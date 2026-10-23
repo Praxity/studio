@@ -1497,6 +1497,7 @@ export function checkDormantChoiceImports(path, source, program) {
 				/(?:^@praxity\/shared-blocks\/choice-learner-state$|(?:^|\/)choice-learner-state(?:\.[cm]?[jt]s)?$)/u,
 			barrels: [],
 			forbidModuleLoads: true,
+			allowNamedOwnerLoads: true,
 			message:
 				"choice admission is dormant until reporting waits and learner recovery is available",
 		},
@@ -1550,6 +1551,18 @@ function checkOwnedImports(path, source, program, ownership, options) {
 		const declaration =
 			options.forbidModuleLoads &&
 			!typeOnlyBindings &&
+			!(
+				options.allowNamedOwnerLoads &&
+				bindings &&
+				(ts.isNamedImports(bindings) || ts.isNamedExports(bindings)) &&
+				bindings.elements.length > 0 &&
+				(!ts.isImportDeclaration(node) || !node.importClause?.name) &&
+				bindings.elements.every(
+					(binding) =>
+						binding.isTypeOnly ||
+						ownership[(binding.propertyName ?? binding.name).text]?.includes(path),
+				)
+			) &&
 			((ts.isImportDeclaration(node) && !node.importClause?.isTypeOnly) ||
 				(ts.isExportDeclaration(node) && !node.isTypeOnly));
 		const namespace =

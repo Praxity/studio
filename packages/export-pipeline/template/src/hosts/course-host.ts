@@ -445,9 +445,9 @@ export function initializeCourseHost(
 			const submitted = prepareChoiceGroupSubmission(groupId, selectedView);
 			if (!submitted || submitted.contentSignature !== detail.contentSignature) return;
 			// The candidate precedes its write, preserving the existing objective-first order.
-			submissionView = {
+			const candidateView: ChoiceDependencyEvidence = {
 				...selectedView,
-				status: (id) => choiceDependencyStatus(id, submissionView as ChoiceDependencyEvidence),
+				status: (id) => choiceDependencyStatus(id, candidateView),
 				rows: [
 					...view.rows,
 					{
@@ -459,6 +459,7 @@ export function initializeCourseHost(
 				],
 				readState: (id) => (id === groupId ? { ...state, submitted } : view.readState(id)),
 			};
+			submissionView = candidateView;
 		}
 		// Keep the event's existing adapter and ticket; tracker writes have their own lifetime.
 		if (hasScore && runtime)

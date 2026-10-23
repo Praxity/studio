@@ -4,6 +4,7 @@ import {
 	type ChoiceDependencyView,
 	choiceDependencyStatus,
 } from "../choice-learner-state";
+import type { ChoiceStateQuestion } from "../choice-state-facts";
 import { getStrings } from "../i18n/strings";
 import type { LearnerStateValue } from "../learner-state";
 import type { PraxityBlock } from "../types";
@@ -16,14 +17,16 @@ afterEach(() => {
 	delete window.__praxityBlockState;
 });
 
-function mount(mode: "all" | "oneOf", evidence = true, locale = "en") {
+function mount(mode: "all" | "oneOf", evidence = true, locale = "en", summary = true) {
 	const values = new Map<string, LearnerStateValue>();
 	const rows: ChoiceDependencyView["rows"][number][] = [];
 	const events: string[] = [];
+	const questions: Record<string, ChoiceStateQuestion> = {};
+	const signatures: Record<string, string> = {};
 	const view = (): ChoiceDependencyEvidence => {
 		const input: ChoiceDependencyView = {
-			questions: {},
-			signatures: {},
+			questions,
+			signatures,
 			rows,
 			groups: { g: { mode, memberIds: ["a", "b"], requiredIds: ["a", "b"] } },
 			readState: (id) => values.get(id),
@@ -42,7 +45,7 @@ function mount(mode: "all" | "oneOf", evidence = true, locale = "en") {
 		{
 			id: "g",
 			type: "assessmentGroup",
-			data: { mode, memberBlockIds: ["a", "b"], showResultsSummary: true },
+			data: { mode, memberBlockIds: ["a", "b"], showResultsSummary: summary },
 		},
 		{ id: "a", type: "assessment", data: { gradingMode: "exact" } },
 		{ id: "b", type: "assessment", data: { gradingMode: "none", required: true } },
@@ -73,11 +76,19 @@ function mount(mode: "all" | "oneOf", evidence = true, locale = "en") {
 	};
 	document.addEventListener("praxity:assessment-group-complete", complete);
 	disposals.push(() => document.removeEventListener("praxity:assessment-group-complete", complete));
-	return { values, rows, events, view, render };
+	return { values, rows, events, view, render, questions, signatures };
 }
 
 it("without a view keeps the ordinary event-before-save log and unsigned envelope", async () => {
 	const { values, events, render } = mount("all", false);
+	values.set("g", {
+		version: 1,
+		kind: "assessmentGroup",
+		mode: "all",
+		selectedMemberId: null,
+		completed: false,
+		submitted: { retained: true },
+	});
 	await render();
 	document.querySelector<HTMLButtonElement>(".praxity-ag-submit-btn")?.click();
 	await vi.waitFor(() =>
@@ -163,7 +174,36 @@ it("retains the latest capture through A/B/A picker changes and retry remounts",
 });
 
 it("keeps an old aggregate in history after member repair until deliberate submission", async () => {
-	const { values, rows, view, render } = mount("all");
+	const { values, rows, view, render, questions, signatures } = mount("all");
+	questions.a = {
+		selectionMode: "single",
+		dontKnow: false,
+		canAutoScore: true,
+		graded: true,
+		maxAttempts: 2,
+		correctAnswerSignature:
+			"sha256:0eb5b8d6f81bc677da8a08567cc4fa9a06a57e9ec8da85ed73a7f62727996002",
+		materialSignature: `sha256:${"d".repeat(64)}`,
+		options: [
+			{ id: "a", materialSignature: `sha256:${"b".repeat(64)}` },
+			{ id: "b", materialSignature: `sha256:${"c".repeat(64)}` },
+		],
+	};
+	signatures.a = "sha256:b1b74fa98c26909745962fa6d5f98b01897f03a1fa9bcbf35461c4213b407702";
+	values.set("a", {
+		version: 1,
+		kind: "assessment",
+		assessmentType: "choice",
+		checked: true,
+		correct: true,
+		completed: true,
+		interacted: true,
+		attemptCount: 1,
+		answer: ["a"],
+		contentSignature: signatures.a,
+		materialProof: { optionIds: ["a", "b"] },
+	});
+	rows.push({ id: "a", correct: true, contentSignature: signatures.a });
 	const old = {
 		payload: {
 			mode: "all",
@@ -236,4 +276,23 @@ for (const refusal of ["member-history", "stage-refused", "report-refused"] as c
 			} else expect(events).toEqual([]);
 		});
 	}
+}
+
+for (const evidence of [false, true]) {
+	it(`${evidence ? "with" : "without"} a view preserves its submit-removal event order`, async () => {
+		const { render } = mount("all", evidence, "en", false);
+		const observed: boolean[] = [];
+		const observe = () => observed.push(document.querySelector(".praxity-ag-submit-btn") !== null);
+		document.addEventListener("praxity:assessment-group-complete", observe);
+		disposals.push(() =>
+			document.removeEventListener("praxity:assessment-group-complete", observe),
+		);
+		await render();
+		const download = document.createElement("button");
+		download.setAttribute("data-assessment-group-download", "true");
+		document.querySelector("[data-assessment-group-submit]")?.append(download);
+		document.querySelector<HTMLButtonElement>(".praxity-ag-submit-btn")?.click();
+		await vi.waitFor(() => expect(observed).toEqual([evidence]));
+		expect(document.querySelector(".praxity-ag-submit-btn")).toBeNull();
+	});
 }

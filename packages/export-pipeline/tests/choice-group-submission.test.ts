@@ -46,6 +46,11 @@ function launch(format: "scorm12" | "scorm2004", evidence: boolean) {
 	vi.stubGlobal("window", dom.window);
 	vi.stubGlobal("document", dom.window.document);
 	vi.stubGlobal("localStorage", dom.window.localStorage);
+	const errors: string[] = [];
+	window.addEventListener("error", (event) => {
+		errors.push(event.message);
+		event.preventDefault();
+	});
 	const values = new Map<string, string>();
 	const writes: string[][] = [];
 	const order: string[] = [];
@@ -121,6 +126,8 @@ function launch(format: "scorm12" | "scorm2004", evidence: boolean) {
 		order.push("interaction");
 		return interaction(...args);
 	});
+	vi.spyOn(runtime, "setScore");
+	vi.spyOn(runtime, "setCompletion");
 	order.length = 0;
 	writes.length = 0;
 	return {
@@ -130,6 +137,7 @@ function launch(format: "scorm12" | "scorm2004", evidence: boolean) {
 		writes,
 		order,
 		values,
+		errors,
 		provider: window.__praxityBlockState as LearnerBlockStateRuntime,
 		refuse: () => {
 			refuse = true;
@@ -162,6 +170,7 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 		const { provider, order, writes } = launch(format, false);
 		submit();
 		expect(order.slice(0, 3)).toEqual(["objective", "interaction", "save"]);
+		expect(provider.getChoiceDependencyView).toBeUndefined();
 		expect(writes.slice(0, 3)).toEqual([
 			["cmi.objectives.0.id", "g"],
 			["cmi.objectives.0.score.raw", "100"],
@@ -176,6 +185,8 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 			totalPages: 1,
 			completionMethod: "allPages",
 			requiredAssessmentIds: ["g"],
+			passMark: 80,
+			scoredAssessmentIds: ["g"],
 			getChoiceDependencyView: view,
 		});
 		expect(choiceDependencyStatus("g", view())).toBe("history");
@@ -189,6 +200,10 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 		submit();
 		expect(order.slice(0, 3)).toEqual(["objective", "interaction", "save"]);
 		expect(runtime.trackObjective).toHaveBeenCalledExactlyOnceWith("g", 100, true);
+		expect(runtime.setScore).toHaveBeenCalledWith(100, 0, 100);
+		expect(runtime.setCompletion).toHaveBeenCalledWith(
+			format === "scorm12" ? "passed" : "completed",
+		);
 		expect(runtime.getInteractions().at(-1)).toMatchObject({ id: "g", score: 100 });
 	});
 	for (const violation of ["digest", "member"] as const) {
@@ -202,15 +217,10 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 }
 
 it("SCORM 1.2 refused staged submission retains main's objective gap and rolls back answer and row", () => {
-	const { provider, runtime, makeRuntime, values, order, refuse } = launch("scorm12", true);
+	const { provider, runtime, makeRuntime, values, order, refuse, errors } = launch("scorm12", true);
 	const previous = values.get("cmi.suspend_data");
 	const previousState = provider.get("g");
 	const previousRows = runtime.getInteractions();
-	const errors: string[] = [];
-	window.addEventListener("error", (event) => {
-		errors.push(event.message);
-		event.preventDefault();
-	});
 	expect(
 		provider.stageSubmission?.("g", () => {
 			provider.set("g", { ...groupState, submitted });
@@ -232,6 +242,23 @@ it("SCORM 1.2 refused staged submission retains main's objective gap and rolls b
 	reload.initialize();
 	expect(createBlockStateRuntime(reload).get("g")).toEqual(previousState);
 	expect(reload.getInteractions()).toEqual(previousRows);
+});
+
+it("without a view preserves the refused-save exception and objective-first gap", () => {
+	const { order, refuse, errors } = launch("scorm12", false);
+	refuse();
+	submit();
+	expect(order.slice(0, 3)).toEqual(["objective", "interaction", "save"]);
+	expect(errors).toEqual(["ESCORM12STORAGE"]);
+});
+
+it("candidate verification does not swallow an unrelated interaction error", () => {
+	const { runtime, errors } = launch("scorm12", true);
+	vi.mocked(runtime.trackInteraction).mockImplementationOnce(() => {
+		throw Error("EOTHER");
+	});
+	submit();
+	expect(errors).toEqual(["EOTHER"]);
 });
 
 it("ordinary non-staging local storage retains an undefined receipt capability", () => {
