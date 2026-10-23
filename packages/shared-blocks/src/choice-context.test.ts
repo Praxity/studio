@@ -5,6 +5,47 @@ import {
 	createChoiceDependencyView,
 } from "./choice-learner-state";
 import { admitChoiceStateFacts, choiceGroupDefinitionIsValid } from "./choice-state-facts";
+import {
+	groupState,
+	groupSubmission,
+	groupView,
+	signatureA,
+	signedSubmitted,
+} from "./fixtures/choice-evidence";
+
+it("an invalid ID overrides even an otherwise valid captured group", () => {
+	const submitted = groupSubmission("all", "signed");
+	const view = groupView({ a: signedSubmitted, g: groupState("all", submitted) }, [
+		{ id: "g", contentSignature: submitted.contentSignature },
+	]);
+	expect(choiceDependencyStatus("g", { ...view, invalidIds: ["g"] })).toBe("history");
+});
+
+it("a rejected required choice fact cannot become a base non-choice group dependency", () => {
+	const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+	try {
+		const admitted = admitChoiceStateFacts({
+			choiceStateQuestions: { a: null },
+			choiceStateSignatures: { a: signatureA },
+			choiceStateGroups: { g: { mode: "all", memberIds: ["a"], requiredIds: ["a"] } },
+		});
+		const view = createChoiceDependencyView(admitted, {
+			rows: [{ id: "g", correct: true }],
+			readState: (id) => (id === "g" ? groupState("all") : undefined),
+		});
+		expect(choiceDependencyStatus("g", view)).toBe("history");
+	} finally {
+		warn.mockRestore();
+	}
+});
+
+it("a refused group row never becomes a compatible unsigned aggregate", () => {
+	const submitted = groupSubmission("all", "signed");
+	const view = groupView({ a: signedSubmitted, g: groupState("all", submitted) }, [
+		{ id: "g", contentSignature: submitted.contentSignature, choiceEvidenceInvalid: true },
+	]);
+	expect(choiceDependencyStatus("g", view)).toBe("history");
+});
 
 it.each([
 	["undefined", undefined],
@@ -49,9 +90,9 @@ describe("whole-course group facts", () => {
 				expect(facts.choiceStateFactsStatus).toBe("invalid");
 				expect(facts.choiceStateInvalidIds).toEqual(["g"]);
 				expect(facts.choiceStateGroups).toEqual({});
-				expect(() =>
-					createChoiceDependencyView(facts, { rows: [], readState: () => undefined }),
-				).toThrow("Invalid choice facts");
+				const view = createChoiceDependencyView(facts, { rows: [], readState: () => undefined });
+				expect(choiceDependencyStatus("g", view)).toBe("history");
+				expect(choiceDependencyStatus("unrelated", view)).toBe("current");
 			} finally {
 				warn.mockRestore();
 			}
@@ -249,7 +290,7 @@ describe("whole-course group facts", () => {
 	);
 });
 
-describe("dormant evidence view", () => {
+describe("evidence view", () => {
 	it("preserves full admitted question and group facts without reading an answer", () => {
 		const question = {
 			selectionMode: "single" as const,

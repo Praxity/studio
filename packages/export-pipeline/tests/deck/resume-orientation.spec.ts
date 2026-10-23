@@ -272,6 +272,17 @@ async function ready(frame: Frame, mode: Mode) {
 		await expect(frame.locator('[data-island="nav"]').first()).toHaveAttribute("data-hydrated", "");
 }
 
+// Earn access through the real writer: a cached release alone is no answer evidence.
+async function earnGuidedGate(page: Page, format: Format) {
+	const frame = await launch(page, "guided", format, "ab-initio", "en", true);
+	await frame.locator("#deck-next").click();
+	await frame.getByRole("radio", { name: "Correct", exact: true }).check();
+	await frame.locator("[data-assessment-submit]").click();
+	await frame.locator("#deck-next").click();
+	await expect(frame.locator('[data-deck-slide="place-3"] h1')).toBeVisible();
+	await page.goto(`${base}/left`);
+}
+
 async function next(frame: Frame, mode: Mode, place: number) {
 	if (mode === "guided") await frame.locator("#deck-next").click();
 	else await frame.locator("a.praxity-nav-next:visible").last().click();
@@ -962,26 +973,16 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 	test(`${format} Guided module departure and browser Back remove the restored cue`, async ({
 		page,
 	}) => {
+		await earnGuidedGate(page, format);
 		await observeMessages(page);
-		await page.goto(`${base}/left`);
 		await page.evaluate(
-			({ format }) =>
-				localStorage.setItem(
-					`lms:/guided-en-true-${format}`,
-					JSON.stringify({
-						[format === "scorm12" ? "cmi.core.lesson_location" : "cmi.location"]:
-							"index.html?praxity-page=place-3",
-						"cmi.suspend_data": JSON.stringify(
-							format === "scorm12"
-								? {
-										visitedPages: ["place-1", "place-2"],
-										interactions: [],
-										custom: JSON.stringify({ deck: { released: ["required-check"] } }),
-									}
-								: { visitedPages: ["place-1", "place-2"], deck: { released: ["required-check"] } },
-						),
-					}),
-				),
+			({ format }) => {
+				const key = `lms:/guided-en-true-${format}`;
+				const values = JSON.parse(localStorage.getItem(key) ?? "{}");
+				values[format === "scorm12" ? "cmi.core.lesson_location" : "cmi.location"] =
+					"index.html?praxity-page=place-3";
+				localStorage.setItem(key, JSON.stringify(values));
+			},
 			{ format },
 		);
 		const frame = await launch(page, "guided", format, "resume", "en", true);
@@ -1003,29 +1004,15 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 		expect(await messages(frame)).toEqual([]);
 	});
 	test(`${format} Guided resumes in a later module after earned gate access`, async ({ page }) => {
+		await earnGuidedGate(page, format);
 		await observeMessages(page);
-		await page.goto(`${base}/left`);
 		await page.evaluate(
 			({ format }) => {
-				localStorage.setItem(
-					`lms:/guided-en-true-${format}`,
-					JSON.stringify({
-						[format === "scorm12" ? "cmi.core.lesson_location" : "cmi.location"]:
-							"index.html?praxity-page=place-4",
-						"cmi.suspend_data": JSON.stringify(
-							format === "scorm12"
-								? {
-										visitedPages: ["place-1", "place-2", "place-3"],
-										interactions: [],
-										custom: JSON.stringify({ deck: { released: ["required-check"] } }),
-									}
-								: {
-										visitedPages: ["place-1", "place-2", "place-3"],
-										deck: { released: ["required-check"] },
-									},
-						),
-					}),
-				);
+				const key = `lms:/guided-en-true-${format}`;
+				const values = JSON.parse(localStorage.getItem(key) ?? "{}");
+				values[format === "scorm12" ? "cmi.core.lesson_location" : "cmi.location"] =
+					"index.html?praxity-page=place-4";
+				localStorage.setItem(key, JSON.stringify(values));
 			},
 			{ format },
 		);

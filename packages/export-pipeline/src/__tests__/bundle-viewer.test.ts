@@ -96,45 +96,45 @@ const TEST_ISLAND_ENTRIES = [
 const TEST_ISLAND_FILES = Object.fromEntries(
 	TEST_ISLAND_ENTRIES.map((entry) => [entry, `${entry}-TEST.js`]),
 ) as Record<IslandManifestEntryName, string>;
-// Size caps don't block working features (owner rule): SHA-256 pair verification in the host bundle; tighten during final size work.
+// Size caps don't block working features (owner rule): choice history admission in the host bundle; tighten during final size work.
 const HOST_GZIP_BUDGETS: Record<ViewerHostName, number> = {
-	// Measured 10,573 B gzip; add 1 KiB rounded up to 256 B.
-	standalone: 11776,
-	// Measured 13,824 B gzip; add 1 KiB rounded up to 256 B.
-	electronPreview: 14848,
-	// Measured 17,484 B gzip; add 1 KiB rounded up to 256 B.
-	scorm12: 18688,
-	// Measured 11,656 B gzip; add 1 KiB rounded up to 256 B.
-	scorm2004: 12800,
-	// Measured 12,650 B gzip; add 1 KiB rounded up to 256 B.
-	xapi: 13824,
+	// Size caps don't block working features (owner rule): choice admission measured 13,599 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
+	standalone: 14848,
+	// Size caps don't block working features (owner rule): choice admission measured 16,919 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
+	electronPreview: 18176,
+	// Size caps don't block working features (owner rule): choice admission measured 20,065 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
+	scorm12: 21248,
+	// Size caps don't block working features (owner rule): choice admission measured 14,198 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
+	scorm2004: 15360,
+	// Size caps don't block working features (owner rule): choice admission measured 15,743 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
+	xapi: 16896,
 };
 
 const PRIVATE_HOST_GZIP_BUDGETS: Record<ViewerHostName, number> = {
-	// Size caps don't block working features (owner rule): lossless suspend storage and outcome ownership measured 6,932 B gzip; add 1 KiB rounded up to 256 B, tighten during final size work.
-	standalone: 8192,
-	// Size caps don't block working features (owner rule): lossless suspend storage and outcome ownership measured 10,123 B gzip; add 1 KiB rounded up to 256 B, tighten during final size work.
-	electronPreview: 11264,
-	// Size caps don't block working features (owner rule): lossless suspend storage and outcome ownership measured 14,237 B gzip; add 1 KiB rounded up to 256 B, tighten during final size work.
-	scorm12: 15360,
-	// Size caps don't block working features (owner rule): lossless suspend storage and outcome ownership measured 8,223 B gzip; add 1 KiB rounded up to 256 B, tighten during final size work.
-	scorm2004: 9472,
-	// Size caps don't block working features (owner rule): lossless suspend storage and outcome ownership measured 9,258 B gzip; add 1 KiB rounded up to 256 B, tighten during final size work.
-	xapi: 10496,
+	// Size caps don't block working features (owner rule): choice admission measured 12,752 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
+	standalone: 13824,
+	// Size caps don't block working features (owner rule): choice admission measured 16,081 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
+	electronPreview: 17152,
+	// Size caps don't block working features (owner rule): choice admission measured 19,491 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
+	scorm12: 20736,
+	// Size caps don't block working features (owner rule): choice admission measured 13,546 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
+	scorm2004: 14592,
+	// Size caps don't block working features (owner rule): choice admission measured 15,157 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
+	xapi: 16384,
 };
 
-// Size caps don't block working features (owner rule): SHA-256 pair verification in the host bundle; tighten during final size work.
+// Size caps don't block working features (owner rule): choice history admission in the host bundle; tighten during final size work.
 const COLD_HOST_GZIP_BUDGETS: Record<ViewerHostName, number> = {
-	// Measured 10,573 B gzip; add 1 KiB rounded up to 256 B.
-	standalone: 11776,
-	// Measured 13,824 B gzip; add 1 KiB rounded up to 256 B.
-	electronPreview: 14848,
-	// Measured 17,484 B gzip; add 1 KiB rounded up to 256 B.
-	scorm12: 18688,
-	// Measured 11,656 B gzip; add 1 KiB rounded up to 256 B.
-	scorm2004: 12800,
-	// Measured 12,650 B gzip; add 1 KiB rounded up to 256 B.
-	xapi: 13824,
+	// Size caps don't block working features (owner rule): choice admission measured 13,599 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
+	standalone: 14848,
+	// Size caps don't block working features (owner rule): choice admission measured 16,919 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
+	electronPreview: 18176,
+	// Size caps don't block working features (owner rule): choice admission measured 20,065 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
+	scorm12: 21248,
+	// Size caps don't block working features (owner rule): choice admission measured 14,198 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
+	scorm2004: 15360,
+	// Size caps don't block working features (owner rule): choice admission measured 15,743 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
+	xapi: 16896,
 };
 
 // owner 2026-10-11: raised for S9b; size optimisation at the end
@@ -1268,11 +1268,11 @@ describe("computeViewerSourceHash", () => {
 		});
 
 		it("budgets the entire highlight initial JS closure with default navigation", async () => {
-			// Size caps don't block working features (owner rule): SHA-256 pair verification in the host bundle; tighten during final size work.
-			// Measured full enhancer maxima: page 43,137 B gzip; deck 135,602 B gzip.
+			// Size caps don't block working features (owner rule): choice history admission in the host bundle; tighten during final size work.
+			// Measured full enhancer maxima after choice admission: page 50,971 B gzip; deck 151,064 B gzip.
 			// Add 1 KiB rounded up to 256 B. Owner C5 previously measured
 			// 39,577 / 131,639 B; HL04 caps were 36,864 / 129,024 B.
-			const caps = { page: 44_288, deck: 136_704 };
+			const caps = { page: 52224, deck: 152320 };
 			const page = {
 				id: "highlight-page",
 				title: "Highlight",
@@ -1581,10 +1581,8 @@ describe("computeViewerSourceHash", () => {
 				scorm2004: [sessionFilename],
 			});
 			const session = await readFile(path.join(outDir, sessionFilename as string), "utf-8");
-			// Size caps don't block working features (owner rule): outcome owner refactor measured 2,480 B gzip; tighten during final size work.
-			expect(gzipSync(session).byteLength, "SCORM support gzip bytes").toBeLessThanOrEqual(
-				3.5 * 1024,
-			);
+			// Size caps don't block working features (owner rule): choice admission measured 7661 B gzip; tighten during final size work.
+			expect(gzipSync(session).byteLength, "SCORM support gzip bytes").toBeLessThanOrEqual(8704);
 			expect(session).not.toMatch(/\bimport\b/u);
 			const api = { LMSInitialize: () => "true" };
 			const windows = [createContext({ window: {} }), createContext({ window: {} })];
@@ -1738,12 +1736,14 @@ describe("computeViewerSourceHash", () => {
 					// Owner C5: focus restoration adds 2,541 B across the two adapters.
 					// Measured 27,750 B + 1 KiB, rounded up to 256 B. Full page/deck caps stay unchanged.
 					expect(bytes, `${island} initial raw bytes`).toBeLessThanOrEqual(28_928);
-				} else
+				}
+				// Size caps don't block working features (owner rule): group admission measured 38,275 B raw; add 1 KiB rounded up to 256 B; tighten during final size work.
+				else
 					expect(bytes, `${island} initial raw bytes`).toBeLessThan(
 						island === "island-self-check"
 							? SELF_CHECK_INITIAL_RAW_CEILING
 							: (island === "island-assessment-group"
-									? 24.25
+									? 38.5
 									: island === "island-rating"
 										? 18
 										: 16) * 1024,
@@ -1799,7 +1799,8 @@ describe("computeViewerSourceHash", () => {
 					),
 				)
 			).reduce((total, bytes) => total + bytes, 0);
-			expect(narrationGzipBytes).toBeLessThan(80 * 1024);
+			// Size caps don't block working features (owner rule): measured 82,156 gzip bytes; tighten during final size work.
+			expect(narrationGzipBytes).toBeLessThan(83_200);
 			for (const file of narrationFiles) {
 				expect(await readFile(path.join(islandsDir, file), "utf-8")).not.toContain("mantine");
 			}
@@ -1811,9 +1812,8 @@ describe("computeViewerSourceHash", () => {
 					),
 				)
 			).reduce((total, bytes) => total + bytes, 0);
-			// owner 2026-10-11: raise size limits when they block working features; size optimisation at the end.
-			// 248 KiB for the standalone pass mark's finality and outcome reads (246,259 bytes).
-			expect(assessmentGzipBytes).toBeLessThan(248 * 1024);
+			// Size caps don't block working features (owner rule): measured 257,267 gzip bytes; tighten during final size work.
+			expect(assessmentGzipBytes).toBeLessThan(258_304);
 			expect(navFiles.length).toBeLessThan(result.manifest.islandFiles.length);
 			for (const file of navFiles) {
 				expect(await readFile(path.join(islandsDir, file), "utf-8")).not.toBe("");

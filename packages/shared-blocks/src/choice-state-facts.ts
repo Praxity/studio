@@ -1,6 +1,6 @@
 import { sha256 } from "@noble/hashes/sha2.js";
 
-/** Published effective facts. Saved-answer admission remains dormant. */
+/** Published effective facts used by saved-answer admission. */
 export interface ChoiceStateQuestion {
 	selectionMode: "single" | "multiple";
 	dontKnow: boolean;

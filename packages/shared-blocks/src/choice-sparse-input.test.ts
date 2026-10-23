@@ -88,9 +88,9 @@ describe.each(["all", "oneOf"] as const)("sparse %s group facts", (mode) => {
 			expect(admitted.choiceStateFactsStatus).toBe("invalid");
 			expect(admitted.choiceStateInvalidIds).toEqual(["g"]);
 			expect(admitted.choiceStateGroups).toEqual({});
-			expect(() =>
-				createChoiceDependencyView(admitted, { rows: [], readState: () => undefined }),
-			).toThrow("Invalid choice facts");
+			const view = createChoiceDependencyView(admitted, { rows: [], readState: () => undefined });
+			expect(choiceDependencyStatus("g", view)).toBe("history");
+			expect(choiceDependencyStatus("unrelated", view)).toBe("current");
 		} finally {
 			warn.mockRestore();
 		}

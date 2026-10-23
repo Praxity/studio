@@ -16,94 +16,59 @@ import {
 	sourceOwnerAllowlist,
 } from "./check-source-owners.mjs";
 
-test("choice admission stays dormant in production consumers, including aliases and whole-module access", () => {
-	for (const name of [
-		"restoreChoiceAssessmentState",
-		"prepareChoiceAssessmentState",
-		"retainLegacyChoiceBuild",
-		"choiceDependencyStatus",
-		"choiceGroupDependencyIds",
-		"choiceGroupSignature",
-		"prepareChoiceGroupSubmission",
-		"createChoiceDependencyView",
-	]) {
-		for (const source of [
-			`import { ${name} as activate } from "@praxity/shared-blocks/choice-learner-state"; activate(input);`,
-			`export { ${name} as activate } from "./choice-learner-state";`,
-			`const { ${name}: activate } = states; activate(input);`,
-			`states["${name}"](input);`,
-		]) {
-			for (const path of [
-				"packages/export-pipeline/template/src/hosts/course-host.ts",
-				"packages/shared-blocks/src/blocks/AssessmentBlock.tsx",
-				"packages/shared-blocks/src/viewer/assessment-group-runtime.ts",
-			]) {
-				assert.match(checkDormantChoiceImports(path, source).join("\n"), new RegExp(name));
-			}
-			assert.deepEqual(
-				checkDormantChoiceImports(
-					"packages/shared-blocks/src/choice-dependency-state.test.ts",
-					source,
-				),
-				[],
-			);
-		}
-	}
-	for (const source of [
-		'import * as state from "@praxity/shared-blocks/choice-learner-state";',
-		'const state = await import("./choice-learner-state");',
-		'const state = require("@praxity/shared-blocks/choice-learner-state");',
-		'export * from "@praxity/shared-blocks/choice-learner-state";',
-	])
-		assert.match(
-			checkDormantChoiceImports("packages/shared-blocks/src/viewer/planted.ts", source).join("\n"),
-			/dormant/,
-		);
-});
-
-test("dormant admission permits the existing envelope API, shared types and the canonical barrel", () => {
-	assert.deepEqual(
-		checkDormantChoiceImports(
+test("choice admission allows only its named production consumers", () => {
+	const consumers = {
+		restoreChoiceAssessmentState: ["packages/shared-blocks/src/blocks/AssessmentBlock.tsx"],
+		prepareChoiceAssessmentState: ["packages/shared-blocks/src/blocks/AssessmentBlock.tsx"],
+		retainLegacyChoiceBuild: ["packages/export-pipeline/src/scorm/local-storage-runtime.ts"],
+		choiceDependencyStatus: [
 			"packages/shared-blocks/src/blocks/AssessmentBlock.tsx",
-			'import type { SavedAssessmentState } from "../learner-state";',
-		),
-		[],
-	);
-	assert.deepEqual(
-		checkDormantChoiceImports(
-			"packages/export-pipeline/src/scorm/local-storage-runtime.ts",
-			'import { createLearnerState, parseLearnerState, serializeLearnerState } from "@praxity/shared-blocks/learner-state";',
-		),
-		[],
-	);
-	assert.deepEqual(
-		checkDormantChoiceImports(
-			"packages/shared-blocks/src/index.ts",
-			'export * from "./learner-state";',
-		),
-		[],
-	);
-	assert.deepEqual(
-		checkDormantChoiceImports(
-			"packages/shared-blocks/src/choice-learner-state.ts",
-			"choiceDependencyStatus(id, view);",
-		),
-		[],
-	);
+			"packages/shared-blocks/src/viewer/assessment-group-runtime.ts",
+			"packages/export-pipeline/src/scorm/tracking.ts",
+			"packages/export-pipeline/template/src/islands/island-deck.ts",
+		],
+		prepareChoiceGroupSubmission: [
+			"packages/shared-blocks/src/viewer/assessment-group-runtime.ts",
+			"packages/export-pipeline/template/src/hosts/course-host.ts",
+		],
+		createChoiceDependencyView: ["packages/export-pipeline/template/src/hosts/course-host.ts"],
+	};
+	for (const [name, allowed] of Object.entries(consumers)) {
+		const source = `import { ${name} as admit } from "@praxity/shared-blocks/choice-learner-state"; admit(input);`;
+		for (const path of allowed) assert.deepEqual(checkDormantChoiceImports(path, source), []);
+		for (const source of [
+			`import { ${name} as admit } from "./choice-learner-state";`,
+			`export { ${name} as admit } from "./choice-learner-state";`,
+			`const { ${name}: admit } = state; admit(input);`,
+			`state["${name}"](input);`,
+		])
+			assert.match(
+				checkDormantChoiceImports("packages/shared-blocks/src/viewer/planted.ts", source).join(
+					"\n",
+				),
+				new RegExp(name),
+			);
+	}
 });
 
-test("the dormant choice owner is unreachable from the production import graph", () => {
-	for (const source of [
-		'import "./choice-learner-state";',
-		'import {} from "./choice-learner-state";',
-		'import { futureExport } from "./choice-learner-state";',
-		'export * from "./choice-learner-state";',
-		'export { futureExport } from "./choice-learner-state";',
+test("unused choice helpers stay dormant and whole-module access cannot bypass ownership", () => {
+	for (const path of [
+		"packages/shared-blocks/src/blocks/AssessmentBlock.tsx",
+		"packages/export-pipeline/template/src/hosts/course-host.ts",
+		"apps/desktop/src/inspection-frame.ts",
 	]) {
-		for (const path of [
-			"packages/shared-blocks/src/learner-state.ts",
-			"packages/shared-blocks/src/index.ts",
-			"apps/desktop/src/inspection-frame.ts",
+		for (const name of ["choiceGroupDependencyIds", "choiceGroupSignature"])
+			assert.match(
+				checkDormantChoiceImports(path, `import { ${name} } from "./choice-learner-state";`).join(
+					"\n",
+				),
+				new RegExp(name),
+			);
+		for (const source of [
+			'import * as state from "@praxity/shared-blocks/choice-learner-state";',
+			'const state = await import("./choice-learner-state");',
+			'const state = require("./choice-learner-state");',
+			'export * from "./choice-learner-state";',
 		])
 			assert.match(checkDormantChoiceImports(path, source).join("\n"), /dormant/);
 	}
@@ -191,6 +156,7 @@ test("course outcome writes belong to the injected tracking writer", () => {
 		'runtime.setCompletion("completed");',
 		'runtime?.setSuccess?.("passed");',
 		'runtime["setScore"](100, 0, 100);',
+		"runtime.suppressTerminationResult();",
 		'const method = "trackObjective"; runtime[method]("group", 100, true);',
 		"runtime.terminate(true);",
 		"runtime.terminate(explicitFinish);",

@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readLesson } from "@praxity/grammar";
 import { expect, it } from "vitest";
 import * as head from "../src/html-gen";
-import { stripChoiceStateFacts } from "./fixtures/choice-facts";
+import { stripChoiceRecoveryStrings, stripChoiceStateFacts } from "./fixtures/choice-facts";
 import { compilerIslandAssets } from "./fixtures/page-compiler";
 
 it("records exact per-document additions against main", () => {
@@ -44,12 +44,15 @@ it("records exact per-document additions against main", () => {
 	const current = head.prepareHtmlCourse(config, compilerIslandAssets);
 	// Pinned from main before adding facts. Every other learner/config byte stays exact.
 	for (const [slug, baseBytes, delta, baseHash] of expected) {
-		const after = head.renderHtmlDocument(
+		const published = head.renderHtmlDocument(
 			current,
 			slug,
 			{ islandAssets: compilerIslandAssets },
 			(page) => head.renderPageContent(config, page, new Set(["assessment"])),
 		);
+		const after = stripChoiceRecoveryStrings(published);
+		if (published.includes('id="praxity-config"'))
+			expect(Buffer.byteLength(published) - Buffer.byteLength(after)).toBe(186);
 		const stripped = stripChoiceStateFacts(after);
 		expect(createHash("sha256").update(stripped).digest("hex")).toBe(baseHash);
 		expect(Buffer.byteLength(stripped)).toBe(baseBytes);

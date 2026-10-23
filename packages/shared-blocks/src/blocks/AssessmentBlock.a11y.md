@@ -1,3 +1,16 @@
+# Revised choice attempt route, 2026-10-22
+
+Reuse the outline action and secondary text. The new-attempt button is described
+by the history notice, so reaching it supplies the reason for the action without
+another live announcement. Activation uses the existing retry focus path to reach
+the first enabled answer control. History has no current result, score or completion.
+The previous record remains saved until a deliberate new answer retains it in history.
+The notice does not display historical answer details.
+
+EN/FR browser checks cover the accessible description, keyboard route, focus and
+retention in Chromium, WebKit and Firefox. They do not establish spoken delivery
+with a screen reader.
+
 # Choice storage refusal, 2026-10-19
 
 A refused SCORM 1.2 submission leaves the selected answer editable and the submit

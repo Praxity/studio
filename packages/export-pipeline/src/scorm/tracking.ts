@@ -5,6 +5,10 @@
  * detection based on configurable criteria (all pages, percentage, or quiz).
  */
 
+import {
+	type ChoiceDependencyView,
+	choiceDependencyStatus,
+} from "@praxity/shared-blocks/choice-learner-state";
 import { DEFAULT_COMPLETION_THRESHOLD } from "@praxity/shared-blocks/constants";
 import { type CourseOutcome, writeCourseOutcome } from "@praxity/shared-blocks/learner-block-state";
 import type { InteractionRecord, SCORMRuntime, TrackInteractionOptions } from "./types.ts";
@@ -51,6 +55,8 @@ export interface TrackingConfig {
 	isAssessmentFinal?: (id: string) => boolean;
 	/** Hosts supply saved answers; the tracker owns their finality decision. */
 	getAssessmentState?: (id: string) => unknown;
+	/** A fresh evidence view from the admitted host, shared with restoration and gates. */
+	getChoiceDependencyView?: () => ChoiceDependencyView | undefined;
 }
 
 interface CourseResult {
@@ -59,9 +65,7 @@ interface CourseResult {
 	retryable: boolean;
 }
 
-interface TrackerOutcome extends CourseOutcome {
-	result?: CourseResult | null;
-}
+type TrackerOutcome = CourseOutcome & { result?: CourseResult | null };
 
 // ---------------------------------------------------------------------------
 // CourseTracker
@@ -95,12 +99,14 @@ export class CourseTracker {
 		correct?: boolean,
 		score?: number,
 		options?: TrackInteractionOptions,
+		submissionView?: ChoiceDependencyView,
 	): void {
 		this.runtime.trackInteraction(id, response, correct, score, options);
 
-		if (score !== undefined) writeCourseOutcome(this.runtime, this.outcome("score"));
+		if (score !== undefined)
+			writeCourseOutcome(this.runtime, this.outcome("score", submissionView));
 
-		this.checkCompletion();
+		this.checkCompletion(submissionView);
 	}
 
 	/**
@@ -111,6 +117,20 @@ export class CourseTracker {
 		return this.average([...this.latestScored().values()]);
 	}
 
+	/** Display follows admitted rows, even while reported LMS fields are waiting. */
+	getCurrentScore(): { raw: number; min: number; max: number } | null {
+		const view = this.config.getChoiceDependencyView?.();
+		if (
+			!view ||
+			(!Object.keys(view.questions).length &&
+				!Object.keys(view.groups ?? {}).length &&
+				!view.invalidIds?.length)
+		)
+			return this.runtime.getScore();
+		const rows = [...this.latestScored().values()];
+		return rows.length ? { raw: this.average(rows), min: 0, max: 100 } : null;
+	}
+
 	/** Recompute the authored outcome; pending answers have no learner-visible result. */
 	getOutcome(): { score: number; passed: boolean } | undefined {
 		const { result } = this.outcome("display");
@@ -118,6 +138,8 @@ export class CourseTracker {
 	}
 
 	isAssessmentFinal(id: string): boolean {
+		const view = this.config.getChoiceDependencyView?.();
+		if (view && choiceDependencyStatus(id, view) !== "current") return false;
 		if (this.config.isAssessmentFinal) return this.config.isAssessmentFinal(id);
 		const state = this.config.getAssessmentState?.(id);
 		return (
@@ -128,8 +150,14 @@ export class CourseTracker {
 		);
 	}
 
-	trackGroupObjective(id: string, score: number, passed: boolean, runtime = this.runtime): void {
-		writeCourseOutcome(runtime, this.outcome({ id, score, passed }));
+	trackGroupObjective(
+		id: string,
+		score: number,
+		passed: boolean,
+		runtime = this.runtime,
+		submissionView?: ChoiceDependencyView,
+	): void {
+		writeCourseOutcome(runtime, this.outcome({ id, score, passed }, submissionView));
 	}
 
 	finish(explicitFinish = false, runtime = this.runtime): boolean {
@@ -142,9 +170,7 @@ export class CourseTracker {
 			: 0;
 	}
 
-	private latestScored(
-		interactions = this.runtime.getInteractions(),
-	): Map<string, InteractionRecord> {
+	private latestScored(interactions = this.currentInteractions()): Map<string, InteractionRecord> {
 		const latest = new Map<string, InteractionRecord>();
 		for (const interaction of interactions) {
 			if (Number.isFinite(interaction.score)) {
@@ -154,12 +180,28 @@ export class CourseTracker {
 		return latest;
 	}
 
+	private currentInteractions(view = this.config.getChoiceDependencyView?.()): InteractionRecord[] {
+		return this.runtime
+			.getInteractions()
+			.filter((row) => !view || choiceDependencyStatus(row.id, view) === "current");
+	}
+
+	private historyIsWaiting(view = this.config.getChoiceDependencyView?.()): boolean {
+		if (!view) return false;
+		const ids = new Set(this.config.requiredAssessmentIds ?? []);
+		if (this.hasPassMark()) for (const id of this.config.scoredAssessmentIds ?? []) ids.add(id);
+		else if (this.config.completionMethod === "quiz")
+			for (const [id, question] of Object.entries(view.questions))
+				if (question.graded && choiceDependencyStatus(id, view) !== "unanswered") ids.add(id);
+		return [...ids].some((id) => choiceDependencyStatus(id, view) === "history");
+	}
+
 	/**
 	 * Evaluate whether the course should be marked as completed, passed, or
 	 * failed based on the configured completion method.
 	 */
-	checkCompletion(): void {
-		writeCourseOutcome(this.runtime, this.outcome());
+	checkCompletion(submissionView?: ChoiceDependencyView): void {
+		writeCourseOutcome(this.runtime, this.outcome("check", submissionView));
 	}
 
 	// ---- private completion strategies ------------------------------------
@@ -226,15 +268,25 @@ export class CourseTracker {
 	 * would end the attempt before a result exists, so it stays "incomplete" until
 	 * the course has a final failure, or passes with the page rule met.
 	 */
-	private outcome(
+	outcome(
 		intent:
 			| "check"
 			| "score"
 			| "display"
 			| "end"
 			| "finish"
-			| NonNullable<CourseOutcome["objective"]> = "check",
+			| { id: string; score: number; passed: boolean } = "check",
+		view = this.config.getChoiceDependencyView?.(),
 	): TrackerOutcome {
+		if (this.historyIsWaiting(view))
+			return {
+				kind: "waiting",
+				...(intent === "end"
+					? { finish: "complete" as const }
+					: intent === "finish"
+						? { finish: "terminate" as const }
+						: {}),
+			};
 		if (typeof intent === "object") return { kind: "decided", objective: intent };
 		if (intent === "finish") return { kind: "decided", finish: "terminate" };
 		if (intent === "end")
@@ -254,7 +306,7 @@ export class CourseTracker {
 			]);
 			if (![...required].every((id) => this.isAssessmentFinal(id))) return { kind: "decided" };
 		}
-		const interactions = this.runtime.getInteractions();
+		const interactions = this.currentInteractions(view);
 		const latest = this.latestScored(interactions);
 		const authored = hasPassMark && (intent !== "check" || this.config.reportOutcome !== false);
 		const legacyQuiz = !authored && this.config.completionMethod === "quiz";

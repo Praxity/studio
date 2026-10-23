@@ -19,6 +19,7 @@ import { detectVideoSource } from "@praxity/shared-blocks/video-url-utils";
 import { JSDOM } from "jsdom";
 import { type CourseExportInput, compileCourse, deployCourse } from "../src/build.ts";
 import { DEPLOYMENT_HEAD_MARKER, escapeJsonForScript } from "../src/html-gen.ts";
+import { stripChoiceRecoveryStrings } from "../tests/fixtures/choice-facts.ts";
 import { compilerFixture, compilerIslandAssets } from "../tests/fixtures/page-compiler.ts";
 
 const hash = (html: string) => createHash("sha256").update(html).digest("hex");
@@ -26,7 +27,7 @@ const hash = (html: string) => createHash("sha256").update(html).digest("hex");
 /** Match the renderer-only fixture assets in both capture and compiler checks. */
 export function normalizeRendererAssets(html: string): string {
 	// The fixture omits this deployment owner; its presence and URL are not renderer bytes.
-	return html
+	return stripChoiceRecoveryStrings(html)
 		.replace(
 			/^<script(?: defer)? src="self-check-lifetime-[A-Z0-9]{8}\.classic\.js"><\/script>\n/gm,
 			"",

@@ -541,6 +541,8 @@ test("completion exposes the recorded grade and hides an absent score", async ({
 		const runtime = window.__praxityRuntime as SCORMRuntime | undefined;
 		if (!runtime) throw new Error("Completion grade requires a runtime");
 		runtime.setScore(75, 0, 100);
+		// The display reads current rows rather than a potentially historical LMS total.
+		runtime.trackInteraction("recorded-grade", "Recorded response", true, 75);
 	});
 	await page.locator("#deck-next").click();
 	await page.locator("#deck-next").click();

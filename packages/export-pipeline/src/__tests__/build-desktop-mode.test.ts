@@ -9,6 +9,7 @@ import AdmZip from "adm-zip";
 import { JSDOM } from "jsdom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { readLessonFixture as readSource } from "../../../grammar/__tests__/helpers/lesson-fixture.ts";
+import { stripChoiceRecoveryStrings } from "../../tests/fixtures/choice-facts.ts";
 import {
 	fixtureCourseRuntimeLicense,
 	fixtureRuntimeNotices,
@@ -160,7 +161,13 @@ describe("buildScormPackage desktop mode", () => {
 						.filter((entry) => !entry.isDirectory && entry.entryName !== "license.txt")
 						.map((entry) => [
 							entry.entryName,
-							createHash("sha256").update(entry.getData()).digest("hex"),
+							createHash("sha256")
+								.update(
+									entry.entryName.endsWith(".html")
+										? stripChoiceRecoveryStrings(entry.getData().toString("utf8"))
+										: entry.getData(),
+								)
+								.digest("hex"),
 						])
 						.sort();
 					expect(createHash("sha256").update(JSON.stringify(files)).digest("hex")).toBe(

@@ -4,6 +4,7 @@ import { reportLearnerBlockResponse } from "./learner-block-response";
 import {
 	finishLearnerCourse,
 	learnerRuntime,
+	learnerScore,
 	learnerTracker,
 	readLearnerBlockPolicy,
 	readLearnerBlockSaveResult,
@@ -17,6 +18,30 @@ afterEach(() => {
 	delete window.__praxityRuntime;
 	delete window.__praxityTracker;
 	delete window.__praxityFinishCourse;
+});
+
+it("runtime-only End retains the waiting outcome owner", () => {
+	const completion = vi.fn();
+	const terminate = vi.fn(() => true);
+	const commit = vi.fn();
+	Object.assign(window, { __praxityRuntime: { setCompletion: completion, terminate, commit } });
+	window.__praxityBlockState = {
+		get: () => undefined,
+		set() {},
+		getCourseOutcome: () => ({ kind: "waiting", finish: "complete" }),
+	};
+	expect(finishLearnerCourse(() => true)).toBe(true);
+	expect(terminate).toHaveBeenCalledExactlyOnceWith(false);
+	expect(completion).not.toHaveBeenCalled();
+	expect(commit).not.toHaveBeenCalled();
+});
+
+it("an empty current score never falls back to a stale reported score", () => {
+	window.__praxityRuntime = { getScore: () => ({ raw: 100, min: 0, max: 100 }) };
+	window.__praxityTracker = { getCurrentScore: () => null };
+	expect(learnerScore(() => true)).toBeNull();
+	delete window.__praxityTracker;
+	expect(learnerScore(() => true)).toEqual({ raw: 100, min: 0, max: 100 });
 });
 
 describe("learner block provider privacy interface", () => {

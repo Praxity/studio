@@ -368,7 +368,7 @@ it("retains the graded default and the policy owner's reveal override", () => {
 		expect(readCourseHostConfig(doc)?.choiceStateQuestions?.[block.id].maxAttempts).toBe(1);
 	}
 });
-it("retains document bytes apart from the two inert fields", () => {
+it("retains frozen document bytes outside compiled facts and recovery strings", () => {
 	const html = render();
 	const stripped = stripChoiceStateFacts(html);
 	expect(createHash("sha256").update(stripped).digest("hex")).toBe(

@@ -11,14 +11,51 @@ admission, separately from core course configuration. Admission verifies each pr
 hash and projects only declared question/option fields. Invalid pairs are omitted
 together, retain an explicit invalid status and diagnostic ID, and leave unrelated
 reporting operational. The assessment island selects its block's admitted pair;
-editor mounts without compiled facts keep their local policy. These signatures
-remain dormant: saved-answer admission, history and LMS outcomes do not use them.
+editor mounts without compiled facts derive the same local facts. Saved choices
+carry their material signature. `choice-learner-state.ts` owns saved-answer
+restoration, preparation and `choiceDependencyStatus`. A changed submitted answer
+becomes history. The EN/FR notice and New attempt action let the learner answer
+again without overwriting the retained answer on page load.
+
+The host constructs one evidence view from admitted whole-course question and
+group facts, reporting rows and the destination-aware state provider. Invalid
+IDs refuse current credit without affecting unrelated IDs. Invalid whole maps
+refuse the evidence view. Preview's saved build comes from its storage owner;
+every preview write retains an unsigned answer's original build before moving
+the envelope revision. Held SCORM 1.2 device drafts supply no submitted evidence
+or saved-build proof to admission.
+
+Groups retain their last submitted payload through radio and retry writes.
+Deliberate submission captures all required and submitted members in `all` mode,
+or the selected member in `oneOf`. The host verifies the same digest. Readers
+verify the captured payload and its member references rather than today's draft.
+Same-material retries keep the existing member-before-aggregate pending policy.
+
+`CourseTracker.outcome()` waits while a course dependency is history. With a pass
+mark, dependencies are scored IDs plus required IDs. Quiz mode uses required IDs
+and compiled graded choice IDs with submitted evidence; removed IDs cannot keep
+the course waiting. Completion-only mode uses required IDs. A deck gate uses its
+own ID, for both live and restored releases. During waiting, the sole outcome
+writer writes no completion, success, score or objective. End and Finish call
+`terminate(false)`; xAPI emits no result statement for that call. Decided outcomes
+retain the ordinary formulas and write order. In-course score and result displays
+use current rows while the LMS keeps its previously reported values.
+
+### Group submission refusal
+
+Group reporting preserves the existing objective-first write order. An objective
+can therefore be written before the LMS refuses the group save. This is
+"objective credit written before a refused group save (existing behaviour, tracked separately)".
+Changing that successful write sequence requires a separate change. A refused
+save retains the prior evidence and reports a not-saved receipt. After reload,
+a history aggregate still waits and cannot write completion, success, score or
+an explicit completion termination.
 
 Studio's nonblocking `choice-raw-html-footnote` advice checks option label source
 with content-model's HTML classifier and footnote recognizer. It deliberately
 does not predict material signatures or parse or sanitize HTML. Labels containing
 both forms may display footnote syntax as plain text, and editing the note later
-may make learners answer again once answer history uses signatures. Authors can use
+can make learners answer again when the material changes. Authors can use
 Markdown formatting or move the note to the question. This source check leaves
 learner output, block data and signature derivation unchanged, and imports no
 signature or DOM runtime at checker or CLI startup.

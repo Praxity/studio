@@ -4,6 +4,7 @@
  * Extracted into its own module to keep the runtime factory small.
  */
 
+import { retainLegacyChoiceBuild } from "@praxity/shared-blocks/choice-learner-state";
 import {
 	createLearnerState,
 	type LearnerStateV1,
@@ -12,6 +13,7 @@ import {
 	serializeLearnerState,
 } from "@praxity/shared-blocks/learner-state";
 import {
+	assessmentAttemptMetadata,
 	DEVICE_DESTINATIONS,
 	type InteractionRecord,
 	type SCORMRuntime,
@@ -77,13 +79,13 @@ export class LocalStorageRuntime implements SCORMRuntime {
 		const pages = this.getVisitedPages();
 		if (!pages.includes(pageId)) {
 			pages.push(pageId);
-			this.storage.setItem(this.prefix + "visited_pages", JSON.stringify(pages));
+			this.storage.setItem(`${this.prefix}visited_pages`, JSON.stringify(pages));
 		}
 	}
 
 	getVisitedPages(): string[] {
 		if (this.courseId) return [...this.readState().visitedPageIds];
-		const raw = this.storage.getItem(this.prefix + "visited_pages");
+		const raw = this.storage.getItem(`${this.prefix}visited_pages`);
 		if (!raw) return [];
 		try {
 			return JSON.parse(raw) as string[];
@@ -97,11 +99,21 @@ export class LocalStorageRuntime implements SCORMRuntime {
 		response: string,
 		correct?: boolean,
 		score?: number,
-		_options?: TrackInteractionOptions,
+		options?: TrackInteractionOptions,
 	): void {
+		// Legacy local rows omitted attempt metadata. Preserve those bytes until a signed submission.
+		const metadata =
+			options?.contentSignature === undefined ? {} : assessmentAttemptMetadata(options);
 		if (
 			this.updateState((state) => {
-				state.interactions.push({ id, response, correct, score, timestamp: Date.now() });
+				state.interactions.push({
+					id,
+					response,
+					correct,
+					score,
+					...metadata,
+					timestamp: Date.now(),
+				});
 			})
 		) {
 			return;
@@ -112,15 +124,16 @@ export class LocalStorageRuntime implements SCORMRuntime {
 			response,
 			correct,
 			score,
+			...metadata,
 			timestamp: Date.now(),
 		};
 		interactions.push(record);
-		this.storage.setItem(this.prefix + "interactions", JSON.stringify(interactions));
+		this.storage.setItem(`${this.prefix}interactions`, JSON.stringify(interactions));
 	}
 
 	getInteractions(): InteractionRecord[] {
 		if (this.courseId) return [...this.readState().interactions];
-		const raw = this.storage.getItem(this.prefix + "interactions");
+		const raw = this.storage.getItem(`${this.prefix}interactions`);
 		if (!raw) return [];
 		try {
 			return JSON.parse(raw) as InteractionRecord[];
@@ -131,22 +144,22 @@ export class LocalStorageRuntime implements SCORMRuntime {
 
 	setCompletion(status: "incomplete" | "completed" | "passed" | "failed"): void {
 		if (this.updateState((state) => (state.completion = status))) return;
-		this.storage.setItem(this.prefix + "completion", status);
+		this.storage.setItem(`${this.prefix}completion`, status);
 	}
 
 	getCompletion(): string {
 		if (this.courseId) return this.readState().completion;
-		return this.storage.getItem(this.prefix + "completion") ?? "incomplete";
+		return this.storage.getItem(`${this.prefix}completion`) ?? "incomplete";
 	}
 
 	setScore(raw: number, min: number, max: number): void {
 		if (this.updateState((state) => (state.score = { raw, min, max }))) return;
-		this.storage.setItem(this.prefix + "score", JSON.stringify({ raw, min, max }));
+		this.storage.setItem(`${this.prefix}score`, JSON.stringify({ raw, min, max }));
 	}
 
 	getScore(): { raw: number; min: number; max: number } | null {
 		if (this.courseId) return this.readState().score;
-		const raw = this.storage.getItem(this.prefix + "score");
+		const raw = this.storage.getItem(`${this.prefix}score`);
 		if (!raw) return null;
 		try {
 			return JSON.parse(raw) as { raw: number; min: number; max: number };
@@ -157,22 +170,22 @@ export class LocalStorageRuntime implements SCORMRuntime {
 
 	setBookmark(pageId: string): void {
 		if (this.updateState((state) => (state.bookmark = pageId))) return;
-		this.storage.setItem(this.prefix + "bookmark", pageId);
+		this.storage.setItem(`${this.prefix}bookmark`, pageId);
 	}
 
 	getBookmark(): string | null {
 		if (this.courseId) return this.readState().bookmark;
-		return this.storage.getItem(this.prefix + "bookmark") ?? null;
+		return this.storage.getItem(`${this.prefix}bookmark`) ?? null;
 	}
 
 	setSuspendData(data: string): void {
 		if (this.updateState((state) => (state.custom = data))) return;
-		this.storage.setItem(this.prefix + "suspend_data", data);
+		this.storage.setItem(`${this.prefix}suspend_data`, data);
 	}
 
 	getSuspendData(): string | null {
 		if (this.courseId) return this.readState().custom;
-		return this.storage.getItem(this.prefix + "suspend_data") ?? null;
+		return this.storage.getItem(`${this.prefix}suspend_data`) ?? null;
 	}
 
 	getBlockState(blockId: string): LearnerStateValue | undefined {
@@ -183,7 +196,7 @@ export class LocalStorageRuntime implements SCORMRuntime {
 	getSavedBuildRevision(): string | null {
 		if (!this.courseId || !this.persistent) return null;
 		// readState may migrate legacy keys. Evidence reads must leave every byte intact.
-		const raw = this.storage.getItem(this.prefix + "state");
+		const raw = this.storage.getItem(`${this.prefix}state`);
 		return raw === null
 			? null
 			: (parseLearnerState(raw, { courseId: this.courseId, attemptId: this.attemptId })?.revision ??
@@ -227,7 +240,7 @@ export class LocalStorageRuntime implements SCORMRuntime {
 		// Every caller selects the scoped branch before reading learner state.
 		const identity = { courseId: this.courseId as string, attemptId: this.attemptId };
 		try {
-			const raw = this.storage.getItem(this.prefix + "state");
+			const raw = this.storage.getItem(`${this.prefix}state`);
 			if (raw !== null) return parseLearnerState(raw, identity) ?? createLearnerState(identity);
 
 			const state = createLearnerState({ ...identity, revision: this.revision });
@@ -242,15 +255,15 @@ export class LocalStorageRuntime implements SCORMRuntime {
 			if (!legacyKeys.some((name) => this.storage.getItem(this.prefix + name) !== null))
 				return state;
 
-			state.visitedPageIds = readStringArray(this.storage.getItem(this.prefix + "visited_pages"));
-			state.interactions = readInteractions(this.storage.getItem(this.prefix + "interactions"));
-			const completion = this.storage.getItem(this.prefix + "completion");
+			state.visitedPageIds = readStringArray(this.storage.getItem(`${this.prefix}visited_pages`));
+			state.interactions = readInteractions(this.storage.getItem(`${this.prefix}interactions`));
+			const completion = this.storage.getItem(`${this.prefix}completion`);
 			if (completion === "completed" || completion === "passed" || completion === "failed") {
 				state.completion = completion;
 			}
-			state.score = readScore(this.storage.getItem(this.prefix + "score"));
-			state.bookmark = this.storage.getItem(this.prefix + "bookmark") || null;
-			state.custom = this.storage.getItem(this.prefix + "suspend_data");
+			state.score = readScore(this.storage.getItem(`${this.prefix}score`));
+			state.bookmark = this.storage.getItem(`${this.prefix}bookmark`) || null;
+			state.custom = this.storage.getItem(`${this.prefix}suspend_data`);
 			this.writeState(state);
 			for (const name of legacyKeys) this.storage.removeItem(this.prefix + name);
 			return state;
@@ -270,6 +283,7 @@ export class LocalStorageRuntime implements SCORMRuntime {
 		if (!this.courseId) return false;
 		const state = this.readState();
 		if (state.generation !== this.generation) return true;
+		if (this.revision !== null) retainLegacyChoiceBuild(state);
 		update(state);
 		state.revision = this.revision;
 		state.sequence += 1;
@@ -284,7 +298,7 @@ export class LocalStorageRuntime implements SCORMRuntime {
 	}
 
 	private writeState(state: LearnerStateV1): void {
-		this.storage.setItem(this.prefix + "state", serializeLearnerState(state));
+		this.storage.setItem(`${this.prefix}state`, serializeLearnerState(state));
 	}
 }
 

@@ -25,17 +25,16 @@ export function createBlockStateRuntime(runtime: SCORMRuntime): LearnerBlockStat
 					return runtime.stageSubmission?.(blockId, write) ?? false;
 				}
 			: undefined,
-		getSaveResult: runtime.stageSubmission
-			? (blockId) => {
-					const runtimeResult = runtime.getBlockSaveResult?.(blockId);
-					if (runtimeResult?.status === "not-saved" && runtimeResult.code === "unreadable-state")
-						return runtimeResult;
-					const local = results.get(blockId);
-					return local?.status === "not-saved"
-						? local
-						: (runtime.getBlockSaveResult?.(blockId) ?? local);
-				}
-			: undefined,
+		getSaveResult: (blockId) => {
+			if (!runtime.stageSubmission) return results.get(blockId);
+			const runtimeResult = runtime.getBlockSaveResult?.(blockId);
+			if (runtimeResult?.status === "not-saved" && runtimeResult.code === "unreadable-state")
+				return runtimeResult;
+			const local = results.get(blockId);
+			return local?.status === "not-saved"
+				? local
+				: (runtime.getBlockSaveResult?.(blockId) ?? local);
+		},
 		get(blockId) {
 			if (!blockId) return undefined;
 			const held = runtime.getBlockSaveResult?.(blockId);
@@ -61,12 +60,6 @@ export function createBlockStateRuntime(runtime: SCORMRuntime): LearnerBlockStat
 			try {
 				if (runtime.setBlockState) {
 					const saved = runtime.setBlockState(blockId, value);
-					if (!runtime.stageSubmission)
-						return globalThis.__praxityPrivateState !== false
-							? saved === false
-								? { status: "not-saved", code: "storage-unavailable" }
-								: { status: "saved", destination: "device" }
-							: undefined;
 					results.set(
 						blockId,
 						saved === false
@@ -82,12 +75,10 @@ export function createBlockStateRuntime(runtime: SCORMRuntime): LearnerBlockStat
 					[blockId]: value,
 				};
 				const saved = runtime.setSuspendData(JSON.stringify(suspendData));
-				if (!runtime.stageSubmission) return;
 				if (saved === false) throw new Error("EBLOCKSAVE");
 				results.set(blockId, { status: "saved", destination: runtime.destinations.state });
 			} catch {
-				if (runtime.stageSubmission)
-					results.set(blockId, { status: "not-saved", code: "runtime-write-failed" });
+				results.set(blockId, { status: "not-saved", code: "runtime-write-failed" });
 			}
 			return results.get(blockId);
 		},

@@ -1,5 +1,7 @@
+import type { ChoiceDependencyView } from "./choice-learner-state";
 import type { LearnerStateValue } from "./learner-state";
 import type { SelfCheckTicket } from "./self-check-session";
+import type { CourseOutcome } from "./tracking";
 import { finishRuntimeCourse } from "./tracking";
 
 export { type CourseOutcome, writeCourseOutcome } from "./tracking";
@@ -18,6 +20,10 @@ export type LearnerBlockSaveResult =
 	  };
 
 export interface LearnerBlockStateRuntime {
+	/** The host supplies one source-aware view for all admission consumers. */
+	getChoiceDependencyView?(): ChoiceDependencyView;
+	/** Retains the outcome owner when an End caller has only the runtime/provider. */
+	getCourseOutcome?(): CourseOutcome;
 	get(blockId: string): LearnerStateValue | undefined;
 	/** Read-only saved envelope revision; null cannot establish preview build evidence. */
 	getSavedBuildRevision?(blockId: string): string | null;
@@ -39,6 +45,8 @@ declare global {
 		__praxityTracker?: {
 			trackPageVisit?: (pageId: string, bookmark?: string) => void;
 			getOutcome?: () => { score: number; passed: boolean } | undefined;
+			getCurrentScore?: () => { raw: number; min: number; max: number } | null;
+			isAssessmentFinal?: (id: string) => boolean;
 		};
 		__praxityRuntime?: {
 			trackNavigation?: (fromPageId: string, toPageId: string, trigger: string) => void;
@@ -78,8 +86,18 @@ export function finishLearnerCourse(
 	const finish = doc?.defaultView?.__praxityFinishCourse;
 	if (finish) return finish(current);
 	const runtime = learnerRuntime(current, doc);
-	finishRuntimeCourse(runtime);
+	finishRuntimeCourse(runtime, doc?.defaultView?.__praxityBlockState?.getCourseOutcome?.());
 	return current();
+}
+
+export function learnerScore(
+	current: () => boolean,
+	doc: Document | undefined = globalThis.document,
+) {
+	const tracker = learnerTracker(current, doc);
+	return tracker?.getCurrentScore
+		? tracker.getCurrentScore()
+		: learnerRuntime(current, doc)?.getScore?.();
 }
 
 /** Tracker state and reporting methods retain their admitted adapter and refuse revocation. */

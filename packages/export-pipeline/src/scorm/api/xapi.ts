@@ -21,6 +21,7 @@ import { applyXapiPrivatePolicy } from "../private-xapi-policy";
 import { filterPrivateSuspendData } from "@praxity/shared-blocks/block-state-policy";
 import { declaredCourseActivityId, isAbsoluteIri } from "../activity-id.ts";
 import {
+	assessmentAttemptMetadata,
 	DEVICE_DESTINATIONS,
 	type InteractionRecord,
 	type RuntimeDestinations,
@@ -164,6 +165,7 @@ export class XapiRuntime implements SCORMRuntime {
 	private actor: XapiActor | null;
 	private sendEnabled: boolean;
 	private initialized = false;
+	private terminationResult = true;
 	private completionStatus = "incomplete";
 	private successStatus: "passed" | "failed" | "unknown" = "unknown";
 	private score: { raw: number; min: number; max: number } | null = null;
@@ -247,7 +249,7 @@ export class XapiRuntime implements SCORMRuntime {
 						isNumber(record.timestamp) &&
 						(record.correct === undefined || typeof record.correct === "boolean") &&
 						(record.score === undefined || isNumber(record.score))
-						? [record as unknown as InteractionRecord]
+						? [{ ...record, ...assessmentAttemptMetadata(record) } as InteractionRecord]
 						: [];
 				});
 			if (["incomplete", "completed", "passed", "failed"].includes(String(value.completionStatus)))
@@ -375,12 +377,18 @@ export class XapiRuntime implements SCORMRuntime {
 		return true;
 	}
 
+	suppressTerminationResult(): void {
+		this.terminationResult = false;
+	}
+
 	terminate(): boolean {
+		const reportResult = this.terminationResult;
+		this.terminationResult = true;
 		if (!this.initialized) {
 			return false;
 		}
 
-		if (this.sendEnabled) {
+		if (this.sendEnabled && reportResult) {
 			const verb = this.completionVerbKey();
 			const result = this.buildCompletionResult();
 			const statement = this.buildStatement(verb, this.courseObject(), result);
@@ -431,6 +439,7 @@ export class XapiRuntime implements SCORMRuntime {
 			response,
 			correct,
 			score,
+			...(options?.contentSignature === undefined ? {} : assessmentAttemptMetadata(options)),
 			timestamp: Date.now(),
 		};
 		// Keep the latest attempt per question, plus its latest scored one, so saved state stays bounded.

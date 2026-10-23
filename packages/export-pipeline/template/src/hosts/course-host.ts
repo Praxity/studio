@@ -1,3 +1,8 @@
+import {
+	type ChoiceDependencyView,
+	createChoiceDependencyView,
+	prepareChoiceGroupSubmission,
+} from "@praxity/shared-blocks/choice-learner-state";
 import type { AdmittedChoiceStateFacts } from "@praxity/shared-blocks/choice-state-facts";
 import { isSmallPreviewDocument } from "@praxity/shared-blocks/course-preview-protocol";
 import type { LearnerBlockResponseTruncated } from "@praxity/shared-blocks/learner-block-response";
@@ -138,8 +143,10 @@ export function initializeCourseHost(
 		privacySettled = !hostView.__praxityPrivacyReady;
 	let announcing: ReturnType<NonNullable<typeof owner>["lifetime"]>;
 	let trackerLifetime: typeof announcing;
-	const createTracker = (runtime: SCORMRuntime, current: () => boolean) =>
-		new CourseTracker(withLearnerStateAuthority(runtime, current), {
+	const createTracker = (runtime: SCORMRuntime, current: () => boolean) => {
+		const provider = hostWindow.__praxityBlockState;
+		const tracker = new CourseTracker(withLearnerStateAuthority(runtime, current), {
+			getChoiceDependencyView: () => provider?.getChoiceDependencyView?.(),
 			totalPages: page.totalPages,
 			completionMethod: page.completionMethod,
 			completionThreshold: page.completionThreshold,
@@ -152,6 +159,11 @@ export function initializeCourseHost(
 						getAssessmentState: (id: string) => hostWindow.__praxityBlockState?.get(id),
 					}
 				: {}),
+			...(page.choiceStateFactsStatus === "valid"
+				? {
+						getAssessmentState: (id: string) => provider?.get(id),
+					}
+				: {}),
 			pageAliases: Object.fromEntries(
 				Object.entries(page.pageIdMap).map(([id, slug]) => [slug, id]),
 			),
@@ -159,6 +171,9 @@ export function initializeCourseHost(
 				(adapter.format === "scorm12" || adapter.format === "scorm2004") &&
 				!adapter.isFallback?.(runtime),
 		});
+		if (provider) provider.getCourseOutcome = () => tracker.outcome("end");
+		return tracker;
+	};
 
 	const announce = (lifetime = owner?.lifetime()) => {
 		const authority = owner;
@@ -239,6 +254,35 @@ export function initializeCourseHost(
 			hostWindow.__praxityBlockState = requestedProvider;
 			// An injected accessor can retain or wrap the provider during installation.
 			const provider = hostWindow.__praxityBlockState;
+			if (provider)
+				provider.getChoiceDependencyView = () =>
+					createChoiceDependencyView(
+						{
+							choiceStateFactsStatus: page.choiceStateFactsStatus ?? "absent",
+							choiceStateInvalidIds: page.choiceStateInvalidIds ?? [],
+							choiceStateQuestions: page.choiceStateQuestions ?? {},
+							choiceStateSignatures: page.choiceStateSignatures ?? {},
+							...(page.choiceStateGroups ? { choiceStateGroups: page.choiceStateGroups } : {}),
+						},
+						{
+							rows: runtime.getInteractions(),
+							readState: (id) => {
+								const receipt = provider.getSaveResult?.(id);
+								return receipt?.status === "not-saved" && receipt.code === "unreadable-state"
+									? undefined
+									: provider.get(id);
+							},
+							...(adapter.format === "electron-preview"
+								? {
+										preview: {
+											currentRevision: deployment.revision ?? null,
+											readSavedRevision: (id: string) =>
+												provider.getSavedBuildRevision?.(id) ?? null,
+										},
+									}
+								: {}),
+						},
+					);
 			const admittedLifetime = admittedOwner?.lifetime();
 			const owned = () =>
 				(!admittedOwner ||
@@ -414,16 +458,56 @@ export function initializeCourseHost(
 		const hasScore = Number.isFinite(score);
 		const passed = detail.passed === true;
 		const groupId = String(detail.groupId ?? "");
+		let submissionView: ChoiceDependencyView | undefined;
+		const view = hostWindow.__praxityBlockState?.getChoiceDependencyView?.();
+		if (view?.groups && Object.hasOwn(view.groups, groupId)) {
+			const group = view.groups[groupId];
+			const state = {
+				version: 1,
+				kind: "assessmentGroup",
+				mode: group.mode,
+				selectedMemberId: group.mode === "oneOf" ? detail.selectedMemberId : null,
+				completed: detail.completed === true,
+			};
+			const selectedView = {
+				...view,
+				readState: (id: string) => (id === groupId ? state : view.readState(id)),
+			};
+			const submitted = prepareChoiceGroupSubmission(groupId, selectedView);
+			if (!submitted || submitted.contentSignature !== detail.contentSignature) return;
+			// Evaluate this submission before its write, retaining main's objective-first order.
+			// Existing objective credit on a refused group save is tracked separately.
+			submissionView = {
+				...selectedView,
+				rows: [
+					...view.rows,
+					{
+						id: groupId,
+						contentSignature: submitted.contentSignature,
+						correct: typeof detail.correct === "boolean" ? detail.correct : undefined,
+						memberIds: assessmentReportingOptions(detail, page.pageTitle).memberIds,
+					},
+				],
+				readState: (id) => (id === groupId ? { ...state, submitted } : view.readState(id)),
+			};
+		}
 		// Keep the event's existing adapter and ticket; tracker writes have their own lifetime.
-		if (hasScore && runtime) tracker.trackGroupObjective(groupId, score, passed, runtime);
+		if (hasScore && runtime)
+			tracker.trackGroupObjective(groupId, score, passed, runtime, submissionView);
 		if (!owned()) return;
-		tracker.trackInteraction(
-			groupId,
-			hasScore ? `${score}%` : "",
-			typeof detail.correct === "boolean" ? detail.correct : hasScore ? passed : undefined,
-			hasScore ? score : undefined,
-			assessmentReportingOptions(detail, page.pageTitle),
-		);
+		try {
+			tracker.trackInteraction(
+				groupId,
+				hasScore ? `${score}%` : "",
+				typeof detail.correct === "boolean" ? detail.correct : hasScore ? passed : undefined,
+				hasScore ? score : undefined,
+				assessmentReportingOptions(detail, page.pageTitle),
+				submissionView,
+			);
+		} catch (error) {
+			if (runtime?.getBlockSaveResult?.(groupId)?.status === "not-saved") return;
+			throw error;
+		}
 		if (owned() && hostWindow.__praxityRuntime === runtime) runtime?.commit();
 	});
 
@@ -468,7 +552,11 @@ function installScormLifecycle(
 		| null;
 	const session = getSessionState(api, environment.win);
 	// Finish retains the launch adapter through reentrant host teardown.
-	const finishTracker = new CourseTracker(runtime, page);
+	const finishTracker = new CourseTracker(runtime, {
+		...page,
+		getChoiceDependencyView: () =>
+			(environment.win as CourseHostWindow).__praxityBlockState?.getChoiceDependencyView?.(),
+	});
 	let finished = false;
 	const commit = () => {
 		if (!finished && !session?.closed) runtime.commit();

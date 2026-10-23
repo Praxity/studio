@@ -4,6 +4,13 @@ import { splitBlocksIntoPages } from "@praxity/shared-blocks/viewer/split-pages"
 import { createElement, useState } from "react";
 import { flushSync } from "react-dom";
 import { afterEach, assert, beforeEach, expect, it, vi } from "vitest";
+import {
+	choiceEvidenceCases,
+	factsA,
+	signatureA,
+	signatureB,
+	signedSubmitted,
+} from "../../../shared-blocks/src/fixtures/choice-evidence";
 import { bindDeckControls } from "../../template/src/components/deck-control-activation";
 import { mountDeckNarration } from "../../template/src/islands/deck-narration";
 import { initDeck } from "../../template/src/islands/island-deck";
@@ -92,6 +99,7 @@ afterEach(() => {
 	vi.unstubAllGlobals();
 	localStorage.clear();
 	sessionStorage.clear();
+	delete window.__praxityBlockState;
 	delete window.__praxityRuntime;
 	delete window.__praxityTracker;
 	delete window.__praxityResume;
@@ -172,6 +180,48 @@ function setup(audio = true, localCount = 3) {
 		},
 	});
 	return { runtime, tracker, pages };
+}
+
+for (const { name, id, status, view } of choiceEvidenceCases()) {
+	it(`choice gate evidence matrix: ${name}`, () => {
+		const { runtime, pages } = setup(false);
+		pages[0].gates = [{ id, rule: "attempt" }];
+		const config = document.getElementById("praxity-config");
+		assert(config);
+		config.textContent = JSON.stringify({
+			courseId: "evidence-gates",
+			deckPages: pages,
+			sourceLocale: "en",
+		});
+		runtime.getSuspendData.mockReturnValue(JSON.stringify({ deck: { released: [id] } }));
+		runtime.getInteractions.mockReturnValue(
+			view.rows.map((row) => ({ id: row.id, correct: row.correct ?? true })),
+		);
+		window.__praxityBlockState = {
+			get: (key) => {
+				const state = view.readState(key);
+				return state === undefined ? undefined : JSON.parse(JSON.stringify(state));
+			},
+			set() {},
+			getChoiceDependencyView: () => view,
+		};
+		try {
+			cleanup = initDeck();
+			const event =
+				id === "g" ? "praxity:assessment-group-complete" : "praxity:assessment-response";
+			document.dispatchEvent(
+				new CustomEvent(event, {
+					detail: { groupId: id, blockId: id, passed: true, correct: true, completed: true },
+				}),
+			);
+			document.getElementById("deck-next")?.click();
+			expect(document.querySelector<HTMLElement>('[data-deck-slide="slide-2"]')?.hidden).toBe(
+				status !== "current",
+			);
+		} finally {
+			delete window.__praxityBlockState;
+		}
+	});
 }
 
 it.each(["provider", "pagehide"] as const)("%s revokes an old deck layout frame", (boundary) => {
@@ -593,7 +643,9 @@ it.each(["previous", "next"])("keeps %s focus on an enabled one-slide action", (
 	expect(slide?.hasAttribute("hidden")).toBe(false);
 	expect(slide?.hasAttribute("inert")).toBe(false);
 	expect((document.getElementById("deck-previous") as HTMLButtonElement).disabled).toBe(true);
-	expect((document.getElementById("deck-next") as HTMLButtonElement).disabled).toBe(false);
+	expect(document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled")).toBe(
+		"false",
+	);
 	expect(document.getElementById("deck-announcement")?.textContent).toBe("");
 });
 
@@ -1590,7 +1642,9 @@ it.each(["en", "fr"])(
 			locale === "fr" ? "Module précédent" : "Previous module",
 		);
 		expect(previous.title).toBe(previous.getAttribute("aria-label"));
-		expect((document.getElementById("deck-next") as HTMLButtonElement).disabled).toBe(false);
+		expect(
+			document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled"),
+		).toBe("false");
 		previous.click();
 		expect(window.__praxityNavigatePageHref).toHaveBeenCalledWith("first-module.html#slide-2");
 		vi.mocked(window.__praxityNavigatePageHref).mockClear();
@@ -2082,5 +2136,117 @@ it("highlight practice releases no deck gate, visit or completion while the ordi
 	} finally {
 		instances.forEach((instance) => instance.destroy());
 		document.removeEventListener("praxity:assessment-response", response);
+	}
+});
+
+it("a stale released pass gate stays locked after an incorrect current answer and reload", () => {
+	let signature = signatureB;
+	let correct = true;
+	const state = () => ({
+		...signedSubmitted,
+		materialProof: { optionIds: ["a", "b"] },
+		contentSignature: signature,
+		answer: [correct ? "a" : "b"],
+		correct,
+		completed: correct,
+	});
+	const install = () => {
+		const { runtime } = setup(false);
+		runtime.getSuspendData.mockReturnValue(JSON.stringify({ deck: { released: ["check"] } }));
+		runtime.getInteractions.mockImplementation(() => [{ id: "check", correct }]);
+		window.__praxityBlockState = {
+			get: state,
+			set() {},
+			getChoiceDependencyView: () => ({
+				questions: { check: factsA.question },
+				signatures: { check: signatureA },
+				rows: [{ id: "check", correct, contentSignature: signature }],
+				readState: state,
+			}),
+		};
+		cleanup = initDeck();
+	};
+	install();
+	expect(document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled")).toBe(
+		"true",
+	);
+	signature = signatureA;
+	correct = false;
+	document.dispatchEvent(
+		new CustomEvent("praxity:assessment-response", {
+			detail: {
+				blockId: "check",
+				correct: false,
+				submitted: true,
+				attemptsUsed: 1,
+				maxAttempts: 2,
+			},
+		}),
+	);
+	expect(document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled")).toBe(
+		"true",
+	);
+	cleanup?.();
+	install();
+	document.getElementById("deck-next")?.click();
+	expect(document.querySelector<HTMLElement>('[data-deck-slide="slide-2"]')?.hidden).toBe(true);
+	correct = true;
+	document.dispatchEvent(
+		new CustomEvent("praxity:assessment-response", {
+			detail: { blockId: "check", correct: true, submitted: true },
+		}),
+	);
+	expect(document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled")).toBe(
+		"false",
+	);
+});
+
+it("refreshes the gate after a later host listener commits the signed response", () => {
+	const { runtime } = setup(false);
+	const frames: FrameRequestCallback[] = [];
+	vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+		frames.push(callback);
+		return frames.length;
+	});
+	let signature = signatureB;
+	runtime.getInteractions.mockReturnValue([{ id: "check", correct: true }]);
+	window.__praxityBlockState = {
+		get: () => ({
+			...signedSubmitted,
+			materialProof: { optionIds: ["a", "b"] },
+			contentSignature: signature,
+		}),
+		set() {},
+		getChoiceDependencyView: () => ({
+			questions: { check: factsA.question },
+			signatures: { check: signatureA },
+			rows: [{ id: "check", correct: true, contentSignature: signature }],
+			readState: () => ({
+				...signedSubmitted,
+				materialProof: { optionIds: ["a", "b"] },
+				contentSignature: signature,
+			}),
+		}),
+	};
+	cleanup = initDeck();
+	const host = () => {
+		signature = signatureA;
+	};
+	document.addEventListener("praxity:assessment-response", host);
+	try {
+		document.dispatchEvent(
+			new CustomEvent("praxity:assessment-response", {
+				detail: { blockId: "check", correct: true, submitted: true },
+			}),
+		);
+		expect(
+			document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled"),
+		).toBe("true");
+		frames.splice(0).forEach((frame) => frame(0));
+		expect(
+			document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled"),
+		).toBe("false");
+	} finally {
+		document.removeEventListener("praxity:assessment-response", host);
 	}
 });

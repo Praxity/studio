@@ -1,4 +1,4 @@
-export interface CourseOutcome {
+export interface DecidedCourseOutcome {
 	kind: "decided";
 	score?: number;
 	success?: "passed" | "failed" | "unknown";
@@ -9,6 +9,10 @@ export interface CourseOutcome {
 	finish?: "complete" | "terminate";
 }
 
+export type CourseOutcome =
+	| DecidedCourseOutcome
+	| { kind: "waiting"; finish?: "complete" | "terminate" };
+
 /** The runtime-only End path and course tracker share this injected writer. */
 interface OutcomeRuntime {
 	setScore?(raw: number, min: number, max: number): void;
@@ -18,6 +22,7 @@ interface OutcomeRuntime {
 	setCourseFailure?(failed: boolean): void;
 	trackObjective?(id: string, score: number, passed: boolean): void;
 	terminate?(explicitFinish?: boolean): boolean;
+	suppressTerminationResult?(): void;
 	commit?(): unknown;
 }
 
@@ -26,6 +31,11 @@ export function writeCourseOutcome(
 	outcome: CourseOutcome,
 ): boolean {
 	if (!runtime) return true;
+	if (outcome.kind === "waiting") {
+		if (!outcome.finish) return true;
+		runtime.suppressTerminationResult?.();
+		return runtime.terminate?.(false) ?? false;
+	}
 	if (outcome.objective) {
 		const { id, score, passed } = outcome.objective;
 		runtime.trackObjective?.(id, score, passed);
@@ -45,11 +55,17 @@ export function writeCourseOutcome(
 }
 
 /** Runtime-only End has no tracker. Keep its legacy completion rule beside the writer. */
-export function finishRuntimeCourse(runtime: OutcomeRuntime | undefined): boolean {
-	return writeCourseOutcome(runtime, {
-		kind: "decided",
-		completion: "completed",
-		forceCompletion: true,
-		finish: "complete",
-	});
+export function finishRuntimeCourse(
+	runtime: OutcomeRuntime | undefined,
+	outcome?: CourseOutcome,
+): boolean {
+	return writeCourseOutcome(
+		runtime,
+		outcome ?? {
+			kind: "decided",
+			completion: "completed",
+			forceCompletion: true,
+			finish: "complete",
+		},
+	);
 }

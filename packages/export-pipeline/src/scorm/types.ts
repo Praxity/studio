@@ -2,6 +2,8 @@
  * Unified interface for SCORM/xAPI runtime communication.
  * Implementations exist for SCORM 1.2, SCORM 2004, xAPI, and localStorage fallback.
  */
+
+import { isChoiceContentSignature } from "@praxity/shared-blocks/choice-state-facts";
 import type { LearnerBlockSaveResult } from "@praxity/shared-blocks/learner-block-state";
 import type { LearnerStateValue } from "@praxity/shared-blocks/learner-state";
 
@@ -14,6 +16,8 @@ export const LMS_DESTINATIONS: RuntimeDestinations = { reporting: "lms", state: 
 export const DEVICE_DESTINATIONS: RuntimeDestinations = { reporting: "device", state: "device" };
 
 export interface SCORMRuntime {
+	/** The outcome owner can close a result-reporting transport without sending a result. */
+	suppressTerminationResult?(): void;
 	/** The active adapter owns its reporting capability and state storage destination. */
 	readonly destinations: RuntimeDestinations;
 	initialize(): boolean;
@@ -44,6 +48,7 @@ export interface SCORMRuntime {
 	getScore(): { raw: number; min: number; max: number } | null;
 	setBookmark(pageId: string): void;
 	getBookmark(): string | null;
+	// biome-ignore lint/suspicious/noConfusingVoidType: legacy adapters return void; refusal-capable adapters return a boolean.
 	setSuspendData(data: string): void | boolean;
 	getSuspendData(): string | null;
 	/** Editable device drafts while original LMS bytes are held unreadable. Never LMS credit. */
@@ -66,6 +71,10 @@ export interface SCORMRuntime {
 }
 
 export interface AssessmentAttemptMetadata {
+	/** Submitted material evidence; never inferred from the editable answer. */
+	contentSignature?: string;
+	/** Refused evidence stays distinguishable from an unsigned legacy reporting row. */
+	choiceEvidenceInvalid?: true;
 	/** Resolved UI attempt count, including attempts restored from learner state. */
 	attemptsUsed?: number;
 	/** Resolved UI limit. Zero represents unlimited attempts in suspend JSON. */
@@ -89,15 +98,20 @@ export function isPositiveInteger(value: unknown): value is number {
 /** Validate event and restored metadata without coercing malformed persisted values. */
 export function assessmentAttemptMetadata(input?: unknown): AssessmentAttemptMetadata {
 	if (!input || typeof input !== "object") return {};
-	const { attemptsUsed, maxAttempts, memberIds } = input as AssessmentAttemptMetadata;
+	const { attemptsUsed, maxAttempts, memberIds, contentSignature, choiceEvidenceInvalid } =
+		input as AssessmentAttemptMetadata;
 	const limit = maxAttempts === Infinity ? 0 : maxAttempts;
+	const validMembers = Array.isArray(memberIds) && Array.from(memberIds).every(isNonemptyString);
 	return {
+		...(choiceEvidenceInvalid === true ||
+		(contentSignature !== undefined && !isChoiceContentSignature(contentSignature)) ||
+		(memberIds !== undefined && !validMembers)
+			? { choiceEvidenceInvalid: true as const }
+			: {}),
+		...(isChoiceContentSignature(contentSignature) ? { contentSignature } : {}),
 		attemptsUsed: isPositiveInteger(attemptsUsed) ? attemptsUsed : undefined,
 		maxAttempts: limit === 0 || isPositiveInteger(limit) ? limit : undefined,
-		memberIds:
-			Array.isArray(memberIds) && memberIds.length && memberIds.every(isNonemptyString)
-				? memberIds
-				: undefined,
+		memberIds: validMembers ? memberIds : undefined,
 	};
 }
 

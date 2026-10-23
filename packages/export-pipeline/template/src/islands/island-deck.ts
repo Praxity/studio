@@ -1,7 +1,9 @@
 import { type DeckDesign, resolveDeckDesign } from "@praxity/grammar/src/deck-design.ts";
+import { choiceDependencyStatus } from "@praxity/shared-blocks/choice-learner-state";
 import { getStrings, interpolate } from "@praxity/shared-blocks/i18n/strings";
 import {
 	learnerRuntime,
+	learnerScore,
 	learnerTracker,
 	readLearnerBlockPolicy,
 } from "@praxity/shared-blocks/learner-block-state";
@@ -205,7 +207,12 @@ export function initDeck(): (() => void) | undefined {
 	for (const page of pages)
 		for (const gate of page.gates)
 			if (selfCheckConsumers()?.read(gate.id)) selfCheckIds.add(gate.id);
+	const gateCurrent = (id: string) => {
+		const view = window.__praxityBlockState?.getChoiceDependencyView?.();
+		return !view || choiceDependencyStatus(id, view) === "current";
+	};
 	const canPersistGate = (id: string) => {
+		if (!gateCurrent(id)) return false;
 		const policy = readLearnerBlockPolicy(id);
 		// Self-check reporting requires explicit host permission, including missing-provider paths.
 		return policy !== "device" && (!selfCheckIds.has(id) || policy === "lms");
@@ -335,6 +342,28 @@ export function initDeck(): (() => void) | undefined {
 	// Module links and browser history leave the document without a local slide move.
 	on(window, "pagehide", () => removeScormResumeCue(root));
 	const gateReleased = (id: string) => {
+		if (!gateCurrent(id)) return false;
+		const view = window.__praxityBlockState?.getChoiceDependencyView?.();
+		if (view && (Object.hasOwn(view.questions, id) || Object.hasOwn(view.groups ?? {}, id))) {
+			const gate = pages.flatMap((page) => page.gates).find((gate) => gate.id === id);
+			const row = (learnerRuntime(mount) as SCORMRuntime | undefined)
+				?.getInteractions()
+				.slice()
+				.reverse()
+				.find((row) => row.id === id);
+			const exhausted = !!row?.maxAttempts && (row.attemptsUsed ?? 0) >= row.maxAttempts;
+			if (
+				!gate ||
+				!gateSatisfied(
+					gate.rule,
+					row?.correct,
+					Object.hasOwn(view.groups ?? {}, id)
+						? learnerTracker(mount)?.isAssessmentFinal?.(id)
+						: exhausted,
+				)
+			)
+				return false;
+		}
 		if (!selfCheckIds.has(id)) return released.has(id);
 		const activity = selfCheckConsumers()?.read(id);
 		return activity?.ready === true && activity.available && activity.completed;
@@ -1106,7 +1135,7 @@ export function initDeck(): (() => void) | undefined {
 					root,
 					labels,
 					learnerTracker(mount)?.getOutcome?.(),
-					learnerRuntime(mount)?.getScore?.(),
+					learnerScore(mount),
 				);
 			refresh();
 			completion.querySelector<HTMLElement>("h1")?.focus({ preventScroll: true });
@@ -1242,6 +1271,11 @@ export function initDeck(): (() => void) | undefined {
 			released.add(gate.id);
 			save(owned);
 			refresh();
+			if (window.__praxityBlockState?.getChoiceDependencyView)
+				deferFrame(() => {
+					save(owned);
+					refresh();
+				});
 		}
 		player?.pause(); // Feedback remains until explicit continuation.
 	});
@@ -1255,6 +1289,11 @@ export function initDeck(): (() => void) | undefined {
 			released.add(gate.id);
 			save(owned);
 			refresh();
+			if (window.__praxityBlockState?.getChoiceDependencyView)
+				deferFrame(() => {
+					save(owned);
+					refresh();
+				});
 		}
 		player?.pause();
 	});

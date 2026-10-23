@@ -1,4 +1,9 @@
 import { assessmentGroupRequirements } from "@praxity/content-model";
+import {
+	type ChoiceGroupSubmission,
+	choiceDependencyStatus,
+	prepareChoiceGroupSubmission,
+} from "../choice-learner-state";
 import { journalDownloadLabels } from "../i18n/journal-download-labels";
 import {
 	learnerRuntime,
@@ -40,6 +45,7 @@ export interface AssessmentGroupLabels {
 	downloadTxt: string;
 	downloadDocx: string;
 	completed: string;
+	assessmentStorageNotice: string;
 }
 
 const DEFAULT_LABELS: AssessmentGroupLabels = {
@@ -63,6 +69,8 @@ const DEFAULT_LABELS: AssessmentGroupLabels = {
 	assessmentGroupSaved: "Responses saved",
 	...journalDownloadLabels.en,
 	completed: "Completed",
+	assessmentStorageNotice:
+		"This answer could not be saved. Your previously saved progress is kept.",
 };
 
 const LAYOUT_CLASSES = [
@@ -156,7 +164,13 @@ function readAssessmentGroupState(group: AssessmentGroupMeta): SavedAssessmentGr
 	) {
 		return null;
 	}
-	return value as unknown as SavedAssessmentGroupState;
+	const view =
+		typeof window === "undefined"
+			? undefined
+			: window.__praxityBlockState?.getChoiceDependencyView?.();
+	return view && choiceDependencyStatus(group.id, view) !== "current"
+		? ({ ...value, completed: false } as unknown as SavedAssessmentGroupState)
+		: (value as unknown as SavedAssessmentGroupState);
 }
 
 function writeAssessmentGroupState(
@@ -164,18 +178,33 @@ function writeAssessmentGroupState(
 	selectedMemberId: string | null,
 	completed: boolean,
 	current: () => boolean,
+	submitted?: ChoiceGroupSubmission,
 ) {
-	return writeLearnerBlockState(
-		group.id,
-		{
-			version: 1,
-			kind: "assessmentGroup",
-			mode: group.mode,
-			selectedMemberId,
-			completed,
-		},
-		current,
-	);
+	const previous = readLearnerBlockState(group.id);
+	const retained =
+		previous && typeof previous === "object" && !Array.isArray(previous)
+			? previous.submitted
+			: undefined;
+	const snapshot = submitted
+		? {
+				payload: {
+					mode: submitted.payload.mode,
+					selectedMemberId: submitted.payload.selectedMemberId,
+					dependencies: submitted.payload.dependencies,
+				},
+				contentSignature: submitted.contentSignature,
+			}
+		: retained;
+	const next = {
+		version: 1,
+		kind: "assessmentGroup",
+		mode: group.mode,
+		selectedMemberId,
+		completed,
+		...(snapshot !== undefined ? { submitted: snapshot } : {}),
+	};
+	if (snapshot !== undefined && JSON.stringify(previous) === JSON.stringify(next)) return current();
+	return writeLearnerBlockState(group.id, next, current);
 }
 
 function isLayoutMode(value: unknown): value is BlockLayoutMode {
@@ -378,11 +407,51 @@ function showResults(
 		`[data-assessment-group-submit="${CSS.escape(group.id)}"]`,
 	);
 	if (!container) return false;
-	if (!group.showResultsSummary && completed && allMembersFinished)
-		container.querySelector(".praxity-ag-submit-btn")?.remove();
 	const groupName = getGroupName(group, root, labels.untitledGroup);
 
 	if (emitCompletion) {
+		const provider = root.ownerDocument.defaultView?.__praxityBlockState;
+		const view = provider?.getChoiceDependencyView?.();
+		const selectedMemberId = group.mode === "oneOf" ? members[0].id : null;
+		const selectedState = {
+			version: 1,
+			kind: "assessmentGroup",
+			mode: group.mode,
+			selectedMemberId,
+			completed,
+		};
+		const submission =
+			view?.groups && Object.hasOwn(view.groups, group.id)
+				? prepareChoiceGroupSubmission(group.id, {
+						...view,
+						readState: (id) => (id === group.id ? selectedState : view.readState(id)),
+					})
+				: undefined;
+		const restorePicker = () =>
+			root
+				.querySelectorAll<HTMLInputElement>(
+					`.praxity-assessment-group-picker input[name="${CSS.escape(`ag-${group.id}`)}"]`,
+				)
+				.forEach((input) => {
+					input.disabled = false;
+				});
+		if (submission === null) {
+			restorePicker();
+			return false;
+		}
+		const staged = submission && provider?.stageSubmission;
+		if (
+			staged &&
+			!staged(
+				group.id,
+				() =>
+					writeAssessmentGroupState(group, selectedMemberId, completed, current, submission) &&
+					provider?.getSaveResult?.(group.id)?.status !== "not-saved",
+			)
+		) {
+			restorePicker();
+			return false;
+		}
 		dispatchSelfCheckEvent(
 			new CustomEvent("praxity:assessment-group-complete", {
 				detail: {
@@ -398,6 +467,9 @@ function showResults(
 					passed,
 					correct: hasCheckedMembers ? passed : undefined,
 					completed,
+					...(submission
+						? { contentSignature: submission.contentSignature, selectedMemberId }
+						: {}),
 					memberCount: members.length,
 				},
 				bubbles: true,
@@ -405,9 +477,19 @@ function showResults(
 			current,
 			root.ownerDocument,
 		);
+		if (submission && !staged)
+			writeAssessmentGroupState(group, selectedMemberId, completed, current, submission);
+		if (submission && provider?.getSaveResult?.(group.id)?.status === "not-saved") {
+			const status = container.querySelector<HTMLElement>("[data-assessment-group-status]");
+			if (status) status.textContent = labels.assessmentStorageNotice;
+			restorePicker();
+			return false;
+		}
 	}
 
 	if (!current()) return false;
+	if (!group.showResultsSummary && completed && allMembersFinished)
+		container.querySelector(".praxity-ag-submit-btn")?.remove();
 	if (!group.showResultsSummary) {
 		if (completed && allMembersFinished) {
 			if (!container.querySelector("[data-assessment-group-download]")) {

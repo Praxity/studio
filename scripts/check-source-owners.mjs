@@ -1463,33 +1463,41 @@ export function checkDisplayIdImports(path, source, program) {
 	});
 }
 
-/** History must not activate before the reporting wait and learner recovery ship together. */
+/** Admission consumers are explicit; raw signature/dependency helpers remain dormant. */
 export function checkDormantChoiceImports(path, source, program) {
 	const owner = "packages/shared-blocks/src/choice-learner-state.ts";
+	const assessment = "packages/shared-blocks/src/blocks/AssessmentBlock.tsx";
+	const groups = "packages/shared-blocks/src/viewer/assessment-group-runtime.ts";
+	const host = "packages/export-pipeline/template/src/hosts/course-host.ts";
 	return checkOwnedImports(
 		path,
 		source,
 		program,
-		Object.fromEntries(
-			[
-				"restoreChoiceAssessmentState",
-				"prepareChoiceAssessmentState",
-				"retainLegacyChoiceBuild",
-				"choiceDependencyStatus",
-				"choiceGroupDependencyIds",
-				"choiceGroupSignature",
-				"prepareChoiceGroupSubmission",
-				"createChoiceDependencyView",
-			].map((name) => [name, [owner]]),
-		),
+		{
+			restoreChoiceAssessmentState: [owner, assessment],
+			prepareChoiceAssessmentState: [owner, assessment],
+			retainLegacyChoiceBuild: [
+				owner,
+				"packages/export-pipeline/src/scorm/local-storage-runtime.ts",
+			],
+			choiceDependencyStatus: [
+				owner,
+				assessment,
+				groups,
+				"packages/export-pipeline/src/scorm/tracking.ts",
+				"packages/export-pipeline/template/src/islands/island-deck.ts",
+			],
+			prepareChoiceGroupSubmission: [owner, groups, host],
+			createChoiceDependencyView: [owner, host],
+			choiceGroupDependencyIds: [owner],
+			choiceGroupSignature: [owner],
+		},
 		{
 			definition: owner,
 			module:
 				/(?:^@praxity\/shared-blocks\/choice-learner-state$|(?:^|\/)choice-learner-state(?:\.[cm]?[jt]s)?$)/u,
 			barrels: [],
-			forbidModuleLoads: true,
-			message:
-				"choice admission is dormant until reporting waits and learner recovery is available",
+			message: "use named choice admission imports in their owners; other helpers remain dormant",
 		},
 	);
 }
@@ -1587,7 +1595,13 @@ function checkOwnedImports(path, source, program, ownership, options) {
 function checkOutcomeOwners(path, file) {
 	const owner = "packages/shared-blocks/src/tracking.ts";
 	if (path === owner || exemptTestPath(path)) return [];
-	const writes = new Set(["setCompletion", "setSuccess", "setScore", "trackObjective"]);
+	const writes = new Set([
+		"setCompletion",
+		"setSuccess",
+		"setScore",
+		"trackObjective",
+		"suppressTerminationResult",
+	]);
 	const constants = new Map();
 	const writerNames = new Set(["writeCourseOutcome"]);
 	function collect(node) {

@@ -1,5 +1,9 @@
 import { interpolate } from "@praxity/shared-blocks/i18n/interpolate";
-import { learnerRuntime, learnerTracker } from "@praxity/shared-blocks/learner-block-state";
+import {
+	learnerRuntime,
+	learnerScore,
+	learnerTracker,
+} from "@praxity/shared-blocks/learner-block-state";
 import {
 	createSelfCheckIntersectionObserver,
 	dispatchSelfCheckEvent,
@@ -489,7 +493,7 @@ export function initNavigationIsland(): void {
 				document,
 				strings,
 				learnerTracker(mount)?.getOutcome?.(),
-				learnerRuntime(mount)?.getScore?.(),
+				learnerScore(mount),
 			);
 	};
 	updateCompletion();

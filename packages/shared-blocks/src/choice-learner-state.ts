@@ -16,7 +16,7 @@ import type { LearnerStateV1, LearnerStateValue, SavedAssessmentState } from "./
 
 export type { ChoiceStateGroup } from "./choice-state-facts";
 
-// Dormant until reporting waits on history and the recovery UI is available.
+// Preview build evidence is supplied by its saved-state owner.
 export interface LearnerBuildProof {
 	savedRevision: string | null;
 	currentRevision: string | null;
@@ -273,11 +273,13 @@ export function retainLegacyChoiceBuild(state: LearnerStateV1): void {
 }
 
 export interface ChoiceDependencyView {
+	invalidIds?: readonly string[];
 	rows: readonly {
 		id: string;
 		contentSignature?: string;
 		correct?: boolean;
 		memberIds?: readonly string[];
+		choiceEvidenceInvalid?: true;
 	}[];
 	questions: Readonly<Record<string, ChoiceStateQuestion>>;
 	signatures: Readonly<Record<string, string>>;
@@ -286,7 +288,7 @@ export interface ChoiceDependencyView {
 	buildProof?: (id: string) => LearnerBuildProof | undefined;
 }
 
-/** One context for future readers; construction never admits, signs or writes an answer. */
+/** One context for readers; construction never admits, signs or writes an answer. */
 export function createChoiceDependencyView(
 	facts: AdmittedChoiceStateFacts,
 	evidence: {
@@ -298,9 +300,10 @@ export function createChoiceDependencyView(
 		};
 	},
 ): ChoiceDependencyView {
-	if (facts.choiceStateFactsStatus === "invalid") throw new Error("Invalid choice facts");
+	if (facts.choiceStateInvalidIds.includes("*")) throw new Error("Invalid choice facts");
 	const preview = evidence.preview;
 	return {
+		invalidIds: facts.choiceStateInvalidIds,
 		rows: evidence.rows,
 		questions: facts.choiceStateQuestions,
 		signatures: facts.choiceStateSignatures,
@@ -356,11 +359,17 @@ type SubmittedChoiceResolution =
 	  }
 	| { status: "unanswered" | "history"; evidence: null };
 
-/** One status drives future reporting, display and gates. No production caller yet. */
+/** One status drives reporting, display and gates. */
 export function choiceDependencyStatus(
 	id: string,
 	view: ChoiceDependencyView,
 ): "current" | "unanswered" | "history" {
+	if (view.invalidIds?.includes(id)) return "history";
+	if (
+		(Object.hasOwn(view.questions, id) || Object.hasOwn(view.groups ?? {}, id)) &&
+		latestChoiceRow(id, view)?.choiceEvidenceInvalid === true
+	)
+		return "history";
 	if (view.groups && Object.hasOwn(view.groups, id)) return groupDependencyStatus(id, view);
 	return resolveMember(id, view).status;
 }
@@ -537,10 +546,13 @@ function resolveMember(
 	view: ChoiceDependencyView,
 	reference?: { signature: string | null },
 ): SubmittedChoiceResolution {
+	if (view.invalidIds?.includes(id)) return { status: "history", evidence: null };
 	if (!Object.hasOwn(view.questions, id))
 		return reference?.signature != null
 			? { status: "history", evidence: null }
 			: { status: "current", evidence: { kind: "base" } };
+	if (latestChoiceRow(id, view)?.choiceEvidenceInvalid === true)
+		return { status: "history", evidence: null };
 	return resolveSubmittedChoice(
 		view.readState(id),
 		{ question: view.questions[id], signature: view.signatures[id] },

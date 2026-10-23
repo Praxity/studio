@@ -11,6 +11,7 @@ import { expect, it } from "vitest";
 import { type CourseConfig, renderPageFragments } from "../src/html-gen";
 import { compileDocument } from "../src/preview/compile-page";
 import { createCourseContext } from "../src/preview/course-context";
+import { stripChoiceRecoveryStrings } from "./fixtures/choice-facts";
 import { compilerIslandAssets } from "./fixtures/page-compiler";
 
 it("retains the base learner body and embedded block JSON with every inline construct", () => {
@@ -5284,7 +5285,7 @@ it.each(mainDocumentCases)(
 			content: read.pages,
 			htmlOutput: { islandAssets: compilerIslandAssets },
 		});
-		const html = compileDocument(context, row.slug).html;
+		const html = stripChoiceRecoveryStrings(compileDocument(context, row.slug).html);
 		expect(createHash("sha256").update(html).digest("hex")).toBe(row.afterSha);
 		let configIndex = 0;
 		const facts: unknown[] = [];

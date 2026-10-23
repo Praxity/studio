@@ -90,6 +90,8 @@ export interface LearnerStrings {
 	correctAnswer: string;
 	correctAnswers: string;
 	tryAgain: string;
+	choiceHistoryNotice: string;
+	choiceNewAttempt: string;
 	assessmentAttemptOf: string;
 	assessmentAttemptsUsed: string;
 	assessmentStorageNotice: string;
@@ -434,6 +436,9 @@ const en: LearnerStrings = {
 	correctAnswer: "Correct answer",
 	correctAnswers: "Correct answers",
 	tryAgain: "Try again",
+	choiceHistoryNotice:
+		"Your previous answer is kept in history and does not count toward this version of the question. Start a new attempt to continue.",
+	choiceNewAttempt: "New attempt",
 	assessmentAttemptOf: "Attempt {n} of {total}",
 	assessmentAttemptsUsed: "{n} of {total} attempts used",
 	assessmentStorageNotice:
@@ -755,6 +760,9 @@ const fr: LearnerStrings = {
 	correctAnswer: "Bonne réponse",
 	correctAnswers: "Bonnes réponses",
 	tryAgain: "Réessayer",
+	choiceHistoryNotice:
+		"Votre réponse précédente est conservée dans l’historique et ne compte pas pour cette version de la question. Commencez une nouvelle tentative pour continuer.",
+	choiceNewAttempt: "Nouvelle tentative",
 	assessmentAttemptOf: "Tentative {n} sur {total}",
 	assessmentAttemptsUsed: "Tentatives utilisées\u00a0: {n} sur {total}",
 	assessmentStorageNotice:

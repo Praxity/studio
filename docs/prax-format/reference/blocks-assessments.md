@@ -53,6 +53,23 @@ If tab storage or learner identity is unavailable, keep a copy before leaving.
 The course reports no completion, success or score while the data is held. This
 submission refusal applies only to SCORM 1.2; other formats retain their existing submission behavior.
 
+When a published choice's material changes, its previous submitted answer stays
+in history and no longer counts toward this version. The English/French notice
+offers **New attempt**. Selecting it enables and focuses the first answer; the
+previous saved record remains intact until the learner makes a new selection.
+The new submission retains the earlier selection, verdict and material proof.
+Adding only a distractor can keep a compatible answer current. Feedback-only,
+formatting and ancillary-content edits follow the material-signature rules.
+
+If history affects the course's required or scored dependencies, LMS outcomes
+wait until those dependencies have current answers. End and Finish preserve the
+reported LMS result while waiting. Live and restored deck gates use the same
+current-answer decision. In-course scores omit history. Group submissions retain
+their captured member material; changing a member or a one-of selection can
+require deliberate group resubmission. Ordinary same-content retries keep their
+existing scoring and pending behavior. See the [runtime evidence and refusal
+rules](https://github.com/Praxity/studio/blob/main/docs/context/published-output-runtime.md#runtime-boundary).
+
 Set `{private}` or `{private=true}` for device-only practice. Omitted privacy and `{private=false}` keep ordinary choice behavior. Write booleans without quotes. Privacy settings are unavailable on multiple-answer choices, even with a false value.
 
 A private choice must be optional, unscored, outside assessment groups and without a gate. `scored=true`, `required=true`, either `deckGate` value and group membership are errors. A positive unscored `points` weight does not create a score. Optional containers may hold private choices. Grammar 4 has no container `required` or `deckGate` setting.
