@@ -260,7 +260,6 @@
 					resolvedBy: "Résolu par {author}",
 					targetNotFound: "Cible introuvable",
 					anotherPage: "Sur une autre page",
-					notOnPage: "Pas sur cette page",
 					closeComments: "Fermer les commentaires",
 					pendingAction: "Réessayez l’action précédente avant d’en commencer une autre.",
 					stale: "Commentaires hors ligne ou périmés. Nouvelle tentative automatique.",
@@ -290,7 +289,6 @@
 					resolvedBy: "Resolved by {author}",
 					targetNotFound: "Target not found",
 					anotherPage: "On another page",
-					notOnPage: "Not on this page",
 					closeComments: "Close comments",
 					pendingAction: "Retry the earlier action before starting another.",
 					stale: "Comments are offline or out of date. Retrying automatically.",
@@ -617,23 +615,6 @@
 		return false;
 	}
 
-	function measureSpot(target, range) {
-		var quote = Boolean(range);
-		if (!range && getComputedStyle(target).display === "contents") {
-			range = document.createRange();
-			range.selectNodeContents(target);
-		}
-		var rects = Array.from((range || target).getClientRects()).filter(
-			(rect) => rect.width || rect.height,
-		);
-		return {
-			box: !rects.length
-				? null
-				: quote
-					? rects[rects.length - 1]
-					: (range || target).getBoundingClientRect(),
-		};
-	}
 	function createAnchors(pageRoot, pageId) {
 		var limits = localConfig.limits;
 		// Runtime answer projections are private even when their native controls are hidden.
@@ -648,12 +629,10 @@
 		function asElement(node) {
 			return node?.nodeType === 1 ? node : node?.parentElement;
 		}
-		function usable(el, includeHidden = false) {
-			return (
-				el && pageRoot().contains(el) && !el.closest(excluded) && (includeHidden || !hidden(el))
-			);
+		function usable(el) {
+			return el && pageRoot().contains(el) && !el.closest(excluded) && !hidden(el);
 		}
-		function stream(root, includeHidden = false) {
+		function stream(root) {
 			var text = "",
 				points = [];
 			var previousBlock = null;
@@ -666,7 +645,7 @@
 			}
 			var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
 			for (var node = walker.nextNode(); node; node = walker.nextNode()) {
-				if (!usable(node.parentElement, includeHidden)) continue;
+				if (!usable(node.parentElement)) continue;
 				var block = blockOwner(node.parentElement);
 				if (
 					text &&
@@ -698,8 +677,8 @@
 			if (end < text.length && /[\uD800-\uDBFF]/.test(text[end - 1])) end--;
 			return text.slice(0, end);
 		}
-		function label(el, includeHidden = false) {
-			return bounded(stream(el, includeHidden).text.trim(), limits.title) || null;
+		function label(el) {
+			return bounded(stream(el).text.trim(), limits.title) || null;
 		}
 		function pathFrom(root, target, max, depth) {
 			var steps = [];
@@ -724,9 +703,7 @@
 				return null;
 			var target = root.querySelector(`:scope > ${path}`);
 			// The whole-course revision guards positional paths across re-exports.
-			return target && targetLabel(target, hidden(target)) === anchor.context.targetLabel
-				? target
-				: null;
+			return target && targetLabel(target) === anchor.context.targetLabel ? target : null;
 		}
 		function base(target, node, block) {
 			var root = pageRoot();
@@ -788,32 +765,29 @@
 				? wrapper
 				: node;
 		}
-		function identityLabel(target, includeHidden = false) {
+		function identityLabel(target) {
 			var label = target.matches(".praxity-order-item")
 				? target.querySelector(".praxity-order-label")
 				: target.matches("summary,[data-disclosure-label],.praxity-disclosure-title")
 					? target
 					: target.querySelector(".praxity-disclosure-title,[data-disclosure-label]");
-			if (!label || (!includeHidden && hidden(label))) return "";
+			if (!label || hidden(label)) return "";
 			var text = "",
 				walker = document.createTreeWalker(label, NodeFilter.SHOW_TEXT);
 			for (var node = walker.nextNode(); node; node = walker.nextNode()) {
 				if (
 					!node.parentElement.closest(
-						"input,textarea,select,output,script,style,[aria-live],.praxity-order-position,.praxity-order-controls",
+						"input,textarea,select,output,script,style,[aria-live],[aria-hidden='true'],.praxity-order-position,.praxity-order-controls",
 					) &&
-					(includeHidden ||
-						(!node.parentElement.closest("[aria-hidden='true']") && !hidden(node.parentElement)))
+					!hidden(node.parentElement)
 				)
 					text += node.data;
 			}
 			return Array.from(text.replace(/\s+/gu, " ").trim()).slice(0, 60).join("");
 		}
-		function targetLabel(target, includeHidden = false) {
+		function targetLabel(target) {
 			var identity = target.closest(identitySelector);
-			return identity
-				? identityLabel(identity, includeHidden) || null
-				: label(target, includeHidden);
+			return identity ? identityLabel(identity) || null : label(target);
 		}
 		function fromBlock(target) {
 			// Identity can name controls and graphics; their text stays outside the quote stream.
@@ -897,9 +871,9 @@
 			};
 			return anchor;
 		}
-		function matches(root, quote, includeHidden = false) {
+		function matches(root, quote) {
 			if (!quote?.exact) return [];
-			var flat = stream(root, includeHidden),
+			var flat = stream(root),
 				found = [];
 			for (
 				var i = flat.text.indexOf(quote.exact);
@@ -935,22 +909,6 @@
 		}
 		function resolve(anchor) {
 			var root = pageRoot();
-			function concealment(target, extra = {}) {
-				var revealable = anchor.tab || anchor.revealPath.length;
-				for (var el = target; el && root.contains(el) && !revealable; el = el.parentElement) {
-					revealable =
-						el.matches("details:not([open])") ||
-						(el.id &&
-							Array.from(root.querySelectorAll("button[aria-controls]")).some((control) =>
-								control.getAttribute("aria-controls").split(/\s+/).includes(el.id),
-							));
-				}
-				return {
-					...extra,
-					target,
-					state: revealable || measureSpot(target, extra.range).box ? "notVisible" : "notOnPage",
-				};
-			}
 			function concealedWithin(scope) {
 				return [scope, ...scope.querySelectorAll("[id]")].find(
 					(el) => (el.id === anchor.tab || anchor.revealPath.includes(el.id)) && hidden(el),
@@ -992,7 +950,8 @@
 					candidates = [anchor.tab === panel.id ? panel : tab];
 			}
 			var visible = candidates.filter((el) => !hidden(el));
-			if (candidates.length && !visible.length) return concealment(candidates[0]);
+			if (candidates.length && !visible.length)
+				return { state: "notVisible", target: candidates[0] };
 			var target = visible[0],
 				match;
 			if (visible.length > 1) {
@@ -1009,33 +968,27 @@
 				if (concealed) return { state: "notVisible", target: concealed };
 			}
 			if (target && anchor.quote) {
-				var found = best(matches(target, anchor.quote, true));
+				var found = best(matches(target, anchor.quote));
 				if (!found.length) return { state: "textChanged", target };
 				if (found.length > 1) return { state: "ambiguous", target };
 				match = found[0];
-				if (hidden(match.target)) return concealment(match.target, { range: match.range });
 			}
 			if (!target) {
 				var closed = concealedWithin(root);
 				if (closed) return { state: "notVisible", target: closed };
 			}
 			if (!target && anchor.quote) {
-				var elsewhere = matches(root, anchor.quote, true);
+				var elsewhere = matches(root, anchor.quote);
 				var full = elsewhere.filter(
 					(hit) => hit.score === anchor.quote.prefix.length + anchor.quote.suffix.length,
 				);
-				if (!anchor.nodeId && full.length === 1)
-					return hidden(full[0].target)
-						? concealment(full[0].target, { range: full[0].range })
-						: { ...full[0], state: "placed" };
+				if (!anchor.nodeId && full.length === 1) return { ...full[0], state: "placed" };
 				if (elsewhere.length > 1) return { state: "ambiguous" };
 				if (elsewhere.length === 1)
-					return hidden(elsewhere[0].target)
-						? concealment(elsewhere[0].target, { range: elsewhere[0].range })
-						: {
-								...elsewhere[0],
-								state: "moved",
-							};
+					return {
+						...elsewhere[0],
+						state: "moved",
+					};
 				return missing();
 			}
 			if (!target && !anchor.nodeId && !anchor.quote && !anchor.pin && !anchor.cssPath)
@@ -1049,13 +1002,11 @@
 				target = verifiedPath(root, anchor.cssPath, anchor);
 			}
 			if (!target) return missing();
-			if (hidden(target)) return concealment(target);
+			if (hidden(target)) return { state: "notVisible", target };
 			if (anchor.pin) {
 				var pinned = anchor.pin.path ? verifiedPath(target, anchor.pin.path, anchor) : target;
 				if (!pinned) return { state: "pinMoved", target, pin: { x: 1, y: 0 } };
-				return hidden(pinned)
-					? concealment(pinned, { pin: anchor.pin })
-					: { state: "placed", target: pinned, pin: anchor.pin };
+				return { state: hidden(pinned) ? "notVisible" : "placed", target: pinned, pin: anchor.pin };
 			}
 			return { state: "placed", target, range: match?.range };
 		}
@@ -1299,26 +1250,7 @@
 				entry.spot = anchors.resolve(entry.thread.anchor);
 				entry.resolutionVersion = resolutionVersion;
 			}
-			return renderedSpot(entry.spot, entry.thread.anchor);
-		}
-		function renderedSpot(spot, anchor) {
-			// Recheck boxes each frame: cached identity can outlive a player's rendered step.
-			if (
-				!spot.target ||
-				spot.state === "page" ||
-				spot.state === "notVisible" ||
-				spot.state === "notOnPage"
-			)
-				return spot;
-			var measured = measureSpot(spot.target, spot.range);
-			if (
-				!measured.box &&
-				["placed", "moved", "pinMoved"].includes(spot.state) &&
-				!anchor.tab &&
-				!anchor.revealPath.length
-			)
-				return { state: "notOnPage", target: spot.target };
-			return { ...spot, ...measured };
+			return entry.spot;
 		}
 		function scheduleMarkers() {
 			if (!overlay || frame) return;
@@ -1345,15 +1277,15 @@
 					entry.item.hidden ||
 					entry.thread.status !== "open" ||
 					spot.state === "notVisible" ||
-					spot.state === "notOnPage" ||
 					!spot.target ||
-					!spot.box ||
 					spot.state === "page"
 				)
 					return { entry, spot, hidden: true };
-				var box = spot.box;
+				var box = spot.target.getBoundingClientRect();
 				if (spot.range) {
 					ranges.push(spot.range);
+					var rects = Array.from(spot.range.getClientRects?.() || []);
+					box = rects[rects.length - 1] || box;
 				}
 				var x = spot.pin ? box.left + spot.pin.x * box.width : box.right;
 				var y = spot.pin ? box.top + spot.pin.y * box.height : box.top;
@@ -1539,8 +1471,8 @@
 					if (controls.length === 1) controls[0].click();
 				}
 			});
-			spot = renderedSpot(anchors.resolve(entry.thread.anchor), entry.thread.anchor);
-			if (spot.state === "notVisible" || spot.state === "notOnPage" || !spot.target) {
+			spot = anchors.resolve(entry.thread.anchor);
+			if (spot.state === "notVisible" || !spot.target) {
 				status.textContent = strings[spot.state] || strings.notVisible;
 				scheduleMarkers();
 				return;
