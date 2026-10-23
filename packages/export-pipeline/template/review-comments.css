@@ -553,7 +553,19 @@ html[data-praxity-mode="dark"] {
 }
 
 .prx-review-sidebar--local .prx-review-header .prx-review-title {
-	flex: 1 0 100%;
+	flex: 1 1 auto;
+}
+
+.prx-review-sidebar--local:not(.prx-review-sidebar--collapsed) .prx-review-toggle {
+	margin-inline-start: auto;
+}
+
+.prx-review-action-icon {
+	display: inline-block;
+	width: 1.25em;
+	height: 1.25em;
+	margin-inline-end: 0.35em;
+	vertical-align: middle;
 }
 
 .prx-review-action,

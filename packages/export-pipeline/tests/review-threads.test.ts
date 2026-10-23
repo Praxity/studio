@@ -17,6 +17,7 @@ import {
 	resolve,
 } from "../../review-share/src/review";
 import { enhanceDisclosure } from "../template/src/disclosure";
+import { reviewPageLayout } from "./fixtures/review-page-layout";
 
 const source = await readFile(new URL("../template/review-comments.js", import.meta.url), "utf8");
 const reviewId = "11111111-1111-4111-8111-111111111111";
@@ -152,6 +153,7 @@ async function open(
 		},
 	);
 	doms.push(dom);
+	reviewPageLayout(dom);
 	let responseRead = Promise.resolve();
 	dom.window.fetch = ((...args: Parameters<typeof server.fetch>) => {
 		let read!: () => void;
@@ -205,6 +207,83 @@ async function open(
 function click(doc: Document, selector: string) {
 	(doc.querySelector(selector) as HTMLButtonElement).click();
 }
+
+it.each(["en", "fr"])(
+	"Show on page keeps its visible label beside a decorative magnifier (%s)",
+	async (locale) => {
+		const server = fakeServer();
+		await server.seed("Initial");
+		const { doc } = await open(server, locale);
+		const show = doc.querySelector(".prx-review-show") as HTMLButtonElement;
+		const label = locale === "fr" ? "Afficher sur la page" : "Show on page";
+		expect(show.textContent).toBe(label);
+		expect(show.getAttribute("aria-label")).toContain(label);
+		expect(show.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+		expect(show.querySelector("svg")?.getAttribute("stroke")).toBe("currentColor");
+	},
+);
+
+it.each(["MacIntel", "Linux x86_64"])(
+	"keyboard reply uses validation, in-flight guards and frozen retry (%s)",
+	async (platform) => {
+		const server = fakeServer();
+		await server.seed("Initial");
+		const { doc, dom } = await open(server, "en", undefined, (dom) => {
+			Object.defineProperty(dom.window.navigator, "platform", { value: platform });
+		});
+		click(doc, ".prx-review-reply-toggle");
+		const field = doc.querySelector<HTMLTextAreaElement>(".prx-review-reply textarea")!;
+		const mac = platform === "MacIntel";
+		expect(doc.querySelector(".prx-review-reply-send")?.getAttribute("aria-keyshortcuts")).toBe(
+			mac ? "Meta+Enter" : "Control+Enter",
+		);
+		const press = (modifiers = { metaKey: mac, ctrlKey: !mac }) => {
+			const event = new dom.window.KeyboardEvent("keydown", {
+				key: "Enter",
+				bubbles: true,
+				cancelable: true,
+				...modifiers,
+			});
+			field.dispatchEvent(event);
+			return event;
+		};
+		const posts = () => server.fetch.mock.calls.filter(([, options]) => options?.method === "POST");
+		for (const text of ["", " ", "x".repeat(REVIEW_LIMITS.body + 1)]) {
+			field.value = text;
+			press();
+			await settle();
+			expect(posts()).toHaveLength(0);
+			expect(field.getAttribute("aria-invalid")).toBe("true");
+		}
+		field.value = "Reply\nwith newline";
+		expect(press({ metaKey: false, ctrlKey: false }).defaultPrevented).toBe(false);
+		press({ metaKey: !mac, ctrlKey: mac });
+		await settle();
+		expect(posts()).toHaveLength(0);
+		let release!: () => void;
+		server.fetch.mockImplementationOnce(async () => {
+			await new Promise<void>((resolve) => {
+				release = resolve;
+			});
+			throw new Error("offline");
+		});
+		press();
+		press();
+		await settle();
+		expect(posts()).toHaveLength(1);
+		release();
+		await settle();
+		expect(field.readOnly).toBe(true);
+		field.value = "Changed behind the frozen field";
+		press();
+		await settle();
+		expect(posts()).toHaveLength(2);
+		expect(posts()[1][1]?.body).toBe(posts()[0][1]?.body);
+		await vi.waitFor(() =>
+			expect(server.state().threads[0].messages.at(-1)?.body).toBe("Reply\nwith newline"),
+		);
+	},
+);
 
 function pollClock(dom: JSDOM) {
 	const native = dom.window.setTimeout.bind(dom.window);
@@ -476,7 +555,7 @@ it.each(
 );
 
 it.each(["en", "fr"].flatMap((locale) => [false, true].map((deck) => ({ locale, deck }))))(
-	"offers one collapse control and keeps focus on it ($locale, deck=$deck)",
+	"offers one close control and keeps focus on it ($locale, deck=$deck)",
 	async ({ locale, deck }) => {
 		const { doc } = await open(fakeServer(), locale, undefined, (dom) => {
 			if (!deck) return;
@@ -486,12 +565,21 @@ it.each(["en", "fr"].flatMap((locale) => [false, true].map((deck) => ({ locale, 
 			shell.lastElementChild!.append(dom.window.document.querySelector("main")!);
 			dom.window.document.body.append(shell);
 		});
-		const label = locale === "fr" ? "Réduire les commentaires" : "Collapse comments";
+		const label = locale === "fr" ? "Fermer les commentaires" : "Close comments";
 		const controls = Array.from(doc.querySelectorAll("button")).filter(
 			(button) => (button.getAttribute("aria-label") || button.textContent) === label,
 		);
 		expect(controls).toHaveLength(1);
 		const toggle = controls[0];
+		const header = doc.querySelector(".prx-review-header")!;
+		expect([...header.children].map((node) => node.className)).toEqual([
+			"prx-review-title",
+			"prx-review-toggle" + (deck ? " prx-review-toggle--deck" : ""),
+			"prx-review-choose prx-review-action",
+			"prx-review-pin prx-review-action",
+		]);
+		expect(toggle.textContent).toBe(label);
+		expect(toggle.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
 		toggle.focus();
 		toggle.click();
 		expect(toggle.getAttribute("aria-expanded")).toBe("false");
@@ -560,7 +648,7 @@ it.each(["en", "fr"])(
 			);
 			toggle.focus();
 			toggle.click();
-			expectSingleVisibleToggle(locale === "fr" ? "Réduire les commentaires" : "Collapse comments");
+			expectSingleVisibleToggle(locale === "fr" ? "Fermer les commentaires" : "Close comments");
 			expect(tools.getAttribute("aria-expanded")).toBe("false");
 			expect(doc.activeElement).toBe(toggle);
 			toggle.click();
@@ -955,6 +1043,7 @@ it("consumes only review-thread and leaves unchanged refreshes and unchanged hea
 	});
 	expect(dom.window.location.search).toBe("?keep=yes");
 	expect(dom.window.location.hash).toBe("#existing");
+	expect(doc.activeElement).toBe(doc.querySelector('[data-node-id="node"]'));
 	const writes: MutationRecord[] = [];
 	const quote = doc.querySelector(".prx-review-quote")!;
 	const selection = dom.window.getSelection()!;
@@ -1240,12 +1329,12 @@ it("keyed refresh retains focus, reply text, selection and scroll; an older resp
 			release = resolve;
 		}).then(() => response);
 	});
-	const olderRefresh = refresh();
+	dom.window.dispatchEvent(new dom.window.Event("focus"));
 	await settle();
 	await server.mutate("reply", thread.id, "Agent update");
 	await refresh();
 	release(new Response());
-	await olderRefresh;
+	await settle();
 	expect(doc.querySelector(".prx-review-reply textarea")).toBe(field);
 	expect(doc.activeElement).toBe(field);
 	expect([field.value, field.selectionStart, field.selectionEnd, content.scrollTop]).toEqual([

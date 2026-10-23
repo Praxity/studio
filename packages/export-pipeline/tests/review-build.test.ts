@@ -1,4 +1,5 @@
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -6,6 +7,8 @@ import AdmZip from "adm-zip";
 import { JSDOM } from "jsdom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildScormPackage, type DesktopExportInput } from "../src/build";
+import { readPackageNotice } from "../src/third-party-notices";
+import { reviewPageLayout } from "./fixtures/review-page-layout";
 import { fixtureCourseRuntimeLicense, fixtureRuntimeNotices } from "./fixtures/runtime-notices.ts";
 
 const testDir = path.dirname(fileURLToPath(import.meta.url));
@@ -83,6 +86,7 @@ async function delayedPostReviewDom() {
 		}
 		return Promise.resolve(new Response("[]", { status: 200 }));
 	});
+	reviewPageLayout(dom);
 	dom.window.fetch = fetchMock;
 	dom.window.eval(await readFile(scriptPath, "utf-8"));
 	const doc = dom.window.document;
@@ -235,6 +239,28 @@ describe("review HTML builds", () => {
 		expect(scorm.getEntry("scorm-runtime.js")).toBeNull();
 	});
 
+	it("ships the verbatim Tabler notice with review assets on a course without icons", async () => {
+		const review = new AdmZip(
+			(
+				await buildScormPackage(desktopInput(true), {
+					mode: "desktop",
+					format: "html",
+					prebuiltAssetsDir,
+					projectDir: "/tmp/project",
+				})
+			).zip,
+		);
+		const notice = await readPackageNotice(
+			createRequire(import.meta.url).resolve("@tabler/icons/outline/bulb.svg"),
+		);
+		const text = review.readAsText(`third-party-notices/@tabler-icons@${notice.version}.txt`);
+		expect(text).toBe(
+			`${notice.name}@${notice.version}\n\n${Object.entries(notice.texts)
+				.map(([name, contents]) => `===== ${name} =====\n${contents}`)
+				.join("\n\n")}`,
+		);
+	});
+
 	it("loads, posts, and toggles comments without interpreting comment HTML", async () => {
 		const dom = new JSDOM(
 			"<!doctype html><html><head></head><body><main>Course</main></body></html>",
@@ -271,6 +297,7 @@ describe("review HTML builds", () => {
 					{ status: 201, headers: { "Content-Type": "application/json" } },
 				),
 			);
+		reviewPageLayout(dom);
 		dom.window.fetch = fetchMock;
 		const configScript = dom.window.document.createElement("script");
 		configScript.dataset.praxityReviewComments = "true";
@@ -385,6 +412,7 @@ describe("review HTML builds", () => {
 				),
 			);
 		});
+		reviewPageLayout(dom);
 		dom.window.fetch = fetchMock;
 		dom.window.eval(await readFile(scriptPath, "utf-8"));
 		const doc = dom.window.document;
@@ -404,7 +432,7 @@ describe("review HTML builds", () => {
 		deckToggle?.click();
 		expect(sidebar?.hidden).toBe(false);
 		expect(sidebar?.querySelector(".prx-review-toggle")).toBe(deckToggle);
-		expect(deckToggle?.getAttribute("aria-label")).toBe("Collapse comments");
+		expect(deckToggle?.getAttribute("aria-label")).toBe("Close comments");
 		expect(doc.activeElement).toBe(deckToggle);
 		expect(doc.querySelector(".prx-review-context")?.textContent).toBe(
 			"Commenting on: Which choice is helpful?",
@@ -597,6 +625,7 @@ describe("review HTML builds", () => {
 				runScripts: "outside-only",
 			},
 		);
+		reviewPageLayout(dom);
 		dom.window.fetch = vi.fn().mockResolvedValue(
 			new Response(
 				JSON.stringify([
@@ -689,6 +718,7 @@ describe("legacy review requests", () => {
 			{ url: `https://reviews.example${pathname}`, runScripts: "outside-only" },
 		);
 		doms.push(dom);
+		reviewPageLayout(dom);
 		dom.window.fetch = fetchMock;
 		dom.window.eval(await readFile(scriptPath, "utf-8"));
 		await vi.waitFor(() =>

@@ -21,6 +21,47 @@ async function selectQuote(page: Page) {
 	});
 }
 
+test("keyboard save preserves newlines in composer and reply", async ({ page }) => {
+	const fixture = await servedReview("en");
+	try {
+		await page.goto(fixture.url);
+		await page.getByRole("button", { name: "Comment on…", exact: true }).click();
+		await page.getByRole("radio", { name: "Whole page", exact: true }).check();
+		await page
+			.locator(".prx-review-picker")
+			.getByRole("button", { name: "Next", exact: true })
+			.click();
+		const field = page.locator(".prx-review-composer textarea");
+		await field.fill("First");
+		await field.press("End");
+		await field.press("Enter");
+		await field.press("S");
+		await expect(field).toHaveValue("First\nS");
+		const shortcut = await page.locator(".prx-review-submit").getAttribute("aria-keyshortcuts");
+		expect(["Meta+Enter", "Control+Enter"]).toContain(shortcut);
+		await field.press(shortcut as string);
+		await expect(page.locator(".prx-review-comment")).toHaveCount(1);
+		await page.locator(".prx-review-reply-toggle").click();
+		const reply = page.locator(".prx-review-reply textarea");
+		await reply.fill("Reply");
+		await reply.press("End");
+		await reply.press("Enter");
+		await reply.press("S");
+		await expect(reply).toHaveValue("Reply\nS");
+		await reply.press(shortcut as string);
+		await expect(page.locator(".prx-review-message")).toHaveCount(2);
+		const result = await fixture.list();
+		if (!("threads" in result)) throw new Error(result.code);
+		expect(result.threads[0].messages.map((message) => message.body)).toEqual([
+			"First\nS",
+			"Reply\nS",
+		]);
+	} finally {
+		await page.goto("about:blank");
+		await fixture.close();
+	}
+});
+
 test("keyboard picker, selection and pin create durable store-visible comments and recover a draft", async ({
 	page,
 }) => {
@@ -56,7 +97,7 @@ test("keyboard picker, selection and pin create durable store-visible comments a
 			anchor: { nodeId: "quote", pageId: "page" },
 			messages: [{ body: "Keyboard comment" }],
 		});
-		await page.getByRole("button", { name: "Collapse comments" }).click();
+		await page.getByRole("button", { name: "Close comments" }).click();
 		await page.locator('[data-node-id="quote"]').click({ clickCount: 3 });
 		await page.locator(".prx-review-selection").click();
 		await expect(page.locator(".prx-review-composer blockquote")).toHaveText(
@@ -65,14 +106,14 @@ test("keyboard picker, selection and pin create durable store-visible comments a
 		await field.fill("Selected passage comment");
 		await page.getByRole("button", { name: "Save comment", exact: true }).click();
 		await expect(page.locator(".prx-review-comment")).toHaveCount(2);
-		await page.getByRole("button", { name: "Collapse comments" }).click();
+		await page.getByRole("button", { name: "Close comments" }).click();
 		await page.getByRole("button", { name: "Pin", exact: true }).click();
 		await page.locator(".pin-target").click();
 		expect(new URL(page.url()).hash).toBe("");
 		await field.fill("Pinned link comment");
 		await page.getByRole("button", { name: "Save comment", exact: true }).click();
 		await expect(page.locator(".prx-review-comment")).toHaveCount(3);
-		await page.getByRole("button", { name: "Collapse comments" }).click();
+		await page.getByRole("button", { name: "Close comments" }).click();
 		await choose.click();
 		await page.getByRole("radio", { name: "Whole page", exact: true }).check();
 		await page

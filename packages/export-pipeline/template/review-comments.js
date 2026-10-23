@@ -32,7 +32,6 @@
 		config.locale === "fr"
 			? {
 					comments: "Commentaires",
-					collapse: "Réduire les commentaires",
 					expand: "Développer les commentaires",
 					loading: "Chargement des commentaires…",
 					empty: "Aucun commentaire pour cette page.",
@@ -50,7 +49,6 @@
 				}
 			: {
 					comments: "Comments",
-					collapse: "Collapse comments",
 					expand: "Expand comments",
 					loading: "Loading comments…",
 					empty: "No comments on this page yet.",
@@ -262,6 +260,7 @@
 					resolvedBy: "Résolu par {author}",
 					targetNotFound: "Cible introuvable",
 					anotherPage: "Sur une autre page",
+					closeComments: "Fermer les commentaires",
 					pendingAction: "Réessayez l’action précédente avant d’en commencer une autre.",
 					stale: "Commentaires hors ligne ou périmés. Nouvelle tentative automatique.",
 					leaveReply: "Vous avez des modifications de révision non envoyées. Quitter quand même ?",
@@ -290,6 +289,7 @@
 					resolvedBy: "Resolved by {author}",
 					targetNotFound: "Target not found",
 					anotherPage: "On another page",
+					closeComments: "Close comments",
 					pendingAction: "Retry the earlier action before starting another.",
 					stale: "Comments are offline or out of date. Retrying automatically.",
 					leaveReply: "You have unsent review changes. Leave anyway?",
@@ -494,6 +494,54 @@
 		if (className) node.className = className;
 		if (text !== undefined) node.textContent = text;
 		return node;
+	}
+	// Tabler outline paths from the installed @tabler/icons catalog, as in published notes.
+	var actionIcons = {
+		save: "M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2M10 14a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M14 4l0 4l-6 0l0 -4",
+		close: "M18 6l-12 12M6 6l12 12",
+		show: "M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0M21 21l-6 -6",
+		pin: "M9 4v6l-2 4v2h10v-2l-2 -4v-6M12 16l0 5M8 4l8 0",
+		trash:
+			"M4 7l16 0M10 11l0 6M14 11l0 6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3",
+	};
+	function actionIcon(name) {
+		var icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+		Object.entries({
+			class: "prx-review-action-icon",
+			viewBox: "0 0 24 24",
+			fill: "none",
+			stroke: "currentColor",
+			"stroke-width": "2",
+			"stroke-linecap": "round",
+			"stroke-linejoin": "round",
+			"aria-hidden": "true",
+			focusable: "false",
+		}).forEach(([key, value]) => icon.setAttribute(key, value));
+		var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+		path.setAttribute("d", actionIcons[name]);
+		icon.append(path);
+		return icon;
+	}
+	function labelAction(control, icon, label) {
+		control.replaceChildren(actionIcon(icon), element("span", "", label));
+	}
+	function keyboardSave(field, button) {
+		var mac = /Mac|iPhone|iPad|iPod/i.test(navigator.userAgentData?.platform || navigator.platform);
+		button.setAttribute("aria-keyshortcuts", mac ? "Meta+Enter" : "Control+Enter");
+		field.addEventListener("keydown", (event) => {
+			if (
+				event.key !== "Enter" ||
+				event.isComposing ||
+				event.keyCode === 229 ||
+				event.repeat ||
+				!(mac ? event.metaKey : event.ctrlKey) ||
+				event.altKey ||
+				event.shiftKey
+			)
+				return;
+			event.preventDefault();
+			button.click();
+		});
 	}
 
 	function createLegacyShareTransport() {
@@ -1590,8 +1638,8 @@
 			var mobileMore = moreButton && getComputedStyle(moreButton).display !== "none";
 			sidebar.classList.toggle("prx-review-sidebar--collapsed", collapsed);
 			toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
-			toggle.setAttribute("aria-label", collapsed ? strings.expand : strings.collapse);
-			toggle.title = collapsed ? strings.expand : strings.collapse;
+			toggle.setAttribute("aria-label", collapsed ? strings.expand : strings.closeComments);
+			toggle.title = collapsed ? strings.expand : strings.closeComments;
 			toggle.textContent = "";
 			if (isDeck) {
 				if (collapsed) {
@@ -1607,8 +1655,8 @@
 					sidebar.hidden = true;
 				} else {
 					if (mobileMore && moreButton.getAttribute("aria-expanded") === "true") moreButton.click();
-					toggle.textContent = "»";
-					header.append(toggle);
+					labelAction(toggle, "close", strings.closeComments);
+					title.after(toggle);
 					sidebar.hidden = false;
 				}
 				if (restoreFocus) toggle.focus();
@@ -1620,7 +1668,8 @@
 					toggle.append(badge);
 				}
 			} else {
-				toggle.textContent = "»";
+				labelAction(toggle, "close", strings.closeComments);
+				if (toggle.previousSibling !== title) title.after(toggle);
 			}
 			if (reviewTools) reviewTools.placeActions();
 			var draftCount = reviewTools?.draftCount() || 0;
@@ -1767,6 +1816,7 @@
 			var show = button("prx-review-show prx-review-action", strings.showOnPage, () =>
 				showOnPage(entry),
 			);
+			labelAction(show, "show", strings.showOnPage);
 			var replyToggle = button("prx-review-reply-toggle prx-review-action", strings.reply, () => {
 				replyForm.hidden = !replyForm.hidden;
 				replyToggle.setAttribute("aria-expanded", String(!replyForm.hidden));
@@ -1796,6 +1846,7 @@
 			var send = button("prx-review-reply-send prx-review-action", strings.sendReply, () =>
 				mutateThread(entry, "reply"),
 			);
+			keyboardSave(field, send);
 			var cancel = button("prx-review-reply-cancel prx-review-action", strings.cancel, closeReply);
 			function closeReply() {
 				replyForm.hidden = true;
@@ -2209,16 +2260,23 @@
 			var pin = button("prx-review-pin prx-review-action", strings.pin, () =>
 				pinning ? exitPin(true) : enterPin(pin),
 			);
+			labelAction(pin, "pin", strings.pin);
 			pin.setAttribute("aria-pressed", "false");
 			function placeActions() {
 				var parent = isDeck && collapsed ? deckUtilities : header;
 				var focused = [choose, pin].includes(document.activeElement)
 					? document.activeElement
 					: null;
-				if (pin.parentElement !== parent || pin.nextSibling !== toggle)
-					parent.insertBefore(pin, toggle);
-				if (choose.parentElement !== parent || choose.nextSibling !== pin)
-					parent.insertBefore(choose, pin);
+				if (parent === header) {
+					if (toggle.previousSibling !== title) title.after(toggle);
+					if (choose.previousSibling !== toggle) toggle.after(choose);
+					if (pin.previousSibling !== choose) choose.after(pin);
+				} else {
+					if (pin.parentElement !== parent || pin.nextSibling !== toggle)
+						parent.insertBefore(pin, toggle);
+					if (choose.parentElement !== parent || choose.nextSibling !== pin)
+						parent.insertBefore(choose, pin);
+				}
 				if (focused && document.activeElement !== focused) focused.focus({ preventScroll: true });
 			}
 			placeActions();
@@ -2365,6 +2423,7 @@
 			);
 			var composerActions = element("div", "prx-review-actions");
 			composerActions.append(submit, keepNew, cancel);
+			keyboardSave(textInput, submit);
 			error.id = "prx-review-error";
 			error.removeAttribute("role");
 			textInput.removeAttribute("maxlength");
@@ -2974,6 +3033,8 @@
 								),
 							);
 						draftRows.set(row.key, view);
+						var discard = view.node.querySelector(".prx-review-discard-draft");
+						if (discard) labelAction(discard, "trash", strings.discardDraft);
 					}
 					view.row = row;
 					view.summary.id = `prx-review-draft-${row.id}`;
@@ -3127,11 +3188,11 @@
 				submit.disabled =
 					loading || !current || Boolean(isSending(current)) || Boolean(current.gone);
 				cancel.disabled = false;
-				submit.textContent = sending
-					? strings.posting
-					: current?.kind === "outbox"
-						? strings.retry
-						: strings.save;
+				labelAction(
+					submit,
+					"save",
+					sending ? strings.posting : current?.kind === "outbox" ? strings.retry : strings.save,
+				);
 				error.textContent = current?.error || "";
 				error.hidden = !error.textContent;
 				if (error.textContent) textInput.setAttribute("aria-invalid", "true");
