@@ -7,21 +7,7 @@
 
 import type { ChoiceDependencyEvidence } from "@praxity/shared-blocks/choice-learner-state";
 import { DEFAULT_COMPLETION_THRESHOLD } from "@praxity/shared-blocks/constants";
-import {
-	type CourseOutcome,
-	captureLearnerBlockState,
-	type GroupObjectiveWriter,
-	type LearnerBlockStateRuntime,
-	withLearnerStateAuthority,
-	writeCourseOutcome,
-} from "@praxity/shared-blocks/learner-block-state";
-import {
-	isChoiceContentSignature,
-	isGroupObjectiveScore,
-	prepareGroupObjectiveSave,
-	readSavedAssessmentGroupState,
-	readSubmittedAssessmentGroup,
-} from "@praxity/shared-blocks/learner-state";
+import { type CourseOutcome, writeCourseOutcome } from "@praxity/shared-blocks/learner-block-state";
 import type { InteractionRecord, SCORMRuntime, TrackInteractionOptions } from "./types.ts";
 
 /** The pass mark as the manifest declares it, so the LMS and the SCO agree at the boundary. */
@@ -68,8 +54,6 @@ export interface TrackingConfig {
 	getAssessmentState?: (id: string) => unknown;
 	/** Absent until the host admits evidence-aware reporting. */
 	getChoiceDependencyView?: () => ChoiceDependencyEvidence | undefined;
-	/** Dormant SCORM submission handoff; replay is admitted separately. */
-	writeObjectives?: GroupObjectiveWriter;
 }
 
 interface CourseResult {
@@ -79,58 +63,6 @@ interface CourseResult {
 }
 
 type TrackerOutcome = CourseOutcome & { result?: CourseResult | null };
-
-/** Snapshot only the incoming submission. Saved obligations are never replayed here. */
-export function createDeferredGroupObjectiveWriter(
-	provider: LearnerBlockStateRuntime,
-	current: () => boolean,
-): GroupObjectiveWriter | undefined {
-	const handoff = provider.admitGroupObjectives?.(current, {
-		read: readSubmittedAssessmentGroup,
-		prepare: prepareGroupObjectiveSave,
-	});
-	if (!handoff) return undefined;
-	const writer: GroupObjectiveWriter = (runtime, outcome, view, intent) => {
-		const reporting = runtime && withLearnerStateAuthority(runtime, current);
-		if (!Object.hasOwn(view?.groups ?? {}, intent.id))
-			return writeCourseOutcome(reporting, outcome) && current();
-		const { id, score, passed, contentSignature } = intent;
-		handoff(id, null);
-		if (
-			!isGroupObjectiveScore(score) ||
-			typeof passed !== "boolean" ||
-			!isChoiceContentSignature(contentSignature)
-		)
-			return false;
-		const previous = provider.get(id);
-		if (!current()) return false;
-		// Unreadable old groups must remain replaceable through the ordinary submission path.
-		if (previous !== undefined && !readSavedAssessmentGroupState(previous))
-			return writeCourseOutcome(reporting, outcome) && current();
-		const pending =
-			outcome.kind === "waiting" ? { id: crypto.randomUUID(), score, passed } : undefined;
-		const clearId = pending ? undefined : readSubmittedAssessmentGroup(previous)?.objective?.id;
-		// Outcome callbacks can revoke authority before a waiting handoff is queued.
-		if (!writeCourseOutcome(reporting, outcome) || !current()) return false;
-		if (pending || clearId) {
-			handoff(id, { contentSignature, pending, clearId });
-			// SCORM 1.2 already holds the capture provisionally before its aggregate interaction.
-			if (provider.getSaveResult?.(id)?.status === "pending") {
-				const saved = readSubmittedAssessmentGroup(provider.get(id));
-				if (!saved || saved.submitted.contentSignature !== contentSignature) {
-					handoff(id, null);
-					return false;
-				}
-				captureLearnerBlockState(provider, current).write(id, saved.state, { current });
-			}
-		}
-		return true;
-	};
-	writer.discard = (id) => {
-		handoff(id, null);
-	};
-	return writer;
-}
 
 // ---------------------------------------------------------------------------
 // CourseTracker
@@ -226,22 +158,8 @@ export class CourseTracker {
 		passed: boolean,
 		runtime = this.runtime,
 		view?: ChoiceDependencyEvidence,
-		contentSignature?: unknown,
-	): boolean {
-		const evidence = view ?? this.config.getChoiceDependencyView?.();
-		const outcome = this.outcome({ id, score, passed: passed === true }, evidence ?? null);
-		return this.config.writeObjectives
-			? this.config.writeObjectives(runtime, outcome, evidence, {
-					id,
-					score,
-					passed,
-					contentSignature,
-				})
-			: writeCourseOutcome(runtime, outcome);
-	}
-
-	discardGroupObjective(id: string): void {
-		this.config.writeObjectives?.discard(id);
+	): void {
+		writeCourseOutcome(runtime, this.outcome({ id, score, passed }, view));
 	}
 
 	finish(explicitFinish = false, runtime = this.runtime): boolean {
@@ -369,9 +287,9 @@ export class CourseTracker {
 			| "end"
 			| "finish"
 			| { id: string; score: number; passed: boolean } = "check",
-		view: ChoiceDependencyEvidence | null = this.config.getChoiceDependencyView?.() ?? null,
+		view = this.config.getChoiceDependencyView?.(),
 	): TrackerOutcome {
-		if (this.historyIsWaiting(view ?? undefined))
+		if (this.historyIsWaiting(view))
 			return {
 				kind: "waiting",
 				...(intent === "end"

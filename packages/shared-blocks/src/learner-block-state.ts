@@ -1,26 +1,9 @@
 import type { ChoiceDependencyEvidence } from "./choice-learner-state";
-import type {
-	DeferredGroupObjective,
-	LearnerStateValue,
-	prepareGroupObjectiveSave,
-	readSubmittedAssessmentGroup,
-} from "./learner-state";
+import type { LearnerStateValue } from "./learner-state";
 import type { SelfCheckTicket } from "./self-check-session";
-import { type CourseOutcome, finishRuntimeCourse, type OutcomeRuntime } from "./tracking";
+import { finishRuntimeCourse } from "./tracking";
 
 export { type CourseOutcome, writeCourseOutcome } from "./tracking";
-
-export type GroupObjectiveHandoff = (
-	id: string,
-	proposal: { contentSignature: string; pending?: DeferredGroupObjective; clearId?: string } | null,
-) => boolean;
-
-export type GroupObjectiveWriter = ((
-	runtime: OutcomeRuntime | undefined,
-	outcome: CourseOutcome,
-	view: ChoiceDependencyEvidence | undefined,
-	intent: { id: string; score: number; passed: boolean; contentSignature?: unknown },
-) => boolean) & { discard(id: string): void };
 
 export type LearnerBlockSaveResult =
 	| { status: "pending" }
@@ -36,22 +19,6 @@ export type LearnerBlockSaveResult =
 	  };
 
 export interface LearnerBlockStateRuntime {
-	/** SCORM-only admission retains one provider handoff across tracker replacement. */
-	admitGroupObjectives?(
-		current: () => boolean,
-		schema: {
-			read: typeof readSubmittedAssessmentGroup;
-			prepare: typeof prepareGroupObjectiveSave;
-		},
-	): GroupObjectiveHandoff;
-	prepareGroupState?(blockId: string, value: LearnerStateValue): LearnerStateValue | null;
-	/** Native save acceptance, independent of ordinary receipt capabilities. */
-	saveGroupObjective?(blockId: string, value: LearnerStateValue, current: () => boolean): boolean;
-	/** Production binds evidence and objective storage together at activation. */
-	getChoiceReporting?(current: () => boolean): {
-		getChoiceDependencyView: () => ChoiceDependencyEvidence | undefined;
-		writeObjectives?: GroupObjectiveWriter;
-	};
 	/** Absent until the host admits evidence-aware consumers together. */
 	getChoiceDependencyView?(): ChoiceDependencyEvidence | undefined;
 	get(blockId: string): LearnerStateValue | undefined;
@@ -159,21 +126,8 @@ export function writeLearnerBlockState(
 ): boolean {
 	const provider = doc?.defaultView?.__praxityBlockState;
 	if (!provider || !current()) return false;
-	return storeLearnerBlockState(provider, blockId, value, current) && current();
-}
-
-function storeLearnerBlockState(
-	provider: LearnerBlockStateRuntime,
-	blockId: string,
-	value: LearnerStateValue,
-	current: () => boolean,
-): boolean {
-	const prepared = provider.prepareGroupState ? provider.prepareGroupState(blockId, value) : value;
-	if (provider.prepareGroupState && prepared === null) return false;
-	if (provider.prepareGroupState && provider.saveGroupObjective)
-		return provider.saveGroupObjective(blockId, prepared, current) && current();
-	provider.set(blockId, prepared);
-	return true;
+	provider.set(blockId, value);
+	return current();
 }
 
 export function readLearnerBlockSaveResult(blockId: string): LearnerBlockSaveResult | undefined {
@@ -215,8 +169,7 @@ export function captureLearnerBlockState(
 		},
 		write(blockId: string, value: LearnerStateValue, ticket: { current(): boolean }) {
 			if (!lifetime() || !ticket.current() || !provider) return undefined;
-			if (!storeLearnerBlockState(provider, blockId, value, () => lifetime() && ticket.current()))
-				return undefined;
+			provider.set(blockId, value);
 			// A saved receipt is also evidence of stored bytes, even if an injected set
 			// queued a newer edit. The session must not certify that newer draft with it.
 			return lifetime() ? provider.getSaveResult?.(blockId) : undefined;

@@ -167,7 +167,6 @@ export function initializeCourseHost(
 			deferRetryableFailure:
 				(adapter.format === "scorm12" || adapter.format === "scorm2004") &&
 				!adapter.isFallback?.(runtime),
-			...hostWindow.__praxityBlockState?.getChoiceReporting?.(current),
 		});
 
 	const announce = (lifetime = owner?.lifetime()) => {
@@ -434,28 +433,14 @@ export function initializeCourseHost(
 					memberIds: assessmentReportingOptions(detail, page.pageTitle).memberIds,
 				}) ?? undefined;
 			if (!submissionView) {
-				tracker.discardGroupObjective(groupId);
 				runtime?.abortSubmission?.(groupId);
 				event.preventDefault();
 				return;
 			}
 		}
 		// Keep the event's existing adapter and ticket; tracker writes have their own lifetime.
-		if (hasScore && runtime) {
-			const accepted = tracker.trackGroupObjective(
-				groupId,
-				score,
-				submissionView ? (detail.passed as boolean) : passed,
-				runtime,
-				submissionView,
-				detail.contentSignature,
-			);
-			if (!accepted && submissionView) {
-				runtime.abortSubmission?.(groupId);
-				event.preventDefault();
-				return;
-			}
-		}
+		if (hasScore && runtime)
+			tracker.trackGroupObjective(groupId, score, passed, runtime, submissionView);
 		if (!owned()) return;
 		try {
 			tracker.trackInteraction(
