@@ -178,6 +178,52 @@ for (const layout of ["sidebar", "bottomBar"]) {
 						(position === "max" && viewport.height > 320)
 					)
 						await expect.poll(() => next.evaluate(centreIsVisible)).toBe(true);
+					if (layout === "bottomBar" && position === "mid" && viewport.height > 320) {
+						await expect
+							.poll(() =>
+								nav.evaluate((nav) => {
+									const band = document.querySelector<HTMLElement>(".prx-review-sidebar");
+									if (!band) throw new Error("Missing review band");
+									const wrapper = document.querySelector(".praxity-layout-wrapper");
+									if (!wrapper) throw new Error("Missing course wrapper");
+									const bandBox = band.getBoundingClientRect();
+									const navBox = nav.getBoundingClientRect();
+									const style = getComputedStyle(band);
+									const width = document.documentElement.clientWidth;
+									const covered = [1, width / 2, width - 1].every((x) =>
+										[bandBox.top - 0.5, bandBox.top + 0.5, innerHeight - 1].every((y) => {
+											const hit = document.elementFromPoint(x, y);
+											return band.contains(hit) || nav.contains(hit);
+										}),
+									);
+									const endPadding = Number.parseFloat(
+										getComputedStyle(document.documentElement).scrollPaddingBlockEnd,
+									);
+									const coursePadding = Number.parseFloat(
+										getComputedStyle(wrapper).paddingBlockEnd,
+									);
+									return {
+										flush: Math.abs(navBox.bottom - bandBox.top) < 0.5,
+										fullWidth: bandBox.left === 0 && bandBox.right >= width,
+										opaque:
+											style.backgroundColor === getComputedStyle(document.body).backgroundColor,
+										border: style.borderTopWidth === "1px" && style.borderTopStyle === "solid",
+										covered,
+										scrollClearance: Math.abs(endPadding - navBox.height - bandBox.height) < 0.5,
+										contentClearance: Math.abs(coursePadding - bandBox.height) < 0.5,
+									};
+								}),
+							)
+							.toEqual({
+								flush: true,
+								fullWidth: true,
+								opaque: true,
+								border: true,
+								covered: true,
+								scrollClearance: true,
+								contentClearance: true,
+							});
+					}
 					if (position === "max") {
 						if (viewport.height > 320)
 							await expect.poll(() => last.evaluate(centreIsVisible)).toBe(true);

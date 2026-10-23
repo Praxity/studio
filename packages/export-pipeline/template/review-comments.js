@@ -1219,7 +1219,10 @@
 			if (layoutObserver && layoutRoot !== root) {
 				layoutObserver.disconnect();
 				layoutObserver.observe(root);
-				if (anchors && !isDeck) layoutObserver.observe(header);
+				if (anchors && !isDeck) {
+					layoutObserver.observe(header);
+					layoutObserver.observe(sidebar);
+				}
 				layoutRoot = root;
 				layoutInlineSize = undefined;
 			}
@@ -1448,10 +1451,10 @@
 			if (typeof ResizeObserver === "function")
 				layoutObserver = new ResizeObserver((entries = []) => {
 					if (anchors && !isDeck) {
-						// Reserve the floating toolbar's wrapped height above the page navigation.
+						// Include the band's border and padding while retaining floating toolbar clearance.
 						document.documentElement.style.setProperty(
 							"--prx-review-toolbar-space",
-							`${header.getBoundingClientRect().height + 32}px`,
+							`${Math.max(header.getBoundingClientRect().height + 32, collapsed ? sidebar.getBoundingClientRect().height : 0)}px`,
 						);
 					}
 					var entry = entries.find((entry) => entry.target === layoutRoot);
