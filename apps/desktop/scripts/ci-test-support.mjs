@@ -7,6 +7,8 @@ import { join, parse as parsePath } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const root = new URL("../../../", import.meta.url);
+export const browserRunner =
+	"${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-24.04' || vars.STUDIO_BROWSER_RUNNER || 'ubuntu-24.04' }}";
 const bash =
 	process.platform === "win32"
 		? join(
@@ -136,12 +138,8 @@ export function couldBeSelfHosted(value, matrix) {
 		];
 		return !values.length || values.some((item) => couldBeSelfHosted(item, matrix));
 	}
-	// The fork-routing expression chooses only between hosted labels.
-	if (
-		value ===
-		"${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-24.04' || 'ubicloud-standard-2' }}"
-	)
-		return false;
+	// Only the reviewed browser expression may select a repository-variable runner.
+	if (value === browserRunner) return false;
 	// Unknown expressions/labels cannot establish that a PR stays on hosted runners.
 	return !/^(?:ubicloud-[\w.-]+|ubuntu-(?:latest|22\.04|24\.04)(?:-arm)?|windows-(?:latest|2022|2025)|macos-(?:latest|13|14|15|26)(?:-intel|-large|-xlarge)?)$/.test(
 		value,
