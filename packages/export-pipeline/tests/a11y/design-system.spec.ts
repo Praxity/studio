@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import AxeBuilder from "@axe-core/playwright";
-import { Button, MantineProvider, Radio } from "@mantine/core";
+import { ActionIcon, Button, MantineProvider, Radio } from "@mantine/core";
 import { expect, type Page } from "@playwright/test";
 import { colorToHex, hexToOklab } from "@praxity/shared-blocks/color-math";
 import { createElement } from "react";
@@ -2003,6 +2003,55 @@ test("desktop sidebar toggle has no dormant transition", async ({ page }) => {
 	);
 	await expect(page.locator("nav")).toHaveCSS("transition-duration", "0s");
 });
+
+for (const reducedMotion of ["no-preference", "reduce"] as const) {
+	test(`rule 12 keeps assessment ordering icons still ${reducedMotion}`, async ({ page }) => {
+		const rhythm = readFileSync(
+			new URL("../../../shared-blocks/src/reading-rhythm.css", import.meta.url),
+			"utf8",
+		);
+		const blocks = readFileSync(
+			new URL("../../../shared-blocks/src/blocks/shared-blocks.css", import.meta.url),
+			"utf8",
+		).replace('@import "../reading-rhythm.css";', rhythm);
+		const library = readFileSync(
+			new URL("../../node_modules/@mantine/core/styles.css", import.meta.url),
+			"utf8",
+		);
+		const controls = renderToStaticMarkup(
+			createElement(
+				MantineProvider,
+				{ forceColorScheme: "light" },
+				createElement(
+					"div",
+					{ className: "praxity-order-controls" },
+					createElement(
+						ActionIcon<"button">,
+						{ "aria-label": "Move item up", variant: "subtle" },
+						"↑",
+					),
+					createElement(
+						ActionIcon<"button">,
+						{ "aria-label": "Move item down", variant: "subtle" },
+						"↓",
+					),
+				),
+			),
+		);
+		// Set the preference before rendering so a media change cannot hide Mantine's timing.
+		await page.emulateMedia({ reducedMotion });
+		await page.setContent(`<style>${library}${blocks}</style>
+			<main data-praxity-root><div class="praxity-block-assessment">${controls}</div></main>`);
+		const icons = page.locator(".praxity-order-controls .mantine-ActionIcon-icon");
+		await expect(icons).toHaveCount(2);
+		for (const icon of await icons.all()) {
+			await expect(icon).toBeVisible();
+			await expect.soft(icon).toHaveCSS("transition-property", "none");
+			await expect.soft(icon).toHaveCSS("transition-duration", "0s");
+		}
+		expect((await inspect(page)).failures[11]).toEqual([]);
+	});
+}
 
 test("rule 12 uses motion tokens for shell and carousel transitions", async ({ page }) => {
 	const source = (file: string) =>

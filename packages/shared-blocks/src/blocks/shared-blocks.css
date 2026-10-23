@@ -2453,6 +2453,11 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	flex-shrink: 0;
 }
 
+/* Ordering arrows never enter Mantine's animated loading state. */
+.praxity-block-assessment .praxity-order-controls .mantine-ActionIcon-icon {
+	transition: none;
+}
+
 .praxity-order-baseline .praxity-order-controls {
 	display: flex;
 	gap: calc(var(--space-1) * var(--mantine-scale, 1));
