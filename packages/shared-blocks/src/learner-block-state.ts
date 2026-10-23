@@ -169,7 +169,7 @@ function storeLearnerBlockState(
 	current: () => boolean,
 ): boolean {
 	const prepared = provider.prepareGroupState ? provider.prepareGroupState(blockId, value) : value;
-	if ((provider.prepareGroupState && prepared === null) || !current()) return false;
+	if (provider.prepareGroupState && prepared === null) return false;
 	if (provider.prepareGroupState && provider.saveGroupObjective)
 		return provider.saveGroupObjective(blockId, prepared, current) && current();
 	provider.set(blockId, prepared);

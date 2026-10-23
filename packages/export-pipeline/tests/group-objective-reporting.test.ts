@@ -148,7 +148,7 @@ function launch(format: Format, evidence = false, waiting = false) {
 				provider.getChoiceDependencyView = view;
 				provider.getChoiceReporting = (current) => ({
 					getChoiceDependencyView: view,
-					writeObjectives: tracking.createDeferredGroupObjectiveWriter(value, current),
+					writeObjectives: tracking.createDeferredGroupObjectiveWriter?.(value, current),
 				});
 			},
 		});
@@ -194,7 +194,7 @@ function launch(format: Format, evidence = false, waiting = false) {
 			completionMethod: "allPages",
 			requiredAssessmentIds: ["q"],
 			getChoiceDependencyView: view,
-			writeObjectives: tracking.createDeferredGroupObjectiveWriter(provider, () => true),
+			writeObjectives: tracking.createDeferredGroupObjectiveWriter?.(provider, () => true),
 		});
 		expect(view().status("q")).toBe(waiting ? "history" : "current");
 	}
@@ -264,7 +264,9 @@ describe.each(["xapi", "standalone"] as const)("%s without an objective sink", (
 	it("the shared writer treats the absent method as a successful no-op", () => {
 		const host = launch(format);
 		expect("trackObjective" in host.runtime).toBe(false);
-		expect(tracking.createDeferredGroupObjectiveWriter(host.provider, () => true)).toBeUndefined();
+		expect(
+			tracking.createDeferredGroupObjectiveWriter?.(host.provider, () => true),
+		).toBeUndefined();
 		expect(
 			writeCourseOutcome(host.runtime, {
 				kind: "decided",

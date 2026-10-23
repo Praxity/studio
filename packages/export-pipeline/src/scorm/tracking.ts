@@ -91,7 +91,6 @@ export function createDeferredGroupObjectiveWriter(
 	});
 	if (!handoff) return undefined;
 	const writer: GroupObjectiveWriter = (runtime, outcome, view, intent) => {
-		if (!current()) return false;
 		const reporting = runtime && withLearnerStateAuthority(runtime, current);
 		if (!Object.hasOwn(view?.groups ?? {}, intent.id))
 			return writeCourseOutcome(reporting, outcome) && current();
@@ -111,9 +110,10 @@ export function createDeferredGroupObjectiveWriter(
 		const pending =
 			outcome.kind === "waiting" ? { id: crypto.randomUUID(), score, passed } : undefined;
 		const clearId = pending ? undefined : readSubmittedAssessmentGroup(previous)?.objective?.id;
+		// Outcome callbacks can revoke authority before a waiting handoff is queued.
 		if (!writeCourseOutcome(reporting, outcome) || !current()) return false;
 		if (pending || clearId) {
-			if (!handoff(id, { contentSignature, pending, clearId })) return false;
+			handoff(id, { contentSignature, pending, clearId });
 			// SCORM 1.2 already holds the capture provisionally before its aggregate interaction.
 			if (provider.getSaveResult?.(id)?.status === "pending") {
 				const saved = readSubmittedAssessmentGroup(provider.get(id));
@@ -121,11 +121,10 @@ export function createDeferredGroupObjectiveWriter(
 					handoff(id, null);
 					return false;
 				}
-				if (!captureLearnerBlockState(provider, current).write(id, saved.state, { current }))
-					return false;
+				captureLearnerBlockState(provider, current).write(id, saved.state, { current });
 			}
 		}
-		return current();
+		return true;
 	};
 	writer.discard = (id) => {
 		handoff(id, null);

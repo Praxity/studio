@@ -236,6 +236,132 @@ const save = (host: ReturnType<typeof launch>, state: LearnerStateValue = groupS
 	writeLearnerBlockState("g", state, () => true, host.win.document);
 
 describe.each(["scorm12", "scorm2004"] as const)("%s objective capture persistence", (format) => {
+	it("host refuses a signed candidate with a nonboolean pass flag", () => {
+		const host = launch(format, true, true);
+		const { accepted, event } = submit(host, { passed: "false" });
+		expect(accepted).toBe(false);
+		expect(event.defaultPrevented).toBe(true);
+		expect(host.provider.get("g")).toBeUndefined();
+		expect(host.runtime.getInteractions().some((row) => row.id === "g")).toBe(false);
+	});
+
+	it("a revoked writer's discard cannot clear another writer's queued handoff", () => {
+		const host = launch(format, true, true);
+		let current = true;
+		const old = new CourseTracker(host.runtime, {
+			totalPages: 2,
+			completionMethod: "allPages",
+			requiredAssessmentIds: ["q"],
+			getChoiceDependencyView: host.view,
+			writeObjectives: tracking.createDeferredGroupObjectiveWriter?.(host.provider, () => current),
+		});
+		current = false;
+		const tracker = host.win.__praxityTracker as CourseTracker;
+		expect(
+			tracker.trackGroupObjective(
+				"g",
+				100,
+				true,
+				host.runtime,
+				undefined,
+				submitted.contentSignature,
+			),
+		).toBe(true);
+		old.discardGroupObjective("g");
+		expect(save(host)).toBe(true);
+		expect(pending(host)).toMatchObject({ score: 100, passed: true });
+	});
+
+	it("a persisted clear handoff is retired before checking its former writer's authority", () => {
+		const host = launch(format, true, true);
+		submit(host);
+		expect(pending(host)).toMatchObject({ score: 100, passed: true });
+		host.provider.set("q", answer(signature));
+		let current = true;
+		const tracker = new CourseTracker(host.runtime, {
+			totalPages: 2,
+			completionMethod: "allPages",
+			requiredAssessmentIds: ["q"],
+			getChoiceDependencyView: host.view,
+			writeObjectives: tracking.createDeferredGroupObjectiveWriter?.(host.provider, () => current),
+		});
+		tracker.trackGroupObjective("g", 0, false, host.runtime, undefined, submitted.contentSignature);
+		expect(save(host)).toBe(true);
+		expect(pending(host)).toBeUndefined();
+		current = false;
+		expect(save(host, { ...groupState, completed: false })).toBe(true);
+		expect(host.provider.get("g")).toHaveProperty("completed", false);
+	});
+
+	for (const when of ["state read", "save result"] as const)
+		it(`a full reentrant submission during ${when} keeps the newest record`, () => {
+			const host = launch(format, true, true);
+			expect(submit(host).accepted).toBe(true);
+			expect(pending(host)).toMatchObject({ score: 100, passed: true });
+			let armed = true;
+			let nested: ReturnType<typeof submit> | undefined;
+			const reenter = (id: string) => {
+				if (armed && id === "g") {
+					armed = false;
+					nested = submit(host, { score: 0, passed: false });
+					expect(pending(host)).toMatchObject({ score: 0, passed: false });
+				}
+			};
+			if (when === "state read") {
+				const get = host.provider.get.bind(host.provider);
+				vi.spyOn(host.provider, "get").mockImplementation((id) => {
+					reenter(id);
+					return get(id);
+				});
+			} else {
+				const result = host.provider.getSaveResult?.bind(host.provider);
+				host.provider.getSaveResult = (id) => {
+					reenter(id);
+					return result?.(id);
+				};
+			}
+			// The ordinary draft carries no old objective record of its own.
+			expect(save(host, { ...groupState, completed: false })).toBe(true);
+			expect(nested?.accepted).toBe(true);
+			expect(nested?.event.defaultPrevented).toBe(false);
+			expect(nested?.saved).toBe(true);
+			expect(pending(host)).toMatchObject({ score: 0, passed: false });
+		});
+
+	it("revocation cleanup preserves a handoff queued by its authority callback", () => {
+		const host = launch(format, true, true);
+		const latest = host.win.__praxityTracker as CourseTracker;
+		let armed = false;
+		const old = new CourseTracker(host.runtime, {
+			totalPages: 2,
+			completionMethod: "allPages",
+			requiredAssessmentIds: ["q"],
+			getChoiceDependencyView: host.view,
+			writeObjectives: tracking.createDeferredGroupObjectiveWriter?.(host.provider, () => {
+				if (!armed) return true;
+				armed = false;
+				expect(
+					latest.trackGroupObjective(
+						"g",
+						0,
+						false,
+						host.runtime,
+						undefined,
+						submitted.contentSignature,
+					),
+				).toBe(true);
+				return false;
+			}),
+		});
+		expect(
+			old.trackGroupObjective("g", 100, true, host.runtime, undefined, submitted.contentSignature),
+		).toBe(true);
+		armed = true;
+		expect(save(host)).toBe(false);
+		expect(save(host)).toBe(true);
+		expect(pending(host)).toMatchObject({ score: 0, passed: false });
+	});
+
 	it("ordinary null block state keeps its existing save behavior without admission", () => {
 		const host = launch(format);
 		expect(save(host, null)).toBe(true);
@@ -681,6 +807,38 @@ for (const waiting of [false, true])
 			expect(host.runtime.getInteractions().at(-1)).toMatchObject({ id: "g", score: 0 });
 		});
 
+it("SCORM 1.2 does not retire a handoff whose matching record is only provisional", () => {
+	const host = launch("scorm12", true, true);
+	let current = true;
+	const tracker = new CourseTracker(host.runtime, {
+		totalPages: 2,
+		completionMethod: "allPages",
+		requiredAssessmentIds: ["q"],
+		getChoiceDependencyView: host.view,
+		writeObjectives: tracking.createDeferredGroupObjectiveWriter?.(host.provider, () => current),
+	});
+	expect(
+		tracker.trackGroupObjective(
+			"g",
+			100,
+			true,
+			host.runtime,
+			undefined,
+			submitted.contentSignature,
+		),
+	).toBe(true);
+	expect(
+		host.provider.stageSubmission?.("g", () => {
+			expect(save(host)).toBe(true);
+			expect(pending(host)).toMatchObject({ score: 100, passed: true });
+			current = false;
+			expect(save(host)).toBe(false);
+			return false;
+		}),
+	).toBe(false);
+	expect(host.provider.get("g")).toBeUndefined();
+});
+
 for (const state of [
 	undefined,
 	{ ...groupState, submitted: { ...submitted, contentSignature: changed } },
@@ -702,4 +860,6 @@ for (const state of [
 			}),
 		).toBe(false);
 		expect(host.provider.get("g")).toBeUndefined();
+		expect(save(host)).toBe(true);
+		expect(pending(host)).toBeUndefined();
 	});

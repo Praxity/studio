@@ -120,22 +120,27 @@ export function createBlockStateRuntime(runtime: SCORMRuntime): LearnerBlockStat
 		};
 		provider.admitGroupObjectives = (current, schema) => {
 			provider.prepareGroupState ??= (id, next) => {
-				const queued = handoffs.get(id);
 				const previous = provider.get(id);
+				const result = provider.getSaveResult?.(id);
+				// Reads can submit and save a newer handoff before returning.
+				const queued = handoffs.get(id);
+				const retire = () => {
+					if (handoffs.get(id) === queued) handoffs.delete(id);
+				};
 				const saved = schema.read(previous)?.objective;
 				const adopted =
 					queued &&
-					provider.getSaveResult?.(id)?.status !== "pending" &&
+					result?.status !== "pending" &&
 					(queued.proposal.pending ? saved?.id === queued.proposal.pending.id : !saved);
-				if (adopted) handoffs.delete(id);
+				if (adopted) retire();
 				const active = adopted ? undefined : queued;
 				if (active && !active.current()) {
-					handoffs.delete(id);
+					retire();
 					return null;
 				}
 				const matches =
 					active?.proposal.contentSignature === schema.read(next)?.submitted.contentSignature;
-				if (active && !matches) handoffs.delete(id);
+				if (active && !matches) retire();
 				const proposal = active && matches ? active.proposal : undefined;
 				const prepared = schema.prepare(
 					previous,
