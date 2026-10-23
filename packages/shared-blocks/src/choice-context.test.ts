@@ -49,9 +49,9 @@ describe("whole-course group facts", () => {
 				expect(facts.choiceStateFactsStatus).toBe("invalid");
 				expect(facts.choiceStateInvalidIds).toEqual(["g"]);
 				expect(facts.choiceStateGroups).toEqual({});
-				expect(() =>
-					createChoiceDependencyView(facts, { rows: [], readState: () => undefined }),
-				).toThrow("Invalid choice facts");
+				const view = createChoiceDependencyView(facts, { rows: [], readState: () => undefined });
+				expect(view.invalidIds).toEqual(["g"]);
+				expect(choiceDependencyStatus("g", view)).toBe("history");
 			} finally {
 				warn.mockRestore();
 			}

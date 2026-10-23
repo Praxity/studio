@@ -1,5 +1,46 @@
 import type { ChoiceMaterialProof } from "./choice-state-facts";
 
+/** Persisted syntax must not load the material-hashing runtime. */
+export function isChoiceContentSignature(value: unknown): value is string {
+	return typeof value === "string" && /^sha256:[a-f0-9]{64}$/.test(value);
+}
+
+export function isScorm12ChoiceSignature(value: unknown): value is `s96:${string}` {
+	return typeof value === "string" && /^s96:[A-Za-z0-9_-]{16}$/.test(value);
+}
+
+/** The SCORM 1.2 destination uses a versioned 96-bit material claim. */
+export function choiceEvidenceSignature(signature: string, format?: "scorm12"): string {
+	if (format !== "scorm12" || isScorm12ChoiceSignature(signature)) return signature;
+	if (!isChoiceContentSignature(signature)) throw new TypeError("Invalid choice signature");
+	let bytes = "";
+	for (let at = 7; at < 31; at += 2)
+		bytes += String.fromCharCode(Number.parseInt(signature.slice(at, at + 2), 16));
+	return `s96:${btoa(bytes).replaceAll("+", "-").replaceAll("/", "_")}`;
+}
+
+/** Dormant destination projection; archived submissions keep their exact original evidence. */
+export function choiceStateForDestination(
+	value: LearnerStateValue,
+	format?: "scorm12",
+): LearnerStateValue {
+	if (
+		format !== "scorm12" ||
+		!value ||
+		typeof value !== "object" ||
+		Array.isArray(value) ||
+		value.kind !== "assessment" ||
+		value.assessmentType !== "choice" ||
+		!(
+			isChoiceContentSignature(value.contentSignature) ||
+			isScorm12ChoiceSignature(value.contentSignature)
+		)
+	)
+		return value;
+	const { materialProof: _proof, ...state } = value;
+	return { ...state, contentSignature: choiceEvidenceSignature(value.contentSignature, format) };
+}
+
 export type LearnerCompletion = "incomplete" | "completed" | "passed" | "failed";
 
 export type LearnerStateValue =
