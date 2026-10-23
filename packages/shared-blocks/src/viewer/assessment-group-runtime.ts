@@ -433,35 +433,35 @@ function showResults(
 		};
 		const staged = submission && provider?.stageSubmission;
 		const report = () => {
-			const event = new CustomEvent("praxity:assessment-group-complete", {
-				detail: {
-					groupId: group.id,
-					groupName:
-						root
-							.querySelector<HTMLElement>(
-								`[data-block-id="${CSS.escape(group.id)}"][data-assessment-report-title]`,
-							)
-							?.getAttribute("data-assessment-report-title") ?? groupName,
-					language: root.ownerDocument.documentElement.lang,
-					...(hasGradedMembers ? { score: percent, memberIds: scoredMemberIds } : {}),
-					passed,
-					correct: hasCheckedMembers ? passed : undefined,
-					completed,
-					...(submission
-						? { contentSignature: submission.contentSignature, selectedMemberId }
-						: {}),
-					memberCount: members.length,
-				},
-				bubbles: true,
-				cancelable: !!submission,
-			});
-			const dispatched = dispatchSelfCheckEvent(event, current, root.ownerDocument);
+			const dispatched = dispatchSelfCheckEvent(
+				new CustomEvent("praxity:assessment-group-complete", {
+					detail: {
+						groupId: group.id,
+						groupName:
+							root
+								.querySelector<HTMLElement>(
+									`[data-block-id="${CSS.escape(group.id)}"][data-assessment-report-title]`,
+								)
+								?.getAttribute("data-assessment-report-title") ?? groupName,
+						language: root.ownerDocument.documentElement.lang,
+						...(hasGradedMembers ? { score: percent, memberIds: scoredMemberIds } : {}),
+						passed,
+						correct: hasCheckedMembers ? passed : undefined,
+						completed,
+						...(submission
+							? { contentSignature: submission.contentSignature, selectedMemberId }
+							: {}),
+						memberCount: members.length,
+					},
+					bubbles: true,
+					cancelable: !!submission,
+				}),
+				current,
+				root.ownerDocument,
+			);
 			const result = submission ? provider?.getSaveResult?.(group.id) : undefined;
 			return (
-				dispatched &&
-				!event.defaultPrevented &&
-				result?.status !== "not-saved" &&
-				(!staged || result?.status !== "pending")
+				dispatched && result?.status !== "not-saved" && (!staged || result?.status !== "pending")
 			);
 		};
 		// Keep reporting inside the stage so an unhandled report rolls its state back too.

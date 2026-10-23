@@ -295,13 +295,17 @@ it("a rejected staged group releases the SCORM 1.2 runtime for later saves", () 
 
 it("rejecting a different group leaves the active SCORM 1.2 submission intact", () => {
 	const { provider, runtime } = launch("scorm12", true);
-	expect(provider.stageSubmission?.("q2", () => {
-		provider.set("q2", { answer: "kept" });
-		return true;
-	})).toBe(true);
+	expect(
+		provider.stageSubmission?.("q2", () => {
+			provider.set("q2", { answer: "kept" });
+			return true;
+		}),
+	).toBe(true);
 	submit(`sha256:${"f".repeat(64)}`);
 	expect(provider.getSaveResult?.("q2")).toEqual({ status: "pending" });
+	expect(provider.get("q2")).toEqual({ answer: "kept" });
 	expect(() => runtime.trackInteraction("q2", "answer")).not.toThrow();
+	expect(provider.get("q2")).toEqual({ answer: "kept" });
 	expect(provider.getSaveResult?.("q2")).toMatchObject({ status: "saved" });
 });
 

@@ -404,7 +404,9 @@ it("clears the visible oneOf refusal when the learner retries successfully", asy
 	);
 	rejected = false;
 	document.querySelector<HTMLButtonElement>(".praxity-ag-submit-btn")?.click();
-	await vi.waitFor(() => expect(document.querySelector(".praxity-ag-results-score")).not.toBeNull());
+	await vi.waitFor(() =>
+		expect(document.querySelector(".praxity-ag-results-score")).not.toBeNull(),
+	);
 	expect(document.querySelector("[data-assessment-group-status]")?.textContent).toBe("");
 });
 

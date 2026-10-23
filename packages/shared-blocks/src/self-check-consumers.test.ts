@@ -80,6 +80,15 @@ it("cancellation notifies UI with a revoked stamp that survives owner removal", 
 	}
 });
 
+it("returns a synchronous native refusal without revoking the dispatch authority", () => {
+	const target = document.createElement("div");
+	target.addEventListener("learner-test", (event) => event.preventDefault());
+	const event = new Event("learner-test", { cancelable: true });
+	expect(dispatchSelfCheckEvent(event, () => true, document, target)).toBe(false);
+	expect(event.defaultPrevented).toBe(true);
+	expect(selfCheckEpochTicket(document, event)()).toBe(true);
+});
+
 it("rearms pre-host consumers on initial runtime admission without an early document owner", () => {
 	const tickets: (() => boolean)[] = [];
 	const release = observeSelfCheckLifetime((current) => {

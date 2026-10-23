@@ -250,7 +250,7 @@ for (const locale of ["en", "fr"] as const) {
 					expect(box?.height).toBeGreaterThanOrEqual(44);
 				}
 				const collapse = page.getByRole("button", {
-					name: locale === "fr" ? "Réduire les commentaires" : "Collapse comments",
+					name: locale === "fr" ? "Fermer les commentaires" : "Close comments",
 					exact: true,
 				});
 				await expect(collapse).toHaveCount(1);
@@ -271,7 +271,7 @@ for (const locale of ["en", "fr"] as const) {
 							await page.goto(url);
 							await openComments(page, keyboard);
 							const collapse = page.getByRole("button", {
-								name: locale === "fr" ? "Réduire les commentaires" : "Collapse comments",
+								name: locale === "fr" ? "Fermer les commentaires" : "Close comments",
 								exact: true,
 							});
 							await expect(collapse).toHaveCount(1);
