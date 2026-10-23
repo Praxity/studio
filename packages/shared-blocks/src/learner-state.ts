@@ -70,6 +70,149 @@ export interface SavedAssessmentState {
 	history?: LearnerStateValue[];
 }
 
+export interface DeferredGroupObjective {
+	id: string;
+	score: number;
+	passed: boolean;
+}
+
+/** Objective values are percentages, both when submitted and when restored. */
+export function isGroupObjectiveScore(value: unknown): value is number {
+	return isFiniteNumber(value) && value >= 0 && value <= 100;
+}
+
+export function isGroupObjectiveId(value: unknown): value is string {
+	return (
+		typeof value === "string" &&
+		/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+	);
+}
+
+/** Undefined is absent; null refuses corrupt evidence without normalizing its raw fields. */
+export function readDeferredGroupObjective(
+	value: unknown,
+): DeferredGroupObjective | null | undefined {
+	if (!isRecord(value) || !isRecord(value.submitted)) return undefined;
+	const objective = value.submitted.deferredObjective;
+	if (objective === undefined) return undefined;
+	if (
+		!isRecord(objective) ||
+		!isGroupObjectiveId(objective.id) ||
+		!isGroupObjectiveScore(objective.score) ||
+		typeof objective.passed !== "boolean"
+	)
+		return null;
+	return objective as unknown as DeferredGroupObjective;
+}
+
+/** Preserve only named rejected metadata; a replacement never inherits an old capture. */
+export function prepareGroupObjectiveSave(
+	previous: unknown,
+	next: LearnerStateValue,
+	pending?: DeferredGroupObjective & { contentSignature: string },
+	clearId?: string,
+): LearnerStateValue {
+	const group = readSavedAssessmentGroupState(next);
+	// Incoming proposals refuse atomically; corrupt saved metadata is retained below.
+	if (
+		pending !== undefined &&
+		(!isRecord(pending) ||
+			!group ||
+			!isRecord(group.submitted) ||
+			!isChoiceContentSignature(pending.contentSignature) ||
+			group.submitted.contentSignature !== pending.contentSignature ||
+			readDeferredGroupObjective({ submitted: { deferredObjective: pending } }) == null)
+	)
+		return null;
+	if (!group) return next;
+	const { objectiveSequence: _sequence, ...state } = next as Record<string, LearnerStateValue>;
+	const rejected: LearnerStateValue[] = [];
+	for (const source of [previous, next]) {
+		if (!isRecord(source)) continue;
+		const entries = Array.isArray(source.rejectedObjectives) ? [...source.rejectedObjectives] : [];
+		if (Object.hasOwn(source, "objectiveSequence"))
+			entries.push({ field: "objectiveSequence", value: source.objectiveSequence });
+		if (readDeferredGroupObjective(source) === null)
+			entries.push({
+				field: "deferredObjective",
+				value: (source.submitted as Record<string, LearnerStateValue>).deferredObjective,
+			});
+		for (const entry of entries)
+			if (!rejected.some((retained) => JSON.stringify(retained) === JSON.stringify(entry)))
+				rejected.push(entry as LearnerStateValue);
+	}
+	if (rejected.length) state.rejectedObjectives = rejected;
+	if (isRecord(state.submitted)) {
+		const { deferredObjective: _objective, ...capture } = state.submitted;
+		const old = readSubmittedAssessmentGroup(previous);
+		const incoming = readDeferredGroupObjective(next);
+		const retained =
+			old?.submitted.contentSignature === capture.contentSignature ? old.objective : undefined;
+		const objective = pending ?? incoming ?? retained;
+		state.submitted =
+			objective && objective.id !== clearId
+				? {
+						...capture,
+						deferredObjective: {
+							id: objective.id,
+							score: objective.score,
+							passed: objective.passed,
+						},
+					}
+				: capture;
+	}
+	return state as LearnerStateValue;
+}
+
+export interface SavedAssessmentGroupState {
+	version: 1;
+	kind: "assessmentGroup";
+	mode: "all" | "oneOf";
+	selectedMemberId: string | null;
+	completed: boolean;
+	submitted?: LearnerStateValue;
+	rejectedObjectives?: LearnerStateValue[];
+}
+
+export function readSavedAssessmentGroupState(value: unknown): SavedAssessmentGroupState | null {
+	if (
+		!isRecord(value) ||
+		value.version !== 1 ||
+		value.kind !== "assessmentGroup" ||
+		(value.mode !== "all" && value.mode !== "oneOf") ||
+		typeof value.completed !== "boolean" ||
+		(value.mode === "all"
+			? value.selectedMemberId !== null
+			: typeof value.selectedMemberId !== "string")
+	)
+		return null;
+	return value as unknown as SavedAssessmentGroupState;
+}
+
+/** Syntax only. Material admission remains with the choice status owner. */
+export function readSubmittedAssessmentGroup(value: unknown):
+	| {
+			state: Record<string, LearnerStateValue>;
+			submitted: Record<string, LearnerStateValue>;
+			objective?: DeferredGroupObjective;
+	  }
+	| undefined {
+	const state = readSavedAssessmentGroupState(value);
+	if (
+		!state ||
+		!isRecord(state.submitted) ||
+		!isChoiceContentSignature(state.submitted.contentSignature)
+	)
+		return undefined;
+	const objective = readDeferredGroupObjective(value);
+
+	return {
+		state: value as Record<string, LearnerStateValue>,
+		submitted: state.submitted as Record<string, LearnerStateValue>,
+		...(objective == null ? {} : { objective }),
+	};
+}
+
 export interface LearnerStateInteraction {
 	id: string;
 	response: string;
