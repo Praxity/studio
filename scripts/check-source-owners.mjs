@@ -1466,6 +1466,8 @@ export function checkDisplayIdImports(path, source, program) {
 /** History must not activate before the reporting wait and learner recovery ship together. */
 export function checkDormantChoiceImports(path, source, program) {
 	const owner = "packages/shared-blocks/src/choice-learner-state.ts";
+	const recoveryConsumer = "packages/shared-blocks/src/blocks/AssessmentBlock.tsx";
+	const recoveryImports = new Set(["restoreChoiceAssessmentState", "prepareChoiceAssessmentState"]);
 	return checkOwnedImports(
 		path,
 		source,
@@ -1480,7 +1482,7 @@ export function checkDormantChoiceImports(path, source, program) {
 				"choiceGroupSignature",
 				"prepareChoiceGroupSubmission",
 				"createChoiceDependencyView",
-			].map((name) => [name, [owner]]),
+			].map((name) => [name, recoveryImports.has(name) ? [owner, recoveryConsumer] : [owner]]),
 		),
 		{
 			definition: owner,
@@ -1488,6 +1490,7 @@ export function checkDormantChoiceImports(path, source, program) {
 				/(?:^@praxity\/shared-blocks\/choice-learner-state$|(?:^|\/)choice-learner-state(?:\.[cm]?[jt]s)?$)/u,
 			barrels: [],
 			forbidModuleLoads: true,
+			allowOwnedNamedImports: true,
 			message:
 				"choice admission is dormant until reporting waits and learner recovery is available",
 		},
@@ -1558,7 +1561,19 @@ function checkOwnedImports(path, source, program, ownership, options) {
 					? node.arguments[0]
 					: undefined;
 		const barrel = star && options.barrels.includes(path);
-		if (specifier && !barrel && modulePredicates(specifier).length) fail(node, options.message);
+		const ownedNamedImport =
+			options.allowOwnedNamedImports &&
+			ts.isImportDeclaration(node) &&
+			bindings &&
+			ts.isNamedImports(bindings) &&
+			bindings.elements.length > 0 &&
+			bindings.elements.every(
+				(binding) =>
+					binding.isTypeOnly ||
+					ownership[(binding.propertyName ?? binding.name).text]?.includes(path),
+			);
+		if (specifier && !barrel && !ownedNamedImport && modulePredicates(specifier).length)
+			fail(node, options.message);
 		const imported = ts.isImportSpecifier(node) || ts.isExportSpecifier(node);
 		const member = ts.isPropertyAccessExpression(node) || ts.isBindingElement(node);
 		const nameNode =

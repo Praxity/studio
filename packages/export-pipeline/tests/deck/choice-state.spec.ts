@@ -187,12 +187,14 @@ Object.defineProperty(window, '__praxityTracker', {
 	server = createServer((request, response) => {
 		const path = new URL(request.url ?? "/", "http://localhost").pathname;
 		const bytes = files.get(path);
+		const types: Record<string, string> = {
+			js: "text/javascript",
+			css: "text/css",
+			html: "text/html; charset=utf-8",
+			woff2: "font/woff2",
+		};
 		response.writeHead(bytes ? 200 : 404, {
-			"Content-Type": path.endsWith(".js")
-				? "text/javascript"
-				: path.endsWith(".css")
-					? "text/css"
-					: "text/html; charset=utf-8",
+			"Content-Type": types[path.split(".").pop() ?? ""] ?? "application/octet-stream",
 		});
 		response.end(bytes);
 	});
@@ -216,6 +218,7 @@ for (const { locale, variant, presentation, theme, key } of cases) {
 	}, testInfo) => {
 		await page.goto(base + entries[key]);
 		await expect(page.locator("html")).toHaveAttribute("data-praxity-mode", theme);
+		await page.evaluate(() => document.fonts.ready.then(() => {}));
 		const activity = page.locator(`[data-island="assessment"][data-block-id="${questionId}"]`);
 		await expect(activity).toHaveAttribute("data-hydrated", "");
 		const controls = activity.getByRole(variant === "multiple" ? "checkbox" : "radio");
@@ -257,6 +260,10 @@ for (const { locale, variant, presentation, theme, key } of cases) {
 			await page.keyboard.press("Tab");
 		await expect(action).toBeFocused();
 		await expectFocusRing(action, 2);
+		await testInfo.attach("waiting-1280", {
+			body: await page.screenshot(),
+			contentType: "image/png",
+		});
 		const viewport = page.viewportSize();
 		for (const [width, zoom] of [
 			[320, 1],
@@ -268,6 +275,8 @@ for (const { locale, variant, presentation, theme, key } of cases) {
 			}, zoom);
 			await page.keyboard.press("Escape");
 			await action.scrollIntoViewIfNeeded();
+			await action.click({ trial: true });
+			await action.focus();
 			const layout = await action.evaluate((button) => {
 				const bounds = button.getBoundingClientRect();
 				const label = button.querySelector<HTMLElement>(".mantine-Button-label");
@@ -276,17 +285,27 @@ for (const { locale, variant, presentation, theme, key } of cases) {
 					pageWidth: document.documentElement.scrollWidth,
 					viewport: innerWidth,
 					clipped: label.scrollWidth > label.clientWidth || label.scrollHeight > label.clientHeight,
-					uncovered: button.contains(
-						document.elementFromPoint(
-							bounds.left + bounds.width / 2,
-							bounds.top + bounds.height / 2,
-						),
-					),
+					insideViewport:
+						bounds.left >= 0 &&
+						bounds.top >= 0 &&
+						bounds.right <= innerWidth &&
+						bounds.bottom <= innerHeight,
+					uncovered: [
+						[bounds.left + 2, bounds.top + bounds.height / 2],
+						[bounds.right - 2, bounds.top + bounds.height / 2],
+						[bounds.left + bounds.width / 2, bounds.top + 2],
+						[bounds.left + bounds.width / 2, bounds.bottom - 2],
+					].every(([x, y]) => button.contains(document.elementFromPoint(x, y))),
 				};
 			});
 			expect(layout.pageWidth).toBeLessThanOrEqual(layout.viewport);
 			expect(layout.clipped).toBe(false);
+			expect(layout.insideViewport).toBe(true);
 			expect(layout.uncovered).toBe(true);
+			await testInfo.attach(`reflow-${width}-${zoom}`, {
+				body: JSON.stringify(layout),
+				contentType: "application/json",
+			});
 			await testInfo.attach(`waiting-${width}-${zoom}`, {
 				body: await page.screenshot(),
 				contentType: "image/png",
@@ -299,6 +318,10 @@ for (const { locale, variant, presentation, theme, key } of cases) {
 		await action.focus();
 		await action.press("Enter");
 		await expect(controls.first()).toBeFocused();
+		await testInfo.attach("new-attempt", {
+			body: await page.screenshot(),
+			contentType: "image/png",
+		});
 		expect(await saved()).toEqual(previous[key]);
 		await expect(activity.locator('[aria-live], [role="status"], [role="alert"]')).toHaveCount(0);
 		// Opening recovery without editing preserves the original bytes on reload.
@@ -335,6 +358,24 @@ for (const { locale, variant, presentation, theme, key } of cases) {
 		).toEqual(draftIds);
 		for (const control of await controls.all()) await expect(control).toBeEnabled();
 		expect(await outcome()).toBe("waiting");
+		expect(
+			await page.evaluate(
+				(id) => window.__praxityBlockState?.getChoiceDependencyView?.()?.status(id),
+				questionId,
+			),
+		).toBe("history");
+		await testInfo.attach("draft-reload", {
+			body: await page.screenshot(),
+			contentType: "image/png",
+		});
+		await testInfo.attach("draft-reload-state", {
+			body: JSON.stringify({
+				answer: await saved(),
+				outcome: await outcome(),
+				accessibility: await activity.ariaSnapshot(),
+			}),
+			contentType: "application/json",
+		});
 		expect(
 			await page.evaluate(() =>
 				(window.__praxityRuntime as unknown as { getInteractions(): unknown[] }).getInteractions(),

@@ -59,7 +59,6 @@ import {
 	DONT_KNOW,
 } from "../assessment-choice";
 import {
-	choiceDependencyStatus,
 	prepareChoiceAssessmentState,
 	restoreChoiceAssessmentState,
 } from "../choice-learner-state";
@@ -68,7 +67,7 @@ import { RequiredIndicator } from "../components";
 import { hotspotGeometry } from "../hotspot-geometry";
 import { assessmentAttemptsLabel, assessmentPointsLabel } from "../i18n/assessment-labels";
 import { useLocale } from "../i18n/locale-context";
-import { interpolate } from "../i18n/strings";
+import { getChoiceRecoveryStrings, interpolate } from "../i18n/strings";
 import { useStrings } from "../i18n/use-strings";
 import { inlineMarkdown } from "../inline-markdown";
 import { isJournal, journalSavedDate, readJournalSavedAt } from "../journal";
@@ -1863,6 +1862,7 @@ export function PreviewAssessmentBlock({
 	const locale = useLocale();
 	const s = useStrings(locale);
 	const assessmentType = data.assessmentType ?? "choice";
+	const recoveryStrings = getChoiceRecoveryStrings(locale);
 	const response = data.response;
 	const dontKnow =
 		compiledChoiceFacts?.question.dontKnow ??
@@ -1958,7 +1958,7 @@ export function PreviewAssessmentBlock({
 		const recovering =
 			restored.current?.checked === false &&
 			restored.history.some((entry) => isRecord(entry) && entry.checked === true);
-		return view && choiceDependencyStatus(blockId, view) === "history" && !recovering
+		return view && view.status(blockId) === "history" && !recovering
 			? { ...restored, status: "review" as const, current: null }
 			: restored;
 	}, [blockId, choiceFacts]);
@@ -3033,7 +3033,7 @@ export function PreviewAssessmentBlock({
 				{(choiceReviewPending || (newChoiceAttempt && retryFocusPending)) && (
 					<Stack gap="xs">
 						<Text id={`${blockId}-choice-history-notice`} size="sm" c="dimmed">
-							{s.choiceHistoryNotice}
+							{recoveryStrings.choiceHistoryNotice}
 						</Text>
 						<Button
 							className="praxity-assessment-new-attempt"
@@ -3046,7 +3046,7 @@ export function PreviewAssessmentBlock({
 								setRetryFocusPending(true);
 							}}
 						>
-							{s.choiceNewAttempt}
+							{recoveryStrings.choiceNewAttempt}
 						</Button>
 					</Stack>
 				)}
