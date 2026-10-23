@@ -12,8 +12,10 @@ import { appendPrivateScorm12Interaction } from "../private-scorm12-policy";
 import {
 	fitScorm12SuspendData,
 	parseScorm12SuspendData,
+	preflightScorm12SuspendData,
 	SCORM12_SUSPEND_DATA_LIMIT,
 	type Scorm12SuspendData,
+	type Scorm12SuspendDataCodec,
 	serializeScorm12SuspendData,
 } from "../scorm12-suspend-data";
 import {
@@ -116,7 +118,10 @@ export class Scorm12Runtime implements SCORMRuntime {
 	private unreadableSuspendData = false;
 	private heldDrafts?: LocalStorageRuntime;
 	private heldMemory = new Map<string, LearnerStateValue>();
-	constructor(private readonly courseId?: string) {}
+	constructor(
+		private readonly courseId?: string,
+		private readonly suspendDataCodec?: Scorm12SuspendDataCodec,
+	) {}
 	getUnsavedBlockState(blockId: string) {
 		return this.heldMemory.has(blockId)
 			? this.heldMemory.get(blockId)
@@ -581,7 +586,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 		if (this.unreadableSuspendData) return { visitedPages: [], interactions: [] };
 		const raw = this.canCallLms() ? this.api?.LMSGetValue("cmi.suspend_data") : "";
 		if (raw) {
-			const data = parseScorm12SuspendData(raw);
+			const data = (this.suspendDataCodec?.parse ?? parseScorm12SuspendData)(raw);
 			if (data) return data;
 			// Keep the original LMS bytes until recovery, rather than certify an empty attempt.
 			this.unreadableSuspendData = true;
@@ -615,7 +620,13 @@ export class Scorm12Runtime implements SCORMRuntime {
 		// Filter before compression; compressed bytes must never hide private fields from policy.
 		if (globalThis.__praxityPrivateState !== false)
 			data = JSON.parse(filterPrivateSuspendData(JSON.stringify(data), this.blockStatePolicy));
-		const serialized = fitScorm12SuspendData(data);
+		const serialized = this.suspendDataCodec
+			? preflightScorm12SuspendData(
+					data,
+					this.suspendDataCodec.serialize(data),
+					this.suspendDataCodec.parse,
+				)
+			: fitScorm12SuspendData(data);
 		return this.lmsSetValue("cmi.suspend_data", serialized);
 	}
 }

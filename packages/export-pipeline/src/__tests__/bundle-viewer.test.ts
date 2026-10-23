@@ -1267,6 +1267,16 @@ describe("computeViewerSourceHash", () => {
 				expect(await readFile(path.join(outDir, file), "utf8")).not.toContain("data-practice-mode");
 		});
 
+		it("keeps the dormant compact codec out of SCORM 1.2 host bundles", async () => {
+			for (const file of [result.manifest.hosts.scorm12, result.manifest.privateHosts?.scorm12]) {
+				if (!file) throw new Error("Missing SCORM 1.2 host");
+				const code = await readFile(path.join(outDir, file), "utf8");
+				expect(code, file).not.toContain("praxity-evidence-1");
+				expect(code, file).not.toContain("Evidence depth/value");
+				expect(code, file).not.toContain("evidence exceeds the typed limit");
+			}
+		});
+
 		it("keeps dormant admission and hashing out of SCORM support", () => {
 			expect(buildInputs).not.toContain(
 				path.resolve(import.meta.dirname, "../../../shared-blocks/src/choice-learner-state.ts"),
