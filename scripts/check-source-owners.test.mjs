@@ -68,7 +68,15 @@ test("choice admission stays dormant in production consumers, including aliases 
 				"packages/shared-blocks/src/blocks/AssessmentBlock.tsx",
 				"packages/shared-blocks/src/viewer/assessment-group-runtime.ts",
 			]) {
-				assert.match(checkDormantChoiceImports(path, source).join("\n"), new RegExp(name));
+				const groupOwner =
+					name === "prepareChoiceGroupSubmission" &&
+					path !== "packages/shared-blocks/src/blocks/AssessmentBlock.tsx";
+				const statusOwner =
+					name === "choiceDependencyStatus" &&
+					path === "packages/export-pipeline/template/src/hosts/course-host.ts";
+				if (groupOwner || statusOwner)
+					assert.deepEqual(checkDormantChoiceImports(path, source), []);
+				else assert.match(checkDormantChoiceImports(path, source).join("\n"), new RegExp(name));
 			}
 			assert.deepEqual(
 				checkDormantChoiceImports(

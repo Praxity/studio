@@ -1466,6 +1466,8 @@ export function checkDisplayIdImports(path, source, program) {
 /** History must not activate before the reporting wait and learner recovery ship together. */
 export function checkDormantChoiceImports(path, source, program) {
 	const owner = "packages/shared-blocks/src/choice-learner-state.ts";
+	const host = "packages/export-pipeline/template/src/hosts/course-host.ts";
+	const group = "packages/shared-blocks/src/viewer/assessment-group-runtime.ts";
 	return checkOwnedImports(
 		path,
 		source,
@@ -1480,7 +1482,14 @@ export function checkDormantChoiceImports(path, source, program) {
 				"choiceGroupSignature",
 				"prepareChoiceGroupSubmission",
 				"createChoiceDependencyView",
-			].map((name) => [name, [owner]]),
+			].map((name) => [
+				name,
+				name === "prepareChoiceGroupSubmission"
+					? [owner, host, group]
+					: name === "choiceDependencyStatus"
+						? [owner, host]
+						: [owner],
+			]),
 		),
 		{
 			definition: owner,

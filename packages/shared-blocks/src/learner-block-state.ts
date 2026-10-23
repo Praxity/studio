@@ -1,3 +1,4 @@
+import type { ChoiceDependencyEvidence } from "./choice-learner-state";
 import type { LearnerStateValue } from "./learner-state";
 import type { SelfCheckTicket } from "./self-check-session";
 import { finishRuntimeCourse } from "./tracking";
@@ -19,6 +20,8 @@ export type LearnerBlockSaveResult =
 
 export interface LearnerBlockStateRuntime {
 	get(blockId: string): LearnerStateValue | undefined;
+	/** Optional evidence capability, installed only when reporting and recovery admit it. */
+	getChoiceDependencyView?(): ChoiceDependencyEvidence | undefined;
 	/** Read-only saved envelope revision; null cannot establish preview build evidence. */
 	getSavedBuildRevision?(blockId: string): string | null;
 	set(blockId: string, value: LearnerStateValue): void;

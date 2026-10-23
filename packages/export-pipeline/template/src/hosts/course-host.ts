@@ -1,3 +1,8 @@
+import {
+	type ChoiceDependencyEvidence,
+	choiceDependencyStatus,
+	prepareChoiceGroupSubmission,
+} from "@praxity/shared-blocks/choice-learner-state";
 import type { AdmittedChoiceStateFacts } from "@praxity/shared-blocks/choice-state-facts";
 import { isSmallPreviewDocument } from "@praxity/shared-blocks/course-preview-protocol";
 import type { LearnerBlockResponseTruncated } from "@praxity/shared-blocks/learner-block-response";
@@ -422,16 +427,56 @@ export function initializeCourseHost(
 		const hasScore = Number.isFinite(score);
 		const passed = detail.passed === true;
 		const groupId = String(detail.groupId ?? "");
+		let submissionView: ChoiceDependencyEvidence | undefined;
+		const view = hostWindow.__praxityBlockState?.getChoiceDependencyView?.();
+		if (view?.groups && Object.hasOwn(view.groups, groupId)) {
+			const group = view.groups[groupId];
+			const state = {
+				version: 1,
+				kind: "assessmentGroup",
+				mode: group.mode,
+				selectedMemberId: group.mode === "oneOf" ? detail.selectedMemberId : null,
+				completed: detail.completed === true,
+			};
+			const selectedView = {
+				...view,
+				readState: (id: string) => (id === groupId ? state : view.readState(id)),
+			};
+			const submitted = prepareChoiceGroupSubmission(groupId, selectedView);
+			if (!submitted || submitted.contentSignature !== detail.contentSignature) return;
+			// The candidate precedes its write, preserving the existing objective-first order.
+			submissionView = {
+				...selectedView,
+				status: (id) => choiceDependencyStatus(id, submissionView as ChoiceDependencyEvidence),
+				rows: [
+					...view.rows,
+					{
+						id: groupId,
+						contentSignature: submitted.contentSignature,
+						correct: typeof detail.correct === "boolean" ? detail.correct : undefined,
+						memberIds: assessmentReportingOptions(detail, page.pageTitle).memberIds,
+					},
+				],
+				readState: (id) => (id === groupId ? { ...state, submitted } : view.readState(id)),
+			};
+		}
 		// Keep the event's existing adapter and ticket; tracker writes have their own lifetime.
-		if (hasScore && runtime) tracker.trackGroupObjective(groupId, score, passed, runtime);
+		if (hasScore && runtime)
+			tracker.trackGroupObjective(groupId, score, passed, runtime, submissionView);
 		if (!owned()) return;
-		tracker.trackInteraction(
-			groupId,
-			hasScore ? `${score}%` : "",
-			typeof detail.correct === "boolean" ? detail.correct : hasScore ? passed : undefined,
-			hasScore ? score : undefined,
-			assessmentReportingOptions(detail, page.pageTitle),
-		);
+		try {
+			tracker.trackInteraction(
+				groupId,
+				hasScore ? `${score}%` : "",
+				typeof detail.correct === "boolean" ? detail.correct : hasScore ? passed : undefined,
+				hasScore ? score : undefined,
+				assessmentReportingOptions(detail, page.pageTitle),
+				submissionView,
+			);
+		} catch (error) {
+			if (submissionView && runtime?.getBlockSaveResult?.(groupId)?.status === "not-saved") return;
+			throw error;
+		}
 		if (owned() && hostWindow.__praxityRuntime === runtime) runtime?.commit();
 	});
 
