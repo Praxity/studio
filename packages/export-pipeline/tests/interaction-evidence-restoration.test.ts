@@ -87,6 +87,21 @@ function ordinaryRead(raw: string) {
 // Base controls use the actual old reader, so absence fails assertions, never imports.
 const read = xapi.readXapiInteractionEvidence ?? ordinaryRead;
 
+function scorm(format: string, raw: string) {
+	const get = (name: string) => (name === "cmi.suspend_data" ? raw : "");
+	const ok = () => "true";
+	const win = {
+		API: { LMSInitialize: ok, LMSGetValue: get, LMSSetValue: ok, LMSGetLastError: () => "0" },
+		API_1484_11: { Initialize: ok, GetValue: get, SetValue: ok, GetLastError: () => "0" },
+		parent: undefined as unknown,
+	};
+	win.parent = win;
+	vi.stubGlobal("window", win);
+	const adapter = format === "scorm12" ? new Scorm12Runtime() : new Scorm2004Runtime();
+	expect(adapter.initialize()).toBe(true);
+	return adapter;
+}
+
 describe("ordinary restoration characterization", () => {
 	it("keeps xAPI acceptance, raw fields, order and persisted writes unchanged", () => {
 		const store = storage();
@@ -122,17 +137,7 @@ describe("ordinary restoration characterization", () => {
 
 	it.each(["scorm12", "scorm2004"])("%s retains rejected raw rows in order", (format) => {
 		const raw = JSON.stringify({ visitedPages: [], interactions: [current, rejected] });
-		const get = (name: string) => (name === "cmi.suspend_data" ? raw : "");
-		const ok = () => "true";
-		const win = {
-			API: { LMSInitialize: ok, LMSGetValue: get, LMSSetValue: ok, LMSGetLastError: () => "0" },
-			API_1484_11: { Initialize: ok, GetValue: get, SetValue: ok, GetLastError: () => "0" },
-			parent: undefined as unknown,
-		};
-		win.parent = win;
-		vi.stubGlobal("window", win);
-		const adapter = format === "scorm12" ? new Scorm12Runtime() : new Scorm2004Runtime();
-		expect(adapter.initialize()).toBe(true);
+		const adapter = scorm(format, raw);
 		expect(JSON.parse(JSON.stringify(adapter.getInteractions()))).toEqual([current, rejected]);
 	});
 
@@ -148,6 +153,26 @@ describe("ordinary restoration characterization", () => {
 });
 
 describe("dormant signed restoration", () => {
+	it("rejects unsigned numeric IDs through the ordinary and dormant readers", () => {
+		const raw = JSON.stringify({ interactions: [current, { id: 0, response: "a", timestamp: 2 }] });
+		expect(ordinaryRead(raw)).toEqual([current]);
+		expect(read(raw)).toEqual([current]);
+	});
+
+	it.each(["timestamp", "score"])(
+		"rejects overflowing JSON %s without changing ordinary acceptance",
+		(field) => {
+			const latest = JSON.stringify({ ...current, [field]: "overflow" }).replace(
+				'"overflow"',
+				"1e999",
+			);
+			const raw = `{"interactions":[${JSON.stringify(current)},${latest}]}`;
+			expect(ordinaryRead(raw)).toEqual([current]);
+			expect(read(raw)?.[1]).toMatchObject(marker);
+			expect(choiceDependencyStatus("a", { ...view, rows: read(raw) ?? [] })).toBe("history");
+		},
+	);
+
 	it("admits a valid signed row through the existing status owner", () => {
 		const rows = read(JSON.stringify({ interactions: [current] }));
 		expect(rows).not.toBeNull();
@@ -177,17 +202,17 @@ describe("dormant signed restoration", () => {
 
 	it("does not invent a response, score, verdict or timestamp for a rejected row", () => {
 		const rows = read(JSON.stringify({ interactions: [current, rejected] }));
-		expect(rows?.[1]).toEqual(marker);
+		expect(rows?.[1]).toEqual({ ...rejected, ...marker });
 	});
 
 	it("retains the marker in the existing row array when saved and read from storage again", () => {
 		const store = storage();
 		store.setItem(key, JSON.stringify({ interactions: [current, rejected] }));
 		const rows = read(store.getItem(key) as string);
-		expect(rows?.[1]).toEqual(marker);
+		expect(rows?.[1]).toEqual({ ...rejected, ...marker });
 		store.setItem(key, JSON.stringify({ interactions: rows }));
 		const reloaded = read(store.getItem(key) as string);
-		expect(reloaded?.[1]).toEqual(marker);
+		expect(reloaded?.[1]).toEqual({ ...rejected, ...marker });
 		expect(choiceDependencyStatus("a", { ...view, rows: reloaded ?? [] })).toBe("history");
 	});
 
@@ -203,6 +228,46 @@ describe("dormant signed restoration", () => {
 		expect(read(JSON.stringify({ interactions: [current, { ...rejected, id }] }))).toBeNull();
 	});
 
+	it("refuses empty identity even when the signed row has otherwise valid fields", () => {
+		const latest = { ...current, id: "" };
+		expect(read(JSON.stringify({ interactions: [current, latest] }))).toBeNull();
+		expect(() => evidence.assessmentRowEvidence(latest)).toThrow(
+			"Unidentifiable interaction evidence",
+		);
+	});
+
+	it("keeps malformed raw attempt fields and raw rejected metadata through reload", () => {
+		const legacy = { id: "q", response: "x", timestamp: 1, attemptsUsed: "3", maxAttempts: -1 };
+		const invalid = {
+			...current,
+			memberIds: [null],
+			attemptsUsed: "bad",
+			maxAttempts: -1,
+			opaque: "keep",
+		};
+		const raw = JSON.stringify({ interactions: [legacy, invalid] });
+		expect(ordinaryRead(raw)).toEqual([legacy, invalid]);
+		const rows = read(raw);
+		expect(rows).toEqual([legacy, { ...invalid, ...marker }]);
+		expect(read(JSON.stringify({ interactions: rows }))).toEqual(rows);
+	});
+
+	for (const format of ["scorm12", "scorm2004", "xapi"]) {
+		it.each(["response", "timestamp"])(
+			`${format} marks malformed signed %s as history`,
+			(field) => {
+				const latest = { ...current, [field]: null };
+				const raw = JSON.stringify({ visitedPages: [], interactions: [current, latest] });
+				const adapter = format === "xapi" ? undefined : scorm(format, raw);
+				const rows = adapter
+					? (adapter.getInteractionEvidence?.() ?? adapter.getInteractions())
+					: read(raw);
+				expect(rows).toEqual([current, { ...latest, ...marker }]);
+				expect(choiceDependencyStatus("a", { ...view, rows: rows ?? [] })).toBe("history");
+			},
+		);
+	}
+
 	it("preserves unsigned acceptance/rejection and opaque accepted fields", () => {
 		const legacy = { id: "a", response: "a", timestamp: 1, opaque: "keep" };
 		const rows = read(
@@ -217,10 +282,10 @@ describe("dormant signed restoration", () => {
 
 	it("normalizes rejected identity at the shared owner for other transports", () => {
 		const normalize = evidence.assessmentRowEvidence ?? (() => null);
-		expect(normalize(rejected, false)).toEqual(marker);
-		expect(normalize({ id: "a", response: null }, false)).toBeNull();
-		expect(normalize(null, false)).toBeNull();
-		expect(() => normalize({ ...rejected, id: null }, false)).toThrow(
+		expect(normalize(rejected)).toEqual({ ...rejected, ...marker });
+		expect(normalize({ id: "a", response: null })).toBeNull();
+		expect(normalize(null)).toBeNull();
+		expect(() => normalize({ ...rejected, id: null })).toThrow(
 			"Unidentifiable interaction evidence",
 		);
 	});

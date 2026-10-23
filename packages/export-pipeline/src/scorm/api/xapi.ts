@@ -21,10 +21,11 @@ import { applyXapiPrivatePolicy } from "../private-xapi-policy";
 import { filterPrivateSuspendData } from "@praxity/shared-blocks/block-state-policy";
 import { declaredCourseActivityId, isAbsoluteIri } from "../activity-id.ts";
 import {
-	assessmentRowEvidence,
+	assessmentRowsEvidence,
 	DEVICE_DESTINATIONS,
 	type InteractionEvidence,
 	type InteractionRecord,
+	isInteractionRecord,
 	prepareRuntimeCommit,
 	type RuntimeCommitPreparation,
 	type RuntimeDestinations,
@@ -51,29 +52,12 @@ const VERBS = {
 
 type VerbKey = keyof typeof VERBS;
 
-/** Ordinary transport validation also supplies the dormant signed reader's acceptance. */
-function isXapiInteractionRecord(item: unknown): item is InteractionRecord {
-	const record = item as Record<string, unknown> | null;
-	const isNumber = (value: unknown) => typeof value === "number" && Number.isFinite(value);
-	return (
-		!!record &&
-		typeof record.id === "string" &&
-		typeof record.response === "string" &&
-		isNumber(record.timestamp) &&
-		(record.correct === undefined || typeof record.correct === "boolean") &&
-		(record.score === undefined || isNumber(record.score))
-	);
-}
-
-/** Dormant restoration entry. Production keeps its ordinary reader until activation. */
+/** Dormant reader. Handle absent storage before calling; null means refused evidence. */
 export function readXapiInteractionEvidence(raw: string): InteractionEvidence[] | null {
 	try {
 		const value = JSON.parse(raw) as { interactions?: unknown } | null;
 		if (!Array.isArray(value?.interactions)) return null;
-		return value.interactions.flatMap((item) => {
-			const row = assessmentRowEvidence(item, isXapiInteractionRecord(item));
-			return row ? [row] : [];
-		});
+		return assessmentRowsEvidence(value.interactions);
 	} catch {
 		return null;
 	}
@@ -272,7 +256,7 @@ export class XapiRuntime implements SCORMRuntime {
 			if (Array.isArray(value.visitedPages))
 				this.visitedPages = value.visitedPages.filter(isString);
 			if (Array.isArray(value.interactions))
-				this.interactions = value.interactions.filter(isXapiInteractionRecord);
+				this.interactions = value.interactions.filter(isInteractionRecord);
 			if (["incomplete", "completed", "passed", "failed"].includes(String(value.completionStatus)))
 				this.completionStatus = value.completionStatus as string;
 			if (value.successStatus === "passed" || value.successStatus === "failed")

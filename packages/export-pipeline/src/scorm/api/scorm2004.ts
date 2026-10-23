@@ -20,6 +20,7 @@ import { findWindowProperty, type WindowLike } from "../api-discovery.ts";
 import { truncateInteractionResponse } from "../interaction-response";
 import {
 	assessmentAttemptMetadata,
+	assessmentRowsEvidence,
 	type InteractionRecord,
 	interactionDescription,
 	LMS_DESTINATIONS,
@@ -385,13 +386,25 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	}
 
 	getInteractions(): InteractionRecord[] {
+		return this.readReportableInteractions().map((record) => ({
+			...record,
+			...assessmentAttemptMetadata(record),
+		}));
+	}
+
+	/** Dormant evidence read; production restoration keeps getInteractions until activation. */
+	getInteractionEvidence() {
+		return assessmentRowsEvidence(this.readReportableInteractions());
+	}
+
+	private readReportableInteractions(): InteractionRecord[] {
 		const data = this.loadSuspendDataObject();
 		const interactions = (data.interactions as InteractionRecord[]) ?? [];
 		const reportable =
 			globalThis.__praxityPrivateState !== false
 				? interactions.filter((record) => this.blockStatePolicy[record.id] !== "device")
 				: interactions;
-		return reportable.map((record) => ({ ...record, ...assessmentAttemptMetadata(record) }));
+		return reportable;
 	}
 
 	setCourseFailure(failed: boolean): void {
