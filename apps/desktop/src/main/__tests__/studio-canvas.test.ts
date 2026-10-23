@@ -179,7 +179,7 @@ it("projects hostile compiled HTML under a fresh nonce with assets on the learne
 	expect(nonces[0]).not.toBe(nonces[1]);
 });
 
-it("splices only an escaped localized mode link at the parsed body boundary", async () => {
+it("splices a styled localized mode link without changing captured bytes", async () => {
 	for (const [lang, label] of [
 		["en", "Edit text"],
 		["fr", "Modifier le texte"],
@@ -189,9 +189,23 @@ it("splices only an escaped localized mode link at the parsed body boundary", as
 			html,
 			'http://127.0.0.1:9000/launch?canvas=one&label="two"',
 		);
-		const injected = `<a href="http://127.0.0.1:9000/launch?canvas=one&amp;label=&quot;two&quot;" rel="noreferrer" style="position:relative;z-index:2147483647">${label}</a>`;
-		expect(actual).toContain(`<body data-empty>${injected}<p`);
-		expect(actual.replace(injected, "")).toBe(html);
+		const dom = new JSDOM(actual);
+		try {
+			const link = dom.window.document.querySelector(".praxity-studio-edit-link");
+			expect(link?.textContent).toBe(label);
+			expect(link?.getAttribute("href")).toBe(
+				'http://127.0.0.1:9000/launch?canvas=one&label="two"',
+			);
+			expect(link?.getAttribute("rel")).toBe("noreferrer");
+			expect(
+				actual.replace(
+					/<style data-praxity-studio-read>[\s\S]*?<\/style><div class="praxity-studio-read-tools">[\s\S]*?<\/div>/,
+					"",
+				),
+			).toBe(html);
+		} finally {
+			dom.window.close();
+		}
 	}
 	await expect(
 		addStudioReadModeLink("<!-- no body boundary -->", "http://127.0.0.1:9000/launch?canvas=1"),
@@ -205,9 +219,14 @@ it("splices the deck mode link into its flow without changing captured bytes", a
 	const dom = new JSDOM(actual);
 	try {
 		const link = dom.window.document.querySelector("a");
-		expect(link?.parentElement?.className).toBe("praxity-deck");
-		expect(link?.nextElementSibling?.tagName).toBe("HEADER");
-		expect(actual.replace(link?.outerHTML ?? "", "")).toBe(html);
+		expect(link?.parentElement?.parentElement?.className).toBe("praxity-deck");
+		expect(link?.parentElement?.nextElementSibling?.tagName).toBe("HEADER");
+		expect(
+			actual.replace(
+				/<style data-praxity-studio-read>[\s\S]*?<\/style><div class="praxity-studio-read-tools">[\s\S]*?<\/div>/,
+				"",
+			),
+		).toBe(html);
 	} finally {
 		dom.window.close();
 	}
@@ -299,7 +318,7 @@ it.each([false, true])("admits captured deck=%s scope and resources", async (dec
 	);
 	expect(
 		second.replace(
-			/<a href="[^"]+" rel="noreferrer" style="position:relative;z-index:2147483647">Edit text<\/a>/,
+			/<style data-praxity-studio-read>[\s\S]*?<\/style><div class="praxity-studio-read-tools">[\s\S]*?<\/div>/,
 			"",
 		),
 	).toBe(files["second.html"]);

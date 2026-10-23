@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { expect, test } from "@playwright/test";
+import { JSDOM } from "jsdom";
 import { runPraxityCli } from "../../src/main/cli";
 
 for (const review of [true, false]) {
@@ -47,12 +48,34 @@ for (const review of [true, false]) {
 		try {
 			expect(result.exitCode, result.stderr).toBe(0);
 			const response = await page.goto(result.stdout.trim());
-			const csp = response?.headers()["content-security-policy"] ?? "";
+			if (!response) throw new Error("Read navigation returned no response");
+			expect(response.ok()).toBe(true);
+			const csp = response.headers()["content-security-policy"] ?? "";
 			const directives = csp.split(";").map((directive) => directive.trim());
 			expect(directives.filter((directive) => directive.startsWith("script-src "))).toEqual([
 				"script-src 'self'",
 			]);
-			await expect(page.locator("#praxity-review-config")).toHaveCount(review ? 1 : 0);
+			const served = new JSDOM(await response.text());
+			try {
+				const bootstrap = served.window.document.querySelector(
+					'script[type="application/json"]#praxity-review-config',
+				);
+				expect(Boolean(bootstrap)).toBe(review);
+				if (review) {
+					const config = JSON.parse(bootstrap?.textContent ?? "null");
+					expect(config.page.pageId).toEqual(expect.any(String));
+					expect(config.page.pageIds).toContain(config.page.pageId);
+				}
+			} finally {
+				served.window.close();
+			}
+			if (review) {
+				await expect(page.locator(".prx-review-sidebar--local")).toHaveCount(1);
+				await expect(page.locator(".prx-review-status")).toHaveText(
+					"No comments in this review yet.",
+				);
+			} else await expect(page.locator(".prx-review-sidebar")).toHaveCount(0);
+			await expect(page.locator("#praxity-review-config")).toHaveCount(0);
 			const iframe = page.locator('[data-block-type="video"] iframe');
 			await expect(iframe).toBeVisible();
 			await expect(iframe).toHaveAccessibleName("Forest walk");

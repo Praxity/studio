@@ -3,6 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { chmod, mkdir, mkdtemp, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
+import { setTimeout } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { inflateSync } from "node:zlib";
@@ -165,6 +166,36 @@ export async function stageThemeFonts(target) {
 	}
 }
 
+export async function downloadWithRetry(
+	url,
+	label,
+	{ fetch = globalThis.fetch, sleep = setTimeout } = {},
+) {
+	for (let attempt = 1; ; attempt++) {
+		let status;
+		try {
+			const response = await fetch(url, { signal: AbortSignal.timeout(120_000) });
+			if (!response.ok) {
+				status = response.status;
+				throw new Error(`${label} download failed: ${status}`);
+			}
+			return Buffer.from(await response.arrayBuffer());
+		} catch (error) {
+			if (
+				attempt >= 3 ||
+				(status !== undefined && status !== 429 && (status < 500 || status >= 600))
+			)
+				throw error;
+			const code =
+				status === undefined ? (error.cause?.code ?? error.code ?? error.name) : `HTTP_${status}`;
+			console.warn(
+				`Retrying ${new URL(url).host} download: attempt ${attempt + 1}/3 after ${code}`,
+			);
+			await sleep(attempt === 1 ? 2_000 : 8_000);
+		}
+	}
+}
+
 /** Build-time only. Runtime exports never import this downloader. */
 export async function prepareTypst({
 	platform = process.platform,
@@ -192,12 +223,10 @@ export async function prepareTypst({
 		bytes = await readFile(archivePath);
 	} catch (error) {
 		if (archive || error.code !== "ENOENT") throw error;
-		const response = await fetch(
+		bytes = await downloadWithRetry(
 			`https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/${name}.${extension}`,
-			{ signal: AbortSignal.timeout(120_000) },
+			"Typst",
 		);
-		if (!response.ok) throw new Error(`Typst download failed: ${response.status}`);
-		bytes = Buffer.from(await response.arrayBuffer());
 		verifyArchive(bytes, arch, platform);
 		await mkdir(cache, { recursive: true });
 		const pending = `${archivePath}.${randomUUID()}.tmp`;
@@ -227,11 +256,10 @@ export async function prepareTypst({
 		mitexBytes = await readFile(mitexArchive ?? mitexCache);
 	} catch (error) {
 		if (mitexArchive || error.code !== "ENOENT") throw error;
-		const response = await fetch("https://packages.typst.org/preview/mitex-0.2.7.tar.gz", {
-			signal: AbortSignal.timeout(120_000),
-		});
-		if (!response.ok) throw new Error(`MiTeX download failed: ${response.status}`);
-		mitexBytes = Buffer.from(await response.arrayBuffer());
+		mitexBytes = await downloadWithRetry(
+			"https://packages.typst.org/preview/mitex-0.2.7.tar.gz",
+			"MiTeX",
+		);
 	}
 	if (digest(mitexBytes) !== MITEX_SHA256) throw new Error("MiTeX archive checksum mismatch");
 	await mkdir(cache, { recursive: true });

@@ -1,4 +1,7 @@
 import { sha256 } from "@noble/hashes/sha2.js";
+import { isChoiceContentSignature } from "./learner-state";
+
+export { isChoiceContentSignature } from "./learner-state";
 
 /** Published effective facts. Saved-answer admission remains dormant. */
 export interface ChoiceStateQuestion {
@@ -35,10 +38,6 @@ export function choiceMaterialProof(question: ChoiceStateQuestion): ChoiceMateri
 
 export function choiceProofSignature(proof: ChoiceMaterialProof): string {
 	return choiceMaterialSignature(["choice-material", 3, proof.question, [...proof.options].sort()]);
-}
-
-export function isChoiceContentSignature(value: unknown): value is string {
-	return typeof value === "string" && /^sha256:[a-f0-9]{64}$/.test(value);
 }
 
 export function isChoiceStateQuestion(value: unknown): value is ChoiceStateQuestion {

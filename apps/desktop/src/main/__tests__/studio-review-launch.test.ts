@@ -379,6 +379,20 @@ it("bootstraps captured two-lesson scope, reload, relative links and released re
 		capability,
 		endpoint: `/api/reviews/${reviewId}`,
 		locale: "fr",
+		pages: [
+			{
+				id: "page-one",
+				href: `${new URL(".", readUrl).pathname}index.html?praxity-resume=0#page-one`,
+			},
+			{
+				id: "page-two",
+				href: `${new URL(".", readUrl).pathname}second.html?praxity-resume=0#page-two`,
+			},
+			{
+				id: "page-three",
+				href: `${new URL(".", readUrl).pathname}third.html?praxity-resume=0#page-three`,
+			},
+		],
 		blockNames: reviewFr.pedagogyAudit.blockTypes,
 		textRules: {
 			controls: REVIEW_TEXT_RULES.bodyControls,
@@ -475,12 +489,25 @@ it("source revision ignores build changes and includes edits in another lesson",
 	expect(page.revision).toBe("78a9683728561ff96f76689632b5fc411fc917964738c09f2e425cc8c2b58ae8");
 });
 
-it("default-off Read bytes remain the literal captured HTML plus the existing Edit link", async () => {
+it("default-off Read preserves captured bytes and the localized editor destination", async () => {
 	const { readUrl, server } = await running(false);
-	const expectedLink = `<a href="${editorOrigin}/launch?canvas=${encodeURIComponent(new URL(readUrl).pathname.slice(7))}" rel="noreferrer" style="position:relative;z-index:2147483647">Modifier le texte</a>`;
-	expect(await (await fetch(readUrl)).text()).toBe(
-		captured.replace("<body>", `<body>${expectedLink}`),
-	);
+	const html = await (await fetch(readUrl)).text();
+	const dom = new JSDOM(html);
+	try {
+		const link = dom.window.document.querySelector(".praxity-studio-edit-link");
+		expect(link?.textContent).toBe("Modifier le texte");
+		expect(link?.getAttribute("href")).toBe(
+			`${editorOrigin}/launch?canvas=${encodeURIComponent(new URL(readUrl).pathname.slice(7))}`,
+		);
+	} finally {
+		dom.window.close();
+	}
+	expect(
+		html.replace(
+			/<style data-praxity-studio-read>[\s\S]*?<\/style><div class="praxity-studio-read-tools">[\s\S]*?<\/div>/,
+			"",
+		),
+	).toBe(captured);
 	for (const method of ["GET", "POST"]) {
 		const response = await fetch(`${server.origin}/_praxity/review/review-comments.js`, { method });
 		expect(response.status).toBe(method === "GET" ? 404 : 405);

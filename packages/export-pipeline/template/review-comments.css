@@ -29,6 +29,58 @@
 	display: none;
 }
 
+html:has(> body > .prx-review-sidebar--local.prx-review-sidebar--collapsed) {
+	--praxity-scroll-overlay-end: var(--prx-review-toolbar-space, 0px);
+}
+
+body:has(> .prx-review-sidebar--local.prx-review-sidebar--collapsed) > .praxity-layout-wrapper {
+	padding-block-end: var(--praxity-scroll-overlay-end, 0px);
+}
+
+body.praxity-layout-bottombar:has(> .prx-review-sidebar--local.prx-review-sidebar--collapsed)
+	#praxity-page-nav {
+	bottom: var(--praxity-scroll-overlay-end, 0px);
+}
+
+@media (height > 20rem) {
+	body.praxity-layout-bottombar > .prx-review-sidebar--local.prx-review-sidebar--collapsed {
+		box-sizing: border-box;
+		right: 0;
+		bottom: 0;
+		align-items: flex-end;
+		width: 100%;
+		max-width: none;
+		padding: 16px;
+		background: var(--praxity-color-background, #fff);
+		border-top: 1px solid var(--praxity-color-border, #d8dee4);
+	}
+
+	body.praxity-layout-bottombar
+		> .prx-review-sidebar--local.prx-review-sidebar--collapsed
+		> .prx-review-header {
+		max-width: 100%;
+	}
+}
+
+/* Short viewports need the review actions in flow so course content has room to scroll. */
+@media (max-height: 20rem) {
+	html:has(> body > .prx-review-sidebar--local.prx-review-sidebar--collapsed) {
+		--praxity-scroll-overlay-end: 0px;
+	}
+
+	body > .prx-review-sidebar--local.prx-review-sidebar--collapsed {
+		position: static;
+		width: fit-content;
+		margin: 16px 16px 16px auto;
+	}
+
+	body.praxity-layout-bottombar:has(> .prx-review-sidebar--local.prx-review-sidebar--collapsed)
+		#praxity-page-nav {
+		position: relative;
+		bottom: auto;
+	}
+}
+
 .prx-review-header {
 	display: flex;
 	align-items: center;
@@ -87,6 +139,98 @@
 	padding: 0;
 	margin: 0;
 	list-style: none;
+}
+
+.prx-review-page-threads,
+.prx-review-messages {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 0;
+	margin: 0;
+	list-style: none;
+}
+
+.prx-review-page-group,
+.prx-review-comment,
+.prx-review-message {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+.prx-review-page-heading,
+.prx-review-thread-heading {
+	margin: 0 0 12px;
+	font-size: 1rem;
+}
+
+.prx-review-sidebar--local .prx-review-comment-byline {
+	flex-wrap: wrap;
+}
+
+.prx-review-sidebar--local .prx-review-comment-time {
+	font-size: 0.875rem;
+}
+
+.prx-review-sidebar--local .prx-review-thread-number {
+	display: none;
+}
+
+.prx-review-filters {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 0;
+	padding: 8px;
+	margin: 0;
+	border: 1px solid var(--praxity-color-border, #8c959f);
+}
+
+.prx-review-filter {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	min-height: 44px;
+	padding-inline: 8px;
+	cursor: pointer;
+}
+
+.prx-review-filters legend,
+.prx-review-filter {
+	max-width: 100%;
+	overflow-wrap: anywhere;
+}
+
+.prx-review-reply {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-top: 12px;
+}
+
+.prx-review-reply[hidden] {
+	display: none;
+}
+
+.prx-review-reply textarea {
+	resize: vertical;
+}
+
+.prx-review-reply-hint {
+	margin: 0;
+	font-size: 0.875rem;
+}
+
+.prx-review-comment .prx-review-action {
+	max-width: calc(100% - 8px);
+	margin: 4px;
+	overflow-wrap: anywhere;
+}
+
+.prx-review-sidebar--local button:focus-visible,
+.prx-review-filter input:focus-visible {
+	outline: 3px solid var(--praxity-color-focus, #005fcc);
+	outline-offset: 2px;
 }
 
 .prx-review-comment {
@@ -335,18 +479,6 @@ html[data-praxity-mode="dark"] {
 .prx-review-comment:focus-visible {
 	outline: 3px solid var(--praxity-color-focus, #ffbf47);
 	outline-offset: 4px;
-}
-
-.prx-review-show {
-	min-width: 44px;
-	min-height: 44px;
-	padding: 4px 8px;
-	border: 1px solid var(--praxity-color-border, #d8dee4);
-	border-radius: 4px;
-	font: inherit;
-	color: inherit;
-	background: var(--praxity-color-background, #fff);
-	cursor: pointer;
 }
 
 .prx-review-thread-status,

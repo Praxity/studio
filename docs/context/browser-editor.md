@@ -37,8 +37,43 @@ The fixed learner-origin routes `/_praxity/review/review-comments.js` and
 `/_praxity/review/review-comments.css` accept only GET/HEAD with the existing
 Host, Origin and Authorization guards, no-store, nosniff and asset CSP. Other
 names and encoded aliases refuse. An asset lost after startup returns 503.
-The client reads only the typed inert JSON script, loads page threads through the
-local transport. Comment on… opens a native target picker, including selected
+The optional `pages` array maps captured page IDs to same-origin Read URLs for review navigation.
+The client reads only the typed inert JSON script, then removes the element and
+keeps the configuration in its closure. It lists the whole review, grouped by page
+with the current page first. Open, Resolved and All filters stack vertically,
+show their refreshed counts and announce the selected count. Show on page opens the owning lesson page or deck slide
+and focuses the target; missing targets retain their messages and resolution state.
+Deck arrival waits for the owning slide's activation signal, then focuses after
+Deck's own orientation. A newer jump, a conflicting ready Deck activation or
+outside pointer/key/focus input cancels the pending arrival and removes
+`review-thread`; successful arrival removes it too. Pagehide cancels the arrival.
+Deck's access notice owns refusal feedback. Its synchronous orientation focus
+does not cancel an accepted arrival.
+The header has the single Expand/Collapse comments control; the footer shows local review status.
+Edit text keeps its destination in the review header. Plain Read uses a fixed styled link with a reserved row above the shell; both retain a 44 px target and visible focus, including forced colours.
+Off-page threads show “On another page” until their page is active; they never resolve or mark the current page.
+Replies show compact localized times and generic labels derived from actor ID and
+role, never stored display names. The local CLI uses the same actor ID with role
+`author`, shown as Agent in both languages; the viewing reviewer sees You, other reviewers Local user.
+Reviewers can reply and reopen; resolving stays an author action through the CLI.
+The list refreshes every five seconds while visible and when the window gains
+focus, so CLI changes appear without reloading. Failed polls back off to 60 seconds,
+show a visible stale notice and announce once until a successful refresh. Success
+or focus resets the delay; bfcache restoration restarts polling. Recovery restores
+the empty/count status even if nothing changed. Polls skip only the current
+generation's in-flight list; a superseded request cannot block later polls, and
+create acknowledgement cannot end the timer chain. Unchanged responses leave the list DOM alone. Thread IDs and versions retain
+controls, focus, scroll and unsent text; older responses cannot replace newer data.
+Reply text and frozen request retries stay in memory for this page session and
+are lost when the document closes or reloads. New-comment drafts keep the rules below.
+Cross-document Show on page uses a native modal dialog before discarding any reply
+text or pending retry; Cancel or Escape returns focus to Show on page. A frozen
+reply is read-only, and a frozen Reopen keeps Retry available even after a refresh
+shows the committed result. Retry replays the original receipt before another action can start.
+The Read-mode CSP omits `allow-modals`, so `beforeunload` cannot show a leave prompt.
+Ordinary course links, Edit text, Back, reload and closing can discard session-only
+replies and retries without a prompt. Course links are not intercepted by the dialog.
+Comment on… opens a native target picker, including selected
 text, the whole page, top-level blocks and their nested order items, tab titles
 and accordion summaries. Labels contain authored text only. Known renderer
 projections (Button wrapper/control and tab title/active panel) resolve to one
@@ -106,8 +141,9 @@ and restarts. An edit made a moment before reloading can be lost, especially whi
 another tab is editing comments on the same page: the lock is per review and page.
 Text already saved is kept. The review page's CSP sandbox suppresses the leave
 prompt. A follow-up PR restores a crash journal. The existing
-beforeunload handler remains a best-effort warning for queued writes, volatile text
-and unconfirmed outbox records; settled durable drafts do not prompt.
+beforeunload handler attempts a warning for queued writes, volatile text and
+unconfirmed outbox records when the host permits dialogs; it cannot prompt in Read mode.
+Settled durable drafts do not request a warning.
 Storage refusal keeps the composer usable in memory for the rest of that page
 session. The warning is announced on first composer open if loading was blocked,
 or when persistence first fails while open, and describes the textarea. Buttons,
