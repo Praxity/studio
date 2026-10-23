@@ -15,11 +15,21 @@ function createMockAPI(): SCORM2004API & {
 	GetErrorString: ReturnType<typeof vi.fn>;
 	GetDiagnostic: ReturnType<typeof vi.fn>;
 } {
+	const objectives = new Map<string, string>();
 	return {
 		Initialize: vi.fn().mockReturnValue("true"),
 		Terminate: vi.fn().mockReturnValue("true"),
-		GetValue: vi.fn().mockReturnValue(""),
-		SetValue: vi.fn().mockReturnValue("true"),
+		GetValue: vi.fn((key: string) =>
+			key === "cmi.objectives._count"
+				? String(
+						[...objectives.keys()].filter((key) => /^cmi\.objectives\.\d+\.id$/.test(key)).length,
+					)
+				: (objectives.get(key) ?? ""),
+		),
+		SetValue: vi.fn((key: string, value: string) => {
+			if (key.startsWith("cmi.objectives.")) objectives.set(key, value);
+			return "true";
+		}),
 		Commit: vi.fn().mockReturnValue("true"),
 		GetLastError: vi.fn().mockReturnValue("0"),
 		GetErrorString: vi.fn().mockReturnValue(""),

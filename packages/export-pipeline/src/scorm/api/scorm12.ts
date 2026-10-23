@@ -29,6 +29,7 @@ import {
 	type TrackInteractionOptions,
 } from "../types.ts";
 import { deviceAttemptId } from "./device-attempt";
+import { writeObjectiveId } from "./objective-slots";
 import {
 	configureSessionOutcome,
 	getSessionState,
@@ -384,8 +385,6 @@ export class Scorm12Runtime implements SCORMRuntime {
 
 	// ---- objectives --------------------------------------------------------
 
-	private objectiveCount = 0;
-
 	trackObjective(id: string, score: number, passed: boolean): void {
 		this.loadSuspendPayload();
 		if (this.unreadableSuspendData) return;
@@ -393,11 +392,14 @@ export class Scorm12Runtime implements SCORMRuntime {
 			return;
 		this.ensureInitialized();
 		try {
-			const n = this.objectiveCount;
-			this.optionalSetValue(`cmi.objectives.${n}.id`, id);
+			const n = writeObjectiveId(
+				id,
+				(element) => this.lmsGetValue(element),
+				(element, value) => this.canCallLms() && this.api?.LMSSetValue(element, value) === "true",
+			);
+			if (n === undefined) return;
 			this.optionalSetValue(`cmi.objectives.${n}.score.raw`, String(score));
 			this.optionalSetValue(`cmi.objectives.${n}.status`, passed ? "passed" : "failed");
-			this.objectiveCount++;
 		} catch {
 			// Non-critical: LMS objectives support varies.
 		}

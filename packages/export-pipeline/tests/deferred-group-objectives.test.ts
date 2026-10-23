@@ -85,7 +85,10 @@ function launch(format: Format, evidence = false, waiting = false, owned = false
 		values.set(key, value);
 		return "true";
 	};
-	const get = (key: string) => values.get(key) ?? "";
+	const get = (key: string) =>
+		key === "cmi.objectives._count"
+			? String([...values.keys()].filter((key) => /^cmi\.objectives\.\d+\.id$/.test(key)).length)
+			: (values.get(key) ?? "");
 	Object.assign(win, {
 		API: {
 			LMSInitialize: () => "true",

@@ -66,7 +66,13 @@ function launch(format: Format, mode: Mode) {
 			? {
 					LMSInitialize: () => call("initialize"),
 					LMSFinish: () => call("terminate"),
-					LMSGetValue: (key: string) => values[key] ?? "",
+					LMSGetValue: (key: string) =>
+						key === "cmi.objectives._count"
+							? String(
+									Object.keys(values).filter((key) => /^cmi\.objectives\.\d+\.id$/.test(key))
+										.length,
+								)
+							: (values[key] ?? ""),
 					LMSSetValue: set,
 					LMSCommit: () => call("commit"),
 					LMSGetLastError: () => "0",
@@ -76,7 +82,13 @@ function launch(format: Format, mode: Mode) {
 			: {
 					Initialize: () => call("initialize"),
 					Terminate: () => call("terminate"),
-					GetValue: (key: string) => values[key] ?? "",
+					GetValue: (key: string) =>
+						key === "cmi.objectives._count"
+							? String(
+									Object.keys(values).filter((key) => /^cmi\.objectives\.\d+\.id$/.test(key))
+										.length,
+								)
+							: (values[key] ?? ""),
 					SetValue: set,
 					Commit: () => call("commit"),
 					GetLastError: () => "0",
