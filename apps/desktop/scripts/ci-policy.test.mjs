@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { parse } from "yaml";
@@ -10,6 +10,48 @@ import { buildVitestPlan, loadContext } from "./test-affected.mjs";
 const ci = parse(
 	readFileSync(new URL("../../../.github/workflows/ci.yml", import.meta.url), "utf8"),
 );
+
+function assertDependencyRestore(steps, root = new URL("../../../", import.meta.url)) {
+	for (const [index, step] of steps.entries()) {
+		if (/playwright install --with-deps/.test(step.run ?? "")) {
+			const restore = steps.findIndex(
+				(candidate) =>
+					candidate.uses?.startsWith("actions/cache/restore@") &&
+					candidate.with?.path === "${{ runner.temp }}/playwright-debs",
+			);
+			assert.ok(restore >= 0 && restore < index, "Restore dependency archives before Playwright");
+			assert.equal(step.if, steps[restore].if, "Restore on every install path");
+		}
+		if (step.uses?.startsWith("./")) {
+			const action = parse(readFileSync(new URL(`${step.uses}/action.yml`, root), "utf8"));
+			assertDependencyRestore(action.runs.steps, root);
+		}
+	}
+}
+
+test("every Playwright system install restores dependency archives first", () => {
+	const workflows = new URL("../../../.github/workflows/", import.meta.url);
+	for (const name of readdirSync(workflows).filter((name) => /\.ya?ml$/.test(name))) {
+		const workflow = parse(readFileSync(new URL(name, workflows), "utf8"));
+		for (const job of Object.values(workflow.jobs)) assertDependencyRestore(job.steps ?? []);
+	}
+});
+
+test("dependency policy catches missing, late and conditional restores", () => {
+	const restore = {
+		uses: "actions/cache/restore@fixture",
+		with: { path: "${{ runner.temp }}/playwright-debs" },
+	};
+	const install = { run: "pnpm exec playwright install --with-deps firefox" };
+	assert.doesNotThrow(() => assertDependencyRestore([restore, install]));
+	for (const steps of [
+		[install],
+		[install, restore],
+		[{ ...restore, if: "false" }, install],
+		[{ ...restore, with: { path: "other-cache" } }, install],
+	])
+		assert.throws(() => assertDependencyRestore(steps), /Restore/);
+});
 const condition = (expression, github, needs = {}, cancelled = false, inputs = {}) =>
 	workflowFunction(
 		"github",
