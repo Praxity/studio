@@ -331,7 +331,7 @@ for (const version of ["0.1.2", "", "next"])
 		});
 
 test("publication requests always reach hosted admission, including a missing version", () => {
-	assert.equal(workflow.jobs.admit["runs-on"], "ubicloud-standard-2");
+	assert.equal(workflow.jobs.admit["runs-on"], "ubuntu-24.04");
 	for (const pack_version of ["", "0.1.2"])
 		assert.equal(
 			workflowFunction(

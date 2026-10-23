@@ -29,6 +29,58 @@
 	display: none;
 }
 
+html:has(> body > .prx-review-sidebar--local.prx-review-sidebar--collapsed) {
+	--praxity-scroll-overlay-end: var(--prx-review-toolbar-space, 0px);
+}
+
+body:has(> .prx-review-sidebar--local.prx-review-sidebar--collapsed) > .praxity-layout-wrapper {
+	padding-block-end: var(--praxity-scroll-overlay-end, 0px);
+}
+
+body.praxity-layout-bottombar:has(> .prx-review-sidebar--local.prx-review-sidebar--collapsed)
+	#praxity-page-nav {
+	bottom: var(--praxity-scroll-overlay-end, 0px);
+}
+
+@media (height > 20rem) {
+	body.praxity-layout-bottombar > .prx-review-sidebar--local.prx-review-sidebar--collapsed {
+		box-sizing: border-box;
+		right: 0;
+		bottom: 0;
+		align-items: flex-end;
+		width: 100%;
+		max-width: none;
+		padding: 16px;
+		background: var(--praxity-color-background, #fff);
+		border-top: 1px solid var(--praxity-color-border, #d8dee4);
+	}
+
+	body.praxity-layout-bottombar
+		> .prx-review-sidebar--local.prx-review-sidebar--collapsed
+		> .prx-review-header {
+		max-width: 100%;
+	}
+}
+
+/* Short viewports need the review actions in flow so course content has room to scroll. */
+@media (max-height: 20rem) {
+	html:has(> body > .prx-review-sidebar--local.prx-review-sidebar--collapsed) {
+		--praxity-scroll-overlay-end: 0px;
+	}
+
+	body > .prx-review-sidebar--local.prx-review-sidebar--collapsed {
+		position: static;
+		width: fit-content;
+		margin: 16px 16px 16px auto;
+	}
+
+	body.praxity-layout-bottombar:has(> .prx-review-sidebar--local.prx-review-sidebar--collapsed)
+		#praxity-page-nav {
+		position: relative;
+		bottom: auto;
+	}
+}
+
 .prx-review-header {
 	display: flex;
 	align-items: center;
