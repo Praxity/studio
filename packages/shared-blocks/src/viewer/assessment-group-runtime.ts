@@ -1,4 +1,5 @@
 import { assessmentGroupRequirements } from "@praxity/content-model";
+import type { ChoiceGroupSubmission } from "../choice-learner-state";
 import { journalDownloadLabels } from "../i18n/journal-download-labels";
 import {
 	learnerRuntime,
@@ -40,6 +41,7 @@ export interface AssessmentGroupLabels {
 	downloadTxt: string;
 	downloadDocx: string;
 	completed: string;
+	assessmentStorageNotice: string;
 }
 
 const DEFAULT_LABELS: AssessmentGroupLabels = {
@@ -63,6 +65,8 @@ const DEFAULT_LABELS: AssessmentGroupLabels = {
 	assessmentGroupSaved: "Responses saved",
 	...journalDownloadLabels.en,
 	completed: "Completed",
+	assessmentStorageNotice:
+		"This answer could not be saved. Your previously saved progress is kept.",
 };
 
 const LAYOUT_CLASSES = [
@@ -156,7 +160,10 @@ function readAssessmentGroupState(group: AssessmentGroupMeta): SavedAssessmentGr
 	) {
 		return null;
 	}
-	return value as unknown as SavedAssessmentGroupState;
+	const view = window.__praxityBlockState?.getChoiceDependencyView?.();
+	return view && view.status(group.id) !== "current"
+		? ({ ...value, completed: false } as unknown as SavedAssessmentGroupState)
+		: (value as unknown as SavedAssessmentGroupState);
 }
 
 function writeAssessmentGroupState(
@@ -164,18 +171,20 @@ function writeAssessmentGroupState(
 	selectedMemberId: string | null,
 	completed: boolean,
 	current: () => boolean,
+	submitted?: ChoiceGroupSubmission,
 ) {
-	return writeLearnerBlockState(
-		group.id,
-		{
-			version: 1,
-			kind: "assessmentGroup",
-			mode: group.mode,
-			selectedMemberId,
-			completed,
-		},
-		current,
-	);
+	const next = {
+		version: 1,
+		kind: "assessmentGroup",
+		mode: group.mode,
+		selectedMemberId,
+		completed,
+	};
+	const view = window.__praxityBlockState?.getChoiceDependencyView?.();
+	const prepared = view?.prepareGroupState?.(readLearnerBlockState(group.id), next, submitted);
+	return prepared === null
+		? current()
+		: writeLearnerBlockState(group.id, prepared ?? next, current);
 }
 
 function isLayoutMode(value: unknown): value is BlockLayoutMode {
@@ -289,6 +298,7 @@ function focusRequiredMember(memberEl: HTMLElement, messageId: string) {
 	};
 }
 
+/** null distinguishes a refused save from incomplete member progress. */
 function showResults(
 	group: AssessmentGroupMeta,
 	members: Array<{ id: string; el: HTMLElement }>,
@@ -298,7 +308,7 @@ function showResults(
 	requiredIds = new Set(members.map((member) => member.id)),
 	scoreRequiredIds = requiredIds,
 	current = selfCheckEpochTicket(root.ownerDocument),
-): boolean {
+): boolean | null {
 	if (!current()) return false;
 	let totalScore = 0;
 	let gradedCount = 0;
@@ -378,36 +388,101 @@ function showResults(
 		`[data-assessment-group-submit="${CSS.escape(group.id)}"]`,
 	);
 	if (!container) return false;
-	if (!group.showResultsSummary && completed && allMembersFinished)
+	const provider = root.ownerDocument.defaultView?.__praxityBlockState;
+	const view = provider?.getChoiceDependencyView?.();
+	if (!view && !group.showResultsSummary && completed && allMembersFinished)
 		container.querySelector(".praxity-ag-submit-btn")?.remove();
 	const groupName = getGroupName(group, root, labels.untitledGroup);
 
 	if (emitCompletion) {
-		dispatchSelfCheckEvent(
-			new CustomEvent("praxity:assessment-group-complete", {
-				detail: {
-					groupId: group.id,
-					groupName:
-						root
-							.querySelector<HTMLElement>(
-								`[data-block-id="${CSS.escape(group.id)}"][data-assessment-report-title]`,
-							)
-							?.getAttribute("data-assessment-report-title") ?? groupName,
-					language: root.ownerDocument.documentElement.lang,
-					...(hasGradedMembers ? { score: percent, memberIds: scoredMemberIds } : {}),
-					passed,
-					correct: hasCheckedMembers ? passed : undefined,
-					completed,
-					memberCount: members.length,
-				},
-				bubbles: true,
-			}),
-			current,
-			root.ownerDocument,
-		);
+		const selectedMemberId = group.mode === "oneOf" ? members[0].id : null;
+		const selectedState = {
+			version: 1,
+			kind: "assessmentGroup",
+			mode: group.mode,
+			selectedMemberId,
+			completed,
+		};
+		const submission =
+			view?.groups && Object.hasOwn(view.groups, group.id)
+				? (view.prepareGroupSubmission?.(group.id, {
+						...view,
+						readState: (id) => (id === group.id ? selectedState : view.readState(id)),
+					}) ?? null)
+				: undefined;
+		const restorePicker = () =>
+			root
+				.querySelectorAll<HTMLInputElement>(
+					`.praxity-assessment-group-picker input[name="${CSS.escape(`ag-${group.id}`)}"]`,
+				)
+				.forEach((input) => {
+					input.disabled = false;
+				});
+		if (submission === null) {
+			restorePicker();
+			return false;
+		}
+		const refuse = () => {
+			const status = container.querySelector<HTMLElement>("[data-assessment-group-status]");
+			if (status) {
+				status.classList.remove("praxity-sr-only");
+				status.textContent = labels.assessmentStorageNotice;
+			}
+			restorePicker();
+			return null;
+		};
+		const staged = submission && provider?.stageSubmission;
+		const report = () => {
+			const dispatched = dispatchSelfCheckEvent(
+				new CustomEvent("praxity:assessment-group-complete", {
+					detail: {
+						groupId: group.id,
+						groupName:
+							root
+								.querySelector<HTMLElement>(
+									`[data-block-id="${CSS.escape(group.id)}"][data-assessment-report-title]`,
+								)
+								?.getAttribute("data-assessment-report-title") ?? groupName,
+						language: root.ownerDocument.documentElement.lang,
+						...(hasGradedMembers ? { score: percent, memberIds: scoredMemberIds } : {}),
+						passed,
+						correct: hasCheckedMembers ? passed : undefined,
+						completed,
+						...(submission
+							? { contentSignature: submission.contentSignature, selectedMemberId }
+							: {}),
+						memberCount: members.length,
+					},
+					bubbles: true,
+					cancelable: !!submission,
+				}),
+				current,
+				root.ownerDocument,
+			);
+			const result = submission ? provider?.getSaveResult?.(group.id) : undefined;
+			return (
+				dispatched && result?.status !== "not-saved" && (!staged || result?.status !== "pending")
+			);
+		};
+		// Keep reporting inside the stage so an unhandled report rolls its state back too.
+		const accepted = staged
+			? staged(
+					group.id,
+					() =>
+						writeAssessmentGroupState(group, selectedMemberId, completed, current, submission) &&
+						provider?.getSaveResult?.(group.id)?.status !== "not-saved" &&
+						report(),
+				)
+			: report();
+		if (submission && !accepted) return refuse();
+		if (submission && !staged)
+			writeAssessmentGroupState(group, selectedMemberId, completed, current, submission);
+		if (submission && provider?.getSaveResult?.(group.id)?.status === "not-saved") return refuse();
 	}
 
 	if (!current()) return false;
+	if (view && !group.showResultsSummary && completed && allMembersFinished)
+		container.querySelector(".praxity-ag-submit-btn")?.remove();
 	if (!group.showResultsSummary) {
 		if (completed && allMembersFinished) {
 			if (!container.querySelector("[data-assessment-group-download]")) {
@@ -918,6 +993,7 @@ function initAssessmentGroupLifetime(
 					if (!selectedId) return;
 					const member = members.find((candidate) => candidate.id === selectedId);
 					if (!member) return;
+					status.textContent = "";
 					picker.querySelectorAll<HTMLInputElement>("input").forEach((input) => {
 						input.disabled = true;
 					});
@@ -1009,20 +1085,20 @@ function initAssessmentGroupLifetime(
 					() => {
 						if (!current()) return;
 						if (!root.isConnected || members.some((member) => !root.contains(member.el))) return;
-						if (
-							showResults(
-								group,
-								members,
-								root,
-								labels,
-								true,
-								requiredIds,
-								scoreRequiredIds,
-								current,
-							)
-						) {
+						const completed = showResults(
+							group,
+							members,
+							root,
+							labels,
+							true,
+							requiredIds,
+							scoreRequiredIds,
+							current,
+						);
+						if (completed) {
 							writeAssessmentGroupState(group, null, true, current);
 						} else if (
+							completed !== null &&
 							current() &&
 							!group.isGraded &&
 							members.some(

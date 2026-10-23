@@ -6291,3 +6291,17 @@ html:not(.praxity-js) [data-card-root] .praxity-slides-item {
 [data-praxity-root] .praxity-required-marker {
 	border-radius: var(--radius-mark);
 }
+
+/* A localized action must grow with its text at narrow widths and text zoom. */
+.praxity-assessment-new-attempt {
+	height: auto;
+	min-height: var(--target-size);
+	padding-block: var(--space-2);
+	white-space: normal;
+}
+.praxity-assessment-new-attempt .mantine-Button-label {
+	height: auto;
+	line-height: var(--leading-body);
+	white-space: normal;
+	overflow-wrap: anywhere;
+}

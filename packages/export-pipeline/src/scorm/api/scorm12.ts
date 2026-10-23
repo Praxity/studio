@@ -153,6 +153,12 @@ export class Scorm12Runtime implements SCORMRuntime {
 		return false;
 	}
 
+	abortSubmission(blockId: string): void {
+		if (this.submission?.blockId !== blockId) return;
+		this.submission = undefined;
+		this.blockSaveResults.set(blockId, { status: "not-saved", code: "runtime-write-failed" });
+	}
+
 	getBlockSaveResult(blockId: string) {
 		this.loadSuspendPayload();
 		return this.unreadableSuspendData
