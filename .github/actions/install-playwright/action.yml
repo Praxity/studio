@@ -1,0 +1,65 @@
+name: Install Playwright
+description: Reuse downloaded apt archives while installing current browser dependencies
+inputs:
+  browser:
+    description: Playwright browser to install
+    required: true
+  playwright-version:
+    description: Version resolved from the frozen workspace dependency
+    required: true
+  package:
+    description: Workspace package that owns the Playwright installation
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Identify runner image
+      id: image
+      shell: bash
+      run: |
+        echo "os=${ImageOS:?}" >> "$GITHUB_OUTPUT"
+        echo "version=${ImageVersion:?}" >> "$GITHUB_OUTPUT"
+    - name: Restore Playwright dependency archives
+      id: debs
+      uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      with:
+        path: ${{ runner.temp }}/playwright-debs
+        key: playwright-debs-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.image.outputs.os }}-${{ inputs.playwright-version }}-${{ inputs.browser }}-${{ steps.image.outputs.version }}
+        restore-keys: |
+          playwright-debs-v1-${{ runner.os }}-${{ runner.arch }}-${{ steps.image.outputs.os }}-${{ inputs.playwright-version }}-${{ inputs.browser }}-
+    - name: Prepare apt archive reuse
+      shell: bash
+      run: |
+        set -euo pipefail
+        mkdir -p "$RUNNER_TEMP/playwright-debs"
+        sudo mkdir -p /var/cache/apt/archives
+        # Docker's cleanup hook otherwise deletes the downloads before we can save them.
+        sudo rm -f /etc/apt/apt.conf.d/docker-clean
+        echo 'APT::Keep-Downloaded-Packages "true";' | sudo tee /etc/apt/apt.conf.d/99playwright-cache >/dev/null
+        shopt -s nullglob
+        debs=("$RUNNER_TEMP/playwright-debs/"*.deb)
+        if ((${#debs[@]})); then sudo cp "${debs[@]}" /var/cache/apt/archives/; fi
+    - name: Install browser and system dependencies
+      shell: bash
+      env:
+        PLAYWRIGHT_PACKAGE: ${{ inputs.package }}
+        PLAYWRIGHT_BROWSER: ${{ inputs.browser }}
+      run: pnpm --filter "$PLAYWRIGHT_PACKAGE" exec playwright install --with-deps "$PLAYWRIGHT_BROWSER"
+    - name: Collect current dependency archives
+      shell: bash
+      run: |
+        set -euo pipefail
+        # Drop packages no longer in the refreshed indexes, including older-image restores.
+        sudo apt-get autoclean
+        shopt -s nullglob
+        old=("$RUNNER_TEMP/playwright-debs/"*.deb)
+        if ((${#old[@]})); then rm "${old[@]}"; fi
+        debs=(/var/cache/apt/archives/*.deb)
+        if ((${#debs[@]})); then cp "${debs[@]}" "$RUNNER_TEMP/playwright-debs/"; fi
+        echo "Playwright dependency archive bytes: $(du -sb "$RUNNER_TEMP/playwright-debs" | cut -f1)" | tee -a "$GITHUB_STEP_SUMMARY"
+    - name: Save Playwright dependency archives
+      if: steps.debs.outputs.cache-hit != 'true'
+      uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      with:
+        path: ${{ runner.temp }}/playwright-debs
+        key: ${{ steps.debs.outputs.cache-primary-key }}
