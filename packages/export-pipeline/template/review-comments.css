@@ -29,11 +29,16 @@
 	display: none;
 }
 
-body:has(> .prx-review-sidebar--local) > .praxity-layout-wrapper {
+html:has(> body > .prx-review-sidebar--local.prx-review-sidebar--collapsed) {
+	scroll-padding-block-end: var(--prx-review-toolbar-space, 0px);
+}
+
+body:has(> .prx-review-sidebar--local.prx-review-sidebar--collapsed) > .praxity-layout-wrapper {
 	padding-block-end: var(--prx-review-toolbar-space, 0px);
 }
 
-body:has(> .prx-review-sidebar--local) #praxity-page-nav {
+body.praxity-layout-bottombar:has(> .prx-review-sidebar--local.prx-review-sidebar--collapsed)
+	#praxity-page-nav {
 	bottom: var(--prx-review-toolbar-space, 0px);
 }
 

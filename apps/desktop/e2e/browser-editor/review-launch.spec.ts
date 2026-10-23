@@ -93,3 +93,107 @@ for (const width of [1280, 390]) {
 		}
 	});
 }
+
+function centreIsVisible(element: HTMLElement) {
+	const box = element.getBoundingClientRect();
+	return element.contains(
+		document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2),
+	);
+}
+
+for (const layout of ["sidebar", "bottomBar"]) {
+	test.describe(`review toolbar in ${layout}`, () => {
+		let root: string;
+		let result: Awaited<ReturnType<typeof runPraxityCli>>;
+		test.beforeAll(async () => {
+			root = await mkdtemp(join(process.env.PRAXITY_TEST_ARTIFACTS ?? tmpdir(), "review-toolbar-"));
+			await writeFile(
+				join(root, "course.yaml"),
+				`title: Review toolbar\nlessons: [one.prax]\ndesign:\n  navArchetype: ${layout}\n`,
+			);
+			const paragraphs = Array.from(
+				{ length: 24 },
+				(_, index) =>
+					`Paragraph ${index + 1} of the course body, with enough words to wrap on a narrow screen.`,
+			).join("\n\n");
+			await writeFile(
+				join(root, "one.prax"),
+				`# First page\n\n${paragraphs}\n\nLast line of course content.\n\n# Second page\n\nSecond body.\n`,
+			);
+			result = await runPraxityCli(["studio", root, "--review", "--no-open"], {
+				appVersion: "0.3.0",
+				editorAssetsDir: process.env.PRAXITY_BROWSER_EDITOR_ASSETS,
+				exportAssetsDir: resolve(import.meta.dirname, "../../resources/export-assets"),
+			});
+			expect(result.exitCode, result.stderr).toBe(0);
+		});
+		test.afterAll(async () => {
+			await result?.studioServer?.close();
+			if (root) await rm(root, { recursive: true });
+		});
+
+		for (const viewport of [
+			{ width: 1280, height: 900 },
+			{ width: 390, height: 844 },
+			{ width: 320, height: 256 },
+		]) {
+			test(`keeps content and Next clear at ${viewport.width}px`, async ({ page }, testInfo) => {
+				await page.setViewportSize(viewport);
+				await page.emulateMedia({ reducedMotion: "reduce" });
+				await page.goto(result.stdout.trim());
+				await expect(page.locator(".prx-review-sidebar")).toHaveClass(/--collapsed/);
+				await expect
+					.poll(() =>
+						page.evaluate(() =>
+							Number.parseFloat(getComputedStyle(document.documentElement).scrollPaddingBlockEnd),
+						),
+					)
+					.toBeGreaterThan(0);
+				const nav = page.locator("#praxity-page-nav");
+				const next = page.locator("a.praxity-nav-next");
+				const last = page.getByText("Last line of course content.", { exact: true });
+				expect(await nav.evaluate((element) => getComputedStyle(element).position)).toBe(
+					layout === "bottomBar" ? "sticky" : "relative",
+				);
+				if (layout === "sidebar")
+					expect(await nav.evaluate((element) => getComputedStyle(element).bottom)).toBe("auto");
+				const output = process.env.PRAXITY_TOOLBAR_SCREENSHOTS ?? testInfo.outputDir;
+				await mkdir(output, { recursive: true });
+				for (const position of ["mid", "max"]) {
+					await page.evaluate((position) => {
+						const root = document.scrollingElement;
+						if (!root) throw new Error("Missing scroll container");
+						const max = root.scrollHeight - root.clientHeight;
+						window.scrollTo({ top: position === "mid" ? max / 2 : max, behavior: "instant" });
+					}, position);
+					if (layout === "bottomBar" || position === "max")
+						await expect.poll(() => next.evaluate(centreIsVisible)).toBe(true);
+					if (position === "max") {
+						await expect.poll(() => last.evaluate(centreIsVisible)).toBe(true);
+						const navTop = await nav.evaluate((element) => element.getBoundingClientRect().top);
+						const lastBottom = await last.evaluate(
+							(element) => element.getBoundingClientRect().bottom,
+						);
+						expect(navTop).toBeGreaterThanOrEqual(lastBottom);
+					}
+					await page.screenshot({
+						path: join(output, `${layout}-${viewport.width}-${position}.png`),
+					});
+				}
+				await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+				await next.focus();
+				await page.keyboard.press("Shift+Tab");
+				await page.keyboard.press("Tab");
+				await expect(next).toBeFocused();
+				await expect.poll(() => next.evaluate(centreIsVisible)).toBe(true);
+				const nextBox = await next.boundingBox();
+				const toolbarBox = await page.locator(".prx-review-header").boundingBox();
+				if (!nextBox || !toolbarBox) throw new Error("Missing navigation or toolbar bounds");
+				expect(nextBox.y).toBeGreaterThanOrEqual(0);
+				expect(nextBox.y + nextBox.height).toBeLessThanOrEqual(toolbarBox.y);
+				await next.click();
+				await expect(page.getByText("Second body.", { exact: true })).toBeVisible();
+			});
+		}
+	});
+}

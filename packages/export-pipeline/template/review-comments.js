@@ -1449,7 +1449,7 @@
 				layoutObserver = new ResizeObserver((entries = []) => {
 					if (anchors && !isDeck) {
 						// Reserve the floating toolbar's wrapped height above the page navigation.
-						document.body.style.setProperty(
+						document.documentElement.style.setProperty(
 							"--prx-review-toolbar-space",
 							`${header.getBoundingClientRect().height + 32}px`,
 						);
