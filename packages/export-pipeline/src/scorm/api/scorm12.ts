@@ -18,6 +18,8 @@ import {
 } from "../scorm12-suspend-data";
 import {
 	assessmentAttemptMetadata,
+	assessmentRowsEvidence,
+	type InteractionEvidence,
 	type InteractionRecord,
 	LMS_DESTINATIONS,
 	prepareRuntimeCommit,
@@ -33,6 +35,12 @@ import {
 	writeSessionState,
 } from "./session.ts";
 import { sessionTime } from "./session-time.ts";
+
+/** Dormant export so ordinary adapter instances do not retain evidence code in bundles. */
+export function readScorm12InteractionEvidence(raw: string): InteractionEvidence[] | null {
+	const data = parseScorm12SuspendData(raw);
+	return data ? assessmentRowsEvidence(data.interactions) : null;
+}
 
 // See docs/context/scorm-xapi-standards.md for spec references
 

@@ -149,6 +149,56 @@ export function assessmentEvidenceMetadata(input?: unknown): AssessmentAttemptMe
 	};
 }
 
+/** Keep rejected raw fields beside their marker, without inventing an answer or result. */
+export interface RejectedInteractionEvidence {
+	id: string;
+	choiceEvidenceInvalid: true;
+	[key: string]: unknown;
+}
+
+export type InteractionEvidence = InteractionRecord | RejectedInteractionEvidence;
+
+/** Row shape shared by ordinary xAPI acceptance and dormant evidence admission. */
+export function isInteractionRecord(input: unknown): input is InteractionRecord {
+	const record = input as Record<string, unknown> | null;
+	const isNumber = (value: unknown) => typeof value === "number" && Number.isFinite(value);
+	return (
+		!!record &&
+		typeof record.id === "string" &&
+		typeof record.response === "string" &&
+		isNumber(record.timestamp) &&
+		(record.correct === undefined || typeof record.correct === "boolean") &&
+		(record.score === undefined || isNumber(record.score))
+	);
+}
+
+/** Dormant admission: malformed signed evidence is history in every transport. */
+export function assessmentRowEvidence(input: unknown): InteractionEvidence | null {
+	if (!input || typeof input !== "object") return null;
+	const record = input as Record<string, unknown>;
+	const metadata = assessmentEvidenceMetadata(record);
+	const signed = record.contentSignature !== undefined || metadata.choiceEvidenceInvalid === true;
+	// Without identity, no dependency can be marked invalid. Refuse the whole evidence read.
+	if (signed && !isNonemptyString(record.id))
+		throw new Error("Unidentifiable interaction evidence");
+	if (!isInteractionRecord(record) || metadata.choiceEvidenceInvalid === true) {
+		return signed ? { ...record, id: record.id as string, choiceEvidenceInvalid: true } : null;
+	}
+	return record as unknown as InteractionRecord;
+}
+
+/** A missing identity refuses the complete read, never exposing an earlier credited row. */
+export function assessmentRowsEvidence(rows: readonly unknown[]): InteractionEvidence[] | null {
+	try {
+		return rows.flatMap((input) => {
+			const row = assessmentRowEvidence(input);
+			return row ? [row] : [];
+		});
+	} catch {
+		return null;
+	}
+}
+
 export interface TrackInteractionOptions extends AssessmentAttemptMetadata {
 	/** Report adapters own their field limits; learner UI may disclose a cut answer. */
 	onResponseTruncated?: (responseLimit: number) => void;

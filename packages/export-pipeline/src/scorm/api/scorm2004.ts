@@ -20,6 +20,8 @@ import { findWindowProperty, type WindowLike } from "../api-discovery.ts";
 import { truncateInteractionResponse } from "../interaction-response";
 import {
 	assessmentAttemptMetadata,
+	assessmentRowsEvidence,
+	type InteractionEvidence,
 	type InteractionRecord,
 	interactionDescription,
 	LMS_DESTINATIONS,
@@ -36,6 +38,17 @@ import {
 	writeSessionState,
 } from "./session.ts";
 import { sessionTime } from "./session-time.ts";
+
+/** Dormant export so ordinary adapter instances do not retain evidence code in bundles. */
+export function readScorm2004InteractionEvidence(raw: string): InteractionEvidence[] | null {
+	try {
+		const value = JSON.parse(raw) as { interactions?: unknown } | null;
+		if (!Array.isArray(value?.interactions)) return null;
+		return assessmentRowsEvidence(value.interactions);
+	} catch {
+		return null;
+	}
+}
 
 export const SCORM2004_RESPONSE_LIMIT = 3900;
 
