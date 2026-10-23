@@ -138,6 +138,14 @@ export function initializeCourseHost(
 		privacySettled = !hostView.__praxityPrivacyReady;
 	let announcing: ReturnType<NonNullable<typeof owner>["lifetime"]>;
 	let trackerLifetime: typeof announcing;
+	const bindCommitPreparation = (
+		runtime: SCORMRuntime,
+		tracker: CourseTracker,
+		current: () => boolean,
+	) =>
+		runtime.setCommitPreparation?.(() => {
+			if (current() && hostWindow.__praxityRuntime === runtime) tracker.prepareCommit();
+		});
 	const createTracker = (runtime: SCORMRuntime, current: () => boolean) =>
 		new CourseTracker(withLearnerStateAuthority(runtime, current), {
 			totalPages: page.totalPages,
@@ -167,12 +175,11 @@ export function initializeCourseHost(
 		const provider = hostWindow.__praxityBlockState;
 		const runtime = hostWindow.__praxityRuntime;
 		if (provider && runtime && hostWindow.__praxityTracker && trackerLifetime !== lifetime) {
-			hostWindow.__praxityTracker = createTracker(
-				runtime,
-				() =>
-					(!authority || lifetime?.current() === true) &&
-					hostWindow.__praxityBlockState === provider,
-			);
+			const current = () =>
+				(!authority || lifetime?.current() === true) && hostWindow.__praxityBlockState === provider;
+			const tracker = createTracker(runtime, current);
+			hostWindow.__praxityTracker = tracker;
+			bindCommitPreparation(runtime, tracker, current);
 			trackerLifetime = lifetime;
 		}
 		if (provider && page.deferVisits && page.pageRole === "content" && !page.deck) {
@@ -246,6 +253,8 @@ export function initializeCourseHost(
 				hostWindow.__praxityBlockState === provider;
 			preparing = false;
 			if (!provider || !owned()) return;
+			const tracker = createTracker(runtime, owned);
+			bindCommitPreparation(runtime, tracker, owned);
 			const scormSession = adapter.installLifecycle?.(runtime, page, environment) === true;
 			if (!scormSession) {
 				hostView.addEventListener("beforeunload", () => hostWindow.__praxityRuntime?.commit());
@@ -254,7 +263,6 @@ export function initializeCourseHost(
 
 			// Utility documents use the launch's exit policy without evaluating their own course rule.
 			if (!(scormSession && page.pageRole !== "content")) {
-				const tracker = createTracker(runtime, owned);
 				trackerLifetime = admittedLifetime;
 				if (!owned()) return;
 				hostWindow.__praxityTracker = tracker;

@@ -23,6 +23,7 @@ import {
 	type InteractionRecord,
 	interactionDescription,
 	LMS_DESTINATIONS,
+	prepareRuntimeCommit,
 	type SCORMRuntime,
 	type TrackInteractionOptions,
 } from "../types.ts";
@@ -169,6 +170,7 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		if (this.session?.closed) return this.session.terminationSucceeded;
 		if (!this.initialized || !this.canCallLms() || !this.session) return false;
 		const session = this.session;
+		if (!prepareRuntimeCommit(session)) return false;
 		// Block every retained adapter before the first final-state LMS callback.
 		session.terminationInProgress = true;
 		try {
@@ -203,6 +205,10 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		return this.initialized && this.setLmsValue(element, value);
 	}
 
+	setCommitPreparation(prepare: () => void): void {
+		if (this.session) this.session.prepareCommit = prepare;
+	}
+
 	commit(): boolean {
 		return this.initialized && this.commitToLms();
 	}
@@ -210,6 +216,7 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	private commitToLms(terminating = false): boolean {
 		if (
 			!this.canCallLms(terminating) ||
+			(!terminating && !prepareRuntimeCommit(this.session as ScormSessionState)) ||
 			!this.flushCompletion(terminating) ||
 			!this.prepareExit(terminating) ||
 			!this.canCallLms(terminating)

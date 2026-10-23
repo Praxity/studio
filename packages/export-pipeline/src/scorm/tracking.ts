@@ -162,6 +162,11 @@ export class CourseTracker {
 		writeCourseOutcome(this.runtime, this.outcome());
 	}
 
+	/** A decided commit preserves the adapter's existing write log. */
+	prepareCommit(): void {
+		writeCourseOutcome(this.runtime, this.outcome("prepareCommit"));
+	}
+
 	// ---- private completion strategies ------------------------------------
 
 	private pageRuleMet(): boolean {
@@ -231,10 +236,12 @@ export class CourseTracker {
 			| "check"
 			| "score"
 			| "display"
+			| "prepareCommit"
 			| "end"
 			| "finish"
 			| NonNullable<CourseOutcome["objective"]> = "check",
 	): TrackerOutcome {
+		if (intent === "prepareCommit") return { kind: "decided" };
 		if (typeof intent === "object") return { kind: "decided", objective: intent };
 		if (intent === "finish") return { kind: "decided", finish: "terminate" };
 		if (intent === "end")

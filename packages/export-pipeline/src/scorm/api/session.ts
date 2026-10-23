@@ -1,7 +1,8 @@
 import { findWindowProperty, type WindowLike } from "../api-discovery";
+import type { RuntimeCommitPreparation } from "../types";
 
 /** Shared by every runtime in one LMS launch, including cached older documents. */
-export interface ScormSessionState {
+export interface ScormSessionState extends RuntimeCommitPreparation {
 	initialized: boolean;
 	closed: boolean;
 	terminationSucceeded: boolean;
@@ -140,6 +141,7 @@ export function resetSessionState(api: object | null, win: WindowLike): void {
 			if (state && typeof state === "object" && !state.closed) {
 				state.initialized = false;
 				state.attemptId = undefined;
+				state.prepareCommit = undefined;
 			} else store?.delete(api);
 		} catch {
 			// Restricted carriers are independent; reset every accessible one.
