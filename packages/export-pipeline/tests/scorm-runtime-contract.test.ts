@@ -52,7 +52,9 @@ class StrictScorm12Api {
 			return "";
 		}
 		this.ok();
-		return this.data.get(element) ?? "";
+		return element === "cmi.objectives._count"
+			? String([...this.data.keys()].filter((key) => /^cmi\.objectives\.\d+\.id$/.test(key)).length)
+			: (this.data.get(element) ?? "");
 	}
 
 	LMSSetValue(element: string, value: string): string {
@@ -177,7 +179,9 @@ class StrictScorm2004Api implements SCORM2004API {
 			return "";
 		}
 		this.ok();
-		return this.data.get(element) ?? "";
+		return element === "cmi.objectives._count"
+			? String([...this.data.keys()].filter((key) => /^cmi\.objectives\.\d+\.id$/.test(key)).length)
+			: (this.data.get(element) ?? "");
 	}
 
 	SetValue(element: string, value: string): string {
@@ -1034,7 +1038,7 @@ describe("SCORM runtime strict LMS contracts", () => {
 						.querySelector('[data-block-id="optional"] [data-assessment-display]')
 						?.setAttribute("data-assessment-answered", "true");
 					dom.window.document.querySelector<HTMLButtonElement>(".praxity-ag-submit-btn")?.click();
-					await vi.waitFor(() => expect(api.data.get("cmi.objectives.1.score.raw")).toBe("50"));
+					await vi.waitFor(() => expect(api.data.get("cmi.objectives.0.score.raw")).toBe("50"));
 					expect(api.data.get("cmi.core.score.raw")).toBe("50");
 				}
 				if (optionalRequired && !optionalAnswered)

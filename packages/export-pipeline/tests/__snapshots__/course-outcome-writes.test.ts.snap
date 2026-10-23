@@ -7050,17 +7050,17 @@ exports[`scorm12 LMS write log on unchanged content > groups-all: answer 1`] = `
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "50"
     ],
     [
       "set",
-      "cmi.objectives.1.status",
+      "cmi.objectives.0.status",
       "failed"
     ],
     [
@@ -7435,17 +7435,17 @@ exports[`scorm12 LMS write log on unchanged content > groups-all: answer 1`] = `
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "100"
     ],
     [
       "set",
-      "cmi.objectives.1.status",
+      "cmi.objectives.0.status",
       "passed"
     ],
     [
@@ -7561,17 +7561,17 @@ exports[`scorm12 LMS write log on unchanged content > groups-all: answer 1`] = `
     ],
     [
       "set",
-      "cmi.objectives.2.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.2.score.raw",
+      "cmi.objectives.0.score.raw",
       "50"
     ],
     [
       "set",
-      "cmi.objectives.2.status",
+      "cmi.objectives.0.status",
       "failed"
     ],
     [
@@ -7974,17 +7974,17 @@ exports[`scorm12 LMS write log on unchanged content > groups-all: answer 1`] = `
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "100"
     ],
     [
       "set",
-      "cmi.objectives.1.status",
+      "cmi.objectives.0.status",
       "passed"
     ],
     [
@@ -8100,17 +8100,17 @@ exports[`scorm12 LMS write log on unchanged content > groups-all: answer 1`] = `
     ],
     [
       "set",
-      "cmi.objectives.2.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.2.score.raw",
+      "cmi.objectives.0.score.raw",
       "50"
     ],
     [
       "set",
-      "cmi.objectives.2.status",
+      "cmi.objectives.0.status",
       "failed"
     ],
     [
@@ -8495,17 +8495,17 @@ exports[`scorm12 LMS write log on unchanged content > groups-all: answer 1`] = `
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "100"
     ],
     [
       "set",
-      "cmi.objectives.1.status",
+      "cmi.objectives.0.status",
       "passed"
     ],
     [
@@ -8621,17 +8621,17 @@ exports[`scorm12 LMS write log on unchanged content > groups-all: answer 1`] = `
     ],
     [
       "set",
-      "cmi.objectives.2.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.2.score.raw",
+      "cmi.objectives.0.score.raw",
       "50"
     ],
     [
       "set",
-      "cmi.objectives.2.status",
+      "cmi.objectives.0.status",
       "failed"
     ],
     [
@@ -9016,17 +9016,17 @@ exports[`scorm12 LMS write log on unchanged content > groups-all: answer 1`] = `
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "100"
     ],
     [
       "set",
-      "cmi.objectives.1.status",
+      "cmi.objectives.0.status",
       "passed"
     ],
     [
@@ -9142,17 +9142,17 @@ exports[`scorm12 LMS write log on unchanged content > groups-all: answer 1`] = `
     ],
     [
       "set",
-      "cmi.objectives.2.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.2.score.raw",
+      "cmi.objectives.0.score.raw",
       "50"
     ],
     [
       "set",
-      "cmi.objectives.2.status",
+      "cmi.objectives.0.status",
       "failed"
     ],
     [
@@ -9556,17 +9556,17 @@ exports[`scorm12 LMS write log on unchanged content > groups-all: group objectiv
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "80"
     ],
     [
       "set",
-      "cmi.objectives.1.status",
+      "cmi.objectives.0.status",
       "passed"
     ],
     [
@@ -9883,17 +9883,17 @@ exports[`scorm12 LMS write log on unchanged content > groups-all: group objectiv
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "80"
     ],
     [
       "set",
-      "cmi.objectives.1.status",
+      "cmi.objectives.0.status",
       "passed"
     ],
     [
@@ -10172,17 +10172,17 @@ exports[`scorm12 LMS write log on unchanged content > groups-all: group objectiv
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "80"
     ],
     [
       "set",
-      "cmi.objectives.1.status",
+      "cmi.objectives.0.status",
       "passed"
     ],
     [
@@ -10461,17 +10461,17 @@ exports[`scorm12 LMS write log on unchanged content > groups-all: group objectiv
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "80"
     ],
     [
       "set",
-      "cmi.objectives.1.status",
+      "cmi.objectives.0.status",
       "passed"
     ],
     [
@@ -13835,17 +13835,17 @@ exports[`scorm12 LMS write log on unchanged content > groups-oneOf: answer 1`] =
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "50"
     ],
     [
       "set",
-      "cmi.objectives.1.status",
+      "cmi.objectives.0.status",
       "failed"
     ],
     [
@@ -14220,17 +14220,17 @@ exports[`scorm12 LMS write log on unchanged content > groups-oneOf: answer 1`] =
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "100"
     ],
     [
       "set",
-      "cmi.objectives.1.status",
+      "cmi.objectives.0.status",
       "passed"
     ],
     [
@@ -14346,17 +14346,17 @@ exports[`scorm12 LMS write log on unchanged content > groups-oneOf: answer 1`] =
     ],
     [
       "set",
-      "cmi.objectives.2.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.2.score.raw",
+      "cmi.objectives.0.score.raw",
       "50"
     ],
     [
       "set",
-      "cmi.objectives.2.status",
+      "cmi.objectives.0.status",
       "failed"
     ],
     [
@@ -14759,17 +14759,17 @@ exports[`scorm12 LMS write log on unchanged content > groups-oneOf: answer 1`] =
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "100"
     ],
     [
       "set",
-      "cmi.objectives.1.status",
+      "cmi.objectives.0.status",
       "passed"
     ],
     [
@@ -14885,17 +14885,17 @@ exports[`scorm12 LMS write log on unchanged content > groups-oneOf: answer 1`] =
     ],
     [
       "set",
-      "cmi.objectives.2.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.2.score.raw",
+      "cmi.objectives.0.score.raw",
       "50"
     ],
     [
       "set",
-      "cmi.objectives.2.status",
+      "cmi.objectives.0.status",
       "failed"
     ],
     [
@@ -15280,17 +15280,17 @@ exports[`scorm12 LMS write log on unchanged content > groups-oneOf: answer 1`] =
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "100"
     ],
     [
       "set",
-      "cmi.objectives.1.status",
+      "cmi.objectives.0.status",
       "passed"
     ],
     [
@@ -15406,17 +15406,17 @@ exports[`scorm12 LMS write log on unchanged content > groups-oneOf: answer 1`] =
     ],
     [
       "set",
-      "cmi.objectives.2.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.2.score.raw",
+      "cmi.objectives.0.score.raw",
       "50"
     ],
     [
       "set",
-      "cmi.objectives.2.status",
+      "cmi.objectives.0.status",
       "failed"
     ],
     [
@@ -15801,17 +15801,17 @@ exports[`scorm12 LMS write log on unchanged content > groups-oneOf: answer 1`] =
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "100"
     ],
     [
       "set",
-      "cmi.objectives.1.status",
+      "cmi.objectives.0.status",
       "passed"
     ],
     [
@@ -15927,17 +15927,17 @@ exports[`scorm12 LMS write log on unchanged content > groups-oneOf: answer 1`] =
     ],
     [
       "set",
-      "cmi.objectives.2.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.2.score.raw",
+      "cmi.objectives.0.score.raw",
       "50"
     ],
     [
       "set",
-      "cmi.objectives.2.status",
+      "cmi.objectives.0.status",
       "failed"
     ],
     [
@@ -16341,17 +16341,17 @@ exports[`scorm12 LMS write log on unchanged content > groups-oneOf: group object
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "80"
     ],
     [
       "set",
-      "cmi.objectives.1.status",
+      "cmi.objectives.0.status",
       "passed"
     ],
     [
@@ -16668,17 +16668,17 @@ exports[`scorm12 LMS write log on unchanged content > groups-oneOf: group object
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "80"
     ],
     [
       "set",
-      "cmi.objectives.1.status",
+      "cmi.objectives.0.status",
       "passed"
     ],
     [
@@ -16957,17 +16957,17 @@ exports[`scorm12 LMS write log on unchanged content > groups-oneOf: group object
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "80"
     ],
     [
       "set",
-      "cmi.objectives.1.status",
+      "cmi.objectives.0.status",
       "passed"
     ],
     [
@@ -17246,17 +17246,17 @@ exports[`scorm12 LMS write log on unchanged content > groups-oneOf: group object
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "80"
     ],
     [
       "set",
-      "cmi.objectives.1.status",
+      "cmi.objectives.0.status",
       "passed"
     ],
     [
@@ -46881,17 +46881,17 @@ exports[`scorm2004 LMS write log on unchanged content > groups-all: answer 1`] =
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "50"
     ],
     [
       "set",
-      "cmi.objectives.1.success_status",
+      "cmi.objectives.0.success_status",
       "failed"
     ],
     [
@@ -47376,17 +47376,17 @@ exports[`scorm2004 LMS write log on unchanged content > groups-all: answer 1`] =
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "100"
     ],
     [
       "set",
-      "cmi.objectives.1.success_status",
+      "cmi.objectives.0.success_status",
       "passed"
     ],
     [
@@ -47537,17 +47537,17 @@ exports[`scorm2004 LMS write log on unchanged content > groups-all: answer 1`] =
     ],
     [
       "set",
-      "cmi.objectives.2.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.2.score.raw",
+      "cmi.objectives.0.score.raw",
       "50"
     ],
     [
       "set",
-      "cmi.objectives.2.success_status",
+      "cmi.objectives.0.success_status",
       "failed"
     ],
     [
@@ -48070,17 +48070,17 @@ exports[`scorm2004 LMS write log on unchanged content > groups-all: answer 1`] =
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "100"
     ],
     [
       "set",
-      "cmi.objectives.1.success_status",
+      "cmi.objectives.0.success_status",
       "passed"
     ],
     [
@@ -48231,17 +48231,17 @@ exports[`scorm2004 LMS write log on unchanged content > groups-all: answer 1`] =
     ],
     [
       "set",
-      "cmi.objectives.2.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.2.score.raw",
+      "cmi.objectives.0.score.raw",
       "50"
     ],
     [
       "set",
-      "cmi.objectives.2.success_status",
+      "cmi.objectives.0.success_status",
       "failed"
     ],
     [
@@ -48726,17 +48726,17 @@ exports[`scorm2004 LMS write log on unchanged content > groups-all: answer 1`] =
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "100"
     ],
     [
       "set",
-      "cmi.objectives.1.success_status",
+      "cmi.objectives.0.success_status",
       "passed"
     ],
     [
@@ -48887,17 +48887,17 @@ exports[`scorm2004 LMS write log on unchanged content > groups-all: answer 1`] =
     ],
     [
       "set",
-      "cmi.objectives.2.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.2.score.raw",
+      "cmi.objectives.0.score.raw",
       "50"
     ],
     [
       "set",
-      "cmi.objectives.2.success_status",
+      "cmi.objectives.0.success_status",
       "failed"
     ],
     [
@@ -49392,17 +49392,17 @@ exports[`scorm2004 LMS write log on unchanged content > groups-all: answer 1`] =
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "100"
     ],
     [
       "set",
-      "cmi.objectives.1.success_status",
+      "cmi.objectives.0.success_status",
       "passed"
     ],
     [
@@ -49553,17 +49553,17 @@ exports[`scorm2004 LMS write log on unchanged content > groups-all: answer 1`] =
     ],
     [
       "set",
-      "cmi.objectives.2.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.2.score.raw",
+      "cmi.objectives.0.score.raw",
       "50"
     ],
     [
       "set",
-      "cmi.objectives.2.success_status",
+      "cmi.objectives.0.success_status",
       "failed"
     ],
     [
@@ -50072,17 +50072,17 @@ exports[`scorm2004 LMS write log on unchanged content > groups-all: group object
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "80"
     ],
     [
       "set",
-      "cmi.objectives.1.success_status",
+      "cmi.objectives.0.success_status",
       "passed"
     ],
     [
@@ -50494,17 +50494,17 @@ exports[`scorm2004 LMS write log on unchanged content > groups-all: group object
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "80"
     ],
     [
       "set",
-      "cmi.objectives.1.success_status",
+      "cmi.objectives.0.success_status",
       "passed"
     ],
     [
@@ -50858,17 +50858,17 @@ exports[`scorm2004 LMS write log on unchanged content > groups-all: group object
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "80"
     ],
     [
       "set",
-      "cmi.objectives.1.success_status",
+      "cmi.objectives.0.success_status",
       "passed"
     ],
     [
@@ -51227,17 +51227,17 @@ exports[`scorm2004 LMS write log on unchanged content > groups-all: group object
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "80"
     ],
     [
       "set",
-      "cmi.objectives.1.success_status",
+      "cmi.objectives.0.success_status",
       "passed"
     ],
     [
@@ -55496,17 +55496,17 @@ exports[`scorm2004 LMS write log on unchanged content > groups-oneOf: answer 1`]
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "50"
     ],
     [
       "set",
-      "cmi.objectives.1.success_status",
+      "cmi.objectives.0.success_status",
       "failed"
     ],
     [
@@ -55991,17 +55991,17 @@ exports[`scorm2004 LMS write log on unchanged content > groups-oneOf: answer 1`]
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "100"
     ],
     [
       "set",
-      "cmi.objectives.1.success_status",
+      "cmi.objectives.0.success_status",
       "passed"
     ],
     [
@@ -56152,17 +56152,17 @@ exports[`scorm2004 LMS write log on unchanged content > groups-oneOf: answer 1`]
     ],
     [
       "set",
-      "cmi.objectives.2.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.2.score.raw",
+      "cmi.objectives.0.score.raw",
       "50"
     ],
     [
       "set",
-      "cmi.objectives.2.success_status",
+      "cmi.objectives.0.success_status",
       "failed"
     ],
     [
@@ -56685,17 +56685,17 @@ exports[`scorm2004 LMS write log on unchanged content > groups-oneOf: answer 1`]
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "100"
     ],
     [
       "set",
-      "cmi.objectives.1.success_status",
+      "cmi.objectives.0.success_status",
       "passed"
     ],
     [
@@ -56846,17 +56846,17 @@ exports[`scorm2004 LMS write log on unchanged content > groups-oneOf: answer 1`]
     ],
     [
       "set",
-      "cmi.objectives.2.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.2.score.raw",
+      "cmi.objectives.0.score.raw",
       "50"
     ],
     [
       "set",
-      "cmi.objectives.2.success_status",
+      "cmi.objectives.0.success_status",
       "failed"
     ],
     [
@@ -57341,17 +57341,17 @@ exports[`scorm2004 LMS write log on unchanged content > groups-oneOf: answer 1`]
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "100"
     ],
     [
       "set",
-      "cmi.objectives.1.success_status",
+      "cmi.objectives.0.success_status",
       "passed"
     ],
     [
@@ -57502,17 +57502,17 @@ exports[`scorm2004 LMS write log on unchanged content > groups-oneOf: answer 1`]
     ],
     [
       "set",
-      "cmi.objectives.2.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.2.score.raw",
+      "cmi.objectives.0.score.raw",
       "50"
     ],
     [
       "set",
-      "cmi.objectives.2.success_status",
+      "cmi.objectives.0.success_status",
       "failed"
     ],
     [
@@ -58007,17 +58007,17 @@ exports[`scorm2004 LMS write log on unchanged content > groups-oneOf: answer 1`]
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "100"
     ],
     [
       "set",
-      "cmi.objectives.1.success_status",
+      "cmi.objectives.0.success_status",
       "passed"
     ],
     [
@@ -58168,17 +58168,17 @@ exports[`scorm2004 LMS write log on unchanged content > groups-oneOf: answer 1`]
     ],
     [
       "set",
-      "cmi.objectives.2.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.2.score.raw",
+      "cmi.objectives.0.score.raw",
       "50"
     ],
     [
       "set",
-      "cmi.objectives.2.success_status",
+      "cmi.objectives.0.success_status",
       "failed"
     ],
     [
@@ -58687,17 +58687,17 @@ exports[`scorm2004 LMS write log on unchanged content > groups-oneOf: group obje
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "80"
     ],
     [
       "set",
-      "cmi.objectives.1.success_status",
+      "cmi.objectives.0.success_status",
       "passed"
     ],
     [
@@ -59109,17 +59109,17 @@ exports[`scorm2004 LMS write log on unchanged content > groups-oneOf: group obje
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "80"
     ],
     [
       "set",
-      "cmi.objectives.1.success_status",
+      "cmi.objectives.0.success_status",
       "passed"
     ],
     [
@@ -59473,17 +59473,17 @@ exports[`scorm2004 LMS write log on unchanged content > groups-oneOf: group obje
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "80"
     ],
     [
       "set",
-      "cmi.objectives.1.success_status",
+      "cmi.objectives.0.success_status",
       "passed"
     ],
     [
@@ -59842,17 +59842,17 @@ exports[`scorm2004 LMS write log on unchanged content > groups-oneOf: group obje
     ],
     [
       "set",
-      "cmi.objectives.1.id",
+      "cmi.objectives.0.id",
       "group"
     ],
     [
       "set",
-      "cmi.objectives.1.score.raw",
+      "cmi.objectives.0.score.raw",
       "80"
     ],
     [
       "set",
-      "cmi.objectives.1.success_status",
+      "cmi.objectives.0.success_status",
       "passed"
     ],
     [

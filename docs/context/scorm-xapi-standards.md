@@ -99,6 +99,17 @@ waiting gate must cover that exception as well as `CourseTracker.outcome()`.
 - `answered` — question response
 - `experienced` — page visit
 
+## Objective reporting
+
+Objective writes address groups by id in both SCORM versions. Each write reads
+`cmi.objectives._count` and every saved id, reuses the first matching slot, and
+appends only for a new id. Reading afresh covers reloads and other document
+adapters. Existing duplicate ids from older SCORM 1.2 submissions remain intact;
+new results use their first slot. An unreadable, empty or malformed count, an
+unreadable or empty saved id, or a refused id write skips the objective result.
+The next submission retries lookup. Objective reporting stays best effort and
+never replaces another group's result by guessing a slot.
+
 ## Readable interaction reports
 
 Assessment response events carry the authored stem as decoded plain text. Empty

@@ -17,11 +17,21 @@ interface MockSCORM12API {
 }
 
 function createMockAPI(): MockSCORM12API {
+	const objectives = new Map<string, string>();
 	return {
 		LMSInitialize: vi.fn().mockReturnValue("true"),
 		LMSFinish: vi.fn().mockReturnValue("true"),
-		LMSGetValue: vi.fn().mockReturnValue(""),
-		LMSSetValue: vi.fn().mockReturnValue("true"),
+		LMSGetValue: vi.fn((key: string) =>
+			key === "cmi.objectives._count"
+				? String(
+						[...objectives.keys()].filter((key) => /^cmi\.objectives\.\d+\.id$/.test(key)).length,
+					)
+				: (objectives.get(key) ?? ""),
+		),
+		LMSSetValue: vi.fn((key: string, value: string) => {
+			if (key.startsWith("cmi.objectives.")) objectives.set(key, value);
+			return "true";
+		}),
 		LMSCommit: vi.fn().mockReturnValue("true"),
 		LMSGetLastError: vi.fn().mockReturnValue("0"),
 		LMSGetErrorString: vi.fn().mockReturnValue("No error"),
