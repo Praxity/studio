@@ -297,6 +297,8 @@ export interface ChoiceDependencyView {
 /** Readers receive the status owner with the evidence, without importing admission code. */
 export interface ChoiceDependencyEvidence extends ChoiceDependencyView {
 	status(id: string): ReturnType<typeof choiceDependencyStatus>;
+	/** Status-only readers may omit this; question finality requires the admitted host state. */
+	admitQuestionState?(id: string, state: unknown): SavedAssessmentState | null;
 }
 
 /** One context for future readers; construction never admits, signs or writes an answer. */
@@ -315,6 +317,14 @@ export function createChoiceDependencyView(
 	const preview = evidence.preview;
 	const view: ChoiceDependencyEvidence = {
 		status: (id) => choiceDependencyStatus(id, view),
+		admitQuestionState: (id, state) =>
+			Object.hasOwn(view.questions, id)
+				? admitChoiceAssessmentState(
+						state,
+						{ question: view.questions[id], signature: view.signatures[id] },
+						view.buildProof?.(id),
+					)
+				: null,
 		invalidIds: facts.choiceStateInvalidIds,
 		rows: evidence.rows,
 		questions: facts.choiceStateQuestions,
