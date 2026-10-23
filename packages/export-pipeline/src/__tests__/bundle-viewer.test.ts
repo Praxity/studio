@@ -1299,8 +1299,8 @@ describe("computeViewerSourceHash", () => {
 			// Earlier full enhancer maxima: page 43,137 B gzip; deck 135,602 B gzip.
 			// Owner C5 previously measured
 			// 39,577 / 131,639 B; HL04 caps were 36,864 / 129,024 B.
-			// Size caps don't block working features (owner rule): waiting and exit mechanics measure 136,755 B gzip for the deck, plus 1 KiB rounded up to 256 B; tighten during final size work.
-			const caps = { page: 44_288, deck: 137_984 };
+			// Recovery measures at most 138,176 B gzip for the deck; add 1 KiB rounded up to 256 B.
+			const caps = { page: 44_288, deck: 139_264 };
 			const page = {
 				id: "highlight-page",
 				title: "Highlight",
@@ -1343,10 +1343,13 @@ describe("computeViewerSourceHash", () => {
 								),
 							)
 						).reduce((sum, bytes) => sum + bytes, 0);
-					expect.soft(
-							gzip,
-							`highlight ${host} ${deck ? "deck" : "page"} ${classic ? "classic" : "ESM"} full initial JS gzip`,
-						).toBeLessThanOrEqual(deck ? caps.deck : caps.page);
+						// Report every exceeded format in one run.
+						expect
+							.soft(
+								gzip,
+								`highlight ${host} ${deck ? "deck" : "page"} ${classic ? "classic" : "ESM"} full initial JS gzip`,
+							)
+							.toBeLessThanOrEqual(deck ? caps.deck : caps.page);
 					}
 				}
 		});
@@ -1841,8 +1844,8 @@ describe("computeViewerSourceHash", () => {
 				)
 			).reduce((total, bytes) => total + bytes, 0);
 			// owner 2026-10-11: raise size limits when they block working features; size optimisation at the end.
-			// 248 KiB for the standalone pass mark's finality and outcome reads (246,259 bytes).
-			expect(assessmentGzipBytes).toBeLessThan(248 * 1024);
+			// Recovery measures 256,599 B gzip; add 1 KiB rounded up to 256 B.
+			expect(assessmentGzipBytes).toBeLessThan(257_792);
 			expect(navFiles.length).toBeLessThan(result.manifest.islandFiles.length);
 			for (const file of navFiles) {
 				expect(await readFile(path.join(islandsDir, file), "utf-8")).not.toBe("");
