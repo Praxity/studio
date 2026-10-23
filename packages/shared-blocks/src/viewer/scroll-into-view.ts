@@ -14,7 +14,12 @@ function updatePageScrollPadding(doc: Document): void {
 			bar && ["fixed", "sticky"].includes(getComputedStyle(bar).position)
 				? bar.getBoundingClientRect().height
 				: 0;
-		scroller.style.setProperty(property, `${height}px`);
+		scroller.style.setProperty(
+			property,
+			property === "scroll-padding-block-end"
+				? `calc(${height}px + var(--praxity-scroll-overlay-end, 0px))`
+				: `${height}px`,
+		);
 	}
 }
 

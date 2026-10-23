@@ -20,6 +20,7 @@ import {
 	assessmentAttemptMetadata,
 	type InteractionRecord,
 	LMS_DESTINATIONS,
+	prepareRuntimeCommit,
 	type SCORMRuntime,
 	type TrackInteractionOptions,
 } from "../types.ts";
@@ -205,6 +206,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 		this.loadSuspendPayload();
 		const session = this.session;
 		if (!session) return false;
+		if (!prepareRuntimeCommit(session)) return false;
 		// LMS callbacks can synchronously reach any retained adapter. Only this
 		// invocation may prepare and commit the final state while the guard is held.
 		session.terminationInProgress = true;
@@ -452,9 +454,14 @@ export class Scorm12Runtime implements SCORMRuntime {
 
 	// ---- commit ------------------------------------------------------------
 
+	setCommitPreparation(prepare: () => void): void {
+		if (this.session) this.session.prepareCommit = prepare;
+	}
+
 	commit(): boolean {
 		this.ensureInitialized();
 		this.loadSuspendPayload();
+		if (!prepareRuntimeCommit(this.session as ScormSessionState)) return false;
 		return this.commitToLms();
 	}
 

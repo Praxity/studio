@@ -17,6 +17,23 @@ export interface RuntimeDestinations {
 export const LMS_DESTINATIONS: RuntimeDestinations = { reporting: "lms", state: "lms" };
 export const DEVICE_DESTINATIONS: RuntimeDestinations = { reporting: "device", state: "device" };
 
+export interface RuntimeCommitPreparation {
+	prepareCommit?: () => void;
+	commitPreparationInProgress?: boolean;
+}
+
+/** Preparation may read or adjust queued state, but cannot recursively commit it. */
+export function prepareRuntimeCommit(state: RuntimeCommitPreparation): boolean {
+	if (state.commitPreparationInProgress) return false;
+	state.commitPreparationInProgress = true;
+	try {
+		state.prepareCommit?.();
+		return true;
+	} finally {
+		state.commitPreparationInProgress = false;
+	}
+}
+
 export interface SCORMRuntime {
 	/** The active adapter owns its reporting capability and state storage destination. */
 	readonly destinations: RuntimeDestinations;
@@ -64,6 +81,8 @@ export interface SCORMRuntime {
 	/** Read saved build evidence without migration or persistence. */
 	getSavedBuildRevision?(): string | null;
 	setBlockState?(blockId: string, value: LearnerStateValue): boolean;
+	/** Host admission supplies the current outcome owner before any commit or termination. */
+	setCommitPreparation?(prepare: () => void): void;
 	commit(): boolean;
 	trackNavigation?(fromPageId: string, toPageId: string, trigger: string): void;
 	trackObjective?(id: string, score: number, passed: boolean): void;

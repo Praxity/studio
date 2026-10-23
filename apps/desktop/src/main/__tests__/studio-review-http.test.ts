@@ -165,6 +165,18 @@ afterAll(async () => {
 	await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true })));
 });
 
+it("pins the list principal to the local reviewer and refuses author role injection", async () => {
+	const { server, route, headers, store } = admissionFixture;
+	const localPrincipal = await store.principalFor("reviewer", "local-preview");
+	const listed = await probe(server.origin, route, {
+		headers: { ...headers, "X-Role": "author", "X-Principal-Id": "other" },
+	});
+	expect(listed.status).toBe(200);
+	expect(JSON.parse(listed.text).principal).toEqual({ id: localPrincipal.id, role: "reviewer" });
+	const refused = await probe(server.origin, `${route}?role=author`, { headers });
+	expect(refused.status).toBe(422);
+});
+
 it.each([
 	undefined,
 	"",

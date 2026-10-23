@@ -10,7 +10,10 @@
 	};
 	var localConfig = null;
 	var configError = false;
-	var bootstrap = document.querySelector('script[type="application/json"]#praxity-review-config');
+	var bootstrap = document.querySelector(
+		'script[type="application/json"][id="praxity-review-config"]',
+	);
+	var localPage = Boolean(bootstrap);
 	if (bootstrap) {
 		try {
 			localConfig = parseLocalConfig(JSON.parse(bootstrap.textContent));
@@ -18,9 +21,13 @@
 			config.pageId = localConfig.page.pageId;
 		} catch {
 			configError = true;
+		} finally {
+			bootstrap.remove();
+			bootstrap = null;
 		}
 	}
 	var transport = localConfig ? createLocalTransport(localConfig) : createLegacyShareTransport();
+	var viewingActor = null;
 	var strings =
 		config.locale === "fr"
 			? {
@@ -231,6 +238,65 @@
 	function formatted(template, values) {
 		return template.replace(/\{(\w+)\}/g, (_match, key) => values[key]);
 	}
+	Object.assign(
+		strings,
+		config.locale === "fr"
+			? {
+					all: "Tous",
+					filters: "Afficher les commentaires",
+					currentPage: "Page actuelle",
+					unknownPage: "Page introuvable",
+					emptyReview: "Aucun commentaire dans cette révision.",
+					count: "{count} commentaires, filtre : {filter}.",
+					countOne: "1 commentaire, filtre : {filter}.",
+					thread: "Commentaire {number}",
+					you: "Vous",
+					localUser: "Utilisateur local",
+					agent: "Agent",
+					reply: "Répondre",
+					replyLabel: "Réponse au commentaire {number}",
+					sendReply: "Envoyer la réponse",
+					replySaved: "Réponse enregistrée.",
+					reopen: "Rouvrir",
+					reopened: "Commentaire rouvert.",
+					resolvedBy: "Résolu par {author}",
+					targetNotFound: "Cible introuvable",
+					anotherPage: "Sur une autre page",
+					pendingAction: "Réessayez l’action précédente avant d’en commencer une autre.",
+					stale: "Commentaires hors ligne ou périmés. Nouvelle tentative automatique.",
+					leaveReply: "Vous avez des modifications de révision non envoyées. Quitter quand même ?",
+					leaveAnyway: "Quitter quand même",
+					replySession:
+						"Les réponses non envoyées restent dans cette page jusqu’à sa fermeture ou son rechargement.",
+				}
+			: {
+					all: "All",
+					filters: "Show comments",
+					currentPage: "Current page",
+					unknownPage: "Page not found",
+					emptyReview: "No comments in this review yet.",
+					count: "{count} comments, filter: {filter}.",
+					countOne: "1 comment, filter: {filter}.",
+					thread: "Comment {number}",
+					you: "You",
+					localUser: "Local user",
+					agent: "Agent",
+					reply: "Reply",
+					replyLabel: "Reply to comment {number}",
+					sendReply: "Send reply",
+					replySaved: "Reply saved.",
+					reopen: "Reopen",
+					reopened: "Comment reopened.",
+					resolvedBy: "Resolved by {author}",
+					targetNotFound: "Target not found",
+					anotherPage: "On another page",
+					pendingAction: "Retry the earlier action before starting another.",
+					stale: "Comments are offline or out of date. Retrying automatically.",
+					leaveReply: "You have unsent review changes. Leave anyway?",
+					leaveAnyway: "Leave anyway",
+					replySession: "Unsent replies stay in this page until it is closed or reloaded.",
+				},
+	);
 	function parseLocalConfig(value) {
 		function keys(object, expected) {
 			return (
@@ -244,7 +310,8 @@
 			!keys(
 				value,
 				"schema reviewId capability endpoint locale limits page textRules blockNames" +
-					(Object.hasOwn(value || {}, "draftOriginChanged") ? " draftOriginChanged" : ""),
+					(Object.hasOwn(value || {}, "draftOriginChanged") ? " draftOriginChanged" : "") +
+					(Object.hasOwn(value || {}, "pages") ? " pages" : ""),
 			) ||
 			(value.draftOriginChanged !== undefined && value.draftOriginChanged !== true) ||
 			value.schema !== 1 ||
@@ -262,6 +329,19 @@
 			) ||
 			!Object.values(value.limits).every((n) => Number.isSafeInteger(n) && n > 0) ||
 			value.limits.quoteContext !== 32
+		)
+			throw new Error("invalid_config");
+		if (
+			value.pages !== undefined &&
+			(!Array.isArray(value.pages) ||
+				!value.pages.every(
+					(page) =>
+						keys(page, "id href") &&
+						id(page.id, value.limits.id) &&
+						typeof page.href === "string" &&
+						page.href.startsWith("/canvas/preview/") &&
+						new URL(page.href, location.origin).origin === location.origin,
+				))
 		)
 			throw new Error("invalid_config");
 		if (
@@ -342,16 +422,19 @@
 			}
 		}
 		return {
-			async list(pageId) {
+			async list() {
 				for (var restart = 0; restart < 3; restart++) {
 					var threads = [],
 						cursor = null,
 						seen = new Set();
 					try {
 						for (var page = 0; page <= settings.limits.threadsPerReview; page++) {
-							var query = new URLSearchParams({ page: pageId });
+							var query = new URLSearchParams();
 							if (cursor) query.set("cursor", cursor);
-							var result = await request(`${settings.endpoint}/comments?${query}`);
+							var result = await request(
+								`${settings.endpoint}/comments${query.size ? `?${query}` : ""}`,
+							);
+							if (result.principal) viewingActor = result.principal;
 							if (!Array.isArray(result.threads)) throw new Error("invalid_list");
 							threads.push(...result.threads);
 							if (threads.length > settings.limits.threadsPerReview)
@@ -373,6 +456,13 @@
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({ reviewId: settings.reviewId, requestId, anchor, body }),
+				});
+			},
+			mutate(kind, payload) {
+				return request(`${settings.endpoint}/comments/${payload.threadId}/${kind}`, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(payload),
 				});
 			},
 		};
@@ -893,6 +983,26 @@
 		var activePageId = config.pageId;
 		var pageHeading = "";
 		var collapsed = true;
+		var threadViews = new Map();
+		var pageGroups = new Map();
+		var threadFilter = "all";
+		var refreshVersion = 0;
+		var refreshInFlight = null;
+		var pollDelay = 5000;
+		var pollTimer = null;
+		var pollingActive = false;
+		var loadFailed = false;
+		var arrivalUrl = new URL(location.href);
+		var arrivalId = arrivalUrl.searchParams.get("review-thread");
+		var pendingJump = arrivalId ? { id: arrivalId, pageId: null, activation: null } : null;
+		if (pendingJump) {
+			try {
+				pendingJump.pageId = decodeURIComponent(arrivalUrl.hash.slice(1)) || null;
+			} catch {
+				clearPendingJump();
+			}
+		}
+		var deckOrienting = false;
 		function pageRoot() {
 			return (
 				Array.from(document.querySelectorAll("[data-deck-slide]")).find(
@@ -913,6 +1023,19 @@
 			document.querySelector(".praxity-deck .deck-utilities");
 		var deckWorkspace = document.querySelector(".praxity-deck .deck-workspace");
 		var isDeck = Boolean(deckUtilities && deckWorkspace);
+		function deckPageActive(id) {
+			if (!isDeck) return true;
+			var slide = Array.from(deckWorkspace.querySelectorAll("[data-deck-slide]")).find(
+				(node) => node.getAttribute("data-deck-slide") === id,
+			);
+			return (
+				deckWorkspace.closest(".praxity-deck").dataset.ready === "true" &&
+				slide &&
+				!slide.hidden &&
+				!slide.inert &&
+				!slide.hasAttribute("inert")
+			);
+		}
 		var sidebar = element("aside", "prx-review-sidebar");
 		if (anchors) sidebar.classList.add("prx-review-sidebar--local");
 		sidebar.id = "prx-review-sidebar";
@@ -929,6 +1052,13 @@
 			header.append(title);
 		} else {
 			header.append(title, toggle);
+		}
+		var editLink = document.querySelector(".praxity-studio-edit-link");
+		if (editLink) {
+			var readTools = editLink.closest(".praxity-studio-read-tools");
+			editLink.classList.add("prx-review-action");
+			header.append(editLink);
+			readTools?.remove();
 		}
 		var deckIcon;
 		if (isDeck) {
@@ -987,15 +1117,43 @@
 		var submit = element("button", "prx-review-submit", strings.post);
 		submit.type = "submit";
 		form.append(nameLabel, nameInput, textLabel, textInput, submit, context);
-		if (bootstrap) {
+		if (localPage) {
 			nameLabel.hidden = nameInput.hidden = true;
 			nameInput.required = false;
 			textInput.maxLength = localConfig?.limits.body || 2000;
 		}
 
 		var footer = element("footer", "prx-review-footer", expiryLabel());
-		if (bootstrap) footer.textContent = strings.localReview;
-		content.append(status, list, error, form, footer);
+		if (localPage) footer.textContent = strings.localReview;
+		var stale = element("p", "prx-review-stale", strings.stale);
+		stale.hidden = true;
+		content.append(status, stale, list, error, form, footer);
+		var filters;
+		if (anchors) {
+			filters = element("fieldset", "prx-review-filters");
+			filters.append(element("legend", "", strings.filters));
+			["open", "resolved", "all"].forEach((value) => {
+				var label = element("label", "prx-review-filter");
+				var radio = element("input");
+				radio.type = "radio";
+				radio.name = "prx-review-filter";
+				radio.value = value;
+				radio.dataset.reviewFilter = value;
+				radio.checked = value === threadFilter;
+				radio.addEventListener("change", () => {
+					threadFilter = value;
+					renderThreads();
+					announceList(threadCount());
+				});
+				label.append(radio, element("span", "prx-review-filter-label", `${strings[value]} (0)`));
+				filters.append(label);
+			});
+			content.insertBefore(filters, status);
+			// Course shortcuts must not intercept editing or navigation in the review list.
+			["keydown", "keyup", "keypress"].forEach((name) =>
+				sidebar.addEventListener(name, (event) => event.stopPropagation()),
+			);
+		}
 		sidebar.append(header, content);
 		if (isDeck) {
 			deckWorkspace.classList.add("prx-review-workspace");
@@ -1038,6 +1196,8 @@
 			return y;
 		}
 		function resolveEntry(entry) {
+			// A quote or node ID can occur on several pages, including inactive deck slides.
+			if (entry.thread.anchor.pageId !== activePageId) return { state: "anotherPage" };
 			if (entry.resolutionVersion !== resolutionVersion) {
 				entry.spot = anchors.resolve(entry.thread.anchor);
 				entry.resolutionVersion = resolutionVersion;
@@ -1059,13 +1219,23 @@
 			if (layoutObserver && layoutRoot !== root) {
 				layoutObserver.disconnect();
 				layoutObserver.observe(root);
+				if (anchors && !isDeck) {
+					layoutObserver.observe(header);
+					layoutObserver.observe(sidebar);
+				}
 				layoutRoot = root;
 				layoutInlineSize = undefined;
 			}
 			// Finish every DOM/style/geometry read before changing any marker or status.
 			var placements = entries.map((entry) => {
 				var spot = resolveEntry(entry);
-				if (spot.state === "notVisible" || !spot.target || spot.state === "page")
+				if (
+					entry.item.hidden ||
+					entry.thread.status !== "open" ||
+					spot.state === "notVisible" ||
+					!spot.target ||
+					spot.state === "page"
+				)
 					return { entry, spot, hidden: true };
 				var box = spot.target.getBoundingClientRect();
 				if (spot.range) {
@@ -1143,7 +1313,9 @@
 			}
 			placements.forEach(({ entry, spot, hidden, x, y, block }) => {
 				if (entry.state !== spot.state) {
-					entry.chip.textContent = strings[spot.state] ? `⚠ ${strings[spot.state]}` : "";
+					entry.chip.textContent = strings[spot.state]
+						? `${spot.state === "anotherPage" ? "" : "⚠ "}${strings[spot.state]}`
+						: "";
 					entry.chip.hidden = !entry.chip.textContent;
 					entry.state = spot.state;
 				}
@@ -1157,7 +1329,71 @@
 				else CSS.highlights.delete("prx-review-quote");
 			}
 		}
+		function hasUnsentReplies() {
+			return [...threadViews.values()].some((entry) => entry.field.value.length || entry.pending);
+		}
+		var leaveDialog, leaveDestination, leaveOpener;
+		function navigateToThread(url, opener) {
+			if (!hasUnsentReplies()) {
+				location.assign(url);
+				return;
+			}
+			if (!leaveDialog) {
+				leaveDialog = element("dialog", "prx-review-dialog prx-review-leave-dialog");
+				leaveDialog.setAttribute("data-review-ui", "");
+				var title = element("h2", "", strings.leaveReply);
+				title.id = "prx-review-leave-title";
+				leaveDialog.setAttribute("aria-labelledby", title.id);
+				var cancel = element("button", "prx-review-action", strings.cancel);
+				var leave = element("button", "prx-review-action", strings.leaveAnyway);
+				cancel.type = leave.type = "button";
+				function dismiss() {
+					leaveDialog.close();
+					leaveOpener?.focus({ preventScroll: true });
+				}
+				cancel.addEventListener("click", dismiss);
+				leaveDialog.addEventListener("cancel", (event) => {
+					event.preventDefault();
+					dismiss();
+				});
+				leave.addEventListener("click", () => {
+					leaveDialog.close();
+					location.assign(leaveDestination);
+				});
+				var actions = element("div", "prx-review-actions");
+				actions.append(cancel, leave);
+				leaveDialog.append(title, actions);
+				document.body.append(leaveDialog);
+			}
+			leaveDestination = url;
+			leaveOpener = opener;
+			leaveDialog.showModal();
+			leaveDialog.querySelector("button").focus();
+		}
 		function showOnPage(entry) {
+			clearPendingJump();
+			var pageId = entry.thread.anchor.pageId;
+			if (pageId !== activePageId) {
+				var slide = Array.from(document.querySelectorAll("[data-deck-slide]")).find(
+					(slide) => slide.getAttribute("data-deck-slide") === pageId,
+				);
+				if (slide) {
+					pendingJump = { id: entry.thread.id, pageId, activation: null };
+					location.hash = encodeURIComponent(pageId);
+					return;
+				}
+				var destination = localConfig.pages?.find((page) => page.id === pageId);
+				if (destination) {
+					var url = new URL(destination.href, location.origin);
+					url.searchParams.set("review-thread", entry.thread.id);
+					navigateToThread(url.href, entry.show);
+				} else announceList(strings.targetNotFound);
+				return;
+			}
+			if (!deckPageActive(pageId)) {
+				pendingJump = { id: entry.thread.id, pageId, activation: null };
+				return;
+			}
 			var spot = resolveEntry(entry);
 			var target = spot.target;
 			if (!target) {
@@ -1214,6 +1450,13 @@
 		if (overlay) {
 			if (typeof ResizeObserver === "function")
 				layoutObserver = new ResizeObserver((entries = []) => {
+					if (anchors && !isDeck) {
+						// Include the band's border and padding while retaining floating toolbar clearance.
+						document.documentElement.style.setProperty(
+							"--prx-review-toolbar-space",
+							`${Math.max(header.getBoundingClientRect().height + 32, collapsed ? sidebar.getBoundingClientRect().height : 0)}px`,
+						);
+					}
 					var entry = entries.find((entry) => entry.target === layoutRoot);
 					if (entry) {
 						var inlineSize = entry.borderBoxSize?.[0]?.inlineSize ?? entry.contentRect.width;
@@ -1396,78 +1639,510 @@
 			scheduleMarkers();
 		}
 
+		function announceList(text) {
+			status.textContent = "";
+			queueMicrotask(() => {
+				status.textContent = text;
+			});
+		}
+		function authorLabel(actor) {
+			if (actor?.role === "author") return strings.agent;
+			return actor?.id && actor.id === viewingActor?.id && actor.role === viewingActor.role
+				? strings.you
+				: strings.localUser;
+		}
+		function visibleThread(thread) {
+			return threadFilter === "all" || thread.status === threadFilter;
+		}
+		function threadCount() {
+			var count = comments.filter(visibleThread).length;
+			return formatted(count === 1 ? strings.countOne : strings.count, {
+				count,
+				filter: strings[threadFilter],
+			});
+		}
+		function updateThread(entry, thread, index) {
+			function text(node, value) {
+				if (node.textContent !== value) node.textContent = value;
+			}
+			function attribute(node, name, value) {
+				if (node.getAttribute(name) !== value) node.setAttribute(name, value);
+			}
+			entry.thread = thread;
+			text(entry.number, String(index + 1));
+			text(entry.marker, String(index + 1));
+			var name = formatted(strings.thread, { number: index + 1 });
+			text(entry.heading, name);
+			attribute(entry.item, "aria-label", name);
+			if (entry.item.hidden !== !visibleThread(thread)) entry.item.hidden = !visibleThread(thread);
+			text(entry.send, entry.pending?.kind === "reply" ? strings.retry : strings.sendReply);
+			text(entry.reopen, entry.pending?.kind === "reopen" ? strings.retry : strings.reopen);
+			if (entry.field.readOnly !== Boolean(entry.pending?.kind === "reply"))
+				entry.field.readOnly = Boolean(entry.pending?.kind === "reply");
+			[entry.show, entry.replyToggle, entry.send, entry.cancel, entry.reopen].forEach((button) => {
+				attribute(button, "aria-label", `${button.textContent} · ${name}`);
+			});
+			text(entry.fieldLabel, formatted(strings.replyLabel, { number: index + 1 }));
+			attribute(
+				entry.marker,
+				"aria-label",
+				`${strings.marker} ${index + 1}${thread.anchor.context.targetLabel ? strings.markerSeparator + Array.from(thread.anchor.context.targetLabel).slice(0, 60).join("") : ""}`,
+			);
+			var resolver = thread.messages.findLast(
+				(message) =>
+					message.actor.id === thread.resolution?.actorId && message.actor.role === "author",
+			);
+			text(
+				entry.lifecycle,
+				thread.status === "resolved"
+					? formatted(strings.resolvedBy, { author: authorLabel(resolver?.actor) })
+					: strings.open,
+			);
+			var hideReopen = thread.status !== "resolved" && entry.pending?.kind !== "reopen";
+			if (entry.reopen.hidden !== hideReopen) entry.reopen.hidden = hideReopen;
+			if (entry.quote.hidden !== !thread.anchor.quote) entry.quote.hidden = !thread.anchor.quote;
+			text(entry.quote, thread.anchor.quote?.exact || "");
+			var messageIds = new Set();
+			thread.messages.forEach((message, index) => {
+				var key = message.id || index;
+				messageIds.add(key);
+				var view = entry.messages.get(key);
+				if (!view) {
+					var item = element("li", "prx-review-message"),
+						byline = element("p", "prx-review-comment-byline");
+					var author = element("strong", "prx-review-message-author"),
+						time = element("time", "prx-review-comment-time");
+					var body = element("p", "prx-review-comment-text");
+					byline.append(author, time);
+					item.append(byline, body);
+					entry.messageList.append(item);
+					view = { item, author, time, body };
+					entry.messages.set(key, view);
+				}
+				if (view.body.textContent !== message.body) view.body.textContent = message.body;
+				var label = authorLabel(message.actor);
+				if (view.author.textContent !== label) view.author.textContent = label;
+				if (view.time.dateTime !== message.at) {
+					var date = new Date(message.at);
+					if (!Number.isNaN(date.getTime())) {
+						view.time.dateTime = date.toISOString();
+						view.time.textContent = new Intl.DateTimeFormat(
+							config.locale === "fr" ? "fr-CA" : "en-CA",
+							{ month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" },
+						).format(date);
+					}
+				}
+			});
+			entry.messages.forEach((view, id) => {
+				if (!messageIds.has(id)) {
+					view.item.remove();
+					entry.messages.delete(id);
+				}
+			});
+		}
+		function createThreadView(thread) {
+			function button(className, text, action) {
+				var control = element("button", className, text);
+				control.type = "button";
+				control.addEventListener("click", action);
+				return control;
+			}
+			var item = element("li", "prx-review-comment"),
+				heading = element("h4", "prx-review-thread-heading");
+			item.tabIndex = -1;
+			item.dataset.threadId = thread.id;
+			var number = element("span", "prx-review-thread-number");
+			number.setAttribute("aria-hidden", "true");
+			var messageList = element("ol", "prx-review-messages");
+			messageList.setAttribute("role", "list");
+			var lifecycle = element("p", "prx-review-thread-status"),
+				quote = element("blockquote", "prx-review-quote");
+			var chip = element("p", "prx-review-anchor-status");
+			var marker = button("prx-review-marker", "", () => {
+				collapsed = false;
+				updateToggle();
+				item.focus();
+			});
+			marker.hidden = true;
+			var show = button("prx-review-show prx-review-action", strings.showOnPage, () =>
+				showOnPage(entry),
+			);
+			var replyToggle = button("prx-review-reply-toggle prx-review-action", strings.reply, () => {
+				replyForm.hidden = !replyForm.hidden;
+				replyToggle.setAttribute("aria-expanded", String(!replyForm.hidden));
+				if (!replyForm.hidden) field.focus();
+			});
+			var reopen = button("prx-review-reopen prx-review-action", strings.reopen, () =>
+				mutateThread(entry, "reopen"),
+			);
+			var replyForm = element("form", "prx-review-reply");
+			replyForm.noValidate = true;
+			replyForm.hidden = true;
+			replyForm.id = `prx-review-reply-${thread.id}`;
+			replyToggle.setAttribute("aria-controls", replyForm.id);
+			replyToggle.setAttribute("aria-expanded", "false");
+			var fieldLabel = element("label", "prx-review-label");
+			var field = element("textarea", "prx-review-input");
+			field.id = `${replyForm.id}-text`;
+			fieldLabel.htmlFor = field.id;
+			field.rows = 3;
+			field.maxLength = localConfig.limits.body;
+			var hint = element("p", "prx-review-reply-hint", strings.replySession);
+			hint.id = `${replyForm.id}-hint`;
+			var failure = element("p", "prx-review-error");
+			failure.id = `${replyForm.id}-error`;
+			failure.hidden = true;
+			field.setAttribute("aria-describedby", `${hint.id} ${failure.id}`);
+			var send = button("prx-review-reply-send prx-review-action", strings.sendReply, () =>
+				mutateThread(entry, "reply"),
+			);
+			var cancel = button("prx-review-reply-cancel prx-review-action", strings.cancel, closeReply);
+			function closeReply() {
+				replyForm.hidden = true;
+				replyToggle.setAttribute("aria-expanded", "false");
+				replyToggle.focus();
+			}
+			replyForm.addEventListener("submit", (event) => {
+				event.preventDefault();
+				mutateThread(entry, "reply");
+			});
+			replyForm.addEventListener("keydown", (event) => {
+				if (event.key === "Escape") {
+					event.preventDefault();
+					closeReply();
+				}
+			});
+			replyForm.append(fieldLabel, field, hint, send, cancel);
+			item.append(
+				number,
+				heading,
+				lifecycle,
+				messageList,
+				quote,
+				chip,
+				show,
+				replyToggle,
+				reopen,
+				replyForm,
+				failure,
+			);
+			overlay.append(marker);
+			var entry = {
+				thread,
+				item,
+				number,
+				heading,
+				lifecycle,
+				messageList,
+				quote,
+				chip,
+				show,
+				marker,
+				replyToggle,
+				reopen,
+				replyForm,
+				fieldLabel,
+				field,
+				failure,
+				send,
+				cancel,
+				messages: new Map(),
+				pending: null,
+				sending: false,
+			};
+			return entry;
+		}
+		async function mutateThread(entry, kind) {
+			if (entry.sending) return;
+			if (entry.pending && entry.pending.kind !== kind) {
+				entry.failure.textContent = strings.pendingAction;
+				entry.failure.hidden = false;
+				announceList(strings.pendingAction);
+				return;
+			}
+			var body = entry.field.value;
+			if (
+				!entry.pending &&
+				kind === "reply" &&
+				(!body.trim() ||
+					body.length > localConfig.limits.body ||
+					new RegExp(localConfig.textRules.controls, "u").test(body) ||
+					new RegExp(localConfig.textRules.surrogates, "u").test(body))
+			) {
+				var invalid = !body.trim()
+					? strings.emptyBody
+					: body.length > localConfig.limits.body
+						? formatted(strings.tooLong, { limit: localConfig.limits.body })
+						: strings.invalidInput;
+				entry.failure.textContent = invalid;
+				entry.failure.hidden = false;
+				entry.field.setAttribute("aria-invalid", "true");
+				announceList(invalid);
+				entry.field.focus();
+				return;
+			}
+			// In-memory retries freeze the full command until a durable acknowledgement or refusal.
+			if (!entry.pending)
+				entry.pending = {
+					kind,
+					payload: {
+						reviewId: localConfig.reviewId,
+						threadId: entry.thread.id,
+						requestId: crypto.randomUUID(),
+						expectVersion: entry.thread.version,
+						...(kind === "reply" ? { body } : {}),
+					},
+				};
+			entry.sending = true;
+			if (kind === "reply") entry.field.readOnly = true;
+			entry.send.setAttribute("aria-disabled", "true");
+			entry.reopen.setAttribute("aria-disabled", "true");
+			try {
+				var pending = entry.pending;
+				var response = await transport.mutate(kind, pending.payload);
+				refreshVersion++;
+				var saved = response.thread;
+				var index = comments.findIndex((thread) => thread.id === saved.id);
+				if (index >= 0 && !(comments[index].version > saved.version)) comments[index] = saved;
+				entry.pending = null;
+				entry.failure.hidden = true;
+				entry.field.removeAttribute("aria-invalid");
+				if (kind === "reply" && entry.field.value === pending.payload.body) {
+					entry.field.value = "";
+					entry.replyForm.hidden = true;
+					entry.replyToggle.setAttribute("aria-expanded", "false");
+				}
+				if (!visibleThread(saved)) {
+					threadFilter = "all";
+					filters.querySelector('[value="all"]').checked = true;
+				}
+				renderThreads();
+				if (kind === "reply") (entry.replyForm.hidden ? entry.replyToggle : entry.field).focus();
+				else entry.item.focus();
+				announceList(kind === "reply" ? strings.replySaved : strings.reopened);
+				refreshThreads();
+			} catch (failure) {
+				if (failure.status >= 400 && failure.status < 500) entry.pending = null;
+				var message = errorText(failure, strings.postError);
+				entry.failure.textContent = message;
+				entry.failure.hidden = false;
+				announceList(message);
+				if (failure.message === "stale_version") refreshThreads();
+			} finally {
+				entry.sending = false;
+				entry.send.removeAttribute("aria-disabled");
+				entry.reopen.removeAttribute("aria-disabled");
+				entry.send.textContent =
+					entry.pending?.kind === "reply" ? strings.retry : strings.sendReply;
+				entry.reopen.textContent =
+					entry.pending?.kind === "reopen" ? strings.retry : strings.reopen;
+				updateThread(
+					entry,
+					entry.thread,
+					comments.findIndex((thread) => thread.id === entry.thread.id),
+				);
+			}
+		}
+		function renderThreads(preserveEditing = false) {
+			["open", "resolved", "all"].forEach((value) => {
+				var count = comments.filter((thread) => value === "all" || thread.status === value).length;
+				var label = filters.querySelector(`[value="${value}"]`).nextElementSibling;
+				var text = `${strings[value]} (${count.toLocaleString(config.locale)})`;
+				if (label.textContent !== text) label.textContent = text;
+			});
+			var focus = document.activeElement,
+				scroll = content.scrollTop;
+			if (
+				preserveEditing &&
+				comments.some((thread) => {
+					var entry = threadViews.get(thread.id);
+					return (
+						!visibleThread(thread) &&
+						entry &&
+						visibleThread(entry.thread) &&
+						(entry.item.contains(focus) || !entry.replyForm.hidden || entry.pending)
+					);
+				})
+			) {
+				threadFilter = "all";
+				filters.querySelector('[value="all"]').checked = true;
+			}
+			resolutionVersion++;
+			var ids = new Set(comments.map((thread) => thread.id));
+			threadViews.forEach((entry, id) => {
+				if (!ids.has(id)) {
+					if (entry.item.contains(focus)) filters.querySelector("input:checked").focus();
+					entry.item.remove();
+					entry.marker.remove();
+					threadViews.delete(id);
+				}
+			});
+			var grouped = new Map();
+			comments.forEach((thread, index) => {
+				var key = thread.anchor.pageId;
+				if (!grouped.has(key)) grouped.set(key, []);
+				var entry = threadViews.get(thread.id);
+				if (!entry) {
+					entry = createThreadView(thread);
+					threadViews.set(thread.id, entry);
+				}
+				updateThread(entry, thread, index);
+				grouped.get(key).push(entry);
+			});
+			var keys = [...grouped.keys()].sort((a, b) =>
+				a === activePageId ? -1 : b === activePageId ? 1 : 0,
+			);
+			keys.forEach((key, index) => {
+				var group = pageGroups.get(key),
+					rows = grouped.get(key);
+				if (!group) {
+					var item = element("li", "prx-review-page-group"),
+						heading = element("h3", "prx-review-page-heading");
+					var threads = element("ol", "prx-review-page-threads");
+					threads.setAttribute("role", "list");
+					item.append(heading, threads);
+					group = { item, heading, threads };
+					pageGroups.set(key, group);
+				}
+				var title = rows[0].thread.anchor.context.pageTitle || key || strings.unknownPage;
+				var label = `${title}${key === activePageId ? ` · ${strings.currentPage}` : ""}`;
+				if (group.heading.textContent !== label) group.heading.textContent = label;
+				var hideGroup = rows.every((entry) => entry.item.hidden);
+				if (group.item.hidden !== hideGroup) group.item.hidden = hideGroup;
+				if (list.children[index] !== group.item)
+					list.insertBefore(group.item, list.children[index] || null);
+				rows.forEach((entry, index) => {
+					if (group.threads.children[index] !== entry.item)
+						group.threads.insertBefore(entry.item, group.threads.children[index] || null);
+				});
+			});
+			pageGroups.forEach((group, key) => {
+				if (!grouped.has(key)) {
+					group.item.remove();
+					pageGroups.delete(key);
+				}
+			});
+			entries = [...threadViews.values()];
+			if (focus?.isConnected && !focus.closest("[hidden]") && document.activeElement !== focus)
+				focus.focus({ preventScroll: true });
+			if (content.scrollTop !== scroll) content.scrollTop = scroll;
+			status.classList.toggle("praxity-a11y-sr-only", comments.some(visibleThread));
+			updateToggle();
+			finishPendingJump();
+		}
+		function clearPendingJump() {
+			if (!pendingJump) return;
+			pendingJump = null;
+			var url = new URL(location.href);
+			if (url.searchParams.has("review-thread")) {
+				url.searchParams.delete("review-thread");
+				history.replaceState(history.state, "", url.href);
+			}
+		}
+		function answerPendingJump(id) {
+			if (!pendingJump) return;
+			var pageId = threadViews.get(pendingJump.id)?.thread.anchor.pageId || pendingJump.pageId;
+			if ((pageId && pageId !== id) || (pendingJump.activation && pendingJump.activation !== id))
+				// Deck owns the access notice; do not announce the same refusal again.
+				clearPendingJump();
+			else pendingJump.activation = id;
+		}
+		function finishPendingJump() {
+			var intent = pendingJump;
+			var jump = threadViews.get(intent?.id);
+			if (jump && intent.activation && intent.activation !== jump.thread.anchor.pageId) {
+				clearPendingJump();
+				return;
+			}
+			if (jump?.thread.anchor.pageId !== activePageId || !deckPageActive(activePageId)) return;
+			// Deck signals after activating the slide, then finishes its own focus synchronously.
+			queueMicrotask(() => {
+				if (
+					pendingJump === intent &&
+					jump.thread.anchor.pageId === activePageId &&
+					deckPageActive(activePageId)
+				) {
+					clearPendingJump();
+					collapsed = false;
+					updateToggle();
+					showOnPage(jump);
+				}
+			});
+		}
+		async function refreshThreads(initial = false) {
+			var version = ++refreshVersion;
+			refreshInFlight = version;
+			try {
+				var loaded = await transport.list();
+				if (version !== refreshVersion) return;
+				var previous = new Map(comments.map((thread) => [thread.id, thread]));
+				var merged = loaded.map((thread) =>
+					previous.get(thread.id)?.version > thread.version ? previous.get(thread.id) : thread,
+				);
+				var changed =
+					initial ||
+					merged.length !== comments.length ||
+					merged.some(
+						(thread, index) =>
+							thread.id !== comments[index]?.id || thread.version !== comments[index]?.version,
+					);
+				var recovered = loadFailed;
+				loadFailed = false;
+				pollDelay = 5000;
+				if (!stale.hidden) stale.hidden = true;
+				if (!changed) {
+					if (recovered) announceList(comments.length ? threadCount() : strings.emptyReview);
+					return;
+				}
+				comments = merged;
+				renderThreads(true);
+				announceList(comments.length ? threadCount() : strings.emptyReview);
+			} catch (failure) {
+				if (version === refreshVersion) {
+					if (!loadFailed) announceList(errorText(failure, strings.loadError));
+					loadFailed = true;
+					if (stale.hidden) stale.hidden = false;
+					pollDelay = Math.min(60000, pollDelay * 2);
+				}
+			} finally {
+				if (refreshInFlight === version) refreshInFlight = null;
+				if (version === refreshVersion) {
+					if (loading) {
+						loading = false;
+						reviewTools?.refreshComposer();
+					}
+				}
+				// A mutation can supersede this list without starting a newer refresh.
+				if (refreshInFlight !== refreshVersion) schedulePoll();
+			}
+		}
 		function renderComments() {
+			if (anchors) {
+				renderThreads();
+				return;
+			}
 			list.textContent = "";
 			resolutionVersion++;
 			entries = [];
 			if (overlay) overlay.textContent = "";
 			status.classList.toggle("praxity-a11y-sr-only", comments.length > 0);
 			status.textContent = comments.length === 0 ? strings.empty : "";
-			comments.forEach((comment, index) => {
+			comments.forEach((comment) => {
 				var item = element("li", "prx-review-comment");
-				var message = anchors ? comment.messages[0] : null;
 				var byline = element("p", "prx-review-comment-byline");
-				var author = element(
-					"strong",
-					"",
-					String(message?.actor.displayName || comment.name || ""),
-				);
+				var author = element("strong", "", String(comment.name || ""));
 				var timestamp = element("time", "prx-review-comment-time");
-				var date = new Date(message?.at || comment.at || "");
+				var date = new Date(comment.at || "");
 				timestamp.textContent = Number.isNaN(date.getTime())
 					? ""
 					: date.toLocaleString(config.locale === "fr" ? "fr-CA" : "en-CA");
 				if (!Number.isNaN(date.getTime())) timestamp.dateTime = date.toISOString();
 				byline.append(author, timestamp);
-				var commentText = element(
-					"p",
-					"prx-review-comment-text",
-					String(message?.body || comment.text || ""),
-				);
+				var commentText = element("p", "prx-review-comment-text", String(comment.text || ""));
 				if (typeof comment.pageHeading === "string" && comment.pageHeading) {
 					item.append(element("p", "prx-review-comment-heading", comment.pageHeading));
 				}
 				item.append(byline, commentText);
-				if (anchors) {
-					item.tabIndex = -1;
-					var number = element("span", "prx-review-thread-number", String(index + 1));
-					number.setAttribute("aria-hidden", "true");
-					byline.prepend(number);
-					item.append(
-						element(
-							"p",
-							"prx-review-thread-status",
-							comment.status === "resolved" ? strings.resolved : strings.open,
-						),
-					);
-					if (comment.anchor.quote)
-						item.append(element("blockquote", "prx-review-quote", comment.anchor.quote.exact));
-					if (comment.status === "open") {
-						var chip = element("p", "prx-review-anchor-status");
-						var show = element("button", "prx-review-show", strings.showOnPage);
-						show.type = "button";
-						var marker = element("button", "prx-review-marker", String(index + 1));
-						marker.type = "button";
-						marker.hidden = true;
-						var markerLabel = Array.from(comment.anchor.context.targetLabel || "")
-							.slice(0, 60)
-							.join("");
-						marker.setAttribute(
-							"aria-label",
-							`${strings.marker} ${index + 1}${markerLabel ? strings.markerSeparator + markerLabel : ""}`,
-						);
-						marker.addEventListener("click", () => {
-							collapsed = false;
-							updateToggle();
-							item.focus();
-						});
-						var entry = { thread: comment, chip, show, marker, item };
-						show.addEventListener("click", () => showOnPage(entry));
-						entries.push(entry);
-						item.append(chip, show);
-						overlay.append(marker);
-					}
-				}
 				list.append(item);
 			});
 			updateToggle();
@@ -2574,6 +3249,8 @@
 						refreshComposer();
 					}
 					if (version !== loadVersion) return;
+					refreshVersion++;
+					schedulePoll();
 					var existing = comments.findIndex((comment) => comment.id === saved.id);
 					if (existing >= 0) comments[existing] = saved;
 					else comments.push(saved);
@@ -2838,7 +3515,7 @@
 				{ once: true },
 			);
 			window.addEventListener("beforeunload", (event) => {
-				if (draftStore.hasPending()) {
+				if (draftStore.hasPending() || hasUnsentReplies()) {
 					event.preventDefault();
 					event.returnValue = "";
 				}
@@ -2929,6 +3606,17 @@
 			}
 			activePageId = id;
 			if (reviewTools) reviewTools.renderDrafts();
+			if (anchors) {
+				if (configError || !activePageId) {
+					loading = true;
+					submit.disabled = true;
+					status.textContent = strings.loadError;
+					return;
+				}
+				renderThreads();
+				refreshThreads(comments.length === 0);
+				return;
+			}
 			comments = [];
 			renderComments();
 			error.hidden = true;
@@ -2961,10 +3649,73 @@
 
 		window.addEventListener("praxity:active-page-change", (event) => {
 			var id = event.detail?.pageId;
-			if (typeof id === "string" && id && id !== activePageId) selectPage(id);
+			if (typeof id !== "string" || !id) return;
+			if (deckPageActive(id)) {
+				// The owner's synchronous heading focus belongs to this arrival, not a new gesture.
+				deckOrienting = true;
+				queueMicrotask(() => {
+					deckOrienting = false;
+				});
+				if (isDeck) answerPendingJump(id);
+			}
+			// First activation can confirm the guessed initial page without changing its ID.
+			resolutionVersion++;
+			if (id !== activePageId) selectPage(id);
+			else finishPendingJump();
 		});
 		var initialSlide = document.querySelector("[data-deck-slide]:not([hidden])");
-		selectPage(initialSlide?.getAttribute("data-deck-slide") || config.pageId);
+		var initialPageId = initialSlide?.getAttribute("data-deck-slide") || config.pageId;
+		if (isDeck && deckPageActive(initialPageId)) answerPendingJump(initialPageId);
+		selectPage(initialPageId);
+		["pointerdown", "keydown", "focusin"].forEach((name) => {
+			window.addEventListener(
+				name,
+				(event) => {
+					if (
+						pendingJump &&
+						!(event.type === "focusin" && deckOrienting) &&
+						!asReviewUI(event.target)
+					)
+						clearPendingJump();
+				},
+				true,
+			);
+		});
+		function schedulePoll() {
+			clearTimeout(pollTimer);
+			if (!pollingActive) return;
+			pollTimer = setTimeout(async () => {
+				pollTimer = null;
+				if (document.hidden || refreshInFlight === refreshVersion) schedulePoll();
+				else await refreshThreads();
+			}, pollDelay);
+		}
+		function refreshOnFocus() {
+			pollDelay = 5000;
+			refreshThreads();
+		}
+		function startPolling() {
+			if (pollingActive) return;
+			pollingActive = true;
+			pollDelay = 5000;
+			window.addEventListener("focus", refreshOnFocus);
+			schedulePoll();
+		}
+		if (anchors) {
+			startPolling();
+			window.addEventListener("pagehide", () => {
+				pendingJump = null;
+				pollingActive = false;
+				clearTimeout(pollTimer);
+				window.removeEventListener("focus", refreshOnFocus);
+				refreshVersion++;
+			});
+			window.addEventListener("pageshow", (event) => {
+				if (!event.persisted) return;
+				startPolling();
+				refreshOnFocus();
+			});
+		}
 	}
 
 	if (document.readyState === "loading") {
