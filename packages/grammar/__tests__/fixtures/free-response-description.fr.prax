@@ -1,0 +1,20 @@
+---
+title: Réflexion
+lang: fr
+---
+
+# Réflexion
+
+::: free-response Réfléchissez.
+Premier **paragraphe**.
+
+Deuxième *paragraphe* avec un [guide](https://example.com/guide).
+
+- Première idée.
+  1. Idée imbriquée.
+  2. Autre idée.
+- Dernière idée.
+
+Dernier paragraphe.
+placeholder: Vos observations
+:::

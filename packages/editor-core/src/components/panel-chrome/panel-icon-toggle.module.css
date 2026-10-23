@@ -1,0 +1,33 @@
+.root {
+	display: inline-flex;
+	background: var(--panel-surface);
+	border-radius: var(--panel-control-radius);
+	padding: 2px;
+	gap: 1px;
+	height: var(--panel-control-height);
+}
+
+.button {
+	all: unset;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 30px;
+	border-radius: calc(var(--panel-control-radius) - 2px);
+	color: var(--panel-text-secondary);
+	cursor: pointer;
+	transition:
+		background 150ms ease,
+		color 150ms ease;
+}
+
+.button:hover {
+	background: var(--panel-control-bg);
+	color: var(--panel-text-secondary);
+}
+
+.selected {
+	background: var(--panel-control-bg);
+	color: var(--panel-accent);
+	box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
+}

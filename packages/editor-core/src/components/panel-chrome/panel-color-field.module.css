@@ -1,0 +1,63 @@
+.field {
+	min-width: 0;
+}
+
+.error {
+	margin: 6px 0 0;
+	font-size: var(--panel-label-size);
+	color: var(--panel-text);
+	overflow-wrap: anywhere;
+}
+
+.root {
+	display: flex;
+	align-items: center;
+	height: var(--panel-control-height);
+	max-width: 120px;
+	border: 1px solid var(--panel-control-border-color);
+	border-radius: var(--panel-control-radius);
+	background: var(--panel-control-bg);
+	padding: 0 8px;
+	gap: 8px;
+}
+
+.swatch {
+	all: unset;
+	width: var(--panel-swatch-size);
+	height: var(--panel-swatch-size);
+	border-radius: var(--panel-swatch-radius);
+	border: 1px solid var(--panel-control-border-color);
+	flex-shrink: 0;
+	cursor: pointer;
+}
+
+.hexInput {
+	all: unset;
+	font-size: var(--panel-value-size);
+	font-family: monospace;
+	color: var(--panel-text);
+	flex: 1;
+	min-width: 0;
+}
+
+.pickerDialog {
+	padding: 8px;
+}
+
+.visuallyHidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+.pickerActions {
+	display: flex;
+	justify-content: flex-end;
+	margin-top: 8px;
+}

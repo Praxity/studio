@@ -1,0 +1,126 @@
+[
+	{
+		"id": "page-visual-interactions",
+		"type": "pageBreak",
+		"data": {
+			"title": "Visual Interactions"
+		}
+	},
+	{
+		"id": "visual-interactions-heading",
+		"type": "heading",
+		"data": {
+			"content": "Visual Interactions",
+			"level": 1
+		}
+	},
+	{
+		"id": "pagespeed-image-comparison",
+		"type": "imageComparison",
+		"data": {
+			"display": "slider",
+			"beforeLabel": "Before",
+			"afterLabel": "After",
+			"beforeCaption": "Wide sample image",
+			"afterCaption": "Square sample image",
+			"beforeImage": {
+				"src": "/assets/test-image-wide.webp",
+				"altText": "A laptop displaying accessibility audit results"
+			},
+			"afterImage": {
+				"src": "/assets/test-image.webp",
+				"altText": "A group collaborating around a table"
+			}
+		}
+	},
+	{
+		"id": "pagespeed-labeled-graphic",
+		"type": "labeledGraphic",
+		"data": {
+			"imageSrc": "/assets/test-image-wide.webp",
+			"imageAlt": "A laptop displaying accessibility audit results with three annotated regions",
+			"reveal": "sequential",
+			"labels": [
+				{
+					"id": "screen",
+					"x": 31,
+					"y": 38,
+					"title": "Audit results",
+					"body": "The screen summarizes automated accessibility findings."
+				},
+				{
+					"id": "keyboard",
+					"x": 52,
+					"y": 69,
+					"title": "Keyboard testing",
+					"body": "Manual keyboard testing catches barriers that automated scans miss."
+				},
+				{
+					"id": "notes",
+					"x": 76,
+					"y": 54,
+					"title": "Review notes",
+					"body": "Document the affected control, expected behavior, and a repeatable test."
+				}
+			]
+		}
+	},
+	{
+		"id": "page-narrated-sample",
+		"type": "pageBreak",
+		"data": {
+			"title": "Narrated Page",
+			"_narrationEnabled": true,
+			"_narrationDefaults": {
+				"narrationLanguage": "en",
+				"narrationVoice": "Maya",
+				"narrationSpeed": 1
+			},
+			"narration": "Technical terms: WCAG, SCORM, xAPI, and Praxity. Course ABC-123 costs $1,249.50 on August 10, 2026.",
+			"narrationAudio": "../superpowers/specs/evidence/2026-08-10-soniox-narration/en-control.mp3",
+			"narrationTimings": "../superpowers/specs/evidence/2026-08-10-soniox-narration/en-control.vtt",
+			"narrationDuration": 15.768
+		}
+	},
+	{
+		"id": "narrated-sample-heading",
+		"type": "heading",
+		"data": {
+			"content": "Narrated Page",
+			"level": 1
+		}
+	},
+	{
+		"id": "narrated-sample-text",
+		"type": "text",
+		"data": {
+			"content": "Use the narration controls to play, pause, seek, mute, or read the synchronized transcript."
+		}
+	},
+	{
+		"id": "page-static-baseline",
+		"type": "pageBreak",
+		"data": {
+			"title": "Static Baseline",
+			"_narrationEnabled": false,
+			"nav": "none",
+			"focus": "off",
+			"navKeyboardArrows": false
+		}
+	},
+	{
+		"id": "static-baseline-heading",
+		"type": "heading",
+		"data": {
+			"content": "Static Baseline",
+			"level": 1
+		}
+	},
+	{
+		"id": "static-baseline-text",
+		"type": "text",
+		"data": {
+			"content": "This page contains semantic HTML only. It provides a baseline for measuring the cost of the published shell without an interactive block runtime."
+		}
+	}
+]

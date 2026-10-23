@@ -1,0 +1,11 @@
+title: Canvas deck
+locale: en
+moduleDeck: true
+lessons: [lesson.prax]
+design:
+  colorMode: auto
+  navTopBar: true
+  navCourseTitle: true
+  navArchetype: slides
+  deck:
+    initialPanel: closed

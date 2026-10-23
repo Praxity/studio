@@ -1,0 +1,1005 @@
+@import "../components/panel-chrome/panel-chrome.css";
+
+/* ===== TIPTAP / PROSEMIRROR — seamless text editing ===== */
+/* Remove ALL focus outlines on text/heading blocks and their children (Notion-style seamless editing) */
+[data-block-type="text"],
+[data-block-type="text"]:focus,
+[data-block-type="text"]:focus-visible,
+[data-block-type="text"]:focus-within,
+[data-block-type="text"] *:focus,
+[data-block-type="text"] *:focus-visible,
+[data-block-type="heading"],
+[data-block-type="heading"]:focus,
+[data-block-type="heading"]:focus-visible,
+[data-block-type="heading"]:focus-within,
+[data-block-type="heading"] *:focus,
+[data-block-type="heading"] *:focus-visible,
+.tiptap:focus,
+.tiptap:focus-visible,
+.tiptap *:focus,
+.tiptap *:focus-visible,
+.ProseMirror:focus,
+.ProseMirror:focus-visible,
+.ProseMirror *:focus,
+.ProseMirror *:focus-visible {
+	outline: none !important;
+	box-shadow: none !important;
+}
+
+/* Text highlight — accent color at low opacity, matching published output */
+.tiptap mark,
+.ProseMirror mark {
+	background: color-mix(in oklab, var(--mantine-color-violet-5, #a463f2) 15%, transparent);
+	color: inherit;
+	padding: 0.05em 0.1em;
+	border-radius: 2px;
+}
+
+/* Search match highlighting */
+.tiptap .search-match,
+.ProseMirror .search-match {
+	background: color-mix(in oklab, var(--mantine-color-yellow-5, #f5a623) 30%, transparent);
+	border-radius: 2px;
+}
+
+.tiptap .search-match--current,
+.ProseMirror .search-match--current {
+	background: color-mix(in oklab, var(--mantine-color-yellow-5, #f5a623) 60%, transparent);
+	outline: 1px solid color-mix(in oklab, var(--mantine-color-yellow-5, #f5a623) 80%, transparent);
+}
+
+/* Remove default paragraph/heading margins inside all TipTap editors and block wrappers (Notion/Tally-style tight spacing) */
+.tiptap p,
+.tiptap h1,
+.tiptap h2,
+.tiptap h3,
+.tiptap h4,
+.ProseMirror p,
+.ProseMirror h1,
+.ProseMirror h2,
+.ProseMirror h3,
+.ProseMirror h4,
+[data-block-type] p,
+[data-block-type] h1,
+[data-block-type] h2,
+[data-block-type] h3,
+[data-block-type] h4 {
+	margin: 0 !important;
+}
+
+[data-page-canvas] h1,
+[data-page-canvas] h2,
+[data-page-canvas] h3,
+[data-page-canvas] h4 {
+	font-family: var(--praxity-font-heading, var(--praxity-font-family));
+}
+
+/* Columns layout — needed for preview mode in the editor */
+.praxity-columns {
+	display: flex;
+	gap: 12px;
+	width: 100%;
+	max-width: 100%;
+	box-sizing: border-box;
+}
+
+.praxity-column {
+	min-width: 0;
+}
+
+/* Tight list spacing */
+.tiptap ul,
+.tiptap ol,
+.ProseMirror ul,
+.ProseMirror ol,
+[data-block-type] ul,
+[data-block-type] ol {
+	margin: 0 !important;
+	padding-left: 24px !important;
+}
+
+.tiptap li,
+.ProseMirror li,
+[data-block-type] li {
+	margin: 0 !important;
+}
+
+.tiptap li p,
+.ProseMirror li p,
+[data-block-type] li p {
+	margin: 0 !important;
+}
+
+/* Placeholder text for empty heading blocks */
+[data-block-type="heading"] [data-placeholder]:empty::before {
+	color: var(--mantine-color-placeholder);
+	content: attr(data-placeholder);
+	pointer-events: none;
+}
+
+/* Placeholder text for empty text blocks */
+.tiptap p.is-editor-empty:first-child::before,
+.ProseMirror p.is-editor-empty:first-child::before {
+	color: var(--mantine-color-placeholder);
+	content: attr(data-placeholder);
+	float: left;
+	height: 0;
+	pointer-events: none;
+}
+
+/* Placeholder text for empty page title */
+h1[data-placeholder]:empty::before {
+	color: var(--mantine-color-placeholder);
+	content: attr(data-placeholder);
+	pointer-events: none;
+}
+
+/* Inline tooltip trigger — dotted underline in editor */
+.tiptap .inline-tooltip-trigger {
+	text-decoration: underline dotted;
+	text-decoration-thickness: 1.5px;
+	text-underline-offset: 3px;
+	cursor: help;
+}
+
+/* Editor sidebar: hidden on mobile unless toggled open, always visible on desktop */
+.editor-sidebar-wrapper {
+	display: none;
+}
+
+.editor-sidebar-wrapper[data-open] {
+	display: flex;
+	position: absolute;
+	z-index: 10;
+	height: 100%;
+}
+
+@media (min-width: 48em) {
+	.editor-sidebar-wrapper,
+	.editor-sidebar-wrapper[data-open] {
+		display: flex;
+		position: relative;
+		z-index: auto;
+		align-self: stretch;
+	}
+}
+
+/* Lock body scroll when editor is active */
+.editor-body-lock {
+	overflow: hidden;
+	height: 100vh;
+}
+
+/* Skip link — visible only on focus */
+.praxity-skip-link {
+	position: absolute;
+	top: -100%;
+	left: 16px;
+	z-index: 100;
+	padding: 8px 16px;
+	background: var(--mantine-color-blue-filled);
+	color: white;
+	border-radius: var(--mantine-radius-sm);
+	font-size: var(--mantine-font-size-sm);
+	text-decoration: none;
+	border: 0;
+	cursor: pointer;
+	font-family: inherit;
+	line-height: inherit;
+	outline: 2px solid transparent;
+	transition: top 100ms;
+}
+
+.praxity-skip-link:focus {
+	top: 8px;
+	outline: 2px solid var(--praxity-color-focus, var(--focus-ring, #4269d0));
+	outline-offset: 2px;
+}
+
+/* Right panel tools aside — positioning context for overlay panel */
+.praxity-editor-tools-aside {
+	position: relative;
+}
+
+/* Right panel: overlay on mobile/tablet, inline on wide desktop (64em+)
+   Mobile (<48em): covers tab strip (full-width overlay)
+   Tablet (48em–64em): positioned left of tab strip (tab strip stays visible)
+   Desktop (64em+): inline in flex layout */
+.praxity-editor-right-panel {
+	position: absolute;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	z-index: 10;
+	box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+	max-width: 100vw;
+}
+
+/* Tablet: sit left of the tab strip so icons remain clickable */
+@media (min-width: 48em) {
+	.praxity-editor-right-panel {
+		right: 100%;
+	}
+}
+
+/* Wide desktop: inline in flex layout */
+@media (min-width: 64em) {
+	.praxity-editor-right-panel {
+		position: relative;
+		right: auto;
+		top: auto;
+		bottom: auto;
+		z-index: auto;
+		box-shadow: none;
+		max-width: none;
+	}
+}
+
+/* Right panel tab strip — icon-only hover/active states */
+.praxity-editor-tab-strip .mantine-ActionIcon-root:hover {
+	background: var(--praxity-editor-surface);
+}
+
+.praxity-editor-tab-strip .mantine-ActionIcon-root[aria-selected="true"] {
+	background: var(--praxity-editor-highlight);
+}
+
+/* ===== MOBILE: Editor canvas padding ===== */
+@media (max-width: 48em) {
+	[data-page-canvas] {
+		padding-left: 16px !important;
+		padding-right: 16px !important;
+	}
+}
+
+/* ===== MOBILE: Editor columns stack ===== */
+@media (max-width: 36em) {
+	[data-columns-container] {
+		flex-direction: column !important;
+	}
+
+	[data-columns-container] > div:not([data-resize-handle]) {
+		flex: 1 1 100% !important;
+	}
+}
+
+/* --- Button theme overrides ---
+   --praxity-color-* vars are injected on [data-page-canvas] in both edit
+   and preview modes. Map them to Mantine's --button-* vars so buttons
+   reflect the course theme. */
+[data-page-canvas] [data-block-type="button"] .mantine-Button-root {
+	--button-bg: var(--praxity-color-button-background) !important;
+	--button-hover: color-mix(in oklab, var(--praxity-color-button-background) 85%, black) !important;
+	--button-color: var(--praxity-color-button-text) !important;
+	--button-bd: 1px solid var(--praxity-color-button-background) !important;
+}
+
+[data-page-canvas] [data-block-type="button"] .mantine-Button-root[data-variant="outline"] {
+	--button-bg: transparent !important;
+	--button-color: var(
+		--praxity-color-button-outline,
+		var(--praxity-color-button-background)
+	) !important;
+	--button-hover: color-mix(
+		in oklab,
+		var(--praxity-color-button-outline, var(--praxity-color-button-background)) 8%,
+		transparent
+	) !important;
+	--button-bd: 1.5px solid
+		var(--praxity-color-button-outline, var(--praxity-color-button-background)) !important;
+}
+
+[data-page-canvas] [data-block-type="button"] .mantine-Button-root[data-variant="light"] {
+	--button-bg: color-mix(
+		in oklab,
+		var(--praxity-color-button-background) 12%,
+		transparent
+	) !important;
+	--button-color: var(--praxity-color-text) !important;
+	--button-hover: color-mix(
+		in oklab,
+		var(--praxity-color-button-background) 20%,
+		transparent
+	) !important;
+	--button-bd: none !important;
+}
+
+/* CodeMirror editor styles */
+.cm-editor .cm-scroller {
+	font-family:
+		ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+		monospace !important;
+}
+
+/* Equation block editor */
+.equation-block-editor .math-preview {
+	min-height: 48px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--mantine-color-text);
+}
+
+/* Block equation published styles */
+.praxity-math-block {
+	display: flex;
+	justify-content: center;
+	padding: 16px 0;
+	overflow-x: auto;
+}
+
+/* Inline math */
+.praxity-math-inline {
+	display: inline;
+	vertical-align: baseline;
+}
+
+.praxity-math-inline.ProseMirror-selectednode {
+	outline: 2px solid var(--mantine-color-blue-4);
+	border-radius: 2px;
+}
+
+/* Editor breadcrumb (top bar) */
+.editor-breadcrumb {
+	display: flex;
+	align-items: center;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	min-width: 0;
+	flex: 1;
+}
+
+.editor-breadcrumb-item {
+	display: flex;
+	align-items: center;
+	min-width: 0;
+}
+
+.editor-breadcrumb-item + .editor-breadcrumb-item::before {
+	content: "\203A";
+	margin: 0 8px;
+	color: var(--mantine-color-gray-6);
+	flex-shrink: 0;
+}
+
+.editor-breadcrumb-link {
+	color: var(--mantine-color-dimmed);
+	text-decoration: none;
+	font-size: var(--mantine-font-size-sm);
+	white-space: nowrap;
+}
+
+.editor-breadcrumb-link:hover {
+	color: var(--mantine-color-text);
+	text-decoration: underline;
+}
+
+.editor-breadcrumb-item[data-visible-from="sm"] {
+	display: none;
+}
+@media (min-width: 48em) {
+	.editor-breadcrumb-item[data-visible-from="sm"] {
+		display: flex;
+	}
+}
+
+/* Panel resize handle */
+.panel-resize-handle {
+	width: 4px;
+	cursor: col-resize;
+	background: var(--praxity-editor-border);
+	position: relative;
+	flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: background 100ms;
+}
+
+.panel-resize-handle::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	left: -6px;
+	right: -6px;
+}
+
+.panel-resize-handle:hover,
+.panel-resize-handle:active {
+	background: var(--praxity-editor-text-muted);
+}
+
+.panel-resize-handle:focus-visible {
+	outline: 2px solid var(--praxity-color-focus, var(--focus-ring, #4269d0));
+	outline-offset: -2px;
+}
+
+.panel-resize-dots {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+
+.panel-resize-dots span {
+	width: 3px;
+	height: 3px;
+	border-radius: 50%;
+	background: var(--praxity-editor-text-muted);
+}
+
+/* Hide resize handle when panel is in overlay mode (not resizable) */
+@media (max-width: 63.9375em) {
+	.panel-resize-handle {
+		display: none;
+	}
+}
+
+@media (pointer: coarse) {
+	.panel-resize-handle::before {
+		left: -10px;
+		right: -10px;
+	}
+}
+
+/* External link icon for target="_blank" links (W3C G201) */
+.praxity-external-icon {
+	display: inline-block;
+	width: 0.75em;
+	height: 0.75em;
+	margin-left: 0.25em;
+	vertical-align: baseline;
+	opacity: 0.7;
+}
+
+.praxity-doodle {
+	position: relative;
+}
+
+.praxity-doodle > svg {
+	pointer-events: none;
+	user-select: none;
+}
+
+/* === Raw editor — bottom padding so last line can scroll to mid-screen === */
+.praxity-raw-editor-shell .ProseMirror {
+	padding-bottom: 50vh;
+}
+
+/* === Raw editor syntax palette === */
+/*
+ * These used to be two hand-tuned oklch palettes gated on `[data-raw-theme]`,
+ * an attribute the raw editor computed for itself from Mantine's colour scheme.
+ * That scheme never tracked the theme chosen in Settings, so the *light*
+ * palette was painted onto a dark editor: `as: image` and `alt:` rendered at
+ * 1.91:1 on Dracula and the assessment markers `(x)`/`( )` at 1.53:1. That is
+ * the "grammar keys and image links are illegible in the dark theme" report.
+ *
+ * They are now aliases of the desktop theme's own syntax and category tokens,
+ * which `theme-factory.ts` contrast-corrects against `--bg-editor` for all 29
+ * themes and `themes/__tests__/theme-contrast.test.ts` asserts. The category
+ * hues keep the same brand mapping — content→blue, flow→teal,
+ * assessment→purple, interactive→orange — because the category tokens carry
+ * those same five hue anchors.
+ *
+ * The gate is `[data-theme]`, which `use-theme.ts` sets on documentElement and
+ * is the single source of truth for light/dark in this app.
+ */
+
+:root {
+	--praxity-raw-bg: var(--bg-editor, #ffffff);
+	--praxity-raw-fg: var(--syntax-content, var(--text-primary));
+	/* "Structural markers that recede" — the same role as the section divider. */
+	--praxity-raw-scaffolding: var(--syntax-marker-section, var(--text-secondary));
+	--praxity-raw-cat-content: var(--category-explain, var(--accent-on-surface));
+	--praxity-raw-cat-flow: var(--category-practice, var(--syntax-marker-correct));
+	--praxity-raw-cat-assessment: var(--category-engage, var(--syntax-value));
+	--praxity-raw-cat-interactive: var(--category-assess, var(--syntax-marker-page));
+	--praxity-raw-frontmatter: var(--syntax-marker-page, var(--status-warning));
+	--praxity-raw-string: var(--syntax-value, var(--accent-on-surface));
+	--praxity-raw-correct: var(--syntax-marker-correct, var(--status-saved));
+	--praxity-raw-selection: color-mix(in oklab, var(--accent) 25%, transparent);
+	--praxity-raw-scrollbar-thumb: color-mix(in oklab, var(--text-muted) 40%, transparent);
+	--praxity-raw-scrollbar-thumb-hover: color-mix(in oklab, var(--text-muted) 70%, transparent);
+	--praxity-raw-sidebar-content: color-mix(
+		in oklab,
+		var(--praxity-raw-cat-content) 55%,
+		transparent
+	);
+	--praxity-raw-sidebar-flow: color-mix(in oklab, var(--praxity-raw-cat-flow) 55%, transparent);
+	--praxity-raw-sidebar-assessment: color-mix(
+		in oklab,
+		var(--praxity-raw-cat-assessment) 55%,
+		transparent
+	);
+	--praxity-raw-sidebar-interactive: color-mix(
+		in oklab,
+		var(--praxity-raw-cat-interactive) 55%,
+		transparent
+	);
+}
+
+/* === Editor chrome tokens — Atom-aligned surface hierarchy === */
+/*
+ * 7 tokens defining all editor chrome surfaces. Scoped to [data-editor-theme]
+ * so adding a new theme = one CSS block, zero component changes.
+ *
+ * Hierarchy (dark): border < chrome < bg < surface
+ *   border (#181A1F, L≈10) < chrome (#21252B, L≈15) < bg (#282C34, L≈18) < surface (#2C313A, L≈20)
+ *
+ * Hierarchy (light): surface < chrome < bg < (white)
+ *   surface (#E8E8E9, L≈91) < chrome (#F0F0F1, L≈94) < bg (#FAFAFA, L≈98)
+ */
+
+[data-editor-theme="atom-dark"] {
+	--praxity-editor-bg: #282c34;
+	--praxity-editor-chrome: #21252b;
+	--praxity-editor-surface: #2c313a;
+	--praxity-editor-border: #181a1f;
+	--praxity-editor-text: #abb2bf;
+	--praxity-editor-text-muted: #929aa5;
+	--praxity-editor-highlight: #2c3540;
+}
+
+[data-editor-theme="atom-light"] {
+	--praxity-editor-bg: #fafafa;
+	--praxity-editor-chrome: #f0f0f1;
+	--praxity-editor-surface: #e8e8e9;
+	--praxity-editor-border: #dbdbdc;
+	--praxity-editor-text: #383a42;
+	--praxity-editor-text-muted: #636670;
+	--praxity-editor-highlight: #e4eaf5;
+}
+
+/* Two guide tracks, a 24px minimum fold target, then the semantic badge. */
+.praxity-raw-editor {
+	--praxity-raw-fold-target: max(24px, calc(24 / 14 * 1rem));
+}
+.praxity-raw-editor p {
+	position: relative;
+	padding-left: calc(20px + 2 * var(--praxity-raw-fold-target));
+}
+
+/*
+ * A fold caret is taller than a line of the editor, so two openers on
+ * consecutive lines would overlap and neither would have a clear 24x24 target
+ * (WCAG 2.5.8). Only the rows that carry a caret are raised to the caret's
+ * height — ordinary lines keep the editor's density.
+ */
+.praxity-raw-editor p:has(.praxity-raw-fold-caret) {
+	min-block-size: max(24px, calc(24 / 14 * 1rem));
+}
+
+/* Line length limit (centered content) */
+.praxity-raw-editor-shell .ProseMirror > p {
+	width: min(100%, calc(var(--praxity-editor-line-length, 100) * 0.6rem));
+	max-width: calc(var(--praxity-editor-line-length, 100) * 0.6rem);
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.praxity-raw-editor-shell[data-line-length="unlimited"] .ProseMirror > p {
+	width: 100%;
+	max-width: none;
+}
+
+/* Exempt table rows and fenced-code lines from line-length wrapping */
+.praxity-raw-editor-shell .ProseMirror > p.grammar-table-row,
+.praxity-raw-editor-shell .ProseMirror > p.grammar-code-fence,
+.praxity-raw-editor-shell .ProseMirror > p.grammar-code-line {
+	white-space: pre;
+	overflow-x: auto;
+}
+
+/* A table/code line inside a container keeps its guide on the shared edge. */
+.praxity-raw-editor-shell
+	.ProseMirror
+	> p:is(.grammar-table-row, .grammar-code-fence, .grammar-code-line):not(
+		.praxity-raw-delimiter-depth-1
+	) {
+	width: 100%;
+	max-width: none;
+}
+
+/* Scaffolding tier — structural markers that recede */
+.tiptap .praxity-raw-fence-marker,
+.tiptap .praxity-raw-heading-marker,
+.tiptap .praxity-raw-structural-marker,
+.tiptap .praxity-raw-annotation {
+	color: var(--praxity-raw-scaffolding);
+}
+
+/* Semantic tier — category-colored keywords */
+.tiptap .praxity-raw-keyword {
+	font-weight: 600;
+}
+.tiptap .praxity-raw-keyword[data-grammar-category="content"] {
+	color: var(--praxity-raw-cat-content);
+}
+.tiptap .praxity-raw-keyword[data-grammar-category="flow"] {
+	color: var(--praxity-raw-cat-flow);
+}
+.tiptap .praxity-raw-keyword[data-grammar-category="assessment"] {
+	color: var(--praxity-raw-cat-assessment);
+}
+.tiptap .praxity-raw-keyword[data-grammar-category="interactive"] {
+	color: var(--praxity-raw-cat-interactive);
+}
+.tiptap .praxity-raw-keyword:not([data-grammar-category]) {
+	color: var(--praxity-raw-scaffolding);
+}
+
+/* Category tokens already guarantee text contrast; opacity would undo it. */
+.tiptap .praxity-raw-params[data-grammar-category="content"],
+.tiptap .praxity-raw-param-name[data-grammar-category="content"] {
+	color: var(--praxity-raw-cat-content);
+}
+.tiptap .praxity-raw-params[data-grammar-category="flow"],
+.tiptap .praxity-raw-param-name[data-grammar-category="flow"] {
+	color: var(--praxity-raw-cat-flow);
+}
+.tiptap .praxity-raw-params[data-grammar-category="assessment"],
+.tiptap .praxity-raw-param-name[data-grammar-category="assessment"] {
+	color: var(--praxity-raw-cat-assessment);
+}
+.tiptap .praxity-raw-params[data-grammar-category="interactive"],
+.tiptap .praxity-raw-param-name[data-grammar-category="interactive"] {
+	color: var(--praxity-raw-cat-interactive);
+}
+.tiptap .praxity-raw-params:not([data-grammar-category]),
+.tiptap .praxity-raw-param-name:not([data-grammar-category]) {
+	color: var(--praxity-raw-scaffolding);
+}
+.tiptap .praxity-raw-param-colon {
+	color: var(--praxity-raw-scaffolding);
+}
+
+/* Strings (block titles) */
+.tiptap .praxity-raw-string {
+	color: var(--praxity-raw-string);
+}
+
+/* Frontmatter fences (---) — scaffolding tier */
+.tiptap p[data-token-type="frontmatter-fence"] {
+	color: var(--praxity-raw-scaffolding);
+}
+/* Frontmatter content (key: value) — soft gold */
+.tiptap p[data-token-type="frontmatter-line"] {
+	color: var(--praxity-raw-frontmatter);
+}
+
+/* Assessment markers */
+.tiptap .praxity-raw-assess-question {
+	color: var(--praxity-raw-cat-assessment);
+}
+.tiptap .praxity-raw-assess-option {
+	color: var(--praxity-raw-cat-assessment);
+}
+.tiptap .praxity-raw-assess-feedback {
+	color: var(--praxity-raw-cat-assessment);
+}
+.tiptap .praxity-raw-correct-marker {
+	color: var(--praxity-raw-correct);
+	font-weight: 700;
+}
+
+/* Selection */
+[data-raw-theme] .tiptap ::selection {
+	background: var(--praxity-raw-selection);
+}
+
+/* Scrollbar */
+[data-raw-theme] {
+	scrollbar-width: thin;
+	scrollbar-color: var(--praxity-raw-scrollbar-thumb) transparent;
+}
+[data-raw-theme]::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+[data-raw-theme]::-webkit-scrollbar-track {
+	background: transparent;
+}
+[data-raw-theme]::-webkit-scrollbar-thumb {
+	background: var(--praxity-raw-scrollbar-thumb);
+	border-radius: 4px;
+}
+[data-raw-theme]::-webkit-scrollbar-thumb:hover {
+	background: var(--praxity-raw-scrollbar-thumb-hover);
+}
+
+/* === Raw editor delimiter matching === */
+/* Dedicated widgets keep container guides independent of heading/gutter badges,
+ * which use paragraph pseudo-elements and transforms. */
+.tiptap .praxity-raw-container-guide {
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	border-left: 2px solid var(--praxity-raw-scaffolding);
+	pointer-events: none;
+}
+
+.tiptap [data-grammar-category-1="content"] > .praxity-raw-container-guide--1 {
+	border-color: var(--praxity-raw-sidebar-content);
+}
+.tiptap [data-grammar-category-1="flow"] > .praxity-raw-container-guide--1 {
+	border-color: var(--praxity-raw-sidebar-flow);
+}
+.tiptap [data-grammar-category-1="assessment"] > .praxity-raw-container-guide--1 {
+	border-color: var(--praxity-raw-sidebar-assessment);
+}
+.tiptap [data-grammar-category-1="interactive"] > .praxity-raw-container-guide--1 {
+	border-color: var(--praxity-raw-sidebar-interactive);
+}
+.tiptap .praxity-raw-container-guide--2 {
+	left: 8px;
+	border-color: color-mix(in oklab, var(--accent-on-surface) 40%, transparent);
+}
+
+/* `hide: true` on a heading hides its whole semantic section. Repeat the
+ * gutter dots on every source line in that section so the editor shows the
+ * same scope the learner runtime applies. */
+.tiptap p.praxity-raw-hidden-heading-scope {
+	background-image: radial-gradient(
+		circle,
+		color-mix(in oklab, var(--praxity-raw-scaffolding) 70%, transparent) 1px,
+		transparent 1.5px
+	);
+	background-position: 22px 0;
+	background-repeat: repeat-y;
+	background-size: 2px 6px;
+}
+
+.tiptap .praxity-raw-delimiter-focus {
+	/* Syntax tokens are corrected against this neutral editor surface. */
+	background: var(--bg-editor);
+	box-shadow: inset 2px 0 var(--focus-ring);
+}
+
+.tiptap .praxity-raw-delimiter-unmatched {
+	text-decoration-line: underline;
+	text-decoration-style: wavy;
+	text-decoration-color: #d97706;
+	text-decoration-thickness: 2px;
+	text-underline-offset: 2px;
+}
+
+.tiptap p.praxity-raw-delimiter-fold-hidden {
+	display: none;
+}
+
+.tiptap .praxity-narration-disclosure {
+	position: absolute;
+	right: -38px;
+	top: 50%;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	transform: translateY(-50%);
+	color: var(--praxity-raw-scaffolding);
+	background: transparent;
+	border: 1px solid transparent;
+	border-radius: 4px;
+	box-shadow: none;
+	cursor: pointer;
+	transition: background-color 120ms ease;
+}
+
+.tiptap .praxity-narration-disclosure:hover {
+	background: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.tiptap.praxity-raw-editor[data-show-narration-controls="true"] {
+	--praxity-raw-editor-padding-right: 58px;
+}
+
+.tiptap .praxity-narration-disclosure::before {
+	content: "";
+	width: 20px;
+	height: 20px;
+	background: currentColor;
+	-webkit-mask: var(--praxity-narration-icon) center / contain no-repeat;
+	mask: var(--praxity-narration-icon) center / contain no-repeat;
+}
+
+.tiptap .praxity-narration-disclosure[aria-current="true"] {
+	border-color: var(--panel-accent, var(--accent, #4269d0));
+	background: var(--panel-selected-bg, var(--selected-bg, var(--bg-active)));
+}
+
+.tiptap .praxity-narration-disclosure[data-state="ready"] {
+	color: var(--mantine-color-green-7);
+}
+
+.tiptap .praxity-narration-disclosure[data-state="stale"],
+.tiptap .praxity-narration-disclosure[data-state="needsReview"] {
+	color: var(--mantine-color-yellow-8);
+}
+
+.tiptap .praxity-narration-disclosure:focus-visible {
+	/* Overrides the editor's blanket descendant focus reset for this real button. */
+	outline: 2px solid var(--praxity-color-focus, var(--focus-ring, #4269d0)) !important;
+	outline-offset: -4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.tiptap .praxity-narration-disclosure {
+		transition: none;
+	}
+}
+
+/*
+ * The hit area is 24x24 at 100%, the WCAG 2.5.8 target floor, and was 20x20.
+ * Only the hit area grew: the glyph is the same size and still sits 12px into
+ * the 32px gutter reserved by `.praxity-raw-editor p`, so it stays lined up with
+ * the nesting bars and never reaches the code text.
+ *
+ * Both sizes are stated against the 14px desktop root like the rest of the raw
+ * editor (`.praxity-raw-editor` is 0.929rem), so the caret tracks the text-size
+ * setting instead of staying 24px in a gutter that had grown to 128px at 400%.
+ * `max()` keeps the target at 24px when that setting scales *down*, where the
+ * rem alone would fall to 19px.
+ *
+ * The box is taller than the 21.5px line it sits on, so two openers on
+ * consecutive lines — e.g. `as: card` directly above `as: col` — would have
+ * overlapping hit areas and neither could claim a clear 24x24. The rows that
+ * carry a caret get the caret's own height instead (below); widening the
+ * editor's line-height would have cost every author 12% of their vertical
+ * screen space to fix a couple of rows.
+ */
+.tiptap .praxity-raw-fold-caret {
+	position: absolute;
+	left: 12px;
+	top: 50%;
+	transform: translateY(-50%);
+	width: var(--praxity-raw-fold-target, 24px);
+	height: var(--praxity-raw-fold-target, 24px);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: none;
+	border: none;
+	color: var(--praxity-raw-scaffolding);
+	font-size: max(12px, calc(12 / 14 * 1rem));
+	cursor: pointer;
+	padding: 0;
+	opacity: 0.5;
+	transition:
+		opacity 120ms ease,
+		color 120ms ease,
+		transform 120ms ease;
+}
+
+.praxity-raw-editor p:hover .praxity-raw-fold-caret {
+	opacity: 0.8;
+}
+
+.tiptap .praxity-raw-fold-caret[aria-expanded="false"] {
+	opacity: 1;
+}
+
+.tiptap .praxity-raw-fold-caret[aria-expanded="true"] {
+	transform: translateY(-50%) rotate(90deg);
+}
+
+.tiptap .praxity-raw-fold-caret:hover {
+	opacity: 1;
+	color: var(--praxity-raw-fg);
+}
+
+.tiptap .praxity-raw-fold-caret:focus-visible {
+	opacity: 1;
+	/* Overrides the editor's blanket descendant focus reset, the same way
+	 * `.praxity-narration-disclosure` does. Without `!important` this outline
+	 * lost to `.tiptap *:focus-visible` and the caret was reachable by Tab with
+	 * no visible focus indicator at all. */
+	outline: 2px solid var(--praxity-color-focus, var(--focus-ring, #4269d0)) !important;
+	outline-offset: 2px;
+	border-radius: 3px;
+}
+
+.tiptap .praxity-raw-fold-summary {
+	margin-left: 0.375rem;
+	color: var(--praxity-raw-scaffolding);
+	/* Exactly 12px at the 14px desktop root — the app's small-text floor.
+	 * 0.75rem resolved to 10.5px, below a comfortable desktop minimum. */
+	font-size: calc(12 / 14 * 1rem);
+	font-style: italic;
+}
+
+@media (forced-colors: active) {
+	.tiptap [data-grammar-category-1] > .praxity-raw-container-guide--1 {
+		border-color: CanvasText;
+	}
+	.tiptap .praxity-raw-container-guide--2 {
+		border-color: GrayText;
+	}
+
+	.tiptap .praxity-raw-delimiter-focus {
+		background: Highlight;
+		color: HighlightText;
+	}
+
+	.tiptap .praxity-raw-delimiter-unmatched {
+		text-decoration-color: Mark;
+	}
+
+	.tiptap .praxity-raw-fold-caret {
+		color: ButtonText;
+		opacity: 1;
+	}
+
+	.tiptap .praxity-narration-disclosure {
+		color: ButtonText;
+	}
+
+	.tiptap .praxity-narration-disclosure[aria-current="true"] {
+		border-color: Highlight;
+	}
+
+	/* Syntax highlighting — degrade to system colors */
+	.tiptap .praxity-raw-fence-marker,
+	.tiptap .praxity-raw-heading-marker,
+	.tiptap .praxity-raw-structural-marker,
+	.tiptap .praxity-raw-annotation {
+		color: GrayText;
+	}
+
+	.tiptap .praxity-raw-keyword,
+	.tiptap .praxity-raw-assess-marker {
+		color: CanvasText;
+	}
+
+	.tiptap p[data-token-type="frontmatter-fence"],
+	.tiptap p[data-token-type="frontmatter-line"] {
+		color: CanvasText;
+	}
+
+	.tiptap .praxity-raw-string,
+	.tiptap .praxity-raw-correct-marker {
+		color: LinkText;
+	}
+
+	.tiptap .praxity-raw-params {
+		opacity: 1;
+		color: GrayText;
+	}
+}
+
+.tiptap[data-show-narration-controls="false"] .praxity-narration-disclosure {
+	display: none;
+}
+
+/*
+ * Arrival cue for a reveal from another panel (accessibility issue, preview block).
+ *
+ * Landing somewhere new with no confirmation reads as "did it work?" — the flash
+ * answers that without a permanent mark. Reduced motion keeps the highlight and
+ * drops the fade: the cue is the information, the animation is not.
+ */
+[data-reveal-flash] {
+	background-color: color-mix(in oklab, var(--praxity-color-accent, #4269d0) 18%, transparent);
+	border-radius: 3px;
+	animation: praxity-reveal-flash 1200ms ease-out;
+}
+
+@keyframes praxity-reveal-flash {
+	0% {
+		background-color: color-mix(in oklab, var(--praxity-color-accent, #4269d0) 32%, transparent);
+	}
+
+	100% {
+		background-color: transparent;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	[data-reveal-flash] {
+		animation: none;
+	}
+}

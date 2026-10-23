@@ -1,0 +1,81 @@
+# Exact historical findings verified as test fixtures, examples or non-secret identifiers.
+# This does not exempt any file, path, rule or future commit.
+
+# Fixed writer-token fixture used with mocked IPC and preview state.
+2b01e12be8ad1e214a9f40a83574c31b10e8a1de:apps/desktop/src/main/__tests__/course-preview-ipc.test.ts:generic-api-key:102
+a44a35e09440212508b954743eeca7bc06cce9d8:apps/desktop/src/main/__tests__/course-preview-ipc.test.ts:generic-api-key:87
+
+# Expected token argument in a mocked issue-report call.
+5af3bd1697ed0fd33e60be27d13c72c8df7bdf66:apps/desktop/src/main/__tests__/ipc-handlers.test.ts:generic-api-key:656
+
+# Stubbed encryption key matches the generated keyring test fixture.
+734824053eda054e0e6eac2ec64adfc5624c14f0:apps/web/lib/ai/provider-factory.test.ts:generic-api-key:103
+734824053eda054e0e6eac2ec64adfc5624c14f0:apps/web/lib/ai/provider-factory.test.ts:generic-api-key:37
+
+# Translation descriptor keys, verified against locale JSON.
+6f4287e912aed865756ae878535c0f550e50df52:apps/web/components/editor/block-menu-data.ts:generic-api-key:446
+6f4287e912aed865756ae878535c0f550e50df52:apps/web/components/editor/block-menu-data.ts:generic-api-key:447
+6f4287e912aed865756ae878535c0f550e50df52:apps/web/components/editor/block-menu-data.ts:generic-api-key:462
+6f4287e912aed865756ae878535c0f550e50df52:apps/web/components/editor/block-menu-data.ts:generic-api-key:463
+6f4287e912aed865756ae878535c0f550e50df52:apps/web/components/editor/block-menu-data.ts:generic-api-key:478
+6f4287e912aed865756ae878535c0f550e50df52:apps/web/components/editor/block-menu-data.ts:generic-api-key:479
+
+# Planned translation descriptor keys for the same column layout implementation.
+a299a4a68e8de54e74a6493bfded8d9fbd157c7c:docs/superpowers/plans/2026-04-14-accessible-column-layout.md:generic-api-key:183
+a299a4a68e8de54e74a6493bfded8d9fbd157c7c:docs/superpowers/plans/2026-04-14-accessible-column-layout.md:generic-api-key:184
+a299a4a68e8de54e74a6493bfded8d9fbd157c7c:docs/superpowers/plans/2026-04-14-accessible-column-layout.md:generic-api-key:199
+a299a4a68e8de54e74a6493bfded8d9fbd157c7c:docs/superpowers/plans/2026-04-14-accessible-column-layout.md:generic-api-key:200
+a299a4a68e8de54e74a6493bfded8d9fbd157c7c:docs/superpowers/plans/2026-04-14-accessible-column-layout.md:generic-api-key:215
+a299a4a68e8de54e74a6493bfded8d9fbd157c7c:docs/superpowers/plans/2026-04-14-accessible-column-layout.md:generic-api-key:216
+
+# Fixed API-key-shaped inputs to schema validation tests, including rejection cases.
+bed35cc0e586cb7b630e8640e8742e90d0d38016:apps/web/app/api/keys/__tests__/rotate.test.ts:generic-api-key:47
+bed35cc0e586cb7b630e8640e8742e90d0d38016:apps/web/app/api/keys/__tests__/rotate.test.ts:generic-api-key:70
+bed35cc0e586cb7b630e8640e8742e90d0d38016:apps/web/app/api/keys/__tests__/rotate.test.ts:stripe-access-token:59
+
+# Documented schema-validation test input.
+b831042ecff53f278b305333ded54af2b61e3bea:docs/superpowers/plans/2026-04-09-openapi-spec-api-documentation.md:generic-api-key:213
+
+# Explicitly generated local test master keys; test environment is stubbed and restored.
+7929ef4d18adafe3af28aa6cfe790842a4251337:apps/web/lib/crypto/keyring.test.ts:generic-api-key:8
+7929ef4d18adafe3af28aa6cfe790842a4251337:apps/web/lib/crypto/keyring.test.ts:generic-api-key:9
+
+# Documented generated test-master-key fixtures.
+fe97ab2cf335ec53c5a4fa89cca904defa651887:docs/plans/2026-04-02-byollm-simplification-implementation.md:generic-api-key:77
+fe97ab2cf335ec53c5a4fa89cca904defa651887:docs/plans/2026-04-02-byollm-simplification-implementation.md:generic-api-key:78
+6306dbd85be7721073ba7d41d0b2232259e6391d:docs/plans/2026-04-02-byollm-simplification-implementation.md:generic-api-key:76
+6306dbd85be7721073ba7d41d0b2232259e6391d:docs/plans/2026-04-02-byollm-simplification-implementation.md:generic-api-key:77
+
+# Bearer placeholder in a public curl usage example.
+60fe45f5a6bd3d946fff1f0e86a4905ee952d21d:apps/marketing/src/pages/[lang]/developers/index.astro:curl-auth-header:166
+
+# Bearer placeholder in a curl usage example.
+fce31a9aee6adb54f2424d46894ff9217baf89e2:docs/plans/2026-03-28-mcp-launch-readiness.md:curl-auth-header:223
+
+# Truncated ellipsis placeholder in a curl example.
+b2c80d0b3597e5173fd663be7de6463d75f82c5f:docs/superpowers/plans/2026-03-18-api-v1-redesign.md:curl-auth-header:927
+
+# YOUR_ placeholders in curl examples.
+b2c80d0b3597e5173fd663be7de6463d75f82c5f:docs/superpowers/plans/2026-03-18-mcp-server.md:curl-auth-header:965
+b2c80d0b3597e5173fd663be7de6463d75f82c5f:docs/superpowers/plans/2026-03-18-mcp-server.md:curl-auth-header:976
+
+# Key-prefix fixtures in logging tests, not complete API credentials.
+3749b3b741b6f1d17a2e3bfae39a0365aa2b5dbd:apps/web/lib/api-v1/auth-logging.test.ts:generic-api-key:25
+3749b3b741b6f1d17a2e3bfae39a0365aa2b5dbd:apps/web/lib/api-v1/auth-logging.test.ts:generic-api-key:37
+
+# Explicit test-key literal used to verify deterministic hashing.
+bc26906da3692e93cb34e2d5fa863aff59de8860:apps/web/lib/api-v1/__tests__/auth.test.ts:generic-api-key:33
+a124aac9113005f7eb72062c59a6c8f75ac83bd5:apps/web/lib/api-v1/__tests__/auth.test.ts:generic-api-key:33
+
+# Explicit test-secret fixture used to sign a synthetic payload.
+a7c68cdb675187546ec511fac3522e63f1eb73cd:apps/web/lib/webhooks/__tests__/sign.test.ts:generic-api-key:5
+
+# The same webhook test-secret fixture in an implementation plan.
+90eae683dd4d0da3d146692c6e2edec6d280e9fd:docs/plans/2026-03-06-public-api-v1-implementation.md:generic-api-key:2607
+
+# Ordinary LinkedIn marketing prose, not a client identifier.
+444929e7d4edb53ccf3dde18fb2afd9414735512:docs/marketing/persona-feature-matrix.md:linkedin-client-id:46
+
+# Trust-checklist prose matched generic-api-key on the word list after "forged"; reworded in a later commit.
+140e3953101a39990b6992ec1d60501b56ab1129:packages/editor-core/src/frame-bridge/README.md:generic-api-key:139
+8cdbbc9bed370c03f33003ca49a729e112e1cb61:CODING_STANDARDS.md:generic-api-key:11

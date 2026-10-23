@@ -1,0 +1,12 @@
+---
+lang: en
+---
+# Button names
+
+::: write-distractors What should a button's accessible name tell the user? {count=2}
+answer: The action the button performs.
+:: Appearance replaces purpose
+option: The button's colour.
+:: Position replaces purpose
+option: The button's position on the page.
+:::

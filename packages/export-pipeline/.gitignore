@@ -1,0 +1,7 @@
+.test-env.json
+
+# Rustici SCORM Driver files (copyrighted — not committed, copied locally at test time)
+tests/scorm-local/drivers/
+
+# Official ADL SCORM resource downloads and extracted suites are cached locally.
+.adl-cache/

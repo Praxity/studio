@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en" dir="ltr" class="praxity-js-loaded" data-praxity-root data-praxity-mode="light" data-praxity-image-hover="none" data-praxity-highlight-style="none">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Glossary</title>
+<meta name="description" content="Glossary — c" />
+<script id="praxity-host-config" type="application/json">{"version":1,"courseId":"c","pageId":"glossary","pageTitle":"Glossary","lessonId":null,"pageRole":"glossary","currentPage":3,"totalPages":2,"currentSlug":"glossary","availableSlugs":["grammar","raw","glossary"],"pageIdMap":{"grammar":"grammar","raw":"raw","glossary":"glossary"},"statefulBlockIds":[],"completionMethod":"allPages","strings":{"scormResumePositionPrefix":"Resumed at page 3 of 2: ","scormResumeAnnouncement":"Resumed at page 3 of 2: Glossary"}}</script>
+<link rel="preload" href="course-shell.js" as="script" />
+<link rel="stylesheet" href="styles.css" />
+<script id="praxity-shell-config" type="application/json">{"version":1,"kind":"page","colorMode":"light","pageFocusDefault":false,"enableJsNav":false,"entrance":"none","stagger":"none","keyboardArrows":false,"previousHref":"raw.html","currentPage":3,"slugs":["grammar","raw","glossary"],"resumeFilename":"course-resume.js"}</script>
+<script src="course-shell.js"></script>
+<!--praxity-deployment-head-->
+</head>
+<body class="praxity-layout-none">
+<div id="praxity-course-meta" hidden data-total-pages="2" data-current-page="3" data-course-id="c"></div>
+<a href="#main-content" class="praxity-skip-link">Skip to content</a>
+<div id="praxity-live-region" lang="en" aria-live="polite" aria-atomic="true" class="praxity-sr-only"></div>
+<div class="praxity-layout-wrapper">
+<main id="main-content" class="praxity-page-content" tabindex="-1">
+<h1 class="praxity-page-title">Glossary</h1>
+<a class="praxity-glossary-link" href="index.html">Back to the course</a>
+
+		<div class="praxity-glossary-page">
+			<dl>
+				
+			<div class="praxity-glossary-term" id="term-opt">
+				<dt class="praxity-glossary-term-name">OPT</dt>
+				<dd class="praxity-glossary-term-definition">
+					escaped
+				</dd>
+			</div>
+
+			<div class="praxity-glossary-term" id="term-t">
+				<dt class="praxity-glossary-term-name">t</dt>
+				<dd class="praxity-glossary-term-definition">
+					d
+				</dd>
+			</div>
+
+			<div class="praxity-glossary-term" id="term-yes">
+				<dt class="praxity-glossary-term-name">Yes</dt>
+				<dd class="praxity-glossary-term-definition">
+					Option definition
+				</dd>
+			</div>
+			</dl>
+		</div>
+</main>
+</div>
+</body>
+</html>

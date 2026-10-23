@@ -1,0 +1,24 @@
+{
+	"workflows": [
+		"cli-candidate.yml",
+		"cli-candidate-freshness.yml",
+		"macos-nightly.yml",
+		"scorm-adl-conformance.yml",
+		"scorm-adl-conformance-windows.yml",
+		"private-ci.yml"
+	],
+	"scripts": [
+		"apps/desktop/scripts/private-ci.test.mjs",
+		"scripts/scorm-adl-conformance-prepare.sh",
+		"scripts/scorm-adl-conformance-windows.ps1",
+		"scripts/scorm-adl-conformance.test.mjs"
+	],
+	"workflowSha256": {
+		"cli-candidate.yml": "c714344a825499638e4351c27a9677e1a7754d2124c4cb2412406c9365676373",
+		"cli-candidate-freshness.yml": "c23e7cbc397c12436f023b73f959010f7e0714628bbb322c7002252db0ba96b6",
+		"macos-nightly.yml": "3ac360253eebd99af9beb8afa789898b0301269f3fd4f758052258564a0b04e7",
+		"scorm-adl-conformance.yml": "6c9c26989d6ef6e13c89ed8aa79e36a622a760a1d8c2a4e26f947c593532341a",
+		"scorm-adl-conformance-windows.yml": "ac0044ae407e8ceca97f2e9ca715a213577ef222d47fe62f9ed5dc827805929d",
+		"private-ci.yml": "141768cadbf9ab080490536c80a4f372fbce9a0e9ca4d430b6d87c072fb2322f"
+	}
+}

@@ -1,0 +1,167 @@
+name: Security
+
+on:
+  pull_request:
+  schedule:
+    - cron: "0 8 * * 1" # Weekly Monday 8am UTC
+    - cron: "0 7 * * *" # Daily secret scan 7am UTC
+  workflow_dispatch: # Allow manual runs
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+# Fork PRs run on free GitHub-hosted runners; Ubicloud serves branches pushed here. A fork can
+# still edit this file, so fork-run approval in repository settings is the real spending gate.
+jobs:
+  changes:
+    if: github.repository == (vars.STUDIO_SOURCE_REPO || github.repository) && (github.event_name == 'pull_request')
+    runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-24.04' || 'ubicloud-standard-2' }}
+    timeout-minutes: 2
+    outputs:
+      dependencies: ${{ steps.filter.outputs.dependencies }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: dorny/paths-filter@0e4a8c6effa4802afeda77dc8d303f8176d7dfad # v3
+        id: filter
+        with:
+          filters: |
+            dependencies:
+              - '**/package.json'
+              - '**/pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - '.npmrc'
+              - '.pnpmfile.cjs'
+              - 'patches/**'
+              - '.github/workflows/security.yml'
+
+  audit:
+    name: Dependency audit
+    needs: changes
+    # Scheduled/manual runs bypass the PR-only changes job.
+    if: github.repository == (vars.STUDIO_SOURCE_REPO || github.repository) && (!cancelled() && (github.event_name != 'pull_request' || needs.changes.outputs.dependencies == 'true') && (github.event_name != 'schedule' || github.event.schedule == '0 8 * * 1'))
+    runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-24.04' || 'ubicloud-standard-2' }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.22.1
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm audit --audit-level=moderate
+
+  gitleaks:
+    name: Secret scanning
+    if: github.repository == (vars.STUDIO_SOURCE_REPO || github.repository) && (github.event_name != 'schedule' || github.event.schedule == '0 7 * * *')
+    runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-24.04' || 'ubicloud-standard-2' }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Select secret scan history
+        id: range
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          log_opts=--all
+          if [[ "$EVENT_NAME" == pull_request ]]; then
+            if base=$(git -c maintenance.auto=false -c gc.auto=0 merge-base "$PR_BASE_SHA" "$PR_HEAD_SHA") && [[ -n "$base" ]]; then
+              log_opts="$base..$PR_HEAD_SHA"
+            else
+              echo "Cannot compute PR merge-base; scanning full history (--all)."
+            fi
+          fi
+          echo "log_opts=$log_opts" >> "$GITHUB_OUTPUT"
+      - name: Scan selected history with Gitleaks
+        shell: bash
+        env:
+          GITLEAKS_REPORT_PATH: ${{ runner.temp }}/gitleaks-findings.json
+          GITLEAKS_LOG_OPTS: ${{ steps.range.outputs.log_opts }}
+        run: |
+          set -euo pipefail
+          scan_dir=$(mktemp -d)
+          trap 'rm -rf "$scan_dir"' EXIT
+          archive="$scan_dir/gitleaks.tar.gz"
+          curl --fail --silent --show-error --location \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz \
+            --output "$archive"
+          # SHA-256 from the official v8.30.1 release checksums.
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  $archive" | sha256sum --check
+          tar -xzf "$archive" -C "$scan_dir" gitleaks
+          scan_status=0
+          "$scan_dir/gitleaks" git --log-opts="--remerge-diff $GITLEAKS_LOG_OPTS" --config=.gitleaks.toml --redact=100 --no-banner \
+            --report-format=json --report-path="$scan_dir/report.json" . 2>"$scan_dir/remerge.stderr" || scan_status=$?
+          if grep -Eiq '\[git\]|fatal:' "$scan_dir/remerge.stderr"; then
+            echo "::error::Secret scanning infrastructure failure in pass 1 (remerge): Git history could not be read."
+            scan_status=2
+          fi
+          # Git skips remerge-diff for octopus merges, so scan their first-parent diffs separately.
+          # A token in a merged PR commit may appear again here with a different fingerprint.
+          octopus_status=0
+          "$scan_dir/gitleaks" git --log-opts="--diff-merges=first-parent --min-parents=3 $GITLEAKS_LOG_OPTS" --config=.gitleaks.toml --redact=100 --no-banner \
+            --report-format=json --report-path="$scan_dir/octopus.json" . 2>"$scan_dir/octopus.stderr" || octopus_status=$?
+          if grep -Eiq '\[git\]|fatal:' "$scan_dir/octopus.stderr"; then
+            echo "::error::Secret scanning infrastructure failure in pass 2 (octopus): Git history could not be read."
+            octopus_status=2
+          fi
+          if (( octopus_status > scan_status )); then
+            scan_status=$octopus_status
+          fi
+          # Keep locations/rules only; never upload source matches, secrets or commit messages.
+          python3 - "$scan_dir/report.json" "$scan_dir/octopus.json" "$GITLEAKS_REPORT_PATH" <<'PY'
+          import json, os, pathlib, re, sys
+          keys = ("RuleID", "File", "StartLine", "Commit", "Fingerprint")
+          findings = []
+          for name in sys.argv[1:-1]:
+              report = pathlib.Path(name)
+              if report.exists():
+                  findings.extend({key: finding[key] for key in keys} for finding in json.loads(report.read_text()))
+          pathlib.Path(sys.argv[-1]).write_text(json.dumps(findings, indent=2) + "\n")
+          if findings:
+              lines = [json.dumps(finding) for finding in findings]
+              longest = max((len(run) for line in lines for run in re.findall(r"`+", line)), default=0)
+              fence = "`" * max(3, longest + 1)
+              with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as summary:
+                  print(fence, file=summary)
+                  for line in lines:
+                      print(line)
+                      print(line, file=summary)
+                  print(fence, file=summary)
+          PY
+          exit "$scan_status"
+      - name: Retain secret finding locations
+        # Gitleaks fails the scan when it finds a secret; clean runs keep nothing.
+        if: failure()
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: gitleaks-findings
+          path: ${{ runner.temp }}/gitleaks-findings.json
+          retention-days: 3
+          if-no-files-found: ignore
+
+  # CodeQL requires GitHub Advanced Security (paid) for private repos.
+  # Enable it in repo Settings > Security > Code security if available,
+  # then uncomment this job.
+  # codeql:
+  #   name: CodeQL analysis
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     security-events: write
+  #     actions: read
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: github/codeql-action/init@v3
+  #       with:
+  #         languages: javascript-typescript
+  #     - uses: github/codeql-action/analyze@v3

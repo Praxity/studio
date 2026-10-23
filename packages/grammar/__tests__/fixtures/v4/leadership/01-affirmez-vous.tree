@@ -1,0 +1,112 @@
+frontmatter@1-7
+page@9-20
+  part:nav@10-10
+  image@12-12
+  body@14-14
+  block:quote@16-19
+    body@17-17
+    part:speaker@18-18
+page@21-34
+  body@23-23
+  block:comparison@25-31
+    item@26-27
+      body@27-27
+    item@29-30
+      body@30-30
+  body@33-33
+page@35-52
+  block:cards@37-49
+    item@38-39
+      body@39-39
+    item@41-42
+      body@42-42
+    item@44-45
+      body@45-45
+    item@47-48
+      body@48-48
+  body@51-51
+page@53-67
+  part:nav@54-54
+  block:categorize@56-66
+    item@57-59
+      body@58-59
+    item@60-61
+      body@61-61
+    item@62-63
+      body@63-63
+    item@64-65
+      body@65-65
+page@68-80
+  block:sequence@70-79
+    item@71-72
+      body@72-72
+    item@74-75
+      body@75-75
+    item@77-78
+      body@78-78
+page@81-98
+  body@83-83
+  block:cards@85-97
+    item@86-87
+      body@87-87
+    item@89-90
+      body@90-90
+    item@92-93
+      body@93-93
+    item@95-96
+      body@96-96
+page@99-114
+  block:tabs@101-113
+    item@102-103
+      body@103-103
+    item@105-106
+      body@106-106
+    item@108-109
+      body@109-109
+    item@111-112
+      body@112-112
+page@115-123
+  part:nav@116-116
+  block:match@118-122
+    body@119-121
+page@124-141
+  body@126-126
+  block:sequence@128-140
+    item@129-130
+      body@130-130
+    item@132-133
+      body@133-133
+    item@135-136
+      body@136-136
+    item@138-139
+      body@139-139
+page@142-164
+  part:nav@143-143
+  block:group@145-163
+    part:button@146-146
+    block:match@147-152
+      body@148-151
+    block:choice@153-162
+      body@154-161
+page@165-209
+  image@167-167
+  body@169-169
+  block:rating@171-182
+    body@172-181
+  block:rating@184-195
+    body@185-194
+  block:rating@197-208
+    body@198-207
+page@210-225
+  body@212-212
+  block:group@214-224
+    part:button@215-215
+    block:free-response@216-219
+      body@217-217
+      part:placeholder@218-218
+    block:free-response@220-223
+      body@221-221
+      part:placeholder@222-222
+page@226-234
+  block:dialogue@228-234
+    body@229-233

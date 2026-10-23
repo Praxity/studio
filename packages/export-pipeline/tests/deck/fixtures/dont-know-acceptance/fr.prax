@@ -1,0 +1,24 @@
+---
+lang: fr
+title: Pratique de l’incertitude
+---
+# Pratique privée et transmise
+::: choice Question privée sur les obstacles {private=true dontKnow=true scored=false required=false name=privateFr shuffle=true}
+correct: Changez l'environnement.
+incorrect: Cherchez les obstacles dans l'environnement.
+(x) PRIVATE_FR_FIRST_RIGHT
+( ) PRIVATE_FR_FIRST_OTHER
+:::
+::: choice Question transmise sur les obstacles {dontKnow=true scored=true required=false attempts=0 name=ordinaryFr}
+(x) Éliminer les obstacles
+( ) Blâmer la personne
+:::
+::: choice Deuxième question privée {private=true dontKnow=true scored=false required=false}
+(x) PRIVATE_FR_SECOND_RIGHT
+( ) PRIVATE_FR_SECOND_OTHER
+:::
+::: self-check Expliquez un obstacle {private=true}
+model: L'environnement peut empêcher la participation.
+:: Environnement
+missed: Pensez à l'effet de l'environnement sur la participation.
+:::

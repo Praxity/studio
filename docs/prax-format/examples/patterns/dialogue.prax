@@ -1,0 +1,19 @@
+---
+title: Prepare for the meeting
+lang: en
+cast:
+  alex:
+    name: Alex
+  sam:
+    name: Sam
+---
+
+# Start with the goal {hideTitle}
+
+## Start with the goal
+
+::: dialogue {style=script}
+- alex: What should I say when the meeting starts?
+- sam: Start with the goal, then ask what everyone needs.
+caption: A short practice exchange
+:::

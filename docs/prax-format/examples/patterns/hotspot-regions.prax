@@ -1,0 +1,15 @@
+---
+title: Equipment controls
+lang: en
+---
+
+# Find the control {hideTitle}
+
+## Find the control
+
+::: hotspot Select the valve.
+![Equipment controls with a valve, gauge and panel](/assets/equipment-controls.png)
+- Valve {shape=rect x=10 y=20 w=30 h=15 correct}
+- Gauge {shape=ellipse x=60 y=40 rx=8 ry=5}
+- Panel {shape=polygon points="10 60, 40 60, 40 80, 10 80"}
+:::

@@ -1,0 +1,55 @@
+.section {
+	border-bottom: 1px solid var(--panel-divider);
+}
+
+.section:last-child {
+	border-bottom: none;
+}
+
+.header {
+	all: unset;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+	padding: 12px var(--panel-padding);
+	cursor: pointer;
+	font-size: var(--panel-section-title-size);
+	line-height: var(--panel-line-height);
+	color: var(--panel-text);
+	background: transparent;
+	box-sizing: border-box;
+}
+
+.header:hover {
+	background: var(--panel-surface);
+}
+
+/*
+ * Section titles stay bold whether open or closed.
+ *
+ * Collapsed headers used to drop to 400 and a muted colour, so once one section was open its
+ * neighbours faded out — exactly when you need to see what comes before and after. The
+ * chevron already carries open-versus-closed, so dimming the label only cost scannability.
+ */
+.header[aria-expanded="true"],
+.header[aria-expanded="false"] {
+	font-weight: 600;
+}
+
+.chevron {
+	transition: transform 200ms ease;
+	color: var(--panel-text-muted);
+}
+
+.chevronOpen {
+	transform: rotate(0deg);
+}
+
+.chevronClosed {
+	transform: rotate(-90deg);
+}
+
+.content {
+	padding: 0 var(--panel-padding) var(--panel-padding);
+}

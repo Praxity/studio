@@ -1,0 +1,159 @@
+{
+	"version": 1,
+	"package": "learning-patterns",
+	"files": [
+		{
+			"path": "lib/text-limits.js",
+			"sha256": "eba098cb94d8b2a18b3035753bf6782dddd788796164a5723506dada753a9f32",
+			"sourceCommit": "b3f82d2415982da20dda28b61770d7e85084901b",
+			"roles": ["learner-bundle", "node-build-time", "studio-browser"],
+			"reviewer": "Opus 5.5",
+			"reviewDate": "2026-10-20",
+			"reviewReceipt": "PR 1833 review comment 6300796999"
+		},
+		{
+			"path": "LICENSE",
+			"sha256": "d817c04f10efaffd1ab6dba0792a6567dce98f8ab41e86c64833a7b9cff7ecc5",
+			"sourceCommit": "b3f82d2415982da20dda28b61770d7e85084901b",
+			"roles": ["legal"],
+			"reviewer": "Opus 5.5",
+			"reviewDate": "2026-10-20",
+			"reviewReceipt": "PR 1833 review comment 6300796999"
+		},
+		{
+			"path": "package.json",
+			"sha256": "bfff7c134f4a63a96bd9b4a1056f05a1a2554fdddfce27ab70736aadd9f1b120",
+			"sourceCommit": "b3f82d2415982da20dda28b61770d7e85084901b",
+			"roles": ["legal"],
+			"reviewer": "Opus 5.5",
+			"reviewDate": "2026-10-20",
+			"reviewReceipt": "PR 1833 review comment 6300796999"
+		},
+		{
+			"path": "patterns/dont-know/logic.js",
+			"sha256": "b2e6720e593cb7ba78690d860628ec4d57afe20a5f6529e375cf8a3a60adea63",
+			"sourceCommit": "b3f82d2415982da20dda28b61770d7e85084901b",
+			"roles": ["learner-bundle", "node-build-time"],
+			"reviewer": "Opus 5.5",
+			"reviewDate": "2026-10-20",
+			"reviewReceipt": "PR 1833 review comment 6300796999"
+		},
+		{
+			"path": "patterns/highlight/content.schema.json",
+			"sha256": "3d8407986c49083cceae52a63acf917b6f506dca2e01f1348b87e227ae1c2b00",
+			"sourceCommit": "b3f82d2415982da20dda28b61770d7e85084901b",
+			"roles": ["node-build-time", "studio-browser"],
+			"reviewer": "Opus 5.5",
+			"reviewDate": "2026-10-20",
+			"reviewReceipt": "PR 1833 review comment 6300796999"
+		},
+		{
+			"path": "patterns/highlight/logic.js",
+			"sha256": "4f6d869fba0ac66349276dbc5ce1a5114e57cef56cd303f7c09ee789572cd985",
+			"sourceCommit": "b3f82d2415982da20dda28b61770d7e85084901b",
+			"roles": ["learner-bundle", "node-build-time", "studio-browser"],
+			"reviewer": "Opus 5.5",
+			"reviewDate": "2026-10-20",
+			"reviewReceipt": "PR 1833 review comment 6300796999"
+		},
+		{
+			"path": "patterns/highlight/strings.js",
+			"sha256": "891ee0f0dec964496cea29fba812c9cf07b64401d28b744ca7cadbb317a1d7c1",
+			"sourceCommit": "b3f82d2415982da20dda28b61770d7e85084901b",
+			"roles": ["learner-bundle", "node-build-time"],
+			"reviewer": "Opus 5.5",
+			"reviewDate": "2026-10-20",
+			"reviewReceipt": "PR 1833 review comment 6300796999"
+		},
+		{
+			"path": "patterns/retrieval-sheet/content.schema.json",
+			"sha256": "428778d19f3f3088015ab1b96e5f7dd74923599d1f7173a976b4b46d03649f97",
+			"sourceCommit": "b3f82d2415982da20dda28b61770d7e85084901b",
+			"roles": ["node-build-time", "studio-browser"],
+			"reviewer": "Opus 5.5",
+			"reviewDate": "2026-10-20",
+			"reviewReceipt": "PR 1833 review comment 6300796999"
+		},
+		{
+			"path": "patterns/retrieval-sheet/logic.js",
+			"sha256": "0f47b1a4bb0a610b62199b1b07107e98fb7a66047a0177a04894ed38a3d1f7fd",
+			"sourceCommit": "b3f82d2415982da20dda28b61770d7e85084901b",
+			"roles": ["learner-bundle", "node-build-time", "studio-browser"],
+			"reviewer": "Opus 5.5",
+			"reviewDate": "2026-10-20",
+			"reviewReceipt": "PR 1833 review comment 6300796999"
+		},
+		{
+			"path": "patterns/retrieval-sheet/strings.js",
+			"sha256": "a7204aa8375bdc7613ff162483d82d42e59b933c6cd72e95ec51261ca59fab2b",
+			"sourceCommit": "b3f82d2415982da20dda28b61770d7e85084901b",
+			"roles": ["learner-bundle", "node-build-time"],
+			"reviewer": "Opus 5.5",
+			"reviewDate": "2026-10-20",
+			"reviewReceipt": "PR 1833 review comment 6300796999"
+		},
+		{
+			"path": "patterns/self-check/content.schema.json",
+			"sha256": "300e0e1f2e474986df334edec65a5d83724c0182d957773e3de2670818f2f8cb",
+			"sourceCommit": "b3f82d2415982da20dda28b61770d7e85084901b",
+			"roles": ["node-build-time"],
+			"reviewer": "Opus 5.5",
+			"reviewDate": "2026-10-20",
+			"reviewReceipt": "PR 1833 review comment 6300796999"
+		},
+		{
+			"path": "patterns/self-check/logic.js",
+			"sha256": "5c51d0475804604a22614c68d896878ae981e4133fd8c3780fa7f130051dab3e",
+			"sourceCommit": "b3f82d2415982da20dda28b61770d7e85084901b",
+			"roles": ["learner-bundle", "node-build-time", "studio-browser"],
+			"reviewer": "Opus 5.5",
+			"reviewDate": "2026-10-20",
+			"reviewReceipt": "PR 1833 review comment 6300796999"
+		},
+		{
+			"path": "patterns/self-check/strings.js",
+			"sha256": "bfddd8a2ad20bc1374562c7cc3dc15d0b237a2ff4b913cc82bc46edface5d321",
+			"sourceCommit": "b3f82d2415982da20dda28b61770d7e85084901b",
+			"roles": ["learner-bundle", "node-build-time"],
+			"reviewer": "Opus 5.5",
+			"reviewDate": "2026-10-20",
+			"reviewReceipt": "PR 1833 review comment 6300796999"
+		},
+		{
+			"path": "patterns/write-distractors/content.schema.json",
+			"sha256": "40a6bd39cf34bbd62ded7c280496a27e20f3d4e5b546a21727935c41cd911bd3",
+			"sourceCommit": "b3f82d2415982da20dda28b61770d7e85084901b",
+			"roles": ["node-build-time", "studio-browser"],
+			"reviewer": "Opus 5.5",
+			"reviewDate": "2026-10-20",
+			"reviewReceipt": "PR 1833 review comment 6300796999"
+		},
+		{
+			"path": "patterns/write-distractors/logic.js",
+			"sha256": "c4afdf43c222029a6c6efc4a406e25461f62a196e3afe9b94a3cf03269ec886e",
+			"sourceCommit": "b3f82d2415982da20dda28b61770d7e85084901b",
+			"roles": ["learner-bundle", "node-build-time", "studio-browser"],
+			"reviewer": "Opus 5.5",
+			"reviewDate": "2026-10-20",
+			"reviewReceipt": "PR 1833 review comment 6300796999"
+		},
+		{
+			"path": "patterns/write-distractors/strings.js",
+			"sha256": "4469fe515926f26d5e2e74c7c13015e0941bdde054b88b2ce2fe41500b697eca",
+			"sourceCommit": "b3f82d2415982da20dda28b61770d7e85084901b",
+			"roles": ["node-build-time"],
+			"reviewer": "Opus 5.5",
+			"reviewDate": "2026-10-20",
+			"reviewReceipt": "PR 1833 review comment 6300796999"
+		},
+		{
+			"path": "README.md",
+			"sha256": "dc962f8a2dedc67a373391ef68d7c079b792604d3c90c427f27eec14d714b1e3",
+			"sourceCommit": "b3f82d2415982da20dda28b61770d7e85084901b",
+			"roles": ["legal"],
+			"reviewer": "Opus 5.5",
+			"reviewDate": "2026-10-20",
+			"reviewReceipt": "PR 1833 review comment 6300796999"
+		}
+	]
+}

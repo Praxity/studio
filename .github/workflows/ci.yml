@@ -1,0 +1,714 @@
+name: CI
+run-name: ${{ github.event_name == 'workflow_dispatch' && inputs.gate == 'candidate' && format('CI candidate {0}', inputs.head_sha) || '' }}
+
+on:
+  # PR pushes run the fast gate; dispatched candidates run the full Chromium gate.
+  # Nightly and ordinary manual runs retain every engine.
+  schedule:
+    - cron: "0 6 * * *"
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      gate:
+        type: choice
+        options: [all, candidate]
+        default: all
+      head_sha:
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.ref }}-${{ inputs.gate }}-${{ inputs.head_sha }}
+  cancel-in-progress: true
+
+# Shared setup anchor — reused by all jobs
+env:
+  DATABASE_URL: postgresql://fake:fake@localhost:5432/fake
+  AUTH_SECRET: ci-placeholder-secret-not-real
+  NEXTAUTH_URL: http://localhost:3000
+  # Compare PRs with their base; nightly and manual runs compare a commit with itself.
+  SLOW_TESTS_BASE: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
+
+# Fork PRs run on free GitHub-hosted runners; Ubicloud serves branches pushed here. A fork can
+# still edit this file, so fork-run approval in repository settings is the real spending gate.
+jobs:
+  # ── Detect if only docs/config changed (no code) ──────────────
+  changes:
+    if: github.repository == (vars.STUDIO_SOURCE_REPO || github.repository)
+    runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-24.04' || 'ubicloud-standard-2' }}
+    timeout-minutes: 2
+    outputs:
+      vitest: ${{ steps.vitest.outputs.vitest || 'full' }}
+      code: ${{ steps.full.outputs.code || steps.filter.outputs.code }}
+      format: ${{ steps.full.outputs.format || steps.filter.outputs.format }}
+      # PRs never execute browsers; candidates use the shared skip-list.
+      output: ${{ github.event_name == 'pull_request' && 'false' || steps.full_browser.outputs.output || steps.browser.outputs.browser || 'true' }}
+      browser_editor: ${{ github.event_name == 'pull_request' && 'false' || steps.full_browser.outputs.browser_editor || steps.browser.outputs.browser || 'true' }}
+      browser: ${{ github.event_name == 'pull_request' && 'false' || steps.full_browser.outputs.browser || steps.browser.outputs.browser || 'true' }}
+      published_engines: ${{ (github.event_name == 'pull_request' || inputs.gate == 'candidate') && '[{"browser":"chromium","shard":"1/3","artifact":"chromium-1"},{"browser":"chromium","shard":"2/3","artifact":"chromium-2"},{"browser":"chromium","shard":"3/3","artifact":"chromium-3"}]' || '[{"browser":"chromium","shard":"1/3","artifact":"chromium-1"},{"browser":"chromium","shard":"2/3","artifact":"chromium-2"},{"browser":"chromium","shard":"3/3","artifact":"chromium-3"},{"browser":"firefox","shard":"1/1","artifact":"firefox"},{"browser":"webkit","shard":"1/2","artifact":"webkit-1"},{"browser":"webkit","shard":"2/2","artifact":"webkit-2"}]' }}
+      deck_engines: ${{ (github.event_name == 'pull_request' || inputs.gate == 'candidate') && '[{"browser":"chromium","shard":"1/2","artifact":"chromium-1"},{"browser":"chromium","shard":"2/2","artifact":"chromium-2"}]' || '[{"browser":"chromium","shard":"1/2","artifact":"chromium-1"},{"browser":"chromium","shard":"2/2","artifact":"chromium-2"},{"browser":"firefox","shard":"1/1","artifact":"firefox"},{"browser":"webkit","shard":"1/2","artifact":"webkit-1"},{"browser":"webkit","shard":"2/2","artifact":"webkit-2"}]' }}
+      editor_engines: ${{ (github.event_name == 'pull_request' || inputs.gate == 'candidate') && '["chromium"]' || '["chromium","webkit"]' }}
+    steps:
+      - name: Verify candidate SHA
+        if: github.event_name == 'workflow_dispatch' && inputs.gate == 'candidate'
+        env:
+          EXPECTED_SHA: ${{ inputs.head_sha }}
+          ACTUAL_SHA: ${{ github.sha }}
+        run: |
+          node --input-type=module <<'NODE'
+          const expected = process.env.EXPECTED_SHA;
+          if (!/^[0-9a-f]{40}$/.test(expected ?? '') || expected !== process.env.ACTUAL_SHA) {
+            console.error('Candidate head SHA does not match the dispatched revision.');
+            process.exitCode = 1;
+          }
+          NODE
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: ${{ inputs.gate == 'candidate' && '0' || '2' }} # Candidates need main ancestry.
+      - name: Check committed machine paths
+        run: node scripts/check-machine-paths.mjs
+      - id: full
+        run: |
+          echo "code=true" >> "$GITHUB_OUTPUT"
+          echo "format=true" >> "$GITHUB_OUTPUT"
+      - id: full_browser
+        if: github.event_name != 'pull_request' && inputs.gate != 'candidate'
+        run: |
+          echo "output=true" >> "$GITHUB_OUTPUT"
+          echo "browser_editor=true" >> "$GITHUB_OUTPUT"
+          echo "browser=true" >> "$GITHUB_OUTPUT"
+      - uses: dorny/paths-filter@0e4a8c6effa4802afeda77dc8d303f8176d7dfad # v3
+        id: filter
+        if: github.event_name == 'pull_request'
+        with:
+          filters: |
+            code:
+              - '**/*.ts'
+              - '**/*.tsx'
+              - '**/*.js'
+              - '**/*.jsx'
+              - '**/*.mjs'
+              - '**/*.mts'
+              - '**/*.css'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'patches/**'
+              - 'package.json'
+              - '**/package.json'
+              - 'tsconfig*.json'
+              - 'biome.json'
+              - 'scripts/slow-tests.json'
+              - '.github/actions/**'
+              - '.github/workflows/ci.yml'
+              - '.github/workflows/cli-candidate.yml'
+              - '.github/workflows/cli-proof.yml'
+              - 'apps/desktop/scripts/build-cli-archives.sh'
+              - '**/*.prax'
+              - 'docs/test-fixtures/**'
+              - 'docs/prax-format/reference/blocks.json'
+            # Retain draft and local affected selection. Ready PRs use browser.
+            output:
+              - 'packages/**'
+              - 'scripts/check-source-owners.mjs'
+              - 'apps/desktop/scripts/test-affected.mjs'
+              - 'apps/desktop/scripts/test-affected-output-map.mjs'
+              - 'apps/desktop/src/renderer/components/panels/compositions-data*'
+              - 'docs/test-fixtures/assets/**'
+              - 'apps/desktop/resources/**'
+              - 'docs/test-fixtures/**'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'package.json'
+              - 'patches/**'
+              - 'tsconfig*.json'
+              - '.github/workflows/ci.yml'
+            # Browser authoring includes the canvas, local server, frame bridge,
+            # preview compiler and their served assets. Retired U7 staged specs are gone.
+            browser_editor:
+              - 'apps/desktop/src/**'
+              - 'apps/desktop/e2e/**'
+              - 'apps/desktop/scripts/**'
+              - 'apps/desktop/resources/**'
+              - 'apps/desktop/browser.vite.config.ts'
+              - 'apps/desktop/package.json'
+              - 'apps/desktop/tsconfig*.json'
+              - 'packages/**'
+              - 'docs/test-fixtures/**'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+              - 'package.json'
+              - 'patches/**'
+              - 'tsconfig*.json'
+              - '.github/workflows/ci.yml'
+            format:
+              - 'docs/prax-format/**/*.md'
+
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.22.1
+      - run: pnpm install --frozen-lockfile
+      # Normal-flow byte drift guard. PRs still control this workflow and tooling;
+      # the Studio merge process requires green CI and security review of changes.
+      - name: Verify installed learning-patterns admission
+        env:
+          ADMISSION_BASE: ${{ github.event.before || github.sha }}
+          ADMISSION_EVENT: ${{ github.event_name }}
+          ADMISSION_GATE: ${{ inputs.gate }}
+        run: |
+          if [[ "$ADMISSION_EVENT" == pull_request ]]; then
+            ADMISSION_BASE=$(git -c maintenance.auto=false -c gc.auto=0 rev-parse --verify 'HEAD^1^{commit}')
+          fi
+          if [[ "$ADMISSION_EVENT" == workflow_dispatch ]]; then
+            echo '::warning::learning-patterns admission: manual dispatch: trusted-base mode skipped; candidate copy only'
+            trusted_verifier="$GITHUB_WORKSPACE/scripts/check-learning-patterns.mjs"
+          else
+            [[ "$ADMISSION_BASE" =~ ^[a-f0-9]{40}$ ]] || { echo 'Pinned admission base required' >&2; exit 1; }
+            trusted_directory=$(mktemp -d "$RUNNER_TEMP/learning-patterns-base.XXXXXX")
+            trap 'rm -r "$trusted_directory"' EXIT
+            git -c maintenance.auto=false -c gc.auto=0 init --bare --quiet "$trusted_directory/repository"
+            source_config="$(git rev-parse --path-format=absolute --git-common-dir)/config"
+            git -C "$trusted_directory/repository" -c maintenance.auto=false -c gc.auto=0 -c include.path="$source_config" -c core.bare=true fetch --no-tags --depth=1 origin "$ADMISSION_BASE"
+            git -C "$trusted_directory/repository" -c maintenance.auto=false -c gc.auto=0 cat-file -e "$ADMISSION_BASE^{commit}"
+            trusted_verifier="$trusted_directory/check-learning-patterns.mjs"
+            git -C "$trusted_directory/repository" -c maintenance.auto=false -c gc.auto=0 show "$ADMISSION_BASE:scripts/check-learning-patterns.mjs" > "$trusted_verifier"
+            git -C "$trusted_directory/repository" -c maintenance.auto=false -c gc.auto=0 show "$ADMISSION_BASE:scripts/learning-patterns-admission.mjs" > "$trusted_directory/learning-patterns-admission.mjs"
+          fi
+          out=$(node "$trusted_verifier" --root "$GITHUB_WORKSPACE")
+          printf '%s\n' "$out"
+          grep -Eq '^learning-patterns admission verified: [1-9][0-9]* files at [a-f0-9]{40} manifest-sha256 [a-f0-9]{64}$' <<<"$out"
+      - id: vitest
+        if: github.event_name == 'pull_request'
+        env:
+          AFFECTED_BASE: ${{ github.event.pull_request.base.sha }}
+        run: pnpm test:affected --vitest-only --select-only --base "$AFFECTED_BASE"
+      - id: browser
+        if: github.event_name == 'workflow_dispatch' && inputs.gate == 'candidate'
+        env:
+          # One owner for skipped paths, shared with the reference guard.
+          BROWSER_SKIP: >-
+            ["docs/context/**", "docs/research/**", "docs/wiki-*/**",
+             "docs/tasks/**", "docs/releases/**", "docs/rules/**", "docs/adr/**",
+             "legal/**", ".claude/**", "*.md", ".github/dependabot.yml",
+             ".github/workflows/!(ci).yml"]
+        run: node apps/desktop/scripts/ci-browser-cli.mjs --candidate
+      # REST exposes completed step names, binding the fetched base to this H and run.
+      - name: Candidate base ${{ steps.browser.outputs.candidate_base }}
+        if: github.event_name == 'workflow_dispatch' && inputs.gate == 'candidate'
+        env:
+          CANDIDATE_BASE: ${{ steps.browser.outputs.candidate_base }}
+        run: |
+          node --input-type=module <<'NODE'
+          if (!/^[a-f0-9]{40}$/.test(process.env.CANDIDATE_BASE ?? '')) {
+            throw new Error('Candidate CI requires a recorded fetched main SHA.');
+          }
+          NODE
+
+  # Each check reports separately; the final verdict preserves every failure.
+  fast-checks:
+    needs: changes
+    if: ${{ github.repository == (vars.STUDIO_SOURCE_REPO || github.repository) && (!cancelled() && needs.changes.result == 'success' && needs.changes.outputs.code == 'true') }}
+    runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-24.04' || 'ubicloud-standard-2' }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          submodules: true
+          fetch-depth: 1
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.22.1
+          cache: pnpm
+      - name: Install dependencies
+        id: install
+        run: pnpm install --frozen-lockfile
+      - name: Check workflow syntax and expressions
+        id: actionlint
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        continue-on-error: true
+        run: |
+          mkdir -p "$RUNNER_TEMP/actionlint"
+          curl --fail --silent --show-error --location https://github.com/rhysd/actionlint/releases/download/v1.7.11/actionlint_1.7.11_linux_amd64.tar.gz -o "$RUNNER_TEMP/actionlint/actionlint.tar.gz"
+          echo "900919a84f2229bac68ca9cd4103ea297abc35e9689ebb842c6e34a3d1b01b0a  $RUNNER_TEMP/actionlint/actionlint.tar.gz" | sha256sum --check
+          tar -xzf "$RUNNER_TEMP/actionlint/actionlint.tar.gz" -C "$RUNNER_TEMP/actionlint" actionlint
+          shopt -s nullglob
+          "$RUNNER_TEMP/actionlint/actionlint" -shellcheck= .github/workflows/*.{yml,yaml}
+      - name: Check editor ownership
+        id: editor-ownership
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        continue-on-error: true
+        run: node scripts/check-editor-ownership.mjs
+      - name: Check source owners
+        id: source-owners
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        continue-on-error: true
+        run: node scripts/check-source-owners.mjs
+      - name: Check timeout evidence
+        id: timeout-evidence
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        continue-on-error: true
+        env:
+          TIMEOUT_BASE: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
+        run: |
+          node scripts/fetch-timeout-base.mjs --base "$TIMEOUT_BASE"
+          node scripts/check-test-timeouts.mjs --base "$TIMEOUT_BASE"
+      - name: Lint
+        id: lint
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        continue-on-error: true
+        run: pnpm exec biome check .
+      - name: Typecheck
+        id: typecheck
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        continue-on-error: true
+        run: pnpm typecheck
+      - name: Report fast-check results
+        id: verdict
+        if: ${{ !cancelled() }}
+        env:
+          CI_STEPS: ${{ toJSON(steps) }}
+        run: |
+          node --input-type=module <<'NODE'
+          const steps = JSON.parse(process.env.CI_STEPS);
+          let failed = false;
+          for (const id of ['install', 'actionlint', 'editor-ownership', 'source-owners', 'timeout-evidence', 'lint', 'typecheck']) {
+            const outcome = steps[id].outcome;
+            console.log(`${id}: ${outcome}`);
+            if (outcome !== 'success') failed = true;
+          }
+          process.exitCode = failed ? 1 : 0;
+          NODE
+
+  node-checks:
+    needs: changes
+    if: ${{ github.repository == (vars.STUDIO_SOURCE_REPO || github.repository) && (!cancelled() && needs.changes.result == 'success' && needs.changes.outputs.code == 'true') }}
+    runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-24.04' || 'ubicloud-standard-2' }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          submodules: true
+          fetch-depth: 0 # The allowlist shrink check reads the base commit.
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.22.1
+          cache: pnpm
+      - id: install
+        run: pnpm install --frozen-lockfile
+      - run: node --import tsx --test scripts/preflight-gates.test.mts
+      - name: Serial Node lifecycle checks
+        id: node-serial
+        shell: bash
+        run: |
+          # Real CLI/server deadlines need the runner to themselves.
+          serial_tests=$(tr '\n' ' ' < scripts/serial-node-tests.txt)
+          read -r -a tests <<< "$serial_tests"
+          (( ${#tests[@]} )) || { echo 'scripts/serial-node-tests.txt must list at least one test' >&2; exit 1; }
+          node --test --test-concurrency=1 "${tests[@]}"
+      - name: Parallel Node checks
+        id: node-parallel
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        shell: bash
+        run: |
+          tests=()
+          serial_tests=" $(tr '\n' ' ' < scripts/serial-node-tests.txt) "
+          for file in scripts/*.test.mjs apps/desktop/scripts/*.test.mjs; do
+            if [[ "$serial_tests" != *" $file "* ]]; then
+              tests+=("$file")
+            fi
+          done
+          node --test --test-concurrency=4 "${tests[@]}"
+
+  affected-test:
+    needs: changes
+    if: ${{ github.repository == (vars.STUDIO_SOURCE_REPO || github.repository) && (!cancelled() && github.event_name == 'pull_request' && needs.changes.result == 'success' && needs.changes.outputs.code == 'true' && needs.changes.outputs.vitest == 'affected') }}
+    runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-24.04' || 'ubicloud-standard-2' }}
+    timeout-minutes: 15
+    env:
+      SLOW_TESTS_PENDING_FILE: ${{ github.workspace }}/.slow-tests-pending.json
+      SLOW_TESTS_PROCESS_GROUPS_FILE: ${{ github.workspace }}/.slow-tests-process-groups
+    steps:
+      - name: Set confirmation deadline
+        run: echo "CI_JOB_DEADLINE_MS=$(( ($(date +%s) + 15 * 60 - 45) * 1000 ))" >> "$GITHUB_ENV"
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          submodules: true
+          fetch-depth: 0 # Affected selection and slow-test admission read the PR base.
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.22.1
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install Poppler
+        uses: ./.github/actions/install-poppler
+        timeout-minutes: 5
+      - name: Affected Vitest
+        env:
+          AFFECTED_BASE: ${{ github.event.pull_request.base.sha }}
+        run: bash scripts/run-vitest-isolated.sh pnpm test:affected --vitest-only --affected-only --base "$AFFECTED_BASE"
+      - name: Confirm slow tests after Vitest exits
+        if: ${{ !cancelled() && hashFiles('.slow-tests-pending.json') != '' }}
+        run: node scripts/confirm-slow-tests.mjs "$SLOW_TESTS_PENDING_FILE"
+
+  test:
+    name: Test ${{ matrix.shard }}/4
+    needs: changes
+    if: ${{ github.repository == (vars.STUDIO_SOURCE_REPO || github.repository) && (!cancelled() && (github.event_name != 'pull_request' || needs.changes.outputs.vitest == 'full') && needs.changes.result == 'success' && needs.changes.outputs.code == 'true') }}
+    runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-24.04' || 'ubicloud-standard-2' }}
+    timeout-minutes: 15
+    env:
+      SLOW_TESTS_PENDING_FILE: ${{ github.workspace }}/.slow-tests-pending.json
+      SLOW_TESTS_PROCESS_GROUPS_FILE: ${{ github.workspace }}/.slow-tests-process-groups
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      # Reserve 45 seconds for GitHub's post-job teardown.
+      - name: Set confirmation deadline
+        run: echo "CI_JOB_DEADLINE_MS=$(( ($(date +%s) + 15 * 60 - 45) * 1000 ))" >> "$GITHUB_ENV"
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        if: needs.changes.outputs.code == 'true'
+        with:
+          submodules: true
+          fetch-depth: 0 # The allowlist shrink check reads the base commit.
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        if: needs.changes.outputs.code == 'true'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        if: needs.changes.outputs.code == 'true'
+        with:
+          node-version: 24.22.1
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+        if: needs.changes.outputs.code == 'true'
+      # Studio RPC integration tests consume shipped assets and compile real PDFs.
+      - run: pnpm --filter @praxity/desktop prebuild
+        if: needs.changes.outputs.code == 'true'
+      - run: pnpm --filter @praxity/desktop prepare:typst
+        if: needs.changes.outputs.code == 'true'
+      # Native format-renderers checks inspect PDF content and tags with Poppler.
+      - name: Install Poppler
+        uses: ./.github/actions/install-poppler
+        timeout-minutes: 5
+        if: needs.changes.outputs.code == 'true'
+      # Cap temp data at 1 GiB; the smallest runner has 8 GB.
+      # An executable mount is needed for test-generated CLI and writer binaries.
+      - name: Prepare Test tmpfs
+        id: test-tmpfs
+        if: needs.changes.outputs.code == 'true'
+        run: |
+          directory=$(mktemp -d /dev/shm/vitest.XXXXXX)
+          printf 'path=%s\n' "$directory" >> "$GITHUB_OUTPUT"
+          sudo mount -t tmpfs -o "size=1G,exec,mode=700,uid=$(id -u),gid=$(id -g)" tmpfs "$directory"
+          printf 'TMPDIR=%s\n' "$directory" >> "$GITHUB_ENV"
+          df -h "$directory"
+          free -m
+      - run: bash scripts/run-vitest-isolated.sh pnpm exec vitest run --config vitest.workspace.ts --shard=${{ matrix.shard }}/4
+        if: needs.changes.outputs.code == 'true'
+      - name: Confirm slow tests after Vitest exits
+        if: ${{ !cancelled() && hashFiles('.slow-tests-pending.json') != '' }}
+        run: node scripts/confirm-slow-tests.mjs "$SLOW_TESTS_PENDING_FILE"
+      - name: Clean Test tmpfs
+        # Ephemeral runner VMs discard the mount, including GitHub-hosted fork PRs.
+        # Reset temp paths only; a busy mount must not fail a passing shard.
+        if: ${{ !cancelled() && steps.test-tmpfs.outputs.path != '' }}
+        run: printf 'TMPDIR=%s\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+
+  published-output-a11y:
+    needs: changes
+    if: ${{ github.repository == (vars.STUDIO_SOURCE_REPO || github.repository) && (!cancelled() && needs.changes.result == 'success' && needs.changes.outputs.browser == 'true' && github.event_name != 'pull_request') }}
+    runs-on: ubicloud-standard-4
+    # File-level scheduling keeps each learner journey together. Chromium uses
+    # three shards; each job gets its own checkout and fixture setup.
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.changes.outputs.published_engines) }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        if: needs.changes.outputs.output == 'true'
+        with:
+          submodules: true
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        if: needs.changes.outputs.output == 'true'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        if: needs.changes.outputs.output == 'true'
+        with:
+          node-version: 24.22.1
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+        if: needs.changes.outputs.output == 'true'
+      - name: Resolve Playwright version
+        id: playwright-version
+        if: needs.changes.outputs.output == 'true'
+        run: pnpm --filter @praxity/export-pipeline exec node -e "console.log('version=' + require('@playwright/test/package.json').version)" >> "$GITHUB_OUTPUT"
+      - name: Cache Playwright browser
+        if: needs.changes.outputs.output == 'true'
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}-${{ matrix.browser }}
+      - run: pnpm --filter @praxity/export-pipeline exec playwright install --with-deps ${{ matrix.browser }}
+        if: needs.changes.outputs.output == 'true'
+      - name: Install Poppler
+        uses: ./.github/actions/install-poppler
+        timeout-minutes: 5
+        if: needs.changes.outputs.output == 'true'
+      - name: Disk usage before published-output tests
+        if: needs.changes.outputs.output == 'true'
+        run: df -h && df -i
+      - name: Run published-output accessibility tests
+        if: needs.changes.outputs.output == 'true'
+        run: |
+          mkdir -p packages/export-pipeline/test-results/a11y
+          printf 'started_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > packages/export-pipeline/test-results/a11y/timestamps.txt
+          pnpm --filter @praxity/export-pipeline test:a11y --project=${{ matrix.browser }} --shard=${{ matrix.shard }}
+      - name: Summarize published-output timing
+        if: ${{ !cancelled() && needs.changes.outputs.output == 'true' }}
+        run: |
+          mkdir -p packages/export-pipeline/test-results/a11y
+          printf 'ended_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> packages/export-pipeline/test-results/a11y/timestamps.txt
+          if [ -f packages/export-pipeline/test-results/a11y/results.json ]; then
+            node packages/export-pipeline/tests/a11y/timing-summary.mjs packages/export-pipeline/test-results/a11y/results.json > packages/export-pipeline/test-results/a11y/timing-summary.md
+            cat packages/export-pipeline/test-results/a11y/timing-summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'Playwright did not produce a JSON report; inspect the run log and timestamps.' | tee packages/export-pipeline/test-results/a11y/timing-summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      # Passing runs keep only the small timing and results files. Screenshots and
+      # traces upload on failure: keeping them for every run filled the artifact quota.
+      - name: Upload published-output evidence
+        if: failure() && !cancelled() && needs.changes.outputs.output == 'true'
+        # A full artifact store must not hide or replace the test verdict.
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: published-output-${{ matrix.artifact }}
+          path: packages/export-pipeline/test-results/a11y/
+          retention-days: 7
+      - name: Upload published-output timing
+        if: success() && needs.changes.outputs.output == 'true'
+        # Timing is diagnostic: a failed upload must not fail passing tests.
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: published-output-${{ matrix.artifact }}
+          path: |
+            packages/export-pipeline/test-results/a11y/results.json
+            packages/export-pipeline/test-results/a11y/timing-summary.md
+            packages/export-pipeline/test-results/a11y/timestamps.txt
+          retention-days: 1
+      - name: Disk usage after published-output tests
+        if: ${{ !cancelled() && needs.changes.outputs.output == 'true' }}
+        run: |
+          df -h
+          df -i
+          du -h -d 1 "$RUNNER_TEMP" "$GITHUB_WORKSPACE/packages/export-pipeline" /tmp 2>/dev/null || true
+
+  # Deck coverage has its own jobs so its fixture lifecycle and failures remain
+  # independent of the a11y suite. Two Chromium shards avoid duplicated setup.
+  published-output-deck:
+    needs: changes
+    if: ${{ github.repository == (vars.STUDIO_SOURCE_REPO || github.repository) && (!cancelled() && needs.changes.result == 'success' && needs.changes.outputs.browser == 'true' && github.event_name != 'pull_request') }}
+    runs-on: ubicloud-standard-4
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.changes.outputs.deck_engines) }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        if: needs.changes.outputs.output == 'true'
+        with:
+          submodules: true
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        if: needs.changes.outputs.output == 'true'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        if: needs.changes.outputs.output == 'true'
+        with:
+          node-version: 24.22.1
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+        if: needs.changes.outputs.output == 'true'
+      - name: Resolve Playwright version
+        id: playwright-version
+        if: needs.changes.outputs.output == 'true'
+        run: pnpm --filter @praxity/export-pipeline exec node -e "console.log('version=' + require('@playwright/test/package.json').version)" >> "$GITHUB_OUTPUT"
+      - name: Cache Playwright browser
+        if: needs.changes.outputs.output == 'true'
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}-${{ matrix.browser }}
+      - run: pnpm --filter @praxity/export-pipeline exec playwright install --with-deps ${{ matrix.browser }}
+        if: needs.changes.outputs.output == 'true'
+      - run: pnpm --filter @praxity/export-pipeline prebuild:client
+        if: needs.changes.outputs.output == 'true'
+      # CLI release journeys consume desktop export assets as well as the compiler cache.
+      - run: pnpm --filter @praxity/desktop prebuild
+        if: needs.changes.outputs.output == 'true'
+      # The distractor acceptance fixture also exports and scans native CLI PDFs.
+      - run: pnpm --filter @praxity/desktop prepare:typst
+        if: needs.changes.outputs.output == 'true'
+      - name: Install Poppler
+        uses: ./.github/actions/install-poppler
+        timeout-minutes: 5
+        if: needs.changes.outputs.output == 'true'
+      - name: Module-deck learner journeys
+        if: needs.changes.outputs.output == 'true'
+        run: |
+          mkdir -p packages/export-pipeline/test-results/deck
+          printf 'started_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > packages/export-pipeline/test-results/deck/timestamps.txt
+          pnpm --filter @praxity/export-pipeline test:deck --project=${{ matrix.browser }} --shard=${{ matrix.shard }}
+      - name: Summarize published-output timing
+        if: ${{ !cancelled() && needs.changes.outputs.output == 'true' }}
+        run: |
+          mkdir -p packages/export-pipeline/test-results/deck
+          printf 'ended_at=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> packages/export-pipeline/test-results/deck/timestamps.txt
+          if [ -f packages/export-pipeline/test-results/deck/results.json ]; then
+            node packages/export-pipeline/tests/a11y/timing-summary.mjs packages/export-pipeline/test-results/deck/results.json > packages/export-pipeline/test-results/deck/timing-summary.md
+            cat packages/export-pipeline/test-results/deck/timing-summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'Playwright did not produce a JSON report; inspect the run log and timestamps.' | tee packages/export-pipeline/test-results/deck/timing-summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+      # Passing runs keep only the small timing and results files. Screenshots and
+      # traces upload on failure: keeping them for every run filled the artifact quota.
+      - name: Upload module-deck evidence
+        if: failure() && !cancelled() && needs.changes.outputs.output == 'true'
+        # A full artifact store must not hide or replace the test verdict.
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: published-output-deck-${{ matrix.artifact }}
+          path: packages/export-pipeline/test-results/deck/
+          retention-days: 7
+      - name: Upload module-deck timing
+        if: success() && needs.changes.outputs.output == 'true'
+        # Timing is diagnostic: a failed upload must not fail passing tests.
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: published-output-deck-${{ matrix.artifact }}
+          path: |
+            packages/export-pipeline/test-results/deck/results.json
+            packages/export-pipeline/test-results/deck/timing-summary.md
+            packages/export-pipeline/test-results/deck/timestamps.txt
+          retention-days: 1
+
+  # Three file-level shards per engine keep two browser workers on each runner.
+  browser-editor:
+    needs: changes
+    if: ${{ github.repository == (vars.STUDIO_SOURCE_REPO || github.repository) && (!cancelled() && needs.changes.result == 'success' && needs.changes.outputs.browser == 'true' && github.event_name != 'pull_request') }}
+    runs-on: ubicloud-standard-4
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: ${{ fromJSON(needs.changes.outputs.editor_engines) }}
+        shard: [1/3, 2/3, 3/3]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          submodules: true
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.22.1
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Resolve Playwright version
+        id: playwright-version
+        run: pnpm --filter @praxity/desktop exec node -e "console.log('version=' + require('@playwright/test/package.json').version)" >> "$GITHUB_OUTPUT"
+      - name: Cache Playwright browser
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}-${{ matrix.browser }}
+      - run: pnpm --filter @praxity/desktop exec playwright install --with-deps ${{ matrix.browser }}
+      - run: pnpm --filter @praxity/desktop prebuild
+      # Without the export-pipeline bundle, each worker's first publish rebuilds it into
+      # prebuilt/ concurrently, and one worker can read another's half-copied chunks.
+      - run: pnpm --filter @praxity/export-pipeline prebuild
+      - run: pnpm --filter @praxity/desktop prepare:typst
+      - name: Browser authoring journeys
+        # The runner context is unavailable in job-level env.
+        env:
+          PRAXITY_TEST_ARTIFACTS: ${{ runner.temp }}/browser-editor
+        run: pnpm --filter @praxity/desktop run e2e:browser-editor --project=${{ matrix.browser }} --shard=${{ matrix.shard }} --workers=2
+      - name: Upload browser authoring failure evidence
+        if: failure() && !cancelled()
+        continue-on-error: true
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: browser-editor-${{ matrix.browser }}-${{ strategy.job-index }}
+          path: ${{ runner.temp }}/browser-editor/browser-editor-results/
+          retention-days: 7
+
+  format-contracts:
+    needs: changes
+    if: github.repository == (vars.STUDIO_SOURCE_REPO || github.repository) && (needs.changes.outputs.format == 'true' && needs.changes.outputs.code != 'true')
+    runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-24.04' || 'ubicloud-standard-2' }}
+    timeout-minutes: 5
+    env:
+      SLOW_TESTS_PENDING_FILE: ${{ github.workspace }}/.slow-tests-pending.json
+      SLOW_TESTS_PROCESS_GROUPS_FILE: ${{ github.workspace }}/.slow-tests-process-groups
+    steps:
+      - name: Set confirmation deadline
+        run: echo "CI_JOB_DEADLINE_MS=$(( ($(date +%s) + 5 * 60 - 45) * 1000 ))" >> "$GITHUB_ENV"
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          submodules: true
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.22.1
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: bash scripts/run-vitest-isolated.sh pnpm exec vitest run --project grammar
+      - name: Confirm slow tests after Vitest exits
+        if: ${{ !cancelled() && hashFiles('.slow-tests-pending.json') != '' }}
+        run: node scripts/confirm-slow-tests.mjs "$SLOW_TESTS_PENDING_FILE"
+
+  # PR success certifies the fast gate; candidate success certifies the full gate.
+  merge-gate:
+    needs: [changes, fast-checks, node-checks, test, affected-test, published-output-a11y, published-output-deck, browser-editor, format-contracts]
+    if: ${{ github.repository == (vars.STUDIO_SOURCE_REPO || github.repository) && (!cancelled()) }}
+    runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-24.04' || 'ubicloud-standard-2' }}
+    timeout-minutes: 2
+    steps:
+      - name: Report merge acceptance
+        env:
+          CI_NEEDS: ${{ toJSON(needs) }}
+          CI_EVENT_NAME: ${{ github.event_name }}
+        run: |
+          node --input-type=module <<'NODE'
+          const needs = JSON.parse(process.env.CI_NEEDS);
+          const pr = process.env.CI_EVENT_NAME === 'pull_request';
+          const outputs = needs.changes.outputs;
+          const required = {
+            changes: true,
+            'fast-checks': outputs.code === 'true',
+            'node-checks': outputs.code === 'true',
+            test: (!pr || outputs.vitest === 'full') && outputs.code === 'true',
+            'affected-test': pr && outputs.vitest === 'affected' && outputs.code === 'true',
+            'published-output-a11y': !pr && outputs.browser === 'true',
+            'published-output-deck': !pr && outputs.browser === 'true',
+            'browser-editor': !pr && outputs.browser === 'true',
+            'format-contracts': outputs.format === 'true' && outputs.code !== 'true',
+          };
+          let failed = pr ? !['full', 'affected', 'empty'].includes(outputs.vitest) : !['true', 'false'].includes(outputs.browser);
+          for (const [name, expected] of Object.entries(required)) {
+            const result = needs[name].result;
+            console.log(`${name}: ${result}${expected ? ' (required)' : ' (path-filtered)'}`);
+            if (expected ? result !== 'success' : !['success', 'skipped'].includes(result)) failed = true;
+          }
+          process.exitCode = failed ? 1 : 0;
+          NODE

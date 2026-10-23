@@ -1,0 +1,30 @@
+diff --git a/dist/purify.cjs.js b/dist/purify.cjs.js
+index 1dca627f6491690f4a7aa2df365502fb073fe699..3105fff9a0a451e8269c6308be802b2018910ad7 100644
+--- a/dist/purify.cjs.js
++++ b/dist/purify.cjs.js
+@@ -1208,6 +1208,10 @@ function createDOMPurify() {
+ 	let SAFE_FOR_XML = true;
+ 	let WHOLE_DOCUMENT = false;
+ 	let SET_CONFIG = false;
++	// Trusted Types callbacks also persist after a per-call configuration.
++	Object.defineProperty(DOMPurify, "hasPersistentConfig", {
++		get: () => SET_CONFIG || Boolean(trustedTypesPolicy)
++	});
+ 	let SET_CONFIG_ALLOWED_TAGS = null;
+ 	let SET_CONFIG_ALLOWED_ATTR = null;
+ 	let FORCE_BODY = false;
+diff --git a/dist/purify.es.mjs b/dist/purify.es.mjs
+index c7174af3b3cf80b96179d3a7156c9014d57f1e28..518d34498c56574818f3da0ba53f4009c666960f 100644
+--- a/dist/purify.es.mjs
++++ b/dist/purify.es.mjs
+@@ -1207,6 +1207,10 @@ function createDOMPurify() {
+ 	let SAFE_FOR_XML = true;
+ 	let WHOLE_DOCUMENT = false;
+ 	let SET_CONFIG = false;
++	// Trusted Types callbacks also persist after a per-call configuration.
++	Object.defineProperty(DOMPurify, "hasPersistentConfig", {
++		get: () => SET_CONFIG || Boolean(trustedTypesPolicy)
++	});
+ 	let SET_CONFIG_ALLOWED_TAGS = null;
+ 	let SET_CONFIG_ALLOWED_ATTR = null;
+ 	let FORCE_BODY = false;

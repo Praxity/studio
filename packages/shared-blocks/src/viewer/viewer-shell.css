@@ -1,0 +1,3583 @@
+/* Shared learner shell styles */
+
+html {
+	font-family: var(--praxity-font-family);
+	font-weight: var(--praxity-font-weight-body, 400);
+	font-style: var(--praxity-font-style-body, normal);
+	font-size: var(--root-font-size);
+	line-height: var(--leading-body);
+	color: var(--praxity-color-text);
+}
+
+/* A published modal sheet is bounded by its owning workspace, not the viewport. */
+.praxity-dialog-sheet {
+	position: fixed;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	max-width: none;
+	max-height: none;
+	background: var(--praxity-color-navigation-surface);
+	color: var(--praxity-color-text);
+}
+.praxity-dialog-sheet::backdrop {
+	background: transparent;
+}
+.praxity-dialog-sheet[open] {
+	display: flex;
+}
+.praxity-dialog-sheet > * {
+	flex: 1;
+	border: 0;
+}
+
+/* Inactive actions must not reserve a modal sheet's limited reading space. */
+.praxity-dialog-sheet [inert][aria-hidden="true"] {
+	display: none;
+}
+
+body {
+	margin: 0;
+	padding: 0;
+	font-size: var(--type-body);
+	/* Keep the course baseline when a page also loads Mantine's body styles. */
+	font-family: inherit;
+	line-height: inherit;
+	background-color: var(--praxity-color-background);
+	overflow-x: hidden;
+}
+
+/* Content-only previews keep the canonical document. Main's siblings are shell
+   chrome, regardless of resolved course/page navigation options. Hide wrappers
+   too, and release their grid tracks; hiding only the sidebar leaves 260px empty.
+   Keep authored navigation inside main. The desktop frame supplies `inert`. */
+/* One-page authoring previews measure natural content, not the iframe viewport.
+   Otherwise expanding the iframe can keep expanding a viewport-sized slide. */
+html[data-praxity-root][data-praxity-preview-expand="true"]
+:is(body, .praxity-layout-wrapper, #main-content, .praxity-slide) {
+	height: auto !important;
+	min-height: 0 !important;
+	max-height: none !important;
+	flex: none !important;
+	overflow-y: visible !important;
+}
+
+[data-praxity-root][data-praxity-small-preview="true"]
+	.praxity-layout-wrapper
+	> :not(#main-content):not(:has(#main-content)),
+[data-praxity-root][data-praxity-small-preview="true"]
+	:is(#praxity-narrative-bar, .praxity-floating-toc, .praxity-skip-link, .praxity-scroll-progress) {
+	display: none !important;
+}
+
+:where([data-praxity-root][data-praxity-small-preview="true"]) .praxity-layout-wrapper {
+	display: flex !important;
+	flex-direction: column;
+}
+
+[data-praxity-root][data-praxity-small-preview="true"]
+	:is(a, button, summary, input, select, textarea, [role="button"]) {
+	pointer-events: none !important;
+}
+
+.praxity-viewer-shell {
+	--praxity-toolbar-height: 52px;
+	min-height: 100%;
+	background: var(--praxity-color-background);
+	color: var(--praxity-color-text);
+	font-family: var(--praxity-font-family);
+	font-weight: var(--praxity-font-weight-body, 400);
+	font-style: var(--praxity-font-style-body, normal);
+	font-size: var(--type-body);
+	max-width: 100%;
+	overflow-x: clip;
+	position: relative;
+}
+
+[data-praxity-root][data-praxity-mode="light"],
+html[data-praxity-root][data-praxity-mode="light"] {
+	--praxity-color-success: var(--praxity-color-success-on-light);
+	--praxity-color-error: var(--praxity-color-error-on-light);
+	--praxity-color-warning: var(--praxity-color-warning-on-light);
+}
+
+[data-praxity-root][data-praxity-mode="dark"],
+html[data-praxity-root][data-praxity-mode="dark"] {
+	--praxity-color-success: var(--praxity-color-success-on-dark);
+	--praxity-color-error: var(--praxity-color-error-on-dark);
+	--praxity-color-warning: var(--praxity-color-warning-on-dark);
+}
+
+/* Mantine buttons and skip links manage their own visual affordance */
+.mantine-Button-root,
+.praxity-skip-link {
+	text-decoration: none;
+}
+
+/* Skip links */
+.praxity-skip-link {
+	position: absolute;
+	top: -100%;
+	inset-inline-start: 0;
+	background: var(--praxity-color-focus);
+	color: var(--praxity-color-focus-text);
+	padding: var(--space-2) var(--space-4);
+	z-index: 1000;
+	text-decoration: none;
+	font-weight: var(--weight-strong);
+}
+
+.praxity-skip-link:focus {
+	top: 0;
+}
+
+/* ── Scroll progress bar ── */
+.praxity-scroll-progress,
+.praxity-pages-progress {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 4px;
+	z-index: 9999;
+	pointer-events: none;
+	background: color-mix(in oklab, var(--praxity-color-border) 72%, var(--praxity-color-background));
+}
+
+.praxity-scroll-progress-fill {
+	height: 100%;
+	width: 100%;
+	background: var(--praxity-color-accent);
+	transform: scaleX(0);
+	transform-origin: left;
+	transition: transform 60ms linear;
+}
+
+[dir="rtl"] .praxity-scroll-progress-fill {
+	transform-origin: right;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.praxity-scroll-progress-fill {
+		transition: none;
+	}
+}
+
+[data-praxity-reduced-motion] .praxity-scroll-progress-fill {
+	transition: none;
+}
+
+.praxity-narrative-bar {
+	max-width: var(--praxity-max-width, 680px);
+	margin: 0 auto var(--space-3);
+	padding: var(--space-2) var(--space-6) var(--space-3);
+	opacity: 0.88;
+}
+
+.praxity-narrative-bar-text {
+	margin: 0;
+	font-size: var(--type-small);
+	line-height: var(--leading-body);
+	color: var(--praxity-color-text-light);
+}
+
+@media (max-width: 768px) {
+	.praxity-narrative-bar {
+		padding-left: var(--space-4);
+		padding-right: var(--space-4);
+	}
+}
+
+.praxity-page-content {
+	--praxity-container-width: var(
+		--praxity-viewer-content-frame-width,
+		var(--praxity-viewer-shell-width, 100vw)
+	);
+	width: 100%;
+	max-width: calc(var(--measure) + 2 * var(--page-gutter));
+	margin: 0 auto;
+	padding: var(--section-before) var(--page-gutter);
+	box-sizing: border-box;
+	word-break: normal;
+	overflow-wrap: break-word;
+	-webkit-hyphens: manual;
+	hyphens: manual;
+	container-type: inline-size;
+	container-name: preview-content praxity-image-float;
+}
+
+/* Shell queries also respond to an LMS or editor frame's available width. */
+.praxity-layout-wrapper,
+.praxity-viewer-shell {
+	container-type: inline-size;
+	container-name: course-shell praxity-stage;
+	overflow-wrap: break-word;
+	-webkit-hyphens: manual;
+	hyphens: manual;
+}
+
+:where(
+		.praxity-viewer-shell .praxity-text,
+		.praxity-viewer-shell .praxity-text-content,
+		.praxity-viewer-shell .praxity-note-body,
+		.praxity-viewer-shell .praxity-quote
+	)
+	a {
+	text-decoration: underline;
+	text-decoration-color: var(--praxity-link-underline-color, currentColor);
+	text-underline-offset: 0.15em;
+}
+
+.praxity-page-title,
+.praxity-lesson-title {
+	margin: 0;
+	padding: 0;
+	color: var(--praxity-color-heading, currentColor);
+	font-size: var(--type-h1);
+	font-family: var(--praxity-font-family-h1, var(--praxity-font-heading));
+	font-weight: var(--praxity-font-weight-h1, var(--praxity-font-weight-heading));
+	font-style: var(--praxity-font-style-h1, var(--praxity-font-style-heading));
+}
+
+h2.praxity-page-title {
+	font-size: var(--type-h2);
+	font-family: var(--praxity-font-family-h2, var(--praxity-font-heading));
+	font-weight: var(--praxity-font-weight-h2, var(--praxity-font-weight-heading));
+	font-style: var(--praxity-font-style-h2, var(--praxity-font-style-heading));
+}
+
+/* biome-ignore lint/style/noDescendingSpecificity: title adjacency intentionally overrides earlier section block selectors */
+.praxity-page-title + .praxity-block,
+.praxity-page-title + .praxity-block-slot {
+	--praxity-flow-gap: var(--praxity-space-normal);
+}
+
+/* Persistent sidebar layout — desktop only (≥768px) */
+@media (min-width: 768px) {
+	.praxity-layout-sidebar .praxity-layout-wrapper {
+		display: grid;
+		grid-template-columns: 260px minmax(0, 1fr);
+		grid-template-rows: minmax(0, 1fr) auto;
+		min-height: 100dvh;
+	}
+
+	.praxity-viewer-shell.praxity-layout-sidebar .praxity-layout-wrapper {
+		grid-template-rows: var(--praxity-toolbar-height) 1fr auto auto;
+	}
+
+	.praxity-layout-sidebar:not(.praxity-shell-compact) .praxity-top-bar {
+		grid-column: 2;
+		grid-row: 1;
+		position: static;
+		z-index: 2;
+	}
+
+	.praxity-layout-sidebar #main-content {
+		grid-column: 2;
+		grid-row: 2;
+		min-width: 0;
+	}
+
+	.praxity-layout-sidebar #praxity-page-nav,
+	.praxity-layout-sidebar #praxity-embed-nav {
+		grid-column: 2;
+		grid-row: 3;
+		margin-inline-start: 0;
+		width: 100%;
+	}
+
+	.praxity-viewer-shell.praxity-layout-sidebar #praxity-page-nav,
+	.praxity-viewer-shell.praxity-layout-sidebar #praxity-embed-nav {
+		grid-row: 4;
+	}
+}
+
+/* ── Sidebar expand button (collapsed state — aligned within the top bar) ── */
+.praxity-sidebar-expand {
+	width: 44px;
+	height: 44px;
+	display: flex;
+	flex: 0 0 44px;
+	align-items: center;
+	justify-content: center;
+	border: 1px solid var(--praxity-color-border);
+	border-radius: var(--radius-control);
+	background: var(--praxity-color-navigation-surface, var(--praxity-color-background));
+	color: var(--praxity-color-text-light);
+	cursor: pointer;
+	box-shadow: none;
+	opacity: 1;
+	transition: background var(--duration-press) var(--ease-out);
+	padding: 0;
+}
+
+/* ── Sidebar collapse button (expanded state — inside sidebar header) ── */
+.praxity-sidebar-collapse {
+	position: absolute;
+	top: 12px;
+	inset-inline-end: 12px;
+	z-index: 301;
+	width: 44px;
+	height: 44px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border: none;
+	border-radius: var(--radius-control);
+	background: transparent;
+	color: var(--praxity-color-text-light);
+	cursor: pointer;
+	opacity: 1;
+	transition: background var(--duration-press) var(--ease-out);
+	padding: 0;
+}
+
+@media (hover: hover) {
+	.praxity-sidebar-expand:hover,
+	.praxity-sidebar-collapse:hover {
+		background: var(--praxity-color-background-alt);
+	}
+}
+
+.praxity-sidebar-expand:focus-visible,
+.praxity-sidebar-collapse:focus-visible {
+	outline: var(--focus-width) solid var(--praxity-color-focus);
+	outline-offset: var(--focus-offset);
+	opacity: 1;
+}
+
+.praxity-sidebar-expand:active,
+.praxity-sidebar-collapse:active {
+	transform: scale(0.95);
+}
+
+/* Desktop sidebar toggles reflow instantly, including the keyboard shortcut. */
+@media (min-width: 768px) {
+	.praxity-layout-sidebar .praxity-course-menu {
+		width: 260px;
+		min-width: 260px;
+	}
+
+	/* When sidebar collapsed: content takes full width */
+	.praxity-layout-sidebar.praxity-sidebar-collapsed .praxity-layout-wrapper {
+		grid-template-columns: 0 minmax(0, 1fr);
+	}
+}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+	.praxity-layout-sidebar .praxity-course-menu,
+	.praxity-layout-sidebar .praxity-layout-wrapper,
+	.praxity-layout-sidebar #praxity-page-nav,
+	.praxity-layout-sidebar #praxity-embed-nav,
+	.praxity-sidebar-collapse,
+	.praxity-sidebar-expand {
+		transition: none;
+	}
+}
+
+[data-praxity-reduced-motion] .praxity-layout-sidebar .praxity-course-menu,
+[data-praxity-reduced-motion] .praxity-layout-sidebar .praxity-layout-wrapper,
+[data-praxity-reduced-motion] .praxity-layout-sidebar #praxity-page-nav,
+[data-praxity-reduced-motion] .praxity-layout-sidebar #praxity-embed-nav,
+[data-praxity-reduced-motion] .praxity-sidebar-collapse,
+[data-praxity-reduced-motion] .praxity-sidebar-expand {
+	transition: none;
+}
+
+/* ── Bottom bar layout ── */
+/* Menu container shows a hamburger top-bar (non-sticky, scrolls with page).
+   Page nav sticks to the bottom of the viewport. */
+.praxity-layout-bottombar .praxity-layout-wrapper {
+	display: flex;
+	flex-direction: column;
+	min-height: 100dvh;
+}
+
+.praxity-layout-bottombar #main-content {
+	flex: 1 0 auto;
+	min-height: 0;
+}
+
+.praxity-layout-bottombar #praxity-page-nav {
+	position: sticky;
+	bottom: 0;
+	z-index: 100;
+	background: var(--praxity-color-navigation-surface, var(--praxity-color-background));
+	border-top: 0;
+	padding-bottom: 0;
+}
+
+/* ── No-nav layout ── */
+/* Hide both menu and page-nav containers entirely */
+.praxity-layout-none #praxity-page-nav {
+	display: none;
+}
+
+/* ── No-JS navigation fallback ─────────────────────────────────
+   On static/HTML pages there is no JS nav; the fallback <nav>s ARE the
+   navigation, so they must be styled to match the course rather than render as
+   raw UA-blue underlined links. */
+.praxity-outline-fallback {
+	padding: var(--space-3);
+	background: var(--praxity-color-navigation-surface, var(--praxity-color-background));
+	border-bottom: 1px solid var(--praxity-color-border);
+}
+
+/* Once the nav island owns this mount, CourseMenu supplies its own spacing and
+   borders. Keeping the fallback padding made compact top bars narrower than the
+   page and made the desktop sidebar overflow its 260px grid track. */
+.praxity-outline-fallback[data-hydrated] {
+	padding: 0;
+	background: transparent;
+	border: 0;
+}
+
+.praxity-outline-fallback ol {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+	gap: var(--space-1);
+}
+
+.praxity-outline-fallback li {
+	min-width: 0;
+	margin: 0;
+}
+
+.praxity-outline-fallback a,
+.praxity-page-nav-fallback a {
+	display: inline-flex;
+	align-items: center;
+	min-height: 44px;
+	box-sizing: border-box;
+	color: var(--praxity-color-text);
+	text-decoration: none;
+	font-weight: var(--weight-strong);
+}
+
+.praxity-outline-fallback a {
+	gap: var(--space-2);
+	width: 100%;
+	padding: var(--space-2) var(--space-3);
+	border-inline-start: 0 solid var(--accent);
+	border-radius: 0;
+}
+
+.praxity-outline-fallback ol a {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 1rem;
+	min-width: 0;
+	padding-inline-start: var(--space-4);
+	font-size: var(--type-small);
+	font-weight: var(--weight-body);
+	line-height: var(--leading-small);
+	overflow-wrap: anywhere;
+}
+
+.praxity-outline-fallback .deck-module-link {
+	font-weight: var(--weight-strong);
+}
+
+.praxity-outline-fallback a:hover {
+	background: var(--praxity-color-background-alt);
+}
+
+.praxity-outline-fallback a[aria-current="page"] {
+	border-inline-start-width: var(--space-1);
+	padding-inline-start: var(--space-3);
+	background: var(--paper-2);
+	font-weight: var(--weight-strong);
+}
+
+.praxity-page-nav-fallback a:focus-visible {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+}
+
+/* Full-width rows meet the scrollport edge, so keep the focus ring inside it. */
+.praxity-outline-fallback a:focus-visible {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: calc(-1 * (var(--focus-width) + var(--focus-offset)));
+}
+
+.praxity-outline-label {
+	min-width: 0;
+	white-space: normal;
+}
+
+.praxity-outline-fallback .praxity-nav-marker-spacer {
+	display: grid;
+	grid-column: -2;
+	grid-row: 1;
+	place-items: center;
+	color: var(--ink-2);
+}
+
+.praxity-outline-fallback .praxity-nav-marker-spacer > * {
+	grid-area: 1 / 1;
+}
+
+.praxity-outline-fallback .praxity-nav-marker-spacer > svg {
+	visibility: hidden;
+}
+
+.praxity-outline-fallback a[data-visited="true"] .praxity-nav-marker-spacer {
+	color: var(--success-ink);
+}
+
+.praxity-outline-fallback a[data-visited="true"] .praxity-nav-marker-spacer > svg {
+	visibility: visible;
+}
+
+.praxity-nav-current-marker {
+	display: none;
+	width: var(--space-3);
+	height: var(--space-3);
+	border: var(--focus-width) solid currentColor;
+	border-radius: var(--radius-round);
+}
+
+.praxity-outline-fallback
+	a[aria-current="page"]:not([data-visited="true"])
+	.praxity-nav-current-marker {
+	display: block;
+}
+
+.praxity-page-nav-fallback {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+	align-items: center;
+	gap: var(--space-4);
+	width: min(100%, var(--praxity-max-width, 680px));
+	margin: 0 auto;
+	padding: var(--space-4) var(--space-6) max(var(--space-4), env(safe-area-inset-bottom));
+	border-top: 1px solid var(--praxity-color-border);
+}
+
+.praxity-page-nav-fallback[data-hydrated] {
+	display: block;
+	width: 100%;
+	padding: 0;
+	border-top: 0;
+}
+
+.praxity-page-nav-fallback a {
+	justify-content: center;
+	padding: var(--space-2) var(--space-4);
+	border: 1.5px solid var(--praxity-color-button-outline, var(--praxity-color-button-background));
+	border-radius: var(--radius-control);
+}
+
+.praxity-page-nav-fallback .praxity-nav-next {
+	justify-self: end;
+	border-color: var(--praxity-color-button-outline, var(--praxity-color-button-background));
+	background: var(--praxity-color-button-background);
+	color: var(--praxity-color-button-text);
+}
+
+.praxity-page-nav-fallback .praxity-nav-prev {
+	justify-self: start;
+}
+
+.praxity-page-nav-fallback a:hover {
+	box-shadow: none;
+}
+
+.praxity-page-nav-fallback a:active {
+	box-shadow: none;
+}
+
+.praxity-nav-progress {
+	color: var(--praxity-color-text-light);
+	font-size: var(--type-small);
+	font-weight: var(--weight-strong);
+}
+
+/* Native published navigation. The HTML is complete at first paint; the small
+   nav island only adds persistence, focus transfer, gating and disclosure. */
+.praxity-native-outline,
+.praxity-native-outline[data-hydrated] {
+	padding: 0;
+	background: var(
+		--praxity-color-navigation-surface,
+		var(--praxity-color-surface, var(--praxity-color-background))
+	);
+	border-bottom: 1px solid var(--praxity-color-border);
+}
+
+.praxity-native-sidebar-header {
+	position: sticky;
+	inset-block-start: 0;
+	z-index: 1;
+	padding-block: var(--space-4) var(--space-3);
+	padding-inline: var(--space-4) var(--space-16);
+	border-block-end: 1px solid transparent;
+	background: var(
+		--praxity-color-navigation-surface,
+		var(--praxity-color-surface, var(--praxity-color-background))
+	);
+}
+
+.praxity-native-outline[data-outline-scrolled] .praxity-native-sidebar-header {
+	border-block-end-color: var(--rule);
+}
+
+.praxity-native-sidebar-header p,
+.praxity-native-sidebar-header h2 {
+	margin: 0;
+}
+
+.praxity-native-sidebar-kicker {
+	margin-bottom: var(--space-1) !important;
+	color: var(--praxity-color-text-light);
+	font-size: var(--type-small);
+	font-weight: var(--weight-strong);
+	text-transform: none;
+}
+
+.praxity-native-sidebar-header .praxity-sidebar-title {
+	display: -webkit-box;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 3;
+	overflow: hidden;
+	font-family: var(--praxity-font-heading, var(--praxity-font-family));
+	font-size: var(--type-body);
+	line-height: var(--leading-heading);
+}
+
+.praxity-native-sidebar-meta {
+	margin-top: var(--space-1) !important;
+	color: var(--praxity-color-text-light);
+	font-size: var(--type-small);
+}
+
+.praxity-native-outline > [role="group"] > ol {
+	padding-block: var(--space-1);
+}
+
+.praxity-native-reference {
+	padding: var(--space-1) var(--space-3);
+}
+
+.praxity-native-outline a {
+	gap: var(--space-2);
+	font-size: var(--type-small);
+	font-weight: var(--weight-body);
+}
+
+.praxity-native-outline a[aria-current="page"] {
+	font-weight: var(--weight-strong);
+}
+
+.praxity-native-lesson-title {
+	padding: var(--space-3) var(--space-3) var(--space-1);
+	color: var(--praxity-color-text-light);
+	font-size: var(--type-small);
+	font-weight: var(--weight-strong);
+}
+
+.praxity-native-module > a {
+	font-weight: var(--weight-strong);
+}
+
+.praxity-native-module > ol {
+	padding-inline-start: 0;
+}
+
+.praxity-native-module > ol a {
+	padding-inline-start: var(--space-8);
+}
+.praxity-native-module > ol a[aria-current="page"] {
+	padding-inline-start: calc(var(--space-8) - var(--space-1));
+}
+
+.praxity-native-module > a[aria-current="true"] {
+	font-weight: var(--weight-strong);
+	text-decoration: none;
+}
+
+.praxity-native-reference-divider {
+	margin: var(--space-2) var(--space-3);
+	border: 0;
+	border-top: 1px solid var(--praxity-color-border);
+}
+
+.praxity-native-reference {
+	display: grid;
+	gap: var(--space-1);
+}
+
+.praxity-native-menu-close,
+.praxity-native-menu-toggle,
+.praxity-native-nav-backdrop {
+	display: none;
+}
+
+.praxity-native-nav-backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 1001;
+	border: 0;
+	background: var(--paper);
+}
+
+.praxity-native-menu-close {
+	position: absolute;
+	inset-block-start: 0.5rem;
+	inset-inline-end: 0.5rem;
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	border: 0;
+	border-radius: var(--radius-control);
+	background: transparent;
+	color: var(--praxity-color-text);
+	font: inherit;
+	font-size: var(--type-h3);
+	cursor: pointer;
+}
+
+.praxity-native-menu-toggle {
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	border: 1px solid var(--praxity-color-border);
+	font: inherit;
+	font-size: var(--type-body);
+	cursor: pointer;
+}
+
+.praxity-mobile-top-bar {
+	display: none;
+}
+
+/* Native outlines are drawers by default. The desktop sidebar is the sole
+   persistent variant and overrides this geometry at the larger breakpoint. */
+html.praxity-js .praxity-native-outline {
+	position: fixed;
+	inset-block: 0;
+	inset-inline-start: 0;
+	z-index: 1002;
+	width: min(22rem, calc(100vw - 3rem));
+	height: 100dvh;
+	overflow-x: hidden;
+	overflow-y: auto;
+	border: 0;
+	border-inline-end: 1px solid var(--praxity-color-border);
+	box-shadow: none;
+	transform: translateX(-105%);
+	transition: transform var(--duration-state) var(--ease-in-out);
+}
+
+html[dir="rtl"].praxity-js .praxity-native-outline {
+	transform: translateX(105%);
+}
+
+html.praxity-js body.praxity-nav-open .praxity-native-outline {
+	transform: translateX(0);
+}
+
+html[dir="rtl"].praxity-js body.praxity-nav-open .praxity-native-outline {
+	transform: translateX(0);
+}
+
+body.praxity-nav-open {
+	overflow: hidden;
+}
+
+body.praxity-nav-open .praxity-native-nav-backdrop {
+	display: block;
+}
+
+.praxity-native-page-nav,
+.praxity-native-page-nav[data-hydrated] {
+	display: block;
+	width: 100%;
+	padding: 0;
+	border-top: 1px solid var(--praxity-color-border);
+}
+
+.praxity-native-page-nav .praxity-native-page-nav-inner {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(6rem, 24rem) minmax(0, 1fr);
+	align-items: center;
+	gap: var(--space-4);
+	max-width: var(--praxity-max-width, 680px);
+	margin: 0 auto;
+	padding: var(--space-4) max(var(--space-4), env(safe-area-inset-left), env(safe-area-inset-right));
+}
+
+.praxity-native-page-nav :is(a, button).praxity-nav-prev,
+.praxity-native-page-nav :is(a, button).praxity-nav-next {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: var(--target-size);
+	padding: var(--space-2) var(--space-4);
+	border: 1.5px solid var(--praxity-color-button-outline, var(--praxity-color-button-background));
+	border-radius: var(--radius-control);
+	background: transparent;
+	color: var(
+		--praxity-color-accent-text,
+		var(--praxity-color-button-outline, var(--praxity-color-button-background))
+	);
+	font: inherit;
+	font-weight: var(--weight-strong);
+	cursor: pointer;
+}
+
+.praxity-native-page-nav:not(.praxity-pages-pagination)
+	:is(a, button).praxity-nav-next:not(:disabled) {
+	background: var(--praxity-color-button-background);
+	color: var(--praxity-color-button-text);
+}
+
+/* Pages pagination can use a full spacing token; deck icon controls stay 44px. */
+.praxity-native-page-nav:not(.deck-controls) :is(.praxity-nav-prev, .praxity-nav-next) {
+	min-height: var(--space-12);
+}
+
+.praxity-native-page-nav:not(.deck-controls) .praxity-nav-prev {
+	grid-column: 1;
+}
+
+.praxity-native-page-nav:not(.deck-controls) .praxity-nav-next {
+	grid-column: 3;
+}
+
+.praxity-native-page-nav :is(a, button):disabled {
+	opacity: 0.47;
+	cursor: default;
+}
+
+.praxity-nav-label-compact {
+	display: none;
+}
+
+.praxity-native-page-nav:not(.deck-controls) .praxity-native-page-position {
+	grid-column: 2;
+	grid-row: 1;
+}
+
+.praxity-native-page-position {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+	gap: var(--space-1);
+}
+
+.praxity-native-progress {
+	display: flex;
+	width: min(100%, 24rem);
+	height: 0.5rem;
+	overflow: hidden;
+	border-radius: var(--radius-control);
+	background: var(--praxity-color-border);
+}
+
+.praxity-native-progress > span {
+	display: block;
+	height: 100%;
+	border-radius: inherit;
+	background: var(--praxity-color-accent);
+}
+
+.praxity-native-progress--dots,
+.praxity-native-progress--segments {
+	justify-content: center;
+	gap: var(--space-1);
+	height: auto;
+	overflow: visible;
+	background: transparent;
+}
+
+.praxity-native-progress--dots > span {
+	width: 0.5rem;
+	height: 0.5rem;
+	background: var(--praxity-color-border);
+}
+
+.praxity-native-progress--segments > span {
+	flex: 1;
+	min-width: 0.45rem;
+	height: 0.25rem;
+	background: var(--praxity-color-border);
+}
+
+.praxity-native-progress--dots > span[data-active="true"],
+.praxity-native-progress--segments > span[data-active="true"] {
+	background: var(--praxity-color-accent);
+}
+
+.praxity-native-progress--grouped {
+	align-items: flex-start;
+	max-width: 32rem;
+}
+
+.praxity-native-progress--grouped > span {
+	display: flex;
+	height: auto;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--space-1);
+	background: transparent;
+}
+
+.praxity-native-progress--grouped > span::before {
+	width: 100%;
+	height: 0.25rem;
+	border-radius: var(--radius-control);
+	background: var(--praxity-color-border);
+	content: "";
+}
+
+.praxity-native-progress--grouped > span[data-active="true"]::before {
+	background: var(--praxity-color-accent);
+}
+
+.praxity-native-progress--grouped > span > span {
+	font-size: var(--type-small);
+	line-height: 1;
+	white-space: nowrap;
+}
+
+@media (max-width: 767px) {
+	.praxity-top-bar-fallback {
+		display: none;
+	}
+
+	html.praxity-js
+		.praxity-top-bar-fallback:has(.praxity-native-menu-toggle, #praxity-a11y-preferences) {
+		display: block;
+	}
+
+	html.praxity-js .praxity-native-menu-close {
+		display: inline-flex;
+	}
+
+	.praxity-native-outline .praxity-sidebar-collapse,
+	.praxity-top-bar .praxity-sidebar-expand {
+		display: none;
+	}
+
+	html.praxity-js .praxity-native-menu-toggle {
+		display: inline-flex;
+	}
+
+	html.praxity-js .praxity-mobile-top-bar:has(.praxity-native-menu-toggle) {
+		display: block;
+	}
+
+	.praxity-page-nav-fallback,
+	.praxity-native-page-nav .praxity-native-page-nav-inner {
+		grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+		gap: var(--space-2);
+		padding-block: var(--space-2) max(var(--space-2), env(safe-area-inset-bottom));
+	}
+
+	.praxity-native-page-nav,
+	.praxity-native-page-nav[data-hydrated] {
+		padding: 0;
+	}
+
+	.praxity-page-nav-fallback .praxity-nav-prev,
+	.praxity-page-nav-fallback .praxity-nav-next {
+		grid-row: 1;
+		min-width: 44px;
+		min-height: 44px;
+		max-width: 100%;
+		padding-inline: var(--space-2);
+		overflow-wrap: anywhere;
+		text-align: center;
+	}
+
+	.praxity-page-nav-fallback .praxity-nav-next {
+		grid-column: 3;
+	}
+
+	.praxity-page-nav-fallback > .praxity-nav-progress,
+	.praxity-native-page-nav .praxity-native-page-position {
+		grid-column: 2;
+		grid-row: 1;
+		text-align: center;
+	}
+
+	.praxity-native-page-position .praxity-native-progress,
+	.praxity-nav-label-full {
+		display: none;
+	}
+
+	.praxity-nav-label-compact {
+		display: inline;
+	}
+
+	.praxity-nav-progress .praxity-nav-label-compact,
+	.praxity-page-count-text .praxity-nav-label-compact {
+		white-space: nowrap;
+	}
+}
+
+@media (min-width: 768px) {
+	.praxity-native-menu-toggle,
+	.praxity-native-menu-close,
+	.praxity-native-nav-backdrop {
+		display: none;
+	}
+
+	html.praxity-js
+		body:not(.praxity-layout-sidebar):has(.praxity-native-outline)
+		.praxity-native-menu-toggle,
+	html.praxity-js
+		body:not(.praxity-layout-sidebar):has(.praxity-native-outline)
+		.praxity-native-menu-close,
+	html.praxity-js body:has(.praxity-native-outline[data-nav-drawer]) .praxity-native-menu-toggle,
+	html.praxity-js body:has(.praxity-native-outline[data-nav-drawer]) .praxity-native-menu-close {
+		display: inline-flex;
+	}
+
+	html.praxity-js
+		body:not(.praxity-layout-sidebar):has(.praxity-native-outline)
+		.praxity-mobile-top-bar,
+	html.praxity-js body:has(.praxity-native-outline[data-nav-drawer]) .praxity-mobile-top-bar {
+		display: block;
+	}
+
+	body:not(.praxity-layout-sidebar) .praxity-native-outline .praxity-sidebar-collapse,
+	body:not(.praxity-layout-sidebar) .praxity-top-bar .praxity-sidebar-expand,
+	.praxity-native-outline[data-nav-drawer] .praxity-sidebar-collapse,
+	body:has(.praxity-native-outline[data-nav-drawer]) .praxity-top-bar .praxity-sidebar-expand {
+		display: none;
+	}
+
+	body.praxity-layout-sidebar:has(.praxity-native-outline[data-nav-drawer])
+		.praxity-layout-wrapper {
+		display: flex;
+		min-height: 100dvh;
+		flex-direction: column;
+	}
+
+	body:not(.praxity-sidebar-collapsed) .praxity-top-bar .praxity-sidebar-expand {
+		display: none;
+	}
+
+	body.praxity-layout-sidebar:not(.praxity-sidebar-collapsed):has(
+			.praxity-native-outline:not([data-nav-drawer])
+		)
+		.praxity-top-bar
+		:is(.praxity-toolbar-context:not(.praxity-brand-title), .praxity-brand-title-text) {
+		display: none;
+	}
+
+	body.praxity-layout-sidebar .praxity-layout-wrapper[data-has-top-bar="true"] {
+		--praxity-toolbar-height: 52px;
+		grid-template-rows: auto minmax(0, 1fr) auto;
+	}
+
+	body.praxity-layout-sidebar
+		.praxity-layout-wrapper[data-has-top-bar="true"]
+		.praxity-outline-fallback {
+		grid-row: 1 / -1;
+	}
+
+	body.praxity-layout-sidebar .praxity-top-bar-fallback {
+		grid-column: 2;
+		grid-row: 1;
+	}
+
+	body.praxity-layout-sidebar .praxity-layout-wrapper[data-has-top-bar="true"] #main-content {
+		grid-row: 2;
+	}
+
+	body.praxity-layout-sidebar
+		.praxity-layout-wrapper[data-has-top-bar="true"]
+		.praxity-page-nav-fallback {
+		grid-row: 3;
+	}
+
+	body.praxity-layout-sidebar .praxity-outline-fallback[data-hydrated] .praxity-top-bar {
+		display: none;
+	}
+
+	body.praxity-layout-sidebar .praxity-outline-fallback:not([data-nav-drawer]) {
+		grid-column: 1;
+		grid-row: 1;
+		width: 260px;
+		height: 100vh;
+		position: sticky;
+		inset: auto;
+		inset-block-start: 0;
+		border-inline-end: 1px solid var(--praxity-color-border);
+		border-bottom: 0;
+		box-shadow: none;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		transform: none;
+		z-index: 200;
+	}
+
+	body.praxity-layout-sidebar #main-content {
+		grid-column: 2;
+		grid-row: 1;
+		min-width: 0;
+		min-height: 0;
+	}
+
+	body.praxity-layout-sidebar:not(.praxity-sidebar-collapsed):has(
+			.praxity-native-outline:not([data-nav-drawer])
+		)
+		#main-content {
+		--praxity-container-width: calc(100vw - 260px);
+	}
+
+	body.praxity-layout-sidebar .praxity-page-nav-fallback {
+		grid-column: 2;
+		grid-row: 2;
+	}
+
+	body.praxity-layout-sidebar .praxity-layout-wrapper > .praxity-a11y-dock {
+		grid-column: 2;
+	}
+
+	body.praxity-layout-sidebar.praxity-sidebar-collapsed
+		.praxity-outline-fallback:not([data-nav-drawer]) {
+		display: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.praxity-native-outline,
+	.praxity-native-menu-close,
+	.praxity-native-menu-toggle {
+		transition: none;
+	}
+}
+
+[data-praxity-reduced-motion]
+	:is(.praxity-native-outline, .praxity-native-menu-close, .praxity-native-menu-toggle) {
+	transition: none;
+}
+
+/* ── Slides layout ─────────────────────────────────────────── */
+
+body.praxity-layout-slides {
+	height: var(--praxity-slide-viewport-height, 100svh);
+	min-height: 0;
+	overflow: hidden;
+}
+
+body.praxity-layout-slides > .praxity-layout-wrapper {
+	height: 100%;
+}
+
+html.praxity-js
+	body.praxity-layout-slides.praxity-nav-open:has(.praxity-native-outline)
+	.praxity-hamburger.praxity-native-menu-toggle {
+	display: none;
+}
+
+body.praxity-layout-slides .praxity-native-outline[data-nav-drawer] {
+	border-inline-end: 1px solid var(--praxity-color-border);
+}
+
+/* Published output mounts the viewer into #main-content, which carries the
+   reading-column width and page padding (1rem 1.5rem 3rem) that scrolling
+   layouts need. A slides shell is already sized to the viewport, so that
+   padding pushed the document 64px past the fold: the learner got a second
+   scrollbar on top of the slide's own internal one, and the narration bar's
+   bottom edge (play/pause, seek, speed, captions, "Show all") sat under it.
+   Scoped with :has() so it only fires where a viewport-owned slides/minimal
+   shell is actually mounted — the no-JS static fallback keeps its reading column. */
+#main-content:has(> .praxity-viewer-shell.praxity-layout-slides),
+#main-content:has(> .praxity-viewer-shell.praxity-layout-minimal) {
+	width: 100%;
+	max-width: none;
+	margin: 0;
+	padding: 0;
+}
+
+/* Minimal and slides reserve a solid row below their scrolling content for
+   learner controls. Nothing in the row paints over the page. */
+.praxity-viewer-shell:is(.praxity-layout-slides, .praxity-layout-minimal) {
+	display: flex;
+	flex-direction: column;
+	height: var(--praxity-slide-viewport-height, 100svh);
+	min-height: 0;
+	overflow: hidden;
+}
+
+.praxity-layout-wrapper:is(.praxity-layout-slides, .praxity-layout-minimal) {
+	display: flex;
+	flex-direction: column;
+	flex: 1 1 auto;
+	height: auto;
+	min-height: 0;
+}
+
+/* SlideNav also answers to #praxity-page-nav (the slides skip-link target). */
+.praxity-layout-slides #praxity-page-nav:not(.praxity-slide-nav) {
+	padding-bottom: 0;
+}
+
+.praxity-layout-wrapper:is(.praxity-layout-slides, .praxity-layout-minimal) #main-content {
+	/* The scrollport spans the stage so wide blocks never escape its clipped edge. */
+	max-width: none;
+	padding-inline: max(var(--page-gutter), calc((100% - var(--measure)) / 2));
+	flex: 1 1 auto;
+	height: auto;
+	min-height: 0;
+	overflow-y: auto;
+}
+
+.praxity-layout-slides {
+	--praxity-slide-padding: clamp(16px, 4vw, 48px);
+	--praxity-slide-width: min(100%, var(--praxity-max-width, 720px));
+}
+
+.praxity-layout-slides #main-content {
+	display: flex;
+	flex-direction: column;
+}
+
+.praxity-nav-band {
+	position: relative;
+	z-index: 100;
+	flex: 0 0 auto;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-2);
+	padding: var(--space-2) max(var(--space-3), env(safe-area-inset-right))
+		max(var(--space-2), env(safe-area-inset-bottom)) max(var(--space-3), env(safe-area-inset-left));
+	overflow-x: auto;
+	background: var(--praxity-color-navigation-surface, var(--praxity-color-background));
+	border-top: 1px solid var(--praxity-color-border);
+}
+
+.praxity-nav-band > :is(.praxity-progress-dots, .praxity-slide-nav) {
+	position: static;
+	inset: auto;
+	transform: none;
+	flex: 0 0 auto;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+	backdrop-filter: none;
+}
+
+/* Vertical centering that still scrolls when content overflows:
+   margin:auto collapses to 0 when the slide is taller than the viewport. */
+.praxity-layout-slides .praxity-slide {
+	margin: auto;
+	width: var(--praxity-slide-width);
+	padding: var(--praxity-slide-padding);
+	box-sizing: border-box;
+}
+
+/* Default feature media stays inside the slide's bounded scroll container. */
+.praxity-layout-slides .praxity-slide .praxity-block-feature-width {
+	max-width: 100%;
+	margin-inline: 0;
+}
+
+.praxity-layout-slides .praxity-slide h1 {
+	font-size: var(--type-h1);
+	line-height: var(--leading-heading);
+}
+
+.praxity-layout-slides .praxity-slide h2 {
+	font-size: var(--type-h2);
+	line-height: var(--leading-heading);
+}
+
+.praxity-slide-counter {
+	position: fixed;
+	top: 16px;
+	inset-inline-end: 20px;
+	font-size: var(--type-small);
+	/*
+	 * `--praxity-color-text-muted`, not `--praxity-text-muted`: that name is defined
+	 * nowhere, so the counter silently fell back to a hardcoded #888 — 3.36:1 on the
+	 * default surface, and invisible to the export's contrast floor, which only
+	 * corrects tokens that actually exist.
+	 */
+	color: var(--praxity-color-text-muted);
+	z-index: 20;
+}
+
+.praxity-hamburger {
+	position: fixed;
+	top: 4px;
+	inset-inline-start: 20px;
+	z-index: 231;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	padding: 0;
+	color: var(--praxity-color-text);
+	background: var(--praxity-color-navigation-surface, var(--praxity-color-background));
+	border: 1px solid var(--praxity-color-border);
+	border-radius: var(--radius-control);
+	cursor: pointer;
+	box-shadow: none;
+	transition:
+		background var(--duration-press) var(--ease-out),
+		opacity var(--duration-press) var(--ease-out),
+		transform var(--duration-press) var(--ease-out);
+}
+
+.praxity-hamburger[hidden] {
+	display: none;
+}
+
+.praxity-hamburger:active {
+	transform: scale(0.97);
+}
+
+.praxity-hamburger[data-open="true"] {
+	opacity: 0;
+	transform: scale(0.97);
+	pointer-events: none;
+}
+
+.praxity-layout-wrapper:has(> .praxity-hamburger) > .praxity-top-bar {
+	padding-inline-start: var(--space-16);
+}
+
+.praxity-hamburger svg {
+	width: 24px;
+	height: 24px;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 2;
+	stroke-linecap: round;
+}
+
+.praxity-hamburger:focus-visible {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+}
+
+.praxity-outline-drawer {
+	position: fixed;
+	inset-block: 0;
+	inset-inline-start: 0;
+	z-index: 230;
+	width: min(320px, 85vw);
+	max-width: min(320px, 85vw);
+	height: 100vh;
+	overflow-y: auto;
+	color: var(--praxity-color-text);
+	background: var(--praxity-color-navigation-surface, var(--praxity-color-background));
+	border-inline-end: 1px solid var(--praxity-color-border);
+	box-shadow: none;
+	transform: translateX(-100%);
+	visibility: hidden;
+	pointer-events: none;
+	transition:
+		transform var(--duration-state) var(--ease-in-out),
+		visibility 0ms linear var(--duration-state);
+}
+
+[dir="rtl"] .praxity-outline-drawer {
+	box-shadow: none;
+	transform: translateX(100%);
+}
+
+.praxity-outline-drawer[data-open="true"] {
+	transform: translateX(0);
+	visibility: visible;
+	pointer-events: auto;
+	transition-delay: 0ms;
+}
+
+.praxity-outline-drawer__header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: var(--space-4);
+	padding: var(--space-3) var(--space-4);
+	border-bottom: 1px solid var(--praxity-color-border);
+}
+
+.praxity-outline-drawer__title,
+.praxity-outline-drawer__meta {
+	margin: 0;
+}
+
+.praxity-outline-drawer__title {
+	font-size: var(--type-body);
+	line-height: var(--leading-heading);
+}
+
+.praxity-outline-drawer__meta {
+	margin-top: var(--space-1);
+	font-size: var(--type-small);
+	color: var(--praxity-color-text-light);
+}
+
+.praxity-outline-drawer__close {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 44px;
+	width: 44px;
+	height: 44px;
+	margin: 0;
+	padding: 0;
+	color: inherit;
+	font: inherit;
+	font-size: var(--type-h3);
+	background: transparent;
+	border: 0;
+	border-radius: var(--radius-control);
+	cursor: pointer;
+	transition:
+		background var(--duration-press) var(--ease-out),
+		transform var(--duration-press) var(--ease-out);
+}
+
+.praxity-outline-drawer__close:active {
+	transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+	.praxity-hamburger:hover,
+	.praxity-outline-drawer__close:hover {
+		background: var(--praxity-color-background-alt);
+	}
+}
+
+.praxity-outline-drawer__close:focus-visible {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.praxity-outline-drawer {
+		transition: none;
+	}
+
+	.praxity-hamburger,
+	.praxity-outline-drawer__close {
+		transition: none;
+	}
+}
+
+/* ── Additional layout modes ── */
+
+.praxity-layout-minimal .praxity-page-nav {
+	display: none;
+}
+
+html.praxity-js .praxity-navigation-proxy,
+body.praxity-layout-none .praxity-navigation-proxy {
+	display: none;
+}
+
+/* ── Edge arrows ── */
+.praxity-edge-arrow {
+	position: fixed;
+	top: 50%;
+	transform: translateY(-50%);
+	z-index: 850;
+	width: 52px;
+	height: 52px;
+	border: 1px solid var(--praxity-color-border);
+	background: color-mix(
+		in oklab,
+		var(--praxity-color-navigation-surface, var(--praxity-color-background)) 92%,
+		transparent
+	);
+	color: var(--praxity-color-text);
+	text-decoration: none;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	box-shadow: none;
+	backdrop-filter: blur(8px);
+}
+
+.praxity-edge-arrow--prev {
+	inset-inline-start: 16px;
+}
+
+.praxity-edge-arrow--next {
+	inset-inline-end: 16px;
+}
+
+:is(.praxity-edge-arrow, .praxity-slide-nav__arrow) span {
+	display: inline-block;
+}
+
+.praxity-edge-arrow span {
+	font-size: var(--type-h1);
+	line-height: 1;
+}
+
+[dir="rtl"] :is(.praxity-edge-arrow, .praxity-slide-nav__arrow) span,
+[dir="rtl"] :is(.praxity-sidebar-collapse, .praxity-sidebar-expand) svg {
+	transform: scaleX(-1);
+}
+
+.praxity-edge-arrow:focus-visible {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+}
+
+/* Edge arrows obstruct narrow layouts. Touch navigation remains available
+   through the same paging handler whenever the author enables these arrows. */
+@media (max-width: 1024px) {
+	.praxity-edge-arrow-nav {
+		display: none;
+	}
+}
+
+/* ── Progress dots ── */
+.praxity-progress-dots {
+	position: fixed;
+	left: 50%;
+	bottom: 16px;
+	transform: translateX(-50%);
+	z-index: 860;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--space-2);
+	padding: var(--space-2) var(--space-3);
+	border-radius: var(--radius-mark);
+	background: color-mix(
+		in oklab,
+		var(--praxity-color-navigation-surface, var(--praxity-color-background)) 90%,
+		transparent
+	);
+	border: 1px solid var(--praxity-color-border);
+	backdrop-filter: blur(8px);
+}
+.praxity-progress-dots-row {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+}
+
+/* Inside SlideNav the pill chrome belongs to the nav, not to the dots. The
+   doubled class keeps this ahead of the export template's own copy of
+   `.praxity-progress-dots`, which is otherwise the same specificity. */
+.praxity-progress-dots.praxity-progress-dots--inline {
+	position: static;
+	transform: none;
+	padding: 0;
+	background: none;
+	border: none;
+	backdrop-filter: none;
+}
+
+/* ── Slides bottom navigation (prev + dots + next) ── */
+.praxity-slide-nav {
+	position: fixed;
+	left: 50%;
+	bottom: 16px;
+	transform: translateX(-50%);
+	z-index: 860;
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	padding: var(--space-1) var(--space-2);
+	border-radius: var(--radius-control);
+	background: color-mix(
+		in oklab,
+		var(--praxity-color-navigation-surface, var(--praxity-color-background)) 90%,
+		transparent
+	);
+	border: 1px solid var(--praxity-color-border);
+	backdrop-filter: blur(8px);
+	max-width: calc(100% - 2rem);
+	box-sizing: border-box;
+}
+
+.praxity-slide-nav__tools {
+	display: flex;
+	align-items: center;
+	/* Inline narration controls must be able to shrink and wrap here rather
+	   than push the fixed nav past the viewport edge. */
+	min-width: 0;
+	padding-inline-start: var(--space-2);
+	border-inline-start: 1px solid var(--praxity-color-border);
+}
+
+.praxity-sidebar-tools {
+	display: flex;
+	justify-content: center;
+	padding: var(--space-3);
+}
+
+.praxity-slide-nav__arrow {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	/* 44px is the touch-target floor the default theme guarantees. */
+	width: 44px;
+	height: 44px;
+	padding: 0;
+	border-radius: var(--radius-control);
+	border: 2px solid transparent;
+	background: transparent;
+	color: var(--praxity-color-text);
+	font-size: var(--type-h3);
+	line-height: 1;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.praxity-slide-nav__arrow:disabled {
+	opacity: 0.4;
+	cursor: default;
+}
+
+.praxity-slide-nav__arrow:focus-visible {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+}
+
+/* Progress dots distinguish state by shape + solid color (not opacity), so
+   every state clears WCAG 1.4.11 non-text contrast (3:1) against the page
+   background. text-muted and accent tokens are contrast-validated by theme. */
+.praxity-progress-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: var(--radius-round);
+	/* unvisited: hollow ring — reads as "not yet", ring color is ≥3:1 */
+	background: transparent;
+	box-shadow: none;
+}
+
+.praxity-progress-dot.is-visited {
+	/* visited: solid muted fill */
+	background: var(--praxity-color-text-muted);
+	box-shadow: none;
+}
+
+.praxity-progress-dot.is-current {
+	width: 20px;
+	border-radius: var(--radius-mark);
+	background: var(--praxity-color-accent);
+	box-shadow: none;
+	opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.praxity-progress-dot {
+		transition: none;
+	}
+}
+
+[data-praxity-reduced-motion] .praxity-progress-dot {
+	transition: none;
+}
+
+.praxity-progress-dots-counter {
+	font-size: var(--type-small);
+	font-weight: var(--weight-strong);
+	color: var(--praxity-color-text-light);
+}
+
+@media (max-width: 768px) {
+	.praxity-progress-dots {
+		bottom: 12px;
+	}
+}
+
+@media (max-width: 600px) {
+	.praxity-slide-nav {
+		flex-wrap: nowrap;
+		justify-content: center;
+	}
+
+	.praxity-slide-nav__tools {
+		flex: 0 1 auto;
+		min-width: 0;
+	}
+}
+
+/* Floating TOC (minimap). Owned here because viewer.css loads on every page. */
+.praxity-floating-toc {
+	position: fixed;
+	inset-inline-end: 16px;
+	top: 50%;
+	transform: translateY(-50%);
+	z-index: 900;
+	display: flex;
+	align-items: flex-end;
+	gap: var(--space-2);
+}
+
+.praxity-floating-toc-bars {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-1);
+}
+
+.praxity-toc-tick-wrap {
+	position: relative;
+	display: flex;
+	justify-content: flex-end;
+}
+
+.praxity-floating-toc[hidden],
+.praxity-toc-tick-wrap[hidden] {
+	display: none;
+}
+
+/* The element box is the >=24x24 hit target (WCAG 2.5.8); the visible tick is
+   the content box via background-clip. */
+.praxity-toc-bar {
+	position: relative;
+	display: block;
+	width: 24px;
+	height: 24px;
+	padding: var(--space-3) 0 var(--space-3) var(--space-2);
+	background: var(--praxity-color-text-light);
+	opacity: 0.4;
+	border-radius: var(--radius-control);
+	transition:
+		opacity var(--duration-state) var(--ease-out),
+		background var(--duration-state) var(--ease-out);
+	cursor: pointer;
+	border: none;
+	background-clip: content-box;
+}
+
+/* Widen each tick's pointer target to 44px. Vertical extension is capped at
+   half the 2px row gap so adjacent section links never overlap. */
+.praxity-toc-bar::after {
+	content: "";
+	position: absolute;
+	inset: -1px -10px;
+}
+
+.praxity-toc-bar-sub {
+	padding-inline-start: var(--space-3);
+}
+
+.praxity-toc-bar.active {
+	padding-inline-start: 0;
+	opacity: 1;
+	background: var(--praxity-color-accent);
+	background-clip: content-box;
+}
+
+.praxity-toc-bar:hover {
+	opacity: 0.8;
+}
+
+.praxity-toc-bar:focus-visible {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+	border-radius: var(--radius-control);
+}
+
+/* Preview card opens inward from the rail's inline-end edge. */
+.praxity-toc-preview {
+	position: absolute;
+	inset-inline-end: calc(100% + 12px);
+	top: 50%;
+	transform: translateY(-50%);
+	width: 260px;
+	padding: var(--space-2) var(--space-3);
+	background: var(--praxity-color-navigation-surface, var(--praxity-color-surface));
+	border: 1px solid var(--praxity-color-border);
+	border-radius: var(--radius-control);
+	box-shadow: none;
+	pointer-events: none;
+	z-index: 10;
+}
+
+.praxity-toc-preview-title {
+	margin: 0 0 var(--space-1);
+	font-size: var(--type-small);
+	font-weight: var(--weight-strong);
+	color: var(--praxity-color-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.praxity-toc-bar {
+		transition: none;
+	}
+}
+
+[data-praxity-reduced-motion] .praxity-toc-bar {
+	transition: none;
+}
+
+/* Hide floating TOC on mobile */
+@media (max-width: 768px) {
+	.praxity-floating-toc {
+		display: none;
+	}
+}
+
+/* Course menu text follows the theme. */
+.praxity-course-menu,
+.praxity-course-menu nav {
+	color: var(--praxity-color-text);
+}
+
+.praxity-course-menu .praxity-sidebar-title {
+	max-width: 100%;
+	font-size: var(--type-body);
+	line-height: var(--leading-heading);
+}
+
+.praxity-nav-marker-spacer {
+	display: inline-block;
+	width: 1rem;
+	height: 1rem;
+}
+
+.praxity-top-bar-fallback {
+	position: sticky;
+	top: 0;
+	z-index: 220;
+}
+
+.praxity-top-bar {
+	position: static;
+	z-index: 220;
+	display: flex;
+	align-items: center;
+	justify-content: flex-start;
+	height: var(--praxity-toolbar-height);
+	min-height: var(--praxity-toolbar-height);
+	box-sizing: border-box;
+	padding-block: var(--space-1);
+	padding-inline: var(--space-4);
+	gap: var(--space-3);
+	background: var(
+		--praxity-color-navigation-surface,
+		var(--praxity-color-surface, var(--praxity-color-background))
+	);
+	color: var(--praxity-color-text);
+	border-bottom: 1px solid var(--praxity-color-border);
+	box-shadow: none;
+}
+
+.praxity-toolbar-context {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.praxity-toolbar-position {
+	flex: 0 0 auto;
+	white-space: nowrap;
+}
+
+.praxity-toolbar-tools {
+	position: relative;
+	display: flex;
+	align-items: center;
+	margin-inline-start: auto;
+}
+
+/* Keep identity and disclosure controls on one row. The disclosed player has
+   its own full-width row, rather than wrapping inside three nested flexboxes. */
+.praxity-top-bar-fallback > .praxity-top-bar {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+	height: auto;
+	min-height: 52px;
+	column-gap: var(--space-3);
+}
+
+.praxity-top-bar-fallback
+	.praxity-top-bar
+	:is(
+		.praxity-toolbar-tools,
+		#praxity-a11y-preferences,
+		[data-island="narration"]:not(:empty),
+		.praxity-narration
+	) {
+	display: contents;
+}
+
+.praxity-top-bar-fallback .praxity-top-bar :is(.praxity-menu-toggle, .praxity-sidebar-expand) {
+	grid-area: 1 / 1;
+}
+
+.praxity-top-bar-fallback .praxity-toolbar-context {
+	grid-area: 1 / 2;
+}
+
+.praxity-top-bar-fallback .praxity-toolbar-position {
+	grid-area: 1 / 3;
+}
+
+.praxity-top-bar-fallback .praxity-a11y-pill {
+	grid-area: 1 / 4;
+}
+
+.praxity-top-bar-fallback .praxity-narration-toggle {
+	grid-area: 1 / 5;
+}
+
+.praxity-top-bar-fallback .praxity-top-bar [data-island="narration"]:empty {
+	display: block;
+	grid-area: 1 / 5;
+	width: 44px;
+}
+
+.praxity-top-bar-fallback .praxity-narration-controls {
+	grid-column: 1 / -1;
+	grid-row: 2;
+	padding-block: var(--space-2);
+	border-block-start: 1px solid var(--praxity-color-border);
+}
+
+@media (max-width: 767px) {
+	.praxity-top-bar-fallback > .praxity-top-bar {
+		padding-inline: var(--space-3);
+		column-gap: var(--space-1);
+	}
+
+	.praxity-top-bar-fallback .praxity-toolbar-context {
+		margin-inline-start: var(--space-2);
+	}
+
+	body:has(.praxity-native-page-nav) .praxity-top-bar-fallback .praxity-toolbar-position {
+		display: none;
+	}
+}
+
+.praxity-top-bar .praxity-menu-toggle {
+	flex: 0 0 auto;
+	margin: 0;
+	min-width: 44px;
+	min-height: 44px;
+	background: var(
+		--praxity-color-navigation-surface,
+		var(--praxity-color-surface, var(--praxity-color-background))
+	);
+	color: var(--praxity-color-text);
+	border-color: var(--praxity-color-border);
+	border-radius: var(--radius-control);
+}
+
+/* Programmatic focus targets (tabindex=-1, not keyboard-reachable) that receive
+   focus for screen readers: the inner <main id=main-content> in preview, the
+   #main-content mount in published output, and the H1-H6 headings that guided
+   navigation (Next, Previous, arrows, outline jumps) focuses on arrival. Suppress their
+   browser-default outline — otherwise published output frames every slide in a
+   blue focus ring on load. Both are tabindex=-1, so real keyboard focus rings on
+   interactive descendants are unaffected. Safari also matches :focus-visible on
+   programmatic .focus(), so suppress both pseudo-classes. */
+#main-content[tabindex="-1"],
+#main-content[tabindex="-1"]:focus,
+#main-content[tabindex="-1"]:focus-visible,
+.praxity-page-content :is(h1, h2, h3, h4, h5, h6)[tabindex="-1"],
+.praxity-page-content :is(h1, h2, h3, h4, h5, h6)[tabindex="-1"]:focus,
+.praxity-page-content :is(h1, h2, h3, h4, h5, h6)[tabindex="-1"]:focus-visible {
+	outline: none !important;
+	box-shadow: none !important;
+}
+
+/* Suppress Mantine's focus-on-click outline — it uses :focus (fires on mouse click)
+   instead of :focus-visible (keyboard only). Our :focus-visible rule below handles it. */
+.mantine-focus-always:focus:not(:focus-visible) {
+	outline: none;
+}
+
+/* These targets are outside the tab order. Suppress the browser's default
+   outline too when submission moves focus here after keyboard activation. */
+[data-assessment-feedback]:focus,
+[data-assessment-feedback] [tabindex="-1"]:focus,
+[data-row-summary]:focus {
+	outline: none;
+}
+
+.mantine-focus-auto:focus-visible,
+.mantine-focus-always:focus-visible {
+	outline-color: var(--praxity-color-focus);
+}
+
+/* One themed outline survives forced-colors. Programmatic feedback targets
+   announce their content without drawing another box inside the activity.
+   Scoped to interactive elements to prevent non-interactive wrappers (nav, div, main)
+   from showing focus rings when they receive programmatic or click-through focus. */
+.praxity-page-content :is(input, select, textarea):focus-visible,
+a:focus-visible,
+button:focus-visible,
+.praxity-viewer-shell summary:focus-visible,
+.praxity-viewer-shell audio:focus-visible,
+.praxity-viewer-shell video:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible,
+[role="tab"]:focus-visible,
+[role="slider"]:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
+	outline: var(--focus-width) solid var(--praxity-color-focus);
+	outline-offset: var(--focus-offset);
+	box-shadow: none;
+}
+
+.praxity-viewer-shell summary:focus-visible,
+.praxity-disclosure-trigger:focus-visible {
+	outline-offset: -2px;
+}
+
+/* Touch targets -- WCAG SC 2.5.8 */
+:where(.praxity-viewer-shell) button,
+:where(.praxity-viewer-shell) [role="button"],
+:where(.praxity-viewer-shell) a,
+:where(.praxity-viewer-shell) input,
+:where(.praxity-viewer-shell) select,
+:where(.praxity-viewer-shell) textarea {
+	min-height: 24px;
+	min-width: 24px;
+}
+
+/* Button & document blocks — use theme colors instead of Mantine default blue.
+   Mantine v7 sets --button-bg/--button-color/etc. as inline styles on <button>,
+   so !important is required to override them from a stylesheet.
+	   --praxity-color-button-outline is contrast-corrected against course surfaces.
+   BlockRenderer wraps in div[data-block-type], separate from outer .praxity-block. */
+:is([data-block-type="button"], [data-block-type="document"], [data-block-type="assessment"])
+.mantine-Button-root,
+.praxity-page-nav .mantine-Button-root {
+	--button-bg: var(--praxity-color-button-background) !important;
+	--button-hover: var(--praxity-color-button-background) !important;
+	--button-color: var(--praxity-color-button-text) !important;
+	--button-bd: 1px solid var(--praxity-color-button-outline) !important;
+	color: var(--button-color) !important;
+}
+
+:is([data-block-type="button"], [data-block-type="document"], [data-block-type="assessment"])
+	.mantine-Button-root[data-variant="outline"],
+.praxity-page-nav .mantine-Button-root[data-variant="outline"] {
+	--button-bg: transparent !important;
+	--button-color: var(
+		--praxity-color-accent-text,
+		var(--praxity-color-button-outline, var(--praxity-color-button-background))
+	) !important;
+	--button-hover: var(--praxity-color-accent-light, var(--praxity-color-background-alt)) !important;
+	--button-bd: 1.5px solid
+		var(--praxity-color-button-outline, var(--praxity-color-button-background)) !important;
+}
+
+:is([data-block-type="button"], [data-block-type="document"], [data-block-type="assessment"])
+	.mantine-Button-root[data-variant="light"] {
+	--button-bg: var(--praxity-color-accent-light, var(--praxity-color-background-alt)) !important;
+	--button-color: var(--praxity-color-accent-text, var(--praxity-color-accent)) !important;
+	--button-hover: var(--praxity-color-background-alt) !important;
+	--button-bd: none !important;
+}
+
+/* Page navigation — Previous (outline) + Next (filled) use theme button colors */
+.praxity-page-nav .mantine-Button-root {
+	border-radius: var(--radius-control);
+	min-height: 44px;
+}
+
+@supports (color: color-mix(in oklab, black, white)) {
+	:is([data-block-type="button"], [data-block-type="document"], [data-block-type="assessment"])
+		.mantine-Button-root,
+	.praxity-page-nav .mantine-Button-root {
+		--button-hover: color-mix(
+			in oklab,
+			var(--praxity-color-button-background) 85%,
+			black
+		) !important;
+	}
+
+	:is([data-block-type="button"], [data-block-type="document"], [data-block-type="assessment"])
+		.mantine-Button-root[data-variant="outline"],
+	.praxity-page-nav .mantine-Button-root[data-variant="outline"] {
+		--button-hover: color-mix(
+			in oklab,
+			var(--praxity-color-button-outline, var(--praxity-color-button-background)) 8%,
+			transparent
+		) !important;
+	}
+
+	:is([data-block-type="button"], [data-block-type="document"], [data-block-type="assessment"])
+		.mantine-Button-root[data-variant="light"] {
+		--button-bg: color-mix(
+			in oklab,
+			var(--praxity-color-button-background) 12%,
+			transparent
+		) !important;
+	}
+}
+
+:is([data-block-type="button"], [data-block-type="document"], [data-block-type="assessment"])
+	.mantine-Button-root,
+.praxity-page-nav .mantine-Button-root {
+	transition: transform var(--duration-press) var(--ease-out);
+}
+
+:is(
+		[data-block-type="button"],
+		[data-block-type="document"],
+		[data-block-type="assessment"],
+		.praxity-page-nav
+	)
+	.mantine-Button-root:hover:not([data-disabled]):not(:disabled) {
+	box-shadow: none;
+}
+
+:is(
+		[data-block-type="button"],
+		[data-block-type="document"],
+		[data-block-type="assessment"],
+		.praxity-page-nav
+	)
+	.mantine-Button-root:active:not([data-disabled]):not(:disabled) {
+	transform: none;
+	box-shadow: none;
+}
+
+:is(
+		[data-block-type="button"],
+		[data-block-type="document"],
+		[data-block-type="assessment"],
+		.praxity-page-nav
+	)
+	.mantine-Button-root:focus-visible {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+	box-shadow: none;
+}
+
+:is(
+		[data-block-type="button"],
+		[data-block-type="document"],
+		[data-block-type="assessment"],
+		.praxity-page-nav
+	)
+	.mantine-Button-root:is([data-disabled], :disabled) {
+	opacity: 1 !important;
+	cursor: not-allowed;
+	box-shadow: none !important;
+	transform: none !important;
+}
+
+/* Required indicator — positioned badge injected by logic engine's require action */
+.praxity-block[data-required] {
+	position: relative;
+}
+
+.praxity-block[data-required] > .praxity-required-indicator {
+	position: absolute;
+	top: 4px;
+	right: 4px;
+	z-index: 1;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.3em;
+	height: 1.3em;
+	border-radius: var(--radius-control);
+	background: color-mix(in oklab, var(--praxity-color-accent) 12%, transparent);
+}
+
+/* Required validation message — injected below incomplete blocks */
+.praxity-required-message {
+	color: var(--praxity-color-error-text, var(--praxity-color-error));
+	font-size: var(--type-small);
+	margin-top: var(--space-1);
+	padding: var(--space-1) 0;
+}
+
+/* Temporary highlight ring on incomplete required blocks */
+[data-required-highlight] {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+	border-radius: var(--radius-control);
+	transition: none;
+}
+
+/* SlideNav also answers to #praxity-page-nav but owns its floating geometry. */
+/* biome-ignore lint/style/noDescendingSpecificity: base non-slide page nav follows slide-layout overrides */
+#praxity-page-nav:not(.praxity-slide-nav) {
+	scroll-margin-top: 72px;
+	position: relative;
+	z-index: 1;
+}
+
+/* biome-ignore lint/style/noDescendingSpecificity: base page nav follows layout-specific overrides */
+.praxity-page-nav {
+	border-top: 1px solid var(--praxity-color-border);
+	background: var(
+		--praxity-color-navigation-surface,
+		var(--praxity-color-surface, var(--praxity-color-background))
+	);
+}
+
+.praxity-page-nav > div {
+	padding-inline: max(var(--space-4), env(safe-area-inset-left), env(safe-area-inset-right));
+	box-sizing: border-box;
+}
+
+.praxity-page-nav-tools,
+.praxity-a11y-dock {
+	display: flex;
+	justify-content: flex-end;
+	margin-top: var(--space-3);
+	padding-top: var(--space-3);
+	border-top: 1px solid var(--praxity-color-border);
+}
+
+@media (max-width: 400px) {
+	.praxity-top-bar {
+		gap: var(--space-2);
+		padding-inline: var(--space-2);
+	}
+}
+
+:is(.praxity-page-nav-tools, .praxity-slide-nav__tools, .praxity-a11y-dock) .praxity-a11y-pill {
+	position: static;
+	inset: auto;
+	transform: none;
+	flex-direction: row;
+	box-shadow: none;
+	backdrop-filter: none;
+}
+
+.praxity-a11y-dock {
+	margin-top: 0;
+	padding: var(--space-3) max(var(--space-4), env(safe-area-inset-right));
+	background: var(
+		--praxity-color-navigation-surface,
+		var(--praxity-color-surface, var(--praxity-color-background))
+	);
+}
+
+.praxity-nav-band > .praxity-a11y-dock {
+	flex: 0 0 auto;
+	margin: 0;
+	padding: 0;
+	border: 0;
+}
+
+.praxity-nav-band > .praxity-progress-dots + .praxity-a11y-dock {
+	padding-inline-start: var(--space-3);
+	border-inline-start: 1px solid var(--praxity-color-border);
+}
+
+/* Placeholder text: muted below typed answers but still WCAG AA (Mantine's default is too light) */
+.praxity-page-content input::placeholder,
+.praxity-page-content textarea::placeholder,
+.praxity-page-content .mantine-TextInput-input::placeholder,
+.praxity-page-content .mantine-Textarea-input::placeholder,
+.praxity-page-content .mantine-Input-input::placeholder {
+	color: var(--praxity-color-text-muted) !important;
+	opacity: 1;
+}
+
+/* Pages owns its reading boundary and pagination, independently of deck chrome. */
+@media (max-width: 599px) {
+	body:not(.praxity-layout-slides) #main-content,
+	body:not(.praxity-layout-slides) #main-content .praxity-section {
+		padding-inline: max(var(--page-gutter), env(safe-area-inset-left), env(safe-area-inset-right));
+	}
+}
+
+.praxity-native-page-nav.praxity-pages-pagination .praxity-native-page-nav-inner,
+.praxity-pages-pagination:not(.praxity-native-page-nav) {
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	align-items: start;
+	width: calc(100% - 2 * var(--page-gutter));
+	max-width: var(--measure);
+	padding-inline: 0;
+	font-size: var(--type-body);
+}
+
+.praxity-pages-pagination .praxity-pages-position {
+	grid-column: 1 / -1;
+}
+
+.praxity-pages-pagination :is(a, button):is(.praxity-nav-prev, .praxity-nav-next) {
+	grid-row: 2;
+	justify-self: stretch;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	justify-content: flex-start;
+	padding-inline: 0;
+	border: 0;
+	border-radius: var(--radius-control);
+	background: transparent;
+	color: var(--praxity-color-accent-text);
+	text-align: start;
+	hyphens: manual;
+}
+
+.praxity-native-page-nav.praxity-pages-pagination .praxity-nav-next {
+	grid-column: 2;
+	align-items: flex-end;
+	text-align: end;
+}
+
+.praxity-pagination-title,
+.praxity-embed-url {
+	font-size: var(--type-small);
+	font-weight: var(--weight-body);
+}
+
+.praxity-pages-progress {
+	height: 2px;
+}
+
+.praxity-pages-progress > div {
+	height: 100%;
+	background: var(--praxity-color-accent);
+}
+
+.praxity-pages-completion-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-4);
+}
+
+.praxity-pages-completion-actions :is(button, a) {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: var(--target-size);
+	min-height: var(--target-size);
+	padding: var(--space-2) var(--space-4);
+	border: 1px solid var(--line);
+	border-radius: var(--radius-control);
+	background: transparent;
+	color: var(--ink);
+	font: inherit;
+	font-weight: var(--weight-strong);
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.praxity-pages-completion {
+	margin-top: var(--section-before);
+}
+
+.praxity-glossary-link {
+	display: block;
+	min-height: var(--target-size);
+	padding-block: var(--space-2);
+}
+
+/* ===== Embed navigation — compact bar for embedded content ===== */
+.praxity-embed-nav {
+	display: none;
+	padding: var(--space-2) 0;
+	border-top: 1px solid var(--praxity-color-border);
+	opacity: 0.7;
+	transition: opacity var(--duration-press) var(--ease-out);
+}
+
+.praxity-embed-nav:hover {
+	opacity: 1;
+}
+
+.praxity-native-embed-nav-inner {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-2);
+}
+
+.praxity-native-embed-nav-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	padding: 0;
+	color: var(--praxity-color-text);
+	font: inherit;
+	font-size: var(--type-h3);
+	line-height: 1;
+	text-decoration: none;
+	background: transparent;
+	border: 2px solid transparent;
+	border-radius: var(--radius-control);
+}
+
+.praxity-native-embed-nav-button:disabled {
+	opacity: 0.4;
+}
+
+.praxity-native-embed-nav-button:focus-visible {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+}
+
+.praxity-native-embed-nav-inner .praxity-native-progress {
+	width: 60px;
+	flex: 0 0 60px;
+}
+
+/* In minimal mode, show embed nav (it replaces the hidden full nav) */
+.praxity-minimal .praxity-embed-nav {
+	display: flex !important;
+	justify-content: center;
+}
+
+.praxity-embed-nav-skip {
+	display: none;
+}
+
+body.praxity-minimal .praxity-embed-nav-skip {
+	display: block;
+}
+
+body.praxity-minimal
+	:is(
+		.praxity-page-nav-skip,
+		.praxity-outline-fallback,
+		.praxity-native-menu-toggle,
+		.praxity-page-nav,
+		.praxity-page-nav-fallback,
+		.praxity-slide-nav,
+		.praxity-edge-arrow-nav,
+		.praxity-navigation-proxy
+	) {
+	display: none !important;
+}
+
+/* ── Accessibility preference overrides ── */
+
+/* Text size: large (125%) */
+:where(html, [data-praxity-root])[data-praxity-text-size="large"] {
+	--praxity-font-size-base: var(--type-body);
+}
+
+/* Nav and a11y bar: cap font size regardless of text-size preference */
+:where(html, [data-praxity-root])[data-praxity-text-size] .praxity-page-nav,
+:where(html, [data-praxity-root])[data-praxity-text-size] .praxity-a11y-pill,
+:where(html, [data-praxity-root])[data-praxity-text-size] .praxity-top-bar,
+:where(html, [data-praxity-root])[data-praxity-text-size] .praxity-course-menu {
+	font-size: var(--type-body);
+}
+
+:where(html, [data-praxity-root])[data-praxity-text-size] .praxity-page-nav .mantine-Button-root,
+:where(html, [data-praxity-root])[data-praxity-text-size] .praxity-a11y-pill button,
+:where(html, [data-praxity-root])[data-praxity-text-size] .praxity-narration-toggle,
+:where(html, [data-praxity-root])[data-praxity-text-size] .praxity-narration-controls {
+	font-size: var(--type-small);
+}
+
+/* Reading guide: dim whole rows, including media and scrollable tables. */
+:where(html, [data-praxity-root])[data-praxity-focus-mode="true"]
+[data-focus-row][data-focus-dimmed] {
+	--praxity-reading-guide-opacity: 0.15;
+	opacity: 0.15;
+	transition: opacity var(--duration-state) var(--ease-out);
+}
+
+/* Keyboard and pointer users fully restore the reading row they enter. */
+:where(html, [data-praxity-root])[data-praxity-focus-mode="true"]
+[data-focus-row][data-focus-dimmed]:focus-within {
+	--praxity-reading-guide-opacity: 1;
+	opacity: 1;
+}
+
+@media (hover: hover) {
+	:where(html, [data-praxity-root])[data-praxity-focus-mode="true"]
+		[data-focus-row][data-focus-dimmed]:hover {
+		--praxity-reading-guide-opacity: 1;
+		opacity: 1;
+	}
+}
+
+/* Reduced motion: remove transition */
+@media (prefers-reduced-motion: reduce) {
+	:where(html, [data-praxity-root])[data-praxity-focus-mode="true"]
+		[data-focus-row][data-focus-dimmed] {
+		transition: none;
+	}
+}
+
+[data-praxity-root][data-praxity-reduced-motion] [data-focus-row][data-focus-dimmed] {
+	transition: none !important;
+}
+
+@media (prefers-contrast: more) {
+	:where(html, [data-praxity-root])[data-praxity-focus-mode="true"]
+		[data-focus-row][data-focus-dimmed] {
+		--praxity-reading-guide-opacity: 1;
+		opacity: 1;
+	}
+}
+
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		:where(html, [data-praxity-root])[data-praxity-focus-mode="true"]
+			[data-focus-row][data-focus-dimmed] {
+			--praxity-reading-guide-opacity: 1;
+			opacity: 1;
+		}
+	}
+}
+
+/* File and external-link indicators used by the published HTML post-processor. */
+.praxity-file-type {
+	font-size: var(--type-small);
+	opacity: 0.8;
+}
+
+.praxity-external-icon {
+	display: inline-block;
+	width: 0.75em;
+	height: 0.75em;
+	margin-inline-start: 0.25em;
+	vertical-align: baseline;
+	opacity: 0.7;
+}
+
+/* Disabled page nav stays visible without competing with the available action. */
+.praxity-page-nav .mantine-Button-root[data-disabled],
+.praxity-page-nav .mantine-Button-root:disabled {
+	--button-bg: transparent !important;
+	--button-color: var(
+		--praxity-color-accent-text,
+		var(--praxity-color-button-outline, var(--praxity-color-button-background))
+	) !important;
+	--button-bd: 1.5px solid
+		var(--praxity-color-button-outline, var(--praxity-color-button-background)) !important;
+	background: var(--button-bg) !important;
+	color: var(--button-color) !important;
+	border: var(--button-bd) !important;
+	opacity: 0.47 !important;
+}
+
+/* Honour the platform preference by strengthening existing boundaries and state indicators. */
+@media (prefers-contrast: more) {
+	:is(html[data-praxity-root], .praxity-viewer-shell) {
+		/* Theme tokens are inline on this element; important is required for the preference to win. */
+		--praxity-color-border: var(--praxity-color-text) !important;
+		--praxity-color-control-border: var(--praxity-color-text) !important;
+		--praxity-color-activity-border: var(--praxity-color-text) !important;
+		--praxity-color-text-light: var(--praxity-color-text) !important;
+		--praxity-color-text-muted: var(--praxity-color-text) !important;
+		--praxity-color-focus: var(--praxity-color-text) !important;
+		--mantine-color-dimmed: var(--praxity-color-text) !important;
+	}
+	[data-praxity-root] :focus-visible {
+		outline-color: var(--praxity-color-focus) !important;
+	}
+
+	.praxity-scroll-progress {
+		height: 6px;
+		border-bottom: 2px solid var(--praxity-color-text);
+	}
+
+	.praxity-scroll-progress-fill {
+		background: var(--praxity-color-text);
+	}
+
+	:is(
+		.praxity-progress-dots,
+		.praxity-slide-nav,
+		.praxity-a11y-pill,
+		.praxity-sidebar-expand,
+		.praxity-sidebar-collapse
+	) {
+		border-width: 2px;
+		border-color: var(--praxity-color-text);
+		box-shadow: none;
+		backdrop-filter: none;
+	}
+
+	.praxity-progress-dot {
+		background: transparent;
+		box-shadow: none;
+	}
+
+	.praxity-progress-dot.is-visited {
+		background: var(--praxity-color-text);
+		box-shadow: none;
+	}
+
+	.praxity-progress-dot.is-current {
+		outline: var(--focus-width) solid var(--accent);
+		outline-offset: var(--focus-offset);
+	}
+
+	:is(
+		.mantine-TextInput-input,
+		.mantine-Textarea-input,
+		.mantine-Select-input,
+		.mantine-Checkbox-input,
+		.mantine-Radio-radio,
+		.praxity-choice-key,
+		.praxity-assessment-select-input,
+		.praxity-ag-radio
+	),
+	.praxity-page-content
+		input:not([type="hidden"], [type="button"], [type="submit"], [type="reset"], [type="image"]),
+	.praxity-page-content textarea,
+	.praxity-page-content select {
+		border-width: 2px !important;
+		border-color: var(--praxity-color-control-border) !important;
+	}
+
+	.praxity-fill-blank-input {
+		border-width: 0 0 3px !important;
+	}
+
+	:is(
+		a,
+		button,
+		input,
+		select,
+		textarea,
+		[role="button"],
+		[role="tab"],
+		[role="slider"],
+		[tabindex]:not([tabindex="-1"])
+	):focus-visible {
+		outline: var(--focus-width) solid var(--praxity-color-focus) !important;
+		outline-offset: var(--focus-offset) !important;
+		box-shadow: none !important;
+	}
+
+	.praxity-a11y-pill button[data-active],
+	.praxity-narration-toggle[data-active],
+	.praxity-narration-controls button[data-active] {
+		box-shadow: none;
+	}
+
+	:is(
+		.praxity-file-type,
+		.praxity-duration,
+		.praxity-page-count-text,
+		.praxity-block-caption,
+		.praxity-document-meta,
+		.praxity-document-url,
+		.praxity-quote-attribution,
+		.praxity-external-icon
+	) {
+		opacity: 1;
+	}
+
+	/* biome-ignore lint/style/noDescendingSpecificity: platform preference override intentionally follows every divider layout variant */
+}
+
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		.praxity-native-progress {
+			background: Canvas;
+			border: 1px solid CanvasText;
+		}
+
+		.praxity-native-progress > span {
+			background: Highlight;
+		}
+
+		:is(.praxity-native-progress--dots, .praxity-native-progress--segments) {
+			border: 0;
+		}
+
+		:is(.praxity-native-progress--dots, .praxity-native-progress--segments) > span {
+			background: Canvas;
+			border: 1px solid CanvasText;
+		}
+
+		:is(.praxity-native-progress--dots, .praxity-native-progress--segments)
+			> span[data-active="true"] {
+			background: Highlight;
+			border-color: Highlight;
+		}
+
+		.praxity-native-progress--grouped > span {
+			background: transparent;
+			border: 0;
+		}
+
+		.praxity-native-progress--grouped > span::before {
+			background: Canvas;
+			border: 1px solid CanvasText;
+		}
+
+		.praxity-native-progress--grouped > span[data-active="true"]::before {
+			background: Highlight;
+			border-color: Highlight;
+		}
+
+		.praxity-scroll-progress {
+			background: Canvas;
+			border-bottom: 2px solid CanvasText;
+		}
+
+		.praxity-scroll-progress-fill {
+			background: Highlight;
+		}
+
+		:is(
+				.praxity-progress-dots,
+				.praxity-slide-nav,
+				.praxity-a11y-pill,
+				.praxity-sidebar-expand,
+				.praxity-sidebar-collapse
+			) {
+			color: CanvasText;
+			background: Canvas;
+			border: 2px solid CanvasText;
+			box-shadow: none;
+			backdrop-filter: none;
+		}
+
+		/* biome-ignore lint/style/noDescendingSpecificity: forced-colors repair intentionally follows every divider layout variant */
+
+		/* biome-ignore lint/style/noDescendingSpecificity: forced-colors repair intentionally follows the base SVG rule */
+
+		.praxity-progress-dot {
+			background: Canvas;
+			border: 2px solid ButtonText;
+			box-shadow: none;
+		}
+
+		.praxity-progress-dot.is-visited {
+			background: ButtonText;
+		}
+
+		.praxity-progress-dot.is-current {
+			outline: 2px solid Highlight;
+			outline-offset: var(--focus-offset);
+		}
+
+		.praxity-a11y-pill button[data-active],
+		.praxity-narration-toggle[data-active],
+		.praxity-narration-controls button[data-active],
+		:is(.deck-utility-items, .deck-follow)
+			button:is([aria-expanded="true"], [aria-pressed="true"], [aria-checked="true"]),
+		#deck-more-toggle[aria-expanded="true"] {
+			outline: 2px solid Highlight;
+			outline-offset: -4px;
+		}
+
+		:is(
+				.praxity-file-type,
+				.praxity-duration,
+				.praxity-page-count-text,
+				.praxity-block-caption,
+				.praxity-document-meta,
+				.praxity-document-url,
+				.praxity-quote-attribution,
+				.praxity-external-icon
+			) {
+			opacity: 1;
+		}
+
+		:is(.mantine-TextInput-input, .mantine-Textarea-input, .mantine-Select-input),
+		:is(.mantine-Checkbox-input, .mantine-Radio-radio) {
+			color: FieldText !important;
+			background: Field !important;
+			border: 2px solid FieldText !important;
+		}
+
+		:is(
+				a,
+				button,
+				input,
+				select,
+				textarea,
+				[role="button"],
+				[role="tab"],
+				[role="slider"],
+				[tabindex]:not([tabindex="-1"])
+			):focus-visible {
+			outline: var(--focus-control-width) solid Highlight !important;
+			outline-offset: var(--focus-offset) !important;
+			box-shadow: none !important;
+		}
+	}
+}
+
+/* Keep the scoped single-ring policy when the system focus rules above use
+   !important. Input suppression still requires an equivalent enclosing row. */
+@media (prefers-contrast: more) {
+	.praxity-assessment-choice-option input:focus-visible,
+	.praxity-assessment-choice-option input[type="radio"]:focus,
+	.praxity-assessment-choice-option input[type="checkbox"]:focus,
+	.praxity-ag-radio-row input[type="radio"]:focus {
+		outline: none !important;
+		box-shadow: none !important;
+	}
+
+	.praxity-outline-fallback ol[role="list"] a:focus-visible {
+		outline-offset: -5px !important;
+	}
+
+	.praxity-tabs-static .praxity-tabs-tab:focus-visible,
+	.praxity-tabs-block .mantine-Tabs-tab:focus-visible,
+	.praxity-viewer-shell summary:focus-visible,
+	.praxity-disclosure-trigger[aria-controls]:focus-visible {
+		outline-offset: -3px !important;
+	}
+
+	/* Higher contrast keeps the themed focus token, with Highlight as fallback. */
+	.praxity-disclosure-trigger[aria-controls]:focus-visible {
+		outline-color: var(--praxity-color-focus, Highlight) !important;
+	}
+}
+
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		.praxity-assessment-choice-option input:focus-visible,
+		.praxity-assessment-choice-option input[type="radio"]:focus,
+		.praxity-assessment-choice-option input[type="checkbox"]:focus,
+		.praxity-ag-radio-row input[type="radio"]:focus {
+			outline: none !important;
+			box-shadow: none !important;
+		}
+
+		.praxity-outline-fallback ol[role="list"] a:focus-visible {
+			outline-offset: -5px !important;
+		}
+
+		.praxity-tabs-static .praxity-tabs-tab:focus-visible,
+		.praxity-tabs-block .mantine-Tabs-tab:focus-visible,
+		.praxity-viewer-shell summary:focus-visible,
+		.praxity-disclosure-trigger[aria-controls]:focus-visible {
+			outline-offset: -3px !important;
+		}
+
+		/* Palette-capable engines remap this token to the system focus color. */
+		.praxity-disclosure-trigger[aria-controls]:focus-visible {
+			outline-color: var(--praxity-color-focus, Highlight) !important;
+		}
+	}
+}
+
+/* Reduced motion */
+[data-praxity-root][data-praxity-reduced-motion="true"] *,
+[data-praxity-root][data-praxity-reduced-motion="true"] *::before,
+[data-praxity-root][data-praxity-reduced-motion="true"] *::after {
+	animation-duration: 0s !important;
+	animation-delay: 0s !important;
+	animation-iteration-count: 1 !important;
+	transition-duration: 0s !important;
+	scroll-behavior: auto !important;
+}
+
+/* ── Accessibility preferences toolbar ── */
+
+#praxity-a11y-preferences {
+	position: relative;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: flex-end;
+	min-width: 0;
+}
+
+[data-island="narration"] {
+	min-width: 44px;
+	min-height: 44px;
+}
+
+/* biome-ignore lint/style/noDescendingSpecificity: toolbar base follows text-size layout overrides */
+.praxity-a11y-pill {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	background: var(--praxity-color-surface, var(--praxity-color-background));
+	border: 2px solid transparent;
+	border-radius: var(--radius-control);
+	padding: 0;
+	font-size: var(--type-small);
+}
+
+html:not(.praxity-js) [data-praxity-js-control] {
+	display: none;
+}
+
+html.praxity-shell-ready [data-a11y-toolbar] {
+	display: flex;
+}
+
+/* Pill buttons */
+.praxity-a11y-pill button,
+/* biome-ignore lint/style/noDescendingSpecificity: toolbar base follows text-size layout overrides */
+.praxity-narration-toggle,
+.praxity-narration-controls button,
+.deck-follow > button,
+.deck-utility-items button,
+#deck-more-toggle {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	padding: 0;
+	border: none;
+	background: transparent;
+	color: var(--praxity-color-text-light);
+	cursor: pointer;
+	position: relative;
+	font-family: inherit;
+	font-size: inherit;
+}
+
+/* Guided uses the shared toolbar geometry, including its transcript actions. */
+.deck-utility-items button,
+#deck-more-toggle,
+.deck-follow > button,
+.deck-panel-heading > button,
+#deck-narration button,
+#deck-resume-follow,
+.deck-gate-notice {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	min-height: 44px;
+	padding: 0;
+	border: 1px solid transparent;
+	border-radius: var(--radius-control);
+	color: var(--praxity-color-text);
+	background: transparent;
+	font: inherit;
+	cursor: pointer;
+}
+
+.praxity-deck[data-narration="false"] :is(.praxity-narration-position, .praxity-narration-time) {
+	display: none;
+}
+#deck-narration .praxity-narration-transport button,
+#deck-more-toggle {
+	background: transparent;
+	color: var(--accent);
+	border-color: var(--line);
+}
+#deck-narration .praxity-narration-transport button:focus-visible {
+	outline-color: var(--accent);
+	outline-offset: var(--focus-offset);
+}
+
+/* Guided toolbar states share the toolbar geometry owner. */
+.deck-utility-items button[role="switch"] {
+	justify-content: space-between;
+}
+.deck-utility-items button[aria-checked="true"] circle {
+	transform: translateX(14px);
+}
+:is(.deck-utility-items, .deck-follow) button:is([aria-expanded="true"], [aria-pressed="true"]),
+#deck-more-toggle[aria-expanded="true"] {
+	background: var(--paper-2);
+	color: var(--ink);
+}
+.deck-utility-items button:hover,
+#deck-more-toggle:hover,
+.deck-follow > button:hover,
+#deck-resume-follow:hover,
+.deck-gate-notice:hover {
+	background: var(--paper-2);
+	border-color: var(--line);
+}
+.deck-utility-items .praxity-a11y-pill {
+	border: 0;
+	background: transparent;
+	font-size: inherit;
+}
+/* Hover */
+.praxity-a11y-pill button:hover,
+.praxity-narration-toggle:hover,
+.praxity-narration-controls button:hover {
+	color: var(--praxity-color-text);
+	background: var(--praxity-color-background-alt);
+}
+
+/* Active/pressed — accent color icon */
+.praxity-a11y-pill button[data-active],
+.praxity-narration-toggle[data-active],
+.praxity-narration-controls button[data-active] {
+	color: var(--praxity-color-accent-text, var(--praxity-color-accent));
+}
+
+.deck-utility-items .praxity-a11y-pill button[data-active] {
+	color: var(--ink);
+}
+
+/* Active/pressed indicator — dot below icon */
+.praxity-a11y-pill button[data-active]::after,
+.praxity-narration-toggle[data-active]::after,
+.praxity-narration-controls button[data-active]::after,
+:is(.deck-utility-items, .deck-follow)
+	button:is([aria-expanded="true"], [aria-pressed="true"])::after {
+	content: "";
+	position: absolute;
+	bottom: 4px;
+	inset-inline-start: 50%;
+	transform: translateX(-50%);
+	width: 4px;
+	height: 4px;
+	border-radius: var(--radius-round);
+	background: var(--praxity-color-accent);
+}
+
+/* Guided dots use text contrast on both footer and transcript surfaces. */
+:is(.deck-utility-items, .deck-follow)
+button:is([aria-expanded="true"], [aria-pressed="true"])::after {
+	background: currentColor;
+}
+
+/* Focus */
+.praxity-a11y-pill button:focus-visible,
+.praxity-narration-toggle:focus-visible,
+.praxity-narration-controls button:focus-visible {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: -4px;
+	box-shadow: none;
+}
+
+/* Visually hidden labels for icon-only buttons */
+.praxity-a11y-sr-only,
+.praxity-focus-reveal:not(:focus) {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: calc(-1 * var(--space-1));
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+@container course-shell (width < 600px) {
+	.praxity-deck[data-panel="script"] .deck-identity {
+		display: none;
+	}
+}
+
+@container course-shell (width < 360px) {
+	.praxity-page-nav-fallback:not(.praxity-pages-pagination),
+	.praxity-native-page-nav .praxity-native-page-nav-inner {
+		grid-template-columns: max-content minmax(0, 1fr) max-content;
+		padding-inline: var(--space-2);
+		gap: var(--space-2);
+	}
+	[data-praxity-root]
+		.praxity-page-nav-fallback:not(.praxity-pages-pagination)
+		:is(.praxity-nav-prev, .praxity-nav-next) {
+		min-width: 44px;
+		min-height: var(--space-12);
+		padding: 0;
+	}
+}
+@container course-shell (width < 320px) {
+	[data-praxity-root]
+		.praxity-page-nav-fallback:not(.praxity-pages-pagination)
+		:is(.praxity-nav-prev, .praxity-nav-next) {
+		width: 44px;
+		font-size: 0;
+	}
+	.praxity-page-nav-fallback:not(.praxity-pages-pagination)
+		:is(.praxity-nav-prev, .praxity-nav-next)::before {
+		content: "←";
+		font-size: var(--type-body);
+	}
+	.praxity-page-nav-fallback:not(.praxity-pages-pagination) .praxity-nav-next::before {
+		content: "→";
+	}
+	[dir="rtl"]
+		.praxity-page-nav-fallback:not(.praxity-pages-pagination)
+		:is(.praxity-nav-prev, .praxity-nav-next)::before {
+		transform: scaleX(-1);
+	}
+}
+@container course-shell (width < 240px) {
+	/* At phone-zoom widths the toolbar must reflow with the document. Keeping
+	   it sticky occludes response controls when a tall activity scrolls into view. */
+	.praxity-top-bar-fallback {
+		position: static;
+	}
+	.praxity-page-nav-fallback:not(.praxity-pages-pagination) > .praxity-nav-progress,
+	.praxity-native-page-nav .praxity-native-page-position {
+		grid-column: 1 / -1;
+		grid-row: 2;
+	}
+}
+
+@container course-shell (width < 320px) {
+	[data-praxity-root] .praxity-top-bar-fallback > .praxity-top-bar {
+		grid-template-columns: 44px minmax(0, 1fr);
+		padding-inline: var(--space-1);
+		column-gap: var(--space-1);
+	}
+	[data-praxity-root] .praxity-top-bar-fallback .praxity-a11y-pill {
+		grid-area: 1 / 2;
+		justify-self: end;
+	}
+	[data-praxity-root] .praxity-top-bar-fallback .praxity-narration-toggle {
+		grid-area: 2 / 1;
+	}
+	[data-praxity-root] .praxity-top-bar-fallback .praxity-narration-controls {
+		grid-row: 3;
+	}
+}
+
+.praxity-native-page-nav .praxity-page-nav-tools {
+	grid-column: 1 / -1;
+}
+
+.praxity-native-menu-close:focus-visible,
+.praxity-native-menu-toggle:focus-visible {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+}
+
+/* ── Narration controls ────────────────────────────────────── */
+/* Disclosure first in DOM and visual order; transport groups wrap as units. */
+.praxity-narration {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: flex-end;
+	min-width: 0;
+}
+
+/* biome-ignore lint/style/noDescendingSpecificity: base toggle follows text-size overrides */
+.praxity-narration-toggle {
+	box-sizing: border-box;
+	border: 2px solid transparent;
+	border-radius: var(--radius-control);
+}
+
+/* biome-ignore lint/style/noDescendingSpecificity: base follows text-size layout overrides */
+.praxity-narration-controls {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-2);
+	min-width: 0;
+	color: var(--praxity-color-text);
+	font-size: var(--type-small);
+}
+
+.praxity-narration-transport,
+.praxity-narration-options,
+.praxity-narration-position {
+	display: flex;
+	align-items: center;
+	gap: var(--space-1);
+}
+
+.praxity-narration-transport,
+.praxity-narration-options {
+	flex: 0 0 auto;
+}
+
+.praxity-narration-position {
+	flex: 1 1 12rem;
+	min-width: 0;
+	gap: var(--space-3);
+}
+
+.praxity-narration-position input[type="range"] {
+	height: 44px;
+	margin: 0;
+	min-width: 80px;
+	flex: 1 1 80px;
+	accent-color: var(--praxity-color-accent);
+}
+
+.praxity-narration-position input[type="range"]:focus-visible {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+}
+
+.praxity-narration-time,
+.praxity-narration-speed {
+	white-space: nowrap;
+	font-variant-numeric: tabular-nums;
+}
+
+.praxity-narration-time-status {
+	white-space: normal;
+	overflow-wrap: anywhere;
+}
+
+.praxity-narration-settings {
+	display: grid;
+}
+.praxity-narration-settings .praxity-narration-time {
+	display: flex;
+	align-items: center;
+	min-block-size: 44px;
+	padding-inline: var(--space-3);
+}
+.praxity-narration-settings .praxity-narration-speed {
+	display: flex;
+	justify-content: space-between;
+	gap: var(--space-3);
+}
+
+/* Keep the primary playback row compact; secondary controls disclose inline. */
+.praxity-narration-controls .praxity-narration-options-toggle {
+	display: none;
+}
+
+@media (max-width: 767px) {
+	.praxity-narration-controls {
+		gap: var(--space-1);
+		width: 100%;
+	}
+
+	.praxity-narration-position {
+		flex: 1 1 0;
+		gap: var(--space-1);
+	}
+
+	.praxity-narration-position input[type="range"] {
+		min-width: 44px;
+		width: 44px;
+		flex-basis: 44px;
+	}
+
+	.praxity-narration-controls .praxity-narration-options-toggle {
+		display: flex;
+		flex: 0 0 44px;
+	}
+
+	.praxity-narration-options {
+		flex-basis: 100%;
+		justify-content: flex-end;
+	}
+
+	.praxity-narration-options-toggle[aria-expanded="false"] + .praxity-narration-options {
+		display: none;
+	}
+}
+
+::highlight(praxity-narration-current) {
+	background: color-mix(in srgb, var(--praxity-color-accent) 9%, transparent);
+}
+
+::highlight(praxity-narration-hover) {
+	background: color-mix(in srgb, currentcolor 9%, transparent);
+}
+
+/* Put the fallback marker in the reading gutter without changing block layout
+   or replacing authored shadows. Logical positioning also handles RTL. */
+/* Establish the SVG containing block before rough-notation draws its paths. */
+[data-block-id]:has([data-doodle]),
+[data-narration-active="true"] {
+	position: relative;
+}
+
+:is([data-narration-active="true"], .praxity-dialogue-turn[aria-current="true"])::before {
+	content: "";
+	position: absolute;
+	inset-block: 0;
+	inset-inline-start: -12px;
+	width: 3px;
+	box-sizing: border-box;
+	border-inline-start: 3px solid var(--praxity-color-accent);
+	pointer-events: none;
+}
+
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		:is([data-narration-active="true"], .praxity-dialogue-turn[aria-current="true"])::before {
+			border-color: Highlight;
+		}
+	}
+}
+
+/* The grid area follows the bubble, including a retained empty avatar column. */
+.praxity-dialogue[data-style="bubbles"] .praxity-dialogue-turn[aria-current="true"]::before {
+	grid-column: 2;
+	grid-row: 1;
+	inset-inline-start: calc(-1 * var(--space-2));
+}
+.praxity-dialogue[data-style="bubbles"]
+	.praxity-dialogue-turn[data-side="end"][aria-current="true"]::before {
+	grid-column: 1;
+}
+@container praxity-dialogue (width < 20rem) {
+	.praxity-dialogue[data-style="bubbles"] .praxity-dialogue-turn[aria-current="true"]::before {
+		grid-column: 1 / -1;
+	}
+}
+
+/* ── Declarative slide styles ─────────────────────────────── */
+.praxity-layout-slides .praxity-slide[data-slide-style] {
+	width: min(100%, var(--slide-measure));
+	min-height: 100%;
+	margin-block: 0;
+	display: grid;
+	grid-template-columns: var(--slide-grid-columns);
+	align-content: var(--slide-align);
+	column-gap: clamp(var(--space-6), 5vw, var(--space-16));
+	color: var(--slide-fg);
+	background: var(--slide-bg);
+	border-inline-start: var(--slide-accent-rule-width) solid var(--praxity-color-accent);
+	box-shadow: none;
+}
+
+.praxity-layout-slides .praxity-slide[data-slide-style] > .praxity-block,
+.praxity-layout-slides .praxity-slide[data-slide-style] > .praxity-block-slot > .praxity-block {
+	grid-column: var(--slide-text-column);
+}
+
+.praxity-layout-slides
+	.praxity-slide[data-slide-style]
+	> :is(.praxity-block-text, .praxity-block-heading),
+.praxity-layout-slides
+	.praxity-slide[data-slide-style]
+	> .praxity-block-slot
+	> :is(.praxity-block-text, .praxity-block-heading) {
+	color: var(--slide-fg);
+}
+
+.praxity-layout-slides
+	.praxity-slide[data-slide-style]
+	> :is(
+		.praxity-block-image,
+		.praxity-block-video,
+		.praxity-block-embed,
+		.praxity-block-audio,
+		.praxity-block-image-comparison,
+		.praxity-block-labeled-graphic
+	),
+.praxity-layout-slides
+	.praxity-slide[data-slide-style]
+	> .praxity-block-slot
+	> :is(
+		.praxity-block-image,
+		.praxity-block-video,
+		.praxity-block-embed,
+		.praxity-block-audio,
+		.praxity-block-image-comparison,
+		.praxity-block-labeled-graphic
+	) {
+	grid-column: var(--slide-media-column);
+}
+
+.praxity-layout-slides .praxity-slide[data-slide-style] h1 {
+	font-size: var(--type-h1);
+}
+
+.praxity-layout-slides .praxity-slide[data-slide-style] h2 {
+	font-size: var(--type-h2);
+}
+
+.praxity-viewer-shell:has(.praxity-slide[data-slide-chrome="minimal"])
+	:is(.praxity-slide-counter, .praxity-edge-arrow-nav),
+body.praxity-layout-slides:has(.praxity-slide[data-slide-chrome="minimal"])
+	:is(.praxity-slide-counter, .praxity-edge-arrow-nav) {
+	display: none;
+}
+
+/* Inline `[term]{definition}` toggletips. Compiled previews and exports load
+   these styles through viewer.css; the runtime binds behavior only. */
+.inline-tooltip-trigger {
+	text-decoration-line: underline;
+	text-decoration-style: dotted;
+	text-decoration-color: var(--ink-2);
+	text-decoration-thickness: var(--focus-width);
+	text-underline-offset: 0.15em;
+	cursor: help;
+	position: relative;
+}
+
+.inline-tooltip-trigger:hover,
+.inline-tooltip-trigger:focus-visible {
+	text-decoration-style: solid;
+}
+
+.inline-tooltip-trigger[data-tooltip-enhanced] > .inline-tooltip-fallback {
+	display: none;
+}
+
+.inline-tooltip-popover {
+	position: absolute;
+	z-index: 1000;
+	max-width: min(32ch, calc(100vw - 2 * var(--space-2)));
+	max-height: min(24rem, calc(100vh - 2 * var(--space-2)));
+	overflow-y: auto;
+	padding: var(--space-3) var(--space-4);
+	background: var(--praxity-color-surface);
+	border: 0;
+	border-radius: var(--radius-box);
+	box-shadow: var(--shadow-floating);
+	font-size: var(--type-body);
+	line-height: var(--leading-body);
+	color: var(--praxity-color-text);
+	visibility: hidden;
+	transform: translateY(6px);
+	transition: transform var(--duration-reveal) var(--ease-out);
+	pointer-events: none;
+}
+
+.inline-tooltip-popover[data-visible] {
+	visibility: visible;
+	transform: translateY(0);
+	pointer-events: auto;
+}
+
+.inline-tooltip-popover::before {
+	content: "";
+	position: absolute;
+	bottom: -6px;
+	left: 50%;
+	transform: translateX(-50%);
+	border: 6px solid transparent;
+	border-top-color: var(--praxity-color-surface);
+}
+
+.inline-tooltip-popover[data-placement="bottom"]::before {
+	top: -6px;
+	bottom: auto;
+	border-top-color: transparent;
+	border-bottom-color: var(--praxity-color-surface);
+}
+
+.inline-tooltip-popover a {
+	color: var(--accent);
+	text-decoration: underline;
+}
+
+.inline-tooltip-popover p {
+	margin: 0 0 var(--space-2);
+}
+
+.inline-tooltip-popover p:last-child {
+	margin-bottom: 0;
+}
+
+.inline-tooltip-popover ul,
+.inline-tooltip-popover ol {
+	margin: 0 0 var(--space-2);
+	padding-left: var(--space-4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.inline-tooltip-popover {
+		transition: none;
+	}
+}
+
+/* Keyboard-only reading links share the learner toolbar focus treatment. */
+.praxity-focus-reveal:not(:focus) {
+	min-height: 0;
+	clip-path: inset(50%);
+}
+
+/* The stage owns the gutter once. Sections stay inside the reading column. */
+#main-content.praxity-page-content {
+	width: 100%;
+	max-width: calc(var(--measure) + 2 * var(--page-gutter));
+	padding-inline: var(--page-gutter);
+	font-size: var(--type-body);
+	background: var(--paper);
+}
+.praxity-section {
+	width: 100%;
+	margin: 0;
+	padding: 0;
+	background: transparent;
+}
+.praxity-page-content :is(.praxity-text, .praxity-text-content) > p {
+	max-inline-size: var(--measure);
+}
+/* The float's container already bounds the prose. A second measure would
+   consume the left-hand lane twice and push text beneath a left float. */
+.praxity-page-content .praxity-float-region :is(.praxity-text, .praxity-text-content) > p {
+	max-inline-size: none;
+}
+.praxity-page-content
+	:is(
+		.praxity-layout-wide,
+		.praxity-layout-full,
+		.praxity-layout-breakout,
+		.praxity-block-feature-width
+	) {
+	--_target-w: min(
+		var(--measure-wide),
+		calc(var(--praxity-container-width) - 2 * var(--page-gutter))
+	);
+	inline-size: var(--_target-w);
+	max-inline-size: var(--measure-wide);
+	margin-inline: calc((100% - var(--_target-w)) / 2);
+}
+[data-praxity-root][data-praxity-small-preview="true"],
+[data-praxity-root][data-praxity-small-preview="true"] #main-content {
+	/* The hidden sidebar's later shell rule must not reserve its track. */
+	--praxity-container-width: 100vw !important;
+}
+.praxity-page-content .praxity-block[data-heading-level="2"] {
+	margin-block-start: var(--section-before);
+}
+.praxity-page-content .praxity-block[data-heading-level="2"] + .praxity-block {
+	margin-block-start: var(--section-after);
+}
+.praxity-kicker {
+	font-family: var(--praxity-font-family);
+	font-size: var(--type-small);
+	color: var(--ink-2);
+	letter-spacing: normal;
+	text-transform: none;
+}
+
+.praxity-slide-nav__arrow {
+	min-inline-size: 44px;
+}
+
+/* Padded deck controls use the shared outer ring; an inset would merge with
+   matching borders. Only structural targets at clipping edges need an inset. */
+.praxity-deck .deck-panel-title:focus-visible {
+	outline: var(--focus-width) solid var(--accent);
+	box-shadow: none;
+}
+
+/* Keep edge targets inside clipping boundaries even when platform focus rules
+   use !important. Padded interactive controls keep their shared outer ring. */
+.praxity-deck
+:is(.deck-panel-title, #main-content, #deck-more-below, #deck-script-scroll):focus-visible {
+	outline-offset: -3px !important;
+}
+
+@media (prefers-contrast: more) {
+	.praxity-deck .deck-utility-items {
+		border-width: 2px;
+	}
+}
+
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		.praxity-deck .deck-utility-items {
+			border-width: 2px;
+		}
+	}
+}
+
+/* On phones and at extreme zoom, adjacent titles use the full reading column. */
+@container course-shell (width < 480px) {
+	.praxity-native-page-nav.praxity-pages-pagination .praxity-native-page-nav-inner,
+	.praxity-pages-pagination:not(.praxity-native-page-nav) {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	.praxity-native-page-nav.praxity-pages-pagination :is(.praxity-nav-prev, .praxity-nav-next),
+	.praxity-pages-pagination :is(a, button):is(.praxity-nav-prev, .praxity-nav-next) {
+		grid-column: 1;
+		grid-row: auto;
+		align-items: flex-start;
+		text-align: start;
+	}
+}

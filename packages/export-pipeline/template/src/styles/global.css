@@ -1,0 +1,1582 @@
+:root {
+	--praxity-color-background: var(--paper);
+	--praxity-color-background-alt: var(--paper-2);
+	--praxity-color-surface: var(--paper-2);
+	--praxity-color-navigation-surface: var(--paper);
+	--praxity-color-text: var(--ink);
+	--praxity-color-text-light: var(--ink-2);
+	--praxity-color-text-muted: var(--ink-2);
+	--praxity-color-control-border: var(--line);
+	--praxity-color-border: var(--line);
+	--praxity-color-text-inverted: var(--paper);
+	--praxity-color-accent: var(--accent);
+	--praxity-color-link: var(--accent);
+	--praxity-color-doodle: var(--accent);
+	--praxity-color-doodle-ink: var(--ink);
+	--praxity-color-doodle-success: var(--success-ink);
+	--praxity-color-doodle-error: var(--error-ink);
+	--praxity-color-code-red: var(--error-ink);
+	--praxity-color-accent-hover: var(--accent);
+	--praxity-color-accent-light: var(--paper);
+	--praxity-color-focus: var(--accent);
+	--praxity-color-note-neutral-bg: var(--paper);
+	--praxity-color-button-background: var(--accent);
+	--praxity-color-button-text: var(--on-accent);
+	--praxity-color-button-outline: var(--accent);
+	--praxity-color-success: var(--success-ink);
+	--praxity-color-success-light: var(--success-tint);
+	--praxity-color-warning: var(--warning-ink);
+	--praxity-color-warning-light: var(--warning-tint);
+	--praxity-color-error: var(--error-ink);
+	--praxity-color-error-light: var(--error-tint);
+	--praxity-chart-1: var(--accent);
+	--praxity-chart-2: var(--warning-ink);
+	--praxity-chart-3: var(--error-ink);
+	--praxity-chart-4: var(--success-ink);
+	--praxity-chart-5: var(--ink-2);
+	--praxity-chart-6: var(--ink);
+}
+
+/* Published series already use contrasting palette inks; a second dark edge
+   would turn those marks into text-coloured outlines. */
+[data-praxity-root] .praxity-chart-visual .praxity-chart-mark {
+	stroke: currentColor;
+}
+
+h1 {
+	color: var(--praxity-color-heading, currentColor);
+	font-family: var(--praxity-font-family-h1, var(--praxity-font-heading));
+	font-weight: var(--praxity-font-weight-h1, var(--praxity-font-weight-heading));
+	font-style: var(--praxity-font-style-h1, var(--praxity-font-style-heading));
+}
+
+h2 {
+	color: var(--praxity-color-heading, currentColor);
+	font-family: var(--praxity-font-family-h2, var(--praxity-font-heading));
+	font-weight: var(--praxity-font-weight-h2, var(--praxity-font-weight-heading));
+	font-style: var(--praxity-font-style-h2, var(--praxity-font-style-heading));
+}
+
+h3 {
+	color: var(--praxity-color-heading, currentColor);
+	font-family: var(--praxity-font-family-h3, var(--praxity-font-heading));
+	font-weight: var(--praxity-font-weight-h3, var(--praxity-font-weight-heading));
+	font-style: var(--praxity-font-style-h3, var(--praxity-font-style-heading));
+}
+
+h4 {
+	color: var(--praxity-color-heading, currentColor);
+	font-family: var(--praxity-font-family-h4, var(--praxity-font-heading));
+	font-weight: var(--praxity-font-weight-h4, var(--praxity-font-weight-heading));
+	font-style: var(--praxity-font-style-h4, var(--praxity-font-style-heading));
+}
+
+h5 {
+	color: var(--praxity-color-heading, currentColor);
+	font-family: var(--praxity-font-family-h5, var(--praxity-font-heading));
+	font-weight: var(--praxity-font-weight-h5, var(--praxity-font-weight-heading));
+	font-style: var(--praxity-font-style-h5, var(--praxity-font-style-heading));
+}
+
+h6 {
+	color: var(--praxity-color-heading, currentColor);
+	font-family: var(--praxity-font-family-h6, var(--praxity-font-heading));
+	font-weight: var(--praxity-font-weight-h6, var(--praxity-font-weight-heading));
+	font-style: var(--praxity-font-style-h6, var(--praxity-font-style-heading));
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html {
+	font-family: var(--praxity-font-family);
+	font-weight: var(--praxity-font-weight-body);
+	font-style: var(--praxity-font-style-body);
+	font-size: var(--root-font-size);
+	line-height: var(--leading-body);
+	color: var(--praxity-color-text);
+}
+
+body {
+	margin: 0;
+	padding: 0;
+	background-color: var(--praxity-color-background);
+	color: var(--praxity-color-text);
+	overflow-x: hidden;
+}
+
+a {
+	color: var(--praxity-color-link);
+	text-decoration: underline;
+	text-decoration-color: var(--praxity-link-underline-color, currentColor);
+	text-underline-offset: 2px;
+}
+
+.praxity-block :is(ul, ol) > li::marker {
+	color: var(--praxity-color-list-marker, currentColor);
+}
+
+a:visited {
+	color: var(--praxity-color-link);
+}
+
+/* Mantine buttons and skip links manage their own visual affordance */
+.mantine-Button-root,
+.praxity-skip-link {
+	text-decoration: none;
+}
+
+/* Skip links */
+.praxity-skip-link {
+	position: absolute;
+	top: -100%;
+	left: 0;
+	background: var(--praxity-color-focus);
+	color: var(--praxity-color-focus-text);
+	padding: var(--space-2) var(--space-4);
+	z-index: 1000;
+	text-decoration: none;
+	font-weight: var(--weight-strong);
+}
+
+.praxity-skip-link:focus {
+	top: 0;
+}
+
+/* ── Section rhythm system ── */
+
+/* Container width for layout escape — blocks inherit this */
+
+@media (min-width: 768px) {
+	body.praxity-layout-sidebar {
+		--praxity-container-width: calc(100vw - 260px);
+	}
+
+	body.praxity-layout-sidebar.praxity-sidebar-collapsed {
+		--praxity-container-width: 100vw;
+	}
+}
+
+/* Let section rhythm backgrounds/dividers span the available canvas when nav is not sidebar.
+   Inner content stays aligned to the existing centered content column width. */
+
+/* Breakout blocks inside non-sidebar sections: section already spans viewport,
+   so only escape the section's centering padding — don't recalculate viewport width. */
+
+.praxity-section:first-of-type {
+	padding-top: 0;
+}
+
+.praxity-section:last-of-type {
+	padding-bottom: 0;
+}
+
+/* Block containers — spacing controlled by theme tokens */
+.praxity-block {
+	scroll-margin-top: 4rem;
+	margin-top: var(--praxity-block-spacing, var(--space-4));
+	margin-bottom: 0;
+}
+
+.praxity-layout-wide {
+	--_target-w: min(calc(100% * 1.3), calc(var(--praxity-container-width, 100vw) - 3rem));
+	width: var(--_target-w);
+	max-width: none;
+	margin-left: calc((var(--_target-w) - 100%) / -2);
+	margin-right: calc((var(--_target-w) - 100%) / -2);
+}
+
+/* biome-ignore lint/style/noDescendingSpecificity: base layout class after high-specificity non-sidebar rule is intentional cascade order */
+.praxity-layout-full {
+	--_target-w: calc(var(--praxity-container-width, 100vw) - 3rem);
+	width: var(--_target-w);
+	max-width: none;
+	margin-left: calc((var(--_target-w) - 100%) / -2);
+	margin-right: calc((var(--_target-w) - 100%) / -2);
+}
+
+/* biome-ignore lint/style/noDescendingSpecificity: base layout class after high-specificity non-sidebar rule is intentional cascade order */
+.praxity-layout-breakout {
+	--_target-w: calc(var(--praxity-container-width, 100vw) - 3rem);
+	width: var(--_target-w);
+	max-width: none;
+	margin-left: calc((var(--_target-w) - 100%) / -2);
+	margin-right: calc((var(--_target-w) - 100%) / -2);
+}
+
+/* Keep descendants on the section palette instead of the root palette. */
+
+/* Light sections share the page palette, so they keep the theme's resolved callout fills and
+   muted text. Other section palettes re-derive both from their own colours. */
+
+/*
+ * Assessments adopt the section palette instead of Mantine's white.
+ *
+ * This used to force a surface and a border with !important, which outranked the
+ * one-container hierarchy in shared-blocks and repainted every question as a box
+ * again. Text colour and the Mantine body token are what actually need forcing on
+ * a dark or accent section; the background stays transparent so the section's own
+ * surface shows through, and the boxed treatment stays owned by shared-blocks —
+ * which draws it for grouped and graded questions only.
+ */
+
+/* Assessment badges + required indicator on dark/accent sections */
+
+/* Assessment option borders on dark/accent sections */
+
+/* Assessment dimmed text on dark/accent sections — override Mantine dimmed */
+
+/* Notes on dark sections need stronger tint + border */
+
+@media (max-width: 768px) {
+	.praxity-layout-wide {
+		width: 100%;
+		margin-left: 0;
+		margin-right: 0;
+	}
+
+	/* biome-ignore lint/style/noDescendingSpecificity: mobile reset intentionally overrides higher-specificity desktop rules */
+	.praxity-layout-full {
+		width: 100%;
+		margin-left: 0;
+		margin-right: 0;
+	}
+
+	/* biome-ignore lint/style/noDescendingSpecificity: mobile reset intentionally overrides higher-specificity desktop rules */
+	.praxity-layout-breakout {
+		width: 100%;
+		margin-left: 0;
+		margin-right: 0;
+	}
+
+	/* Override the high-specificity non-sidebar breakout/full rules on mobile */
+
+	.praxity-block-feature-width {
+		max-width: 100%;
+		margin-left: 0;
+		margin-right: 0;
+	}
+}
+
+/* Transition dividers between sections */
+/* biome-ignore lint/style/noDescendingSpecificity: section divider styles intentionally layered with high-contrast overrides below */
+
+@media (max-width: 480px) {
+	/* biome-ignore lint/style/noDescendingSpecificity: mobile-specific divider height intentionally follows base rule */
+}
+
+/* Page content */
+
+/* ── Page title treatment ── */
+
+.praxity-page-title,
+.praxity-lesson-title {
+	margin: 0;
+	padding: 0;
+	font-size: var(--type-h1);
+	font-family: var(--praxity-font-family-h1, var(--praxity-font-heading));
+	font-weight: var(--praxity-font-weight-h1, var(--praxity-font-weight-heading));
+	font-style: var(--praxity-font-style-h1, var(--praxity-font-style-heading));
+	line-height: var(--leading-heading);
+}
+
+h2.praxity-page-title {
+	font-size: var(--type-h2);
+	font-family: var(--praxity-font-family-h2, var(--praxity-font-heading));
+	font-weight: var(--praxity-font-weight-h2, var(--praxity-font-weight-heading));
+	font-style: var(--praxity-font-style-h2, var(--praxity-font-style-heading));
+}
+
+.praxity-duration {
+	display: inline-block;
+	font-size: var(--type-small);
+	color: var(--praxity-color-text-light);
+	margin-top: var(--space-1);
+}
+
+/* Text-like blocks: use text spacing for line-height */
+.praxity-block[data-block-type="text"] {
+	padding: 0;
+	line-height: var(--praxity-line-height-base, var(--praxity-text-spacing, 1.5));
+	--praxity-flow-space: calc(
+		1em *
+		(var(--praxity-line-height-base, var(--praxity-text-spacing, 1.5)) / 1.5)
+	);
+}
+
+.praxity-block[data-block-type="text"] p + p {
+	margin-top: var(--praxity-flow-space);
+}
+
+/* Shared semantic flow rules own spacing between blocks in every preview. */
+.praxity-block[data-block-type="heading"] {
+	padding: 0;
+}
+
+/*
+ * Rhythm margins space a block away from the block before it. A block that
+ * opens a container — a column, a card, a tab panel, a callout — has nothing
+ * before it, so the margin lands inside the box and reads as dead space. A
+ * heading first in a column was collecting 37px on top of the container's own
+ * 42px gap. Same for the trailing margin on the block that closes one.
+ */
+.praxity-block-slot:first-child > .praxity-block[data-block-type],
+:not(.praxity-block-slot) > .praxity-block[data-block-type]:first-child {
+	margin-top: 0;
+}
+
+.praxity-block-slot:last-child > .praxity-block[data-block-type],
+:not(.praxity-block-slot) > .praxity-block[data-block-type]:last-child {
+	margin-bottom: 0;
+}
+
+.praxity-block-caption,
+.praxity-document-meta,
+.praxity-document-url,
+.praxity-text-dimmed {
+	color: var(--praxity-color-text-light) !important;
+}
+
+/* Meta blocks: zero spacing */
+.praxity-block[data-block-type="logic"],
+.praxity-block[data-block-type="variable"] {
+	margin-top: 0;
+	margin-bottom: 0;
+}
+
+/* Text highlight variants */
+[data-praxity-root] .praxity-block mark {
+	color: inherit;
+	background: transparent;
+	padding: 0.05em 0.15em;
+	border-radius: var(--radius-mark);
+}
+
+[data-praxity-root][data-praxity-highlight-style="none"] .praxity-block mark {
+	padding: 0;
+}
+
+/* Marker: underline-fill style — 25% accent creates visible highlight
+   while maintaining Lc 60+ text contrast on both light and dark backgrounds.
+   OKLCH mixing preserves hue fidelity across accent colors. */
+[data-praxity-root][data-praxity-highlight-style="marker"] .praxity-block mark {
+	background: linear-gradient(
+		to top,
+		color-mix(in oklab, var(--praxity-color-accent) 25%, transparent) 45%,
+		transparent 45%
+	);
+}
+
+/* Gradient: left-to-right wash — 30%→12% provides visible start edge */
+[data-praxity-root][data-praxity-highlight-style="gradient"] .praxity-block mark {
+	background: linear-gradient(
+		90deg,
+		color-mix(in oklab, var(--praxity-color-accent) 30%, transparent),
+		color-mix(in oklab, var(--praxity-color-accent) 12%, transparent)
+	);
+	border-radius: var(--radius-mark);
+}
+
+/* Scribble: wavy underline with thicker stroke for visibility */
+[data-praxity-root][data-praxity-highlight-style="scribble"] .praxity-block mark {
+	background: none;
+	padding: 0;
+	text-decoration: underline wavy var(--praxity-color-accent, #4269d0);
+	text-underline-offset: 3px;
+	text-decoration-thickness: 2px;
+}
+
+/* Dark mode (published output): data-praxity-mode is on <html>,
+   data-praxity-highlight-style is also on <html data-praxity-root>. */
+html[data-praxity-mode="dark"][data-praxity-highlight-style="marker"] .praxity-block mark {
+	background: linear-gradient(
+		to top,
+		color-mix(in oklab, var(--praxity-color-accent) 30%, transparent) 45%,
+		transparent 45%
+	);
+}
+
+html[data-praxity-mode="dark"][data-praxity-highlight-style="gradient"] .praxity-block mark {
+	background: linear-gradient(
+		90deg,
+		color-mix(in oklab, var(--praxity-color-accent) 35%, transparent),
+		color-mix(in oklab, var(--praxity-color-accent) 15%, transparent)
+	);
+}
+
+/* Video player rounding — applies radius to all player types */
+.praxity-block-video video,
+.praxity-block-video iframe,
+.praxity-block-video mux-player {
+	border-radius: var(--radius-control);
+	overflow: hidden;
+}
+
+/* Reset inner margins on headings and paragraphs inside blocks */
+/* biome-ignore lint/style/noDescendingSpecificity: intentional reset that must apply broadly after component-specific typography rules */
+.praxity-block p,
+.praxity-block h1,
+.praxity-block h2,
+.praxity-block h3,
+.praxity-block h4,
+.praxity-block h5,
+.praxity-block h6 {
+	margin: 0;
+}
+
+/* Shared learner shell/sidebar rules come from
+   shared-blocks/src/viewer/viewer-shell.css via the always-loaded viewer.css. */
+
+/* ── Bottom bar layout ── */
+/* Menu container shows a hamburger top-bar (non-sticky, scrolls with page).
+   Page nav sticks to the bottom of the viewport. */
+body.praxity-layout-bottombar .praxity-layout-wrapper {
+	display: flex;
+	flex-direction: column;
+	min-height: 100dvh;
+}
+
+body.praxity-layout-bottombar #main-content {
+	flex: 1 0 auto;
+	min-height: 0;
+}
+
+body.praxity-layout-bottombar #praxity-page-nav {
+	position: sticky;
+	bottom: 0;
+	z-index: 100;
+	background: var(--praxity-color-navigation-surface, var(--praxity-color-background));
+	border-top: 0;
+	padding-bottom: 0;
+}
+
+/* ── No-nav layout ── */
+/* Hide both menu and page-nav containers entirely */
+body.praxity-layout-none #praxity-course-menu,
+body.praxity-layout-none #praxity-page-nav {
+	display: none;
+}
+
+/* ── Additional layout modes ── */
+body.praxity-layout-scroll .praxity-page-nav {
+	border: 0;
+	border-top: 1px solid var(--praxity-color-border);
+	background: transparent;
+	justify-content: center;
+}
+
+body.praxity-layout-minimal #praxity-course-menu {
+	display: none;
+}
+
+body.praxity-layout-minimal .praxity-page-nav {
+	display: none;
+}
+
+/* ── Edge arrows ── */
+.praxity-edge-arrow {
+	position: fixed;
+	top: 50%;
+	transform: translateY(-50%);
+	z-index: 850;
+	width: 52px;
+	height: 52px;
+	border-radius: var(--radius-round);
+	border: 1px solid var(--praxity-color-border);
+	background: color-mix(
+		in oklab,
+		var(--praxity-color-navigation-surface, var(--praxity-color-background)) 92%,
+		transparent
+	);
+	color: var(--praxity-color-text);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	box-shadow: none;
+	backdrop-filter: blur(8px);
+}
+
+.praxity-edge-arrow--prev {
+	left: 16px;
+}
+
+.praxity-edge-arrow--next {
+	right: 16px;
+}
+
+.praxity-edge-arrow span {
+	font-size: var(--type-h1);
+	line-height: 1;
+}
+
+.praxity-edge-arrow:focus-visible {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+}
+
+/* ── Progress dots ── */
+.praxity-progress-dots {
+	position: fixed;
+	left: 50%;
+	bottom: 16px;
+	transform: translateX(-50%);
+	z-index: 860;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--space-2);
+	padding: var(--space-2) var(--space-3);
+	border-radius: var(--radius-mark);
+	background: color-mix(
+		in oklab,
+		var(--praxity-color-navigation-surface, var(--praxity-color-background)) 90%,
+		transparent
+	);
+	border: 1px solid var(--praxity-color-border);
+	backdrop-filter: blur(8px);
+}
+
+.praxity-progress-dots-row {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+}
+
+.praxity-progress-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: var(--radius-round);
+	background: transparent;
+	box-shadow: none;
+}
+
+.praxity-progress-dot.is-visited {
+	background: var(--praxity-color-text-muted);
+	box-shadow: none;
+}
+
+.praxity-progress-dot.is-current {
+	width: 20px;
+	border-radius: var(--radius-mark);
+	background: var(--praxity-color-accent);
+	box-shadow: none;
+	opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.praxity-progress-dot {
+		transition: none;
+	}
+}
+
+[data-praxity-reduced-motion] .praxity-progress-dot {
+	transition: none;
+}
+
+.praxity-progress-dots-counter {
+	font-size: var(--type-small);
+	font-weight: var(--weight-strong);
+	color: var(--praxity-color-text-light);
+}
+
+@media (max-width: 768px) {
+	.praxity-edge-arrow {
+		width: 44px;
+		height: 44px;
+	}
+
+	.praxity-edge-arrow--prev {
+		left: 10px;
+	}
+
+	.praxity-edge-arrow--next {
+		right: 10px;
+	}
+
+	.praxity-progress-dots {
+		bottom: 12px;
+	}
+}
+
+/* Sidebar NavLink — ensure active state meets WCAG AA contrast */
+.praxity-course-menu .mantine-NavLink-root[data-active] {
+	background: var(--praxity-color-background-alt) !important;
+	color: var(--praxity-color-text) !important;
+}
+
+.praxity-course-menu .mantine-NavLink-root[data-active]:hover {
+	background: color-mix(
+		in oklab,
+		var(--praxity-color-accent) 15%,
+		var(--praxity-color-background)
+	) !important;
+}
+
+.praxity-top-bar {
+	display: flex;
+	align-items: center;
+	padding: var(--space-2) var(--space-4);
+	min-height: 48px;
+	gap: var(--space-3);
+	background: var(--praxity-color-navigation-surface, var(--praxity-color-background));
+	border-bottom: 1px solid var(--praxity-color-border);
+}
+
+/* Non-tabbable main content receives programmatic focus on page load for screen readers.
+   Preserve the focus indicator on keyboard-scrollable main content.
+   Some browsers (Safari) match :focus-visible on programmatic .focus() calls,
+   so suppress both pseudo-classes here. */
+/* biome-ignore lint/style/noDescendingSpecificity: base focus reset intentionally follows sidebar layout override */
+#main-content[tabindex="-1"],
+#main-content[tabindex="-1"]:focus,
+#main-content[tabindex="-1"]:focus-visible {
+	outline: none !important;
+	box-shadow: none !important;
+}
+
+/* Keyboard-scrollable main content keeps its navigation focus indicator. */
+#main-content.praxity-navigation-focus[tabindex]:focus-visible {
+	outline: 3px solid var(--praxity-color-focus, Highlight) !important;
+	outline-offset: -3px;
+	box-shadow: none !important;
+}
+
+/* Suppress Mantine's focus-on-click outline — it uses :focus (fires on mouse click)
+   instead of :focus-visible (keyboard only). Our :focus-visible rule below handles it. */
+.mantine-focus-always:focus:not(:focus-visible) {
+	outline: none;
+}
+
+/* Submission focuses these targets to announce feedback. They are outside
+   the tab order and must not acquire the browser's default focus box. */
+[data-assessment-feedback]:focus,
+[data-row-summary]:focus {
+	outline: none;
+}
+
+.mantine-focus-auto:focus-visible,
+.mantine-focus-always:focus-visible {
+	outline-color: var(--praxity-color-focus);
+}
+
+/* One themed outline survives forced-colors. Programmatic feedback targets
+   announce their content without drawing another box inside the activity.
+   Keep this contract with viewer-shell.css.
+   Scoped to interactive elements to prevent non-interactive wrappers (nav, div, main)
+   from showing focus rings when they receive programmatic or click-through focus. */
+.praxity-page-content :is(input, select, textarea):focus-visible,
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+audio:focus-visible,
+video:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible,
+[role="tab"]:focus-visible,
+[role="slider"]:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
+	outline: var(--focus-width) solid var(--praxity-color-focus);
+	outline-offset: var(--focus-offset);
+	box-shadow: none;
+}
+
+summary:focus-visible,
+.praxity-disclosure-trigger:focus-visible {
+	outline-offset: -2px;
+}
+
+/* LMS resume cue: a quiet visible first line, either inside the focused
+   heading or as a focusable summary before it. It uses the course's meta text
+   size (as in the sidebar's page count), so it reads as orientation rather than
+   as a second title. Muted text keeps the resolver's 4.5:1 floor; rem sizing
+   follows the Larger text preference. The prefix inherits from the heading, so
+   reset the heading's display tracking, which is too tight at body sizes. */
+:is(h1, h2) > .praxity-resume-prefix:first-child,
+.praxity-resume-summary {
+	display: block;
+	margin: 0 0 var(--space-1);
+	color: var(--praxity-color-text-muted, var(--praxity-color-text-light));
+	font-family: var(--praxity-font-family);
+	font-size: var(--type-small);
+	font-style: var(--praxity-font-style-body);
+	font-weight: var(--praxity-font-weight-body);
+	letter-spacing: normal;
+	line-height: var(--praxity-line-height-base, 1.6);
+	text-transform: none;
+	overflow-wrap: anywhere;
+}
+
+/* The summary's ring sits outside its box; keep it clear of the heading below. */
+.praxity-resume-summary {
+	margin-block-end: var(--space-3);
+}
+
+/* viewer-shell.css hides the ring on programmatically focused headings. The
+   resume cue is the reason for that focus, so show it. The :has() argument
+   lifts specificity above the suppression rule and above the deck's inset
+   high-contrast offset, which would draw the ring through the heading's glyphs.
+   The wider offset keeps the square ring, like the course's other focus rings,
+   clear of the text, so it reads as focus rather than as a text field. */
+:is(h1, h2)[tabindex]:has(> .praxity-resume-prefix:first-child):focus,
+p.praxity-resume-summary[tabindex]:focus {
+	outline: var(--focus-width) solid var(--accent) !important;
+	outline-offset: var(--focus-offset) !important;
+}
+
+/* A slide layout centres .praxity-slide and pads it, so a summary inserted
+   before it would float above the slide, offset from its text. Match the
+   slide's content box and keep the two centred as one group. */
+.praxity-resume-summary:has(+ .praxity-slide) {
+	width: calc(var(--praxity-slide-width) - 2 * var(--praxity-slide-padding));
+	margin: auto auto var(--space-3);
+	box-sizing: border-box;
+}
+
+/* Guided pads the outer stage and leaves its inner slide unpadded. Match that
+   inner width rather than subtracting the former slide gutters a second time. */
+.praxity-deck[data-ready="true"] .deck-slide > .praxity-resume-summary:has(+ .praxity-slide) {
+	width: 100%;
+	margin-inline: 0;
+}
+
+:is(main, .deck-slide) > .praxity-resume-summary + .praxity-slide {
+	margin-top: 0;
+}
+
+/* Pages slides keep their top padding (Guided removes it and pads the slide
+   frame). Draw the summary down inside that padding, so a tall slide that
+   scrolls does not push it against the top controls. */
+main > .praxity-resume-summary:has(+ .praxity-slide) {
+	position: relative;
+	top: var(--praxity-slide-padding);
+}
+
+@media print {
+	.praxity-resume-prefix,
+	.praxity-resume-summary {
+		display: none !important;
+	}
+
+	/* Same selector as the screen ring, so it wins when focus is still there. */
+	:is(h1, h2)[tabindex]:has(> .praxity-resume-prefix:first-child):focus {
+		outline: none !important;
+	}
+}
+
+/* Touch targets -- WCAG SC 2.5.8 */
+button,
+[role="button"],
+a,
+input,
+select,
+textarea {
+	min-height: 24px;
+	min-width: 24px;
+}
+
+/* Button & document blocks — use theme colors instead of Mantine default blue.
+   Mantine v7 sets --button-bg/--button-color/etc. as inline styles on <button>,
+   so !important is required to override them from a stylesheet.
+   --praxity-color-button-outline is auto-computed: equals button-text when button-bg
+   is light (e.g. Praxity lime), equals button-bg when it's dark (e.g. Slate blue).
+   BlockRenderer wraps in div[data-block-type], separate from outer .praxity-block. */
+.praxity-button {
+	--button-bg: var(--praxity-color-button-background);
+	--button-hover: var(--praxity-color-button-background);
+	--button-color: var(--praxity-color-button-text);
+	--button-bd: 1px solid var(--praxity-color-button-outline);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: var(--target-size);
+	min-width: var(--target-size);
+	padding: var(--space-2) var(--space-4);
+	box-sizing: border-box;
+	color: var(--button-color) !important;
+	background: var(--button-bg);
+	border: var(--button-bd);
+	border-radius: var(--radius-control);
+	cursor: pointer;
+	font-family: inherit;
+	font-size: var(--type-body);
+	font-weight: var(--weight-strong);
+	line-height: 1.25;
+	text-decoration: none;
+	transition: transform var(--duration-press) var(--ease-out);
+}
+
+.praxity-button[data-variant="outline"] {
+	--button-bg: transparent;
+	--button-color: var(
+		--praxity-color-accent-text,
+		var(--praxity-color-button-outline, var(--praxity-color-button-background))
+	);
+	--button-hover: var(--praxity-color-accent-light, var(--praxity-color-background-alt));
+	--button-bd: 1.5px solid
+		var(--praxity-color-button-outline, var(--praxity-color-button-background));
+}
+
+.praxity-button[data-variant="light"] {
+	--button-bg: var(--praxity-color-accent-light, var(--praxity-color-background-alt));
+	--button-color: var(--praxity-color-accent-text, var(--praxity-color-accent));
+	--button-hover: var(--praxity-color-background-alt);
+	--button-bd: none;
+}
+
+.praxity-button:hover {
+	background: var(--button-hover);
+	box-shadow: none;
+}
+
+.praxity-button:active {
+	transform: scale(0.96);
+	box-shadow: none;
+}
+
+[data-block-type="button"] .mantine-Button-root,
+[data-block-type="document"] .mantine-Button-root,
+[data-block-type="assessment"] .mantine-Button-root {
+	--button-bg: var(--praxity-color-button-background) !important;
+	--button-hover: var(--praxity-color-button-background) !important;
+	--button-color: var(--praxity-color-button-text) !important;
+	--button-bd: 1px solid var(--praxity-color-button-outline) !important;
+	color: var(--button-color) !important;
+}
+
+[data-block-type="button"] .mantine-Button-root[data-variant="outline"],
+[data-block-type="document"] .mantine-Button-root[data-variant="outline"],
+[data-block-type="assessment"] .mantine-Button-root[data-variant="outline"] {
+	--button-bg: transparent !important;
+	--button-color: var(
+		--praxity-color-accent-text,
+		var(--praxity-color-button-outline, var(--praxity-color-button-background))
+	) !important;
+	--button-hover: var(--praxity-color-accent-light, var(--praxity-color-background-alt)) !important;
+	--button-bd: 1.5px solid
+		var(--praxity-color-button-outline, var(--praxity-color-button-background)) !important;
+}
+
+[data-block-type="button"] .mantine-Button-root[data-variant="light"],
+[data-block-type="document"] .mantine-Button-root[data-variant="light"],
+[data-block-type="assessment"] .mantine-Button-root[data-variant="light"] {
+	--button-bg: var(--praxity-color-accent-light, var(--praxity-color-background-alt)) !important;
+	--button-color: var(--praxity-color-accent-text, var(--praxity-color-accent)) !important;
+	--button-hover: var(--praxity-color-background-alt) !important;
+	--button-bd: none !important;
+}
+
+/* Page navigation — Previous (outline) + Next (filled) use theme button colors */
+.praxity-page-nav .mantine-Button-root {
+	--button-bg: var(--praxity-color-button-background) !important;
+	--button-hover: var(--praxity-color-button-background) !important;
+	--button-color: var(--praxity-color-button-text) !important;
+	--button-bd: 1px solid var(--praxity-color-button-outline) !important;
+	color: var(--button-color) !important;
+}
+
+.praxity-page-nav .mantine-Button-root[data-variant="outline"] {
+	--button-bg: transparent !important;
+	--button-color: var(
+		--praxity-color-accent-text,
+		var(--praxity-color-button-outline, var(--praxity-color-button-background))
+	) !important;
+	--button-hover: var(--praxity-color-accent-light, var(--praxity-color-background-alt)) !important;
+	--button-bd: 1.5px solid
+		var(--praxity-color-button-outline, var(--praxity-color-button-background)) !important;
+}
+@supports (color: color-mix(in oklab, black, white)) {
+	.praxity-button[data-variant="filled"],
+	[data-block-type="button"] .mantine-Button-root,
+	[data-block-type="document"] .mantine-Button-root,
+	[data-block-type="assessment"] .mantine-Button-root,
+	.praxity-page-nav .mantine-Button-root {
+		--button-hover: color-mix(
+			in oklab,
+			var(--praxity-color-button-background) 85%,
+			black
+		) !important;
+	}
+
+	[data-block-type="button"] .mantine-Button-root[data-variant="outline"],
+	[data-block-type="document"] .mantine-Button-root[data-variant="outline"],
+	[data-block-type="assessment"] .mantine-Button-root[data-variant="outline"],
+	.praxity-page-nav .mantine-Button-root[data-variant="outline"] {
+		--button-hover: color-mix(
+			in oklab,
+			var(--praxity-color-button-outline, var(--praxity-color-button-background)) 8%,
+			transparent
+		) !important;
+	}
+
+	[data-block-type="button"] .mantine-Button-root[data-variant="light"],
+	[data-block-type="document"] .mantine-Button-root[data-variant="light"],
+	[data-block-type="assessment"] .mantine-Button-root[data-variant="light"] {
+		--button-bg: color-mix(
+			in oklab,
+			var(--praxity-color-button-background) 12%,
+			transparent
+		) !important;
+	}
+}
+
+[data-block-type="button"] .mantine-Button-root,
+[data-block-type="document"] .mantine-Button-root,
+[data-block-type="assessment"] .mantine-Button-root,
+.praxity-page-nav .mantine-Button-root {
+	transition: transform var(--duration-press) var(--ease-out);
+}
+
+[data-block-type="button"] .mantine-Button-root:hover:not([data-disabled]):not(:disabled),
+[data-block-type="document"] .mantine-Button-root:hover:not([data-disabled]):not(:disabled),
+[data-block-type="assessment"] .mantine-Button-root:hover:not([data-disabled]):not(:disabled),
+.praxity-page-nav .mantine-Button-root:hover:not([data-disabled]):not(:disabled) {
+	box-shadow: none;
+}
+
+[data-block-type="button"] .mantine-Button-root:active:not([data-disabled]):not(:disabled),
+[data-block-type="document"] .mantine-Button-root:active:not([data-disabled]):not(:disabled),
+[data-block-type="assessment"] .mantine-Button-root:active:not([data-disabled]):not(:disabled),
+.praxity-page-nav .mantine-Button-root:active:not([data-disabled]):not(:disabled) {
+	transform: none;
+	box-shadow: none;
+}
+
+[data-block-type="button"] .mantine-Button-root:focus-visible,
+[data-block-type="document"] .mantine-Button-root:focus-visible,
+[data-block-type="assessment"] .mantine-Button-root:focus-visible,
+.praxity-page-nav .mantine-Button-root:focus-visible {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+	box-shadow: none;
+}
+
+[data-block-type="button"] .mantine-Button-root[data-disabled],
+[data-block-type="button"] .mantine-Button-root:disabled,
+[data-block-type="document"] .mantine-Button-root[data-disabled],
+[data-block-type="document"] .mantine-Button-root:disabled,
+[data-block-type="assessment"] .mantine-Button-root[data-disabled],
+[data-block-type="assessment"] .mantine-Button-root:disabled,
+.praxity-page-nav .mantine-Button-root[data-disabled],
+.praxity-page-nav .mantine-Button-root:disabled {
+	opacity: 1 !important;
+	cursor: not-allowed;
+	box-shadow: none !important;
+	transform: none !important;
+}
+
+/* Document bookmark link — use accent for title instead of Mantine blue */
+[data-block-type="document"] .mantine-Anchor-root .mantine-Text-root:first-child {
+	color: var(--praxity-color-link);
+}
+
+/* Divider — round endpoints. border-radius on the border itself rounds
+   the line caps; overflow:hidden is intentionally omitted because it
+   causes diagonal rendering artifacts on dotted/dashed borders. */
+.praxity-block[data-block-type="divider"] .mantine-Divider-root {
+	border-radius: 0;
+}
+
+/* Custom dashed divider (background-image pattern) — round the element */
+.praxity-block[data-block-type="divider"] [role="separator"]:not(.mantine-Divider-root) {
+	border-radius: 0;
+}
+
+/* Authored images keep their straight edges. */
+.praxity-block[data-block-type="image"] .mantine-Image-root {
+	--image-radius: 0 !important;
+}
+
+.praxity-block[data-block-type="slides"] .praxity-slides-grid {
+	border-radius: var(--radius-control) !important;
+}
+
+.praxity-block[data-block-type="imageComparison"] img {
+	border-radius: var(--radius-control);
+}
+
+/* Checkbox — theme-colored and well-aligned */
+.mantine-Checkbox-input:checked {
+	background-color: var(--praxity-color-accent);
+	border-color: var(--praxity-color-accent);
+}
+
+[data-mantine-color-scheme="dark"] .mantine-Checkbox-input:checked {
+	background-color: color-mix(in oklab, var(--praxity-color-accent) 65%, black 35%);
+	border-color: color-mix(in oklab, var(--praxity-color-accent) 65%, black 35%);
+}
+
+.mantine-Checkbox-input {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.mantine-Checkbox-icon {
+	transform: scale(0.75);
+}
+
+/* Required indicator — now handled by inline styles in RequiredIndicator component */
+
+/* Progress bar — use theme accent, visible track with border */
+.mantine-Progress-section {
+	background-color: var(--praxity-color-accent) !important;
+	border-radius: var(--radius-control);
+}
+
+.mantine-Progress-root {
+	background-color: var(--praxity-color-surface, var(--mantine-color-gray-2)) !important;
+	border: 1px solid var(--praxity-color-border);
+	border-radius: var(--radius-control);
+}
+
+/* Tabs — theme-colored active indicator and text (all variants).
+   Mantine v7 sets --tabs-color as an inline style, so !important is required. */
+.mantine-Tabs-root {
+	--tabs-color: var(--praxity-color-accent) !important;
+}
+
+.mantine-Tabs-tab[data-active] {
+	color: var(--praxity-color-accent-text, var(--praxity-color-accent)) !important;
+}
+
+.mantine-Tabs-tab[data-active]::after {
+	background-color: var(--praxity-color-accent) !important;
+}
+
+.mantine-Tabs-list::after {
+	border-color: var(--mantine-color-gray-3);
+}
+
+/* Pills variant — filled background for active tab */
+.mantine-Tabs-root[data-variant="pills"] .mantine-Tabs-tab[data-active] {
+	background-color: var(--praxity-color-accent) !important;
+	color: var(--praxity-color-button-text) !important;
+}
+
+/* Outline variant — accent border on active tab */
+.mantine-Tabs-root[data-variant="outline"] .mantine-Tabs-tab[data-active] {
+	border-color: var(--praxity-color-accent) !important;
+	color: var(--praxity-color-accent-text, var(--praxity-color-accent)) !important;
+}
+
+/* Vertical tabs — constrain tab list width so content panel gets more space */
+.mantine-Tabs-root[data-orientation="vertical"] .mantine-Tabs-list {
+	max-width: 200px;
+	flex-shrink: 0;
+}
+
+.mantine-Tabs-root[data-orientation="vertical"] .mantine-Tabs-tab {
+	white-space: normal;
+	word-break: break-word;
+}
+
+/* Accordion — remove Mantine's gray hover/active background on controls.
+   Mantine v7 sets a persistent gray background via --_control-hover that
+   remains visible after collapse/expand, creating a distracting flash. */
+.mantine-Accordion-control {
+	background-color: transparent !important;
+	--_control-hover: transparent !important;
+	font-size: inherit;
+	line-height: inherit;
+}
+
+/* Accordion — default: minimal/flat, bottom borders only */
+.praxity-block-accordion [data-accordion-variant="default"] .mantine-Accordion-item {
+	background: transparent;
+	border: none;
+	border-bottom: 1px solid var(--praxity-color-border);
+	border-radius: 0;
+	box-shadow: none;
+}
+
+.praxity-block-accordion [data-accordion-variant="default"] .mantine-Accordion-item:last-child {
+	border-bottom: none;
+}
+
+/* Accordion — contained: unified card, shared background */
+.praxity-block-accordion [data-accordion-variant="contained"] {
+	background: var(--praxity-color-background-alt, var(--praxity-color-surface));
+	border: 1px solid var(--praxity-color-border);
+	border-radius: var(--radius-control);
+	overflow: hidden;
+}
+
+.praxity-block-accordion [data-accordion-variant="contained"] .mantine-Accordion-item {
+	background: transparent;
+	border: none;
+	border-bottom: 1px solid color-mix(in oklab, var(--praxity-color-border) 60%, transparent);
+	border-radius: 0;
+	box-shadow: none;
+}
+
+.praxity-block-accordion [data-accordion-variant="contained"] .mantine-Accordion-item:last-child {
+	border-bottom: none;
+}
+
+/* Accordion — separated: individual cards with gap */
+.praxity-block-accordion [data-accordion-variant="separated"] .mantine-Accordion-item {
+	background: var(--praxity-color-surface);
+	border: none;
+	border-radius: var(--radius-control);
+	box-shadow: none;
+	overflow: hidden;
+}
+
+.praxity-block-accordion
+	[data-accordion-variant="separated"]
+	.mantine-Accordion-item
+	+ .mantine-Accordion-item {
+	margin-top: var(--praxity-spacing-sm, var(--space-3));
+}
+
+/* Badges — sentence case instead of all caps, normal text size */
+/* biome-ignore lint/style/noDescendingSpecificity: base Mantine badge normalization intentionally precedes context-specific variants */
+.mantine-Badge-root {
+	text-transform: none;
+	font-size: var(--type-small);
+	font-weight: var(--weight-strong);
+}
+
+/* Radio buttons — center the inner dot via positioning, not flex */
+.praxity-block-assessment .mantine-Radio-radio {
+	position: relative;
+}
+
+.praxity-block-assessment .mantine-Radio-radio::before {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+}
+
+/* Vertically center radio/checkbox with label text */
+.praxity-block-assessment .mantine-Radio-body,
+.praxity-block-assessment .mantine-Checkbox-body {
+	align-items: center;
+}
+
+.praxity-block-assessment .mantine-Radio-inner,
+.praxity-block-assessment .mantine-Checkbox-inner {
+	display: flex;
+	align-items: center;
+}
+
+.mantine-Radio-radio:checked {
+	background-color: var(--praxity-color-accent);
+	border-color: var(--praxity-color-accent);
+}
+
+[data-mantine-color-scheme="dark"] .mantine-Radio-radio:checked {
+	background-color: color-mix(in oklab, var(--praxity-color-accent) 65%, black 35%);
+	border-color: color-mix(in oklab, var(--praxity-color-accent) 65%, black 35%);
+}
+
+/* Free response inputs inside assessment — remove border to avoid
+   double-line with the enclosing Card border */
+.praxity-block-assessment .mantine-Textarea-input,
+.praxity-block-assessment .mantine-TextInput-input {
+	border: none;
+	border-bottom: 1px solid var(--praxity-color-border);
+	border-radius: var(--radius-control);
+	background: transparent;
+	padding-left: 0;
+}
+
+.praxity-block-assessment .mantine-Textarea-input:focus,
+.praxity-block-assessment .mantine-TextInput-input:focus {
+	border-bottom-color: var(--praxity-color-accent);
+	border-bottom-width: 2px;
+}
+
+/* Block title — shared class for consistent title styling across blocks */
+.praxity-block-title {
+	font-size: var(--type-h3);
+	font-weight: var(--weight-strong);
+	line-height: var(--leading-heading);
+}
+
+/* Assessment question stem — bold paragraph at the established question size */
+.praxity-assessment-stem {
+	font-size: var(--type-h3);
+	font-weight: var(--weight-strong);
+	line-height: var(--leading-body);
+	margin: 0;
+}
+
+/* Assessment option labels — normal text size, not Mantine's sm default */
+.mantine-Radio-label,
+.mantine-Checkbox-label {
+	font-size: var(--type-body);
+}
+
+/* Keep the inert matching select at the active control's dimensions. */
+.praxity-assessment-baseline select.praxity-assessment-select-input {
+	appearance: none;
+	block-size: calc(1.55em + 12px);
+	padding: var(--space-1) var(--space-2);
+	line-height: var(--leading-body);
+}
+
+.praxity-table-scroll-region {
+	max-width: 100%;
+	overflow-x: auto;
+	overscroll-behavior-x: contain;
+}
+
+.praxity-table-scroll-region:focus-visible {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+}
+
+.praxity-ag-required-error {
+	margin: 0 0 var(--space-2);
+	color: var(--praxity-color-error-text, var(--praxity-color-error));
+	font-weight: var(--weight-strong);
+}
+
+.praxity-ag-results {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: var(--space-3);
+	margin-block-start: var(--space-4);
+	padding-block-start: var(--space-4);
+	border-block-start: 1px solid var(--rule);
+}
+
+.praxity-ag-results-score {
+	flex-basis: 100%;
+	font-size: var(--type-small);
+	margin: 0;
+}
+
+.praxity-ag-review-links {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-3);
+	font-size: var(--type-small);
+}
+
+.praxity-ag-review-links a {
+	display: inline-flex;
+	align-items: center;
+	min-block-size: 44px;
+	color: var(--praxity-color-accent-text);
+	text-decoration: underline;
+}
+
+.praxity-ag-results-score:focus-visible,
+.praxity-ag-review-links a:focus-visible {
+	outline: var(--focus-width) solid var(--focus);
+	outline-offset: var(--focus-offset);
+}
+
+:is(.praxity-text-response-downloads, .praxity-assessment-group-submit) button {
+	transition: transform var(--duration-press) var(--ease-out);
+}
+
+:is(.praxity-text-response-downloads, .praxity-assessment-group-submit)
+	button:active:not(:disabled) {
+	transform: scale(0.96);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	:is(.praxity-text-response-downloads, .praxity-assessment-group-submit) button {
+		transition: none;
+	}
+}
+
+/* Required indicator — positioned badge injected by logic engine's require action */
+.praxity-block[data-required] {
+	position: relative;
+}
+
+.praxity-block[data-required] > .praxity-required-indicator {
+	position: absolute;
+	top: 4px;
+	right: 4px;
+	z-index: 1;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 1.3em;
+	height: 1.3em;
+	border-radius: var(--radius-control);
+	background: color-mix(in oklab, var(--praxity-color-accent) 12%, transparent);
+}
+
+/* Required validation message — injected below incomplete blocks */
+.praxity-required-message {
+	color: var(--praxity-color-error-text, var(--praxity-color-error));
+	font-size: var(--type-small);
+	margin-top: var(--space-1);
+	padding: var(--space-1) 0;
+}
+
+/* Temporary highlight ring on incomplete required blocks */
+[data-required-highlight] {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+	border-radius: var(--radius-control);
+	transition: none;
+}
+
+/* ===== Columns layout ===== */
+.praxity-columns {
+	display: flex;
+	gap: var(--space-3);
+	width: 100%;
+}
+
+.praxity-column {
+	min-width: 0;
+}
+
+/* ===== MOBILE: responsive typography, columns stacking, badge, tabs ===== */
+@media (max-width: 36em) {
+	/* Stack columns. Row gap carries the separation between what are now
+	   sequential sections; the 12px inline gap would read as one run of text. */
+	.praxity-columns {
+		flex-direction: column;
+		row-gap: calc(var(--praxity-block-spacing, var(--space-4)) * 1.5);
+	}
+
+	.praxity-column {
+		flex: 1 1 100% !important;
+	}
+
+	/* Scrollable horizontal tabs (vertical tabs keep their layout on mobile) */
+	.mantine-Tabs-root:not([data-orientation="vertical"]) .mantine-Tabs-list {
+		flex-wrap: nowrap;
+		overflow-x: auto;
+		scrollbar-width: none;
+		-webkit-overflow-scrolling: touch;
+		scroll-snap-type: x proximity;
+		-webkit-mask-image: linear-gradient(to right, black calc(100% - 40px), transparent);
+		mask-image: linear-gradient(to right, black calc(100% - 40px), transparent);
+	}
+
+	.mantine-Tabs-root:not([data-orientation="vertical"]) .mantine-Tabs-list::-webkit-scrollbar {
+		display: none;
+	}
+
+	.mantine-Tabs-root:not([data-orientation="vertical"]) .mantine-Tabs-tab {
+		white-space: nowrap;
+		flex-shrink: 0;
+		min-height: 44px;
+		scroll-snap-align: start;
+	}
+}
+
+.praxity-course-footer {
+	max-width: var(--praxity-max-width);
+	margin: var(--space-8) auto 0;
+	padding: var(--space-4) var(--space-6);
+	text-align: center;
+	color: var(--praxity-color-text-light);
+	font-size: var(--type-small);
+	border-top: 1px solid var(--praxity-color-border);
+}
+
+/* SlideNav also answers to #praxity-page-nav but owns its floating geometry. */
+#praxity-page-nav:not(.praxity-slide-nav) {
+	scroll-margin-top: 72px;
+	position: relative;
+	z-index: 1;
+}
+
+/* Placeholder text: muted below typed answers but still WCAG AA (Mantine's default is too light) */
+.praxity-page-content input::placeholder,
+.praxity-page-content textarea::placeholder,
+.praxity-page-content .mantine-TextInput-input::placeholder,
+.praxity-page-content .mantine-Textarea-input::placeholder,
+.praxity-page-content .mantine-Input-input::placeholder {
+	color: var(--praxity-color-text-muted) !important;
+	opacity: 1;
+}
+
+/* ===== Embed navigation — compact bar for embedded content ===== */
+.praxity-embed-nav {
+	padding: var(--space-2) 0;
+	border-top: 1px solid var(--praxity-color-border);
+	opacity: 0.7;
+	transition: opacity var(--duration-press) var(--ease-out);
+}
+
+.praxity-embed-nav:hover {
+	opacity: 1;
+}
+
+/* In minimal mode, show embed nav (it replaces the hidden full nav) */
+.praxity-minimal .praxity-embed-nav {
+	display: flex !important;
+	justify-content: center;
+}
+
+body.praxity-minimal .praxity-course-menu,
+body.praxity-minimal .praxity-menu-toggle,
+body.praxity-minimal .praxity-page-nav {
+	display: none !important;
+}
+
+/* ── Accessibility preference overrides ── */
+
+/* Text size: large (125%) */
+
+/* Nav and a11y bar: cap font size regardless of text-size preference */
+html[data-praxity-text-size] .praxity-page-nav,
+html[data-praxity-text-size] .praxity-top-bar,
+html[data-praxity-text-size] .praxity-course-menu {
+	font-size: var(--type-body);
+}
+
+html[data-praxity-text-size] .praxity-page-nav .mantine-Button-root {
+	font-size: var(--type-small);
+}
+
+/* Disabled page nav stays visible without competing with the available action. */
+.praxity-page-nav .mantine-Button-root[data-disabled],
+.praxity-page-nav .mantine-Button-root:disabled {
+	--button-bg: transparent !important;
+	--button-color: var(
+		--praxity-color-accent-text,
+		var(--praxity-color-button-outline, var(--praxity-color-button-background))
+	) !important;
+	--button-bd: 1.5px solid
+		var(--praxity-color-button-outline, var(--praxity-color-button-background)) !important;
+	background: var(--button-bg) !important;
+	color: var(--button-color) !important;
+	border: var(--button-bd) !important;
+	opacity: 0.47 !important;
+}
+
+/* Reduced motion */
+[data-praxity-root][data-praxity-reduced-motion="true"] *,
+[data-praxity-root][data-praxity-reduced-motion="true"] *::before,
+[data-praxity-root][data-praxity-reduced-motion="true"] *::after {
+	animation-duration: 0s !important;
+	animation-delay: 0s !important;
+	animation-iteration-count: 1 !important;
+	transition-duration: 0s !important;
+	scroll-behavior: auto !important;
+}
+
+/* Visually hidden labels for icon-only buttons */
+.praxity-a11y-sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: calc(-1 * var(--space-1));
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+/* Equation block */
+.praxity-math-block,
+.praxity-equation {
+	display: flex;
+	justify-content: center;
+	padding: var(--space-4) 0;
+	overflow-x: auto;
+}
+.praxity-block-equation {
+	font-size: var(--type-body);
+}
+
+.praxity-block-equation .praxity-math-block {
+	display: block;
+	overflow-x: auto;
+	overflow-y: hidden;
+	padding-block: var(--space-1);
+}
+
+/* Center equations that fit without putting wide equations before the scroll origin. */
+.praxity-block-equation .praxity-math-block > div {
+	width: max-content;
+	min-width: 100%;
+}
+
+/* Inline math */
+.praxity-math-inline {
+	display: inline;
+	vertical-align: baseline;
+}
+
+/* Glossary page */
+.praxity-glossary-page {
+	padding-block-start: var(--space-8);
+}
+
+.praxity-glossary-page dl {
+	display: grid;
+	gap: var(--praxity-spacing-lg, var(--space-6));
+	margin: 0;
+}
+.praxity-glossary-term {
+	padding-bottom: var(--praxity-spacing-lg, var(--space-6));
+	border-bottom: 1px solid var(--praxity-color-border);
+}
+.praxity-glossary-term:last-child {
+	border-bottom: none;
+}
+.praxity-glossary-term-name {
+	font-weight: var(--weight-strong);
+	font-size: var(--type-body);
+	margin-bottom: var(--praxity-spacing-xs, var(--space-2));
+	color: var(--praxity-color-text);
+}
+.praxity-glossary-term-definition {
+	margin: 0;
+	margin-inline-start: 0;
+	color: var(--praxity-color-text-light);
+}
+
+/* Decorative course branding follows the same resolved mode as the learner controls. */
+.praxity-brand-title {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	min-width: 0;
+}
+.praxity-brand-title-text {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.praxity-brand-title .praxity-sidebar-title {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+.praxity-brand-logo {
+	display: block;
+	flex: 0 0 40px;
+	width: 40px;
+	height: 40px;
+	object-fit: contain;
+}
+.praxity-brand-logo--dark,
+html[data-praxity-mode="dark"] .praxity-brand-logo--light {
+	display: none;
+}
+html[data-praxity-mode="dark"] .praxity-brand-logo--dark {
+	display: block;
+}
+
+button,
+input,
+select,
+textarea {
+	font-family: var(--praxity-font-family);
+}
+.praxity-skip-link {
+	min-height: 44px;
+}

@@ -1,0 +1,18 @@
+# Untitled {hideTitle}
+
+::: cards Team directory {columns=3 style=outline shadow=subtle}
+:: Alex Chen, team lead
+![Abstract blue portrait illustration for sample team member Alex Chen](/assets/alex-chen-illustration.svg)
+
+Alex coordinates the weekly review and keeps the agenda in the project folder.
+
+:: Priya Nair, specialist
+![Abstract purple portrait illustration for sample team member Priya Nair](/assets/priya-nair-illustration.svg)
+
+Priya checks a draft activity before release. Request a review in the project folder.
+
+:: Marcus Osei, coordinator
+![Abstract teal portrait illustration for sample team member Marcus Osei](/assets/marcus-osei-illustration.svg)
+
+Marcus tracks onboarding dates and room bookings for new team members.
+:::

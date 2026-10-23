@@ -1,0 +1,3 @@
+.test-env.json
+test-results/
+playwright-report/

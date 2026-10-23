@@ -1,0 +1,42 @@
+---
+title: Workplace Safety FAQ
+description: Common questions about safety policy, reporting, and PPE in an
+  accordion. Learners open only what they need.
+lang: en
+design:
+  palette: clean
+  colorMode: light
+  accentHue: 210
+---
+
+# Frequently Asked Questions {hideTitle}
+
+## Frequently Asked Questions
+
+Use this FAQ when learners need reference material rather than a guided walkthrough. `allowMultipleOpen: true` lets them keep several panels open while they compare answers. A PPE question may depend on a reporting requirement.
+
+::: accordion {style=shaded allowMultipleOpen}
+:: Who is responsible for reporting a hazard?
+Every worker is responsible for reporting hazards immediately. You do not need to wait for a supervisor. Use the incident reporting app or the paper form at each zone entry point.
+
+:: What counts as a "near miss"?
+A near miss is any unplanned event that did not result in injury, illness, or damage but clearly had the potential to do so. Examples include a spill that was cleaned before anyone slipped, a dropped tool that narrowly missed a coworker, and an alarm that sounded but was not acted on.
+
+:: When is PPE mandatory?
+PPE is required whenever engineering and administrative controls alone cannot reduce a hazard to an acceptable level. The task risk matrix in Section 4 of the SOP lists required PPE by task type. When in doubt, wear it.
+
+:: How do I report an incident after hours?
+Call the 24-hour safety line posted at every workstation. Leave a message with your name, zone, time, and a brief description. A safety officer will follow up within two hours. Do not wait until the next shift.
+
+:: What is the difference between an incident and an emergency?
+An incident is any unplanned event that results in injury, illness, property damage, or a near miss. An emergency is an incident that requires immediate evacuation, medical response, or hazardous materials containment. When unsure, treat it as an emergency.
+
+:: Can I refuse unsafe work?
+Yes. Every worker has the right to refuse work they believe poses a serious and immediate danger. Notify your supervisor, remain available for investigation, and document your concern in writing. You are protected from reprisal.
+
+:: How soon must an incident report be submitted?
+A preliminary report must be submitted within 4 hours of the incident. A full report, including witness statements and root cause notes, is due within 48 hours. Late reports must include a reason for delay.
+
+:: Where are first-aid kits located?
+First-aid kits are mounted at zone entry points, the main break room, and the loading dock. Locations are marked on the evacuation map posted at every exit. Check kit contents at the start of each shift using the inspection card inside the lid.
+:::

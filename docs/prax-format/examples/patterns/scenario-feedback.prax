@@ -1,0 +1,70 @@
+---
+title: Spill Response Scenario
+description: "Conditional feedback pattern. The learner chooses a response to a
+  workplace scenario, then sees differentiated follow-up content based on their
+  answer. Uses assessment results and if: rules to reveal the right feedback
+  block."
+lang: en
+design:
+  palette: campfire
+  colorMode: light
+  accentHue: 24
+---
+
+# Scenario: Chemical Spill in the Storage Room {hideTitle}
+
+## Scenario: Chemical Spill in the Storage Room
+
+You are working in the chemical storage room when you notice a small puddle forming at the base of a solvent drum. The drum valve appears to have been left open. Two colleagues are working nearby.
+
+::: note {tone=warning style=outline}
+Your immediate action will shape how safely this situation resolves.
+:::
+
+::: choice What is your first action? {name=spillResponse points=3 required}
+correct: Well done. Your first priority is always people. Clear the area, then follow the spill response procedure.
+incorrect: Review the spill response procedure. People before product is the guiding rule.
+(x) Notify your colleagues to leave the area, then follow the spill response procedure
+feedback: Correct. Protecting people before attempting containment is always the right first move.
+( ) Grab absorbent material and start containing the spill immediately
+feedback: Containment is important, but people must be cleared from the area first.
+( ) Close the valve, then continue your work
+feedback: Closing the valve alone does not address the spill already on the floor or alert others to the hazard.
+
+:::
+
+---
+
+## What Happens Next
+
+::: rule
+if: block:spillResponse.result is "correct"
+then: show @correctFollowUp
+then: hide @incorrectFollowUp
+:::
+
+::: rule
+if: block:spillResponse.result is "incorrect"
+then: show @incorrectFollowUp
+then: hide @correctFollowUp
+:::
+
+::: cards You made the right call {name=correctFollowUp hide}
+:: You made the right call {level=3}
+Clearing the area prevents secondary injuries. Once colleagues are safe, the next steps are: close the valve if it is safe to do so, retrieve the spill kit from the zone entry point, contain the spill using absorbent socks, and notify your supervisor.
+
+::: button [Download the Spill Response Checklist](https://example.com/spill-response-checklist.pdf) {style=outline newTab}
+:::
+:::
+
+::: cards Let's review the procedure {name=incorrectFollowUp hide}
+:: Let's review the procedure {level=3}
+The spill response procedure has four phases: **protect people**, then **contain the source**, then **clean up**, then **report**. Skipping the first phase puts coworkers at risk from vapour inhalation or slipping on the spill.
+
+::: note {tone=note style=shaded}
+When in doubt, clear the area first. Containment can wait thirty seconds.
+:::
+
+::: button [Review the Spill Response SOP](https://example.com/spill-response-sop) {style=outline newTab}
+:::
+:::

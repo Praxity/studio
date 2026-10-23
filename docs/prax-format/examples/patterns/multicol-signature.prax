@@ -1,0 +1,44 @@
+---
+title: Module Completion and Signoff
+description: Two-column completion page. The left column summarises what the
+  course covered; the right column captures the learner's signature. Use this
+  pattern for compliance training that requires a record of acknowledgement.
+lang: en
+design:
+  palette: campfire
+  colorMode: light
+  accentHue: 145
+---
+
+# Module Complete {hideTitle}
+
+## Module Complete
+
+You have reached the end of **Workplace Hazard Awareness**. Review the summary on the left, then sign to confirm you have completed this training.
+
+# Untitled {hideTitle}
+
+::: columns
+::
+### What You Covered
+
+- Identifying physical, chemical, and procedural hazards in your work zone
+- Applying the hierarchy of controls, elimination through PPE
+- Reporting incidents and near misses within the required timeframe
+- Exercising your right to refuse unsafe work
+- Locating first-aid stations, emergency contacts, and PPE supply points
+
+This training satisfies the annual hazard awareness requirement under Section 3.2 of the facility safety policy. Your completion record will be sent to your supervisor within 24 hours.
+
+::: note {tone=info style=outline}
+Keep this module accessible for reference. You can return to any section using the course navigation.
+:::
+
+::
+### Learner Acknowledgement
+
+By signing below, you confirm that you have reviewed this module in full, understand the safety procedures described, and agree to apply them in your daily work.
+
+::: signature Learner Signature {mode=type level=3}
+:::
+:::

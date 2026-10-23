@@ -1,0 +1,222 @@
+﻿[
+	{
+		"id": "57cf59cb-277a-494a-9467-b9312c86e7d7",
+		"type": "assessment",
+		"data": {
+			"stem": [
+				{
+					"id": "bbc13764-7da7-4450-8abd-50fb80ae11a7",
+					"type": "text",
+					"data": {
+						"content": "\u003cp\u003eRéflexion\u0026nbsp;: comment se sont passées vos tentatives ?\u003c/p\u003e"
+					}
+				}
+			],
+			"stemLevel": 3,
+			"description": [
+				{
+					"id": "924fa09b-ae03-4751-88a9-ef0d6bfcf0f2",
+					"type": "text",
+					"data": {
+						"content": "\u003cp\u003eDans quelles situations avez-vous utilisé ces techniques\u0026nbsp;? Quels effets ont-elles eus\u0026nbsp;?\u003c/p\u003e"
+					}
+				},
+				{
+					"id": "9a1a3a35-1ef9-4771-b7a3-9f41eefd9d37",
+					"type": "text",
+					"data": {
+						"content": "\u003cp\u003eQu\u0027avez-vous ressenti en vous affirmant\u0026nbsp;?\u003c/p\u003e"
+					}
+				},
+				{
+					"id": "5cff4795-3709-4754-b7f5-398c0caa1567",
+					"type": "text",
+					"data": {
+						"content": "\u003cp\u003eComment l\u0027autre personne a-t-elle réagi\u0026nbsp;?\u003c/p\u003e"
+					}
+				},
+				{
+					"id": "659412e4-9c51-4bad-9b62-1facb66c5a8d",
+					"type": "text",
+					"data": {
+						"content": "\u003cp\u003eÉtait-il facile de les utiliser\u0026nbsp;? Pourquoi\u0026nbsp;?\u003c/p\u003e"
+					}
+				}
+			],
+			"feedback": {},
+			"gradingMode": "none",
+			"assessmentType": "textResponse",
+			"response": {
+				"type": "textResponse",
+				"inputType": "long",
+				"placeholder": "Mes observations",
+				"downloadAs": "both"
+			}
+		}
+	},
+	{
+		"id": "f6e1977f-4742-4a27-9533-a57c1bcc26da",
+		"type": "assessment",
+		"data": {
+			"stem": [
+				{
+					"id": "bb1c0e63-1bcf-45a1-be45-63f013e4d2f3",
+					"type": "text",
+					"data": {
+						"content": "\u003cp\u003eRéflexion\u0026nbsp;: qu\u0027avez-vous observé cette semaine ?\u003c/p\u003e"
+					}
+				}
+			],
+			"stemLevel": 3,
+			"description": [
+				{
+					"id": "c464fd5b-b8c6-4aa9-84b9-22cd33aaebbf",
+					"type": "text",
+					"data": {
+						"content": "\u003cp\u003eQuand et avec qui avez-vous subi ou exprimé l\u0027un des cavaliers\u0026nbsp;?\u003c/p\u003e"
+					}
+				},
+				{
+					"id": "cb313574-6a09-4765-9daa-a253094bd162",
+					"type": "text",
+					"data": {
+						"content": "\u003cp\u003eQu\u0027a dit ou fait l\u0027autre, et comment avez-vous réagi\u0026nbsp;?\u003c/p\u003e"
+					}
+				},
+				{
+					"id": "e011f2c5-11e5-4e49-8bd0-3f37a261f60d",
+					"type": "text",
+					"data": {
+						"content": "\u003cp\u003eQu\u0027avez-vous fait pour éviter ces comportements, et quel effet cela a-t-il eu sur votre relation\u0026nbsp;?\u003c/p\u003e"
+					}
+				},
+				{
+					"id": "acb0d508-40e8-406f-b16e-8d2451544539",
+					"type": "text",
+					"data": {
+						"content": "\u003cp\u003eQu\u0027avez-vous trouvé difficile\u0026nbsp;?\u003c/p\u003e"
+					}
+				}
+			],
+			"feedback": {},
+			"gradingMode": "none",
+			"assessmentType": "textResponse",
+			"response": {
+				"type": "textResponse",
+				"inputType": "long",
+				"placeholder": "Mes observations",
+				"downloadAs": "both"
+			}
+		}
+	},
+	{
+		"id": "4e132706-f555-4b8e-a845-de8dbcec2135",
+		"type": "assessment",
+		"data": {
+			"stem": [
+				{
+					"id": "8e007be4-ac33-48c2-b07c-5b406cc18c86",
+					"type": "text",
+					"data": {
+						"content": "\u003cp\u003eRéflexion\u0026nbsp;: comment s\u0027est déroulée votre démarche ?\u003c/p\u003e"
+					}
+				}
+			],
+			"stemLevel": 3,
+			"description": [
+				{
+					"id": "a5840004-2c4b-4238-b5f7-f385c5a41394",
+					"type": "text",
+					"data": {
+						"content": "\u003cp\u003eQu\u0027avez-vous ressenti\u0026nbsp;?\u003c/p\u003e"
+					}
+				},
+				{
+					"id": "f9a827aa-5bc4-468d-96e1-ecc4653947a4",
+					"type": "text",
+					"data": {
+						"content": "\u003cp\u003eQuels conseils ont été difficiles ou faciles à suivre\u0026nbsp;? Pourquoi\u0026nbsp;?\u003c/p\u003e"
+					}
+				},
+				{
+					"id": "f12db1dc-9aa4-4ea0-a491-ccc81e24ca1e",
+					"type": "text",
+					"data": {
+						"content": "\u003cp\u003eComment l\u0027autre personne a-t-elle réagi\u0026nbsp;?\u003c/p\u003e"
+					}
+				},
+				{
+					"id": "df9c8276-af18-4ae9-8794-8919a61d4744",
+					"type": "text",
+					"data": {
+						"content": "\u003cp\u003eQu\u0027avez-vous appris sur vous-même en matière de gestion des conflits\u0026nbsp;?\u003c/p\u003e"
+					}
+				}
+			],
+			"feedback": {},
+			"gradingMode": "none",
+			"assessmentType": "textResponse",
+			"response": {
+				"type": "textResponse",
+				"inputType": "long",
+				"placeholder": "Mes observations",
+				"downloadAs": "both"
+			}
+		}
+	},
+	{
+		"id": "9e59d4ab-bc5b-4704-a31c-6526acaee146",
+		"type": "assessment",
+		"data": {
+			"stem": [
+				{
+					"id": "13524d4d-d538-400b-9a0c-862db317cca2",
+					"type": "text",
+					"data": {
+						"content": "\u003cp\u003eEn tant que leader\u0026nbsp;: que feriez-vous ?\u003c/p\u003e"
+					}
+				}
+			],
+			"stemLevel": 3,
+			"description": [
+				{
+					"id": "8dbbfd55-bc72-4f99-884c-cedbf4ffc8a8",
+					"type": "text",
+					"data": {
+						"content": "\u003cp\u003eDeux membres de votre équipe se sont disputés. Selon les rumeurs, le différend est à la fois personnel et professionnel.\u003c/p\u003e"
+					}
+				},
+				{
+					"id": "c904c835-6ba2-4138-9ad7-df49fa2ef555",
+					"type": "text",
+					"data": {
+						"content": "\u003cp\u003eQuelques jours plus tard, l\u0027ambiance est toujours tendue, les ragots circulent et les performances baissent.\u003c/p\u003e"
+					}
+				},
+				{
+					"id": "9576a1d3-ba29-40e6-aa1e-e028e19a5143",
+					"type": "text",
+					"data": {
+						"content": "\u003cp\u003eÀ quel moment intervenez-vous, et comment ?\u003c/p\u003e"
+					}
+				},
+				{
+					"id": "05ebabea-ee75-466a-a932-96def3696d21",
+					"type": "text",
+					"data": {
+						"content": "\u003cp\u003eQuels conseils parmi les 14 donneriez-vous à un autre leader dans cette situation ?\u003c/p\u003e"
+					}
+				}
+			],
+			"feedback": {},
+			"gradingMode": "none",
+			"assessmentType": "textResponse",
+			"response": {
+				"type": "textResponse",
+				"inputType": "long",
+				"placeholder": "Mon intervention",
+				"downloadAs": "both"
+			}
+		}
+	}
+]

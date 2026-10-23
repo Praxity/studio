@@ -1,0 +1,11 @@
+{
+	"_comment": "Known a11y violation counts per page/view. New violations fail the test. Fix issues, then lower the count.",
+	"published": {
+		"page-1-content": 2,
+		"page-2-interactive": 2,
+		"page-3-assessment": 2
+	},
+	"editor": {
+		"editor-shell": 0
+	}
+}

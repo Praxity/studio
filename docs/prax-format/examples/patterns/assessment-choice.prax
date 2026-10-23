@@ -1,0 +1,43 @@
+---
+title: Hazard control knowledge check, your choice
+description: Assessment group with mode oneOf, giving learners agency over which
+  question they answer. Use this when your audience has varied roles and no
+  single question type fits everyone.
+lang: en
+design:
+  palette: clean
+  colorMode: light
+  accentHue: 210
+---
+
+# Knowledge Check {hideTitle}
+
+## Knowledge Check
+
+Choose one of the three questions below to match your role and experience. Each question asks you to select controls for a hazard.
+
+Your question choice carries no penalty.
+
+::: group Hazard Control Assessment {mode=oneOf showResultsSummary passingScore=70 level=2}
+::: choice For field workers, which control should you apply first? {points=10 required shuffle}
+A spill of cleaning solvent has occurred near an electrical panel. Select the most appropriate first control.
+correct: Well done. Eliminating the ignition source before cleanup is the correct application of the hierarchy of controls.
+incorrect: Review the hierarchy of controls. Elimination and engineering controls come before PPE.
+(x) Shut off the electrical panel and ventilate the area before cleanup
+feedback: Correct. Eliminate the ignition source and reduce vapour concentration before anyone enters.
+( ) Provide the cleanup crew with gloves and a face shield, then proceed
+feedback: PPE is a last-resort control, not a first response when an ignition source is present.
+( ) Post a warning sign and schedule cleanup for after-hours
+feedback: Deferring cleanup increases exposure time and does not address the electrical risk.
+( ) Notify the supervisor and wait for instructions before taking any action
+feedback: Shut off the panel before seeking supervisor confirmation when the risk is clear.
+
+:::
+::: free-response For supervisors, describe your approach to a recurring near miss {points=10 required}
+placeholder: Your team has logged three near misses in the loading dock over the past month, all involving forklifts and pedestrian crossings. Describe the steps you would take to identify the root cause and implement a lasting control.
+:::
+Include the type of control you would prioritize and why, and how you would confirm the control is working over time.
+::: fill-blank For safety coordinators, complete the investigation record {points=10}
+After a confined space incident, the coordinator must confirm that the {entry permit} was signed, that {atmospheric testing} was completed, and that the {rescue plan} was reviewed before entry. If any of these were missing, the root cause category is {procedural failure}.
+:::
+:::

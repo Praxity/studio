@@ -1,0 +1,21 @@
+---
+title: Hazard response
+lang: en
+variables:
+  passedQuiz: false
+---
+
+# Hazard response
+
+Show remediation if the learner has not passed.
+
+::: rule
+if: passedQuiz is false
+then: show @remediation
+:::
+
+# Follow-up {hideTitle}
+
+::: note {name=remediation}
+Ask a supervisor for help.
+:::

@@ -1,0 +1,11 @@
+# Build artifacts & large generated files
+packages/export-pipeline/prebuilt/
+.next/
+dist/
+out/
+
+# Dependencies
+node_modules/
+
+# Lock files (large, not useful for context)
+*.lock

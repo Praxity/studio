@@ -1,0 +1,12 @@
+name = "praxity-review-share"
+main = "src/worker.ts"
+compatibility_date = "2026-07-22"
+
+[[kv_namespaces]]
+binding = "REVIEW_KV"
+# Replace this placeholder with the namespace ID printed by Wrangler before deploying.
+id = "00000000000000000000000000000000"
+
+[[r2_buckets]]
+binding = "REVIEW_FILES"
+bucket_name = "praxity-review-share"

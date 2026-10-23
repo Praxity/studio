@@ -1,0 +1,20 @@
+# Repeated containers
+
+::: accordion Resources
+:: Route
+Read the northern route description.
+:::
+
+::: accordion Resources
+:: Route
+Read the southern route description.
+:::
+
+::: choice Which path is open?
+(x) North
+( ) Closed
+( ) Closed
+:::
+
+::: rating How ready are you? {scale=3}
+:::

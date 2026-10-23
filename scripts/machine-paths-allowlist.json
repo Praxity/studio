@@ -1,0 +1,46 @@
+[
+	{
+		"path": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"reason": "Windows absolute paths, UNC paths and drive-letter selectors must be refused without writes."
+	},
+	{
+		"path": "apps/desktop/scripts/standalone-cli-paths.test.mjs",
+		"reason": "Windows checkout fixture verifies portable standalone CLI archives."
+	},
+	{
+		"path": "apps/desktop/src/main/__tests__/narration-authoring.test.ts",
+		"reason": "Lowercase and uppercase Windows drive aliases must resolve to one canonical project root."
+	},
+	{
+		"path": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"reason": "Windows absolute-path input must be refused by the server."
+	},
+	{
+		"path": "packages/export-pipeline/src/__tests__/bundle-viewer.test.ts",
+		"reason": "A Windows absolute entrypoint must be refused by the bundler."
+	},
+	{
+		"path": "packages/export-pipeline/tests/a11y/fill-blank-variants.spec.ts",
+		"reason": "The escaped Windows path is an authored word-bank answer."
+	},
+	{
+		"path": "packages/export-pipeline/tests/a11y/fixtures/fill-blank-variants-fixture.ts",
+		"reason": "Windows path literals exercise word-bank escaping in published output."
+	},
+	{
+		"path": "packages/grammar/__tests__/fixtures/inline-baseline.json",
+		"reason": "Windows path literals verify lossless backslash escaping in the inline baseline."
+	},
+	{
+		"path": "packages/grammar/__tests__/v4-lex.test.ts",
+		"reason": "A Windows asset path tests unquoted setting-value lexing."
+	},
+	{
+		"path": "packages/shared-blocks/src/blocks/AssessmentBlock.escaping.test.tsx",
+		"reason": "Windows path answers test escaped assessment rendering."
+	},
+	{
+		"path": "scripts/check-machine-paths.test.mjs",
+		"reason": "Synthetic Windows, macOS and Linux paths exercise this guard."
+	}
+]

@@ -1,0 +1,17 @@
+---
+title: Explain a delay
+lang: en
+---
+# Practice
+
+::: self-check Explain why the report needs another day. {required}
+model: The data arrived late. Could I send the report on Tuesday?
+:: Reason for the delay
+missed: Explain what caused the delay.
+evidence: The data arrived late.
+:: New delivery date
+missed: Propose a specific delivery date.
+evidence: Tuesday
+:: Respectful wording
+missed: Make a clear request without blaming anyone.
+:::

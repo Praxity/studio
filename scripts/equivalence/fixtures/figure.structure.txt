@@ -1,0 +1,7 @@
+Document
+  P (block)
+    "Fixture"
+  Figure:
+     /Placement /Block
+     /BBox [70.8661 51.0811 99.2126 79.4275]
+    ""

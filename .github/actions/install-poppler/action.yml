@@ -1,0 +1,26 @@
+name: Install Poppler
+description: Prepare native PDF inspection tools with bounded apt waits
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        set -euo pipefail
+        if command -v pdftotext >/dev/null 2>&1; then
+          echo 'Poppler is already on PATH; skipping apt.'
+        else
+          # One retry covers transient failures; each network/lock wait stays short.
+          apt_options=(
+            -o Acquire::Retries=1
+            -o Acquire::http::Timeout=20
+            -o Acquire::https::Timeout=20
+            -o DPkg::Lock::Timeout=30
+          )
+          if ! sudo apt-get "${apt_options[@]}" install -y -q --no-install-recommends poppler-utils; then
+            echo 'Poppler install failed; refreshing apt indexes before one more install.'
+            # No --error-on=any: a failed third-party source would stop the retry install.
+            sudo apt-get "${apt_options[@]}" update -q
+            sudo apt-get "${apt_options[@]}" install -y -q --no-install-recommends poppler-utils
+          fi
+        fi
+        pdftotext -v

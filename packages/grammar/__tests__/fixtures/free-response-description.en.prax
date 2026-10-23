@@ -1,0 +1,20 @@
+---
+title: Reflection
+lang: en
+---
+
+# Reflection
+
+::: free-response Reflect.
+First **paragraph**.
+
+Second *paragraph* with a [guide](https://example.com/guide).
+
+- First idea.
+  1. Nested idea.
+  2. Another idea.
+- Last idea.
+
+Final paragraph.
+placeholder: Your observations
+:::

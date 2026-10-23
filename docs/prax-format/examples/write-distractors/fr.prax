@@ -1,0 +1,12 @@
+---
+lang: fr
+---
+# Le texte des liens
+
+::: write-distractors Que doit indiquer le texte d’un lien vers un formulaire d’inscription ?
+answer: La destination ou le but du lien.
+:: Une consigne vague suffit
+option: Seulement les mots « cliquez ici ».
+:: La couleur suffit à expliquer la destination
+option: Seulement la couleur du lien.
+:::

@@ -1,0 +1,243 @@
+{
+	"apps/desktop/scripts/benchmark-compile-scheduler.mts": [
+		"@praxity/grammar/src/operations/contract.ts"
+	],
+	"apps/desktop/src/main/__tests__/desktop-export-input.test.ts": [
+		"@praxity/grammar/src/v4/lex/index.ts"
+	],
+	"apps/desktop/src/main/__tests__/editor-snapshot.test.ts": ["@praxity/grammar/src/v4/schema.ts"],
+	"apps/desktop/src/main/__tests__/fixtures/editor-snapshot.ts": [
+		"@praxity/grammar/src/v4/lex/index.ts",
+		"@praxity/grammar/src/v4/schema.ts",
+		"@praxity/grammar/src/v4/tree/index.ts",
+		"@praxity/operations/src/ranges.ts"
+	],
+	"apps/desktop/src/main/__tests__/identity-store.test.ts": ["@praxity/grammar/src/read-lesson.ts"],
+	"apps/desktop/src/main/__tests__/operation-service.test.ts": [
+		"@praxity/grammar/src/operations/contract.ts"
+	],
+	"apps/desktop/src/main/edit-cli.ts": ["@praxity/grammar/src/operations/contract.ts"],
+	"apps/desktop/src/main/identity-store.ts": [
+		"@praxity/grammar/src/operations/contract.ts",
+		"@praxity/grammar/src/read-lesson.ts",
+		"@praxity/grammar/src/v4/lex/index.ts",
+		"@praxity/grammar/src/v4/to-blocks.ts",
+		"@praxity/grammar/src/v4/tree/index.ts"
+	],
+	"apps/desktop/src/main/operations/block-inspection.ts": [
+		"@praxity/content-identity/src/files.ts",
+		"@praxity/grammar/src/operations/contract.ts",
+		"@praxity/grammar/src/v4/lex/index.ts",
+		"@praxity/grammar/src/v4/schema.ts",
+		"@praxity/grammar/src/v4/tree/index.ts",
+		"@praxity/operations/src/ranges.ts"
+	],
+	"apps/desktop/src/main/operations/canvas-text-bindings.ts": [
+		"@praxity/grammar/src/operations/contract.ts",
+		"@praxity/grammar/src/v4/tree/index.ts",
+		"@praxity/operations/src/ranges.ts"
+	],
+	"apps/desktop/src/main/operations/local-editor-store.ts": [
+		"@praxity/content-identity/src/files.ts"
+	],
+	"apps/desktop/src/main/operations/operation-service.ts": [
+		"@praxity/grammar/src/operations/contract.ts",
+		"@praxity/operations/src/ranges.ts"
+	],
+	"apps/desktop/src/main/studio/preview-scheduler.ts": ["@praxity/operations/src/ranges.ts"],
+	"apps/desktop/src/renderer/browser/canvas-text.ts": [
+		"@praxity/grammar/src/line-endings.ts",
+		"@praxity/grammar/src/source-edit.ts",
+		"@praxity/operations/src/ranges.ts"
+	],
+	"apps/desktop/src/shared/editor-session.ts": [
+		"@praxity/grammar/src/operations/contract.ts",
+		"@praxity/grammar/src/v4/schema.ts",
+		"@praxity/grammar/src/v4/tree/types.ts",
+		"@praxity/operations/src/ranges.ts"
+	],
+	"apps/desktop/src/shared/editor-source.ts": ["@praxity/grammar/src/line-endings.ts"],
+	"apps/desktop/src/shared/review/model.ts": ["@praxity/content-identity/src/files.ts"],
+	"packages/content-identity/__tests__/page-history.test.ts": [
+		"@praxity/grammar/src/v4/lex/index.ts",
+		"@praxity/grammar/src/v4/schema.ts",
+		"@praxity/grammar/src/v4/tree/index.ts"
+	],
+	"packages/content-identity/__tests__/planning.test.ts": [
+		"@praxity/grammar/src/v4/lex/index.ts",
+		"@praxity/grammar/src/v4/schema.ts",
+		"@praxity/grammar/src/v4/tree/index.ts"
+	],
+	"packages/content-identity/__tests__/runtime-continuity.test.ts": [
+		"@praxity/grammar/src/v4/to-blocks.ts"
+	],
+	"packages/content-identity/src/canonical.ts": [
+		"@praxity/grammar/src/v4/inline.ts",
+		"@praxity/grammar/src/v4/schema.ts",
+		"@praxity/grammar/src/v4/to-blocks.ts",
+		"@praxity/grammar/src/v4/tree/index.ts"
+	],
+	"packages/content-identity/src/types.ts": [
+		"@praxity/grammar/src/operations/contract.ts",
+		"@praxity/grammar/src/v4/tree/index.ts"
+	],
+	"packages/editor-core/src/components/design-navigation-defaults.test.tsx": [
+		"@praxity/grammar/src/nav-archetype-presets.ts",
+		"@praxity/grammar/src/v4/schema.ts"
+	],
+	"packages/editor-core/src/components/design-system-panel.tsx": [
+		"@praxity/grammar/src/nav-archetype-layout.ts"
+	],
+	"packages/editor-core/src/frame-bridge/protocol.ts": [
+		"@praxity/grammar/src/operations/contract.ts"
+	],
+	"packages/editor-core/src/frame-bridge/view.ts": [
+		"@praxity/grammar/src/v4/schema.ts",
+		"@praxity/grammar/src/v4/tree/index.ts"
+	],
+	"packages/editor-core/src/lib/themes/normalize-design-variants.ts": [
+		"@praxity/grammar/src/nav-archetype-presets.ts"
+	],
+	"packages/editor-core/src/session/announcement-templates.test.ts": [
+		"@praxity/grammar/src/v4/lex/index.ts",
+		"@praxity/grammar/src/v4/schema.ts",
+		"@praxity/grammar/src/v4/tree/index.ts"
+	],
+	"packages/editor-core/src/session/announcements.ts": [
+		"@praxity/grammar/src/operations/contract.ts"
+	],
+	"packages/editor-core/src/session/controller.ts": ["@praxity/grammar/src/operations/contract.ts"],
+	"packages/editor-core/src/session/names.ts": [
+		"@praxity/grammar/src/v4/inline.ts",
+		"@praxity/grammar/src/v4/schema.ts",
+		"@praxity/grammar/src/v4/tree/index.ts"
+	],
+	"packages/editor-core/src/session/operation-integration.test.ts": [
+		"@praxity/grammar/src/operations/contract.ts",
+		"@praxity/grammar/src/source-edit.ts",
+		"@praxity/grammar/src/v4/lex/index.ts",
+		"@praxity/grammar/src/v4/schema.ts",
+		"@praxity/grammar/src/v4/tree/index.ts"
+	],
+	"packages/editor-core/src/session/selection.test.ts": [
+		"@praxity/grammar/src/operations/contract.ts"
+	],
+	"packages/editor-core/src/session/selection.ts": ["@praxity/grammar/src/operations/contract.ts"],
+	"packages/editor-core/src/session/session.test.ts": [
+		"@praxity/grammar/src/operations/contract.ts",
+		"@praxity/grammar/src/v4/lex/index.ts",
+		"@praxity/grammar/src/v4/schema.ts",
+		"@praxity/grammar/src/v4/tree/index.ts"
+	],
+	"packages/editor-core/src/session/types.ts": ["@praxity/grammar/src/operations/contract.ts"],
+	"packages/export-pipeline/src/__tests__/write-distractors-admission.test.ts": [
+		"@praxity/grammar/src/v4/tree"
+	],
+	"packages/export-pipeline/src/desktop-design.ts": [
+		"@praxity/grammar/src/nav-archetype-layout.ts",
+		"@praxity/grammar/src/nav-archetype-presets.ts"
+	],
+	"packages/export-pipeline/src/html-gen.ts": [
+		"@praxity/grammar/src/nav-archetype-layout.ts",
+		"@praxity/grammar/src/page-nav-overrides.ts"
+	],
+	"packages/export-pipeline/src/practice-admission.ts": [
+		"@praxity/grammar/src/practice-diagnostics.ts"
+	],
+	"packages/export-pipeline/src/runtime-plan.ts": ["@praxity/grammar/src/nav-archetype-layout.ts"],
+	"packages/export-pipeline/template/src/islands/island-deck.ts": [
+		"@praxity/grammar/src/deck-design.ts"
+	],
+	"packages/export-pipeline/tests/compiler-admission.test.ts": [
+		"@praxity/grammar/src/v4/schema.ts"
+	],
+	"packages/format-renderers/src/pipelines/course-pdf-theme.ts": [
+		"@praxity/grammar/src/font-catalog.ts",
+		"@praxity/grammar/src/types.ts"
+	],
+	"packages/operations/__tests__/draft-ranges.test.ts": [
+		"@praxity/grammar/src/v4/lex/index.ts",
+		"@praxity/grammar/src/v4/schema.ts",
+		"@praxity/grammar/src/v4/tree/index.ts"
+	],
+	"packages/operations/__tests__/inline.test.ts": [
+		"@praxity/grammar/src/operations/contract.ts",
+		"@praxity/grammar/src/source-edit.ts",
+		"@praxity/grammar/src/v4/lex/index.ts",
+		"@praxity/grammar/src/v4/schema.ts",
+		"@praxity/grammar/src/v4/tree/index.ts"
+	],
+	"packages/operations/__tests__/operations.test.ts": [
+		"@praxity/grammar/src/operations/contract.ts",
+		"@praxity/grammar/src/source-edit.ts",
+		"@praxity/grammar/src/v4/lex/index.ts",
+		"@praxity/grammar/src/v4/schema.ts",
+		"@praxity/grammar/src/v4/tree/index.ts"
+	],
+	"packages/operations/__tests__/pages-paste.test.ts": [
+		"@praxity/grammar/src/operations/contract.ts",
+		"@praxity/grammar/src/source-edit.ts",
+		"@praxity/grammar/src/v4/lex/index.ts",
+		"@praxity/grammar/src/v4/schema.ts",
+		"@praxity/grammar/src/v4/tree/index.ts"
+	],
+	"packages/operations/__tests__/planning.test.ts": [
+		"@praxity/grammar/src/v4/lex/index.ts",
+		"@praxity/grammar/src/v4/schema.ts",
+		"@praxity/grammar/src/v4/tree/index.ts"
+	],
+	"packages/operations/__tests__/similar-descendants.test.ts": [
+		"@praxity/grammar/src/source-edit.ts",
+		"@praxity/grammar/src/v4/lex/index.ts",
+		"@praxity/grammar/src/v4/schema.ts",
+		"@praxity/grammar/src/v4/tree/index.ts"
+	],
+	"packages/operations/__tests__/transforms.test.ts": [
+		"@praxity/grammar/src/operations/contract.ts",
+		"@praxity/grammar/src/source-edit.ts",
+		"@praxity/grammar/src/v4/lex/index.ts",
+		"@praxity/grammar/src/v4/schema.ts",
+		"@praxity/grammar/src/v4/tree/index.ts"
+	],
+	"packages/operations/src/diagnostics.ts": ["@praxity/grammar/src/operations/contract.ts"],
+	"packages/operations/src/index.ts": [
+		"@praxity/grammar/src/line-endings.ts",
+		"@praxity/grammar/src/operations/contract.ts",
+		"@praxity/grammar/src/source-edit.ts",
+		"@praxity/grammar/src/v4/lex/index.ts",
+		"@praxity/grammar/src/v4/schema.ts",
+		"@praxity/grammar/src/v4/tree/index.ts"
+	],
+	"packages/operations/src/inline.ts": [
+		"@praxity/grammar/src/operations/contract.ts",
+		"@praxity/grammar/src/source-edit.ts",
+		"@praxity/grammar/src/utils.ts",
+		"@praxity/grammar/src/v4/inline.ts",
+		"@praxity/grammar/src/v4/lex/index.ts",
+		"@praxity/grammar/src/v4/schema.ts",
+		"@praxity/grammar/src/v4/tree/index.ts"
+	],
+	"packages/operations/src/inverse.ts": [
+		"@praxity/grammar/src/operations/contract.ts",
+		"@praxity/grammar/src/source-edit.ts",
+		"@praxity/grammar/src/v4/lex/index.ts",
+		"@praxity/grammar/src/v4/schema.ts",
+		"@praxity/grammar/src/v4/tree/index.ts"
+	],
+	"packages/operations/src/ranges.ts": [
+		"@praxity/grammar/src/line-endings.ts",
+		"@praxity/grammar/src/operations/contract.ts",
+		"@praxity/grammar/src/source-edit.ts",
+		"@praxity/grammar/src/v4/tree/index.ts"
+	],
+	"packages/operations/src/transforms.ts": [
+		"@praxity/grammar/src/line-endings.ts",
+		"@praxity/grammar/src/source-edit.ts",
+		"@praxity/grammar/src/v4/lex/index.ts",
+		"@praxity/grammar/src/v4/schema.ts",
+		"@praxity/grammar/src/v4/tree/index.ts"
+	],
+	"packages/shared-blocks/src/self-check-prompt.ts": ["@praxity/grammar/src/v4/schema.ts"],
+	"packages/shared-blocks/src/write-distractors-prompt.ts": ["@praxity/grammar/src/v4/schema.ts"],
+	"packages/shared-blocks/tests/grammar-adapter.test.ts": ["@praxity/grammar/src/v4/schema.ts"]
+}

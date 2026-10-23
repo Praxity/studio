@@ -1,0 +1,85 @@
+---
+title: Interactive Safety Walkthrough
+lang: en
+design:
+  palette: campfire
+  colorMode: light
+  accentHue: 24
+---
+
+# Welcome {hideTitle}
+
+## Welcome
+
+This module combines explainers, interaction, and quick decision points.
+
+::: accordion {style=shaded}
+:: Hazard Types
+Physical hazards include slips, noise, and moving machinery.
+
+:: Procedural hazards
+Procedural hazards include skipped checks and unclear handoffs.
+
+:: Reporting hazards
+Report hazards immediately and include location plus severity.
+:::
+
+::: tabs {style=pills orientation=vertical}
+:: Before Shift
+Review overnight incidents and pending actions.
+
+:: During Shift
+Use the checklist and escalate unresolved hazards.
+:::
+
+::: columns
+::
+### Risks
+
+- Chemical splash
+- Electrical fault
+- Fall from ladder
+
+::
+### Controls
+
+- Face shield and gloves
+- Lockout/tagout
+- Guard rail and harness
+:::
+
+::: video /assets/lab-safety-walkthrough.mp4 {captions=/assets/lab-safety-walkthrough.en.vtt start=12 end=90}
+caption: Lab safety walkthrough
+:::
+
+::: note {tone=note style=shaded}
+Use the buddy system for high-risk tasks.
+:::
+
+::: note {tone=warning style=outline}
+Stop work immediately when controls fail.
+:::
+
+::: checklist {required}
+- [ ] Inspect exits
+- [ ] Confirm PPE
+- [ ] Review incident board
+:::
+
+::: button [Open Full SOP](https://example.com/sop) {style=outline newTab}
+:::
+
+::: choice Decision Scenario {points=5}
+A solvent leak appears near a heat source. Choose the safest first response.
+(x) Shut off the heat source and contain the spill
+feedback: Correct. Eliminate the ignition source first, then contain.
+( ) Evacuate immediately without containment
+feedback: Evacuation may be needed, but containment prevents escalation.
+:::
+
+# Signoff {hideTitle}
+
+## Signoff
+
+::: signature I confirm I reviewed this interactive walkthrough {mode=draw}
+:::

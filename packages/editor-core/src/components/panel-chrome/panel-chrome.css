@@ -1,0 +1,73 @@
+/* packages/editor-core/src/components/panel-chrome/panel-chrome.css */
+
+/* ── Panel Chrome Design Tokens ──
+   Cascade from desktop theme variables with sensible defaults.
+*/
+
+:root {
+	/* Surface */
+	--panel-bg: var(--bg-panel, #f9f9fb);
+	--panel-surface: var(--bg-secondary, #f5f5f5);
+	--panel-border: var(--border, #e5e5e5);
+	--panel-divider: var(--border-subtle, #e5e5e5);
+
+	/* Text */
+	--panel-text: var(--text-primary, #1a1a1a);
+	--panel-text-secondary: var(--text-secondary, #666666);
+	--panel-text-muted: var(--text-muted, #999999);
+
+	/* Controls.
+	   `--panel-control-border-color` used to alias `--border-subtle`, i.e. the
+	   same value as `--panel-divider` — a text input's outline and a hairline
+	   rule were the same colour by construction, and neither cleared the 3:1
+	   WCAG 1.4.11 asks of a control boundary. It now aliases `--control-border`,
+	   which the theme factory guarantees against every panel surface. */
+	--panel-control-bg: var(--control-bg, var(--bg-primary, #ffffff));
+	--panel-control-border-color: var(--control-border, var(--border, #b0b0b0));
+	--panel-accent: var(--accent, #4269d0);
+	/* Accent as a foreground (labels, icons), corrected for panel surfaces. */
+	--panel-accent-text: var(--accent-on-surface, var(--accent, #4269d0));
+	--panel-selected-bg: var(--selected-bg, var(--bg-active));
+	--panel-selected-text: var(--selected-text, var(--text-primary, #1a1a1a));
+
+	/* Typography */
+	--panel-label-size: 12px;
+	--panel-value-size: 13px;
+	--panel-section-title-size: 13px;
+	--panel-title-size: 13px;
+	--panel-line-height: 1.4;
+
+	/* Spacing */
+	--panel-padding: 16px;
+	--panel-section-gap: 24px;
+	--panel-field-gap: 16px;
+	--panel-label-gap: 8px;
+	--panel-grid-gap: 10px;
+
+	/* Control sizing */
+	--panel-control-height: 34px;
+	--panel-control-radius: 6px;
+	--panel-control-padding: 6px 10px;
+	--panel-swatch-size: 18px;
+	--panel-swatch-radius: 4px;
+	--panel-icon-size: 16px;
+}
+
+/* ── Shared Focus Ring ── */
+
+/* `--focus-ring` is the contrast-guaranteed variant of the accent (3:1 against
+   bgPrimary, bgPanel and bgCard); `--panel-accent` is the raw fill and is not
+   held to that ratio, so the panel focus indicator was the only one in the app
+   that could fall under 3:1. */
+.panelChrome *:focus-visible {
+	outline: none;
+	box-shadow: 0 0 0 2px var(--focus-ring, var(--panel-accent));
+}
+
+@media (forced-colors: active) {
+	.panelChrome *:focus-visible {
+		outline: 2px solid Highlight;
+		outline-offset: 2px;
+		box-shadow: none;
+	}
+}

@@ -1,0 +1,21 @@
+---
+title: Confidence Matrix Check
+description: Table-style Likert matrix with one prompt, numbered scale points,
+  and multiple statements.
+lang: en
+---
+
+# Confidence Check {hideTitle}
+
+## Confidence Check
+
+Use this matrix to gather learner confidence across related skills.
+
+::: matrix How confident are you?
+1. Not confident
+2. Somewhat confident
+3. Confident
+- Using PPE correctly
+- Reading warning labels
+- Following emergency procedures
+:::

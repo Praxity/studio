@@ -1,0 +1,613 @@
+/* A deck adds shell controls and an optional sidebar around the native content area. */
+.praxity-deck {
+	min-width: 0;
+	container: deck-shell / inline-size;
+}
+.praxity-deck .deck-identity {
+	font-size: var(--type-small);
+	flex: 0 0 auto;
+	flex-wrap: nowrap;
+	align-items: baseline;
+	gap: 0 0.5rem;
+	height: 40px;
+	padding-block: 0.25rem;
+	box-shadow: none;
+}
+.deck-identity p {
+	margin: 0;
+	line-height: var(--leading-body);
+}
+.deck-course-title {
+	min-width: 0;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	color: var(--ink-2);
+}
+.deck-module-title {
+	min-width: 0;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	font-size: var(--type-small);
+	font-weight: var(--weight-strong);
+}
+.praxity-deck [hidden] {
+	display: none !important;
+}
+#deck-slides {
+	display: contents;
+}
+.deck-slide {
+	display: flex;
+	flex-direction: column;
+	flex: 1 0 auto;
+	min-width: 0;
+}
+.deck-panels {
+	position: relative;
+	min-width: 0;
+	background: var(--praxity-color-navigation-surface);
+	border-inline-start: 1px solid var(--line);
+}
+.deck-panel-title {
+	flex: 1;
+	min-width: 0;
+	padding: 0.25rem 0.5rem;
+	font-size: var(--type-body);
+	line-height: var(--leading-heading);
+	margin: 0;
+	min-height: 44px;
+	font-weight: var(--weight-strong);
+}
+#deck-resume-follow-row {
+	padding-inline: 1rem;
+}
+#deck-resume-follow-row[aria-hidden="true"] {
+	visibility: hidden;
+}
+#deck-resume-follow {
+	width: auto;
+	gap: 0.5rem;
+	padding: 0.5rem;
+}
+.praxity-deck[data-ready="true"] {
+	position: fixed;
+	inset: 0;
+	inline-size: 100cqi;
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-height: 0;
+	height: auto;
+}
+.praxity-deck[data-ready="true"] #main-content {
+	/* Keep hidden native controls inside the scrollport that owns their visible labels. */
+	position: relative;
+	width: 100%;
+	max-inline-size: none;
+	padding-block: 0 var(--deck-footer-height, 0px);
+	scroll-padding-block-end: var(--deck-footer-height, 0px);
+	padding-inline: max(var(--page-gutter), calc((100% - var(--measure)) / 2));
+	font-size: var(--type-body);
+	overscroll-behavior-y: contain;
+}
+.praxity-deck[data-ready="true"]
+	:is(.praxity-layout-wide, .praxity-layout-full, .praxity-layout-breakout) {
+	--_deck-width: min(
+		var(--measure-wide),
+		calc(var(--praxity-viewer-shell-width, 100vw) - 2 * var(--page-gutter))
+	);
+	inline-size: var(--_deck-width);
+	max-inline-size: var(--measure-wide);
+	margin-inline: calc((100% - var(--_deck-width)) / 2);
+}
+/* Each slide owns its boundary once; the scrollport and inner canvas do not add another. */
+.praxity-deck[data-ready="true"] .deck-slide {
+	padding-block: var(--space-12) 0;
+}
+.praxity-deck[data-ready="true"] .deck-slide > .praxity-slide {
+	margin-block: 0;
+	min-height: 0;
+	padding: 0;
+	width: 100%;
+	align-content: start;
+	box-shadow: none;
+	background: var(--paper);
+}
+.praxity-deck[data-ready="true"] .deck-workspace {
+	position: relative;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	grid-template-rows: minmax(0, 1fr);
+	flex: 1;
+	min-height: 0;
+}
+#deck-more-below {
+	position: absolute;
+	grid-column: 1;
+	inset: auto 0 0;
+	height: var(--target-size);
+	border: 0;
+	border-radius: 0;
+	padding: 0 var(--space-4);
+	font-size: var(--type-small);
+	color: var(--ink-2);
+	text-align: center;
+	background: var(--paper);
+	cursor: pointer;
+}
+#deck-more-below::before {
+	content: "";
+	position: absolute;
+	inset: calc(-1 * var(--space-3)) 0 auto;
+	height: var(--space-3);
+	background: linear-gradient(transparent, var(--paper));
+	pointer-events: none;
+}
+.praxity-deck[data-ready="true"]
+	.deck-workspace:has(> #deck-more-below:not([hidden]))
+	> #main-content {
+	margin-block-end: var(--target-size);
+}
+#deck-advance-status {
+	display: block;
+	white-space: nowrap;
+}
+@media screen {
+	html:has(.praxity-deck[data-ready="true"]),
+	body:has(.praxity-deck[data-ready="true"]) {
+		overflow: hidden;
+	}
+}
+@container deck-shell (width < 768px) {
+	.deck-course-title,
+	.deck-identity-separator {
+		display: none;
+	}
+	.praxity-deck[data-ready="true"] .deck-slide {
+		padding-block-start: var(--space-6);
+	}
+}
+.praxity-deck[data-ready="true"][data-panel="script"] .deck-workspace {
+	grid-template-columns: minmax(0, 1fr) min(22rem, 374px);
+	align-items: stretch;
+}
+.praxity-deck[data-ready="true"][data-panel="outline"] .deck-workspace {
+	grid-template-columns: min(22rem, 374px) minmax(0, 1fr);
+}
+@media screen and (min-width: 950px) and (min-height: 36rem) {
+	.praxity-deck[data-ready="true"]:is([data-panel="script"], [data-panel="outline"]) #main-content {
+		--praxity-viewer-shell-width: calc(100vw - min(22rem, 374px));
+	}
+}
+.praxity-deck[data-panel="outline"] :is(#main-content, #deck-more-below) {
+	grid-column: 2;
+	grid-row: 1;
+}
+#deck-outline-sidebar {
+	grid-column: 1;
+	grid-row: 1;
+	border-inline-start: 0;
+	border-inline-end: 1px solid var(--line);
+}
+.praxity-deck[data-ready="true"] .deck-panels {
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	overflow: hidden;
+}
+.praxity-deck[data-ready="true"] .deck-panels > :is(section, nav) {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-height: 0;
+}
+.deck-panel-scroll {
+	padding: 0.5rem 1rem 1rem;
+	scroll-padding-block: 1rem;
+}
+.praxity-deck[data-ready="true"] .deck-panel-scroll {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	overscroll-behavior-y: contain;
+}
+
+#deck-outline .deck-module-title {
+	display: block;
+	padding-inline: var(--space-4);
+}
+
+.deck-outline-kind {
+	display: flex;
+	align-items: center;
+}
+
+.deck-panel-scroll:not(.praxity-outline-fallback) {
+	scrollbar-gutter: stable;
+}
+
+#deck-outline .deck-panel-scroll {
+	scrollbar-gutter: auto;
+	padding-inline: 0;
+	border: 0;
+}
+
+.praxity-deck a[aria-disabled="true"] {
+	color: var(--ink-2);
+	text-decoration-style: dotted;
+}
+
+.deck-follow {
+	display: flex;
+}
+
+.deck-panel-heading {
+	display: flex;
+	align-items: center;
+	gap: 0.25rem;
+	padding-inline: var(--space-4) 0.5rem;
+	padding-block: calc(var(--focus-control-width) + var(--focus-offset));
+	border-block-end: 1px solid var(--line);
+}
+#deck-outline .deck-panel-title {
+	display: flex;
+	align-items: center;
+	padding-inline: 0;
+}
+
+.deck-panel-heading > button {
+	position: static;
+	display: flex;
+	flex-shrink: 0;
+}
+#deck-outline ol a:not(.deck-module-link) {
+	grid-template-columns: 1rem minmax(0, 1fr) 1rem;
+}
+.deck-module-links [data-deck-lock] {
+	margin-inline-start: auto;
+}
+.deck-glossary-link {
+	margin-block-start: 0.5rem;
+	border-block-start: 1px solid var(--line);
+}
+
+#deck-script [data-deck-segment] {
+	position: relative;
+	border-inline-start: 3px solid transparent;
+	padding-inline: 0.5rem;
+}
+
+#deck-script [aria-current="true"] {
+	border-inline-start-color: var(--accent);
+}
+
+#deck-script .deck-script-speaker {
+	margin: 0;
+	padding: 0;
+	font-weight: var(--weight-strong);
+	line-height: var(--leading-body);
+}
+
+/* Titles appear at laptop widths; the 768px footer is one row. */
+.praxity-deck .deck-controls {
+	/* Reserve footer space during layout, before its resize observer runs. */
+	position: relative;
+	flex-shrink: 0;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-2);
+	padding: max(var(--space-1), calc(var(--focus-control-width) + var(--focus-offset)))
+		var(--space-4);
+	background: var(--paper);
+	border-block-start: 2px solid var(--line);
+}
+.deck-position-controls {
+	display: contents;
+}
+.praxity-deck .deck-position-controls > button {
+	flex: 1;
+	min-width: 44px;
+	min-height: 44px;
+	line-height: var(--leading-heading);
+	padding: 0 var(--space-3);
+	gap: var(--space-2);
+}
+.praxity-deck .deck-position-controls .praxity-nav-prev {
+	border-color: var(--line);
+	color: var(--ink);
+}
+.deck-navigation-copy {
+	white-space: normal;
+}
+.deck-navigation-label {
+	display: block;
+}
+.deck-adjacent-title {
+	display: block;
+	overflow-wrap: anywhere;
+	font-size: var(--type-small);
+	font-weight: var(--weight-body);
+	line-height: var(--leading-heading);
+}
+#deck-position,
+#deck-advance-status {
+	font-size: var(--type-small);
+	font-variant-numeric: tabular-nums;
+}
+#deck-narration {
+	flex: 2;
+	min-width: 44px;
+}
+#deck-narration .praxity-narration {
+	justify-content: flex-start;
+}
+#deck-narration .praxity-narration-controls {
+	width: 100%;
+	flex-wrap: nowrap;
+}
+#deck-narration :is(.praxity-narration-options-toggle, .praxity-narration-options) {
+	display: none;
+}
+#deck-more {
+	position: relative;
+}
+#deck-more-toggle {
+	width: auto;
+	padding-inline: var(--space-3);
+}
+.deck-utility-items {
+	display: grid;
+	width: max-content;
+	max-width: calc(100cqi - var(--space-4));
+	overflow-y: auto;
+	position: absolute;
+	z-index: 20;
+	inset-block-end: calc(100% + var(--space-2));
+	inset-inline-end: var(--space-2);
+	padding: max(var(--space-1), calc(var(--focus-control-width) + var(--focus-offset)));
+	border: 1px solid var(--line);
+	border-radius: var(--radius-box);
+	background: var(--paper);
+	box-shadow: var(--shadow-floating);
+}
+.deck-utility-items button {
+	width: auto;
+	min-width: 44px;
+	height: auto;
+	justify-content: flex-start;
+	gap: var(--space-3);
+	padding-inline: var(--space-3);
+	text-align: start;
+	white-space: normal;
+}
+.deck-utility-icon {
+	flex-shrink: 0;
+}
+#deck-status {
+	padding: var(--space-1) var(--space-4);
+	margin: 0;
+	font-size: var(--type-small);
+}
+#deck-status[data-kind="error"] {
+	color: var(--error-ink);
+}
+#deck-status:empty,
+#deck-status[data-kind="paused"] {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+}
+.deck-gate-notice {
+	flex: 0 0 auto;
+	padding: var(--space-2);
+	font-size: var(--type-small);
+}
+.deck-module-links {
+	display: flex;
+	justify-content: space-between;
+	padding-inline: var(--space-4);
+}
+.praxity-deck[data-ready="true"] .deck-module-links {
+	display: none;
+}
+.deck-module-links a {
+	min-height: 44px;
+	padding-block: var(--space-3);
+}
+.deck-stage-title {
+	font: var(--weight-strong) var(--type-h1) / var(--leading-heading) var(--praxity-font-heading);
+	margin: 0 0 var(--space-6);
+}
+.praxity-deck .deck-controls::before {
+	content: "";
+	position: absolute;
+	inset: -2px auto auto 0;
+	width: var(--deck-progress, 0%);
+	height: 2px;
+	background: var(--accent);
+	pointer-events: none;
+}
+@container deck-shell (width < 1024px) {
+	.praxity-deck .deck-position-controls > button {
+		min-width: min-content;
+		white-space: nowrap;
+	}
+	.deck-adjacent-title {
+		display: none;
+	}
+	#deck-narration
+		:is(.praxity-narration-position, .praxity-narration-time, .praxity-narration-speed) {
+		display: none;
+	}
+}
+@container deck-shell (width < 768px) {
+	#deck-more {
+		position: static;
+	}
+	#deck-advance-status {
+		max-width: 16ch;
+		white-space: normal;
+	}
+	.praxity-deck .deck-controls {
+		padding-inline: var(--space-2);
+		justify-content: space-between;
+	}
+	.deck-navigation-copy {
+		display: none;
+	}
+	.praxity-deck .deck-position-controls > button,
+	#deck-narration {
+		flex: 0 0 44px;
+		min-width: 44px;
+		padding: 0;
+	}
+	.praxity-deck .deck-position-controls .deck-finish {
+		flex: 1;
+	}
+	.deck-finish .deck-navigation-copy {
+		display: block;
+	}
+	.deck-finish svg {
+		display: none;
+	}
+	.deck-finish .deck-navigation-label {
+		font-size: var(--type-small);
+	}
+}
+
+.deck-more-position {
+	display: none;
+}
+
+.deck-transcript-sheet .deck-panel-heading {
+	flex-wrap: wrap;
+	padding: calc(var(--focus-control-width) + var(--focus-offset)) var(--space-4);
+}
+.deck-transcript-sheet .deck-panel-title {
+	flex-basis: 100%;
+	padding: 0;
+}
+.deck-transcript-sheet .deck-panel-scroll {
+	/* Keep segment borders from painting over the scroller's inset focus ring. */
+	padding: var(--focus-control-width);
+	scrollbar-gutter: auto;
+	scrollbar-width: thin;
+}
+dialog #deck-script [data-deck-segment] {
+	padding-inline: var(--space-4);
+}
+/* Keep every compact transport control in one row. */
+@container deck-shell (width < 360px) {
+	.praxity-deck .deck-controls {
+		display: grid;
+		grid-template-columns: 44px 44px auto 44px minmax(0, 1fr);
+		gap: var(--space-1);
+	}
+	#deck-next {
+		grid-column: 5;
+	}
+	#deck-more-toggle {
+		width: 44px;
+		padding-inline: 0;
+	}
+}
+@container deck-shell (width < 240px) {
+	.praxity-deck .deck-controls {
+		grid-template-columns: 44px 1fr;
+	}
+	.deck-utilities {
+		grid-area: 1 / 2;
+	}
+	.deck-position-controls .praxity-native-page-position {
+		display: none;
+	}
+	#deck-next {
+		grid-area: 2 / 2 / auto / -1;
+	}
+	#deck-narration {
+		grid-area: 2 / 1;
+	}
+	.deck-more-position {
+		display: block;
+	}
+}
+
+@media screen and (max-width: 949.99px), screen and (max-height: 35.99rem) {
+	.praxity-deck[data-ready="true"] .deck-workspace {
+		display: flex;
+		overflow: hidden;
+	}
+	.praxity-deck[data-ready="true"] .deck-panels {
+		flex: 1;
+		border: 0;
+	}
+	.praxity-deck[data-ready="true"]:is([data-panel="script"], [data-panel="outline"]) #main-content {
+		display: none;
+	}
+	/* At stacked-sidebar sizes the outline remains the course navigation. */
+	body:has(.praxity-deck) .praxity-floating-toc {
+		display: none;
+	}
+}
+@media print {
+	.praxity-deck .deck-slide[hidden],
+	.praxity-deck [data-deck-reading][hidden] {
+		display: block !important;
+	}
+	.praxity-deck .deck-controls,
+	#deck-more-below,
+	.deck-module-links {
+		display: none;
+	}
+	.praxity-deck[data-ready="true"],
+	.praxity-deck[data-ready="true"] .deck-workspace {
+		position: static;
+		padding-bottom: 0;
+		display: block;
+		height: auto;
+		overflow: visible;
+	}
+}
+
+/* The readable fallback and inert small preview use normal document scrolling. */
+body:has(.praxity-deck:not([data-ready="true"])) {
+	height: auto;
+	overflow: auto;
+}
+
+@media screen {
+	/* Hide the workspace until bookmark and gate resolution, retaining fallback on failure. */
+	.praxity-shell-ready:not([data-praxity-fallback], [data-praxity-small-preview])
+		.praxity-deck:not([data-ready])
+		:is(.deck-workspace, .deck-module-links) {
+		display: none;
+	}
+}
+
+/* Keep the in-page minimap beside content when the transcript rail is open. */
+@media (min-width: 950px) and (min-height: 36rem) {
+	body:has(.praxity-deck[data-panel="script"]) .praxity-floating-toc {
+		inset-inline-end: calc(min(22rem, 374px) + 16px);
+	}
+}
+
+/* Guided replacing panels: align with the panel title's text and keep the
+   deck's inset ring inside the panel's clipping boundary. */
+:is(#deck-script, #deck-outline) > .praxity-resume-summary {
+	margin: 0;
+	padding: var(--space-3) var(--space-6) var(--space-1);
+}
+
+:is(#deck-script, #deck-outline) > .praxity-resume-summary:focus {
+	outline-offset: -2px !important;
+}
+
+/* Keep the resume summary aligned with the sheet title. */
+.praxity-dialog-sheet #deck-script > .praxity-resume-summary {
+	padding-inline: var(--space-4);
+}

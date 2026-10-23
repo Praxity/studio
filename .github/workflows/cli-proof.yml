@@ -1,0 +1,34 @@
+name: Standalone CLI proof
+
+# Verify the shipped Intel CLI on hosted macOS nightly and on demand.
+on:
+  schedule:
+    - cron: "0 12 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cli-proof
+  cancel-in-progress: true
+
+jobs:
+  proof:
+    if: github.repository == (vars.STUDIO_SOURCE_REPO || github.repository)
+    runs-on: macos-15-intel
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+          submodules: true
+          persist-credentials: false
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.22.1
+      - run: pnpm install --frozen-lockfile
+      # build:cli prepares viewer/export assets and the pinned compiler.
+      - run: pnpm build:cli
+      - run: pnpm test:cli

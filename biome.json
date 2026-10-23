@@ -1,0 +1,120 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.5.5/schema.json",
+	"assist": { "actions": { "source": { "organizeImports": "on" } } },
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"preset": "recommended",
+			"a11y": {
+				"recommended": true,
+				"useSemanticElements": "warn",
+				"useMediaCaption": "warn",
+				"useFocusableInteractive": "warn",
+				"noSvgWithoutTitle": "warn",
+				"useAriaPropsForRole": "warn",
+				"useKeyWithClickEvents": "warn",
+				"noStaticElementInteractions": "warn",
+				"useAriaPropsSupportedByRole": "warn",
+				"useHtmlLang": "off"
+			},
+			"suspicious": {
+				"noArrayIndexKey": "warn",
+				"noAssignInExpressions": "off",
+				"noDoubleEquals": "off",
+				"noLabelVar": "off",
+				"noControlCharactersInRegex": "off",
+				"noMisleadingCharacterClass": "off",
+				"useIterableCallbackReturn": "off",
+				"noThenProperty": "off",
+				"noSelfCompare": "off",
+				"noDuplicateProperties": "off",
+				"noFallthroughSwitchClause": "off",
+				"noConfusingLabels": "off",
+				"noDocumentCookie": "off",
+				"noTemplateCurlyInString": "off"
+			},
+			"style": {
+				"noNonNullAssertion": "warn"
+			},
+			"correctness": {
+				"noInnerDeclarations": "off",
+				"noConstructorReturn": "off",
+				"noConstantCondition": "off",
+				"useValidTypeof": "off",
+				"noInvalidUseBeforeDeclaration": "off",
+				"useHookAtTopLevel": "off",
+				"noUnusedFunctionParameters": "off",
+				"noUnusedImports": "off"
+			},
+			"complexity": {
+				"noCommaOperator": "off",
+				"noImportantStyles": "off",
+				"noArguments": "off"
+			},
+			"performance": {
+				"noImgElement": "off"
+			}
+		}
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab",
+		"lineWidth": 100
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "double",
+			"semicolons": "always"
+		}
+	},
+	"overrides": [
+		{
+			"includes": [
+				"apps/*/src/**",
+				"packages/*/src/**",
+				"tools/**/src/**",
+				"!**/*.{test,spec}.*",
+				"!**/{__tests__,test,tests,__fixtures__,fixtures,test-utils,test-helpers}/**",
+				"!**/{test-utils,test-helpers}.*"
+			],
+			"linter": {
+				"rules": {
+					"style": { "noNonNullAssertion": "error" }
+				}
+			}
+		},
+		{
+			"includes": ["**/*.astro"],
+			"linter": {
+				"rules": {
+					"correctness": {
+						"noUnusedVariables": "off"
+					}
+				}
+			}
+		}
+	],
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	},
+	"files": {
+		"includes": [
+			"**",
+			"!**/node_modules",
+			"!**/.next",
+			"!**/.astro",
+			"!**/dist",
+			"!**/build",
+			"!**/prebuilt",
+			"!**/test-results",
+			"!**/playwright-report",
+			"!**/docs",
+			"!**/logs",
+			"!**/public/screenshots",
+			"!**/scripts/help-videos",
+			"!**/lib/db/migrations/meta"
+		]
+	}
+}

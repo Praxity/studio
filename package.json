@@ -1,0 +1,108 @@
+{
+	"name": "praxity",
+	"version": "0.3.0",
+	"private": true,
+	"description": "Accessibility-first eLearning authoring tool",
+	"license": "SEE LICENSE IN LICENSE",
+	"author": "Praxity",
+	"scripts": {
+		"build:cli": "pnpm --filter @praxity/desktop prebuild && pnpm exec tsx apps/desktop/scripts/build-standalone-cli.ts",
+		"test:cli": "node --test apps/desktop/scripts/standalone-cli.proof.mjs",
+		"lint": "node scripts/check-machine-paths.mjs && node scripts/check-editor-ownership.mjs && node scripts/check-source-owners.mjs && biome check .",
+		"lint:fix": "biome check --write .",
+		"format": "biome format --write .",
+		"typecheck": "pnpm -r typecheck",
+		"test": "node --import tsx --test scripts/preflight-gates.test.mts && node --test --test-concurrency=3 scripts/*.test.mjs apps/desktop/scripts/*.test.mjs && vitest run --config vitest.workspace.ts",
+		"test:affected": "node apps/desktop/scripts/test-affected.mjs",
+		"test:a11y:vpat": "pnpm --filter @praxity/export-pipeline test:a11y",
+		"test:scorm-adl": "pnpm --filter @praxity/export-pipeline test:scorm-adl",
+		"test:adl-manifest": "pnpm --filter @praxity/export-pipeline test:adl-manifest",
+		"preflight:gates": "tsx scripts/preflight-gates.mts",
+		"test:gates": "node --import tsx --test scripts/preflight-gates.test.mts && pnpm --filter @praxity/export-pipeline exec vitest run tests/gate-prerequisites.test.ts",
+		"test:scorm-cloud": "pnpm --filter @praxity/export-pipeline test:scorm-cloud",
+		"grammar:validate": "pnpm --filter @praxity/grammar grammar-validate",
+		"sync:prax-format": "node scripts/sync-prax-format.mjs"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.4.16",
+		"tsx": "^4.23.12",
+		"typescript": "^5.9.3",
+		"vitest": "^4.1.12"
+	},
+	"packageManager": "pnpm@10.28.2",
+	"engines": {
+		"node": ">=24.22.1 <25.0.0"
+	},
+	"pnpm": {
+		"supportedArchitectures": {
+			"os": [
+				"current",
+				"linux"
+			],
+			"cpu": [
+				"current",
+				"x64"
+			],
+			"libc": [
+				"current",
+				"glibc"
+			]
+		},
+		"onlyBuiltDependencies": [
+			"@biomejs/biome",
+			"better-sqlite3",
+			"esbuild"
+		],
+		"overrides": {
+			"vitest>vite": "7.3.7 || 8.2.4",
+			"@ungap/structured-clone": "1.3.3",
+			"@xmldom/xmldom": "0.9.12",
+			"svgo@>=4.0.0 <4.0.2": "4.0.2",
+			"esbuild@<=0.24.2": ">=0.25.0",
+			"fast-xml-parser@>=5.0.0 <5.5.7": ">=5.5.7",
+			"h3@<1.15.6": ">=1.15.6",
+			"devalue@<5.8.1": ">=5.8.1",
+			"undici@>=7.0.0 <7.29.1": "7.29.1",
+			"convict@<=6.2.4": ">=6.2.5",
+			"picomatch@>=4.0.0 <4.0.4": ">=4.0.4",
+			"picomatch@<2.3.2": ">=2.3.2",
+			"brace-expansion": "5.0.12",
+			"lodash@<=4.17.23": ">=4.18.0",
+			"lodash-es@<=4.17.23": ">=4.18.0",
+			"defu@<=6.1.4": ">=6.1.5",
+			"smol-toml@<1.6.1": ">=1.6.1",
+			"jsondiffpatch@<0.7.2": ">=0.7.2",
+			"hono@<4.12.12": ">=4.12.12",
+			"@hono/node-server@<1.19.13": ">=1.19.13",
+			"@babel/core@<7.29.6": "7.29.6",
+			"fast-uri@>=3.0.0 <3.1.8": "3.1.8",
+			"form-data@>=4.0.0 <4.0.6": "4.0.6",
+			"js-yaml@>=4.0.0 <4.3.2": "4.3.2",
+			"nanoid@>=3.0.0 <3.3.18": "3.3.18",
+			"postcss@>=8.0.0 <8.5.23": "8.5.23",
+			"plist": "3.1.1",
+			"tar@>=7.0.0 <7.5.21": "7.5.21",
+			"tmp@>=0.2.0 <0.2.7": "0.2.7",
+			"source-map-js@<1.2.2": "1.2.2",
+			"prosemirror-view@<1.42.3": "1.42.6",
+			"undici@>=6.0.0 <6.28.1": "6.28.1",
+			"undici@>=8.0.0 <8.10.2": "8.10.2",
+			"dompurify@>=3.4.13 <3.4.17": "3.4.17",
+			"vitefu@<1.1.3": "1.1.3",
+			"ws@>=8.0.0 <8.21.3": "8.21.3",
+			"browserslist@<4.28.7": "4.28.7",
+			"baseline-browser-mapping@>=2.0.0 <2.11.0": "2.11.0",
+			"@tiptap/extension-bubble-menu": "3.30.5",
+			"@tiptap/extension-floating-menu": "3.30.5"
+		},
+		"patchedDependencies": {
+			"dompurify@3.4.17": "patches/dompurify@3.4.17.patch"
+		},
+		"ignoredBuiltDependencies": [
+			"@parcel/watcher",
+			"@swc/core",
+			"core-js",
+			"protobufjs"
+		]
+	}
+}

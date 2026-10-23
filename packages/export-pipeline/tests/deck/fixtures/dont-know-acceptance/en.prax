@@ -1,0 +1,24 @@
+---
+lang: en
+title: Uncertainty practice
+---
+# Private and reported practice
+::: choice Private barrier question {private=true dontKnow=true scored=false required=false name=privateEn shuffle=true}
+correct: Change the environment.
+incorrect: Look for barriers in the environment.
+(x) PRIVATE_EN_FIRST_RIGHT
+( ) PRIVATE_EN_FIRST_OTHER
+:::
+::: choice Reported barrier question {dontKnow=true scored=true required=false attempts=0 name=ordinaryEn}
+(x) Remove barriers
+( ) Blame the learner
+:::
+::: choice Private second question {private=true dontKnow=true scored=false required=false}
+(x) PRIVATE_EN_SECOND_RIGHT
+( ) PRIVATE_EN_SECOND_OTHER
+:::
+::: self-check Explain a barrier {private=true}
+model: The environment can prevent participation.
+:: Environment
+missed: Consider how the environment affects participation.
+:::

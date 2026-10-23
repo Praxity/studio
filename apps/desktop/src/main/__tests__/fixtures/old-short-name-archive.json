@@ -1,0 +1,13 @@
+{
+	"writer": "fa78b3fc27d5fefb822f290cf76bdfd467ab033f",
+	"stage": ".praxity-write-532d9cc1-086b-43df-a9f3-af290a9ee323",
+	"entries": {
+		"committed": "PGNoZWNrc3VtPg==",
+		"install-0.capture-cd2e5f63-9ee6-4457-849e-77224d351042": "b3JpZ2luYWwgbmFycmF0aW9u",
+		"install-0.identity": "eyJjaGVja3N1bSI6IjxjaGVja3N1bT4iLCJkZXYiOiI0NzE0MDIyNTkiLCJpbm8iOiIyNTMzMjc0Nzk2MjgzNDY1In0=",
+		"installed-0": "PGNoZWNrc3VtPg==",
+		"journal.tmp": "eyJwbGFuIjp7InZlcnNpb24iOjEsImNhcHR1cmVWZXJzaW9uIjoyLCJzdGFnZVZlcnNpb24iOjEsImNvdXJzZSI6Ijxjb3Vyc2U+Iiwic3RhZ2UiOiIucHJheGl0eS13cml0ZS01MzJkOWNjMS0wODZiLTQzZGYtYTlmMy1hZjI5MGE5ZWUzMjMiLCJmaWxlcyI6W3sicGF0aCI6Ik5BUlJBVH4xLllBTSIsImZyb20iOiJiM0pwWjJsdVlXd2dibUZ5Y21GMGFXOXUiLCJ0byI6ImMyRjJaV1FnYm1GeWNtRjBhVzl1IiwiZnJvbUhhc2giOiJmZTE0ZjE0ZjYyMTg2ZTVlNGRjM2ExODYxZjNjMzNmY2M5ZTgxOThhMDQ0ZWMwN2ExOWViNzQzYmQ0ODYwNGY4IiwidG9IYXNoIjoiMWNmOWMxOGIwNWZkZTk5ZGNjMDBlNDcyMzg3MzE3MWQ3MTM0YWM1NmNkNDc4MGI5ZjJiNDIwODQ3YmRjN2NkYyIsIm1vZGUiOjQzOCwiaGVhZCI6ZmFsc2V9XX0sImNoZWNrc3VtIjoiPGNoZWNrc3VtPiJ9",
+		"ready": "PGNoZWNrc3VtPg==",
+		"staged-0": "PGNoZWNrc3VtPg=="
+	}
+}

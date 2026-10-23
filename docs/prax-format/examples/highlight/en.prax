@@ -1,0 +1,38 @@
+---
+lang: en
+variables:
+  publicFlag: false
+---
+# Reading practice
+::: highlight A useful pause {mode=key maxMarks=2 name=keyPractice}
+question: Why say when you will return?
+:: You need a moment to think.
+note: This explains the pause.
+:: They know when to expect you. {key}
+note: A return time reduces uncertainty.
+:: Agree on a return time. {key}
+note: Agree before leaving.
+:: The wall is blue.
+note: Colour does not explain the return time.
+:::
+
+::: highlight A useful pause {mode=evidence maxMarks=2 name=evidencePractice}
+question: Why say when you will return?
+:: You need a moment to think.
+note: This explains the pause.
+:: They know when to expect you. {key}
+note: A return time reduces uncertainty.
+:: Agree on a return time. {key}
+note: Agree before leaving.
+:: The wall is blue.
+note: Colour does not explain the return time.
+:::
+
+::: choice Ordinary reporting control {name=ordinary required=false}
+(x) A return time
+( ) A wall colour
+:::
+::: rule
+if: @ordinary.isAttempted is true
+then: set publicFlag = true
+:::

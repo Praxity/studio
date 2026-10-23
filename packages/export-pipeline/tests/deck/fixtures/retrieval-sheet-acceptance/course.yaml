@@ -1,0 +1,5 @@
+title: Retrieval acceptance
+locale: en
+design:
+  colorMode: auto
+lessons: [en.prax, fr.prax]

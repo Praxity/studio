@@ -1,0 +1,47 @@
+---
+title: Synthetic identity baseline
+variables:
+  ready: false
+---
+# Practice
+
+::: accordion Resources
+:: First
+Read the first explanation.
+:: Second
+Read the second explanation.
+:::
+
+- Alpha
+- Beta
+  - Nested
+
+::: choice Which route is open?
+(x) North
+  feedback: The north route is open.
+( ) South
+  feedback: The south route is closed.
+:::
+
+Repeated paragraph.
+
+Repeated paragraph.
+
+::: fill-blank Complete the sentence
+The sky is {blue}.
+:::
+
+::: rating How ready are you?
+1. Not ready
+2. Ready
+:::
+
+# History
+
+::: note
+Cut explanation.
+:::
+
+::: text
+Retired explanation.
+:::

@@ -1,0 +1,37 @@
+---
+title: Practice
+lang: en
+---
+
+# Introduction
+
+Read **carefully** and visit [the guide](https://example.com/guide).
+
+::: choice Pick a colour {shuffle scored=false level=3}
+Choose the colour of the sky.
+correct: CORRECTEXPLANATION
+incorrect: RETRYONLY
+( ) Red
+(x) Blue
+feedback: OPTIONEXPLANATION
+( ) Green
+
+:::
+
+::: fill-blank Typed blanks {level=3}
+Write {ANSWERONLY|~pattern*}, then {\~literal} and ____.
+:::
+
+::: fill-blank Dropdowns {style=dropdown level=3}
+Choose {red|*a\|b|*\*star} beside \{literal\}.
+:::
+
+::: fill-blank Word bank {style=word-bank level=3}
+Use {red}, then {blue}, then {red}.
+bank: red | blue | red | green
+:::
+
+::: free-response Reflect {level=3}
+Explain your reasoning.
+placeholder: Consider a recent example.
+:::

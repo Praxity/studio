@@ -1,0 +1,32 @@
+{
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"jsx": "react-jsx",
+		"strict": true,
+		"noEmit": true,
+		"allowImportingTsExtensions": true,
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"paths": {
+			"@/*": ["./src/*"]
+		}
+	},
+	"include": [
+		"src/**/*.d.ts",
+		"src/PraxityEditor.tsx",
+		"src/index.ts",
+		"src/adapters/**/*.ts",
+		"src/types/**/*.ts",
+		"src/lib/**/*.ts",
+		"src/lib/**/*.tsx",
+		"src/hooks/**/*.ts",
+		"src/stores/**/*.ts",
+		"src/session/**/*.ts",
+		"src/frame-bridge/**/*.ts",
+		"src/contexts/**/*.tsx",
+		"src/__tests__/test-utils.tsx"
+	],
+	"exclude": ["node_modules", "dist", "src/components/**", "src/**/*.test.ts", "src/**/*.test.tsx"]
+}

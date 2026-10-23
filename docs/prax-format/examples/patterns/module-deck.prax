@@ -1,0 +1,25 @@
+---
+title: Check exit routes
+lang: en
+design:
+  deck:
+    preset: transcript
+    initialPanel: transcript
+    slideCounter: true
+---
+
+# Find the exits {deckStop}
+
+Locate the nearest exit and one backup route before you start work.
+
+# Check the route {deckStop}
+nav: Practice the route
+
+::: choice What should you do if the nearest exit is blocked? {deckGate=pass required}
+( ) Wait beside the blocked exit
+(x) Use the backup route
+:::
+
+# Review your plan
+
+Point out both exits to a coworker before your shift.

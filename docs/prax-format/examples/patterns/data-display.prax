@@ -1,0 +1,28 @@
+---
+title: Read the inspection log
+lang: en
+---
+
+# Read the inspection log
+
+@icon{check} Use this sample log to compare completed checks by month.@source{[Sample inspection log](https://example.com/inspection-log)}
+
+## Compare monthly totals
+
+::: stats {columns=2 size=large}
+| 6 | checks completed in March |
+| 8 | checks completed in April |
+:::
+
+::: table
+title: Completed checks by month
+| Month | Completed checks |
+| --- | --- |
+| March | 6 |
+| April | 8 |
+:::
+
+::: accordion
+:: Sources
+@sources
+:::

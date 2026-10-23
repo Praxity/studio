@@ -1,0 +1,42 @@
+{
+	"scorm12": {
+		"bookmark": {
+			"cmi.core.lesson_location": "page-feedback"
+		},
+		"visit": {
+			"cmi.suspend_data": "{\"visitedPages\":[\"page-intro\",\"page-practice\"],\"interactions\":[]}"
+		},
+		"answer": {
+			"cmi.suspend_data": "{\"visitedPages\":[],\"interactions\":[{\"id\":\"question\",\"response\":\"choice-a\",\"correct\":false,\"score\":40,\"attemptsUsed\":1,\"maxAttempts\":2,\"timestamp\":1800000000000}],\"custom\":\"{\\\"blockState\\\":{\\\"question\\\":{\\\"answer\\\":\\\"choice-a\\\",\\\"submitted\\\":true}}}\"}"
+		},
+		"retry": {
+			"cmi.suspend_data": "{\"visitedPages\":[],\"interactions\":[{\"id\":\"quiz\",\"response\":\"choice-a\",\"correct\":false,\"score\":40,\"attemptsUsed\":1,\"maxAttempts\":2,\"memberIds\":[\"question\"],\"timestamp\":1800000000000},{\"id\":\"quiz\",\"response\":\"choice-b\",\"correct\":true,\"score\":100,\"attemptsUsed\":2,\"maxAttempts\":2,\"memberIds\":[\"question\"],\"timestamp\":1800000001000}]}"
+		},
+		"privacy": {
+			"cmi.suspend_data": "{\"visitedPages\":[],\"interactions\":[{\"id\":\"reported\",\"response\":\"SYNTHETIC REPORTED\",\"timestamp\":1800000000000},{\"id\":\"journal\",\"response\":\"SYNTHETIC PRIVATE\",\"timestamp\":1800000000000}],\"custom\":\"{\\\"blockState\\\":{\\\"reported\\\":{\\\"answer\\\":\\\"SYNTHETIC REPORTED\\\"},\\\"journal\\\":{\\\"answer\\\":\\\"SYNTHETIC PRIVATE\\\"}}}\"}"
+		},
+		"current-without-attempt-fields": {
+			"cmi.suspend_data": "{\"visitedPages\":[\"legacy-page\"],\"interactions\":[{\"id\":\"legacy-question\",\"response\":\"legacy answer\",\"correct\":false,\"score\":0,\"timestamp\":1600000000000}],\"custom\":\"{\\\"blockState\\\":{\\\"legacy-question\\\":{\\\"answer\\\":\\\"legacy answer\\\"}}}\"}"
+		}
+	},
+	"scorm2004": {
+		"bookmark": {
+			"cmi.location": "page-feedback"
+		},
+		"visit": {
+			"cmi.suspend_data": "{\"visitedPages\":[\"page-intro\",\"page-practice\"]}"
+		},
+		"answer": {
+			"cmi.suspend_data": "{\"interactions\":[{\"id\":\"question\",\"response\":\"choice-a\",\"correct\":false,\"score\":40,\"attemptsUsed\":1,\"maxAttempts\":2,\"timestamp\":1800000000000}],\"blockState\":{\"question\":{\"answer\":\"choice-a\",\"submitted\":true}}}"
+		},
+		"retry": {
+			"cmi.suspend_data": "{\"interactions\":[{\"id\":\"quiz\",\"response\":\"choice-a\",\"correct\":false,\"score\":40,\"attemptsUsed\":1,\"maxAttempts\":2,\"memberIds\":[\"question\"],\"timestamp\":1800000000000},{\"id\":\"quiz\",\"response\":\"choice-b\",\"correct\":true,\"score\":100,\"attemptsUsed\":2,\"maxAttempts\":2,\"memberIds\":[\"question\"],\"timestamp\":1800000001000}]}"
+		},
+		"privacy": {
+			"cmi.suspend_data": "{\"blockState\":{\"reported\":{\"answer\":\"SYNTHETIC REPORTED\"},\"journal\":{\"answer\":\"SYNTHETIC PRIVATE\"}},\"interactions\":[{\"id\":\"reported\",\"response\":\"SYNTHETIC REPORTED\",\"timestamp\":1800000000000},{\"id\":\"journal\",\"response\":\"SYNTHETIC PRIVATE\",\"timestamp\":1800000000000}]}"
+		},
+		"current-without-attempt-fields": {
+			"cmi.suspend_data": "{\"visitedPages\":[\"legacy-page\"],\"interactions\":[{\"id\":\"legacy-question\",\"response\":\"legacy answer\",\"correct\":false,\"score\":0,\"timestamp\":1600000000000}],\"blockState\":{\"legacy-question\":{\"answer\":\"legacy answer\"}}}"
+		}
+	}
+}

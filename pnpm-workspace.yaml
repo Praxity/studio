@@ -1,0 +1,17 @@
+packages:
+  - apps/*
+  - packages/*
+
+catalog:
+  learning-patterns: github:Praxity/learning-patterns#b3f82d2415982da20dda28b61770d7e85084901b
+
+supportedArchitectures:
+  os:
+    - current
+    - linux
+  cpu:
+    - current
+    - x64
+  libc:
+    - current
+    - glibc

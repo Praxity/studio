@@ -1,0 +1,24 @@
+.root {
+	flex-shrink: 0;
+}
+
+.labeled {
+	width: 100%;
+	color: var(--panel-text);
+}
+
+.labeled :global(.mantine-Switch-body) {
+	justify-content: space-between;
+	align-items: center;
+}
+
+.labeled :global(.mantine-Switch-labelWrapper) {
+	flex: 1;
+	min-width: 0;
+}
+
+.labeled :global(.mantine-Switch-label) {
+	font-size: var(--panel-value-size);
+	font-weight: 600;
+	line-height: var(--panel-line-height);
+}

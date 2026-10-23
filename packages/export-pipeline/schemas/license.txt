@@ -1,0 +1,529 @@
+Sections for files absent from this package do not apply.
+
+Third-party SCORM schema notices
+
+These notices apply to the schema files identified below, wherever this schema
+set is included in a course package. The schemas retain their embedded notices.
+The schema files are separate third-party works. Studio's licence and the
+Praxity course runtime licence do not replace their terms.
+
+IMS Global Learning Consortium / 1EdTech
+======================================
+Files: imscp*.xsd, imsmd*.xsd, imsss*.xsd and ims_xml.xsd in the scorm12 and
+scorm2004 schema sets.
+
+Copyright legends retained in the supplied schemas include:
+Copyright (2) 2001 IMS Global Learning Consortium, Inc.
+Copyright (c) 2001 IMS GLC, Inc.
+Copyright (2) 2004 IMS Global Learning Consortium, Inc.
+
+Specification sources:
+https://www.imsglobal.org/content/packaging/cpv1p1p2/
+https://www.imsglobal.org/content/packaging/cpv1p1p4/imscp_bindv1p1p4.html
+https://www.imsglobal.org/metadata/
+https://www.imsglobal.org/simplesequencing/
+Current upstream specification licence: https://www.imsglobal.org/license.html
+
+Publisher copies of IMS Simple Sequencing 1.0 retain the complete notice below
+in each imsss*.xsd file. Source prefix, followed by the schema filename:
+https://www.imsglobal.org/xsd/
+
+IPR, License and Distribution Notices
+	This machine readable file is derived from IMS specification IMS Simple Sequencing XML Binding Version 1.0 Final Specification 
+	found at http://www.imsglobal.org/simplesequencing/ and the original IMS schema binding or code base 
+	http://www.imsglobal.org/simplesequencing/ssv1p0/imsss_bindv1p0.html.
+	
+	Recipients of this document are requested to submit, with their comments, notification of any relevant patent 
+	claims or other intellectual property rights of which they may be aware that might be infringed by the schema 
+	binding contained in this document.
+	
+	IMS takes no position regarding the validity or scope of any intellectual property or other rights that might be 
+	claimed to pertain to the implementation or use of the technology described in this document or the extent to 
+	which any license under such rights might or might not be available; neither does it represent that it has made 
+	any effort to identify any such rights. Information on IMS’s procedures with respect to rights in IMS specifications 
+	can be found at the IMS Intellectual Property Rights web page: http://www.imsglobal.org/ipr/imsipr_policyFinal.pdf.
+	
+	Copyright © IMS Global Learning Consortium 1999-2007. All Rights Reserved.
+	
+	License Notice for Users
+	Users of products or services that include this document are hereby granted a worldwide, royalty-free, 
+	non-exclusive license to use this document.
+	
+	Distribution Notice for Developers
+	Developers of products or services that provide distribution of this document as is or with modifications are 
+	required to register with the IMS community on the IMS website as described in the following two paragraphs:
+	
+	- If you wish to distribute this document as is, with no modifications, you are hereby granted permission to copy, 
+	display and distribute the contents of this document in any medium for any purpose without fee or royalty provided 
+	that you include this IPR, License and Distribution notice in its entirety on ALL copies, or portions thereof, that you 
+	make and you complete a valid license registration with IMS and receive an email from IMS granting the license. 
+	To register, follow the instructions on the IMS website: http://www.imsglobal.org/specificationdownload.cfm. Once 
+	registered you are granted permission to transfer unlimited distribution rights of this document for the purposes 
+	of third-party or other distribution of your product or service that incorporates this document as long as this IPR, 
+	License and Distribution notice remains in place in its entirety.
+	
+	- If you wish to create and distribute a derived work from this document, you are hereby granted permission to copy, 
+	display and distribute the contents of the derived work in any medium for any purpose without fee or royalty provided 
+	that you include this IPR, License and Distribution notice in its entirety on ALL copies, or portions thereof, that you 
+	make and you complete a valid profile registration with IMS and receive an email from IMS granting the license. To 
+	register, follow the instructions on the IMS website: http://www.imsglobal.org/profile/. Once registered you are 
+	granted permission to transfer unlimited distribution rights of the derived work for the purposes of third-party or 
+	other distribution of your product or service that incorporates the derived work as long as this IPR, License and 
+	Distribution notice remains in place in its entirety.
+	
+	The limited permissions granted above are perpetual and will not be revoked by IMS or its successors or assigns.
+	
+	THIS SPECIFICATION IS BEING OFFERED WITHOUT ANY WARRANTY WHATSOEVER, AND IN PARTICULAR, 
+	ANY WARRANTY OF NONINFRINGEMENT IS EXPRESSLY DISCLAIMED. ANY USE OF THIS SPECIFICATION 
+	SHALL BE MADE ENTIRELY AT THE IMPLEMENTER’S OWN RISK, AND NEITHER THE CONSORTIUM, NOR 
+	ANY OF ITS MEMBERS OR SUBMITTERS, SHALL HAVE ANY LIABILITY WHATSOEVER TO ANY IMPLEMENTER 
+	OR THIRD PARTY FOR ANY DAMAGES OF ANY NATURE WHATSOEVER, DIRECTLY OR INDIRECTLY, ARISING 
+	FROM THE USE OF THIS SPECIFICATION.
+
+ADL SCORM 1.2 schema: adlcp_rootv1p2.xsd
+Advanced Distributed Learning Co-Laboratory (ADL Co-Lab)
+Unmodified schema from SCORM Version 1.2 Conformance Test Suite
+Version 1.2.7 (Self Test), xml/xsd/adlcp_rootv1p2.xsd.
+Source: https://www.adlnet.gov/assets/uploads/SCORM1_2_TestSuite1_2_7ST.zip
+SHA-256: 173decaf9cd31ea847e6ff6853c702137974aca6b56567151aa4a885e0aa4883
+The following ADL terms apply to this schema.
+
+Advanced Distributed Learning Co-Laboratory (ADL Co-Lab) grants you
+("Licensee") a non-exclusive, royalty free, license to use and redistribute
+this software, provided that i) this copyright notice and license appear
+on all copies of the software; and ii) Licensee does not utilize the
+software in a manner which is disparaging to ADL Co-Lab and Licensee
+agrees not to reverse-engineer any of the software, object code or source
+code for this software.
+
+This software is provided "AS IS," without a warranty of any kind. ALL
+EXPRESS OR IMPLIED CONDITIONS, REPRESENTATIONS AND WARRANTIES, INCLUDING
+ANY IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+OR NON-INFRINGEMENT, ARE HEREBY EXCLUDED. ADL Co-Lab AND ITS LICENSORS
+SHALL NOT BE LIABLE FOR ANY DAMAGES SUFFERED BY LICENSEE AS A RESULT OF
+USING, MODIFYING OR DISTRIBUTING THE SOFTWARE OR ITS DERIVATIVES. IN NO
+EVENT WILL ADL Co-Lab OR ITS LICENSORS BE LIABLE FOR ANY LOST REVENUE,
+PROFIT OR DATA, OR FOR DIRECT, INDIRECT, SPECIAL, CONSEQUENTIAL,
+INCIDENTAL OR PUNITIVE DAMAGES, HOWEVER CAUSED AND REGARDLESS OF THE
+THEORY OF LIABILITY, ARISING OUT OF THE USE OF OR INABILITY TO USE
+SOFTWARE, EVEN IF ADL Co-Lab HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH
+DAMAGES.
+
+Advanced Distributed Learning (ADL), SCORM 2004
+=============================================
+Files: adlcp_v1p3.xsd, adlnav_v1p3.xsd and adlseq_v1p3.xsd
+(SCORM 2004 and the SCORM-wrapped xAPI export).
+
+The three SCORM 2004 files match the following upstream source revision after
+whitespace normalization. Their upstream licence notice is reproduced below.
+https://github.com/adlnet/SCORM-2004-4ed-Test-Suite/tree/050f1b4282c914154ab80254e4767ce8c58d0d36/software_development/xml/xsd
+Licence notice source:
+https://github.com/adlnet/SCORM-2004-4ed-Test-Suite/blob/050f1b4282c914154ab80254e4767ce8c58d0d36/software_development/TestSuite/CTS_Readme/licenseCopyright.html
+
+Licenses and Copyrights
+
+ Copyright 2014 Advanced Distributed Learning
+
+Licensed under the Apache License, Version 2.0 (the "License"); 
+you may not use this file except in compliance with the License. 
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+The SCORM 2004 source licence above applies to the three identified SCORM 2004
+files. The SCORM 1.2 terms appear in the separate entry above.
+
+Apache License 2.0 text source: https://www.apache.org/licenses/LICENSE-2.0.txt
+
+Apache License
+                           Version 2.0, January 2004
+                        http://www.apache.org/licenses/
+
+   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
+
+   1. Definitions.
+
+      "License" shall mean the terms and conditions for use, reproduction,
+      and distribution as defined by Sections 1 through 9 of this document.
+
+      "Licensor" shall mean the copyright owner or entity authorized by
+      the copyright owner that is granting the License.
+
+      "Legal Entity" shall mean the union of the acting entity and all
+      other entities that control, are controlled by, or are under common
+      control with that entity. For the purposes of this definition,
+      "control" means (i) the power, direct or indirect, to cause the
+      direction or management of such entity, whether by contract or
+      otherwise, or (ii) ownership of fifty percent (50%) or more of the
+      outstanding shares, or (iii) beneficial ownership of such entity.
+
+      "You" (or "Your") shall mean an individual or Legal Entity
+      exercising permissions granted by this License.
+
+      "Source" form shall mean the preferred form for making modifications,
+      including but not limited to software source code, documentation
+      source, and configuration files.
+
+      "Object" form shall mean any form resulting from mechanical
+      transformation or translation of a Source form, including but
+      not limited to compiled object code, generated documentation,
+      and conversions to other media types.
+
+      "Work" shall mean the work of authorship, whether in Source or
+      Object form, made available under the License, as indicated by a
+      copyright notice that is included in or attached to the work
+      (an example is provided in the Appendix below).
+
+      "Derivative Works" shall mean any work, whether in Source or Object
+      form, that is based on (or derived from) the Work and for which the
+      editorial revisions, annotations, elaborations, or other modifications
+      represent, as a whole, an original work of authorship. For the purposes
+      of this License, Derivative Works shall not include works that remain
+      separable from, or merely link (or bind by name) to the interfaces of,
+      the Work and Derivative Works thereof.
+
+      "Contribution" shall mean any work of authorship, including
+      the original version of the Work and any modifications or additions
+      to that Work or Derivative Works thereof, that is intentionally
+      submitted to Licensor for inclusion in the Work by the copyright owner
+      or by an individual or Legal Entity authorized to submit on behalf of
+      the copyright owner. For the purposes of this definition, "submitted"
+      means any form of electronic, verbal, or written communication sent
+      to the Licensor or its representatives, including but not limited to
+      communication on electronic mailing lists, source code control systems,
+      and issue tracking systems that are managed by, or on behalf of, the
+      Licensor for the purpose of discussing and improving the Work, but
+      excluding communication that is conspicuously marked or otherwise
+      designated in writing by the copyright owner as "Not a Contribution."
+
+      "Contributor" shall mean Licensor and any individual or Legal Entity
+      on behalf of whom a Contribution has been received by Licensor and
+      subsequently incorporated within the Work.
+
+   2. Grant of Copyright License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      copyright license to reproduce, prepare Derivative Works of,
+      publicly display, publicly perform, sublicense, and distribute the
+      Work and such Derivative Works in Source or Object form.
+
+   3. Grant of Patent License. Subject to the terms and conditions of
+      this License, each Contributor hereby grants to You a perpetual,
+      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
+      (except as stated in this section) patent license to make, have made,
+      use, offer to sell, sell, import, and otherwise transfer the Work,
+      where such license applies only to those patent claims licensable
+      by such Contributor that are necessarily infringed by their
+      Contribution(s) alone or by combination of their Contribution(s)
+      with the Work to which such Contribution(s) was submitted. If You
+      institute patent litigation against any entity (including a
+      cross-claim or counterclaim in a lawsuit) alleging that the Work
+      or a Contribution incorporated within the Work constitutes direct
+      or contributory patent infringement, then any patent licenses
+      granted to You under this License for that Work shall terminate
+      as of the date such litigation is filed.
+
+   4. Redistribution. You may reproduce and distribute copies of the
+      Work or Derivative Works thereof in any medium, with or without
+      modifications, and in Source or Object form, provided that You
+      meet the following conditions:
+
+      (a) You must give any other recipients of the Work or
+          Derivative Works a copy of this License; and
+
+      (b) You must cause any modified files to carry prominent notices
+          stating that You changed the files; and
+
+      (c) You must retain, in the Source form of any Derivative Works
+          that You distribute, all copyright, patent, trademark, and
+          attribution notices from the Source form of the Work,
+          excluding those notices that do not pertain to any part of
+          the Derivative Works; and
+
+      (d) If the Work includes a "NOTICE" text file as part of its
+          distribution, then any Derivative Works that You distribute must
+          include a readable copy of the attribution notices contained
+          within such NOTICE file, excluding those notices that do not
+          pertain to any part of the Derivative Works, in at least one
+          of the following places: within a NOTICE text file distributed
+          as part of the Derivative Works; within the Source form or
+          documentation, if provided along with the Derivative Works; or,
+          within a display generated by the Derivative Works, if and
+          wherever such third-party notices normally appear. The contents
+          of the NOTICE file are for informational purposes only and
+          do not modify the License. You may add Your own attribution
+          notices within Derivative Works that You distribute, alongside
+          or as an addendum to the NOTICE text from the Work, provided
+          that such additional attribution notices cannot be construed
+          as modifying the License.
+
+      You may add Your own copyright statement to Your modifications and
+      may provide additional or different license terms and conditions
+      for use, reproduction, or distribution of Your modifications, or
+      for any such Derivative Works as a whole, provided Your use,
+      reproduction, and distribution of the Work otherwise complies with
+      the conditions stated in this License.
+
+   5. Submission of Contributions. Unless You explicitly state otherwise,
+      any Contribution intentionally submitted for inclusion in the Work
+      by You to the Licensor shall be under the terms and conditions of
+      this License, without any additional terms or conditions.
+      Notwithstanding the above, nothing herein shall supersede or modify
+      the terms of any separate license agreement you may have executed
+      with Licensor regarding such Contributions.
+
+   6. Trademarks. This License does not grant permission to use the trade
+      names, trademarks, service marks, or product names of the Licensor,
+      except as required for reasonable and customary use in describing the
+      origin of the Work and reproducing the content of the NOTICE file.
+
+   7. Disclaimer of Warranty. Unless required by applicable law or
+      agreed to in writing, Licensor provides the Work (and each
+      Contributor provides its Contributions) on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+      implied, including, without limitation, any warranties or conditions
+      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
+      PARTICULAR PURPOSE. You are solely responsible for determining the
+      appropriateness of using or redistributing the Work and assume any
+      risks associated with Your exercise of permissions under this License.
+
+   8. Limitation of Liability. In no event and under no legal theory,
+      whether in tort (including negligence), contract, or otherwise,
+      unless required by applicable law (such as deliberate and grossly
+      negligent acts) or agreed to in writing, shall any Contributor be
+      liable to You for damages, including any direct, indirect, special,
+      incidental, or consequential damages of any character arising as a
+      result of this License or out of the use or inability to use the
+      Work (including but not limited to damages for loss of goodwill,
+      work stoppage, computer failure or malfunction, or any and all
+      other commercial damages or losses), even if such Contributor
+      has been advised of the possibility of such damages.
+
+   9. Accepting Warranty or Additional Liability. While redistributing
+      the Work or Derivative Works thereof, You may choose to offer,
+      and charge a fee for, acceptance of support, warranty, indemnity,
+      or other liability obligations and/or rights consistent with this
+      License. However, in accepting such obligations, You may act only
+      on Your own behalf and on Your sole responsibility, not on behalf
+      of any other Contributor, and only if You agree to indemnify,
+      defend, and hold each Contributor harmless for any liability
+      incurred by, or claims asserted against, such Contributor by reason
+      of your accepting any such warranty or additional liability.
+
+   END OF TERMS AND CONDITIONS
+
+   APPENDIX: How to apply the Apache License to your work.
+
+      To apply the Apache License to your work, attach the following
+      boilerplate notice, with the fields enclosed by brackets "[]"
+      replaced with your own identifying information. (Don't include
+      the brackets!)  The text should be enclosed in the appropriate
+      comment syntax for the file format. We also recommend that a
+      file or class name and description of purpose be included on the
+      same "printed page" as the copyright notice for easier
+      identification within third-party archives.
+
+   Copyright [yyyy] [name of copyright owner]
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+IEEE Learning Technology Standards Committee (LTSC)
+=================================================
+Work: IEEE LTSC LOM XML 1.0, Learning Object Metadata XML schemas.
+Files in scorm2004: lom.xsd, lomCustom.xsd, lomLoose.xsd, lomStrict.xsd and
+all .xsd files under common/, extend/, unique/ and vocab/.
+Source: http://standards.ieee.org/reading/ieee/downloads/LOM/lomv1.0/xsd/
+Upstream copy of the embedded notice:
+https://github.com/adlnet/SCORM-2004-4ed-Test-Suite/blob/050f1b4282c914154ab80254e4767ce8c58d0d36/software_development/xml/xsd/lom.xsd
+Licence: Creative Commons Attribution-ShareAlike 2.0 Generic (CC BY-SA 2.0)
+https://creativecommons.org/licenses/by-sa/2.0/
+https://creativecommons.org/licenses/by-sa/2.0/legalcode.en
+Component comparison, 2026-10-19: common/, extend/, unique/ and vocab/ do
+not match that ADL revision. All fourteen components change the embedded
+CC BY-SA URL from 1.0 in ADL to 2.0 here. Documentation and declarations also
+differ, including extension attributes and language/vocabulary types.
+The ADL copy is a comparison source, not an exact source for these components.
+Source prefix for the per-file comparisons below:
+https://raw.githubusercontent.com/adlnet/SCORM-2004-4ed-Test-Suite/050f1b4282c914154ab80254e4767ce8c58d0d36/software_development/xml/xsd/
+For each relative path, SHA-256 values identify shipped and ADL bytes respectively:
+common/anyElement.xsd
+  shipped: 4d6a287fbebfac7ed3d3943fac72b82785f77b4a324c6550413d7e2702871b50
+  ADL:     cac6e4e3865324aa749b45d43f69f252e3447c7ab1d3a6432ed78c5388aefeea
+common/dataTypes.xsd
+  shipped: 9f0681456bb3708b52c0c0a0fa81fa1427d0359f5da198632b7e018ab15d2536
+  ADL:     b5ed98fd78019103deb5cf41642f477e4e522de48795874715b18df617086ac7
+common/elementNames.xsd
+  shipped: 4da20d9330aac666f817e50834a9485f4dccd174591f71b2eec1ee8b8498e6a0
+  ADL:     1e9abdb0af7896ad7856eac903d210a5235fec2bca62cbef8e45014794513636
+common/elementTypes.xsd
+  shipped: d60c7c5712c565742caa13b2fc957a47df95198eaaa52778ee200c53c8263cfe
+  ADL:     703c395e67753c1710544c668cdfdfe510a0ea7060f644b6180fbeaef48b9226
+common/rootElement.xsd
+  shipped: 5807529b1834f3e7e6f4db35c419b15e7225963ca562a4ad140a4a8f5f3e9dfc
+  ADL:     85855fd15bb5029fca257cf4253cdba42cac49be7698efaaf4f81787afb7b344
+common/vocabTypes.xsd
+  shipped: d9d33b60a78fd2dba78aefe73d57ac7a6835d8cf5ccd6eb2ee36c939de539cb7
+  ADL:     5e06bd22cf08a56d0634e73ff33e02ea2d437695a6167c275e843bdf7f5138c4
+common/vocabValues.xsd
+  shipped: 7e4069b42dcaa529644402a022aa9294f62e7085f2649475145c89788937c1c0
+  ADL:     428caec4a51277aa28c571d1d488ab7ff7720d6cd90c1a87ed3a5a6e36b945a9
+extend/custom.xsd
+  shipped: 1093ab1e3fabd928f9446b8d3fb4f7fa31c1329c3f8f2e3cb26e629aa7dc517e
+  ADL:     d5d2635abaeef4df02106fc4b8dd220e11e641c00842f1f8f6c32949a6ddc236
+extend/strict.xsd
+  shipped: 2eef05cafc2603502f3e93a95fe34f4a0654c1aaac96938ff79ebd417454b1cd
+  ADL:     8f456ea45b7512e3e0d66b166ad9bc6b931e4761c2ad55eaedc463e016410b03
+unique/loose.xsd
+  shipped: a073383d472d37d755fb953ccf7571328b51cf13821c74f20f96a7c397b9d9aa
+  ADL:     06bc22c9f52d577d2e90d304da32324c8badd9b577aa6157786338184218ffb4
+unique/strict.xsd
+  shipped: d6689d4d7856c3957d92efd384ec11f2a37e7cd184089bbb973363c8f5bb0c95
+  ADL:     a85e93aee43885242179a5a56d0472e03e58bacf72ab128b8fcee4f363cbc1ff
+vocab/custom.xsd
+  shipped: 80ccb6c6c04236d4324c2a1e26f3b15c6c09bead72c6276f1e6c6fcce3fb50e0
+  ADL:     ecc663e47037db127d060ec62bf360f590d5a1d623af7dc22522f1d9d04c0b3f
+vocab/loose.xsd
+  shipped: 4626a1d58d6d76c99d3faeb022a7abcf8c845473107fd001f93b2f44286c3c05
+  ADL:     71f4e06f1caf74649297b3b60b4d0be18909966fc90f159d926d762720d89d4a
+vocab/strict.xsd
+  shipped: 1d6b501ab49cb8d206f5f3581687b61f1a99df67db46e82abd1938776732d45d
+  ADL:     6411e6ca24441648c940e849355485c723e9b7577dacd3d967ebce9b8332e962
+
+The schemas are distributed separately under that licence; no Studio licence
+restrictions are imposed on the rights it grants.
+
+This work is licensed under the Creative Commons Attribution-ShareAlike
+License.  To view a copy of this license, see the file license.txt,
+visit http://creativecommons.org/licenses/by-sa/2.0 or send a letter to
+Creative Commons, 559 Nathan Abbott Way, Stanford, California 94305, USA.
+
+World Wide Web Consortium (W3C)
+==============================
+Files in scorm2004: xml.xsd, XMLSchema.dtd and datatypes.dtd.
+Upstream locations identified by these files:
+http://www.w3.org/2001/03/xml.xsd
+http://www.w3.org/2001/XMLSchema.dtd
+http://www.w3.org/2001/datatypes.dtd
+xml.xsd is the unmodified W3C 2001/03 schema, retrieved 2026-10-19:
+https://www.w3.org/2001/03/xml.xsd
+SHA-256: 0ed94db44402526e7a683424d0bd4b65e5bc50e65d9b9a762b11b30bae06d0c8
+Existing DTD variants, compared with W3C on 2026-10-19:
+- XMLSchema.dtd has a revision marker dated 2004-07-21 and omits the optional
+  annotation in the complexContent, simpleContent and extension content models.
+- datatypes.dtd differs only in its revision marker, dated 2004-07-21.
+The two DTD variants are retained without edits.
+Full upstream notice source:
+https://www.w3.org/Consortium/Legal/copyright-software-19980720
+
+W3C® SOFTWARE NOTICE AND LICENSE
+
+Copyright © 1994-2002 World
+Wide Web Consortium <https://www.w3.org/>, (Massachusetts Institute of
+Technology <http://www.lcs.mit.edu/>, Institut National de
+Recherche en Informatique et en Automatique <http://www.inria.fr/>, Keio University <http://www.keio.ac.jp/>). All Rights
+Reserved. http://www.w3.org/Consortium/Legal/
+
+This W3C work (including software, documents, or other related
+items) is being provided by the copyright holders under the
+following license. By obtaining, using and/or copying this work,
+you (the licensee) agree that you have read, understood, and will
+comply with the following terms and conditions:
+
+Permission to use, copy, modify, and distribute this software
+and its documentation, with or without modification, for any
+purpose and without fee or royalty is hereby granted, provided that
+you include the following on ALL copies of the software and
+documentation or portions thereof, including modifications, that
+you make:
+
+1. The full text of this NOTICE in a location viewable to users of
+the redistributed or derivative work.
+
+2. Any pre-existing intellectual property disclaimers, notices, or
+terms and conditions. If none exist, a short notice of the
+following form (hypertext is preferred, text is permitted) should
+be used within the body of any redistributed or derivative code:
+"Copyright © [$date-of-software] World Wide Web Consortium <https://www.w3.org/>, (Massachusetts Institute of
+Technology <http://www.lcs.mit.edu/>, Institut National de
+Recherche en Informatique et en Automatique <http://www.inria.fr/>, Keio University <http://www.keio.ac.jp/>). All Rights
+Reserved. http://www.w3.org/Consortium/Legal/"
+
+3. Notice of any changes or modifications to the W3C files,
+including the date changes were made. (We recommend you provide
+URIs to the location from which the code is derived.)
+
+THIS SOFTWARE AND DOCUMENTATION IS PROVIDED "AS IS," AND
+COPYRIGHT HOLDERS MAKE NO REPRESENTATIONS OR WARRANTIES, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO, WARRANTIES OF
+MERCHANTABILITY OR FITNESS FOR ANY PARTICULAR PURPOSE OR THAT THE
+USE OF THE SOFTWARE OR DOCUMENTATION WILL NOT INFRINGE ANY THIRD
+PARTY PATENTS, COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.
+
+COPYRIGHT HOLDERS WILL NOT BE LIABLE FOR ANY DIRECT, INDIRECT,
+SPECIAL OR CONSEQUENTIAL DAMAGES ARISING OUT OF ANY USE OF THE
+SOFTWARE OR DOCUMENTATION.
+
+The name and trademarks of copyright holders may NOT be used in
+advertising or publicity pertaining to the software without
+specific, written prior permission. Title to copyright in this
+software and any associated documentation will at all times remain
+with copyright holders.
+
+____________________________________
+
+This formulation of W3C's notice and license became active on
+August 14 1998 so as to improve compatibility with GPL. This
+version ensures that W3C software licensing terms are no more
+restrictive than GPL and consequently W3C software may be
+distributed in GPL packages. See the older formulation for
+the policy prior to this date. Please see our Copyright FAQ for common questions about
+using materials from our site, including specific terms and
+conditions for packages like libwww, Amaya, and Jigsaw. Other
+questions about this notice can be directed to site-policy@w3.org.
+
+webmaster
+ (last updated $Date: 2002/02/13 14:08:32 $)
+
+
+W3C document notice
+===================
+XML Schema Part 1: Structures Second Edition, W3C Recommendation 28 October 2004.
+https://www.w3.org/TR/2004/REC-xmlschema-1-20041028/
+Copyright © 2004 W3C® (MIT, ERCIM, Keio), All Rights Reserved.
+The Recommendation publishes XMLSchema.dtd and datatypes.dtd as standalone
+schema components. Their retained variant differences are identified above.
+Document notice source: https://www.w3.org/copyright/document-license-2002/
+
+By using and/or copying this document, or the W3C document from which this statement is linked, you (the licensee) agree that you have read, understood, and will comply with the following terms and conditions:
+
+Permission to copy, and distribute the contents of this document, or the W3C document from which this statement is linked, in any medium for any purpose and without fee or royalty is hereby granted, provided that you include the following on ALL copies of the document, or portions thereof, that you use:
+
+A link or URL to the original W3C document.
+
+The pre-existing copyright notice of the original author, or if it doesn't exist, a notice (hypertext is preferred, but a textual representation is permitted) of the form: "Copyright © [$date-of-document] World Wide Web Consortium, (MIT, ERCIM, Keio, Beihang). All Rights Reserved. http://www.w3.org/copyright/document-license-2002/"
+
+If it exists, the STATUS of the W3C document.
+
+When space permits, inclusion of the full text of this NOTICE should be provided. We request that authorship attribution be provided in any software, documents, or other items or products that you create pursuant to the implementation of the contents of this document, or any portion thereof.
+
+No right to create modifications or derivatives of W3C documents is granted pursuant to this license. However, if additional requirements (documented in the Copyright FAQ) are satisfied, the right to create modifications or derivatives is sometimes granted by the W3C to individuals complying with those requirements.
+
+Disclaimers
+
+THIS DOCUMENT IS PROVIDED "AS IS," AND COPYRIGHT HOLDERS MAKE NO REPRESENTATIONS OR WARRANTIES, EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, OR TITLE; THAT THE CONTENTS OF THE DOCUMENT ARE SUITABLE FOR ANY PURPOSE; NOR THAT THE IMPLEMENTATION OF SUCH CONTENTS WILL NOT INFRINGE ANY THIRD PARTY PATENTS, COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS.
+
+COPYRIGHT HOLDERS WILL NOT BE LIABLE FOR ANY DIRECT, INDIRECT, SPECIAL OR CONSEQUENTIAL DAMAGES ARISING OUT OF ANY USE OF THE DOCUMENT OR THE PERFORMANCE OR IMPLEMENTATION OF THE CONTENTS THEREOF.
+
+The name and trademarks of copyright holders may NOT be used in advertising or publicity pertaining to this document or its contents without specific, written prior permission. Title to copyright in this document will at all times remain with copyright holders.

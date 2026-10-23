@@ -1,0 +1,213 @@
+/* Fixed course tokens live here. resolveDesignTokens owns palette roles and
+   pairings; a preset cannot change the reading structure. */
+html:root,
+[data-praxity-root] {
+	--root-font-size: 16px;
+	--type-small: 0.9375rem;
+	--type-body: 1.125rem;
+	--type-lead: 1.25rem;
+	--type-h3: 1.3125rem;
+	--type-h2: 1.5625rem;
+	--type-h1: 1.875rem;
+	--weight-body: 400;
+	--weight-strong: 600;
+	--leading-body: 1.55;
+	--leading-heading: 1.2;
+	--leading-small: 1.45;
+	--measure: 66ch;
+	--measure-wide: 60rem;
+	--space-1: 4px;
+	--space-2: 8px;
+	--space-3: 12px;
+	--space-4: 16px;
+	--space-6: 24px;
+	--space-8: 32px;
+	--space-12: 48px;
+	--space-16: 64px;
+	--space-24: 96px;
+	--paragraph-gap: 0.75em;
+	--block-gap: var(--space-6);
+	--section-before: var(--space-12);
+	--section-after: var(--space-3);
+	/* 24 belongs to the scale and exceeds the phone's 20px minimum. */
+	--page-gutter: var(--space-6);
+	--radius-box: 16px;
+	--radius-control: 10px;
+	--radius-key: 6px;
+	--radius-mark: 4px;
+	/* Circular controls and dots retain their shape independently of box corners. */
+	--radius-round: 50%;
+	--focus-width: 2px;
+	--focus-control-width: var(--focus-width);
+	--focus-offset: 2px;
+	--target-size: 44px;
+	--shadow-floating: 0 8px 24px rgb(0 0 0 / 0.12);
+	--ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+	--ease-in: cubic-bezier(0.8, 0.2, 1, 0.2);
+	--ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+	--duration-press: 120ms;
+	--duration-state: 200ms;
+	--duration-reveal: 200ms;
+
+	/* Existing names alias the tokens rather than maintaining another scale. */
+	--praxity-font-size-base: var(--type-body);
+	--praxity-font-size-xs: var(--type-small);
+	--praxity-font-size-sm: var(--type-body);
+	--praxity-font-size-md: var(--type-body);
+	--praxity-font-size-lg: var(--type-lead);
+	--praxity-font-size-xl: var(--type-h3);
+	--praxity-type-h1: var(--type-h1);
+	--praxity-type-h2: var(--type-h2);
+	--praxity-type-h3: var(--type-h3);
+	--praxity-type-h4: var(--type-h3);
+	--praxity-type-h5: var(--type-h3);
+	--praxity-type-h6: var(--type-h3);
+	--praxity-type-chapter: var(--type-h1);
+	--praxity-space-tight: var(--space-2);
+	--praxity-space-close: var(--section-after);
+	--praxity-space-normal: var(--block-gap);
+	--praxity-space-section: var(--block-gap);
+	--praxity-space-boundary: var(--section-before);
+	--praxity-spacing-xs: var(--space-2);
+	--praxity-spacing-sm: var(--space-3);
+	--praxity-spacing-md: var(--space-6);
+	--praxity-block-spacing: var(--block-gap);
+	--praxity-block-spacing-scale: 1;
+	--praxity-section-gap: var(--section-before);
+	--praxity-line-height-base: var(--leading-body);
+	--praxity-max-width: var(--measure);
+	/* Legacy theme aliases cannot replace the role tokens. */
+	--praxity-radius-content: var(--radius-control) !important;
+	--praxity-radius-container: var(--radius-box) !important;
+	--praxity-radius-action: var(--radius-control) !important;
+	--praxity-border-radius: var(--radius-control) !important;
+	--praxity-shadow-sm: none;
+	--praxity-shadow-md: none;
+	--praxity-shadow-lg: none;
+	--praxity-hotspot-label-font-size: var(--type-small);
+	--praxity-code-meta-font-size: var(--type-small);
+	--mantine-font-size-xs: var(--type-small);
+	--mantine-font-size-sm: var(--type-body);
+	--mantine-font-size-md: var(--type-body);
+	--mantine-font-size-lg: var(--type-lead);
+	--mantine-font-size-xl: var(--type-h3);
+	--mantine-line-height: var(--leading-body);
+	--mantine-radius-xs: var(--radius-key);
+	--mantine-radius-sm: var(--radius-key);
+	--mantine-radius-md: var(--radius-control);
+	--mantine-radius-lg: var(--radius-box);
+	--mantine-radius-xl: var(--radius-box);
+}
+
+/* Balance short titles; pretty keeps sentences filling the line, even in heading-styled prompts. */
+:where([data-praxity-root]) :where(h1, h2, h3, h4, h5, h6, .praxity-chart-title) {
+	text-wrap: balance;
+}
+:where([data-praxity-root])
+	:where(
+		p,
+		li,
+		dd,
+		caption,
+		figcaption,
+		label,
+		legend,
+		.praxity-assessment-stem,
+		.praxity-assessment-stem-body,
+		.praxity-scene-title,
+		.praxity-matching-prompt,
+		.praxity-chart-subtitle,
+		[data-assessment-feedback],
+		.praxity-choice-feedback
+	),
+:where([data-praxity-root])
+	:where(
+		.praxity-assessment-stem,
+		.praxity-assessment-stem-body,
+		.praxity-scene-title,
+		[data-assessment-feedback],
+		.praxity-choice-feedback
+	)
+	:where(h1, h2, h3, h4, h5, h6) {
+	text-wrap: pretty;
+}
+
+/* Zero-duration animations keep their end keyframe. Removing the animation can
+   expose its initial state when an authored reveal uses animation-fill-mode. */
+@media (prefers-reduced-motion: reduce) {
+	[data-praxity-root],
+	[data-praxity-root] *,
+	[data-praxity-root] *::before,
+	[data-praxity-root] *::after {
+		animation-duration: 0s !important;
+		animation-delay: 0s !important;
+		animation-iteration-count: 1 !important;
+		transition: none !important;
+		scroll-behavior: auto !important;
+	}
+}
+
+html:root[data-praxity-text-size="large"],
+[data-praxity-root][data-praxity-text-size="large"] {
+	--root-font-size: 20px;
+}
+
+@media (min-width: 768px) {
+	html:root,
+	[data-praxity-root] {
+		--type-body: 1.1875rem;
+		--type-lead: 1.375rem;
+		--type-h3: 1.5rem;
+		--type-h2: 1.875rem;
+		--type-h1: 2.375rem;
+		--block-gap: var(--space-8);
+		--section-before: var(--space-16);
+		--section-after: var(--space-4);
+		--page-gutter: var(--space-8);
+	}
+}
+
+/* A laptop viewport can contain a phone-sized authoring preview. */
+@container praxity-stage (max-width: 767px) {
+	.praxity-page-content {
+		--type-body: 1.125rem;
+		--type-lead: 1.25rem;
+		--type-h3: 1.3125rem;
+		--type-h2: 1.5625rem;
+		--type-h1: 1.875rem;
+		--block-gap: var(--space-6);
+		--section-before: var(--space-12);
+		--section-after: var(--space-3);
+		--page-gutter: var(--space-6);
+	}
+}
+
+/* Very narrow reading views reduce type without changing the six roles. */
+@media (max-width: 359.99px) {
+	html:root,
+	[data-praxity-root],
+	.praxity-page-content {
+		--type-body: clamp(1rem, 5vw, 1.125rem);
+		--type-lead: clamp(1.125rem, 5.6vw, 1.25rem);
+		--type-h3: clamp(1.1875rem, 5.9vw, 1.3125rem);
+		--type-h2: clamp(1.375rem, 7vw, 1.5625rem);
+		--type-h1: clamp(1.5rem, 8.4vw, 1.875rem);
+	}
+}
+
+@media (prefers-contrast: more) {
+	html:root,
+	[data-praxity-root] {
+		--focus-width: 3px;
+	}
+}
+
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		html:root,
+		[data-praxity-root] {
+			/* Native controls thicken their ring without changing composite-widget focus. */
+			--focus-control-width: 3px;
+		}
+	}
+}

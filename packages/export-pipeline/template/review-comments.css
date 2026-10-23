@@ -1,0 +1,671 @@
+.prx-review-sidebar {
+	position: fixed;
+	top: 0;
+	right: 0;
+	z-index: 10000;
+	display: flex;
+	flex-direction: column;
+	width: min(360px, calc(100vw - 32px));
+	height: 100dvh;
+	color: var(--praxity-color-text, #212529);
+	background: var(--praxity-color-background, #fff);
+	border-left: 1px solid var(--praxity-color-border, #d8dee4);
+	box-shadow: -8px 0 24px rgb(0 0 0 / 12%);
+}
+
+/* The deck workspace excludes its navigation footer. Keep review comments inside it. */
+.praxity-deck[data-ready="true"] .prx-review-workspace {
+	position: relative;
+}
+
+.praxity-deck[data-ready="true"] .prx-review-workspace > .prx-review-sidebar {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	height: auto;
+}
+
+.prx-review-sidebar[hidden] {
+	display: none;
+}
+
+.prx-review-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	min-height: 56px;
+	padding: 8px 12px 8px 20px;
+	border-bottom: 1px solid var(--praxity-color-border, #d8dee4);
+}
+
+.prx-review-title {
+	margin: 0;
+	font-size: 1.125rem;
+}
+
+.prx-review-toggle,
+.prx-review-submit {
+	min-width: 44px;
+	min-height: 44px;
+	color: inherit;
+	background: transparent;
+	border: 1px solid var(--praxity-color-border, #d8dee4);
+	border-radius: 6px;
+	cursor: pointer;
+}
+
+.prx-review-toggle:focus-visible,
+.prx-review-submit:focus-visible,
+.prx-review-input:focus-visible {
+	outline: 3px solid var(--praxity-color-focus, #005fcc);
+	outline-offset: 2px;
+}
+
+.prx-review-content {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	gap: 16px;
+	min-height: 0;
+	padding: 16px 20px;
+	overflow: auto;
+}
+
+.prx-review-status,
+.prx-review-error {
+	margin: 0;
+}
+
+.prx-review-error {
+	color: var(--praxity-color-error-text, var(--praxity-color-error, #b42318));
+}
+
+.prx-review-list {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 0;
+	margin: 0;
+	list-style: none;
+}
+
+.prx-review-comment {
+	padding: 12px;
+	background: var(--praxity-color-surface, #f6f8fa);
+	border: 1px solid var(--praxity-color-border, #d8dee4);
+	border-radius: 8px;
+}
+
+.prx-review-comment-byline {
+	display: flex;
+	gap: 8px;
+	justify-content: space-between;
+	margin: 0 0 8px;
+}
+
+.prx-review-comment-time {
+	font-size: 0.75rem;
+	color: var(--praxity-color-text-muted, #57606a);
+}
+
+.prx-review-context,
+.prx-review-comment-heading {
+	margin: 0 0 8px;
+	overflow-wrap: anywhere;
+}
+
+.prx-review-comment-heading {
+	font-weight: 600;
+}
+
+.prx-review-comment-text {
+	margin: 0;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+
+.prx-review-form {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding-top: 16px;
+	border-top: 1px solid var(--praxity-color-border, #d8dee4);
+}
+
+.prx-review-label {
+	font-weight: 600;
+}
+
+.prx-review-input {
+	box-sizing: border-box;
+	width: 100%;
+	min-height: 44px;
+	padding: 8px 10px;
+	font: inherit;
+	color: inherit;
+	background: var(--praxity-color-background, #fff);
+	border: 1px solid var(--praxity-color-border, #8c959f);
+	border-radius: 6px;
+}
+
+.prx-review-textarea {
+	resize: vertical;
+}
+
+.prx-review-submit {
+	padding: 8px 14px;
+	font-weight: 600;
+	color: var(--praxity-color-button-text, #fff);
+	background: var(--praxity-color-button-background, #0969da);
+}
+
+.prx-review-submit:disabled {
+	opacity: 0.65;
+	cursor: wait;
+}
+
+.prx-review-footer {
+	padding-top: 12px;
+	margin-top: auto;
+	font-size: 0.8125rem;
+	color: var(--praxity-color-text-muted, #57606a);
+	border-top: 1px solid var(--praxity-color-border, #d8dee4);
+}
+
+.prx-review-count {
+	display: inline-grid;
+	place-items: center;
+	min-width: 24px;
+	min-height: 24px;
+	padding: 0 4px;
+	font-size: 0.75rem;
+	font-weight: 700;
+	color: var(--praxity-color-button-text, #fff);
+	background: var(--praxity-color-button-background, #0969da);
+	border-radius: 999px;
+}
+
+.prx-review-toggle--deck {
+	position: relative;
+	border-color: transparent;
+}
+
+.prx-review-toggle--deck:hover {
+	background: var(--praxity-color-background-alt, #f5f5f5);
+	border-color: var(--praxity-color-border, #d8dee4);
+}
+
+.prx-review-toggle--deck .prx-review-count {
+	position: absolute;
+	inset-block-start: -0.25rem;
+	inset-inline-end: -0.25rem;
+	min-width: 1rem;
+	min-height: 1rem;
+	padding: 0 0.15rem;
+	font-size: 0.625rem;
+	line-height: 1rem;
+	border: 1px solid var(--praxity-color-background, #fff);
+}
+
+.prx-review-sidebar--collapsed {
+	top: auto;
+	right: 16px;
+	bottom: 16px;
+	width: auto;
+	height: auto;
+	background: transparent;
+	border: 0;
+	box-shadow: none;
+}
+
+.prx-review-sidebar--collapsed .prx-review-header {
+	min-height: 0;
+	padding: 0;
+	border: 0;
+}
+
+.prx-review-sidebar--collapsed .prx-review-title,
+.prx-review-sidebar--collapsed .prx-review-content {
+	display: none;
+}
+
+.prx-review-sidebar--collapsed .prx-review-toggle {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 12px;
+	font-weight: 600;
+	background: var(--praxity-color-background, #fff);
+	box-shadow: 0 3px 12px rgb(0 0 0 / 18%);
+}
+
+/* Keep the deck utility row and transport on one line at the narrowest width. */
+@media (max-width: 22.5rem) {
+	.praxity-deck .deck-position-controls #deck-position {
+		inline-size: 0;
+		max-width: 0;
+		overflow: hidden;
+		font-size: 0;
+	}
+}
+
+@media (max-width: 1099px) {
+	.prx-review-sidebar:not(.prx-review-sidebar--collapsed) {
+		width: min(360px, 100vw);
+	}
+}
+
+::highlight(prx-review-quote) {
+	color: var(--praxity-color-text, #212529);
+	background-color: color-mix(
+		in srgb,
+		var(--praxity-color-accent, #0b5cad) var(--prx-review-quote-strength, 28%),
+		transparent
+	);
+	text-decoration: underline 2px var(--praxity-color-accent, #0b5cad);
+}
+
+html[data-praxity-mode="dark"] {
+	--prx-review-quote-strength: 35%;
+}
+
+@media (prefers-color-scheme: dark) {
+	html:not([data-praxity-mode]) {
+		--prx-review-quote-strength: 35%;
+	}
+}
+
+/* Beneath the sidebar, with hit boxes excluded from learner navigation zones. */
+.prx-review-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 9999;
+	pointer-events: none;
+}
+
+.prx-review-marker {
+	position: absolute;
+	box-sizing: border-box;
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	border: 2px solid var(--praxity-color-text, #212529);
+	border-radius: 50%;
+	color: var(--praxity-color-accent-foreground, #fff);
+	background: var(--praxity-color-accent, #0b5cad);
+	font:
+		700 12px / 20px system-ui,
+		sans-serif;
+	font-variant-numeric: tabular-nums;
+	text-align: center;
+	transform: translate(-50%, -100%);
+	pointer-events: auto;
+	cursor: pointer;
+}
+
+.prx-review-marker::before {
+	position: absolute;
+	/* Absolute offsets start inside the 2px border. */
+	left: -14px;
+	top: -14px;
+	width: 48px;
+	height: 48px;
+	content: "";
+}
+
+/* The tip touches the point; the numbered circle stays above and to its right. */
+.prx-review-marker:not(.prx-review-marker--block)::after {
+	position: absolute;
+	left: -2px;
+	top: 22px;
+	width: 12px;
+	height: 12px;
+	background: var(--praxity-color-accent, #0b5cad);
+	clip-path: polygon(0 100%, 0 0, 100% 0);
+	pointer-events: none;
+	content: "";
+}
+
+.prx-review-marker[hidden] {
+	display: none;
+}
+
+.prx-review-marker:focus-visible,
+.prx-review-show:focus-visible,
+.prx-review-comment:focus-visible {
+	outline: 3px solid var(--praxity-color-focus, #ffbf47);
+	outline-offset: 4px;
+}
+
+.prx-review-show {
+	min-width: 44px;
+	min-height: 44px;
+	padding: 4px 8px;
+	border: 1px solid var(--praxity-color-border, #d8dee4);
+	border-radius: 4px;
+	font: inherit;
+	color: inherit;
+	background: var(--praxity-color-background, #fff);
+	cursor: pointer;
+}
+
+.prx-review-thread-status,
+.prx-review-anchor-status {
+	margin-block: 8px;
+	font-size: 0.875rem;
+}
+
+.prx-review-thread-number {
+	display: inline-block;
+	min-width: 24px;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+}
+
+.prx-review-quote {
+	margin: 8px 0;
+	padding-inline-start: 8px;
+	border-inline-start: 2px solid var(--praxity-color-accent, #0b5cad);
+	overflow-wrap: anywhere;
+}
+
+/* On phones leave learner content visible above the same review panel. */
+@media (max-width: 720px) {
+	.prx-review-sidebar--local:not(.prx-review-sidebar--collapsed),
+	.praxity-deck[data-ready="true"]
+		.prx-review-workspace
+		> .prx-review-sidebar--local:not(.prx-review-sidebar--collapsed) {
+		top: auto;
+		bottom: 0;
+		width: 100%;
+		height: 55dvh;
+		max-height: 55%;
+	}
+}
+
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		.prx-review-marker {
+			color: ButtonText;
+			background: ButtonFace;
+			border-color: ButtonText;
+		}
+		.prx-review-marker:not(.prx-review-marker--block)::after {
+			background: ButtonText;
+		}
+
+		.prx-review-marker:focus-visible,
+		.prx-review-show:focus-visible,
+		.prx-review-comment:focus-visible {
+			outline-color: Highlight;
+		}
+
+		::highlight(prx-review-quote) {
+			color: MarkText;
+			background-color: Mark;
+			text-decoration-color: MarkText;
+		}
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.prx-review-marker,
+	.prx-review-show {
+		transition: none;
+	}
+}
+
+.prx-review-sidebar--local .prx-review-header {
+	flex-wrap: wrap;
+	gap: 4px;
+}
+
+.prx-review-sidebar--local .prx-review-header .prx-review-title {
+	flex: 1 0 100%;
+}
+
+.prx-review-action,
+.prx-review-next,
+.prx-review-selection {
+	box-sizing: border-box;
+	min-width: 44px;
+	min-height: 44px;
+	padding: 8px 12px;
+	border: 2px solid var(--praxity-color-border, #8c959f);
+	border-radius: 6px;
+	font: inherit;
+	color: var(--praxity-color-text, #212529);
+	background: var(--praxity-color-background, #fff);
+	cursor: pointer;
+}
+
+.prx-review-action:focus-visible,
+.prx-review-next:focus-visible,
+.prx-review-selection:focus-visible,
+.prx-review-target input:focus-visible {
+	outline: 3px solid var(--praxity-color-focus, #005fcc);
+	outline-offset: 2px;
+}
+
+.prx-review-action[aria-pressed="true"] {
+	color: var(--praxity-color-accent-foreground, #fff);
+	background: var(--praxity-color-accent, #0b5cad);
+	border-color: var(--praxity-color-accent, #0b5cad);
+}
+
+.prx-review-sidebar--local .prx-review-header > button,
+.deck-utility-items > .prx-review-action,
+.deck-utility-items > .prx-review-toggle {
+	min-height: 44px;
+	padding: 8px 12px;
+	font: inherit;
+	font-weight: 600;
+}
+
+.prx-review-dialog {
+	box-sizing: border-box;
+	width: calc(100% - 32px);
+	max-width: 520px;
+	max-height: 90dvh;
+	padding: 24px;
+	border: 2px solid var(--praxity-color-border, #8c959f);
+	border-radius: 12px;
+	font:
+		1rem / 1.5 system-ui,
+		sans-serif;
+	color: var(--praxity-color-text, #212529);
+	background: var(--praxity-color-background, #fff);
+	overflow: auto;
+	overflow-wrap: anywhere;
+}
+
+.prx-review-dialog::backdrop {
+	background: var(--praxity-color-backdrop, rgb(0 0 0 / 45%));
+}
+
+.prx-review-dialog h2 {
+	margin: 0 0 16px;
+	font-size: 1.125rem;
+	text-wrap: balance;
+}
+
+.prx-review-dialog .prx-review-form {
+	border: 0;
+	padding: 0;
+}
+
+.prx-review-dialog .prx-review-input {
+	min-height: 120px;
+	max-height: 40dvh;
+}
+
+.prx-review-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 16px;
+}
+
+.prx-review-actions > button {
+	flex: 1 1 auto;
+}
+
+.prx-review-count-text {
+	margin: 0;
+	font-variant-numeric: tabular-nums;
+}
+
+.prx-review-targets {
+	min-width: 0;
+	padding: 0;
+	margin: 0;
+	border: 0;
+}
+
+.prx-review-target {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	min-height: 44px;
+	padding-block: 8px;
+	cursor: pointer;
+}
+
+.prx-review-target input {
+	flex: 0 0 auto;
+	margin-top: 6px;
+	accent-color: var(--praxity-color-accent, #0b5cad);
+}
+
+.prx-review-selection {
+	position: fixed;
+	z-index: 10000;
+	min-height: 36px;
+	padding: 2px 16px;
+	line-height: 1.2;
+	border-color: transparent;
+	border-radius: 999px;
+	color: var(--praxity-color-accent-foreground, #fff);
+	background: var(--praxity-color-accent, #0b5cad);
+}
+
+.prx-review-selection::before {
+	position: absolute;
+	inset: -6px 0;
+	content: "";
+}
+
+.prx-review-selection:disabled {
+	cursor: default;
+	border-style: dashed;
+}
+
+.prx-review-selection[hidden],
+.prx-review-pin-hint[hidden],
+.prx-review-dialog [hidden] {
+	display: none;
+}
+
+.prx-review-pinning,
+.prx-review-pinning body *:not([data-review-ui]):not([data-review-ui] *) {
+	cursor: crosshair;
+	touch-action: manipulation;
+}
+
+.prx-review-pin-hint {
+	position: fixed;
+	inset-inline: 16px;
+	z-index: 10000;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	max-width: 700px;
+	padding: 8px 16px;
+	margin-inline: auto;
+	border: 2px solid var(--praxity-color-border, #8c959f);
+	border-radius: 6px;
+	font:
+		1rem / 1.5 system-ui,
+		sans-serif;
+	color: var(--praxity-color-text, #212529);
+	background: var(--praxity-color-background, #fff);
+}
+
+.prx-review-pin-hint p {
+	margin: 0;
+}
+
+.prx-review-pin-hint button {
+	flex: none;
+}
+
+.prx-review-draft-origin {
+	display: block;
+	max-width: 20em;
+	font-size: 0.8125rem;
+	font-weight: 400;
+	white-space: normal;
+	text-align: start;
+}
+
+.prx-review-draft {
+	padding-block: 8px;
+	border-top: 1px solid var(--praxity-color-border, #d8dee4);
+	overflow-wrap: anywhere;
+}
+
+.prx-review-visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
+}
+
+@media (max-width: 479px) {
+	.prx-review-dialog {
+		width: 100%;
+		max-width: 100%;
+		margin: auto 0 0;
+		border-radius: 12px 12px 0 0;
+	}
+	.prx-review-sidebar--collapsed {
+		right: 8px;
+		max-width: calc(100% - 16px);
+	}
+}
+
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		.prx-review-action,
+		.prx-review-next,
+		.prx-review-selection,
+		.prx-review-dialog,
+		.prx-review-pin-hint {
+			border-color: ButtonText;
+			color: CanvasText;
+			background: Canvas;
+		}
+		.prx-review-action[aria-pressed="true"] {
+			color: HighlightText;
+			background: Highlight;
+			border-color: Highlight;
+		}
+	}
+}
+
+/* The form's gap supplies spacing between notices, including tab-only mode. */
+.prx-review-composer-notice,
+.prx-review-tab-warning {
+	margin: 0;
+}
+
+.prx-review-composer-status:empty {
+	margin: 0;
+	padding: 0;
+}

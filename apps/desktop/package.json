@@ -1,0 +1,51 @@
+{
+	"name": "@praxity/desktop",
+	"version": "0.3.0",
+	"private": true,
+	"description": "Praxity Studio â€” local-first eLearning authoring",
+	"author": "Praxity",
+	"license": "SEE LICENSE IN LICENSE",
+	"type": "module",
+	"imports": {
+		"#jsonc-parser": {
+			"module": "jsonc-parser/lib/esm/main.js",
+			"default": "jsonc-parser"
+		}
+	},
+	"scripts": {
+		"prepare:typst": "node scripts/prepare-typst.mjs",
+		"prebuild": "tsx scripts/prebuild-viewer.ts",
+		"export-assets:verify": "tsx scripts/verify-export-assets.ts",
+		"typecheck": "tsc --noEmit -p tsconfig.main.json && tsc --noEmit -p tsconfig.renderer.json && tsc --noEmit -p e2e/browser-editor/tsconfig.json",
+		"test": "node --test scripts/*.test.mjs && vitest run",
+		"e2e:browser-editor": "playwright test --config=e2e/browser-editor/playwright.config.ts"
+	},
+	"dependencies": {
+		"esbuild": "^0.28.2",
+		"jsdom": "^30.0.1",
+		"jsonc-parser": "3.3.1"
+	},
+	"devDependencies": {
+		"@axe-core/playwright": "^4.11.1",
+		"@playwright/test": "^1.59.0",
+		"@praxity/content-identity": "workspace:*",
+		"@praxity/editor-core": "workspace:*",
+		"@praxity/export-pipeline": "workspace:*",
+		"@praxity/format-renderers": "workspace:*",
+		"@praxity/grammar": "workspace:*",
+		"@praxity/operations": "workspace:*",
+		"@praxity/review-share": "workspace:*",
+		"@praxity/shared-blocks": "workspace:*",
+		"@types/adm-zip": "^0.5.8",
+		"@types/jsdom": "27.0.0",
+		"adm-zip": "^0.6.1",
+		"chokidar": "^4.0.3",
+		"picomatch": "^4.0.5",
+		"typescript": "^5.7.0",
+		"use-intl": "^4.13.6",
+		"vite": "^7.3.7",
+		"vitest": "^4.1.12",
+		"yaml": "^2.8.3",
+		"zod": "^3.24.0"
+	}
+}

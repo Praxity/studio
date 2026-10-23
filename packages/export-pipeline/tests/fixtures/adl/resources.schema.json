@@ -1,0 +1,57 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"type": "object",
+	"required": ["canonicalPage", "lastVerified", "assetRepository", "resources"],
+	"properties": {
+		"canonicalPage": { "type": "string", "format": "uri" },
+		"lastVerified": { "type": "string" },
+		"assetRepository": {
+			"type": "object",
+			"required": ["tag", "commit"],
+			"properties": {
+				"tag": { "type": "string" },
+				"commit": { "type": "string", "pattern": "^[a-f0-9]{40}$" }
+			},
+			"additionalProperties": false
+		},
+		"resources": {
+			"type": "array",
+			"items": {
+				"type": "object",
+				"required": [
+					"id",
+					"scormVersion",
+					"category",
+					"title",
+					"sourceLabel",
+					"downloadUrl",
+					"status"
+				],
+				"properties": {
+					"id": { "type": "string" },
+					"scormVersion": { "enum": ["1.2", "2004-4th"] },
+					"category": {
+						"enum": [
+							"api-wrapper",
+							"conformance-suite",
+							"content-example",
+							"lms-test-packages",
+							"sample-rte",
+							"specification",
+							"testing-requirements"
+						]
+					},
+					"title": { "type": "string" },
+					"sourceLabel": { "type": "string" },
+					"downloadUrl": { "type": ["string", "null"], "format": "uri" },
+					"status": { "enum": ["ready", "pending-url"] },
+					"localFilename": { "type": "string" },
+					"sizeBytes": { "type": "integer", "minimum": 0 },
+					"sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"additionalProperties": false
+}

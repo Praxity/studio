@@ -1,0 +1,132 @@
+---
+title: Working Safely at Heights
+description: Guided reading pattern with teaching content interleaved with
+  inline knowledge checks across three pages. Use this when learners need to
+  absorb a concept before being tested on it, not after.
+lang: en
+design:
+  palette: standard
+  colorMode: light
+  accentHue: 200
+  navPrevNext: true
+  navProgressStyle: segments
+---
+
+# Fall Prevention Fundamentals {hideTitle}
+
+## Fall Prevention Fundamentals
+
+Falls from height remain one of the leading causes of serious injury in industrial and construction workplaces. Choose controls for the task before starting work.
+
+::: figure
+![Diagram of a warehouse showing fall hazard zones at elevated platforms and open floor edges](/assets/fall-hazard-zones.png)
+Common fall hazard zones in a typical warehouse
+:::
+
+### When is fall protection required?
+
+Fall protection is required whenever work takes place at or above **1.5 metres** (5 feet) from a lower level, or at any height over open machinery, water, or other hazardous surfaces. This applies to walking surfaces, platforms, scaffolding, rooftops, and floor openings.
+
+::: note {tone=note style=outline}
+The 1.5-metre threshold is a minimum. Many sites set a lower trigger. Always follow the more protective standard.
+:::
+
+### Three levels of fall control
+
+Use the hierarchy of controls to choose the most effective protection:
+
+1. **Elimination**, redesign the task so work at height is not required.
+2. **Passive protection**, guardrails, safety nets, covers over openings.
+3. **Active protection**, [personal fall arrest systems]{A harness, lanyard, and anchor point that stop a fall already in progress rather than preventing it.} (PFAS) with harness, lanyard, and anchor point.
+
+Passive protection is always preferred over active protection because it works without any action from the worker.
+
+---
+
+### Quick Check: Fall Protection Threshold
+
+::: choice At what height is fall protection required for standard platforms? {points=2 required level=3}
+correct: Correct. The 1.5-metre threshold is the baseline requirement. Always check your site standard, which may be more stringent.
+incorrect: The standard threshold is 1.5 metres above a lower level. Review the regulations for your jurisdiction before proceeding.
+( ) 2.5 metres
+feedback: 2.5 metres is above the threshold. Protection is required earlier than this.
+( ) 3 metres
+feedback: The requirement applies well below 3 metres.
+(x) 1.5 metres
+feedback: Correct. The standard threshold is 1.5 metres for most work surfaces.
+( ) Only on rooftops
+feedback: Fall protection applies to any elevated work surface, not only rooftops.
+
+:::
+
+# Personal Fall Arrest Systems {hideTitle}
+
+## Personal Fall Arrest Systems
+
+A personal fall arrest system (PFAS) has three components that must all be present and correctly connected before work begins.
+
+### The three components
+
+::: sequence {style=numbered}
+:: Anchorage {level=3}
+The fixed attachment point must hold a minimum of 22 kN (5,000 lbs) per attached worker. Select an anchor above the work position whenever possible to reduce free-fall distance.
+
+:: Body harness {level=3}
+A full-body harness distributes arrest forces across the thighs, pelvis, chest, and shoulders. Shoulder straps and leg loops must be snug but not restrictive. The dorsal D-ring is the only correct connection point for a fall arrest lanyard.
+
+:: Connecting subsystem {level=3}
+The lanyard, self-retracting lifeline (SRL), or energy absorber that connects the harness to the anchor. Maximum allowable free-fall is 1.8 metres. Before beginning work, calculate total fall clearance using harness height, lanyard extension, deceleration distance and safety margin.
+:::
+
+---
+
+### Inspect before use
+
+Inspect every PFAS component at the start of each shift. Remove any component from service if you find:
+
+- Cuts, abrasions, or burns on webbing or stitching
+- Corrosion, cracks, or deformation on hardware
+- Missing or illegible labels
+- A deployed energy absorber (the system has been in a fall and must be retired)
+
+::: note {tone=warning style=shaded}
+A PFAS that has arrested a fall must be immediately removed from service, even if it shows no visible damage.
+:::
+
+---
+
+### Quick Check: PFAS Components
+
+::: choice Select all three required components of a personal fall arrest system. {points=3 shuffle level=3}
+[x] Anchorage point
+feedback: Correct. The anchor is the fixed connection to structure.
+[x] Full-body harness
+feedback: Correct. The harness distributes arrest forces across the body.
+[ ] Hard hat
+feedback: A hard hat is required PPE but is not a component of the fall arrest system itself.
+[x] Connecting subsystem (lanyard or SRL)
+feedback: Correct. The connecting subsystem links harness to anchor and controls free-fall distance.
+[ ] Safety glasses
+feedback: Eye protection is separate PPE, not a fall arrest component.
+:::
+
+# Summary and Reflection {hideTitle}
+
+## Summary and Reflection
+
+Fall protection requires both the right equipment and the right decisions. Professional judgment and site conditions may demand more than the regulations require.
+
+### Key takeaways
+
+- Fall protection is required at 1.5 metres or above any hazardous surface.
+- Choose passive protection (guardrails, covers) over active protection (PFAS) wherever possible.
+- A PFAS has three components: anchorage, harness, and connecting subsystem. All three must be inspected before each use.
+- A deployed energy absorber means the system has been in a fall. Retire it immediately.
+
+---
+
+### Reflection: Your worksite
+
+::: free-response Describe one fall hazard on your worksite and the control currently in place. {required attempts=1 level=3}
+placeholder: Include the location, the hazard type (e.g. open edge, ladder work, elevated platform), and whether the current control is passive or active. If you believe the control is inadequate, note what you would recommend instead.
+:::

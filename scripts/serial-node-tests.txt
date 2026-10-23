@@ -1,0 +1,1 @@
+apps/desktop/scripts/standalone-cli-lifecycle.test.mjs

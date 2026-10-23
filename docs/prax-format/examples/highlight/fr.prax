@@ -1,0 +1,38 @@
+---
+lang: fr
+variables:
+  publicFlag: false
+---
+# Lecture et pratique
+::: highlight Une pause utile {mode=key maxMarks=2 name=keyPracticeFr}
+question: Pourquoi préciser l’heure de son retour ?
+:: Vous avez besoin de réfléchir.
+note: Ce détail décrit la pause.
+:: Ils savent quand vous attendre. {key}
+note: Une heure précise réduit l’incertitude.
+:: Convenez d’une heure de retour. {key}
+note: Convenez de l’heure avant de partir.
+:: Le mur est bleu.
+note: La couleur n’explique pas l’heure du retour.
+:::
+
+::: highlight Une pause utile {mode=evidence maxMarks=2 name=evidencePracticeFr}
+question: Pourquoi préciser l’heure de son retour ?
+:: Vous avez besoin de réfléchir.
+note: Ce détail décrit la pause.
+:: Ils savent quand vous attendre. {key}
+note: Une heure précise réduit l’incertitude.
+:: Convenez d’une heure de retour. {key}
+note: Convenez de l’heure avant de partir.
+:: Le mur est bleu.
+note: La couleur n’explique pas l’heure du retour.
+:::
+
+::: choice Question de contrôle {name=ordinaryFr required=false}
+(x) Une heure de retour
+( ) La couleur du mur
+:::
+::: rule
+if: @ordinaryFr.isAttempted is true
+then: set publicFlag = true
+:::

@@ -1,0 +1,2562 @@
+[
+	{
+		"file": "apps/desktop/src/main/__tests__/course-io.test.ts",
+		"name": "course-io > loadCourse > persists one course ID for an existing project without changing its metadata",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3037 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/course-io.test.ts",
+		"name": "course-io > loadCourse > returns the created manifest baseline for a manifest-free course",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5047 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/course-io.test.ts",
+		"name": "course-io > manifest sync > preserves valid and invalid cast entries after lesson rename",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2043 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/course-io.test.ts",
+		"name": "course-io > readLesson / writeLessonSource > reads a lesson file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3047 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/course-io.test.ts",
+		"name": "course-io > readLesson / writeLessonSource > writes a lesson file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4180 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/desktop-export-input.test.ts",
+		"name": "buildExportInputFromProject > builds a full-course export input from course.yaml lesson order",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5012 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/desktop-export-input.test.ts",
+		"name": "buildExportInputFromProject > builds a lesson-scoped export input for a specific .prax file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4204 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/desktop-export-input.test.ts",
+		"name": "buildExportInputFromProject > builds a standard ExportInput with parsed blocks and asset bytes",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5026 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/desktop-export-input.test.ts",
+		"name": "buildExportInputFromProject > derives manual and automatic dark section palettes but leaves uniform rhythm alone",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5042 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/desktop-export-input.test.ts",
+		"name": "buildExportInputFromProject > derives palettes for explicit section bands in a uniform course",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4050 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/desktop-export-input.test.ts",
+		"name": "buildExportInputFromProject > does not block export for advisory or human-judgment source results",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4025 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/desktop-export-input.test.ts",
+		"name": "buildExportInputFromProject > handles missing assets directory",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5029 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/desktop-export-input.test.ts",
+		"name": "buildExportInputFromProject > keeps block UUIDs outside source across preview, save, export and import",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5013 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/desktop-export-input.test.ts",
+		"name": "buildExportInputFromProject > parses each lesson once for course export input under read-only policy",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4239 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/desktop-export-input.test.ts",
+		"name": "buildExportInputFromProject > parses each lesson once for course export input under undefined policy",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3137 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/desktop-export-input.test.ts",
+		"name": "buildExportInputFromProject > parses each lesson once for course preview input under read-only policy",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2473 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/desktop-export-input.test.ts",
+		"name": "buildExportInputFromProject > parses each lesson once for lesson export input under read-only policy",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3425 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/desktop-export-input.test.ts",
+		"name": "buildExportInputFromProject > parses each lesson once for lesson export input under undefined policy",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3468 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/desktop-export-input.test.ts",
+		"name": "buildExportInputFromProject > parses each lesson once for lesson preview input under read-only policy",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3708 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/desktop-export-input.test.ts",
+		"name": "buildExportInputFromProject > preserves authored first slide titles across course lesson boundaries",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5009 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/desktop-export-input.test.ts",
+		"name": "buildExportInputFromProject > preserves lesson language on every course page without changing the course fallback",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5063 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/desktop-export-input.test.ts",
+		"name": "buildExportInputFromProject > previews course with unlinked narration but rejects export with details",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5006 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/desktop-export-input.test.ts",
+		"name": "buildExportInputFromProject > previews lesson with unlinked narration but rejects export with details",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5009 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/desktop-export-input.test.ts",
+		"name": "buildExportInputFromProject > rejects a full-course export with a critical issue when enforcement is not configured",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2127 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/desktop-export-input.test.ts",
+		"name": "buildExportInputFromProject > rejects duplicate durable IDs copied between lessons",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5007 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/desktop-export-input.test.ts",
+		"name": "buildExportInputFromProject > resolves saved deck choices to durable IDs in lesson and course builds",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5008 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/desktop-export-input.test.ts",
+		"name": "buildExportInputFromProject > retains each module's deck presentation in a full-course build",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5015 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/desktop-export-input.test.ts",
+		"name": "buildExportInputFromProject > retains ordered PDF lessons and local defaults only when requested",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5018 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/desktop-export-input.test.ts",
+		"name": "buildExportInputFromProject > saves edited narration with its old recording and review flag, preserving YAML comments",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5027 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/desktop-export-input.test.ts",
+		"name": "buildExportInputFromProject > scopes parser IDs across lessons after linking existing narration",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5034 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/desktop-export-input.test.ts",
+		"name": "buildExportInputFromProject > supports html format",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5008 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/desktop-export-input.test.ts",
+		"name": "buildExportInputFromProject > threads completion settings through lesson and course inputs",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5022 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 a new course plans without sidecars and installs identity through the service",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4384 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 ambiguous find refuses without writes",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2171 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 ambiguous returns its documented exit code",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4858 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 discovers edit and exposes stable inspection addresses, UUIDs, operations and typed settings",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4919 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 dry run preserves hashes and JSON has stable keys and values",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2710 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 French copy and invalid arguments are structured without writes",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2124 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 not-allowed returns its documented exit code",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3129 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 orphaned returns its documented exit code",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2077 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 page and block resolve one-based positions",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5060 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 R8 resolves the copied file and inclusive line range",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5064 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 refuses unsupported batches before applying any member",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2509 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 resolve checks an explicit revision inside admission",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2556 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 review absent, ambiguous and stale targets have distinct exit codes",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2203 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 review numeric pages ignore frontmatter \"---\\ntitle: Test\\n---\\n\\n\" and hidden titles \" {hideTitle}\"",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5004 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 review numeric pages ignore frontmatter \"---\\ntitle: Test\\n---\\n\\n\" and hidden titles \"\"",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4826 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 review numeric pages ignore frontmatter \"\" and hidden titles \" {hideTitle}\"",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4677 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 review numeric pages ignore frontmatter \"\" and hidden titles \"\"",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5020 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 source ordinals: 'First later note' via [ '--page', '1', '--block', '2' ], frontmatter=false",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4641 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 source ordinals: 'First later note' via [ '--page', '1', '--block', '2' ], frontmatter=true",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2835 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 source ordinals: 'First note' via [ '--line', 'lesson.prax:10-12' ], frontmatter=true",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5014 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 source ordinals: 'First note' via [ '--line', 'lesson.prax:4-6' ], frontmatter=false",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5005 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 source ordinals: 'First note' via [ '--page', '1', '--block', '1' ], frontmatter=false",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5010 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 source ordinals: 'First note' via [ '--page', '1', '--block', '1' ], frontmatter=true",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3313 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 source ordinals: 'Second later note' via [ '--line', 'lesson.prax:18-20' ], frontmatter=false",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5005 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 source ordinals: 'Second later note' via [ '--line', 'lesson.prax:24-26' ], frontmatter=true",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3586 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 source ordinals: 'Second later note' via [ '--page', '2', '--block', '2' ], frontmatter=false",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5009 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 source ordinals: 'Second later note' via [ '--page', '2', '--block', '2' ], frontmatter=true",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4925 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 stale expected revision refuses with exit 5 and zero writes",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3799 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 stale returns its documented exit code",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2079 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/export-e2e.test.ts",
+		"name": "SCORM export end-to-end > exports a local avatar: none override without an image asset",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5054 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/export-e2e.test.ts",
+		"name": "SCORM export end-to-end > exports authored content in a SCORM 2004 4th Edition package",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5111 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/export-e2e.test.ts",
+		"name": "SCORM export end-to-end > exports decorative card images without an accessibility override",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5007 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/export-e2e.test.ts",
+		"name": "SCORM export end-to-end > handles missing assets directory gracefully",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5034 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/export-e2e.test.ts",
+		"name": "SCORM export end-to-end > HTML: produces a zip without SCORM manifest/runtime",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5183 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/export-e2e.test.ts",
+		"name": "SCORM export end-to-end > packages a cast avatar in static dialogue HTML",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5103 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/export-e2e.test.ts",
+		"name": "SCORM export end-to-end > SCORM 1.2: produces a valid package with required files",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3418 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/export-root-security.test.ts",
+		"name": "allows missing assets and trusted runtime files outside the project",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2888 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/export-root-security.test.ts",
+		"name": "does not inherit an ancestor workspace when explicitly disabled",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3866 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/export-root-security.test.ts",
+		"name": "keeps internal asset symlinks readable and rejects cyclic directory links",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4124 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/export-root-security.test.ts",
+		"name": "refuses inherited workspace settings aliased into the private lock cache",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4687 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/export-root-security.test.ts",
+		"name": "rejects a dangling escaping assets link rather than treating it as absent",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4279 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/export-root-security.test.ts",
+		"name": "rejects an escaping asset directory symlink",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4139 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/export-root-security.test.ts",
+		"name": "rejects an escaping asset file symlink",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4137 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/export-root-security.test.ts",
+		"name": "rejects an escaping assets directory for course input",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4722 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/export-root-security.test.ts",
+		"name": "rejects an escaping assets directory for lesson input",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5057 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/grammar4-switch.test.ts",
+		"name": "Studio opens a fresh grammar 4 project with durable I4 identity and unchanged source",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3065 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/grammar4-switch.test.ts",
+		"name": "X1 preview, export and Check/Trace inspection preserve saved source bytes and identity",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4866 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/grammar4-switch.test.ts",
+		"name": "X1 reads and saves exact BOM and CRLF source bytes without source IDs",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4660 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 a removed rating level receives a fresh identity when reintroduced",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3594 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 a replaced float's virtual prose cannot inherit the old content's identity",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5010 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 allocates slugs once, preserves them through title edits, and retains rename aliases",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4154 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 existing write recovers source and identity together after process death at head:head",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5234 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 existing write recovers source and identity together after process death at installed:snapshot",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 6848 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 existing write recovers source and identity together after process death at installed:source",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 6786 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 existing write recovers source and identity together after process death at journal",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2053 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 existing write recovers source and identity together after process death at staged:snapshot",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2096 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 existing write recovers source and identity together after process death at staged:source",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2815 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 export requires a persisted namespace and the resolved head revisions",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4464 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 first write recovers source and identity together after process death at head:head",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2206 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 first write recovers source and identity together after process death at installed:course",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 13366 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 first write recovers source and identity together after process death at installed:snapshot",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 12732 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 first write recovers source and identity together after process death at installed:source",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 12043 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 first write recovers source and identity together after process death at journal",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3520 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 first write recovers source and identity together after process death at staged:snapshot",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4178 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 first write recovers source and identity together after process death at staged:source",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 10562 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 metadata plans cannot overwrite identity through a Windows path alias",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3177 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 moves a page and all reader IDs across lesson heads and stores variable projections",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5022 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 recorded modifications retain IDs across a wholesale title change",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5024 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 recorded undo restores removed reader roles with their exact IDs",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5004 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 refuses {\"schema\":99} head metadata with the file named and no writes",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2532 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 refuses <<<<<<< ours\n{}\n=======\n{}\n>>>>>>> theirs\n course metadata with the file named and no writes",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2651 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 refuses an omitted live lesson used as a copy donor, naming its path",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2518 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 refuses an omitted live lesson, naming its path",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3641 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 refuses changed source bytes, mutated resolutions and extra source writes",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2853 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 refuses missing course metadata with the file named and no writes",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2179 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 refuses missing head metadata with the file named and no writes",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2216 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 refuses missing identity with recovery archives instead of allocating a new namespace",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3468 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 refuses persist-namespace-race after validation without changing source or identity",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2448 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 rejects an empty UUID or hash filename in lessons without writing",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5002 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 rejects an empty UUID or hash filename in snapshots without writing",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5121 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 reserves index and refuses another page's slug and alias without writing",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5011 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-store.test.ts",
+		"name": "I4 resolve, persist and reload retain every reader ID and source byte",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2364 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/inspect-project.test.ts",
+		"name": "expanded schema 1 evidence > fingerprints referenced media and preserves sidecar locations, provenance and unresolved links",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2081 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/lesson-source-admission.test.ts",
+		"name": "keeps inventory and identity in one read admission, strict=false",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5040 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/lesson-source-admission.test.ts",
+		"name": "keeps inventory and identity in one read admission, strict=true",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5047 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/lesson-source-safety.test.ts",
+		"name": "grammar 4 source and identity transaction safety > does not overwrite a lesson recreated while deletion rolls back",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5005 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/lesson-source-safety.test.ts",
+		"name": "grammar 4 source and identity transaction safety > does not overwrite an external file created after the rename collision check",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5018 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/lesson-source-safety.test.ts",
+		"name": "grammar 4 source and identity transaction safety > keeps clean source unchanged and persists identities across reads and copied projects",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3531 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/lesson-source-safety.test.ts",
+		"name": "grammar 4 source and identity transaction safety > preserves existing source and metadata permissions when replacing their bytes",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5073 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/lesson-source-safety.test.ts",
+		"name": "grammar 4 source and identity transaction safety > preserves source and exact metadata after a partial staged write and permits retry",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5065 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/lesson-source-safety.test.ts",
+		"name": "grammar 4 source and identity transaction safety > queues lesson deletion after an in-flight save",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5029 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/lesson-source-safety.test.ts",
+		"name": "grammar 4 source and identity transaction safety > refuses rename collisions and sidecar symlink escapes",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5042 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/lesson-source-safety.test.ts",
+		"name": "grammar 4 source and identity transaction safety > rejects read-only source replacement and restores metadata",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5022 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/lesson-source-safety.test.ts",
+		"name": "grammar 4 source and identity transaction safety > reports source and rollback failures together",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4358 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/lesson-source-safety.test.ts",
+		"name": "grammar 4 source and identity transaction safety > restores a source rename when metadata fails without overwriting a recreated source",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5008 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/lesson-source-safety.test.ts",
+		"name": "grammar 4 source and identity transaction safety > serializes source writes with their identities and rejects symlink lesson targets",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3420 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/line-ending-files.test.ts",
+		"name": "does not normalize an explicit lesson replacement or restore its removed newline",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4928 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/line-ending-files.test.ts",
+		"name": "exports a CRLF course with LF-authored narration anchors and zero unlinked entries",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5019 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/line-ending-files.test.ts",
+		"name": "loads CRLF lesson metadata and preserves manifest style through ID, add and rename writes",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4611 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/line-ending-files.test.ts",
+		"name": "preserves CRLF through the public text writer, course.yaml",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2062 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/line-ending-files.test.ts",
+		"name": "preserves existing lesson line endings through consecutive editor saves and identity migration, \"\\n\"",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5038 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/line-ending-files.test.ts",
+		"name": "preserves existing lesson line endings through consecutive editor saves and identity migration, \"\\r\\n\"",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5033 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/line-ending-files.test.ts",
+		"name": "saves a CRLF lesson without adding machine data to authored source",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5009 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/line-ending-files.test.ts",
+		"name": "shared lesson writer retains exact bytes and final newline with a hidden title, \"\\n\"",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5012 ms. Existing test exceeded the budget before this guard; remove when it meets the budget.",
+		"added": "2026-10-22",
+		"backlog": "Duplicate-name rename carry-over of an existing allowlist entry (no new allowance); see the duplicate-test-names backlog item",
+		"run": "39752400359"
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/line-ending-files.test.ts",
+		"name": "shared lesson writer retains exact bytes and final newline with a note block, \"\\n\"",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5012 ms. Existing test exceeded the budget before this guard; remove when it meets the budget.",
+		"added": "2026-10-22",
+		"backlog": "Duplicate-name rename carry-over of an existing allowlist entry (no new allowance); see the duplicate-test-names backlog item",
+		"run": "39752400359"
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/line-ending-files.test.ts",
+		"name": "shared lesson writer retains exact bytes and final newline with a hidden title, \"\\r\\n\"",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5009 ms. Existing test exceeded the budget before this guard; remove when it meets the budget.",
+		"added": "2026-10-22",
+		"backlog": "Duplicate-name rename carry-over of an existing allowlist entry (no new allowance); see the duplicate-test-names backlog item",
+		"run": "39752400359"
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/line-ending-files.test.ts",
+		"name": "shared lesson writer retains exact bytes and final newline with a note block, \"\\r\\n\"",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5009 ms. Existing test exceeded the budget before this guard; remove when it meets the budget.",
+		"added": "2026-10-22",
+		"backlog": "Duplicate-name rename carry-over of an existing allowlist entry (no new allowance); see the duplicate-test-names backlog item",
+		"run": "39752400359"
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/line-ending-files.test.ts",
+		"name": "writes submitted lesson bytes literally, including mixed endings and removed final newline",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5108 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/manifest-module-assembly.test.ts",
+		"name": "assembles Orientation and three modules in manifest order with durable local page identities",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5001 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/manifest-module-assembly.test.ts",
+		"name": "retains lesson-local canonical and legacy page styles in full-course input without rewriting source",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5011 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/manifest-module-assembly.test.ts",
+		"name": "uses each lesson's leading delimiter as its first page in an assembled course",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5015 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/narration-authoring.test.ts",
+		"name": "N2 accept clears a flag while keeping the original recording and provenance",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5079 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/narration-authoring.test.ts",
+		"name": "N2 accept preserves every byte outside the target entry",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5020 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/narration-authoring.test.ts",
+		"name": "N2 attach links an existing recording and refuses unresolved targets",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5038 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/narration-authoring.test.ts",
+		"name": "N2 attach refuses ../outside.mp3 without changing sidecar",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5004 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/narration-authoring.test.ts",
+		"name": "N2 attach refuses an asset junction escaping the project",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5052 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/narration-authoring.test.ts",
+		"name": "N2 attach refuses assets without changing sidecar",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5010 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/narration-authoring.test.ts",
+		"name": "N2 attach refuses assets/../../outside.mp3 without changing sidecar",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5189 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/narration-authoring.test.ts",
+		"name": "N2 attach refuses assets/missing.mp3 without changing sidecar",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5004 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/narration-authoring.test.ts",
+		"name": "N2 attach refuses Windows drive path without changing sidecar",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5106 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/narration-authoring.test.ts",
+		"name": "N2 attach refuses https://example.com/clip.mp3 without changing sidecar",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5005 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/narration-authoring.test.ts",
+		"name": "N2 attaches a new entry to a empty sidecar",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5021 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/narration-authoring.test.ts",
+		"name": "N2 attaches a new entry to a flow sidecar",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5021 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/narration-authoring.test.ts",
+		"name": "N2 attaches a new entry to a missing sidecar",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5003 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/narration-authoring.test.ts",
+		"name": "N2 keeps cross-lesson entries linked in both status and the panel",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5004 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/narration-authoring.test.ts",
+		"name": "N2 refuses a stale panel baseline and preserves the outside edit",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5003 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/narration-authoring.test.ts",
+		"name": "N2 status lists flagged and unresolved targets without writes",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5069 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/narration.test.ts",
+		"name": "Soniox narration boundary > accepts audio only after audio_end, terminated, and complete timestamps",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3806 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/nested-project-reader.test.ts",
+		"name": "parent tree and browser watcher wait for a nested course.yaml capture in another process",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5003 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/nested-project-reader.test.ts",
+		"name": "parent tree and browser watcher wait for a nested lesson.prax capture in another process",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5068 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-file-journal.test.ts",
+		"name": "T1 admits after death inside empty abort publication",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4102 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-file-journal.test.ts",
+		"name": "T1 admits after death inside partial abort publication",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3527 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-file-journal.test.ts",
+		"name": "T1 finishes a durable abort even when every installed byte matches to",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2870 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-file-journal.test.ts",
+		"name": "T1 installs all content before heads even when the head is first in the plan",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2280 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-file-journal.test.ts",
+		"name": "T1 keeps outside edits to untouched targets after death at abort",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5006 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-file-journal.test.ts",
+		"name": "T1 keeps outside edits to untouched targets after death at installed:0",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5004 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-file-journal.test.ts",
+		"name": "T1 keeps outside edits to untouched targets after death at staged:0",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2869 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-file-journal.test.ts",
+		"name": "T1 keeps the existing lesson caller and identity in one journal after death at lesson-head",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 6400 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-file-journal.test.ts",
+		"name": "T1 keeps the existing lesson caller and identity in one journal after death at lesson-source",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5082 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-file-journal.test.ts",
+		"name": "T1 preserves every other byte in a mixed-ending text edit",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2728 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-file-journal.test.ts",
+		"name": "T1 preserves mixed endings through the existing lesson caller",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2974 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-file-journal.test.ts",
+		"name": "T1 preserves unknown lesson bytes and reports a conflict before the durable final head",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5011 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-file-journal.test.ts",
+		"name": "T1 reclaims a verified cleanup orphan on write admission and keeps unverified bytes",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5023 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-file-journal.test.ts",
+		"name": "T1 recovers after real process death at head:2",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2453 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-file-journal.test.ts",
+		"name": "T1 recovers after real process death at installed:0",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2674 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-file-journal.test.ts",
+		"name": "T1 recovers after real process death at installed:1",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4323 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-file-journal.test.ts",
+		"name": "T1 refuses corrupt journal without touching any course bytes",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2044 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-file-journal.test.ts",
+		"name": "T1 refuses missing readiness without touching any course bytes",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4774 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-file-journal.test.ts",
+		"name": "T1 repeats conflict recovery after death inside empty conflict publication",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4123 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-file-journal.test.ts",
+		"name": "T1 repeats conflict recovery after death inside partial conflict publication",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4333 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-file-journal.test.ts",
+		"name": "T1 repeats rollback after the recovering process dies",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3658 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-file-journal.test.ts",
+		"name": "T1 restores absence and deleted bytes after a killed binary plan",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3403 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-file-journal.test.ts",
+		"name": "T1 retains recovery copies for a file named install.tmp",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3333 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-file-journal.test.ts",
+		"name": "T1 rolls back when one of several heads has advanced",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4204 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-cleanup-races.test.ts",
+		"name": "rollback retains the cleanup inode after detach-edit, after-unlink, before-unlink, createOnly=false",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5051 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-cleanup-races.test.ts",
+		"name": "rollback retains the cleanup inode after detach-edit, finish, before-unlink, createOnly=false",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4602 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-cleanup-races.test.ts",
+		"name": "rollback retains the cleanup inode after detach-known, finish, before-unlink, createOnly=false",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4217 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-cleanup-races.test.ts",
+		"name": "rollback retains the cleanup inode after rewrite, finish, before-unlink, createOnly=false",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4029 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-cleanup-races.test.ts",
+		"name": "save retains the cleanup inode after detach-edit, after-unlink, before-unlink, createOnly=false",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2835 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-cleanup-races.test.ts",
+		"name": "save retains the cleanup inode after detach-edit, finish, before-unlink, createOnly=false",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4694 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-cleanup-races.test.ts",
+		"name": "save retains the cleanup inode after detach-edit, finish, retired, createOnly=true",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2444 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-cleanup-races.test.ts",
+		"name": "save retains the cleanup inode after detach-known, finish, before-unlink, createOnly=false",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3394 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-cleanup-races.test.ts",
+		"name": "save retains the cleanup inode after rewrite, finish, before-unlink, createOnly=false",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3909 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-commit-marker.test.ts",
+		"name": "keeps durable installed peers when committed publication fails after rename",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3929 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-commit-marker.test.ts",
+		"name": "keeps durable installed peers when committed publication fails before rename",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4696 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-design.test.ts",
+		"name": "D2 isolates archives after death between publication and source retirement at design:link",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4293 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-design.test.ts",
+		"name": "D2 isolates archives after death between publication and source retirement at design:recover-link",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4690 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-design.test.ts",
+		"name": "D2 leaves only independent archive files after rollback",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3138 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-design.test.ts",
+		"name": "D3 resumes reclamation after death immediately after the quarantine rename",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3014 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-design.test.ts",
+		"name": "design probe B restores a capture after real process death without aliasing the live file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2821 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-faults.test.ts",
+		"name": "design probe A keeps committed peers after death at the last head and an outside edit",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5083 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-faults.test.ts",
+		"name": "T1 finalizes head:2 without requiring write access to unchanged targets",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5055 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-faults.test.ts",
+		"name": "T1 refuses an identity changed after it was read without rolling over the external bytes",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3202 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-faults.test.ts",
+		"name": "T1 restores a replacement whose link succeeded before reporting failure",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2696 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-live-edits.test.ts",
+		"name": "a lesson reached through a linked parent can remove after rollback without a recovery notice",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2290 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-live-edits.test.ts",
+		"name": "a lesson reached through a linked parent can remove after save without a recovery notice",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2568 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-live-edits.test.ts",
+		"name": "a lesson reached through a linked parent can rewrite after rollback without a recovery notice",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2912 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-live-edits.test.ts",
+		"name": "a lesson reached through a linked parent can rewrite after save without a recovery notice",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2212 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review-fixes.test.ts",
+		"name": "P1 recovers a torn identity and identical outside bytes, malformed published=false",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3500 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review-fixes.test.ts",
+		"name": "P1 recovers a torn identity and identical outside bytes, malformed published=true",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4378 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review-fixes.test.ts",
+		"name": "P2 reclaims a torn independent copy with 0 planned bytes after recovery death",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5015 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review-fixes.test.ts",
+		"name": "P2 reclaims a torn independent copy with 1 planned bytes after recovery death",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5068 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review-fixes.test.ts",
+		"name": "P2 reclaims a torn restore copy with 0 planned bytes after recovery death",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5014 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review-fixes.test.ts",
+		"name": "P2 reclaims a torn restore copy with 1 planned bytes after recovery death",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5029 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review-fixes.test.ts",
+		"name": "P2 resumes death during isolation, abandoned=false",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4611 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review-fixes.test.ts",
+		"name": "P2 resumes death during isolation, abandoned=true",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3563 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review-fixes.test.ts",
+		"name": "P2 silently reclaims committed.tmp with 1 planned bytes after death",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2310 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review-fixes.test.ts",
+		"name": "P2 silently reclaims install-0.identity with 0 planned bytes after death",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2129 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review-fixes.test.ts",
+		"name": "P2 silently reclaims install-0.identity with 1 planned bytes after death",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2216 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review-fixes.test.ts",
+		"name": "P2 silently reclaims installed-0.tmp with 0 planned bytes after death",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3951 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review-fixes.test.ts",
+		"name": "P2 silently reclaims installed-0.tmp with 1 planned bytes after death",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3097 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review-fixes.test.ts",
+		"name": "P2 silently reclaims rollback-0.attempt-[0-9a-f-]+ with 0 planned bytes after death",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5082 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review-fixes.test.ts",
+		"name": "P2 silently reclaims rollback-0.attempt-[0-9a-f-]+ with 1 planned bytes after death",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5021 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review-fixes.test.ts",
+		"name": "P2 silently reclaims rollback-0.attempt-[0-9a-f-]+.capture-[0-9a-f-]+.intent.tmp with 0 planned bytes after death",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5013 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review-fixes.test.ts",
+		"name": "P2 silently reclaims rollback-0.attempt-[0-9a-f-]+.capture-[0-9a-f-]+.intent.tmp with 1 planned bytes after death",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5018 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review-fixes.test.ts",
+		"name": "P2 silently reclaims rollback-0.attempt-[0-9a-f-]+.identity with 0 planned bytes after death",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5008 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review-fixes.test.ts",
+		"name": "P2 silently reclaims rollback-0.attempt-[0-9a-f-]+.identity with 1 planned bytes after death",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5275 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review-fixes.test.ts",
+		"name": "P3 refuses an uppercase reserved journal after a real writer death",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3650 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review-fixes.test.ts",
+		"name": "recovers a legacy post-ready linked installation after real death",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4353 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review-fixes.test.ts",
+		"name": "retains differing installed-0.tmp bytes after real death",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4722 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review2.test.ts",
+		"name": "F1 permits removing the deleted lesson's own trailing comment",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2895 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review2.test.ts",
+		"name": "S2 serializes two courses' Git exclusions and retains an author's concurrent append",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3149 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review2.test.ts",
+		"name": "S3 parent admission keeps a running manifest-free nested stage",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2328 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review2.test.ts",
+		"name": "S4 CLI discovers, extracts and explicitly resolves retained recovery bytes",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5067 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review2.test.ts",
+		"name": "S5 recovers directory rename death and keeps outside creations=false",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5022 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review2.test.ts",
+		"name": "S5 recovers directory rename death and keeps outside creations=true",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3514 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review2.test.ts",
+		"name": "S5 removes only empty destination directories after failed staging and permits retry",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2407 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "B1 archives a displaced open file until a later admission, forward",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4348 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "B1 archives a displaced open file until a later admission, recovery",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5016 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "B1 lists intact captures for inspection without raising a recovery notice",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5494 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "B1 reclaims unchanged captures only on a later admission",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5045 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "B2 preserves an outside deletion after rollback completion",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5119 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "B2 resumes a second recovery death at link-after",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5019 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "B2 resumes a second recovery death at link-before",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5112 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "B2 resumes a second recovery death at rollback-completed-after",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4895 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "B2 resumes a second recovery death at rollback-displaced-after",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5246 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "B2 resumes abort death at capture-after before admitting a lesson reader",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5039 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "B2 resumes abort death at capture-before before admitting a lesson reader",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5506 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "B2 resumes abort death at link-after before admitting a lesson reader",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5064 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "B2 resumes abort death at link-before before admitting a lesson reader",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5411 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "B2 resumes abort death at rollback-completed-after before admitting a lesson reader",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5124 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "B2 resumes abort death at rollback-displaced-after before admitting a lesson reader",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5063 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "B2 resumes abort death at rollback-intent-after before admitting a lesson reader",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5012 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "B2 resumes recovery death at capture-after before admitting a lesson reader",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5010 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "B2 resumes recovery death at capture-before before admitting a lesson reader",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5113 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "B2 resumes recovery death at link-after before admitting a lesson reader",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5287 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "B2 resumes recovery death at link-before before admitting a lesson reader",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5021 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "B2 resumes recovery death at rollback-completed-after before admitting a lesson reader",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5032 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "B2 resumes recovery death at rollback-displaced-after before admitting a lesson reader",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 6482 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "B2 resumes recovery death at rollback-intent-after before admitting a lesson reader",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5033 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "S1 changes exactly the lesson inventory and validates the complete manifest through its reader",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3165 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death abort journal-remove-after preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5149 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death abort journal-remove-before preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5069 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death abort stage-remove-before preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5087 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death abort temp-chmod preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4499 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death abort temp-empty preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5010 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death abort temp-flushed preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5070 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death abort temp-partial preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5008 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death abort temp-prefix preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5008 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death abort temp-written preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5084 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death forward capture-after preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3253 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death forward committed-head preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3116 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death forward journal-remove-after preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4352 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death forward journal-remove-before preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5188 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death forward link-after preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4973 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death forward link-before preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5058 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death forward marker-after preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4282 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death forward marker-before preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4239 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death forward stage-remove-before preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5072 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death forward temp-chmod preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5015 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death forward temp-empty preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2208 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death forward temp-partial preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5011 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death forward temp-prefix preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5318 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death forward temp-written preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3141 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death recovery journal-remove-after preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2844 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death recovery journal-remove-before preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2986 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death recovery stage-remove-before preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4802 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death recovery temp-chmod preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4377 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death recovery temp-empty preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4411 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death recovery temp-flushed preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5022 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death recovery temp-partial preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5012 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death recovery temp-prefix preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5041 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-review3.test.ts",
+		"name": "storage death recovery temp-written preserves every course file",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5022 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-snapshot.test.ts",
+		"name": "T1 excludes reserved recovery paths nested in exported assets",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5160 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-snapshot.test.ts",
+		"name": "T1 export holds one admission across a competing complete course write",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5096 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-snapshot.test.ts",
+		"name": "T1 inspect holds one admission across a competing complete course write",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5082 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-snapshot.test.ts",
+		"name": "T1 inspect-v1 holds one admission across a competing complete course write",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5033 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-snapshot.test.ts",
+		"name": "T1 inspectProject reads hashes only after course recovery",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5048 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-snapshot.test.ts",
+		"name": "T1 inspectProjectV1 reads hashes only after course recovery",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5047 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-stage.test.ts",
+		"name": "D7 stages one source per replacement in a flat archive and consumes it at installation",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2727 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-writers.test.ts",
+		"name": "T1 recovers the complete authored create plan after actual process death",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5062 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-writers.test.ts",
+		"name": "T1 recovers the complete authored delete plan after actual process death",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5132 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-writers.test.ts",
+		"name": "T1 recovers the complete authored manifest plan after actual process death",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5316 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-writers.test.ts",
+		"name": "T1 recovers the complete authored narration plan after actual process death",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5015 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-journal-writers.test.ts",
+		"name": "T1 recovers the complete authored rename plan after actual process death",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5300 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-lock-ownership.test.ts",
+		"name": "does not recover a live writer while staged filesystem I/O is indefinitely stalled",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 15096 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-lock-ownership.test.ts",
+		"name": "mtime changes cannot compromise an owner or crash its process",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5303 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-lock-ownership.test.ts",
+		"name": "recovers a killed staged text writer and removes abandoned staging directories",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5069 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-lock-ownership.test.ts",
+		"name": "retains differing staging bytes after a writer death without blocking a later save",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3767 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-open-recovery.test.ts",
+		"name": "browser snapshot reports an outside edit to retained recovery bytes without marking or changing them",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5078 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-open-recovery.test.ts",
+		"name": "CLI recovery refuses corrupt journals and keeps an outside edit during conflict recovery",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5126 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-open-recovery.test.ts",
+		"name": "inspect and export refuse without writes, name a working recovery command, then succeed",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5031 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-open-recovery.test.ts",
+		"name": "old-editor preview refuses a pending journal without recovery, then compiles without writes",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5026 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-open-recovery.test.ts",
+		"name": "praxity studio recovers a dead writer's course.yaml before discovery and serves the editor snapshot",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5042 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-open-recovery.test.ts",
+		"name": "praxity studio recovers a dead writer's lesson.prax before discovery and serves the editor snapshot",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5022 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-os-lock.test.ts",
+		"name": "ignores obsolete owner records without inferring ownership: {\"pid\":1,\"host\":\"another-host\"}",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2124 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-os-lock.test.ts",
+		"name": "ignores obsolete owner records without inferring ownership: truncated",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2209 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-os-lock.test.ts",
+		"name": "keeps unverified recovery bytes with an uppercase nested .praxity, case-sensitive=false",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2673 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-os-lock.test.ts",
+		"name": "keeps unverified recovery bytes with an uppercase nested .praxity, case-sensitive=true",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2647 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-os-lock.test.ts",
+		"name": "keeps unverified recovery bytes with an uppercase nested course.yaml, case-sensitive=false",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2624 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-os-lock.test.ts",
+		"name": "keeps unverified recovery bytes with an uppercase nested praxity.json, case-sensitive=false",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2141 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-os-lock.test.ts",
+		"name": "keeps unverified recovery bytes with an uppercase nested praxity.json, case-sensitive=true",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2305 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-os-lock.test.ts",
+		"name": "parent recovery preserves nested project stages marked by course.yaml",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2236 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-os-lock.test.ts",
+		"name": "publishes no owner journal that can be truncated during stage registration",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5126 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-os-lock.test.ts",
+		"name": "releases on SIGKILL and cleans stages for every target without an owner journal",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4901 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-os-lock.test.ts",
+		"name": "serializes identity replacement even when the old lock directory is removed after rename dispatch",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5277 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-os-lock.test.ts",
+		"name": "times out a hung owner with a busy error, preserves bytes, and permits retry",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 7588 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-reader-admission.test.ts",
+		"name": "admits completion settings reads during a journal capture",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3880 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-reader-admission.test.ts",
+		"name": "admits config reads during a journal capture",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3664 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-reader-admission.test.ts",
+		"name": "admits file tree reads during a journal capture",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3356 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-reader-admission.test.ts",
+		"name": "admits PDF asset reads during a journal capture",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3033 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-reader-admission.test.ts",
+		"name": "admits workspace config reads during a journal capture",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2453 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-reader-admission.test.ts",
+		"name": "admits workspace detection reads during a journal capture",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4757 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-reader-admission.test.ts",
+		"name": "admits workspace scan reads during a journal capture",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2627 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-reader-admission.test.ts",
+		"name": "browser lesson authorization holds admission through its final path check",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2463 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-reader-admission.test.ts",
+		"name": "stress polls authored files through the reader interfaces while saving",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 9579 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-text-file.test.ts",
+		"name": "acknowledges a committed replacement separately from a cleanup failure",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5036 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-text-file.test.ts",
+		"name": "detects an external edit made during staging",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2355 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-text-file.test.ts",
+		"name": "preserves non-sharing rename errors",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2124 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-text-file.test.ts",
+		"name": "rechecks the save baseline after a sharing failure",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2205 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-text-file.test.ts",
+		"name": "retains original bytes after a partial staged write fails, then permits retry",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3763 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/project-text-file.test.ts",
+		"name": "retries transient EBUSY through the atomic text writer",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2479 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/response-stream-process.test.ts",
+		"name": "survives repeated mid-body disconnects, preview release and shutdown with open descriptors",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 20041 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-cli.test.ts",
+		"name": "studio command > accepts --port and binds exactly that port",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5005 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-cli.test.ts",
+		"name": "studio command > handles an untrusted port holder cleanly: aborted",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2549 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-cli.test.ts",
+		"name": "studio command > handles an untrusted port holder cleanly: crafted",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2512 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-cli.test.ts",
+		"name": "studio command > handles an untrusted port holder cleanly: extra",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2522 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-cli.test.ts",
+		"name": "studio command > handles an untrusted port holder cleanly: malformed",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2515 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-cli.test.ts",
+		"name": "studio command > handles an untrusted port holder cleanly: oversized",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2545 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-cli.test.ts",
+		"name": "studio command > handles an untrusted port holder cleanly: oversizedStream",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2553 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-cli.test.ts",
+		"name": "studio command > handles an untrusted port holder cleanly: redirect",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2542 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-cli.test.ts",
+		"name": "studio command > handles an untrusted port holder cleanly: silent",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2515 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-cli.test.ts",
+		"name": "studio command > handles an untrusted port holder cleanly: slow",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2577 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-cli.test.ts",
+		"name": "studio command > names the course holding a requested port and leaves that Studio working",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5017 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-cli.test.ts",
+		"name": "studio command > prints the fragment capability ready URL after admission and honours --no-open",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5011 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-cli.test.ts",
+		"name": "studio command > reports another program holding the requested port: foreign HTTP",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5015 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-cli.test.ts",
+		"name": "studio command > reports another program holding the requested port: silent listener",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5011 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-cli.test.ts",
+		"name": "studio command > validates the port holder identity: 'empty path'",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5141 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-cli.test.ts",
+		"name": "studio command > validates the port holder identity: 'extra field on an absolute path'",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5050 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-cli.test.ts",
+		"name": "studio command > validates the port holder identity: 'non-200 Studio identity'",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5026 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-cli.test.ts",
+		"name": "studio command > validates the port holder identity: 'non-string path'",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5041 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-cli.test.ts",
+		"name": "studio command > validates the port holder identity: 'overlong path within the response byt…'",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5049 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-cli.test.ts",
+		"name": "studio command > validates the port holder identity: 'relative path'",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5006 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-cli.test.ts",
+		"name": "studio command > validates the port holder identity: 'terminal and bidi controls in an abso…'",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5046 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-cli.test.ts",
+		"name": "studio command > validates the port holder identity: 'wrong service'",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5028 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-export.test.ts",
+		"name": "Studio exports > discloses environment credential availability without exposing or persisting secrets",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5083 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-export.test.ts",
+		"name": "Studio exports > keeps the accessibility gate, requires explicit override and rejects option/schema bypasses",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 17760 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-export.test.ts",
+		"name": "Studio exports > refuses arbitrary destinations and escaping exports links without outside writes",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 8516 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-export.test.ts",
+		"name": "Studio exports > writes HTML ZIP and native PDF under exports and authenticates attachment downloads",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 20184 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
+		"name": ".praxity/local never enters an export, including an asset alias",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5004 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
+		"name": "assetList lists nested files and refuses symlinks leaving the root",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5005 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
+		"name": "D11 resolves an changed outside edit without writing",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5004 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
+		"name": "D11 resolves an removed outside edit without writing",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2431 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
+		"name": "D11 resolves an unrelated outside edit without writing",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5019 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
+		"name": "D17 drafts and clipboard survive a restart on a different port",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5024 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
+		"name": "draft and clipboard persistence are gitignored inside an author's own project",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5017 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
+		"name": "draftPut accepts a higher generation for the same identified node after it moves",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5033 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
+		"name": "draftPut refuses a changed id-free-node owner",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2651 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
+		"name": "draftPut refuses a changed insertion owner",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3373 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
+		"name": "draftPut refuses a changed scope owner",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2493 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
+		"name": "export refuses local data whose canonical directory moved into assets",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2700 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
+		"name": "list refuses local data whose canonical directory moved into assets",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3331 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
+		"name": "manifest and draft RPC reject prototype name __proto__ cleanly",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5014 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
+		"name": "manifest and draft RPC reject prototype name constructor cleanly",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5004 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
+		"name": "manifest and draft RPC reject prototype name toString cleanly",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5012 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
+		"name": "manifestEdit changes only the course scalar bytes, retaining BOM, mixed endings and flow sequences",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3027 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
+		"name": "manifestEdit edits BOM-prefixed frontmatter once and retains its title and body",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3352 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
+		"name": "manifestEdit refuses a stale revision and preserves comments on an admitted edit",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3117 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
+		"name": "manifestEdit refuses an unapplied same-value edit",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2386 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
+		"name": "manifestEdit returns a conflict when an outside writer changes the lesson after revision checking",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4990 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
+		"name": "manifestEdit writes frontmatter design and identity together, retaining lesson body bytes",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4228 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
+		"name": "per-lesson draft buckets retain siblings and survive removal of the lesson",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5006 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
+		"name": "refuses a draft ID collision across lesson owners without replacing either author's text",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5025 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
+		"name": "refuses a draft ID collision across target owners without replacing either author's text",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5019 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
+		"name": "refuses corrupt local records and local symlink parents instead of returning empty success",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5005 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
+		"name": "strict local schemas refuse extra keys and non-project lesson paths before writing",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2818 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
+		"name": "two windows refuse draft generation 1 after generation 7",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3209 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-preview.test.ts",
+		"name": "isolated Studio media and previews > compiles unsaved source through authenticated RPC, without ancestor inheritance or source writes",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 7398 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-preview.test.ts",
+		"name": "isolated Studio media and previews > logs the preview failure cause while keeping the RPC error generic",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5073 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-preview.test.ts",
+		"name": "isolated Studio media and previews > refuses RPC, editor credentials, hostile origins and unauthenticated media",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5053 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio HTTP boundary > adds a restrictive CSP, private caching policy, and no CORS headers to every response",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2970 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio HTTP boundary > admits only rooted metadata baselines, with strict schemas and explicit absence",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3190 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio HTTP boundary > authorizes lesson paths at the root and uses expected-source identity saves",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5178 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio HTTP boundary > binds the requested loopback port without changing the session capability",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4553 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio HTTP boundary > bounds concurrent authenticated event streams",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4373 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio HTTP boundary > bounds HTTP headers while retaining the private response policy on parser rejection",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4008 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio HTTP boundary > does not expose a capability in project files or through a public bootstrap",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5031 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio HTTP boundary > identifies the admitted course without revealing its session capability",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3557 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio HTTP boundary > keeps Host and Origin guards on /api/identity",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2613 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio HTTP boundary > keeps Host and Origin guards on /launch",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2993 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio HTTP boundary > loads courses without rewriting a missing course identity or inheriting a parent workspace",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4252 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio HTTP boundary > reads absolute metadata paths from the project draft owner without admitting other files",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3411 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio HTTP boundary > refreshes the session snapshot after its initial lesson is removed",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2535 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio HTTP boundary > refuses an escaping or dangling metadata link, absolute path: false",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2407 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio HTTP boundary > refuses an escaping or dangling metadata link, absolute path: true",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2666 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio HTTP boundary > refuses duplicate Origin or authorization headers and malformed UTF-8",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3250 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio HTTP boundary > rejects authorization \"\" on RPC, session reads and event streams",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3617 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio HTTP boundary > rejects authorization \"Basic abc\" on RPC, session reads and event streams",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3128 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio HTTP boundary > rejects authorization \"Bearer \" on RPC, session reads and event streams",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2715 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio HTTP boundary > rejects authorization \"Bearer wrong\" on RPC, session reads and event streams",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5008 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio HTTP boundary > rejects Origin http://evil.example, even with the capability",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2409 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio HTTP boundary > rejects Origin http://localhost:1, even with the capability",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5024 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio HTTP boundary > rejects oversized declared and chunked bodies, malformed JSON, and wrong media types",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3203 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio HTTP boundary > rejects wrong Host 127.0.0.1",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3352 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio HTTP boundary > rejects wrong Host 127.0.0.1:1",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3594 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio HTTP boundary > rejects wrong Host localhost",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3404 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio HTTP boundary > reports a retryable file-sharing save refusal and succeeds after release",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5528 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio HTTP boundary > streams external changes, disposes the subscription, and closes listeners idempotently",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3643 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio startup admission > accepts one standalone lesson and rejects an ambiguous folder without listening",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5094 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio startup admission > acknowledges committed courseWriteLesson despite cleanup failure and accepts its next baseline",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5014 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio startup admission > acknowledges committed projectSave despite cleanup failure and accepts its next baseline",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5030 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio startup admission > keeps recovery stages and unmigrated source intact on startup and every editor read",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5067 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio startup admission > refuses absent UI bundles and hidden or traversing manifest lesson names",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5012 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio startup admission > rejects escaping and dangling manifest/config/lesson links before listening",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5005 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio startup admission > returns the shared busy code for reads and writes, keeps source and permits retry after release",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 19462 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/editor-core/src/components/a11y-audit-panel.test.tsx",
+		"name": "A11yAuditPanel dismissal > dismisses only for the current course session",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2419 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/editor-core/src/components/design-navigation-defaults.test.tsx",
+		"name": "persists Accordion style from the actual default control",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4633 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/editor-core/src/components/design-navigation-defaults.test.tsx",
+		"name": "persists Card shadow from the actual default control",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2489 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/editor-core/src/components/design-navigation-defaults.test.tsx",
+		"name": "persists Card transition from the actual default control",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2927 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/editor-core/src/components/design-navigation-defaults.test.tsx",
+		"name": "persists Comparison layout from the actual default control",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2889 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/editor-core/src/components/design-navigation-defaults.test.tsx",
+		"name": "persists Sequence alignment from the actual default control",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2405 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/editor-core/src/components/design-navigation-defaults.test.tsx",
+		"name": "persists Sequence orientation from the actual default control",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2523 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/editor-core/src/components/design-navigation-defaults.test.tsx",
+		"name": "persists Sequence style from the actual default control",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2456 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/editor-core/src/components/design-navigation-defaults.test.tsx",
+		"name": "persists Tabs orientation from the actual default control",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2391 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/editor-core/src/components/design-navigation-defaults.test.tsx",
+		"name": "persists Tabs style from the actual default control",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2768 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/editor-core/src/components/design-navigation-defaults.test.tsx",
+		"name": "preserves image dimensions when editing an exposed card default: {\"size\":\"small\",\"width\":\"full\"}",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2283 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/editor-core/src/components/design-navigation-defaults.test.tsx",
+		"name": "preserves image dimensions when editing an exposed card default: {\"width\":\"full\"}",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2417 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/editor-core/src/components/design-navigation-defaults.test.tsx",
+		"name": "replaces a legacy colored card default without retaining its hidden tint",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2749 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/editor-core/src/components/design-system-panel.test.tsx",
+		"name": "DesignSystemPanel > offers five course palettes",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3580 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/editor-core/src/components/design-system-panel.test.tsx",
+		"name": "DesignSystemPanel > persists Heading size through its real control",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2040 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/editor-core/src/components/design-system-panel.test.tsx",
+		"name": "DesignSystemPanel > replaces all visual customizations when selecting ink",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2097 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/editor-core/src/session/session.test.ts",
+		"name": "session rules > M1 M2 M3 M4: 10,000 random event sequences close only the innermost layer and preserve typed drafts",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 54032 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/src/__tests__/build-desktop-mode.test.ts",
+		"name": "buildScormPackage desktop mode > captures the shared SCORM dependency before desktop assets change",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2118 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/src/__tests__/build-desktop-mode.test.ts",
+		"name": "buildScormPackage desktop mode > carries a course pass mark to the page host config and both SCORM manifests",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2575 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/src/__tests__/build-desktop-mode.test.ts",
+		"name": "buildScormPackage desktop mode > optimizes one image in the shared artifact for preview, HTML, and SCORM",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2855 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/src/__tests__/build-desktop-mode.test.ts",
+		"name": "buildScormPackage desktop mode > publishes filled v3 comparisons and both following blocks",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3056 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/src/__tests__/build-desktop-mode.test.ts",
+		"name": "buildScormPackage desktop mode > uses shared buildScormPackage entrypoint in source mode",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3324 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/src/__tests__/build-desktop-mode.test.ts",
+		"name": "buildScormPackage desktop mode > uses the durable desktop course ID in repeated builds",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2106 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/src/__tests__/third-party-notices.test.ts",
+		"name": "exports prebuilt notices and fails closed when selected font or runtime notices are missing",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2287 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/src/__tests__/third-party-notices.test.ts",
+		"name": "includes React and Tabler terms when their emitted runtime or icon artwork is present",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2514 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/src/__tests__/third-party-notices.test.ts",
+		"name": "preserves exact bilingual course runtime permissions in HTML and SCORM archives",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4945 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/src/__tests__/third-party-notices.test.ts",
+		"name": "preserves selected font terms in source HTML and SCORM archives without compiler licences",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5798 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/tests/adl-conformance.test.ts",
+		"name": "ADL-derived SCORM package conformance checks > builds a scorm2004 PIF with version-correct manifest and resources",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3449 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/tests/adl-conformance.test.ts",
+		"name": "ADL-derived SCORM package conformance checks > maps every content namespace in the exported scorm12 3rd schemaLocation",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3145 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/tests/adl-conformance.test.ts",
+		"name": "ADL-derived SCORM package conformance checks > maps every content namespace in the exported scorm2004 3rd schemaLocation",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3843 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/tests/adl-conformance.test.ts",
+		"name": "ADL-derived SCORM package conformance checks > maps every content namespace in the exported scorm2004 4th schemaLocation",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3600 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/tests/assessment-export-fidelity.test.ts",
+		"name": "assessment export fidelity > html package preserves matrix, hotspot, categorize, and card block data",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2468 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/tests/assessment-export-fidelity.test.ts",
+		"name": "assessment export fidelity > scorm12 package preserves matrix, hotspot, categorize, and card block data",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3809 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/tests/assessment-export-fidelity.test.ts",
+		"name": "assessment export fidelity > scorm2004 package preserves matrix, hotspot, categorize, and card block data",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3560 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/tests/build.test.ts",
+		"name": "buildScormPackage > deploys one opaque target-neutral artifact more than once until disposal",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 6294 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/tests/build.test.ts",
+		"name": "buildScormPackage > fingerprints the final course stylesheet bytes",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2514 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/tests/build.test.ts",
+		"name": "buildScormPackage > loads the SCORM dependency before the host in content and utility documents, Guided=false",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3030 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/tests/build.test.ts",
+		"name": "buildScormPackage > loads the SCORM dependency before the host in content and utility documents, Guided=true",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5356 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/tests/build.test.ts",
+		"name": "buildScormPackage > packages only the islands referenced by the course",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2078 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/tests/build.test.ts",
+		"name": "buildScormPackage > produces identical core files from identical normalized input",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2823 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/tests/build.test.ts",
+		"name": "buildScormPackage > returns correct page count for multi-page course",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2696 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/tests/grammar-4-reader.test.ts",
+		"name": "grammar 4 through the existing HTML export > compiles converted leadership lessons and identifies every block/item wrapper",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 27744 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/tests/integration.test.ts",
+		"name": "Integration: buildScormPackage > handles special characters in course and page titles",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2101 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/tests/integration.test.ts",
+		"name": "Integration: buildScormPackage > packages an xAPI launch with the selected LRS host",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2080 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/tests/integration.test.ts",
+		"name": "Integration: buildScormPackage > preserves canonical grammar 4 assessments for published output",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3096 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/tests/integration.test.ts",
+		"name": "Integration: buildScormPackage > uses page break data.title for desktop parser-format page titles",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2525 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/tests/published-output/glossary.test.ts",
+		"name": "published output — glossary > renders authored tooltips as triggers and aggregates them into a glossary page",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 8857 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/export-pipeline/tests/published-output/package-integrity.test.ts",
+		"name": "published fixture package integrity > contains every referenced local file and no host filesystem URLs",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 14221 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/format-renderers/__tests__/course-pdf-content.test.ts",
+		"name": "PDF static content > compiles tables with header associations and expandable long content using native PDF/UA",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3411 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/format-renderers/__tests__/course-pdf-native.test.ts",
+		"name": "exports the public full-featured grammar example with images, math, containers and assessments",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 11317 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/grammar/__tests__/operation-contract.test.ts",
+		"name": "operation contract ownership > declares the three public types only in their owner across the repository",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 13975 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/grammar/__tests__/prax-format-docs.test.ts",
+		"name": "prax-format published spec > runs the block index generator and reproduces the committed reference files",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3154 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/grammar/__tests__/v4-lex.test.ts",
+		"name": "G1 lossless partition > partitions 5,000 deterministic generated inputs including invalid drafts",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 6103 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/grammar/__tests__/v4-tree.test.ts",
+		"name": "G2 recovery never drops learner text > 1,000 deterministic malformed drafts retain every token through nested ownership",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2701 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/operations/__tests__/inline.test.ts",
+		"name": "1,000-seed inline gate: ranges, UTF-8 bytes, complete fates and exact undo",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 23181 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/operations/__tests__/operations.test.ts",
+		"name": "O1 public registry > byte and mapping gate: 1,000 seeded valid operations across LF, CRLF and mixed files",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 10808 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/operations/__tests__/operations.test.ts",
+		"name": "O1 public registry > byte gate on the converted leadership and toolkit corpus, with exact undo",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4899 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/operations/__tests__/operations.test.ts",
+		"name": "O3 items and columns > O3 byte and mapping gate: 1,000 seeds include every item and column operation",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 16942 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/operations/__tests__/pages-paste.test.ts",
+		"name": "1,000 multi-file seeds preserve untouched UTF-8, valid parsing, fates and exact inverses",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 23434 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/operations/__tests__/similar-descendants.test.ts",
+		"name": "O2 similar descendants through applyOperation > 1,000 seeded edits cover similar, retired, copied and unresolved descendants with exact undo",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 25296 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/operations/__tests__/transforms.test.ts",
+		"name": "O4 schema conversions > all schema settings and parts are preserved or dropped by their declaration",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 9458 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/operations/__tests__/transforms.test.ts",
+		"name": "O4 wrapping, merging and replacement > O4 byte and mapping gate, 1,000 seeded operations",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 16726 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "packages/shared-blocks/tests/sanitize-performance.test.ts",
+		"name": "sanitizer traversal > does not register window listeners after 1,000 unique calls",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2154 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/shared/project-write-errors.test.ts",
+		"name": "has no question marks inside words in French catalogs or message modules",
+		"reason": "Borderline on merge candidate run 39192695623 (Linux shared host): 3322 ms in shard, 2135 ms alone. Unrelated to the candidate; remove when it meets the 2000 ms budget.",
+		"added": "2026-10-19",
+		"run": "39192695623",
+		"backlog": "Merge candidate run 39192695623: borderline slow-test follow-up, expire 2026-11-02"
+	},
+	{
+		"file": "packages/export-pipeline/tests/self-check-release.test.ts",
+		"name": "publishes the en fixture through the project CLI",
+		"reason": "Borderline on merge candidate run 39192695623 (Linux shared host): 2154 ms in shard, 2005 ms alone. Unrelated to the candidate; remove when it meets the 2000 ms budget.",
+		"added": "2026-10-19",
+		"run": "39192695623",
+		"backlog": "Merge candidate run 39192695623: borderline slow-test follow-up, expire 2026-11-02"
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/identity-write-correspondence.test.ts",
+		"name": "I4 a successful edit returns New and its child to the author, then reloads durable IDs",
+		"reason": "Over budget on PR run 39212840453 (Linux shared host): 2957 ms in shard, 2380 ms alone. Remove when it meets the 2000 ms budget.",
+		"added": "2026-10-19",
+		"run": "39212840453",
+		"backlog": "PR run 39212840453: identity write-correspondence test over budget, expire 2026-11-02"
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
+		"name": "O7 move keeps every moved ID without creating review metadata",
+		"reason": "Over budget on PR run 39259956943 (Linux shared host): 4000 ms in shard, 3247 ms alone. Remove when it meets the 2000 ms budget.",
+		"added": "2026-10-19",
+		"run": "39259956943",
+		"backlog": "PR run 39259956943: edit CLI O7 move test over budget, expire 2026-11-02"
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/lesson-source-identity-reuse.test.ts",
+		"name": "rereads oversized history but validates it once in a clean public save",
+		"reason": "Over budget on PR run 39259956943 (Linux shared host): 2303 ms in shard, 2064 ms alone. Remove when it meets the 2000 ms budget.",
+		"added": "2026-10-19",
+		"run": "39259956943",
+		"backlog": "PR run 39259956943: identity-reuse oversized-history test over budget, expire 2026-11-02"
+	},
+	{
+		"file": "packages/editor-core/src/frame-bridge/control-lifetime.test.ts",
+		"name": "retired handles and shadow adapters can be collected while the lens stays alive",
+		"reason": "Borderline on merge candidate run 39449974372 (#1826, Linux shared host): 2934 ms in shard, 2070 ms alone. Unrelated to the candidate; remove when it meets the 2000 ms budget.",
+		"added": "2026-10-20",
+		"run": "39449974372",
+		"backlog": "Merge candidate run 39449974372: editor-core GC test slow-test follow-up, expire 2026-11-03"
+	}
+]

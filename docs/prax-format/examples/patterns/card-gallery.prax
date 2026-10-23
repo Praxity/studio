@@ -1,0 +1,49 @@
+---
+title: Safety Team Directory
+description: Card grid introducing team members or roles. Use columns to control
+  how many cards appear per row. Start with 3 columns and check the layout at
+  narrow widths.
+lang: en
+design:
+  palette: bauhaus
+  colorMode: light
+  accentHue: 196
+---
+
+# Your Safety Team {hideTitle}
+
+## Your Safety Team
+
+These are the people you contact when you have a hazard to report, a question about procedure, or a concern that hasn't been resolved. `columns: 3` keeps the grid scannable without requiring scrolling on a standard display.
+
+::: cards Directory {layout=grid columns=3}
+:: Fatima Osei, Safety Lead
+![Portrait photo of Fatima Osei](/assets/team/fatima-osei.png)
+
+Fatima oversees all incident reporting and leads the monthly safety audit. Contact her for escalations and policy questions.
+
+:: Marcus Chen, Ergonomics Specialist
+![Portrait photo of Marcus Chen](/assets/team/marcus-chen.png)
+
+Marcus assesses workstation setup, manual handling risks, and repetitive strain concerns. Request a workstation review through the facilities portal.
+
+:: Priya Nair, Emergency Response Coordinator
+![Portrait photo of Priya Nair](/assets/team/priya-nair.png)
+
+Priya runs evacuation drills and maintains first-aid station inventory. She is the primary contact during any declared emergency.
+
+:: Jerome Beaumont, Chemical Safety Officer
+![Portrait photo of Jerome Beaumont](/assets/team/jerome-beaumont.png)
+
+Jerome manages SDS records and chemical storage compliance. Contact him before introducing any new substance to the facility.
+
+:: Adaeze Iwu, Training Coordinator
+![Portrait photo of Adaeze Iwu](/assets/team/adaeze-iwu.png)
+
+Adaeze schedules mandatory safety training, tracks completion records, and coordinates onboarding for new hires.
+
+:: Raj Thandavamurthy, Environmental Health Officer
+![Portrait photo of Raj Thandavamurthy](/assets/team/raj-thandavamurthy.png)
+
+Raj monitors air quality, noise levels, and waste handling. Submit environmental observations through the EHS portal.
+:::

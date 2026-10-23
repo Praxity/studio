@@ -1,0 +1,24 @@
+# Gitleaks configuration. Extends the default rules; .gitleaksignore still
+# lists exact historical findings.
+[extend]
+useDefault = true
+
+# Message keys are dotted lowercase identifiers in Praxity's own namespaces
+# (MessageRef keys such as "grammar.v4.child-count" or "op.refusal.stale").
+# Secrets don't take this shape, and the generic API-key rule flags them
+# wherever a field is named `key` or `labelKey`, in assignments and in
+# comparisons such as `messageRef.key === "grammar.v4.disallowed-child"`.
+[[allowlists]]
+description = "Praxity message keys"
+regexTarget = "match"
+regexes = ['''(?i)(?:label)?key["']?\s*(?:[:=]|[!=]==?)\s*["'](?:grammar|op|identity|narration|editor|studio|convert|praxity)\.[a-z0-9]+(?:[.-][a-z0-9]+)*["']''']
+
+# Export baseline tests pin SHA-256 digests of generated output, keyed by
+# "<variant>/<format>". The generic API-key rule reads 64-hex values as keys.
+# Scoped to that test file and that exact shape so real secrets still match.
+[[allowlists]]
+description = "Export output SHA-256 baselines"
+condition = "AND"
+paths = ['''^packages/export-pipeline/src/__tests__/build-desktop-mode\.test\.ts$''']
+regexTarget = "line"
+regexes = ['''^\s*"(?:pages|guided|deck|module-deck)/(?:html|scorm12|scorm2004|xapi|pdf)": "[0-9a-f]{64}",?\s*$''']

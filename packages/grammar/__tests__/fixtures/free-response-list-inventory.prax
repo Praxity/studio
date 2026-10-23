@@ -1,0 +1,51 @@
+---
+title: Vérification des propositions
+lang: fr
+---
+
+# Consignes de réflexion
+
+::: group Votre journal de la semaine
+button: Enregistrer mes réponses
+::: free-response Comment l’échange s’est-il passé ? {download=both}
+- Qu’avez-vous ressenti ?
+- Comment l’autre personne a-t-elle réagi ?
+- Qu’avez-vous appris ?
+placeholder: Mes observations
+:::
+:::
+
+# Échelle de fréquence
+
+::: rating À quelle fréquence exprimez-vous vos besoins ?
+1. 1, rarement
+2. 2
+3. 3
+4. 4
+5. 5
+6. 6
+7. 7
+8. 8
+9. 9
+10. 10, très souvent
+:::
+
+# Classement avec explication
+
+::: categorize Classez chaque énoncé.
+feedback: La remise du rapport vendredi est un fait vérifiable. « Je trouve… » exprime un jugement personnel. « Pour me nuire » attribue une intention sans preuve.
+:: Fait
+- Le rapport a été remis vendredi.
+:: Opinion
+- Je trouve le rapport incomplet.
+:: Interprétation
+- Il a remis le rapport en retard pour me nuire.
+:::
+
+# Association avec explication
+
+::: match Associez les répliques.
+feedback: La première réplique reprend la demande; la seconde décrit un effet sur soi.
+- Comme je le disais, j’ai besoin du rapport jeudi. -> Répétition
+- Quand la réunion commence en retard, je me sens bousculé. -> Le « je »
+:::

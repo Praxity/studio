@@ -1,0 +1,6288 @@
+@import "../reading-rhythm.css";
+
+/* The control default precedes the more specific circle, key and joined-tab roles. */
+[data-praxity-root] :is(button, input, select, textarea, [role="button"]) {
+	border-radius: var(--radius-control);
+}
+
+/* packages/shared-blocks/src/blocks/shared-blocks.css
+ *
+ * Shared CSS classes for published-output block renderers.
+ * All colors/spacing reference --praxity-* variables so they respond
+ * to reading-setting and platform-preference overrides.
+ */
+
+/* ── Columns base layout ── */
+/* Flex container for column blocks. The narrow-viewport container query
+   below overrides this to flex-direction: column for stacking. */
+[data-praxity-root] .praxity-columns {
+	display: flex;
+	gap: var(--space-3);
+	width: 100%;
+	max-width: 100%;
+	min-width: 0;
+	box-sizing: border-box;
+}
+[data-praxity-root] .praxity-column {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+@container preview-content (max-width: 480px) {
+	[data-praxity-root]:not([data-praxity-text-size]) {
+		font-size: var(--type-small);
+	}
+
+	/*
+	 * Stacked, the columns become sequential sections, so the row gap has to
+	 * carry the separation a heading's own top margin used to fake. 12px reads
+	 * as one continuous run of text.
+	 */
+	[data-praxity-root] .praxity-columns {
+		display: flex;
+		flex-direction: column;
+		column-gap: var(--space-3);
+		row-gap: calc(var(--praxity-block-spacing, var(--space-4)) * 1.5);
+	}
+
+	[data-praxity-root] .praxity-column {
+		flex: 1 1 auto !important;
+	}
+
+	[data-praxity-root] .praxity-hero-cover-content {
+		padding: var(--space-6) var(--space-4);
+	}
+}
+
+@container preview-content (min-width: 481px) and (max-width: 768px) {
+	[data-praxity-root] .praxity-hero-cover-content {
+		padding: var(--space-8) var(--space-4);
+	}
+}
+
+/* --- Layout utilities --- */
+
+.praxity-layout-narrow {
+	box-sizing: border-box;
+	width: min(100%, 45ch);
+	margin-inline: auto;
+}
+
+.praxity-layout-wide,
+.praxity-layout-full,
+.praxity-layout-breakout {
+	width: var(--_target-w);
+	max-width: none;
+	margin-inline: calc((var(--_target-w) - 100%) / -2);
+}
+
+.praxity-layout-wide {
+	--_target-w: min(calc(100% * 1.3), calc(var(--praxity-container-width, 100vw) - 3rem));
+}
+
+.praxity-layout-full {
+	--_target-w: calc(var(--praxity-container-width, 100vw) - 3rem);
+}
+
+.praxity-layout-breakout {
+	--_target-w: min(calc(100% * 1.6), calc(var(--praxity-container-width, 100vw) - 3rem));
+}
+
+@media (max-width: 768px) {
+	.praxity-layout-wide,
+	.praxity-layout-full,
+	.praxity-layout-breakout {
+		width: 100%;
+		margin-inline: 0;
+	}
+}
+
+.praxity-block-relative {
+	position: relative;
+}
+
+.praxity-flex-center {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.praxity-flex-col {
+	display: flex;
+	flex-direction: column;
+}
+
+.praxity-block-loading {
+	position: relative;
+	isolation: isolate;
+	display: grid;
+	place-items: center;
+	border-radius: var(--radius-control);
+	color: var(--praxity-color-text);
+}
+
+/* A steady tint keeps the loading message readable without a decorative loop. */
+.praxity-block-loading::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	border-radius: inherit;
+	background: var(--praxity-surface-muted);
+	opacity: 0.6;
+	pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.praxity-block-loading::before {
+		animation: none;
+		opacity: 0.6;
+	}
+}
+
+[data-praxity-reduced-motion] .praxity-block-loading::before {
+	animation: none;
+}
+
+/* --- Accent badge (numbered circles in SequenceBlock, etc.) --- */
+
+.praxity-accent-badge {
+	width: 28px;
+	height: 28px;
+	border-radius: var(--radius-round);
+	border: 1px solid var(--ink);
+	color: var(--ink);
+	box-sizing: border-box;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: var(--type-small);
+	font-weight: var(--weight-strong);
+	flex-shrink: 0;
+}
+/* Preview and scaled sequences retain continuous tracks. Paper behind an outlined
+   marker masks that track without adding an accent fill. */
+.praxity-block-relative .praxity-accent-badge,
+.praxity-sequence[data-distribution="scaled"] .praxity-accent-badge {
+	background: var(--paper);
+}
+
+/* --- Connector line (SequenceBlock vertical/horizontal) --- */
+
+.praxity-connector-line-v {
+	position: absolute;
+	width: 2px;
+	background: var(--praxity-color-border);
+	z-index: 0;
+}
+
+.praxity-connector-line-h {
+	position: absolute;
+	height: 2px;
+	background: var(--praxity-color-border);
+	z-index: 0;
+}
+
+/* Native published sequence. The ordered list keeps list semantics; these rules
+   only reproduce the authored visual layout without a page-wide React runtime. */
+.praxity-sequence-frame {
+	min-width: 0;
+}
+
+.praxity-sequence {
+	position: relative;
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.praxity-sequence-item {
+	position: relative;
+	min-width: 0;
+}
+
+/* Lists keep a reading edge even when their sequence item faces the connector. */
+.praxity-sequence-item :is(ul, ol) {
+	text-align: start;
+}
+
+.praxity-sequence-item ul {
+	list-style-type: disc;
+}
+
+.praxity-sequence-item :is(ul, ol) ul {
+	list-style-type: circle;
+}
+
+.praxity-sequence-marker {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 28px;
+	min-height: 28px;
+}
+
+.praxity-sequence-content {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+.praxity-sequence-label {
+	margin-bottom: var(--praxity-spacing-xs, var(--space-2));
+	font-weight: var(--weight-strong);
+}
+
+.praxity-sequence[data-orientation="vertical"] .praxity-sequence-marker {
+	align-self: start;
+}
+
+.praxity-sequence[data-orientation="vertical"] .praxity-sequence-item {
+	display: grid;
+	grid-template-columns: 28px minmax(0, 1fr);
+	gap: var(--praxity-spacing-md, var(--space-4));
+}
+
+.praxity-sequence[data-orientation="vertical"] .praxity-sequence-item + .praxity-sequence-item {
+	margin-top: var(--praxity-sequence-gap-before, var(--praxity-spacing-md, var(--space-4)));
+}
+
+.praxity-sequence[data-orientation="vertical"]:not([data-variant="plain"])
+	.praxity-sequence-item:not(:last-child)::after {
+	position: absolute;
+	top: 28px;
+	bottom: calc(var(--praxity-sequence-gap-after, var(--space-6)) * -1);
+	inset-inline-start: 14px;
+	width: 1px;
+	background: var(--line);
+	content: "";
+}
+
+.praxity-sequence[data-orientation="vertical"][data-alignment="right"] .praxity-sequence-item {
+	grid-template-columns: minmax(0, 1fr) 28px;
+}
+
+.praxity-sequence[data-orientation="vertical"][data-alignment="right"] .praxity-sequence-marker {
+	grid-column: 2;
+}
+
+.praxity-sequence[data-orientation="vertical"][data-alignment="right"] .praxity-sequence-content {
+	grid-row: 1;
+	grid-column: 1;
+	text-align: right;
+}
+
+.praxity-sequence[data-orientation="vertical"][data-alignment="right"]:not([data-variant="plain"])
+	.praxity-sequence-item:not(:last-child)::after {
+	inset-inline-start: auto;
+	inset-inline-end: 14px;
+}
+
+.praxity-sequence[data-orientation="vertical"][data-alignment="center"] .praxity-sequence-item {
+	grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr);
+}
+
+.praxity-sequence[data-orientation="vertical"][data-alignment="center"] .praxity-sequence-marker {
+	grid-column: 2;
+}
+
+.praxity-sequence[data-orientation="vertical"][data-alignment="center"]
+	.praxity-sequence-item:nth-child(odd)
+	.praxity-sequence-content {
+	grid-row: 1;
+	grid-column: 1;
+	text-align: right;
+}
+
+.praxity-sequence[data-orientation="vertical"][data-alignment="center"]
+	.praxity-sequence-item:nth-child(even)
+	.praxity-sequence-content {
+	grid-row: 1;
+	grid-column: 3;
+}
+
+.praxity-sequence[data-orientation="vertical"][data-alignment="center"]:not([data-variant="plain"])
+	.praxity-sequence-item:not(:last-child)::after {
+	inset-inline-start: 50%;
+}
+
+.praxity-sequence[data-orientation="vertical"][data-variant="plain"] .praxity-sequence-item {
+	display: block;
+}
+
+.praxity-sequence[data-orientation="vertical"][data-variant="plain"][data-alignment="center"]
+	.praxity-sequence-content {
+	text-align: center;
+}
+
+.praxity-sequence[data-orientation="horizontal"][data-distribution="uniform"] {
+	display: flex;
+	width: 100%;
+	min-width: 100%;
+	gap: var(--praxity-spacing-md, var(--space-4));
+}
+
+.praxity-sequence[data-orientation="horizontal"][data-distribution="uniform"]
+	.praxity-sequence-item {
+	flex: 1 1 0;
+	text-align: center;
+}
+
+.praxity-sequence[data-orientation="horizontal"][data-distribution="uniform"]:not(
+		[data-variant="plain"]
+	)
+	.praxity-sequence-item:not(:last-child)::after {
+	position: absolute;
+	top: 14px;
+	inset-inline-start: calc(50% + 14px);
+	z-index: 0;
+	width: calc(100% + var(--space-6) - 28px);
+	height: 1px;
+	background: var(--line);
+	content: "";
+}
+
+.praxity-sequence[data-orientation="horizontal"] .praxity-sequence-content {
+	margin-top: var(--praxity-spacing-xs, var(--space-2));
+}
+
+.praxity-sequence[data-orientation="horizontal"][data-variant="plain"] .praxity-sequence-content {
+	margin-top: 0;
+}
+
+.praxity-sequence[data-orientation="horizontal"][data-distribution="scaled"] {
+	display: grid;
+	grid-template-columns: repeat(101, minmax(0, 1fr));
+	grid-template-rows: minmax(0, auto) 36px minmax(0, auto);
+	width: 100%;
+}
+
+.praxity-sequence[data-orientation="horizontal"][data-distribution="scaled"]::before {
+	align-self: center;
+	grid-row: 2;
+	grid-column: 1 / -1;
+	height: 2px;
+	background: var(--praxity-color-border);
+	content: "";
+}
+
+.praxity-sequence[data-orientation="horizontal"][data-distribution="scaled"]
+	.praxity-sequence-item {
+	display: grid;
+	grid-row: 1 / 4;
+	grid-column: var(--praxity-sequence-column);
+	grid-template-rows: subgrid;
+	width: clamp(4rem, 18vw, 12.5rem);
+	justify-self: center;
+	text-align: center;
+}
+
+.praxity-sequence[data-orientation="horizontal"][data-distribution="scaled"]
+	.praxity-sequence-marker {
+	grid-row: 2;
+}
+
+.praxity-sequence[data-orientation="horizontal"][data-distribution="scaled"]
+	.praxity-sequence-content {
+	align-self: start;
+	grid-row: 3;
+	margin-top: var(--praxity-spacing-xs, var(--space-2));
+}
+
+.praxity-sequence[data-orientation="horizontal"][data-distribution="scaled"]
+	.praxity-sequence-item[data-label-position="above"]
+	.praxity-sequence-content {
+	align-self: end;
+	grid-row: 1;
+	margin-top: 0;
+	margin-bottom: var(--praxity-spacing-xs, var(--space-2));
+}
+
+.praxity-sequence[data-orientation="horizontal"][data-distribution="scaled"]
+	.praxity-sequence-item:first-child {
+	justify-self: start;
+	text-align: left;
+}
+
+.praxity-sequence[data-orientation="horizontal"][data-distribution="scaled"]
+	.praxity-sequence-item:first-child
+	.praxity-sequence-marker {
+	justify-content: flex-start;
+}
+
+.praxity-sequence[data-orientation="horizontal"][data-distribution="scaled"]
+	.praxity-sequence-item:last-child {
+	justify-self: end;
+	text-align: right;
+}
+
+.praxity-sequence[data-orientation="horizontal"][data-distribution="scaled"]
+	.praxity-sequence-item:last-child
+	.praxity-sequence-marker {
+	justify-content: flex-end;
+}
+
+.praxity-sequence-scroll-region {
+	--praxity-sequence-scroll-button-size: 44px;
+	--praxity-sequence-scroll-button-inset: var(--praxity-spacing-xs, 8px);
+
+	position: relative;
+	max-width: 100%;
+	min-width: 0;
+}
+
+.praxity-sequence-scroll-viewport {
+	max-width: 100%;
+	min-width: 0;
+	overflow-x: auto;
+	overscroll-behavior-x: contain;
+	-webkit-overflow-scrolling: touch;
+}
+
+.praxity-sequence-scroll-region:is(
+		[data-overflow="start"],
+		[data-overflow="end"],
+		[data-overflow="both"]
+	)
+	.praxity-sequence-scroll-viewport {
+	padding-inline: calc(
+		var(--praxity-sequence-scroll-button-size) +
+		var(--praxity-sequence-scroll-button-inset)
+	);
+}
+
+.praxity-sequence-scroll-viewport
+	> .praxity-sequence[data-distribution="uniform"]
+	.praxity-sequence-item {
+	flex: 0 0 220px;
+}
+
+.praxity-sequence-scroll-viewport > .praxity-sequence[data-distribution="scaled"] {
+	width: max(100%, calc(var(--praxity-sequence-count, 3) * 200px));
+}
+
+.praxity-sequence-scroll-viewport:focus-visible,
+.praxity-sequence-scroll-button:focus-visible {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+}
+
+.praxity-sequence-scroll-region::before,
+.praxity-sequence-scroll-region::after {
+	content: "";
+	position: absolute;
+	inset-block: 0;
+	z-index: 2;
+	width: 48px;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.praxity-sequence-scroll-region::before {
+	inset-inline-start: 0;
+	background: linear-gradient(
+		to right,
+		var(--praxity-color-surface, var(--praxity-color-background)),
+		transparent
+	);
+}
+
+.praxity-sequence-scroll-region::after {
+	inset-inline-end: 0;
+	background: linear-gradient(
+		to left,
+		var(--praxity-color-surface, var(--praxity-color-background)),
+		transparent
+	);
+}
+
+.praxity-sequence-scroll-region[data-overflow="start"]::before,
+.praxity-sequence-scroll-region[data-overflow="both"]::before,
+.praxity-sequence-scroll-region[data-overflow="end"]::after,
+.praxity-sequence-scroll-region[data-overflow="both"]::after {
+	opacity: 1;
+}
+
+.praxity-sequence-scroll-button {
+	position: absolute;
+	top: 50%;
+	z-index: 3;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: var(--praxity-sequence-scroll-button-size);
+	height: var(--praxity-sequence-scroll-button-size);
+	padding: 0;
+	transform: translateY(-50%);
+	border: 2px solid var(--praxity-color-border);
+	background: var(--praxity-color-surface, var(--praxity-color-background));
+	color: var(--praxity-color-text);
+	box-shadow: none;
+	cursor: pointer;
+}
+
+.praxity-sequence-scroll-button[hidden] {
+	display: none;
+}
+
+.praxity-sequence-scroll-button[aria-disabled="true"] {
+	opacity: 0.65;
+	cursor: default;
+	box-shadow: none;
+}
+
+.praxity-sequence-scroll-button--start {
+	inset-inline-start: var(--praxity-sequence-scroll-button-inset);
+}
+
+.praxity-sequence-scroll-button--end {
+	inset-inline-end: var(--praxity-sequence-scroll-button-inset);
+}
+
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		.praxity-sequence-scroll-region::before,
+		.praxity-sequence-scroll-region::after {
+			display: none;
+		}
+
+		.praxity-sequence-scroll-button {
+			border-color: ButtonText;
+			background: ButtonFace;
+			color: ButtonText;
+			box-shadow: none;
+		}
+
+		.praxity-sequence-scroll-button[aria-disabled="true"] {
+			border-color: GrayText;
+			color: GrayText;
+			opacity: 1;
+		}
+	}
+}
+
+/* ── Shared block and item entrance motion ── */
+:root {
+	--praxity-stagger-step: 0ms;
+	--praxity-stagger-cap: 5;
+}
+
+/* Five stagger steps plus the state duration stay within the 300ms elapsed budget. */
+[data-praxity-root][data-praxity-motion-stagger="sequential"] {
+	--praxity-stagger-step: 10ms;
+}
+
+[data-praxity-root][data-praxity-motion-entrance] .praxity-block[data-entrance="pending"],
+[data-praxity-root][data-praxity-motion-entrance]
+	:is(.praxity-sequence-item, .praxity-card-item, .praxity-stats-item)[data-entrance="pending"] {
+	opacity: 0;
+	transform: none;
+}
+
+[data-praxity-root][data-praxity-motion-entrance] .praxity-block[data-entrance="visible"] {
+	opacity: var(--praxity-reading-guide-opacity, 1);
+	transform: none;
+	transition:
+		opacity var(--duration-state) var(--ease-out),
+		transform var(--duration-state) var(--ease-out);
+	transition-delay: calc(
+		min(var(--praxity-stagger-index, 0), var(--praxity-stagger-cap, 5)) *
+		var(--praxity-stagger-step, 0ms)
+	);
+}
+
+[data-praxity-root][data-praxity-motion-entrance]
+	:is(.praxity-sequence-item, .praxity-card-item, .praxity-stats-item)[data-entrance="visible"] {
+	opacity: 1;
+	transform: none;
+	transition:
+		opacity var(--duration-state) var(--ease-out),
+		transform var(--duration-state) var(--ease-out);
+	transition-delay: calc(
+		min(var(--i, var(--praxity-stagger-index, 0)), var(--praxity-stagger-cap, 5)) *
+		var(--praxity-stagger-step, 0ms)
+	);
+}
+
+[data-praxity-root][data-praxity-motion-entrance="slide"] .praxity-block[data-entrance="pending"] {
+	transform: translateY(12px);
+}
+
+[data-praxity-root][data-praxity-motion-entrance="slide"]
+	:is(.praxity-sequence-item, .praxity-card-item, .praxity-stats-item)[data-entrance="pending"] {
+	transform: translateY(8px);
+}
+
+[data-praxity-root][data-praxity-motion-entrance="scale"]
+	:is(
+		.praxity-block,
+		.praxity-sequence-item,
+		.praxity-card-item,
+		.praxity-stats-item
+	)[data-entrance="pending"] {
+	transform: scale(0.985);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	[data-praxity-root][data-praxity-motion-entrance] .praxity-block[data-entrance="pending"] {
+		opacity: var(--praxity-reading-guide-opacity, 1);
+		transform: none;
+	}
+	[data-praxity-root][data-praxity-motion-entrance]
+		:is(.praxity-sequence-item, .praxity-card-item, .praxity-stats-item)[data-entrance="pending"] {
+		opacity: 1;
+		transform: none;
+	}
+	[data-praxity-root][data-praxity-motion-entrance]
+		:is(
+			.praxity-block,
+			.praxity-sequence-item,
+			.praxity-card-item,
+			.praxity-stats-item
+		)[data-entrance] {
+		/* Override the viewer's universal reduced-motion duration as well. */
+		transition: none !important;
+		transition-delay: 0ms !important;
+	}
+}
+
+[data-praxity-root][data-praxity-reduced-motion] .praxity-block[data-entrance="pending"] {
+	opacity: var(--praxity-reading-guide-opacity, 1);
+	transform: none;
+}
+
+[data-praxity-root][data-praxity-reduced-motion]
+	:is(.praxity-sequence-item, .praxity-card-item, .praxity-stats-item)[data-entrance="pending"] {
+	opacity: 1;
+	transform: none;
+}
+
+[data-praxity-root][data-praxity-reduced-motion]
+	:is(
+		.praxity-block,
+		.praxity-sequence-item,
+		.praxity-card-item,
+		.praxity-stats-item
+	)[data-entrance] {
+	transition: none !important;
+	transition-delay: 0ms !important;
+}
+
+/* Stale entrance states must not hide content when entrance motion is off.
+   Active modes use the pending/visible rules above and finish at full opacity,
+   unless the learner has explicitly enabled the reading guide. */
+[data-praxity-root]:not([data-praxity-motion-entrance]) .praxity-block[data-entrance],
+[data-praxity-root][data-praxity-motion-entrance="none"] .praxity-block[data-entrance] {
+	opacity: var(--praxity-reading-guide-opacity, 1);
+	transform: none;
+	transition: none;
+}
+
+/* --- Text helpers --- */
+
+.praxity-text-dimmed {
+	color: var(--praxity-color-text-light);
+	font-size: var(--type-small);
+}
+
+.praxity-text-error {
+	color: var(--praxity-color-error-text, var(--praxity-color-error));
+	font-size: var(--type-small);
+}
+
+.praxity-block-caption {
+	color: var(--praxity-color-text-light);
+	font-size: var(--type-small);
+	line-height: var(--leading-small);
+	text-align: start;
+	margin-block: var(--praxity-spacing-xs, var(--space-2)) 0;
+}
+
+.praxity-block-text,
+.praxity-text-content {
+	line-height: var(--praxity-line-height-base, 1.6);
+}
+
+.praxity-block :is(h1, h2, h3, h4, h5, h6) {
+	color: var(--praxity-color-heading, currentColor);
+}
+
+@container course-shell (width < 480px) {
+	/* Enlarged titles need a shorter measure: balancing a full phone line can
+	   strand a short first line when the next word cannot fit beside it. */
+	[data-praxity-root][data-praxity-text-size="large"] .praxity-block :is(h1, h2) {
+		max-inline-size: 17ch;
+	}
+}
+
+/* Large heading type can leave a word wider than a 320px line. Hyphenate it in the
+   document or block language first; break-word then splits only what is still too wide,
+   such as a URL. This replaces the inherited word-break: break-word, which split such
+   words without a hyphen and let a squeezed heading break words that fit. */
+[data-praxity-root] :is(h1, h2, h3, h4, h5, h6) {
+	word-break: normal;
+	overflow-wrap: break-word;
+	/* Safari before 17 reads only the prefixed property. */
+	-webkit-hyphens: manual;
+	hyphens: manual;
+}
+
+/* An inserted hyphen would change code that learners read or copy. */
+[data-praxity-root] :is(h1, h2, h3, h4, h5, h6) :is(code, kbd, samp) {
+	-webkit-hyphens: manual;
+	hyphens: manual;
+}
+
+.praxity-block :is(ul, ol) > li::marker {
+	color: var(--praxity-color-list-marker, currentColor);
+}
+
+.praxity-text-content a {
+	text-decoration-line: underline;
+	text-decoration-color: var(--praxity-link-underline-color, currentColor);
+}
+
+.praxity-block[data-block-type] {
+	margin-top: calc(var(--praxity-flow-gap, 0) * var(--praxity-block-spacing-scale, 1));
+	margin-bottom: 0;
+}
+
+.praxity-block[data-block-type="logic"],
+.praxity-block[data-block-type="variable"] {
+	margin-top: 0;
+	margin-bottom: 0;
+}
+
+/* A top-level slot's gap belongs only to its child block, not to nested flows. */
+.praxity-block[data-block-type] > * {
+	--praxity-flow-gap: 0px;
+}
+
+.praxity-block p,
+.praxity-block h1,
+.praxity-block h2,
+.praxity-block h3,
+.praxity-block h4,
+.praxity-block h5,
+.praxity-block h6 {
+	margin: 0;
+}
+
+.praxity-block[data-block-type="text"] p + p {
+	margin-top: var(--paragraph-gap);
+}
+
+/* A real formatting context bounds each authored float without changing block identities. */
+.praxity-float-region {
+	display: flow-root;
+	container-type: inline-size;
+	container-name: praxity-image-float;
+	grid-column: 1 / -1;
+}
+* + .praxity-float-region {
+	margin-block-start: var(--praxity-space-normal);
+}
+.praxity-float-region figure[data-image-float] {
+	width: fit-content;
+	max-width: 100% !important;
+}
+.praxity-float-region figure[data-image-float="left"] {
+	margin-right: auto !important;
+	--praxity-image-float-side: left;
+	--praxity-image-float-margin-left: 0;
+	--praxity-image-float-margin-right: var(--praxity-space-normal);
+}
+.praxity-float-region figure[data-image-float="right"] {
+	margin-left: auto !important;
+	--praxity-image-float-side: right;
+	--praxity-image-float-margin-left: var(--praxity-space-normal);
+	--praxity-image-float-margin-right: 0;
+}
+/* Keep the marker and wrapped text together beside an authored float. */
+.praxity-float-region .praxity-block-text:has(ul, ol) {
+	display: flow-root;
+}
+@container praxity-image-float (min-width: 20.25em) {
+	.praxity-float-region figure[data-image-float][data-image-width="small"] {
+		float: var(--praxity-image-float-side);
+		width: 33%;
+		margin-left: var(--praxity-image-float-margin-left) !important;
+		margin-right: var(--praxity-image-float-margin-right) !important;
+		margin-block-end: var(--praxity-space-normal);
+	}
+	.praxity-float-region
+		[data-block-type="image"]:has(figure[data-image-width="small"])
+		+ [data-block-type] {
+		--praxity-flow-gap: 0px;
+	}
+}
+@container praxity-image-float (min-width: 27em) {
+	.praxity-float-region figure[data-image-float][data-image-width="medium"] {
+		float: var(--praxity-image-float-side);
+		width: 50%;
+		margin-left: var(--praxity-image-float-margin-left) !important;
+		margin-right: var(--praxity-image-float-margin-right) !important;
+		margin-block-end: var(--praxity-space-normal);
+	}
+	.praxity-float-region
+		[data-block-type="image"]:has(figure[data-image-width="medium"])
+		+ [data-block-type] {
+		--praxity-flow-gap: 0px;
+	}
+}
+@container praxity-image-float (min-width: 54em) {
+	.praxity-float-region figure[data-image-float][data-image-width="large"] {
+		float: var(--praxity-image-float-side);
+		width: 75%;
+		margin-left: var(--praxity-image-float-margin-left) !important;
+		margin-right: var(--praxity-image-float-margin-right) !important;
+		margin-block-end: var(--praxity-space-normal);
+	}
+	.praxity-float-region
+		[data-block-type="image"]:has(figure[data-image-width="large"])
+		+ [data-block-type] {
+		--praxity-flow-gap: 0px;
+	}
+}
+
+/* Unknown and future block pairs deliberately land on one line box. Slots carry
+   the same data attributes as their child and pass this inherited token through.
+   The shared submit footer ends an assessment group in the same flow. */
+:is([data-block-type], .praxity-assessment-group-submit) + [data-block-type] {
+	--praxity-flow-gap: var(--praxity-space-normal);
+}
+
+/* Button-specific pairings; button -> text uses the default gap above. */
+[data-block-type="button"] + [data-block-type="button"] {
+	--praxity-flow-gap: var(--praxity-space-tight);
+}
+
+[data-block-type="text"] + [data-block-type="button"] {
+	--praxity-flow-gap: var(--praxity-space-close);
+}
+
+/* Dividers are boundaries in either direction. */
+:is([data-block-type], .praxity-assessment-group-submit) + [data-block-type="divider"],
+[data-block-type="divider"] + [data-block-type] {
+	--praxity-flow-gap: var(--praxity-space-section);
+}
+
+/* Consecutive heavy blocks and note/quote blocks. */
+:is(
+	[data-block-type="table"],
+	[data-block-type="image"],
+	[data-block-type="video"],
+	[data-block-type="embed"],
+	[data-block-type="columns"],
+	[data-block-type="accordion"],
+	[data-block-type="tabs"],
+	[data-block-type="assessment"],
+	[data-block-type="assessmentGroup"],
+	.praxity-assessment-group-submit
+)
++ :is(
+	[data-block-type="table"],
+	[data-block-type="image"],
+	[data-block-type="video"],
+	[data-block-type="embed"],
+	[data-block-type="columns"],
+	[data-block-type="accordion"],
+	[data-block-type="tabs"],
+	[data-block-type="assessment"],
+	[data-block-type="assessmentGroup"]
+) {
+	--praxity-flow-gap: var(--praxity-space-section);
+}
+
+:is([data-block-type="note"], [data-block-type="quote"])
+	+ :is([data-block-type="note"], [data-block-type="quote"]) {
+	--praxity-flow-gap: var(--praxity-space-section);
+}
+
+/* Text pairings. */
+[data-block-type="text"]
++ :is(
+	[data-block-type="table"],
+	[data-block-type="image"],
+	[data-block-type="video"],
+	[data-block-type="embed"],
+	[data-block-type="columns"],
+	[data-block-type="accordion"],
+	[data-block-type="tabs"],
+	[data-block-type="assessment"],
+	[data-block-type="assessmentGroup"]
+),
+:is(
+		[data-block-type="table"],
+		[data-block-type="image"],
+		[data-block-type="video"],
+		[data-block-type="embed"],
+		[data-block-type="columns"],
+		[data-block-type="accordion"],
+		[data-block-type="tabs"],
+		[data-block-type="assessment"],
+		[data-block-type="assessmentGroup"],
+		.praxity-assessment-group-submit
+	)
+	+ [data-block-type="text"] {
+	--praxity-flow-gap: var(--praxity-space-section);
+}
+
+[data-block-type="text"] + :is([data-block-type="note"], [data-block-type="quote"]),
+:is([data-block-type="note"], [data-block-type="quote"]) + [data-block-type="text"] {
+	--praxity-flow-gap: var(--praxity-space-normal);
+}
+
+[data-block-type="text"] + [data-block-type="checklist"],
+[data-block-type="checklist"] + [data-block-type="text"],
+[data-block-type="text"] + [data-block-type="text"] {
+	--praxity-flow-gap: var(--praxity-space-close);
+}
+
+[data-block-type="text"] + [data-block-type="text"]:has(ul, ol) {
+	--praxity-flow-gap: var(--praxity-space-tight);
+}
+
+/* Heading rules come last so they override heavy-block rules. */
+:is(
+	[data-block-type]:not([data-block-type="heading"]),
+	.praxity-float-region,
+	.praxity-assessment-group-submit
+) + [data-block-type="heading"][data-heading-level="1"] {
+	--praxity-flow-gap: var(--praxity-space-boundary);
+}
+
+:is(
+		[data-block-type]:not([data-block-type="heading"]),
+		.praxity-float-region,
+		.praxity-assessment-group-submit
+	)
+	+ [data-block-type="heading"][data-heading-level="2"] {
+	--praxity-flow-gap: var(--praxity-section-gap, var(--praxity-space-section));
+}
+
+:is(
+		[data-block-type]:not([data-block-type="heading"]),
+		.praxity-float-region,
+		.praxity-assessment-group-submit
+	)
+	+ [data-block-type="heading"][data-heading-level="3"] {
+	--praxity-flow-gap: var(--praxity-space-normal);
+}
+
+:is(
+		[data-block-type]:not([data-block-type="heading"]),
+		.praxity-float-region,
+		.praxity-assessment-group-submit
+	)
+	+ [data-block-type="heading"]:is(
+		[data-heading-level="4"],
+		[data-heading-level="5"],
+		[data-heading-level="6"]
+	) {
+	--praxity-flow-gap: var(--praxity-space-close);
+}
+
+[data-block-type="heading"][data-heading-level="1"]
+	+ [data-block-type]:not([data-block-type="heading"]) {
+	--praxity-flow-gap: var(--praxity-space-normal);
+}
+
+[data-block-type="heading"][data-heading-level="2"]
+	+ [data-block-type]:not([data-block-type="heading"]) {
+	--praxity-flow-gap: var(--praxity-space-close);
+}
+
+[data-block-type="heading"]:is(
+		[data-heading-level="3"],
+		[data-heading-level="4"],
+		[data-heading-level="5"],
+		[data-heading-level="6"]
+	)
+	+ [data-block-type]:not([data-block-type="heading"]) {
+	--praxity-flow-gap: var(--praxity-space-tight);
+}
+
+[data-block-type="heading"] + [data-block-type="heading"] {
+	--praxity-flow-gap: var(--praxity-space-tight);
+}
+
+/* Container titles share standalone heading spacing. Put the gap on the next
+   content element so published heading resets and preview inline styles agree.
+   Only direct block children participate; card labels and widget headings keep
+   their own padding or layout gap. */
+.praxity-block > h1 + :not([data-block-type]) {
+	margin-block-start: var(--praxity-space-normal);
+}
+
+.praxity-block > h2 + :not([data-block-type]) {
+	margin-block-start: var(--praxity-space-close);
+}
+
+.praxity-block > :is(h3, h4, h5, h6) + :not([data-block-type]),
+.praxity-block > :is(h1, h2, h3, h4, h5, h6) + :is(h1, h2, h3, h4, h5, h6) {
+	margin-block-start: var(--praxity-space-tight);
+}
+
+/* The same scale applies to headings generated by container components. */
+[data-praxity-root] #main-content h1 {
+	font-size: var(--type-h1);
+}
+
+[data-praxity-root] #main-content h2 {
+	font-size: var(--type-h2);
+}
+
+[data-praxity-root] #main-content h3 {
+	font-size: var(--type-h3);
+}
+
+[data-praxity-root] #main-content h4 {
+	font-size: var(--type-h3);
+}
+
+[data-praxity-root] #main-content h5 {
+	font-size: var(--type-h3);
+}
+
+[data-praxity-root] #main-content h6 {
+	font-size: var(--type-h3);
+}
+
+.praxity-block-text :is(ul, ol) {
+	margin: var(--praxity-spacing-xs, var(--space-2)) 0;
+	padding-left: var(--praxity-spacing-md, var(--space-6));
+}
+
+.praxity-block-text li + li {
+	margin-top: calc(var(--praxity-spacing-xs, var(--space-2)) * 0.5);
+}
+
+/* A sub-list belongs to the item above it, so it takes the item spacing rather
+   than the block spacing that would otherwise push it away from its parent. */
+.praxity-block-text li > :is(ul, ol) {
+	margin-block: calc(var(--praxity-spacing-xs, var(--space-2)) * 0.5) 0;
+}
+
+/* --- Text highlight variants --- */
+
+[data-praxity-root] .praxity-block mark {
+	color: inherit;
+	background: color-mix(in oklab, var(--praxity-color-accent) 25%, transparent);
+	padding: 0.05em 0.15em;
+	border-radius: var(--radius-mark);
+}
+
+[data-praxity-root][data-praxity-highlight-style="none"] .praxity-block mark {
+	padding: 0;
+}
+
+/* Marker: underline-fill style — 25% accent creates visible highlight
+   while maintaining Lc 60+ text contrast on both light and dark backgrounds.
+   OKLCH mixing preserves hue fidelity across accent colors. */
+[data-praxity-root][data-praxity-highlight-style="marker"] .praxity-block mark {
+	background: linear-gradient(
+		to top,
+		color-mix(in oklab, var(--praxity-color-accent) 25%, transparent) 45%,
+		transparent 45%
+	);
+}
+
+/* Gradient: left-to-right wash — 30%→12% provides visible start edge */
+[data-praxity-root][data-praxity-highlight-style="gradient"] .praxity-block mark {
+	background: linear-gradient(
+		90deg,
+		color-mix(in oklab, var(--praxity-color-accent) 30%, transparent),
+		color-mix(in oklab, var(--praxity-color-accent) 12%, transparent)
+	);
+	border-radius: var(--radius-mark);
+}
+
+/* Scribble: wavy underline with thicker stroke for visibility */
+[data-praxity-root][data-praxity-highlight-style="scribble"] .praxity-block mark {
+	background: none;
+	padding: 0;
+	text-decoration: underline wavy var(--accent);
+	text-underline-offset: 3px;
+	text-decoration-thickness: 2px;
+}
+
+/* Dark mode (editor preview): data-mantine-color-scheme is on an ancestor
+   element, data-praxity-highlight-style is on [data-praxity-root] — use
+   descendant selector, NOT compound selector on the same element. */
+[data-mantine-color-scheme="dark"] [data-praxity-highlight-style="marker"] .praxity-block mark {
+	background: linear-gradient(
+		to top,
+		color-mix(in oklab, var(--praxity-color-accent) 30%, transparent) 45%,
+		transparent 45%
+	);
+}
+
+[data-mantine-color-scheme="dark"] [data-praxity-highlight-style="gradient"] .praxity-block mark {
+	background: linear-gradient(
+		90deg,
+		color-mix(in oklab, var(--praxity-color-accent) 35%, transparent),
+		color-mix(in oklab, var(--praxity-color-accent) 15%, transparent)
+	);
+}
+
+/* --- Video/media container --- */
+
+.praxity-media-container {
+	position: relative;
+	overflow: hidden;
+	border-radius: var(--radius-control);
+	background: var(--praxity-color-surface);
+}
+
+.praxity-media-container[data-aspect="16/9"] {
+	aspect-ratio: 16 / 9;
+}
+
+/* Video player rounding — applies radius to all player types */
+.praxity-block-video video,
+.praxity-block-video iframe,
+.praxity-block-video mux-player {
+	border-radius: var(--radius-control);
+	overflow: hidden;
+}
+
+.praxity-video > :is(video, iframe) {
+	display: block;
+	width: 100%;
+	height: auto;
+	max-width: 100%;
+	aspect-ratio: 16 / 9;
+	border: 0;
+}
+
+.praxity-media-frame {
+	overflow: hidden;
+	border-radius: var(--radius-control);
+	background: var(--paper-2);
+}
+.praxity-media-frame > iframe {
+	display: block;
+	inline-size: 100%;
+	max-inline-size: 100%;
+	border: 0;
+	aspect-ratio: 16 / 9;
+}
+.praxity-media-frame > iframe[hidden] {
+	display: none;
+}
+.praxity-media-fallback [data-embed-retry][hidden] {
+	display: none;
+}
+.praxity-video .praxity-media-frame > iframe {
+	block-size: auto;
+}
+.praxity-media-fallback {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	padding: var(--space-4);
+	gap: var(--space-1);
+	color: var(--ink);
+	font-size: var(--type-body);
+}
+.praxity-media-fallback a {
+	display: inline-flex;
+	align-items: center;
+	min-block-size: var(--target-size);
+	color: var(--accent);
+}
+.praxity-media-source {
+	max-inline-size: 100%;
+	overflow-wrap: anywhere;
+	font-size: var(--type-small);
+	color: var(--ink-2);
+}
+.praxity-block
+	:is(.praxity-video, .praxity-media-stack, .praxity-audio-card, .praxity-embed)
+	> .praxity-block-title {
+	margin: 0;
+	font-family: var(--praxity-font-heading);
+	font-size: var(--type-h3);
+	font-weight: var(--weight-strong);
+	line-height: var(--leading-heading);
+	text-align: start;
+}
+
+/* --- Code label and copy action --- */
+.praxity-code-header {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: var(--space-2);
+	margin-bottom: var(--space-2);
+	color: var(--ink-2);
+	font-size: var(--type-small);
+}
+.praxity-code-title-text {
+	font-family: var(--praxity-font-heading);
+	font-size: var(--type-h3);
+	font-weight: var(--weight-strong);
+}
+.praxity-code-language-badge {
+	display: flex;
+	align-items: center;
+	align-self: stretch;
+	font-size: var(--type-small);
+	color: var(--ink-2);
+}
+.praxity-code-copy-btn {
+	margin-inline-start: auto;
+	min-width: var(--target-size);
+	min-height: var(--target-size);
+	padding: var(--space-2) var(--space-4);
+	border: 1px solid var(--line);
+	border-radius: var(--radius-control);
+	background: transparent;
+	color: var(--ink);
+	font: inherit;
+	font-size: var(--type-body);
+	font-weight: var(--weight-strong);
+	cursor: pointer;
+}
+.praxity-code-copy-btn:hover {
+	background: var(--paper-2);
+}
+
+/* --- Fieldset reset (assessment forms) --- */
+
+.praxity-fieldset-reset {
+	border: none;
+	margin: 0;
+	padding: 0;
+}
+
+/* Floated legends keep native group names without cutting the activity border. */
+fieldset > legend:not(.praxity-sr-only) {
+	float: inline-start;
+	inline-size: 100%;
+	padding: 0;
+}
+fieldset > legend:not(.praxity-sr-only) + * {
+	clear: both;
+}
+
+/* --- Signature block --- */
+
+.praxity-signature {
+	width: 100%;
+}
+
+.praxity-signature-label {
+	margin: 0 0 var(--space-1);
+	font-size: var(--type-body);
+	font-weight: var(--weight-strong);
+}
+
+.praxity-signature-tab-list {
+	display: flex;
+	width: fit-content;
+	border-bottom: 1px solid var(--line);
+	margin-bottom: var(--space-2);
+}
+
+.praxity-signature-tab {
+	min-width: var(--target-size);
+	min-height: var(--target-size);
+	padding: var(--space-2) var(--space-3);
+	border: 0;
+	border-bottom: 2px solid transparent;
+	background: transparent;
+	cursor: pointer;
+	font: inherit;
+	font-size: var(--type-body);
+	font-weight: var(--weight-body);
+	letter-spacing: inherit;
+	word-spacing: inherit;
+	color: var(--praxity-color-text);
+}
+
+.praxity-signature-tab[aria-selected="true"] {
+	border-bottom-color: var(--accent);
+	font-weight: var(--weight-strong);
+}
+
+.praxity-signature-tab:focus-visible,
+.praxity-signature-clear:focus-visible {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+}
+
+.praxity-signature-tab-disabled {
+	cursor: default;
+	border-style: dashed;
+}
+
+.praxity-signature-canvas-box {
+	position: relative;
+	border-bottom: 1px solid var(--line);
+	border-radius: 0;
+}
+
+.praxity-signature-canvas-box--draw {
+	height: 200px;
+}
+
+.praxity-signature-canvas-box--type {
+	height: 100px;
+}
+
+.praxity-signature-canvas {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	background: var(--praxity-color-surface);
+	color: var(--praxity-color-text);
+	display: block;
+	touch-action: none;
+	/* Adapted Feather v4.29.2 edit-2 (MIT); source and full terms in root NOTICE. */
+	cursor:
+		url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z' stroke='%23ffffff' stroke-width='4'/%3E%3Cpath d='M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z' stroke='%23555555' stroke-width='2'/%3E%3C/svg%3E")
+		2 22,
+		auto;
+}
+
+.praxity-signature-canvas:focus-visible,
+.praxity-signature-typed-input:focus-visible {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: -3px;
+}
+
+.praxity-signature-line {
+	position: absolute;
+	left: 24px;
+	right: 24px;
+	bottom: 28px;
+	height: 1px;
+	background: var(--praxity-color-border);
+	pointer-events: none;
+}
+
+.praxity-signature-footer {
+	position: absolute;
+	left: 24px;
+	right: 8px;
+	bottom: 4px;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	pointer-events: none;
+	z-index: 2;
+}
+
+.praxity-signature-status {
+	font-size: var(--type-small);
+	color: var(--praxity-color-text-light);
+}
+
+.praxity-signature-clear {
+	min-width: var(--target-size);
+	min-height: var(--target-size);
+	margin: calc(-1 * var(--space-2)) 0;
+	padding: var(--space-2);
+	border: 1px solid transparent;
+	border-radius: var(--radius-control);
+	background: transparent;
+	color: var(--praxity-color-text-light);
+	font: inherit;
+	font-size: var(--type-small);
+	letter-spacing: inherit;
+	word-spacing: inherit;
+	cursor: pointer;
+	pointer-events: auto;
+}
+
+.praxity-signature-typed-input {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	border: none;
+	background: transparent;
+	width: 100%;
+	height: 100%;
+	padding: var(--space-2) var(--space-6) var(--space-2) var(--space-6);
+	font-family: var(--praxity-font-family);
+	font-size: var(--type-body);
+	letter-spacing: inherit;
+	word-spacing: inherit;
+	color: var(--praxity-color-text, inherit);
+}
+
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		.praxity-signature-canvas-box {
+			border-color: CanvasText;
+			background: Canvas;
+		}
+
+		.praxity-signature-line {
+			background: CanvasText;
+		}
+
+		.praxity-signature-tab-disabled {
+			border-color: CanvasText;
+		}
+
+		.praxity-signature-tab:focus-visible,
+		.praxity-signature-clear:focus-visible,
+		.praxity-signature-canvas:focus-visible,
+		.praxity-signature-typed-input:focus-visible {
+			outline-color: Highlight;
+		}
+	}
+}
+
+/* --- Code surface and syntax --- */
+.praxity-code-container {
+	position: relative;
+}
+.praxity-code-token {
+	color: var(--praxity-code-token-light-color, inherit);
+	font-style: var(--praxity-code-token-light-style, inherit);
+}
+.praxity-code-body {
+	position: relative;
+	background: var(--paper-2);
+	border: 0;
+	border-radius: var(--radius-control);
+	color: var(--ink);
+	overflow: hidden;
+}
+.praxity-code-pre {
+	margin: 0;
+	-webkit-hyphens: manual;
+	hyphens: manual;
+	overflow-wrap: normal;
+	padding: var(--space-4);
+	overflow: auto;
+	font-family: var(
+		--praxity-font-code,
+		ui-monospace,
+		SFMono-Regular,
+		Menlo,
+		Monaco,
+		Consolas,
+		monospace
+	);
+	font-size: var(--type-small);
+	line-height: var(--leading-body);
+	background: transparent;
+}
+.praxity-code-pre--empty {
+	color: var(--ink-2);
+}
+.praxity-code-pre > code {
+	display: block;
+	width: max-content;
+	min-width: 100%;
+}
+.praxity-code-body .praxity-code-pre[tabindex]:focus-visible {
+	outline-offset: calc(-1 * var(--focus-offset));
+}
+.praxity-code-line-number {
+	display: inline-block;
+	margin-right: var(--space-4);
+	text-align: right;
+	color: var(--ink-2);
+	user-select: none;
+	flex-shrink: 0;
+}
+.praxity-code-line--highlighted {
+	background: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.praxity-sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: calc(-1 * var(--space-1));
+	overflow: hidden;
+	white-space: nowrap;
+	border: 0;
+	clip: rect(0, 0, 0, 0);
+	clip-path: inset(50%);
+}
+
+/* --- Image comparison block --- */
+
+.praxity-comparison-slider {
+	position: relative;
+	overflow: hidden;
+	border-radius: var(--radius-control);
+	cursor: ew-resize;
+	user-select: none;
+	touch-action: none;
+}
+
+.praxity-comparison-slider-control {
+	position: absolute;
+	inset: 0;
+	z-index: 2;
+	outline: none;
+}
+
+.praxity-comparison-slider-control:focus-visible {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: -3px;
+	box-shadow: none;
+}
+
+input.praxity-comparison-slider-control {
+	appearance: none;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	color: transparent;
+	cursor: ew-resize;
+	background: transparent;
+	border: 0;
+}
+
+input.praxity-comparison-slider-control::-webkit-slider-runnable-track {
+	height: 100%;
+	background: transparent;
+}
+
+input.praxity-comparison-slider-control::-webkit-slider-thumb {
+	width: 44px;
+	height: 100%;
+	background: transparent;
+	border: 0;
+	appearance: none;
+}
+
+input.praxity-comparison-slider-control::-moz-range-track {
+	height: 100%;
+	background: transparent;
+	border: 0;
+}
+
+input.praxity-comparison-slider-control::-moz-range-thumb {
+	width: 44px;
+	height: 44px;
+	background: transparent;
+	border: 0;
+}
+
+.praxity-comparison-image {
+	display: block;
+	width: 100%;
+	height: auto;
+	pointer-events: none;
+}
+
+.praxity-comparison-before {
+	position: absolute;
+	inset: 0;
+	clip-path: inset(0 calc(100% - var(--praxity-comparison-position, 50%)) 0 0);
+}
+
+.praxity-comparison-before .praxity-comparison-image {
+	height: 100%;
+	object-fit: cover;
+}
+
+.praxity-comparison-divider {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	transform: translateX(-50%);
+	pointer-events: none;
+	left: var(--praxity-comparison-position, 50%);
+}
+
+.praxity-comparison-handle {
+	position: absolute;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	color: var(--praxity-color-text-light);
+	pointer-events: none;
+	left: var(--praxity-comparison-position, 50%);
+}
+
+.praxity-comparison-label {
+	position: absolute;
+	top: 12px;
+	display: block;
+	min-height: 30px;
+	max-width: 45%;
+	background: color-mix(in oklab, var(--praxity-color-background) 94%, transparent);
+	color: var(--praxity-color-text);
+	padding: 0 var(--space-3);
+	border-radius: var(--radius-control);
+	border: 2px solid var(--praxity-color-text);
+	box-shadow: none;
+	font-size: var(--type-body);
+	font-weight: var(--weight-strong);
+	letter-spacing: 0.04em;
+	text-transform: none;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.praxity-comparison-label--before {
+	left: 10px;
+}
+
+.praxity-comparison-label--after {
+	right: 10px;
+}
+
+/* Shared styles for labels, handles, and dividers rendered with their comparison classes. */
+
+.praxity-comparison-label--before,
+.praxity-comparison-label--after {
+	color: var(--praxity-color-text);
+	font-weight: var(--weight-strong);
+	font-size: var(--type-small);
+	text-transform: none;
+	letter-spacing: 0.04em;
+}
+
+.praxity-comparison-handle {
+	width: 36px;
+	height: 36px;
+	background: var(--praxity-color-background);
+	border: 2px solid var(--praxity-color-accent);
+	box-shadow: none;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: ew-resize;
+	font-size: var(--type-small);
+}
+
+.praxity-comparison-divider {
+	width: 2px;
+	background: var(--praxity-color-accent);
+	box-shadow: none;
+}
+
+.praxity-image-comparison-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: var(--praxity-spacing-xs, var(--space-2));
+}
+
+.praxity-image-comparison-label {
+	margin: 0 0 var(--space-1);
+	font-size: var(--type-body);
+	font-weight: var(--weight-strong);
+	text-align: center;
+}
+
+.praxity-image-comparison-image {
+	display: block;
+	width: 100%;
+	height: auto;
+	border-radius: var(--radius-control);
+}
+
+@media (max-width: 36em) {
+	.praxity-image-comparison-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* --- Figure reset --- */
+
+.praxity-figure-reset {
+	margin: 0;
+}
+
+/* Media titles, players and captions use the same rhythm in static output and
+   React preview, where Mantine also supplies a stack layout. */
+.praxity-block :is(.praxity-video, .praxity-audio-card, .praxity-media-stack) {
+	display: flex;
+	flex-direction: column;
+	gap: var(--praxity-space-tight);
+}
+
+/* --- Audio block --- */
+
+.praxity-audio-card {
+	padding: 0;
+	color: var(--ink);
+}
+.praxity-audio-player {
+	inline-size: 100%;
+}
+.praxity-audio-card .praxity-narration-controls {
+	inline-size: 100%;
+	justify-content: flex-start;
+}
+.praxity-audio-card .praxity-narration-position {
+	flex-basis: 0;
+}
+
+.praxity-audio-download {
+	display: inline-flex;
+	align-items: center;
+	align-self: flex-start;
+	min-height: var(--target-size);
+	color: var(--praxity-color-accent-text, var(--praxity-color-accent));
+	font-size: var(--type-small);
+	font-weight: var(--weight-strong);
+	text-decoration: underline;
+	text-underline-offset: 0.18em;
+}
+
+/* --- Card block --- */
+
+.praxity-card-outline {
+	overflow: hidden;
+}
+
+.praxity-card-header--outline,
+.praxity-card-header--minimal {
+	margin: 0;
+	font-size: var(--type-small);
+	font-weight: var(--weight-strong);
+}
+
+.praxity-card-header--outline {
+	border-bottom: 1px solid var(--praxity-color-border);
+	background: color-mix(in oklab, var(--praxity-color-text) 6%, transparent);
+}
+
+.praxity-card-masonry {
+	break-inside: avoid;
+	margin-bottom: var(--praxity-spacing-md, var(--space-4));
+}
+
+.praxity-slides-grid:is([data-style="outline"], [data-style="filled"]),
+[data-card-root] .praxity-card[data-flippable="false"] {
+	border-radius: var(--radius-control);
+}
+
+[data-card-root]:not([data-style="none"]) .praxity-card[data-flippable="false"] {
+	border: var(--praxity-container-border-width, 1px) solid var(--praxity-color-border);
+	overflow: hidden;
+}
+
+[data-card-root][data-style="outline"] .praxity-card-header--outline {
+	background: transparent;
+}
+
+/* A surface belongs to every painted face, including flip faces and slide decks. */
+[data-card-root] {
+	--praxity-card-surface: transparent;
+}
+[data-card-root]:is([data-style="filled"], [data-style="shaded"]) {
+	--praxity-card-surface: var(--paper-2);
+}
+[data-card-root]:is([data-style="accent"], [data-style="primary"]),
+[data-card-root]:is([data-style="filled"], [data-style="shaded"])[data-color="primary"] {
+	--praxity-card-surface: var(--praxity-color-accent-light, var(--paper-2));
+}
+[data-card-root][data-style="secondary"],
+[data-card-root]:is(
+	[data-style="filled"],
+	[data-style="shaded"],
+	[data-style="accent"]
+)[data-color="secondary"] {
+	--praxity-card-surface: var(
+		--praxity-color-secondary-light,
+		var(--praxity-color-accent-light, var(--paper-2))
+	);
+}
+
+/* Card rows preserve label/body order and stack within their own available width. */
+[data-layout="rows"] {
+	container: cards / inline-size;
+}
+[data-layout="rows"][data-style="none"] > .praxity-card {
+	border-radius: 0;
+}
+[data-layout="rows"] > [data-flippable="false"] {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+	column-gap: var(--praxity-block-spacing, var(--space-4));
+}
+[data-layout="rows"] > .praxity-card + .praxity-card {
+	border-top: 1px solid var(--praxity-color-border);
+}
+[data-layout="rows"] > .praxity-card > :only-child,
+[data-layout="rows"] .praxity-card-media {
+	grid-column: 1 / -1;
+}
+@container cards (max-width: 480px) {
+	[data-layout="rows"] > [data-flippable="false"] {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+.praxity-card-media[data-media="inset"] {
+	padding: var(--space-4);
+}
+.praxity-card-media[data-media="flush"] :is(figure, img) {
+	border-radius: 0;
+}
+.praxity-flashcard-face:has(> .praxity-card-media) {
+	justify-content: flex-start;
+}
+.praxity-flashcard-face > .praxity-card-media {
+	width: 100%;
+	flex-shrink: 0;
+}
+.praxity-flashcard-face > .praxity-card-media[data-media="flush"] {
+	inline-size: 100%;
+}
+
+.praxity-card-controls,
+.praxity-card-progress {
+	display: flex;
+	align-items: center;
+}
+
+.praxity-card-controls {
+	justify-content: center;
+	gap: var(--space-2);
+	/* Leave one pixel above the 12px minimum: transformed faces can land on
+	   fractional device pixels in Firefox. */
+	margin-top: calc(var(--space-3) + 1px);
+}
+
+.praxity-card-controls > button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: var(--target-size);
+	min-height: var(--target-size);
+	padding: var(--space-2);
+	border: 1px solid var(--praxity-color-border);
+	border-radius: var(--radius-control);
+	background-color: var(--praxity-color-surface);
+	color: var(--praxity-color-text);
+	font: inherit;
+	cursor: pointer;
+}
+
+.praxity-card-controls > button > [aria-hidden="true"] {
+	font-size: var(--type-h3);
+	line-height: 1;
+}
+
+.praxity-card-controls > button:disabled {
+	cursor: not-allowed;
+	opacity: 0.55;
+}
+
+.praxity-card-progress {
+	gap: var(--space-1);
+}
+
+@media (max-width: 768px) {
+	.praxity-cards[data-columns="3"],
+	.praxity-cards[data-columns="4"],
+	.praxity-cards[data-columns="5"] {
+		grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+		columns: 2 !important;
+	}
+}
+
+@media (max-width: 480px) {
+	.praxity-cards[data-columns] {
+		grid-template-columns: 1fr !important;
+		columns: 1 !important;
+	}
+}
+
+/* --- Chart block --- */
+
+.praxity-chart-container {
+	container: praxity-chart / inline-size;
+}
+
+.praxity-chart-visual--wide {
+	display: block;
+	font-size: var(--type-small);
+}
+
+/* Counter the SVG viewBox scaling to keep labels near 12px between layout breakpoints. */
+.praxity-chart-visual--medium {
+	display: none;
+	font-size: var(--type-body);
+}
+
+.praxity-chart-visual--compact {
+	display: none;
+	font-size: var(--type-body);
+}
+
+@container praxity-chart (max-width: 640px) {
+	.praxity-chart-visual--wide {
+		display: none;
+	}
+	.praxity-chart-visual--medium {
+		display: block;
+	}
+}
+
+@container praxity-chart (max-width: 400px) {
+	.praxity-chart-visual--medium {
+		display: none;
+	}
+	.praxity-chart-visual--compact {
+		display: block;
+	}
+}
+
+@media print {
+	.praxity-chart-visual--wide {
+		display: block;
+	}
+	.praxity-chart-visual:is(.praxity-chart-visual--medium, .praxity-chart-visual--compact) {
+		display: none;
+	}
+}
+
+/* Bars and legend swatches keep a same-hue edge: it holds 3:1 for pale fills without a
+   text-coloured outline on every bar. The SVG stroke attribute remains for print, which
+   drops it where the fill already contrasts with paper. */
+.praxity-chart-visual .praxity-chart-mark {
+	stroke: color-mix(in oklab, currentColor 60%, var(--praxity-color-text));
+}
+
+.praxity-chart-title {
+	max-width: 64ch;
+	margin: 0 auto var(--space-2);
+	font-size: var(--type-h3);
+	font-weight: var(--weight-strong);
+	line-height: var(--leading-heading);
+	text-align: center;
+}
+
+.praxity-chart-subtitle {
+	max-width: 64ch;
+	margin: 0 0 var(--space-3);
+	color: var(--praxity-color-text-muted);
+	text-align: start;
+}
+
+/* --- Checklist and selection controls --- */
+
+/*
+ * Option rows carry no resting border.
+ *
+ * A bordered row inside a bordered question inside a bordered page is three
+ * boundaries for one idea, and the radio already says "choose me" — the border
+ * was redundant affordance, not information. The row keeps its full-width hit
+ * target (Fitts, and the 24px floor of WCAG 2.5.8); the border stays in the box
+ * model as transparent so hover and selection colour it without reflowing the
+ * text a pixel.
+ */
+.praxity-table-scroll-region:focus-visible {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+}
+
+:where(.praxity-block-assessment, .praxity-ag-radio-row, [data-checklist-item]) {
+	/* Server and Mantine controls share the same font-relative size and target floor. */
+	--praxity-choice-control-size: max(24px, 1.25rem);
+}
+
+.praxity-assessment-choice-option,
+.praxity-ag-radio-row {
+	position: relative;
+	border: 1px solid transparent;
+	border-radius: var(--radius-control);
+	background: transparent;
+	color: var(--praxity-color-text);
+	padding: var(--praxity-spacing-xs, var(--space-2)) var(--praxity-spacing-sm, var(--space-3));
+	transition: none;
+}
+
+/* Let the native label activate its control from anywhere in the visual row. */
+.praxity-assessment-choice-option :is(.mantine-Radio-label, .mantine-Checkbox-label)::after,
+.praxity-ag-radio-label::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+}
+
+/* Keep the native control directly clickable above the stretched label. */
+.praxity-assessment-choice-option :is(.mantine-Radio-inner, .mantine-Checkbox-inner) {
+	position: relative;
+	z-index: 1;
+	/* Empty space in the first-line wrapper still belongs to the stretched label. */
+	pointer-events: none;
+}
+
+.praxity-assessment-choice-option :is(.mantine-Radio-radio, .mantine-Checkbox-input) {
+	pointer-events: auto;
+}
+
+/* Feedback links must sit above the native label's full-row click target. */
+.praxity-assessment-choice-option [data-option-feedback] {
+	position: relative;
+	z-index: 1;
+}
+
+.praxity-ag-radio-row:hover:not(:has(input:disabled)) {
+	background: color-mix(
+		in oklab,
+		var(--praxity-color-text) 4%,
+		var(--praxity-color-surface, var(--praxity-color-background))
+	);
+}
+
+.praxity-ag-radio-row:hover:not(:has(input:disabled)) {
+	border-color: color-mix(in oklab, var(--praxity-color-accent) 45%, transparent);
+}
+
+/* Keep native labels and controls stationary during a press.
+ * Rejected: scale(0.99), even after a test's paint wait or centered target.
+ * WebKit moved pointer-up from label to input and clicked their shared div,
+ * losing native activation. Color and focus feedback keep targets stationary. */
+
+.praxity-assessment-choice-option:has(input:focus-visible),
+.praxity-assessment-choice-option:has(input[type="radio"]:focus),
+.praxity-ag-radio-row:has(input[type="radio"]:focus) {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+}
+
+/* The row owns focus. Native radio arrows can clear WebKit's focus-visible
+   heuristic, so keep the row ring on :focus and suppress only its inner ring. */
+.praxity-page-content .praxity-assessment-choice-option input:focus-visible,
+.praxity-assessment-choice-option input[type="radio"]:focus,
+.praxity-ag-radio-row input[type="radio"]:focus {
+	outline: none;
+	box-shadow: none;
+}
+
+/*
+ * After submitting, the options are disabled but the learner is *reading* them —
+ * that is the whole point of the review state, and the feedback below refers to
+ * them. A grey fill on every row plus `opacity: 0.6` made a busy wall of boxes
+ * whose text dropped roughly 40% of its contrast, so the answer explanation was
+ * the hardest thing on the page to read. Disabled controls are exempt from the
+ * contrast minimum; content the learner still has to read is not.
+ */
+.praxity-assessment-choice-option:has(input:disabled),
+.praxity-ag-radio-row:has(input:disabled) {
+	cursor: not-allowed;
+}
+
+.praxity-assessment-choice-option:has(.mantine-Radio-radio:checked),
+.praxity-assessment-choice-option:has(.mantine-Checkbox-input:checked),
+.praxity-ag-radio-row:has(.praxity-ag-radio:checked) {
+	border-color: color-mix(in oklab, var(--praxity-color-accent) 80%, transparent);
+	background: color-mix(
+		in oklab,
+		var(--praxity-color-accent) 15%,
+		var(--praxity-color-surface, var(--praxity-color-background))
+	);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.praxity-assessment-choice-option,
+	.praxity-ag-radio-row {
+		transition: none;
+	}
+}
+
+[data-praxity-root][data-praxity-reduced-motion] .praxity-assessment-choice-option,
+[data-praxity-root][data-praxity-reduced-motion] .praxity-ag-radio-row {
+	transition: none;
+}
+
+[data-checklist-item] {
+	color: var(--praxity-color-text);
+	padding: 0;
+	background: transparent;
+	border: 0;
+	border-radius: 0;
+}
+
+.praxity-checklist-items {
+	display: grid;
+	gap: var(--praxity-spacing-sm, var(--space-3));
+}
+
+[data-checklist-item] :is(.mantine-Checkbox-labelWrapper, .mantine-Checkbox-label),
+.praxity-checklist-items [data-checklist-item] > label {
+	min-inline-size: 0;
+	overflow-wrap: anywhere;
+}
+
+.praxity-checklist-items [data-checklist-item] > label {
+	display: flex;
+	align-items: flex-start;
+	line-height: var(--leading-body);
+	gap: var(--praxity-spacing-sm, var(--space-3));
+	min-height: var(--target-size);
+	padding-block: var(--space-2);
+	cursor: pointer;
+}
+
+[data-checklist-item] {
+	--praxity-choice-control-size: 22px;
+}
+
+.praxity-checklist-items input[type="checkbox"] {
+	appearance: none;
+	display: grid;
+	place-items: center;
+	border: 2px solid var(--ink-2);
+	border-radius: var(--radius-key);
+	background: var(--paper);
+	flex: 0 0 auto;
+	width: var(--praxity-choice-control-size);
+	height: var(--praxity-choice-control-size);
+	min-width: 0;
+	min-height: 0;
+	font-size: inherit;
+	line-height: inherit;
+	margin: max(0px, calc((1lh - var(--praxity-choice-control-size)) / 2)) 0 0;
+}
+
+.praxity-checklist-items input[type="checkbox"]:checked {
+	border-color: var(--accent);
+	background: var(--accent);
+}
+
+.praxity-checklist-items input[type="checkbox"]:checked::before {
+	content: "✓";
+	line-height: 1;
+	color: var(--on-accent);
+}
+
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		.praxity-checklist-items input[type="checkbox"] {
+			border-color: CanvasText;
+			background: Canvas;
+		}
+		.praxity-checklist-items input[type="checkbox"]:checked::before {
+			color: CanvasText;
+		}
+	}
+}
+
+.praxity-checklist-items input[type="checkbox"]:focus-visible {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+	box-shadow: none;
+}
+
+.praxity-assessment-group-picker {
+	/* Native fieldset min-content sizing can exceed the group with wider fallback fonts. */
+	min-inline-size: 0;
+	border: 0;
+	margin: 0 0 var(--praxity-block-spacing, var(--space-4));
+	padding: 0;
+}
+
+.praxity-assessment-group-card > .praxity-assessment-group-picker {
+	margin: var(--praxity-block-spacing, var(--space-4)) 0 0;
+}
+
+.praxity-assessment-group-picker-legend {
+	margin: 0 0 var(--praxity-spacing-xs, var(--space-2));
+	padding: 0;
+	font-size: var(--type-h3);
+	line-height: var(--leading-body);
+	font-weight: var(--weight-strong);
+	color: var(--praxity-color-text-light);
+}
+
+.praxity-audio-controls,
+.praxity-assessment-group-options {
+	display: flex;
+	flex-direction: column;
+	gap: var(--praxity-spacing-xs, var(--space-2));
+}
+
+.praxity-table-scroll-region {
+	max-width: 100%;
+	overflow-x: auto;
+	overscroll-behavior-x: contain;
+}
+
+.praxity-table-scroll-region,
+.praxity-block-equation .praxity-math-block,
+.praxity-code-body .praxity-code-pre {
+	/* Local covers hide each edge shadow when there is nothing left to scroll.
+	   The gutters keep the cues visible beside opaque header and striped cells. */
+	background:
+		linear-gradient(to right, var(--paper) 30%, transparent) left,
+		linear-gradient(to left, var(--paper) 30%, transparent) right,
+		linear-gradient(
+			to right,
+			color-mix(in srgb, var(--praxity-color-text) 35%, transparent),
+			transparent
+		)
+		left,
+		linear-gradient(
+			to left,
+			color-mix(in srgb, var(--praxity-color-text) 35%, transparent),
+			transparent
+		)
+		right;
+	background-size:
+		var(--space-8) 100%,
+		var(--space-8) 100%,
+		var(--space-4) 100%,
+		var(--space-4) 100%;
+	background-repeat: no-repeat;
+	background-attachment: local, local, scroll, scroll;
+	background-color: var(--paper);
+	scrollbar-width: thin;
+}
+.praxity-table-scroll-region,
+.praxity-block-equation .praxity-math-block {
+	padding-block: var(--space-1);
+}
+.praxity-code-pre {
+	--paper: var(--paper-2);
+}
+
+.praxity-table-scroll-region > table :is(th, td) {
+	word-break: normal;
+	overflow-wrap: break-word;
+}
+
+.praxity-table-scroll-region > table {
+	border: 0;
+	border-radius: 0;
+}
+
+.praxity-table-scroll-region > .praxity-data-table {
+	width: 100%;
+	min-inline-size: calc(var(--praxity-table-columns, 2) * (12ch + var(--space-8)));
+	border-collapse: collapse;
+	font: inherit;
+	color: inherit;
+}
+
+.praxity-data-table :is(th, td) {
+	min-inline-size: 12ch;
+	padding: var(--space-3) var(--space-4);
+	vertical-align: top;
+	border: 0;
+	border-bottom: 1px solid var(--line);
+	background: transparent;
+}
+.praxity-data-table th {
+	font-weight: var(--weight-strong);
+}
+.praxity-data-table [data-numeric] {
+	font-variant-numeric: tabular-nums;
+}
+.praxity-data-table thead > tr > * {
+	border-bottom: var(--focus-width) solid var(--ink);
+}
+@media (prefers-contrast: more) {
+	.praxity-data-table :is(th, td) {
+		border-bottom-color: var(--ink);
+	}
+}
+.praxity-table-caption {
+	margin: 0 0 var(--space-2);
+	font-weight: var(--weight-strong);
+}
+.praxity-table-scroll-hint {
+	margin: var(--space-2) 0 0;
+	font-size: var(--type-small);
+	color: var(--ink-2);
+	line-height: var(--leading-small);
+}
+.praxity-table-scroll-region[data-overflow="none"] + .praxity-table-scroll-hint {
+	display: none;
+}
+/* Vertical sequences own marker gutters. Tables regain the reading measure on
+   either side of a track; plain sequences have no gutter to reclaim. */
+.praxity-sequence[data-orientation="vertical"]:not([data-variant="plain"])
+	.praxity-sequence-content
+	[data-block-type="table"] {
+	width: calc(100% + 28px + var(--space-6));
+	text-align: start;
+}
+.praxity-sequence[data-orientation="vertical"][data-alignment="left"]:not([data-variant="plain"])
+	.praxity-sequence-content
+	[data-block-type="table"] {
+	margin-inline-start: calc(-28px - var(--space-6));
+}
+.praxity-sequence[data-orientation="vertical"][data-alignment="center"]:not([data-variant="plain"])
+	.praxity-sequence-content
+	[data-block-type="table"] {
+	width: calc(200% + 28px + var(--space-6) * 2);
+}
+.praxity-sequence[data-orientation="vertical"][data-alignment="center"]:not([data-variant="plain"])
+	.praxity-sequence-item:nth-child(even)
+	.praxity-sequence-content
+	[data-block-type="table"] {
+	margin-inline-start: calc(-100% - 28px - var(--space-6) * 2);
+}
+
+.praxity-ag-radio-row {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--praxity-spacing-xs, var(--space-2));
+	cursor: pointer;
+}
+
+.praxity-ag-required-error {
+	margin: 0 0 var(--praxity-spacing-xs, var(--space-2));
+	color: var(--praxity-color-error-text, var(--praxity-color-error));
+	font-weight: var(--weight-strong);
+}
+
+.praxity-ag-radio {
+	appearance: none;
+	position: relative;
+	z-index: 1;
+	flex: 0 0 auto;
+	width: var(--praxity-choice-control-size);
+	height: var(--praxity-choice-control-size);
+	font-size: inherit;
+	line-height: inherit;
+	margin: max(0px, calc((1lh - var(--praxity-choice-control-size)) / 2)) 0 0;
+	border: 2px solid var(--praxity-color-activity-border);
+	border-radius: var(--radius-round);
+	background: color-mix(
+		in oklab,
+		var(--praxity-color-background) 85%,
+		var(--praxity-color-text) 15%
+	);
+	display: grid;
+	place-items: center;
+}
+
+.praxity-ag-radio::before {
+	content: "";
+	width: 0.45rem;
+	height: 0.45rem;
+	border-radius: var(--radius-round);
+	background: var(--praxity-color-background);
+	transform: scale(0);
+	transition: transform var(--duration-press) var(--ease-out);
+}
+
+.praxity-ag-radio:checked {
+	background: var(--praxity-color-accent);
+	border-color: var(--praxity-color-accent);
+}
+
+.praxity-ag-radio:checked::before {
+	transform: scale(1);
+}
+
+.praxity-ag-radio-label {
+	min-inline-size: 0;
+	color: var(--praxity-color-text);
+	line-height: var(--leading-body);
+	cursor: pointer;
+}
+
+/* The control may look disabled; its label is still text the learner reads. */
+.praxity-ag-radio:disabled {
+	opacity: 0.65;
+	cursor: default;
+}
+
+.praxity-ag-radio:disabled + .praxity-ag-radio-label {
+	cursor: default;
+}
+
+/* --- Ordering block --- */
+
+/*
+ * Steps are a sequence, so they get a rule between them rather than a box around
+ * each: the divider says "next step" where a border would only say "thing". The
+ * position number is the ordinal made explicit, so the order is readable without
+ * counting rows.
+ */
+.praxity-order-item {
+	position: relative;
+	padding: var(--praxity-spacing-xs, var(--space-2)) 0;
+	cursor: grab;
+}
+
+.praxity-order-item + .praxity-order-item {
+	border-top: 1px solid color-mix(in oklab, var(--praxity-color-border) 55%, transparent);
+}
+
+.praxity-order-position {
+	flex: 0 0 auto;
+	min-width: 1.5rem;
+	font-variant-numeric: tabular-nums;
+	font-weight: var(--weight-strong);
+	color: var(--praxity-color-text-light);
+}
+
+.praxity-order-baseline {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.praxity-order-baseline .praxity-order-item {
+	display: flex;
+	align-items: center;
+	gap: var(--mantine-spacing-xs, var(--space-2));
+	cursor: default;
+}
+
+.praxity-order-baseline .praxity-order-position {
+	font-size: var(--type-small);
+	line-height: var(--mantine-line-height-xs, 1.4);
+}
+
+.praxity-order-label {
+	flex: 1;
+	min-inline-size: 0;
+	overflow-wrap: anywhere;
+	font-size: var(--type-body);
+	line-height: var(--mantine-line-height-sm, 1.45);
+}
+
+.praxity-order-controls {
+	flex-shrink: 0;
+}
+
+.praxity-order-baseline .praxity-order-controls {
+	display: flex;
+	gap: calc(var(--space-1) * var(--mantine-scale, 1));
+}
+
+.praxity-order-baseline .praxity-order-controls > * {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: var(--target-size);
+	height: var(--target-size);
+	min-width: var(--target-size);
+	min-height: var(--target-size);
+	padding: 0;
+	border: 1px solid transparent;
+	border-radius: var(--radius-control);
+	background: transparent;
+	color: var(--praxity-color-accent-text, var(--praxity-color-accent));
+	font-size: var(--type-body);
+	opacity: 1;
+}
+
+.praxity-order-item[data-dragging] {
+	opacity: 0.5;
+	cursor: grabbing;
+}
+
+/* An insertion line, not a swap highlight — it shows where the item will land. */
+.praxity-order-item[data-drop-before]::before {
+	content: "";
+	position: absolute;
+	inset-inline: 0;
+	top: -1px;
+	height: 2px;
+	background: var(--praxity-color-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.praxity-order-item {
+		transition: none;
+	}
+}
+
+/* Every in-flow reveal grows its space and fades together; padding stays clipped. */
+[data-content-reveal] {
+	display: grid;
+	grid-template-rows: 0fr;
+	opacity: 0;
+	visibility: hidden;
+	transition:
+		grid-template-rows var(--duration-press) var(--ease-in),
+		opacity var(--duration-press) var(--ease-in);
+}
+[data-content-reveal="open"] {
+	grid-template-rows: 1fr;
+	opacity: 1;
+	visibility: visible;
+	transition:
+		grid-template-rows var(--duration-reveal) var(--ease-out),
+		opacity var(--duration-reveal) var(--ease-out);
+}
+[data-content-reveal] > .praxity-reveal-clip {
+	display: block;
+	min-block-size: 0;
+	overflow: hidden;
+}
+/* Grow the stack's feedback gap inside the clip instead of adding it in one frame. */
+[data-assessment-reveal] {
+	margin-block-start: calc(0px - var(--mantine-spacing-md, var(--space-4)));
+}
+[data-assessment-reveal] > .praxity-reveal-clip {
+	/* Reserve room for the action's outline inside the reveal clip. */
+	padding: calc(var(--focus-control-width) + var(--focus-offset));
+	margin: calc(0px - var(--focus-control-width) - var(--focus-offset));
+}
+[data-assessment-reveal] > .praxity-reveal-clip > [data-assessment-feedback]:not(:empty) {
+	margin-block-start: var(--mantine-spacing-md, var(--space-4));
+}
+@starting-style {
+	[data-content-reveal="open"] {
+		grid-template-rows: 0fr;
+		opacity: 0;
+	}
+}
+[data-praxity-root][data-praxity-reduced-motion="true"] [data-content-reveal] {
+	transition-duration: 0s !important;
+}
+@media (prefers-reduced-motion: reduce) {
+	[data-content-reveal] {
+		transition-duration: 0s !important;
+	}
+}
+@media print {
+	[data-reveal-print="expand"] {
+		grid-template-rows: 1fr;
+		opacity: 1;
+		visibility: visible;
+		transition: none;
+	}
+}
+
+/* --- Accordion and transcript disclosures --- */
+.praxity-disclosure-heading,
+[data-praxity-root] #main-content .praxity-disclosure-heading {
+	margin: 0;
+	font: inherit;
+}
+.praxity-disclosure-heading > [data-disclosure-label] {
+	display: block;
+	min-height: var(--target-size);
+	padding: var(--space-3) var(--space-1);
+	font-weight: var(--weight-strong);
+}
+.praxity-disclosure-trigger {
+	display: flex;
+	align-items: start;
+	justify-content: space-between;
+	gap: var(--space-3);
+	width: 100%;
+	min-height: var(--target-size);
+	padding: var(--space-3) var(--space-1);
+	border: 0;
+	background: transparent;
+	color: var(--ink);
+	font: inherit;
+	text-align: start;
+	cursor: pointer;
+}
+.praxity-disclosure-trigger[hidden],
+.praxity-disclosure-heading > [hidden],
+.praxity-accordion-show-all[hidden] {
+	display: none;
+}
+.praxity-disclosure-icon {
+	flex: 0 0 auto;
+	margin-block-start: calc((1lh - 20px) / 2);
+}
+.praxity-media-transcript
+	.praxity-disclosure-trigger[aria-expanded="true"]
+	.praxity-disclosure-icon-vertical {
+	display: none;
+}
+.praxity-media-transcript [data-disclosure-panel] {
+	padding: var(--space-3) var(--space-4);
+}
+.praxity-disclosure-title,
+.praxity-block-accordion .mantine-Accordion-label {
+	min-inline-size: 0;
+	overflow-wrap: anywhere;
+	font-weight: var(--weight-strong);
+}
+.praxity-accordion-static > [data-accordion-item] + [data-accordion-item],
+.praxity-block-accordion .mantine-Accordion-item + .mantine-Accordion-item,
+[data-disclosure="true"] > .praxity-tabs-tab,
+[data-disclosure="true"] > div > .praxity-tabs-tab {
+	border-block-start: 1px solid var(--line);
+}
+.praxity-accordion-static .praxity-disclosure-trigger,
+[data-disclosure="true"] > .praxity-tabs-tab,
+[data-disclosure="true"] > div > .praxity-tabs-tab {
+	align-items: start;
+	border-radius: 0;
+	justify-content: flex-start;
+	flex-direction: row-reverse;
+	font-size: var(--type-body);
+	font-weight: var(--weight-strong);
+}
+.praxity-accordion-static .praxity-disclosure-title,
+[data-disclosure="true"] > .praxity-tabs-tab > .praxity-disclosure-title,
+[data-disclosure="true"] > div > .praxity-tabs-tab > .praxity-disclosure-title {
+	flex: 1;
+}
+.praxity-accordion-static
+	.praxity-disclosure-trigger[aria-expanded="true"]
+	.praxity-disclosure-icon,
+[data-disclosure="true"] > .praxity-tabs-tab[aria-expanded="true"] > .praxity-disclosure-icon,
+[data-disclosure="true"]
+	> div
+	> .praxity-tabs-tab[aria-expanded="true"]
+	> .praxity-disclosure-icon {
+	transform: rotate(90deg);
+}
+.praxity-accordion-panel,
+.praxity-block-accordion .mantine-Accordion-content,
+[data-disclosure="true"] > .praxity-tabs-panel,
+[data-disclosure="true"] > div > .praxity-tabs-panel,
+[data-disclosure="true"] > [data-content-reveal] > .praxity-reveal-clip > .praxity-tabs-panel {
+	padding: var(--space-3) var(--space-1) var(--space-6);
+}
+.praxity-block-accordion .mantine-Accordion-control {
+	padding: var(--space-3) var(--space-1);
+	font-size: var(--type-body);
+	color: var(--ink);
+	background: transparent;
+}
+.praxity-block-accordion .mantine-Accordion-label {
+	padding: 0;
+}
+.praxity-block-accordion .mantine-Accordion-chevron {
+	margin-inline: 0 var(--space-3);
+}
+.praxity-block-accordion .mantine-Accordion-chevron[data-rotate] {
+	transform: rotate(90deg);
+}
+.praxity-block-accordion .mantine-Accordion-item {
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+}
+.praxity-accordion-show-all,
+.praxity-flashcard-toggle {
+	min-block-size: var(--target-size);
+	min-inline-size: var(--target-size);
+	padding: var(--space-2) var(--space-3);
+	font: inherit;
+	font-weight: var(--weight-strong);
+	color: var(--accent);
+	border: 1px solid var(--line);
+	border-radius: var(--radius-control);
+	background: transparent;
+	cursor: pointer;
+}
+.praxity-accordion-show-all {
+	margin-block-end: var(--space-3);
+}
+.praxity-accordion-show-all:focus-visible,
+.praxity-card .praxity-flashcard-toggle:focus-visible,
+[data-praxity-root] .praxity-block-accordion .praxity-accordion-show-all:focus-visible,
+[data-praxity-root] .praxity-card .praxity-flashcard-toggle:focus-visible {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+}
+
+/* --- Columns block --- */
+
+/* Column flex is dynamic (calculated from width) — stays inline */
+
+/* --- Contribution/Discussion block (sr-only live regions) --- */
+
+/* uses .praxity-sr-only */
+
+/* --- Divider block --- */
+
+.praxity-divider-segment {
+	flex: 1;
+}
+
+.praxity-divider-labeled {
+	margin-top: var(--praxity-spacing-md, var(--space-4));
+	margin-bottom: var(--praxity-spacing-md, var(--space-4));
+	display: flex;
+	align-items: center;
+	gap: var(--praxity-spacing-sm, var(--space-2));
+}
+
+.praxity-divider-label {
+	white-space: nowrap;
+}
+
+.praxity-divider-line {
+	margin-top: var(--praxity-spacing-md, var(--space-4));
+	margin-bottom: var(--praxity-spacing-md, var(--space-4));
+	border: none;
+}
+
+/* Static authored rules share the default line treatment with the block viewer. */
+.praxity-divider {
+	height: 2px;
+	border-radius: var(--radius-mark);
+	background-color: var(--praxity-color-accent);
+}
+
+.praxity-divider-ornament {
+	margin-top: var(--praxity-spacing-lg, var(--space-6));
+	margin-bottom: var(--praxity-spacing-lg, var(--space-6));
+	text-align: center;
+	color: var(--praxity-color-accent);
+	font-size: var(--type-body);
+	letter-spacing: 0.15em;
+	opacity: 0.6;
+}
+
+.praxity-divider-transition {
+	position: relative;
+	width: 100%;
+	height: 60px;
+	margin: 0;
+	overflow: hidden;
+	line-height: var(--leading-body);
+	pointer-events: none;
+}
+
+.praxity-divider-transition-svg {
+	display: block;
+	width: 100%;
+	height: 100%;
+	fill: var(--praxity-color-accent);
+}
+
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		.praxity-divider-line,
+		.praxity-divider-segment {
+			background: CanvasText !important;
+			border-top: 2px solid CanvasText !important;
+			height: 0 !important;
+		}
+
+		.praxity-divider-label {
+			color: CanvasText !important;
+		}
+	}
+}
+
+@media (max-width: 480px) {
+	.praxity-divider-transition {
+		height: 36px;
+	}
+}
+
+/* --- Document block --- */
+
+.praxity-document-bookmark,
+.praxity-document-download {
+	display: block;
+	border-radius: var(--radius-mark);
+}
+
+.praxity-document-bookmark-card {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-1);
+	padding: var(--praxity-spacing-sm, var(--space-3));
+	border: 1px solid var(--praxity-color-border);
+	border-radius: var(--radius-mark);
+	transition: none;
+}
+
+.praxity-document-bookmark-link {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 0.25em;
+	min-width: 0;
+	color: var(--praxity-color-accent-text, var(--praxity-color-accent));
+	text-decoration: underline;
+	text-decoration-style: solid;
+	text-underline-offset: 0.18em;
+}
+
+.praxity-document-bookmark-header {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--praxity-spacing-xs, var(--space-2));
+	width: 100%;
+	min-width: 0;
+}
+
+.praxity-document-bookmark-title {
+	min-width: 0;
+	font-weight: var(--weight-strong);
+}
+
+.praxity-document-bookmark-header .praxity-external-icon {
+	flex-shrink: 0;
+	margin-inline-start: 0;
+}
+
+.praxity-document-bookmark:hover .praxity-document-bookmark-card,
+.praxity-document-bookmark:focus-within .praxity-document-bookmark-card {
+	border-color: var(--praxity-color-accent);
+}
+
+.praxity-document-download-card {
+	border: 1px solid var(--praxity-color-border);
+	border-radius: var(--radius-control);
+	transition: none;
+}
+
+.praxity-document-download:hover .praxity-document-download-card,
+.praxity-document-download:focus-visible .praxity-document-download-card {
+	border-color: var(--praxity-color-accent);
+	background: color-mix(in oklab, var(--praxity-color-accent) 6%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.praxity-document-bookmark-card,
+	.praxity-document-download-card {
+		transition: none;
+	}
+}
+
+.praxity-document-meta {
+	flex-shrink: 0;
+}
+
+.praxity-document-file-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 2.5rem;
+	height: 1.625rem;
+	padding: 0 var(--space-1);
+	border-radius: var(--radius-control);
+	border: 1px solid var(--praxity-color-border);
+	background: var(--praxity-color-surface);
+	font-size: var(--type-small);
+	font-weight: var(--weight-strong);
+	letter-spacing: 0.04em;
+	color: var(--praxity-color-text);
+	text-transform: none;
+}
+
+.praxity-document-file-icon[data-file-category="archive"] {
+	background: color-mix(in oklab, var(--praxity-color-warning) 16%, var(--praxity-color-surface));
+}
+
+.praxity-document-file-icon[data-file-category="spreadsheet"] {
+	background: color-mix(in oklab, var(--praxity-color-success) 16%, var(--praxity-color-surface));
+}
+
+.praxity-document-file-icon[data-file-category="presentation"] {
+	background: color-mix(in oklab, var(--praxity-color-error) 16%, var(--praxity-color-surface));
+}
+
+.praxity-document-file-icon[data-file-category="text"] {
+	background: color-mix(in oklab, var(--praxity-color-accent) 16%, var(--praxity-color-surface));
+}
+
+.praxity-document-download-cta {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: var(--space-1) var(--space-2);
+	border-radius: var(--radius-control);
+	border: 1px solid var(--praxity-color-border);
+	font-size: var(--type-small);
+	font-weight: var(--weight-strong);
+	white-space: nowrap;
+	color: var(--praxity-color-text);
+	background: var(--praxity-color-surface);
+}
+
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		.praxity-document-download-card,
+		.praxity-document-bookmark-card {
+			border-color: CanvasText;
+		}
+
+		.praxity-document-file-icon,
+		.praxity-document-download-cta {
+			border-color: CanvasText;
+			background: Canvas;
+			color: CanvasText;
+		}
+	}
+}
+
+.praxity-download-icon,
+.praxity-chevron-icon {
+	display: inline-block;
+	width: 1em;
+	height: 1em;
+	vertical-align: -0.125em;
+	flex-shrink: 0;
+}
+
+/* --- Embed block --- */
+
+.praxity-embed-iframe {
+	display: block;
+	width: 100%;
+	max-width: 100%;
+	border: none;
+	border-radius: var(--radius-control);
+	pointer-events: auto;
+}
+
+/* --- Flashcard block --- */
+
+#deck-script p.deck-script-item-title {
+	margin-block: var(--space-4) var(--space-1);
+	font-size: var(--type-body);
+}
+
+#deck-script p.deck-script-quote-attribution {
+	font-size: var(--type-small);
+}
+
+.praxity-cards {
+	align-items: stretch;
+}
+.praxity-card[data-flippable="true"] {
+	padding: 0;
+	pointer-events: auto;
+	overflow: visible;
+}
+.praxity-flashcard-inner {
+	display: block;
+}
+.praxity-flashcard-face {
+	padding: 0;
+	transform: none;
+}
+.praxity-flashcard-toggle {
+	display: block;
+	margin-block: var(--space-4);
+	transition: transform var(--duration-press) var(--ease-out);
+}
+.praxity-flashcard-toggle:hover {
+	background: var(--paper-2);
+}
+.praxity-flashcard-toggle:active {
+	transform: scale(0.96);
+}
+.praxity-flashcard-toggle[hidden] {
+	display: none;
+}
+.praxity-block .praxity-flashcard-face-heading {
+	margin: 0 0 var(--space-4);
+	font-family: var(--praxity-font-heading);
+	font-size: var(--type-h3);
+	font-weight: var(--weight-strong);
+	line-height: var(--leading-heading);
+	text-align: start;
+	color: var(--ink);
+}
+.praxity-flashcard-face--back {
+	margin-block-start: var(--space-3);
+}
+
+/* --- Image block --- */
+
+.praxity-block-image img {
+	border-radius: 0;
+}
+
+/* --- Hero / Cover block --- */
+
+.praxity-hero-cover {
+	position: relative;
+	width: 100vw;
+	min-height: 400px;
+	margin-left: calc(-50vw + 50%);
+	margin-right: calc(-50vw + 50%);
+	display: flex;
+	align-items: flex-end;
+	overflow: hidden;
+	background: var(--praxity-color-text);
+}
+
+/* In slides mode the slide is already a measure-constrained, centered box with
+   its own overflow clipping. The 100vw full-bleed breakout gets clipped by the
+   slide and mis-aligns the (white) content overlay to the viewport edge, cutting
+   off the start of the title. Fit the hero to the slide box instead. */
+.praxity-layout-slides .praxity-hero-cover {
+	width: 100%;
+	margin-left: 0;
+	margin-right: 0;
+}
+
+.praxity-hero-cover-image,
+.praxity-hero-cover-overlay {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+}
+
+.praxity-hero-cover-image {
+	object-fit: cover;
+}
+
+.praxity-hero-cover-overlay {
+	pointer-events: none;
+}
+
+.praxity-hero-cover-content {
+	position: relative;
+	z-index: 1;
+	width: 100%;
+	max-width: var(--praxity-max-width, 680px);
+	margin: 0 auto;
+	padding: var(--space-12);
+	color: var(--praxity-color-on-dark);
+}
+
+.praxity-hero-cover-content--left {
+	margin-left: 0;
+	margin-right: auto;
+}
+
+.praxity-hero-cover-content--center {
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.praxity-hero-cover-content--right {
+	margin-left: auto;
+	margin-right: 0;
+}
+
+.praxity-hero-cover--valign-top {
+	align-items: flex-start;
+}
+
+.praxity-hero-cover--valign-center {
+	align-items: center;
+}
+
+.praxity-hero-cover-title {
+	margin: 0 0 var(--space-3);
+	font-size: var(--type-h1);
+	font-weight: var(--weight-strong);
+	line-height: var(--leading-heading);
+	letter-spacing: -0.02em;
+	text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.praxity-hero-cover-subtitle {
+	margin: 0 0 var(--space-6);
+	font-size: var(--type-body);
+	line-height: var(--leading-heading);
+	opacity: 0.92;
+	text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Light overlay mode — dark text on white overlay */
+.praxity-hero-cover--light .praxity-hero-cover-content {
+	color: var(--praxity-color-on-light);
+}
+
+.praxity-hero-cover--light .praxity-hero-cover-title {
+	text-shadow: 0 2px 8px rgba(255, 255, 255, 0.4);
+}
+
+.praxity-hero-cover--light .praxity-hero-cover-subtitle {
+	text-shadow: 0 1px 4px rgba(255, 255, 255, 0.3);
+}
+
+@media (max-width: 768px) {
+	.praxity-hero-cover {
+		width: 100%;
+		min-height: 300px;
+		margin-left: 0;
+		margin-right: 0;
+	}
+
+	.praxity-hero-cover-content {
+		padding: var(--space-8) var(--space-4);
+	}
+
+	.praxity-hero-cover-title {
+		font-size: var(--type-h2);
+	}
+}
+
+/* Image figure uses dynamic maxWidth/margin — stays inline */
+/* Image aspect-ratio: auto is kept inline (Mantine Image prop) */
+
+/* --- Labeled graphic block --- */
+
+.praxity-labeled-graphic {
+	position: relative;
+	display: inline-block;
+	width: 100%;
+}
+
+.praxity-labeled-graphic > img {
+	display: block;
+	width: 100%;
+	height: auto;
+	border-radius: var(--radius-control);
+}
+
+.praxity-labeled-graphic-marker {
+	position: absolute;
+	transform: translate(-50%, -50%);
+	z-index: 2;
+}
+
+.praxity-labeled-graphic-marker[data-active="true"] {
+	z-index: 20;
+}
+
+.praxity-labeled-graphic-pin {
+	position: absolute;
+	transform: translate(-50%, -50%);
+	max-width: 200px;
+	background-color: var(--praxity-color-background);
+	z-index: 1;
+}
+
+.praxity-labeled-graphic-marker > .praxity-labeled-graphic-pin {
+	position: relative;
+	transform: none;
+	padding: var(--praxity-spacing-xs, var(--space-2));
+	border: 1px solid var(--praxity-color-border);
+	border-radius: var(--radius-mark);
+	box-shadow: none;
+	overflow-wrap: anywhere;
+}
+
+.praxity-labeled-graphic-body {
+	margin-top: var(--space-1);
+	color: var(--praxity-color-text-light);
+	font-size: var(--type-small);
+	line-height: var(--leading-body);
+}
+
+.praxity-labeled-graphic-body > :first-child {
+	margin-top: 0;
+}
+
+.praxity-labeled-graphic-body > :last-child {
+	margin-bottom: 0;
+}
+
+/* --- Assessment (Wave 3 reflection + scenario) --- */
+
+.praxity-assessment-question-header {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	align-items: baseline;
+	gap: var(--praxity-spacing-sm, var(--space-3));
+}
+
+.praxity-assessment-stem {
+	font-family: var(--praxity-font-heading);
+	font-style: normal;
+	font-size: var(--type-h3);
+	font-weight: var(--weight-strong);
+	line-height: var(--leading-heading);
+	margin: 0;
+	min-width: 0;
+}
+
+.praxity-assessment-stem-content {
+	display: inline;
+	font-weight: var(--weight-strong);
+	font-size: inherit;
+	line-height: inherit;
+}
+
+.praxity-assessment-stem-body {
+	grid-column: 1;
+	grid-row: 2;
+	font-weight: var(--weight-body);
+	line-height: var(--leading-body);
+}
+
+.praxity-assessment-stem-body > :first-child {
+	margin-top: 0;
+}
+.praxity-assessment-stem-body > :last-child {
+	margin-bottom: 0;
+}
+.praxity-assessment-question-header
+	> :where(.praxity-assessment-question-meta, .praxity-assessment-points) {
+	grid-column: 1;
+	grid-row: auto;
+}
+
+.praxity-assessment-points {
+	color: var(--ink-2);
+	font-size: var(--type-small);
+	line-height: var(--leading-small);
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+.praxity-assessment-question-meta {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: var(--space-1);
+}
+
+.praxity-required-indicator {
+	display: inline;
+	margin-inline-start: 0.2em;
+	color: var(--praxity-color-accent-text, var(--praxity-color-accent));
+	font-size: var(--type-body);
+	font-weight: var(--weight-strong);
+	line-height: 1;
+}
+
+.praxity-required-marker::before {
+	content: "\2060*";
+}
+
+/*
+ * Prompt and select sit in adjacent grid columns, which is what pairs them.
+ * A 24px dashed stub used to sit between them; it spanned no distance, so it
+ * read as an artifact rather than a leader, and `prefers-contrast: more`
+ * darkened it into something that looked like a dash in the copy.
+ */
+.praxity-matching-grid {
+	display: grid;
+	grid-template-columns: minmax(8rem, 1fr) minmax(12rem, 1fr);
+	align-items: start;
+	column-gap: var(--praxity-spacing-md, var(--space-4));
+	row-gap: var(--praxity-spacing-xs, var(--space-2));
+}
+
+.praxity-matching-row {
+	display: contents;
+}
+
+.praxity-block-assessment {
+	container-type: inline-size;
+	container-name: assessment-content;
+}
+
+/* Selects and textareas can span a reading column; update their paint instantly. */
+.praxity-block-assessment .mantine-Input-input {
+	transition: none;
+}
+
+@container assessment-content (max-width: 30rem) {
+	.praxity-matching-grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+.praxity-block .praxity-matching-prompt {
+	min-width: 0;
+	padding-block-start: var(--space-1);
+	font-size: var(--type-body);
+	line-height: var(--mantine-line-height, 1.55);
+}
+
+.praxity-matching-select {
+	position: absolute;
+	inset: 0;
+	--combobox-chevron-color: var(--ink-2);
+}
+
+.praxity-matching-control {
+	position: relative;
+	min-height: var(--target-size);
+}
+
+.praxity-matching-value {
+	position: relative;
+	z-index: 1;
+	display: block;
+	margin-inline-end: var(--space-12);
+	padding: var(--space-3) 0 var(--space-3) var(--space-4);
+	line-height: var(--leading-body);
+	color: var(--ink);
+	overflow-wrap: anywhere;
+	hyphens: none;
+	pointer-events: none;
+}
+
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		.praxity-matching-value {
+			color: CanvasText;
+		}
+	}
+}
+
+.praxity-matching-select .mantine-Input-wrapper {
+	height: 100%;
+}
+
+.praxity-matching-answer {
+	min-width: 0;
+}
+
+.praxity-matching-select .praxity-assessment-select-input {
+	min-height: var(--target-size);
+	padding: var(--space-1) var(--space-2);
+	border-radius: var(--radius-control);
+	height: 100%;
+	-webkit-text-fill-color: transparent;
+	font: inherit;
+	/* The wrapping copy owns visible text; the keyboard input must not scroll it. */
+	font-size: 0;
+	border-color: var(--praxity-color-control-border) !important;
+}
+
+.praxity-matching-select .praxity-assessment-select-input:disabled {
+	opacity: 1;
+}
+
+.praxity-matching-answer[data-result="correct"] .praxity-assessment-select-input {
+	border-color: var(--praxity-color-success-text, var(--praxity-color-success)) !important;
+}
+
+.praxity-matching-answer[data-result="incorrect"] .praxity-assessment-select-input {
+	border-color: var(--praxity-color-error-text, var(--praxity-color-error)) !important;
+}
+
+.praxity-matching-result {
+	display: flex;
+	align-items: center;
+	gap: var(--space-1);
+	margin-block-start: var(--space-1);
+	font-size: var(--type-small);
+	font-weight: var(--weight-strong);
+}
+
+/* Author-supplied supporting prose between the question stem and the response
+   controls. Deliberately lighter than the stem so the question still leads. */
+.praxity-assessment-description {
+	font-size: var(--type-body);
+	line-height: var(--leading-body);
+	color: var(--praxity-color-text-light);
+}
+
+.praxity-assessment-description > :where(p):first-child {
+	margin-top: 0;
+}
+
+.praxity-assessment-description > :where(p):last-child {
+	margin-bottom: 0;
+}
+
+.praxity-assessment-reflection-label {
+	display: block;
+	font-size: var(--type-small);
+	color: var(--praxity-color-text-light);
+	margin-top: var(--praxity-spacing-xs, var(--space-2));
+	font-style: normal;
+	font-weight: var(--weight-body);
+}
+
+.praxity-block-assessment [data-assessment-display="scenario"] {
+	max-width: 100%;
+}
+
+.praxity-block-assessment [data-assessment-display="scenario"] .praxity-assessment-description {
+	padding: var(--praxity-spacing-md, var(--space-4));
+	border-inline-start: 3px solid var(--praxity-color-accent);
+	background: var(--praxity-color-background-alt);
+	color: var(--praxity-color-text);
+}
+
+.praxity-block-assessment [data-assessment-display="scenario"] .praxity-assessment-stem {
+	font-size: inherit;
+	line-height: var(--leading-body);
+}
+
+/* --- Labeled graphic: reveal modes (Wave 3) --- */
+
+.praxity-labeled-graphic[data-reveal="click"],
+.praxity-labeled-graphic[data-reveal="sequential"] {
+	display: block;
+}
+
+.praxity-labeled-graphic-dot {
+	width: 28px;
+	height: 28px;
+	background: var(--praxity-color-accent);
+	color: var(--praxity-color-text-inverted);
+	border: 2px solid var(--praxity-color-text-inverted);
+	font-size: var(--type-small);
+	font-weight: var(--weight-strong);
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-shadow: none;
+	transition: transform var(--duration-press) var(--ease-out);
+}
+
+.praxity-labeled-graphic-dot:not(:disabled):hover {
+	transform: scale(1.15);
+}
+
+.praxity-labeled-graphic-dot:focus-visible {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+	box-shadow: none;
+}
+
+.praxity-labeled-graphic-dot:disabled {
+	cursor: not-allowed;
+	opacity: 0.45;
+}
+
+.praxity-labeled-graphic-dot--next::before {
+	content: "";
+	position: absolute;
+	inset: -2px;
+	border: 2px solid var(--praxity-color-accent);
+	border-radius: inherit;
+	opacity: 0.6;
+	pointer-events: none;
+}
+
+.praxity-labeled-graphic-popover {
+	position: absolute;
+	left: 50%;
+	top: 100%;
+	transform: translateX(-50%);
+	margin-top: var(--space-2);
+	z-index: 10;
+	min-width: 180px;
+	max-width: min(280px, 80vw);
+	padding: var(--praxity-spacing-sm, var(--space-3));
+	background: var(--praxity-color-background);
+	border: 1px solid var(--praxity-color-border);
+	border-radius: var(--radius-box);
+	box-shadow: var(--shadow-floating);
+}
+
+.praxity-labeled-graphic-hint {
+	margin-top: var(--space-2);
+	font-size: var(--type-small);
+	color: var(--praxity-color-text-light);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.praxity-labeled-graphic-dot {
+		transition: none;
+	}
+
+	.praxity-labeled-graphic-dot--next::before {
+		animation: none;
+	}
+}
+
+[data-praxity-reduced-motion] .praxity-labeled-graphic-dot--next::before {
+	animation: none;
+}
+
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		.praxity-labeled-graphic-dot,
+		.praxity-labeled-graphic-pin,
+		.praxity-labeled-graphic-popover {
+			border: 2px solid ButtonText;
+		}
+
+		.praxity-labeled-graphic-dot:focus-visible {
+			outline-color: Highlight;
+			box-shadow: none;
+		}
+	}
+}
+
+/* --- Statistics --- */
+.praxity-stats {
+	margin: 0;
+}
+.praxity-stats-grid {
+	display: grid;
+	gap: var(--space-6);
+}
+.praxity-stats-item {
+	margin: 0;
+	min-width: 0;
+}
+.praxity-stats-value {
+	display: block;
+	font-family: var(--praxity-font-heading);
+	font-size: var(--type-lead);
+	font-weight: var(--weight-strong);
+	font-variant-numeric: tabular-nums;
+	line-height: var(--leading-heading);
+	color: var(--ink);
+	overflow-wrap: break-word;
+}
+.praxity-stats-label {
+	display: block;
+	margin-top: var(--space-2);
+	font-size: var(--type-small);
+	line-height: var(--leading-small);
+	color: var(--ink-2);
+}
+.praxity-stats[data-layout="statement"] .praxity-stats-item {
+	display: flex;
+	align-items: baseline;
+	gap: var(--space-4);
+}
+@container preview-content (min-width: 481px) and (max-width: 768px) {
+	[data-praxity-root] .praxity-stats-grid:is([data-columns="3"], [data-columns="4"]) {
+		grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+	}
+}
+@container preview-content (max-width: 480px) {
+	[data-praxity-root] .praxity-stats-grid {
+		grid-template-columns: minmax(0, 1fr) !important;
+	}
+	.praxity-stats[data-layout="statement"] .praxity-stats-item {
+		display: block;
+	}
+}
+
+/* --- Note block --- */
+.praxity-note-base {
+	border: 0;
+	border-block-start: var(--praxity-rule-width, 1px) solid var(--line);
+	padding-block-start: var(--space-4);
+	color: var(--ink);
+	font-size: var(--type-body);
+	line-height: var(--leading-body);
+}
+.praxity-note-body {
+	min-width: 0;
+}
+.praxity-note-body > p {
+	margin: 0;
+}
+.praxity-note-body > p + p {
+	margin-block-start: var(--paragraph-gap);
+}
+.praxity-note-icon {
+	width: 20px;
+	height: 20px;
+	vertical-align: -0.15em;
+	margin-inline-end: var(--space-2);
+	color: var(--warning-ink);
+}
+.praxity-note-label {
+	display: inline;
+	font-size: inherit;
+	font-weight: var(--weight-strong);
+}
+.praxity-note-base[data-color="warning"] .praxity-note-label {
+	color: var(--warning-ink);
+}
+.praxity-note-base[data-color="error"] :is(.praxity-note-label, .praxity-note-icon) {
+	color: var(--error-ink);
+}
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		.praxity-note-base {
+			border-color: CanvasText;
+		}
+	}
+}
+
+.praxity-task-list ul {
+	display: grid;
+	gap: var(--praxity-spacing-xs, var(--space-2));
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.praxity-task-list li {
+	display: grid;
+	grid-template-columns: 1.25em minmax(0, 1fr);
+	gap: var(--praxity-spacing-xs, var(--space-2));
+	align-items: start;
+}
+
+.praxity-task-list-marker {
+	position: relative;
+	width: 1.1em;
+	height: 1.1em;
+	margin-block-start: 0.15em;
+	border: 1px solid currentColor;
+	border-radius: var(--radius-mark);
+}
+
+.praxity-task-list-marker[data-checked="true"]::after {
+	content: "";
+	position: absolute;
+	inset: 0.18em 0.3em 0.28em;
+	border-inline-end: 0.13em solid currentColor;
+	border-block-end: 0.13em solid currentColor;
+	transform: rotate(45deg);
+}
+
+.praxity-required-ring {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+	border-radius: var(--radius-control);
+}
+
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		.praxity-required-ring {
+			outline-color: Mark;
+		}
+	}
+}
+
+/* --- Logic authoring overlay --- */
+
+.praxity-logic-overlay {
+	display: flex;
+	align-items: center;
+	gap: var(--praxity-spacing-sm, var(--space-3));
+	padding: var(--praxity-spacing-sm, var(--space-3));
+	border: 1px dashed var(--praxity-color-accent);
+	border-radius: var(--radius-control);
+	background: color-mix(in oklab, var(--praxity-color-accent) 8%, transparent);
+	color: var(--praxity-color-text-light);
+	font-size: var(--type-small);
+	line-height: var(--leading-body);
+}
+
+.praxity-logic-overlay > svg {
+	flex-shrink: 0;
+	color: var(--praxity-color-accent-text, var(--praxity-color-accent));
+}
+
+.praxity-logic-overlay strong,
+.praxity-logic-overlay > span > span {
+	display: block;
+}
+
+/* --- Quote block --- */
+.praxity-quote {
+	margin: 0;
+	padding-inline-start: var(--space-4);
+	border-inline-start: var(--focus-width) solid var(--line);
+	color: var(--ink);
+	font-family: var(--praxity-font-heading);
+	font-size: var(--type-lead);
+	font-style: italic;
+	line-height: var(--leading-body);
+}
+.praxity-quote[data-size="large"] {
+	font-size: var(--type-h3);
+}
+.praxity-quote[data-size="very-large"] {
+	font-size: var(--type-h2);
+}
+.praxity-quote blockquote,
+.praxity-quote blockquote p {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	font: inherit;
+}
+.praxity-quote blockquote p + p {
+	margin-block-start: var(--paragraph-gap);
+}
+.praxity-quote-attribution {
+	margin-block-start: var(--space-2);
+	color: var(--ink-2);
+	font-family: var(--praxity-font-family);
+	font-size: var(--type-small);
+	font-style: normal;
+	line-height: var(--leading-small);
+}
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		.praxity-quote {
+			border-color: CanvasText;
+		}
+	}
+}
+
+/* Script keeps its hanging label; bubbles group the label and speech together. */
+.praxity-dialogue {
+	margin: 0;
+}
+.praxity-dialogue-turns {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+	gap: var(--space-3);
+}
+.praxity-dialogue-turn {
+	position: relative;
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	column-gap: var(--space-3);
+	align-items: start;
+}
+.praxity-dialogue-avatar {
+	inline-size: 2.75rem;
+	block-size: 2.75rem;
+	border-radius: var(--radius-round);
+	object-fit: cover;
+}
+.praxity-dialogue-turn:not(:has(.praxity-dialogue-avatar)) {
+	grid-template-columns: minmax(0, 1fr);
+}
+.praxity-dialogue-name {
+	margin: 0;
+	font-weight: var(--weight-strong);
+	color: var(--ink);
+}
+.praxity-dialogue-text {
+	overflow-wrap: anywhere;
+}
+.praxity-dialogue-text > p {
+	margin: 0;
+}
+.praxity-dialogue-text > p + p {
+	margin-block-start: 0.5em;
+}
+.praxity-dialogue-caption {
+	margin-block-end: var(--space-3);
+	color: var(--ink-2);
+}
+@media (max-width: 39.999rem) {
+	.praxity-dialogue[data-style="script"] .praxity-dialogue-bubble {
+		display: contents;
+	}
+	.praxity-dialogue[data-style="script"] .praxity-dialogue-text {
+		grid-column: 1 / -1;
+	}
+}
+.praxity-dialogue[data-style="bubbles"] {
+	container: praxity-dialogue / inline-size;
+	--dialogue-avatar-size: 0px;
+	--dialogue-avatar-gap: 0px;
+}
+.praxity-dialogue[data-style="bubbles"]:has(.praxity-dialogue-avatar) {
+	--dialogue-avatar-size: 48px;
+	--dialogue-avatar-gap: var(--space-3);
+}
+.praxity-dialogue[data-style="bubbles"] .praxity-dialogue-turns {
+	gap: var(--space-6);
+	justify-items: start;
+}
+.praxity-dialogue[data-style="bubbles"] .praxity-dialogue-turn {
+	inline-size: fit-content;
+	max-inline-size: 85%;
+	min-inline-size: 0;
+	grid-template-columns: var(--dialogue-avatar-size) minmax(0, 1fr);
+	column-gap: var(--dialogue-avatar-gap);
+}
+.praxity-dialogue[data-style="bubbles"] .praxity-dialogue-avatar {
+	grid-column: 1;
+	grid-row: 1;
+	inline-size: var(--dialogue-avatar-size);
+	block-size: var(--dialogue-avatar-size);
+	box-sizing: border-box;
+	border: 1px solid var(--line);
+}
+.praxity-dialogue[data-style="bubbles"] .praxity-dialogue-bubble {
+	grid-column: 2;
+	grid-row: 1;
+	min-inline-size: 0;
+	padding: var(--space-3) var(--space-4);
+	border: 0;
+	border-radius: var(--radius-box);
+	background: var(--paper-2);
+	color: var(--ink);
+	box-shadow: none;
+	text-align: start;
+	font-family: var(--praxity-font-family);
+	font-size: var(--type-body);
+	line-height: var(--leading-body);
+}
+.praxity-dialogue[data-style="bubbles"] .praxity-dialogue-name {
+	font-size: var(--type-small);
+	line-height: var(--leading-small);
+}
+.praxity-dialogue[data-style="bubbles"] .praxity-dialogue-name:not(.praxity-sr-only) {
+	margin-block-end: var(--space-1);
+}
+.praxity-dialogue[data-style="bubbles"] .praxity-dialogue-text {
+	font-size: var(--type-body);
+	line-height: var(--leading-body);
+	hyphens: manual;
+}
+.praxity-dialogue[data-style="bubbles"] .praxity-dialogue-text > p + p {
+	margin-block-start: var(--space-2);
+}
+.praxity-dialogue[data-style="bubbles"] .praxity-dialogue-turn[data-side="end"] {
+	justify-self: end;
+	grid-template-columns: minmax(0, 1fr) var(--dialogue-avatar-size);
+}
+.praxity-dialogue[data-style="bubbles"]
+	.praxity-dialogue-turn[data-side="end"]
+	.praxity-dialogue-avatar {
+	grid-column: 2;
+}
+.praxity-dialogue[data-style="bubbles"]
+	.praxity-dialogue-turn[data-side="end"]
+	.praxity-dialogue-bubble {
+	grid-column: 1;
+}
+.praxity-dialogue[data-style="bubbles"] .praxity-dialogue-turn[data-continuation] {
+	margin-block-start: calc(var(--space-2) - var(--space-6));
+}
+.praxity-dialogue[data-style="bubbles"]
+	.praxity-dialogue-turn[data-continuation]
+	.praxity-dialogue-avatar {
+	visibility: hidden;
+}
+@container praxity-dialogue (width < 36rem) {
+	.praxity-dialogue[data-style="bubbles"] .praxity-dialogue-turns {
+		gap: var(--space-4);
+	}
+	.praxity-dialogue[data-style="bubbles"] .praxity-dialogue-turn {
+		--dialogue-avatar-size: 0px;
+		--dialogue-avatar-gap: 0px;
+		max-inline-size: 100%;
+	}
+	.praxity-dialogue:has(.praxity-dialogue-avatar) .praxity-dialogue-turn {
+		--dialogue-avatar-size: 40px;
+		--dialogue-avatar-gap: var(--space-2);
+	}
+	.praxity-dialogue[data-style="bubbles"] .praxity-dialogue-bubble {
+		padding-inline: var(--space-3);
+	}
+	.praxity-dialogue[data-style="bubbles"] .praxity-dialogue-turn[data-continuation] {
+		margin-block-start: calc(var(--space-2) - var(--space-4));
+	}
+}
+/* At the smallest reading width, the portrait shares the name row so speech
+   keeps the whole text column. The DOM and assistive reading order stay intact. */
+@container praxity-dialogue (width < 20rem) {
+	.praxity-dialogue[data-style="bubbles"] .praxity-dialogue-turn[data-side] {
+		inline-size: 100%;
+		grid-template-columns: minmax(0, 1fr);
+		column-gap: 0;
+	}
+	.praxity-dialogue[data-style="bubbles"]
+		.praxity-dialogue-turn[data-side]
+		.praxity-dialogue-bubble {
+		grid-column: 1 / -1;
+	}
+	.praxity-dialogue[data-style="bubbles"]
+		.praxity-dialogue-turn[data-side]
+		.praxity-dialogue-avatar {
+		position: absolute;
+		grid-column: 1 / -1;
+		inset-block-start: var(--space-3);
+		inset-inline-start: var(--space-3);
+		inline-size: 24px;
+		block-size: 24px;
+	}
+	.praxity-dialogue[data-style="bubbles"]
+		.praxity-dialogue-turn:has(.praxity-dialogue-avatar)
+		.praxity-dialogue-name:not(.praxity-sr-only) {
+		display: flex;
+		align-items: center;
+		min-block-size: 24px;
+		padding-inline-start: var(--space-8);
+	}
+	/* A flex item keeps its intrinsic minimum width; let an unbroken name wrap. */
+	.praxity-dialogue[data-style="bubbles"] .praxity-dialogue-name > bdi {
+		min-inline-size: 0;
+	}
+	.praxity-dialogue[data-style="bubbles"]
+		.praxity-dialogue-turn[data-side="end"]
+		.praxity-dialogue-avatar {
+		inset-inline-start: auto;
+		inset-inline-end: var(--space-3);
+	}
+	.praxity-dialogue[data-style="bubbles"]
+		.praxity-dialogue-turn[data-side="end"]:has(.praxity-dialogue-avatar)
+		.praxity-dialogue-name:not(.praxity-sr-only) {
+		padding-inline-start: 0;
+		padding-inline-end: var(--space-8);
+		justify-content: end;
+	}
+}
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		.praxity-dialogue[data-style="bubbles"] .praxity-dialogue-bubble {
+			border: 1px solid CanvasText;
+		}
+	}
+}
+
+/* --- Heading chapter marker / gradient text --- */
+
+.praxity-heading-chapter {
+	text-align: center;
+	padding: var(--space-8) 0 var(--space-6);
+}
+
+.praxity-heading-chapter-divider {
+	width: 60px;
+	height: 3px;
+	margin: var(--space-4) auto 0;
+	border-radius: var(--radius-mark);
+	background: var(--praxity-color-accent);
+}
+
+.praxity-heading-with-kicker {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-1);
+}
+
+.praxity-kicker {
+	margin: 0;
+	font-size: var(--type-small);
+	line-height: var(--leading-body);
+	font-weight: var(--weight-strong);
+	text-transform: none;
+	letter-spacing: 0.08em;
+	color: var(--praxity-color-text-light);
+}
+
+/* --- Assessment affordance --- */
+
+.praxity-assessment-group-card {
+	color: var(--praxity-color-text);
+	/* Mantine's preview Paper must keep the same unboxed group header. */
+	background: transparent;
+	border: 0;
+	border-radius: 0;
+	box-shadow: none;
+}
+
+.praxity-assessment-group-card,
+:is(.praxity-block, .praxity-float-region)[data-assessment-group-context] {
+	padding-block: var(--space-6);
+	padding-inline: 0;
+}
+
+.praxity-assessment-group-header-content {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	min-width: 0;
+	gap: var(--space-1);
+}
+
+.praxity-assessment-group-title {
+	margin: 0;
+	font-size: var(--type-body);
+	line-height: var(--leading-heading);
+}
+
+/* A group can supply the deck's authored H1. Its activity boundary starts
+   below the title, so the same stage inset places every slide heading. */
+.deck-slide .praxity-assessment-group-card:has(h1) {
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+}
+.deck-slide .praxity-assessment-group-card:has(h1) .praxity-assessment-group-metadata {
+	margin-block-start: var(--block-gap);
+	padding: 0;
+}
+
+.praxity-assessment-group-metadata {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--praxity-spacing-md, var(--space-4));
+	font-size: var(--type-small);
+	color: var(--praxity-color-text-light);
+}
+
+.praxity-assessment-group-card .praxity-assessment-group-metadata > * {
+	min-width: 0;
+	max-width: 100%;
+}
+
+.praxity-block [data-assessment-group-progress] {
+	flex-basis: 100%;
+	margin: 0;
+	font-size: var(--type-small);
+	color: var(--praxity-color-text-light);
+}
+
+.praxity-text-response-downloads[hidden],
+[data-assessment-group-progress][hidden] {
+	display: none;
+}
+
+.praxity-text-response-downloads .mantine-Button-root[data-variant="subtle"] {
+	--button-bg: transparent !important;
+	--button-hover: transparent !important;
+	--button-color: var(--praxity-color-text-light) !important;
+	--button-bd: none !important;
+	min-height: var(--target-size);
+}
+
+.praxity-text-response-downloads .praxity-btn,
+.praxity-media-fallback .praxity-btn,
+.praxity-self-check .praxity-btn {
+	min-width: var(--target-size);
+	min-height: var(--target-size);
+	padding: var(--space-2) var(--space-3);
+	font-family: inherit;
+	font-size: var(--type-body);
+	font-weight: var(--weight-strong);
+	line-height: var(--leading-body);
+	color: var(--ink-2);
+	background: transparent;
+	border: 0;
+	border-radius: var(--radius-control);
+	cursor: pointer;
+}
+
+.praxity-text-response-downloads .praxity-btn:disabled {
+	cursor: default;
+}
+
+.praxity-text-response-downloads .praxity-btn {
+	background: var(--paper);
+	border: 1px solid var(--line-mid);
+}
+
+.praxity-text-response-downloads .praxity-btn:focus-visible,
+.praxity-media-fallback .praxity-btn:focus-visible,
+.praxity-self-check .praxity-btn:focus-visible {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+}
+
+.praxity-block-assessment:not(.praxity-block) {
+	border: 1px solid var(--praxity-color-activity-border);
+	border-radius: var(--radius-box);
+	box-shadow: none;
+	background: var(--praxity-color-activity-surface);
+	color: var(--praxity-color-text);
+}
+
+:is(.praxity-block, .praxity-float-region)[data-assessment-group-context],
+.praxity-block-assessment[data-assessment-group] {
+	margin-block: 0;
+}
+
+.praxity-float-region[data-assessment-group-context] .praxity-block {
+	margin-block: 0;
+}
+
+html.praxity-assessment-group-ready [data-group-oneof-unselected] {
+	display: none;
+}
+
+.praxity-assessment-group-submit {
+	padding-block: var(--space-4);
+	padding-inline: 0;
+	text-align: start;
+	color: var(--praxity-section-text, var(--praxity-color-text));
+}
+
+.praxity-ag-submit-btn {
+	min-block-size: var(--target-size);
+	padding-block: var(--space-2);
+	padding-inline: var(--praxity-spacing-lg, var(--space-6));
+	font-size: var(--type-body);
+	font-weight: var(--weight-strong);
+	border: 0;
+	border-radius: var(--radius-control);
+	cursor: pointer;
+	background: var(--praxity-color-button-background, var(--praxity-color-accent));
+	color: var(--praxity-color-button-text);
+}
+
+.praxity-block-assessment
+	:is(
+		[data-assessment-submit="true"],
+		.praxity-assessment-actions button,
+		.praxity-assessment-retry button
+	) {
+	align-self: flex-start;
+	min-block-size: var(--target-size);
+	min-inline-size: var(--target-size);
+	border-radius: var(--radius-control);
+}
+
+.praxity-assessment-actions {
+	display: flex;
+	justify-content: flex-start;
+	gap: var(--space-3);
+}
+
+.praxity-assessment-actions:empty {
+	display: none;
+}
+
+[data-assessment-feedback],
+[data-assessment-retry],
+[data-assessment-continue] {
+	scroll-margin-block: calc(var(--focus-control-width) + var(--focus-offset));
+}
+
+[data-assessment-group]
+	.praxity-assessment-actions:not(:has(button:not([data-assessment-submit]))) {
+	display: none;
+}
+
+/* Keep the feedback owner mounted for focus, with no gap until it has content. */
+.mantine-Stack-root > [data-assessment-feedback]:empty,
+.praxity-assessment-choice-baseline > [data-assessment-feedback]:empty,
+[data-assessment-group] .praxity-assessment-baseline > [data-assessment-feedback]:empty {
+	display: none;
+}
+
+.praxity-block-assessment[data-assessment-group] [data-assessment-submit="true"] {
+	display: none;
+}
+
+@container preview-content (max-width: 480px) {
+	.praxity-ag-submit-btn,
+	.praxity-block-assessment [data-assessment-submit="true"] {
+		inline-size: 100%;
+	}
+
+	/* Keep shared-submit words whole inside the narrow group footer. */
+	.praxity-ag-submit-btn {
+		padding-inline: var(--space-1);
+	}
+}
+
+.praxity-ag-submit-btn:hover {
+	background: color-mix(
+		in oklab,
+		var(--praxity-color-button-background, var(--praxity-color-accent)) 85%,
+		black
+	);
+}
+
+.praxity-ag-submit-btn:focus-visible {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+}
+
+.praxity-block-assessment .mantine-Checkbox-input,
+.praxity-block-assessment .mantine-Radio-radio,
+[data-checklist-item] .mantine-Checkbox-input {
+	background-color: var(--praxity-color-background);
+	border-color: var(--praxity-color-activity-border);
+	transition-duration: var(--duration-state);
+	transition-timing-function: var(--ease-out);
+}
+
+[data-checklist-item] .mantine-Checkbox-input:not(:checked) {
+	border: 2px solid var(--ink-2);
+	border-radius: var(--radius-key);
+	background: var(--paper);
+}
+
+[data-checklist-item] .mantine-Checkbox-input {
+	min-width: 0;
+	min-height: 0;
+}
+
+.praxity-block-assessment .mantine-Checkbox-input:checked,
+.praxity-block-assessment .mantine-Radio-radio:checked,
+[data-checklist-item] .mantine-Checkbox-input:checked {
+	background-color: var(--praxity-color-accent);
+	border-color: var(--praxity-color-accent);
+}
+
+.praxity-block-assessment .mantine-Checkbox-label,
+.praxity-block-assessment .mantine-Radio-label,
+[data-checklist-item] .mantine-Checkbox-label {
+	color: var(--praxity-color-text);
+}
+
+.praxity-assessment-choice-option :is(.mantine-Radio-labelWrapper, .mantine-Checkbox-labelWrapper) {
+	flex: 1;
+	min-width: 0;
+}
+
+.praxity-assessment-choice-option :is(.mantine-Radio-label, .mantine-Checkbox-label) {
+	padding-inline: 0;
+}
+
+.praxity-choice-label {
+	overflow-wrap: break-word;
+	line-height: inherit;
+}
+
+/* At phone-zoom widths, one outer boundary owns all horizontal decoration. */
+@container course-shell (width < 400px) {
+	/* Automatic hyphenation splits words that fit a fresh line at zoom widths. */
+	[data-praxity-root] * {
+		hyphens: manual;
+	}
+	[data-praxity-root] .praxity-assessment-question-header {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	[data-praxity-root] .praxity-assessment-question-header > * {
+		grid-column: 1;
+		grid-row: auto;
+		align-items: flex-start;
+	}
+	[data-praxity-root] .praxity-page-content {
+		padding-inline: var(--page-gutter);
+	}
+	[data-praxity-root] .praxity-deck[data-ready="true"] #main-content {
+		padding-inline: var(--page-gutter);
+	}
+	[data-praxity-root]
+		:is(.praxity-block-assessment:not(.praxity-block), .praxity-card:not([data-flippable="true"])) {
+		padding-inline: var(--space-3);
+	}
+	[data-praxity-root]
+		:is(
+			.praxity-block-assessment:not(.praxity-block),
+			.praxity-card,
+			[data-assessment-group-context]
+		)
+		:is(
+			.praxity-card,
+			.praxity-ag-radio-row,
+			[class*="praxity-card-body"],
+			[class*="praxity-card-header"],
+			.praxity-flashcard-face
+		) {
+		padding-inline: 0;
+		border-inline: 0;
+		border-top: 1px solid var(--praxity-color-activity-border);
+		border-radius: 0;
+	}
+	[data-praxity-root]
+		.praxity-assessment-choice-option
+		:is(.mantine-Radio-body, .mantine-Checkbox-body),
+	[data-praxity-root] .praxity-assessment-choice-baseline .praxity-assessment-choice-option {
+		flex-direction: row;
+		align-items: flex-start;
+	}
+	[data-praxity-root]
+		.praxity-assessment-choice-option
+		:is(.mantine-Radio-inner, .mantine-Checkbox-inner) {
+		/* The wrapper fits the control; its margin aligns with the label's first line. */
+		block-size: var(--praxity-choice-control-size);
+		margin-block-start: max(0px, calc((1lh - var(--praxity-choice-control-size)) / 2));
+	}
+	[data-praxity-root] .praxity-card[data-flippable="true"] .praxity-card-media[data-media="inset"] {
+		padding-inline: 0;
+	}
+	[data-praxity-root]
+		.praxity-card
+		.praxity-flashcard-face
+		> .praxity-card-media[data-media="flush"] {
+		width: 100%;
+		margin-top: 0;
+	}
+}
+/* Keep the established language hyphenation for headings at the reflow width. */
+@container course-shell (320px <= width < 400px) {
+	[data-praxity-root] :is(h1, h2, h3, h4, h5, h6):not(.praxity-assessment-stem) {
+		hyphens: manual;
+	}
+}
+.praxity-choice-status {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-1);
+	font-size: var(--type-body);
+	font-weight: var(--weight-strong);
+	white-space: nowrap;
+}
+
+.praxity-assessment-result {
+	display: flex;
+	align-items: center;
+	gap: var(--space-1);
+}
+
+.praxity-choice-feedback {
+	margin-block-start: var(--space-2);
+	padding-inline-start: calc(var(--praxity-choice-control-size) + var(--space-3));
+}
+.praxity-choice-feedback > div {
+	margin-block-start: var(--space-1);
+	color: var(--ink);
+}
+.praxity-choice-status > svg {
+	inline-size: var(--space-6);
+	block-size: var(--space-6);
+}
+.praxity-block-assessment [data-assessment-feedback]:not(:empty) {
+	border-block-start: var(--praxity-rule-width, 1px) solid var(--rule);
+	padding-block-start: var(--space-4);
+}
+.praxity-assessment-retry {
+	margin-block-start: var(--space-3);
+}
+
+.praxity-block-assessment
+	:is(.praxity-assessment-retry, .praxity-assessment-actions)
+	.mantine-Button-root[data-variant="outline"],
+.praxity-block-assessment .praxity-text-response-downloads .mantine-Button-root {
+	--button-bg: var(--paper) !important;
+	--button-color: var(--ink) !important;
+	--button-bd: 1px solid var(--line-mid) !important;
+	--button-hover: var(--paper-2) !important;
+}
+
+.praxity-block-assessment
+	:is(.praxity-assessment-retry, .praxity-assessment-actions, .praxity-text-response-downloads)
+	.mantine-Button-root {
+	border-radius: var(--radius-control);
+	min-height: var(--target-size);
+	transition: transform var(--duration-press) var(--ease-out);
+}
+
+.mantine-Button-inner,
+.mantine-Button-root::before {
+	transition:
+		transform var(--duration-press) var(--ease-out),
+		opacity var(--duration-press) var(--ease-out);
+}
+
+.praxity-block-assessment
+	:is(.praxity-assessment-retry, .praxity-assessment-actions, .praxity-text-response-downloads)
+	.mantine-Button-root:active:not([data-disabled]):not(:disabled) {
+	transform: scale(0.96);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.praxity-block-assessment
+		:is(.praxity-assessment-retry, .praxity-assessment-actions, .praxity-text-response-downloads)
+		.mantine-Button-root {
+		transition: none;
+	}
+}
+
+.praxity-rating-feedback {
+	margin-block-start: var(--space-4);
+	padding-block-start: var(--space-4);
+	border-block-start: var(--praxity-rule-width, calc(var(--focus-width) / 2)) solid var(--line);
+}
+
+:is(.praxity-choice-status, .praxity-assessment-result) > svg {
+	flex-shrink: 0;
+}
+
+:is(.praxity-choice-status, .praxity-assessment-result)[data-result="correct"] {
+	color: var(--praxity-color-success-text, var(--praxity-color-success));
+}
+
+:is(.praxity-choice-status, .praxity-assessment-result)[data-result="incorrect"] {
+	color: var(--praxity-color-error-text, var(--praxity-color-error));
+}
+
+.praxity-assessment-select-input,
+.praxity-assessment-text-input,
+.praxity-block-assessment .mantine-Textarea-input,
+.praxity-block-assessment .mantine-TextInput-input {
+	background: var(--praxity-color-background) !important;
+	border: 1px solid var(--praxity-color-activity-border) !important;
+	color: var(--praxity-color-text) !important;
+}
+
+/* Inert assessment markup retains the island card surface and padding. */
+
+.praxity-assessment-baseline,
+.praxity-assessment-choice-baseline {
+	font-family: var(--praxity-font-family);
+}
+
+.praxity-assessment-baseline > fieldset {
+	min-inline-size: 0;
+}
+
+.praxity-assessment-text-input,
+.praxity-block-assessment .mantine-Textarea-input,
+.praxity-block-assessment .mantine-TextInput-input,
+.praxity-assessment-baseline .praxity-assessment-select-input {
+	display: block;
+	box-sizing: border-box;
+	inline-size: 100%;
+	min-inline-size: 0;
+	min-block-size: var(--target-size);
+	padding: var(--praxity-spacing-sm, var(--space-3));
+	border-radius: var(--radius-control);
+	font: inherit;
+	line-height: var(--leading-body);
+	opacity: 1;
+	-webkit-text-fill-color: var(--praxity-color-text);
+}
+
+.praxity-assessment-text-input::placeholder,
+.praxity-block-assessment :is(.mantine-Textarea-input, .mantine-TextInput-input)::placeholder {
+	color: var(--praxity-color-text-muted);
+	/* The field's text fill colour would otherwise paint its placeholder at full body colour. */
+	-webkit-text-fill-color: currentColor;
+	opacity: 1;
+}
+
+.praxity-assessment-select-dropdown {
+	background: var(--praxity-color-surface, var(--praxity-color-background)) !important;
+	border: 1px solid var(--praxity-color-activity-border) !important;
+	color: var(--praxity-color-text) !important;
+	box-shadow: none;
+}
+
+.praxity-assessment-select-option {
+	height: auto;
+	min-height: var(--target-size);
+	white-space: normal;
+	line-height: var(--leading-body);
+	align-items: flex-start;
+	color: var(--praxity-color-text) !important;
+}
+
+.praxity-assessment-select-option:hover,
+.praxity-assessment-select-option[data-combobox-selected] {
+	background: color-mix(in oklab, var(--praxity-color-accent) 18%, transparent) !important;
+	color: var(--praxity-color-text) !important;
+}
+
+.praxity-categorize {
+	display: grid;
+	gap: var(--praxity-spacing-sm, var(--space-3));
+}
+
+.praxity-categorize-table-wrap,
+.praxity-matrix-table-wrap {
+	overflow-x: auto;
+	/* Full activity padding consumes the card's corner radius. */
+	border-radius: 0;
+	border: 0;
+}
+
+.praxity-categorize-table,
+.praxity-matrix-table {
+	min-width: 100%;
+	background: var(--paper);
+	border: 0 !important;
+}
+
+.praxity-matrix-statement-column {
+	width: 16rem;
+}
+
+.praxity-categorize-table {
+	table-layout: fixed;
+}
+
+.praxity-categorize-item-heading {
+	width: 44%;
+}
+
+@container assessment-content (width >= 600px) {
+	.praxity-categorize-table-wrap {
+		/* The inset equals the difference between the card and control corner radii. */
+		margin-inline: calc(
+			var(--radius-box) -
+			var(--radius-control) -
+			var(--praxity-activity-padding-inline, 0px)
+		);
+		border-radius: var(--radius-control);
+	}
+}
+
+:is(.praxity-categorize-table, .praxity-matrix-table) {
+	width: 100%;
+	border-collapse: collapse;
+	border-spacing: 0;
+	font-size: var(--type-small);
+	line-height: var(--mantine-line-height, 1.55);
+}
+
+:is(.praxity-categorize-table, .praxity-matrix-table) :is(th, td) {
+	padding: var(--space-2);
+}
+
+.praxity-assessment-baseline :is(.praxity-categorize-table, .praxity-matrix-table) tbody th {
+	text-align: start;
+}
+
+.praxity-assessment-baseline :is(.praxity-categorize-table, .praxity-matrix-table) tr {
+	border-bottom: 1px solid color-mix(in oklab, var(--praxity-color-border) 72%, transparent);
+}
+
+.praxity-assessment-baseline
+	:is(.praxity-categorize-table, .praxity-matrix-table)
+	tbody
+	tr:last-child {
+	border-bottom: 0;
+}
+
+.praxity-assessment-table-control {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	min-width: 44px;
+	min-height: 44px;
+	cursor: pointer;
+}
+
+.praxity-assessment-table-control :is(.mantine-Radio-body, .mantine-Checkbox-body) {
+	justify-content: center;
+	align-items: center;
+}
+
+.praxity-assessment-row-summary {
+	border-top: 1px solid var(--line, var(--praxity-color-border));
+	padding-block-start: 12px;
+}
+
+.praxity-categorize-table :where(th, td),
+.praxity-matrix-table :where(th, td) {
+	border-color: color-mix(in oklab, var(--praxity-color-border) 72%, transparent) !important;
+	color: var(--praxity-color-text);
+}
+
+.praxity-categorize-table th,
+.praxity-matrix-table th {
+	font-weight: 500;
+}
+
+.praxity-categorize-table thead th,
+.praxity-matrix-table thead th {
+	background: var(--praxity-color-surface, var(--praxity-color-background));
+	font-size: var(--type-body);
+	font-weight: var(--weight-strong);
+	text-align: center;
+}
+
+.praxity-categorize-table thead th:not(:first-child),
+.praxity-matrix-table thead th:not(:first-child) {
+	min-width: min-content;
+	overflow-wrap: normal;
+	word-break: normal;
+	hyphens: none;
+}
+
+.praxity-categorize-table thead th:not(:first-child) {
+	padding-inline: var(--space-1);
+}
+
+.praxity-matrix-table thead th {
+	line-height: var(--leading-body);
+}
+
+.praxity-categorize-table tbody th,
+.praxity-matrix-table tbody th {
+	background: var(--praxity-color-surface, var(--praxity-color-background));
+	font-size: var(--type-body);
+	font-weight: var(--weight-body);
+	line-height: var(--leading-body);
+	vertical-align: middle;
+}
+
+.praxity-categorize-table tbody td,
+.praxity-matrix-table tbody td {
+	text-align: center;
+}
+
+.praxity-categorize-table .praxity-assessment-table-control {
+	min-width: var(--target-size);
+	min-height: var(--target-size);
+	cursor: pointer;
+}
+
+.praxity-categorize-category-header {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--praxity-spacing-xs, var(--space-2));
+	font-weight: var(--weight-strong);
+	line-height: var(--leading-body);
+}
+
+.praxity-categorize-category-header > :where(span) {
+	max-width: 100%;
+}
+
+.praxity-categorize-category-image {
+	width: min(8rem, 100%);
+	aspect-ratio: 4 / 3;
+	object-fit: cover;
+	border-radius: var(--radius-control);
+	border: 1px solid color-mix(in oklab, var(--praxity-color-border) 88%, transparent);
+	background: var(--praxity-color-background);
+}
+
+@container assessment-content (width < 600px) {
+	.praxity-categorize-table,
+	.praxity-matrix-table {
+		width: 100%;
+		min-width: 0;
+	}
+	.praxity-categorize-table .praxity-categorize-item-heading,
+	.praxity-matrix-statement-column {
+		width: auto;
+	}
+
+	:is(.praxity-categorize-table, .praxity-matrix-table) thead {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		clip-path: inset(50%);
+		overflow: hidden;
+	}
+
+	:is(.praxity-categorize-table, .praxity-matrix-table) :is(tbody, tr, th) {
+		display: block;
+	}
+
+	/* Override the same baseline cell rules as Mantine's cells, so activation
+	   and inert previews keep identical row heights and borders. */
+	.praxity-block-assessment
+		:is(.praxity-categorize-table, .praxity-matrix-table)
+		tbody
+		th:first-child {
+		padding-block: var(--space-3) var(--space-1);
+		font-weight: var(--weight-body);
+		border-inline: 0;
+	}
+
+	.praxity-block-assessment
+		:is(.praxity-categorize-table, .praxity-matrix-table)
+		tbody
+		td[data-category] {
+		display: flex;
+		align-items: center;
+		gap: var(--praxity-spacing-sm, var(--space-3));
+		min-height: var(--target-size);
+		text-align: start;
+		border-inline: 0;
+	}
+
+	:is(.praxity-categorize-table, .praxity-matrix-table) tbody td::before {
+		content: attr(data-category);
+		font-size: var(--type-body);
+		flex: 1;
+		min-width: 0;
+		overflow-wrap: anywhere;
+	}
+}
+
+.praxity-block-assessment :is(.mantine-Radio-root, .mantine-Checkbox-root),
+[data-checklist-item] .mantine-Checkbox-root {
+	--radio-size: var(--praxity-choice-control-size);
+	--checkbox-size: var(--praxity-choice-control-size);
+}
+
+/* Keep wrapped labels beside the first line. The body owns the font size so
+ * its control wrapper and label measure that line with the same em. */
+.praxity-block-assessment .mantine-Radio-body,
+.praxity-block-assessment .mantine-Checkbox-body,
+[data-checklist-item] .mantine-Checkbox-body {
+	align-items: flex-start;
+}
+
+.praxity-assessment-choice-option :is(.mantine-Radio-body, .mantine-Checkbox-body),
+[data-checklist-item] .mantine-Checkbox-body {
+	font-size: var(--type-body);
+	line-height: var(--leading-body);
+}
+
+.praxity-assessment-choice-option :is(.mantine-Radio-body, .mantine-Checkbox-body) {
+	gap: var(--space-3);
+}
+
+.praxity-block-assessment
+	.praxity-assessment-choice-option
+	:is(
+		.mantine-Radio-labelWrapper,
+		.mantine-Checkbox-labelWrapper,
+		.mantine-Radio-label,
+		.mantine-Checkbox-label
+	),
+[data-checklist-item] :is(.mantine-Checkbox-labelWrapper, .mantine-Checkbox-label) {
+	font-size: inherit;
+	line-height: inherit;
+}
+
+.praxity-block-assessment .mantine-Radio-inner,
+.praxity-block-assessment .mantine-Checkbox-inner,
+[data-checklist-item] .mantine-Checkbox-inner {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.praxity-assessment-choice-option :is(.mantine-Radio-inner, .mantine-Checkbox-inner),
+[data-checklist-item] .mantine-Checkbox-inner {
+	font-size: inherit;
+	line-height: inherit;
+	block-size: max(var(--praxity-choice-control-size), 1lh);
+}
+
+.praxity-block-assessment .mantine-Radio-icon,
+.praxity-block-assessment .mantine-Checkbox-icon,
+[data-checklist-item] .mantine-Checkbox-icon {
+	inset: 0;
+	margin: auto;
+}
+
+.praxity-block-assessment .mantine-Radio-icon {
+	opacity: 1;
+	transform: scale(0);
+	transition: transform var(--duration-press) var(--ease-out);
+}
+
+.praxity-block-assessment .mantine-Radio-radio:checked + .mantine-Radio-icon {
+	transform: scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.praxity-block-assessment .mantine-Radio-icon {
+		transition: none;
+	}
+}
+
+[data-praxity-reduced-motion] .praxity-block-assessment .mantine-Radio-icon {
+	transition: none;
+}
+
+/* Submitted answers are review information. Their mark contrasts with the
+ * actual accent fill, which can differ from Mantine's generated accent shade. */
+.praxity-block-assessment :is(.mantine-Radio-radio, .mantine-Checkbox-input):checked:disabled {
+	border-color: var(--praxity-color-text);
+}
+
+.praxity-block-assessment .mantine-Radio-radio:checked:disabled + .mantine-Radio-icon {
+	--radio-icon-color: var(--praxity-color-accent-foreground, var(--on-accent));
+	color: var(--praxity-color-accent-foreground, var(--praxity-color-button-text));
+}
+
+.praxity-block-assessment .mantine-Checkbox-input:checked:disabled + .mantine-Checkbox-icon {
+	color: var(--praxity-color-accent-foreground, var(--checkbox-icon-color));
+}
+
+[data-checklist-item] .mantine-Checkbox-input:checked:disabled + .mantine-Checkbox-icon {
+	color: var(--checkbox-icon-color);
+}
+
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		.praxity-block-assessment :is(.mantine-Radio-radio, .mantine-Checkbox-input):checked:disabled {
+			background-color: Canvas;
+			border-color: CanvasText;
+		}
+
+		.praxity-block-assessment .mantine-Radio-radio:checked:disabled + .mantine-Radio-icon {
+			--radio-icon-color: CanvasText;
+			color: CanvasText;
+		}
+
+		.praxity-block-assessment .mantine-Checkbox-input:checked:disabled + .mantine-Checkbox-icon {
+			color: CanvasText;
+		}
+	}
+}
+
+/* Free response inputs inside assessment — remove border to avoid
+   double-line with the enclosing Card border */
+.praxity-block-assessment .mantine-Textarea-input,
+.praxity-block-assessment .mantine-TextInput-input {
+	border-bottom-width: 1px;
+}
+
+.praxity-block-assessment .mantine-Textarea-input {
+	padding: var(--praxity-spacing-sm, var(--space-3)) !important;
+}
+
+.praxity-block-assessment .mantine-Textarea-input:focus,
+.praxity-block-assessment .mantine-TextInput-input:focus {
+	border-bottom-color: var(--praxity-color-accent);
+	border-bottom-width: 2px;
+}
+
+.praxity-fill-blank-template {
+	line-height: var(--leading-body);
+	white-space: pre-line;
+}
+
+.praxity-fill-blank-unit {
+	white-space: nowrap;
+}
+
+.praxity-fill-blank-unit:has(select) {
+	white-space: normal;
+}
+
+select.praxity-fill-blank-input {
+	max-width: min(32ch, calc(100% - 0.25em));
+}
+
+.praxity-fill-blank-response {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 0.35em;
+}
+
+.praxity-fill-blank-response:has(select) {
+	max-width: 100%;
+	flex-wrap: wrap;
+}
+
+.praxity-fill-blank-status {
+	font-size: var(--type-small);
+	font-weight: var(--weight-strong);
+}
+
+.praxity-fill-blank-status[data-result="correct"] {
+	color: var(--praxity-color-success);
+}
+
+.praxity-fill-blank-status[data-result="incorrect"] {
+	color: var(--praxity-color-error);
+}
+
+.praxity-fill-blank-input {
+	width: auto;
+	min-width: 8ch;
+	max-width: min(32ch, 100%);
+	min-block-size: var(--target-size);
+	margin-inline-start: 0.25em;
+	margin-inline-end: 0;
+	padding: 0 0.25em;
+	box-sizing: border-box;
+	font: inherit;
+	line-height: var(--leading-body);
+	vertical-align: middle;
+	color: var(--praxity-color-text);
+	background: transparent;
+	border: 1px solid var(--line-mid);
+	border-radius: var(--radius-control);
+	opacity: 1;
+}
+
+/* Inline decorations follow each text fragment, including wrapped lines. */
+.praxity-doodle {
+	--doodle-color: var(--accent);
+	--doodle-stroke: var(--focus-width);
+	position: static;
+	box-decoration-break: clone;
+	-webkit-box-decoration-break: clone;
+}
+.praxity-doodle[data-doodle-mods~="yellow"],
+.praxity-doodle[data-doodle-mods~="warning"] {
+	--doodle-color: var(--warning-ink);
+}
+.praxity-doodle[data-doodle-mods~="green"] {
+	--doodle-color: var(--success-ink);
+}
+.praxity-doodle[data-doodle-mods~="red"] {
+	--doodle-color: var(--error-ink);
+}
+.praxity-doodle[data-doodle-mods~="black"] {
+	--doodle-color: var(--ink);
+}
+.praxity-doodle[data-doodle-mods~="marker"] {
+	--doodle-stroke: var(--space-1);
+}
+.praxity-doodle[data-doodle-mods~="thick"] {
+	--doodle-stroke: calc(var(--focus-width) * 1.5);
+}
+.praxity-doodle[data-doodle-mods~="thin"] {
+	--doodle-stroke: calc(var(--focus-width) / 2);
+}
+.praxity-doodle[data-doodle="highlight"] {
+	background-color: color-mix(in srgb, var(--doodle-color) 20%, transparent);
+}
+/* Legacy arrows retain their emphasis as an underline, without a floating mark. */
+.praxity-doodle[data-doodle="underline"],
+.praxity-doodle[data-doodle="arrow"] {
+	text-decoration-line: underline;
+	text-decoration-color: var(--doodle-color);
+	text-decoration-thickness: var(--doodle-stroke);
+	text-underline-offset: 0.15em;
+	text-decoration-skip-ink: auto;
+}
+.praxity-doodle[data-doodle="underline"][data-doodle-mods~="wavy"] {
+	text-decoration-style: wavy;
+}
+.praxity-doodle[data-doodle="underline"][data-doodle-mods~="double"] {
+	text-decoration-style: double;
+}
+.praxity-doodle[data-doodle="strike"] {
+	text-decoration-line: line-through;
+	text-decoration-color: var(--doodle-color);
+	text-decoration-thickness: var(--doodle-stroke);
+}
+.praxity-doodle[data-doodle="circle"],
+.praxity-doodle[data-doodle="box"] {
+	outline: var(--doodle-stroke) solid var(--doodle-color);
+	outline-offset: calc(-1 * var(--doodle-stroke));
+	padding-inline: 0.15em;
+}
+.praxity-doodle[data-doodle="circle"] {
+	border-radius: var(--radius-mark);
+}
+.praxity-doodle[data-doodle="circle"][data-doodle-mods~="box"] {
+	border-radius: 0;
+}
+.praxity-doodle[data-doodle="bracket"] {
+	border-inline: var(--doodle-stroke) solid var(--doodle-color);
+	padding-inline: 0.15em;
+}
+
+.praxity-fill-blank-input:focus-visible {
+	outline: var(--focus-width) solid var(--accent);
+	box-shadow: none;
+}
+
+.praxity-block-checklist > .praxity-fieldset-reset,
+.praxity-block-rating > div,
+.praxity-block-signature > div {
+	padding: var(--praxity-spacing-md, var(--space-4));
+	background: var(--praxity-color-activity-surface);
+	color: var(--praxity-color-text);
+	border: 1px solid var(--praxity-color-activity-border);
+	border-radius: var(--radius-box);
+	box-shadow: none;
+}
+
+/* --- Tabs: measure labels before choosing tabs or disclosures. --- */
+.praxity-tabs-static,
+.praxity-tabs-block {
+	position: relative;
+	min-inline-size: 0;
+}
+.praxity-tabs-list,
+.praxity-tabs-block .mantine-Tabs-list {
+	display: flex;
+	flex-wrap: nowrap;
+	max-inline-size: 100%;
+	border-block-end: 1px solid var(--line);
+}
+.praxity-tabs-list[hidden] {
+	display: none;
+}
+.praxity-tabs-tab[role="tab"],
+.praxity-tabs-measure-label,
+.praxity-tabs-block .mantine-Tabs-tab {
+	position: relative;
+	flex: 0 0 auto;
+	min-inline-size: var(--target-size);
+	min-block-size: var(--target-size);
+	padding: var(--space-2) var(--space-3);
+	white-space: nowrap;
+	font: inherit;
+	font-size: var(--type-body);
+	font-weight: var(--weight-body);
+	color: var(--ink);
+	text-align: start;
+	background: transparent;
+	border: 0;
+	/* The bottom edge joins its panel; the exposed corners are controls. */
+	border-radius: var(--radius-control) var(--radius-control) 0 0;
+	cursor: pointer;
+}
+.praxity-tabs-tab[aria-selected="true"],
+.praxity-tabs-block .mantine-Tabs-tab[data-active] {
+	font-weight: var(--weight-strong);
+}
+.praxity-tabs-tab[aria-selected="true"]::after,
+.praxity-tabs-block .mantine-Tabs-tab[data-active]::after {
+	content: "";
+	position: absolute;
+	inset-inline: 0;
+	inset-block-end: -1px;
+	block-size: calc(var(--space-1) / 2);
+	background: var(--accent);
+}
+.praxity-tabs-block .mantine-Tabs-list::before,
+.praxity-tabs-block .mantine-Tabs-tab::before {
+	content: none;
+}
+.praxity-tabs-panel,
+.praxity-tabs-block .mantine-Tabs-panel {
+	padding: var(--space-6) 0 0;
+}
+.praxity-tabs-measure {
+	position: absolute;
+	inset: 0 auto auto 0;
+	display: flex;
+	inline-size: max-content;
+	transform: scale(0);
+	transform-origin: top left;
+	visibility: hidden;
+	pointer-events: none;
+}
+/* Reserve the selected weight on every label so activation cannot trigger reflow. */
+.praxity-tabs-measure-label {
+	font-weight: var(--weight-strong);
+}
+[data-disclosure="true"] .praxity-tabs-tab {
+	white-space: normal;
+}
+[data-disclosure="true"] .praxity-tabs-tab::after {
+	content: none;
+}
+.praxity-tabs-tab[role="tab"] .praxity-disclosure-icon {
+	display: none;
+}
+.praxity-tabs-tab[role="tab"] .praxity-disclosure-title {
+	font-weight: inherit;
+}
+
+/* --- Rating block --- */
+
+.praxity-rating {
+	min-width: 0;
+}
+
+.praxity-rating-slider {
+	width: 100%;
+	min-height: var(--target-size);
+	accent-color: var(--praxity-color-primary);
+}
+
+.praxity-rating-options[hidden] {
+	display: none;
+}
+
+.praxity-rating-options {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--praxity-spacing-xs, var(--space-2));
+}
+
+.praxity-rating-endpoints {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: var(--space-4);
+	margin-block-start: var(--space-2);
+	font-size: var(--type-small);
+	line-height: var(--leading-small);
+	color: var(--ink-2);
+}
+.praxity-rating-endpoints > :last-child {
+	text-align: end;
+}
+
+.praxity-rating-option {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: var(--target-size);
+	min-height: var(--target-size);
+	border: 1px solid var(--line-mid);
+	border-radius: var(--radius-control);
+	cursor: pointer;
+}
+
+.praxity-rating-stars {
+	color: var(--praxity-color-text);
+	font-size: var(--type-h1);
+	line-height: 1;
+}
+
+.praxity-rating-stars .praxity-rating-visual::before {
+	content: "☆";
+}
+
+.praxity-rating-emoji {
+	cursor: pointer;
+	transition:
+		opacity var(--duration-press) var(--ease-out),
+		transform var(--duration-press) var(--ease-out);
+}
+
+.praxity-block-rating > :is(.praxity-fieldset-reset, div) {
+	container-type: inline-size;
+}
+
+.praxity-rating-options:has(.praxity-rating-numeric) {
+	--rating-key-size: 48px;
+	gap: var(--space-2);
+}
+
+.praxity-rating-options:has(> .praxity-rating-numeric:nth-of-type(10):last-child) {
+	--rating-columns: 10;
+}
+.praxity-rating-options:has(> .praxity-rating-numeric:nth-of-type(11):last-child) {
+	--rating-columns: 11;
+}
+.praxity-rating-options:has(> .praxity-rating-numeric:nth-of-type(10):last-child),
+.praxity-rating-options:has(> .praxity-rating-numeric:nth-of-type(11):last-child) {
+	/* Round down so Gecko's subpixel gap rounding cannot force an early wrap. */
+	gap: round(
+		down,
+		clamp(4px, calc((100cqi - var(--rating-columns) * 44px) / (var(--rating-columns) - 1)), 8px),
+		1px
+	);
+}
+
+.praxity-rating-numeric {
+	box-sizing: border-box;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: 1 0 44px;
+	min-inline-size: 44px;
+	min-block-size: var(--rating-key-size, 48px);
+	padding: var(--space-2);
+	border: 1px solid var(--line-mid);
+	border-radius: var(--radius-control);
+	background: var(--paper);
+	color: var(--ink);
+	font-size: var(--type-body);
+	line-height: 1;
+	box-shadow: none;
+	cursor: pointer;
+	transition: transform var(--duration-press) var(--ease-out);
+}
+
+.praxity-rating-numeric:hover {
+	border-color: var(--ink-2);
+}
+
+.praxity-rating-numeric:active {
+	transform: scale(0.96);
+}
+
+.praxity-rating-numeric[aria-checked="true"] {
+	border: 2px solid var(--accent);
+	padding: calc(var(--space-2) - 1px);
+	background: var(--accent-soft);
+}
+
+@media (max-width: 600px) {
+	.praxity-rating-options:has(.praxity-rating-numeric) {
+		--rating-key-size: 44px;
+	}
+}
+
+/* Wrap only below 44px keys + 4px gaps; preserve source order in balanced rows. */
+@container (width < 476px) {
+	.praxity-rating-options:has(> .praxity-rating-numeric:nth-of-type(10):last-child),
+	.praxity-rating-options:has(> .praxity-rating-numeric:nth-of-type(10):last-child)
+		+ .praxity-rating-endpoints {
+		max-inline-size: calc(5 * 44px + 4 * 8px);
+		gap: 8px;
+	}
+}
+@container (width < 524px) {
+	.praxity-rating-options:has(> .praxity-rating-numeric:nth-of-type(11):last-child),
+	.praxity-rating-options:has(> .praxity-rating-numeric:nth-of-type(11):last-child)
+		+ .praxity-rating-endpoints {
+		max-inline-size: calc(6 * 44px + 5 * 8px);
+		gap: 8px;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.praxity-rating-emoji,
+	.praxity-rating-numeric {
+		transition: none;
+	}
+}
+
+.praxity-rating-stars[data-rating-active="true"] .praxity-rating-visual::before,
+.praxity-rating-input:checked + .praxity-rating-stars .praxity-rating-visual::before {
+	content: "★";
+}
+
+.praxity-rating-emoji[data-rating-active="false"] {
+	opacity: 0.4;
+}
+
+.praxity-rating-emoji[data-rating-active="true"] {
+	opacity: 1;
+}
+
+.praxity-rating-input:checked + .praxity-rating-option,
+.praxity-rating-option[data-rating-active="true"] {
+	border: 2px solid var(--accent);
+	background: var(--accent-soft);
+	color: var(--ink);
+}
+.praxity-rating-input:checked + .praxity-rating-numeric,
+.praxity-rating-numeric[data-rating-active="true"] {
+	padding: calc(var(--space-2) - 1px);
+}
+
+.praxity-rating-input:focus + .praxity-rating-option {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+	box-shadow: none;
+}
+
+/* Matrix has no enclosing option row; the native radio owns its indicator. */
+.praxity-matrix-table input[type="radio"]:focus {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+	box-shadow: none;
+}
+
+.praxity-rating-input:disabled + .praxity-rating-option {
+	cursor: not-allowed;
+	opacity: 0.55;
+}
+
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		.praxity-rating-input:checked + .praxity-rating-option {
+			border: 2px solid Highlight;
+		}
+	}
+}
+
+/* --- Slides block --- */
+
+.praxity-slides-grid {
+	display: grid;
+	min-height: 80px;
+}
+
+.praxity-slides-item {
+	grid-area: 1 / 1;
+}
+
+.praxity-slides-item[data-active="false"] {
+	visibility: hidden;
+	pointer-events: none;
+}
+
+/* The server baseline keeps every card readable before enhancement. */
+html:not(.praxity-js) [data-card-root] .praxity-slides-grid {
+	display: block;
+}
+html:not(.praxity-js) [data-card-root] .praxity-slides-item {
+	position: static;
+	opacity: 1;
+	visibility: visible;
+	transform: none;
+	transition: none;
+}
+
+/* The button keeps a stable 24px target; ::before paints the dot or current pill. */
+.praxity-slides-dot {
+	display: inline-grid;
+	place-items: center;
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	border: 0;
+	background-color: transparent;
+	cursor: pointer;
+}
+
+.praxity-slides-dot::before {
+	content: "";
+	box-sizing: border-box;
+	width: 8px;
+	height: 8px;
+	border-radius: var(--radius-round);
+	background-color: var(--praxity-color-control-border);
+	transition: background-color var(--duration-press) var(--ease-out);
+}
+
+.praxity-slides-dot[aria-current="step"]::before {
+	width: 16px;
+	border-radius: var(--radius-mark);
+	background-color: var(--praxity-color-accent);
+}
+
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		.praxity-slides-dot::before {
+			border: 1px solid CanvasText;
+		}
+
+		.praxity-slides-dot[aria-current="step"]::before {
+			border-color: Highlight;
+			background-color: Highlight;
+		}
+	}
+}
+
+.praxity-slides-grid:is(
+		[data-transition="fade"],
+		[data-transition="slide"],
+		[data-transition="zoom"]
+	)
+	.praxity-slides-item {
+	opacity: 0;
+	visibility: visible;
+	pointer-events: none;
+}
+/* ── Slide transitions ──
+   Opacity runs in sequence: the outgoing slide fades out over 120ms before the
+   incoming one fades in, so two slides' text never shows at once. */
+/* Authored "none" names no property, so the reduced-motion 0.01ms duration
+   policy cannot turn the visibility swap into a transition. */
+.praxity-slides-grid[data-transition="none"] .praxity-slides-item {
+	transition: none;
+}
+
+.praxity-slides-grid[data-transition="fade"] .praxity-slides-item {
+	transition: opacity var(--duration-press) var(--ease-in);
+}
+
+.praxity-slides-grid[data-transition="fade"] .praxity-slides-item[data-active="true"] {
+	opacity: 1;
+	pointer-events: auto;
+	transition: opacity var(--duration-press) var(--ease-out) var(--duration-press);
+}
+
+.praxity-slides-grid[data-transition="slide"] .praxity-slides-item {
+	transform: translateX(1.5rem);
+	transition:
+		transform var(--duration-state) var(--ease-in-out),
+		opacity var(--duration-press) var(--ease-in);
+}
+
+.praxity-slides-grid[data-transition="slide"] .praxity-slides-item[data-slide-position="before"] {
+	transform: translateX(-1.5rem);
+}
+
+.praxity-slides-grid[data-transition="slide"] .praxity-slides-item[data-active="true"] {
+	transform: translateX(0);
+	opacity: 1;
+	pointer-events: auto;
+	transition:
+		transform var(--duration-state) var(--ease-in-out),
+		opacity var(--duration-press) var(--ease-out) var(--duration-press);
+}
+
+.praxity-slides-grid[data-transition="zoom"] .praxity-slides-item {
+	transform: scale(0.95);
+	transition:
+		transform var(--duration-state) var(--ease-in-out),
+		opacity var(--duration-press) var(--ease-in);
+}
+
+.praxity-slides-grid[data-transition="zoom"] .praxity-slides-item[data-active="true"] {
+	transform: scale(1);
+	opacity: 1;
+	pointer-events: auto;
+	transition:
+		transform var(--duration-state) var(--ease-in-out),
+		opacity var(--duration-press) var(--ease-out) var(--duration-press);
+}
+
+/* !important: the active and before-position rules above are more specific. */
+@media (prefers-reduced-motion: reduce) {
+	.praxity-slides-grid:is(
+			[data-transition="fade"],
+			[data-transition="slide"],
+			[data-transition="zoom"]
+		)
+		.praxity-slides-item {
+		transition: none !important;
+		transform: none !important;
+	}
+}
+
+[data-praxity-reduced-motion]
+	.praxity-slides-grid:is(
+		[data-transition="fade"],
+		[data-transition="slide"],
+		[data-transition="zoom"]
+	)
+	.praxity-slides-item {
+	transition: none !important;
+	transform: none !important;
+}
+
+@media (prefers-contrast: more) {
+	:is(
+		.praxity-audio-card,
+		.praxity-card-outline,
+		.praxity-document-bookmark-card,
+		.praxity-document-download-card,
+		.praxity-ag-results,
+		.praxity-block-checklist > .praxity-fieldset-reset,
+		.praxity-block-rating > div,
+		.praxity-block-signature > div,
+		.praxity-self-check
+	) {
+		border-width: 2px;
+		border-color: var(--praxity-color-border);
+	}
+
+	.praxity-card-header--outline {
+		border-bottom-width: 2px;
+		border-bottom-color: var(--praxity-color-border);
+	}
+
+	.praxity-block-assessment:not(.praxity-block) {
+		border-width: 2px;
+		border-color: var(--praxity-color-activity-border);
+	}
+
+	.praxity-tabs-list,
+	.praxity-tabs-block .mantine-Tabs-list {
+		border-block-end-width: var(--focus-width);
+	}
+
+	:is(.praxity-divider-line, .praxity-divider-segment) {
+		height: 0 !important;
+		background: transparent !important;
+		border-top: 2px solid var(--praxity-color-text) !important;
+	}
+
+	.praxity-order-item + .praxity-order-item {
+		border-color: var(--praxity-color-border);
+		border-top-width: 2px;
+	}
+
+	.praxity-block-accordion [data-variant="default"] .mantine-Accordion-item:not(:last-child),
+	.praxity-block-accordion [data-variant="contained"] .mantine-Accordion-item:not(:last-child) {
+		border-bottom-color: var(--praxity-color-border);
+		border-bottom-width: 2px;
+	}
+
+	.praxity-categorize-table :where(th, td),
+	.praxity-matrix-table :where(th, td) {
+		border-color: var(--praxity-color-border) !important;
+	}
+
+	.praxity-assessment-choice-option:has(.mantine-Radio-radio:checked),
+	.praxity-assessment-choice-option:has(.mantine-Checkbox-input:checked),
+	.praxity-ag-radio-row:has(.praxity-ag-radio:checked) {
+		border-width: 2px;
+		border-color: var(--praxity-color-activity-border);
+	}
+
+	.praxity-assessment-select-option[data-combobox-selected] {
+		outline: var(--focus-width) solid var(--accent);
+		outline-offset: -2px;
+	}
+
+	.praxity-block-assessment .mantine-Checkbox-input:checked,
+	.praxity-block-assessment .mantine-Radio-radio:checked,
+	[data-checklist-item] .mantine-Checkbox-input:checked,
+	.praxity-ag-radio:checked {
+		border-width: 2px !important;
+		border-color: var(--praxity-color-activity-border) !important;
+	}
+
+	:is(.praxity-required-ring, [data-required-highlight]) {
+		outline-width: 4px;
+		outline-color: var(--praxity-color-error-text, var(--praxity-color-error));
+	}
+
+	.praxity-page-content .praxity-fill-blank-input[aria-invalid="true"] {
+		border-bottom: 3px solid var(--praxity-color-error-text, var(--praxity-color-error)) !important;
+	}
+
+	.praxity-block-assessment:not(.praxity-block)[data-result="correct"] {
+		outline: var(--focus-width) solid var(--accent);
+		outline-offset: -3px;
+	}
+
+	.praxity-block-assessment:not(.praxity-block)[data-result="incorrect"] {
+		outline: var(--focus-width) solid var(--accent);
+		outline-offset: -3px;
+	}
+}
+
+/* --- Table block --- */
+
+.praxity-footnote-ref {
+	font-size: var(--type-small);
+	line-height: var(--leading-body);
+	vertical-align: super;
+}
+
+.praxity-footnotes {
+	margin-block: 1.5em 0;
+	padding-inline-start: 1.75em;
+	font-size: var(--type-small);
+	overflow-wrap: anywhere;
+}
+
+.praxity-footnotes > li + li {
+	margin-block-start: 0.5em;
+}
+
+/* Table cell styles are dynamic (conditional borders, shading) — stays inline */
+
+/* The native choice baseline uses the same card and row geometry as the island. */
+.praxity-assessment-baseline,
+.praxity-assessment-choice-baseline {
+	padding: var(--mantine-spacing-lg, var(--space-4));
+	display: flex;
+	flex-direction: column;
+	gap: var(--mantine-spacing-md, var(--space-4));
+}
+
+.praxity-assessment-choice-baseline .praxity-assessment-choice-options {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+}
+
+.praxity-assessment-choice-baseline .praxity-assessment-choice-option {
+	display: flex;
+	align-items: flex-start;
+	margin: 0;
+	gap: var(--space-3);
+	font-size: var(--type-body);
+	line-height: var(--leading-body);
+}
+
+.praxity-assessment-choice-baseline input,
+.praxity-assessment-table-control input {
+	appearance: none;
+	flex: 0 0 var(--praxity-choice-control-size);
+	width: var(--praxity-choice-control-size);
+	height: var(--praxity-choice-control-size);
+	min-width: 0;
+	min-height: 0;
+	margin: 0;
+	border: 1px solid var(--praxity-color-activity-border);
+	background: var(--praxity-color-background);
+	border-radius: var(--radius-control);
+}
+
+.praxity-assessment-choice-baseline .praxity-assessment-choice-option > input {
+	font-size: inherit;
+	line-height: inherit;
+	margin-block-start: max(0px, calc((1lh - var(--praxity-choice-control-size)) / 2));
+}
+
+.praxity-assessment-choice-baseline .praxity-assessment-choice-option > span {
+	flex: 1;
+	min-width: 0;
+	overflow-wrap: break-word;
+}
+
+[data-praxity-root] code {
+	font-family: var(--praxity-font-code, monospace);
+}
+
+/* Shared rich reading text for media and course transcripts. */
+.praxity-transcript-content p {
+	margin: 0;
+	padding-block: var(--space-2) var(--space-3);
+	line-height: var(--leading-body);
+	white-space: pre-line;
+	max-width: 70ch;
+}
+
+.praxity-transcript-content :is(h3, h4, h5) {
+	font: inherit;
+	font-weight: var(--weight-strong);
+	line-height: var(--leading-heading);
+	margin: 0;
+	padding-block: var(--space-3) var(--space-1);
+}
+
+.praxity-transcript-content :is(ul, ol) {
+	margin: 0;
+	padding-block: var(--space-2) var(--space-3);
+	padding-inline-start: 1.5em;
+	line-height: var(--leading-body);
+}
+
+.praxity-transcript-content li + li {
+	margin-block-start: 0.35em;
+}
+
+.praxity-transcript-content {
+	overflow-wrap: break-word;
+	hyphens: manual;
+}
+
+/* Optional keyboard seek links in published reading transcripts. */
+.praxity-transcript-seek {
+	position: absolute;
+	inset-inline-end: 0;
+	inset-block-end: 0;
+	display: inline-flex;
+	align-items: center;
+	vertical-align: middle;
+	margin-inline-start: var(--space-1);
+	min-height: var(--target-size);
+	padding: var(--space-1) var(--space-2);
+	border: 0;
+	border-radius: var(--radius-control);
+	background: var(--praxity-color-navigation-surface);
+	color: var(--praxity-color-accent-text);
+	font: inherit;
+	font-size: var(--type-small);
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+/* Retired surface props cannot add a second reading treatment. This policy
+   also wins over Mantine's inline surface variables until each block is simplified. */
+[data-praxity-root]
+:is(
+	.praxity-card,
+	.praxity-flashcard-face,
+	.praxity-audio-card,
+	.praxity-bookmark,
+	.praxity-tabs-block,
+	.praxity-chart-container,
+	.praxity-comparison-slider
+) {
+	border: 0 !important;
+	border-radius: 0 !important;
+	background-color: transparent !important;
+	box-shadow: none !important;
+}
+
+[data-praxity-root]
+	:is(
+		.praxity-card-header--outline,
+		.praxity-card-outline,
+		.praxity-flashcard-front,
+		.praxity-flashcard-back
+	) {
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+}
+
+[data-praxity-root] .praxity-card[data-flippable="false"] {
+	display: grid;
+	align-content: start;
+	align-items: start;
+	gap: var(--space-4);
+	padding: 0;
+}
+
+[data-praxity-root]
+	:is(
+		.praxity-card-header--outline,
+		.praxity-card-header--minimal,
+		.praxity-card-body--outline,
+		.praxity-card-body--minimal
+	) {
+	padding: 0;
+}
+
+[data-praxity-root] :is(.praxity-card-header--outline, .praxity-card-header--minimal) {
+	line-height: var(--leading-heading);
+}
+
+@container course-shell (width < 400px) {
+	/* A narrow card grid becomes divided reading items; authored rows keep their own layout. */
+	[data-praxity-root]
+		[data-card-root][data-layout="grid"]
+		> .praxity-card[data-flippable="false"]
+		:is(
+			.praxity-card-header--outline,
+			.praxity-card-header--minimal,
+			.praxity-card-body--outline,
+			.praxity-card-body--minimal
+		) {
+		padding-block: var(--block-gap);
+	}
+}
+
+[data-praxity-root]
+	:is(
+		.praxity-block-assessment:not(.praxity-block),
+		.praxity-block-checklist > .praxity-fieldset-reset,
+		.praxity-block-rating > .praxity-fieldset-reset,
+		.praxity-block-signature > div,
+		.praxity-self-check
+	) {
+	border: var(--praxity-rule-width, 1px) solid var(--rule);
+	border-radius: var(--radius-box);
+	--praxity-activity-padding-inline: 28px;
+	--praxity-activity-padding-block: 28px;
+	padding: var(--praxity-activity-padding-block) var(--praxity-activity-padding-inline);
+	background: var(--paper);
+	box-shadow: var(--shadow-card);
+}
+/* Group members share submission, while each activity keeps its own card. */
+.praxity-scene {
+	display: flex;
+	gap: 14px;
+	align-items: center;
+	/* Include the card rule so the band's outer curve shares the card's edges. */
+	margin-inline: calc(
+		-1 *
+		(var(--praxity-activity-padding-inline) + var(--praxity-rule-width, 1px))
+	);
+	margin-block-start: calc(
+		-1 *
+		(var(--praxity-activity-padding-block) + var(--praxity-rule-width, 1px))
+	);
+	padding-inline: calc(var(--praxity-activity-padding-inline) + var(--praxity-rule-width, 1px));
+	padding-block: 20px;
+	border-block-end: 1px solid var(--rule);
+	border-start-start-radius: var(--radius-box);
+	border-start-end-radius: var(--radius-box);
+	background: var(--paper-2);
+}
+.praxity-scene-title {
+	min-inline-size: 0;
+}
+.praxity-self-check-response {
+	margin-block-start: var(--space-4);
+}
+.praxity-self-check-response label {
+	display: block;
+	margin-block-end: var(--space-2);
+	font-weight: var(--weight-strong);
+}
+.praxity-self-check .praxity-assessment-actions {
+	flex-wrap: wrap;
+	margin-block: var(--space-3);
+}
+.praxity-self-check [data-self-check-status]:not(:empty) {
+	margin-block: var(--space-3);
+}
+.praxity-self-check [data-praxity-js-control] {
+	display: none;
+}
+.praxity-self-check [data-self-check-notice],
+.praxity-self-check [data-self-check-mode],
+.praxity-self-check [data-self-check-save],
+.praxity-self-check-error {
+	margin-block: var(--space-3);
+}
+.praxity-self-check p:empty {
+	display: none;
+}
+.praxity-self-check fieldset {
+	min-inline-size: 0;
+	margin-block: var(--space-4);
+}
+.praxity-self-check fieldset label {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	min-block-size: 44px;
+	overflow-wrap: anywhere;
+}
+.praxity-self-check :is(textarea, input):focus-visible {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+}
+.praxity-self-check-columns {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+	gap: var(--space-4);
+	margin-block: var(--space-4);
+}
+.praxity-self-check-columns > div {
+	padding: var(--space-4);
+	border-radius: var(--radius-control);
+	background: var(--paper-2);
+}
+.praxity-self-check-columns p {
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+.praxity-self-check-columns p:first-child,
+[data-self-check-comparison-title] {
+	font-weight: var(--weight-strong);
+}
+.praxity-self-check mark {
+	color: var(--ink);
+	background: var(--accent-soft);
+	text-decoration: underline;
+}
+.praxity-self-check mark[data-included="false"] {
+	text-decoration-style: dotted;
+}
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		.praxity-self-check mark {
+			color: CanvasText;
+			background: Canvas;
+			outline: 1px solid CanvasText;
+		}
+	}
+}
+.praxity-journal-date {
+	margin: 0;
+	font-size: var(--type-small);
+	line-height: var(--leading-small);
+}
+.praxity-scene-icon {
+	box-sizing: border-box;
+	display: grid;
+	flex: none;
+	place-items: center;
+	inline-size: 40px;
+	block-size: 40px;
+	border-radius: var(--radius-control);
+	color: var(--accent-ink);
+	background: var(--accent-soft);
+}
+.praxity-scene-icon svg {
+	inline-size: 22px;
+	block-size: 22px;
+}
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		.praxity-scene {
+			border-color: CanvasText;
+		}
+		.praxity-scene-icon {
+			border: 1px solid CanvasText;
+			color: CanvasText;
+		}
+	}
+}
+@media print {
+	.praxity-scene {
+		display: block;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		background: transparent;
+	}
+	.praxity-scene-icon {
+		display: none;
+	}
+}
+[data-praxity-root]
+	.praxity-block-assessment.praxity-block[data-assessment-group]:not([data-group-first]) {
+	margin-block-start: var(--space-6);
+}
+@container (width < 36rem) {
+	[data-praxity-root]
+		.praxity-block-assessment.praxity-block[data-assessment-group]:not([data-group-first]) {
+		margin-block-start: var(--space-4);
+	}
+}
+[data-praxity-root] .praxity-signature-canvas-box {
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+}
+[data-praxity-root] .praxity-assessment-choice {
+	counter-reset: praxity-choice-key;
+	container-type: inline-size;
+}
+[data-praxity-root] .praxity-assessment-choice-options {
+	display: grid;
+	gap: 8px;
+}
+[data-praxity-root] .praxity-assessment-choice-option {
+	position: relative;
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	column-gap: 12px;
+	row-gap: 6px;
+	align-items: start;
+	min-block-size: 48px;
+	margin: 0;
+	border: 1px solid var(--line-mid);
+	border-radius: var(--radius-control);
+	padding: 10px 14px;
+	background: var(--paper);
+	font-size: var(--type-body);
+	line-height: 1.35;
+	cursor: pointer;
+	counter-increment: praxity-choice-key;
+	transition: none;
+}
+[data-praxity-root] .praxity-assessment-choice-option:hover {
+	border-color: var(--line);
+	background: var(--paper-2);
+}
+[data-praxity-root] .praxity-assessment-choice-option:has(input:checked) {
+	border: 2px solid var(--accent);
+	/* The stronger selection border replaces padding, so selection cannot
+	   move labels or resize the activity and its action row. */
+	padding: 9px 13px;
+	background: var(--accent-soft);
+}
+[data-praxity-root] .praxity-assessment-choice-option:has(input:focus-visible) {
+	outline: 2px solid var(--praxity-color-focus, var(--accent));
+	outline-offset: 2px;
+}
+[data-praxity-root] .praxity-choice-key,
+[data-praxity-root] .praxity-choice-key-spacer {
+	display: grid;
+	grid-column: 1;
+	grid-row: 1;
+	place-items: center;
+	align-self: baseline;
+	inline-size: 26px;
+	block-size: 26px;
+	border: 1px solid var(--line);
+	border-radius: var(--radius-key);
+	color: var(--ink-2);
+	background: var(--paper);
+	font-size: var(--type-small);
+	font-weight: 600;
+	line-height: 1;
+}
+[data-praxity-root] .praxity-choice-key-spacer {
+	visibility: hidden;
+}
+[data-praxity-root] .praxity-choice-key-spacer::before {
+	/* Reserve the key's first-line baseline as well as its inline space. */
+	content: "\00a0";
+}
+[data-praxity-root] .praxity-choice-key::before {
+	content: counter(praxity-choice-key, upper-alpha);
+}
+[data-praxity-root] .praxity-assessment-choice-option:has(input:checked) .praxity-choice-key {
+	color: var(--on-accent);
+	background: var(--accent);
+	border-color: var(--accent);
+}
+[data-praxity-root] .praxity-assessment-choice-option > input[type="radio"] {
+	/* Transparent native hit targets retain their circular shape in Chromium. */
+	appearance: none;
+	position: absolute;
+	inset-inline-start: 14px;
+	inset-block-start: 10px;
+	inline-size: 26px;
+	block-size: 26px;
+	margin: 0;
+	opacity: 0;
+	cursor: pointer;
+}
+[data-praxity-root] .praxity-assessment-choice-option > input[type="checkbox"] {
+	appearance: none;
+	position: relative;
+	grid-column: 1;
+	grid-row: 1;
+	align-self: baseline;
+	inline-size: 22px;
+	block-size: 22px;
+	min-inline-size: 0;
+	min-block-size: 0;
+	margin: 0;
+	border: 1.5px solid var(--line);
+	border-radius: var(--radius-key);
+	background: var(--paper);
+	cursor: pointer;
+}
+[data-praxity-root] .praxity-assessment-choice-option > input[type="checkbox"]::after {
+	content: "";
+	position: absolute;
+	inset-inline-start: 6.5px;
+	inset-block-start: 2.5px;
+	inline-size: 5px;
+	block-size: 10px;
+	border: solid var(--on-accent);
+	border-width: 0 2px 2px 0;
+	transform: rotate(45deg);
+	opacity: 0;
+}
+[data-praxity-root] .praxity-assessment-choice-option > input[type="checkbox"]:checked {
+	border-color: var(--accent);
+	background: var(--accent);
+}
+[data-praxity-root] .praxity-assessment-choice-option > input[type="checkbox"]:checked::after {
+	opacity: 1;
+}
+[data-praxity-root] .praxity-choice-text {
+	grid-column: 2;
+	grid-row: 1;
+	align-self: baseline;
+	min-inline-size: 0;
+}
+[data-praxity-root] .praxity-choice-feedback {
+	display: block;
+	margin-block-start: 6px;
+	padding: 0;
+	color: var(--ink);
+}
+[data-praxity-root] .praxity-choice-label {
+	display: block;
+}
+[data-praxity-root] .praxity-assessment-choice-hint {
+	font-size: var(--type-small);
+	line-height: var(--leading-small);
+	color: var(--ink-2);
+}
+[data-praxity-root] .praxity-choice-feedback > :first-child {
+	margin-block-start: 0;
+}
+[data-praxity-root] .praxity-choice-feedback > :last-child {
+	margin-block-end: 0;
+}
+[data-praxity-root] .praxity-choice-status {
+	display: inline-grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	max-inline-size: 100%;
+	align-items: start;
+	white-space: normal;
+	margin-block-start: 6px;
+	padding: 2px 10px 2px 8px;
+	border-radius: 999px;
+	background: var(--paper);
+	font-size: var(--type-small);
+}
+[data-praxity-root] .praxity-choice-status > svg {
+	inline-size: 16px;
+	block-size: 16px;
+}
+[data-praxity-root] .praxity-assessment-choice-option[data-choice-result],
+[data-praxity-root] .praxity-assessment-choice-option[data-choice-result]:has(input:checked) {
+	border: 2px solid var(--choice-status-ink);
+	padding: 9px 13px;
+	background: var(--choice-status-tint);
+}
+[data-praxity-root] .praxity-assessment-choice-option[data-choice-result="correct"] {
+	--choice-status-ink: var(--success-ink);
+	--choice-status-tint: var(--success-tint);
+}
+[data-praxity-root] .praxity-assessment-choice-option[data-choice-result="incorrect"] {
+	--choice-status-ink: var(--error-ink);
+	--choice-status-tint: var(--error-tint);
+}
+[data-praxity-root] .praxity-assessment-choice-option[data-dont-know] {
+	counter-increment: none;
+	margin-block-start: 9px;
+}
+[data-praxity-root] .praxity-assessment-choice-option[data-dont-know]::before {
+	content: "";
+	position: absolute;
+	inset-block-start: -10px;
+	inset-inline: -1px;
+	border-block-start: 1px solid var(--rule, var(--line));
+}
+[data-praxity-root] .praxity-assessment-choice-option[data-choice-result="unknown"] {
+	--choice-status-ink: var(--ink-2);
+	--choice-status-tint: var(--paper-2);
+}
+[data-praxity-root] .praxity-choice-status[data-result="unknown"] {
+	color: var(--ink-2);
+}
+[data-praxity-root] .praxity-assessment-choice-option[data-choice-result] .praxity-choice-key,
+[data-praxity-root]
+	.praxity-assessment-choice-option[data-choice-result]:has(input:checked)
+	.praxity-choice-key,
+[data-praxity-root] .praxity-assessment-choice-option[data-choice-result] > input:checked {
+	color: var(--on-accent);
+	background: var(--choice-status-ink);
+	border-color: var(--choice-status-ink);
+}
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		[data-praxity-root] .praxity-assessment-choice-option > input[type="radio"] {
+			position: static;
+			grid-column: 1;
+			grid-row: 1;
+			align-self: baseline;
+			appearance: auto;
+			opacity: 1;
+			inline-size: 20px;
+			block-size: 20px;
+		}
+		[data-praxity-root] .praxity-choice-key {
+			display: none;
+		}
+		[data-praxity-root] .praxity-assessment-choice-option > input[type="checkbox"] {
+			appearance: auto;
+		}
+		[data-praxity-root] .praxity-assessment-choice-option > input[type="checkbox"]::after {
+			display: none;
+		}
+		[data-praxity-root] .praxity-assessment-choice-option:has(input:checked) {
+			border: 2px solid Highlight;
+		}
+		[data-praxity-root] .praxity-assessment-choice-option:has(input:focus-visible) {
+			outline-color: Highlight;
+		}
+	}
+}
+@media (prefers-contrast: more) {
+	[data-praxity-root] {
+		--praxity-rule-width: 2px;
+	}
+}
+@container course-shell (width < 768px) {
+	[data-praxity-root]
+		:is(
+			.praxity-block-assessment:not(.praxity-block),
+			.praxity-block-checklist > .praxity-fieldset-reset,
+			.praxity-block-rating > .praxity-fieldset-reset,
+			.praxity-block-signature > div,
+			.praxity-self-check
+		) {
+		--praxity-activity-padding-inline: 16px;
+		--praxity-activity-padding-block: 18px;
+		padding: var(--praxity-activity-padding-block) var(--praxity-activity-padding-inline);
+	}
+}
+
+/* Circle shapes outrank the control default, including native radio hit targets. */
+[data-praxity-root]
+:is(
+	input[type="radio"],
+	.praxity-sequence-scroll-button,
+	.praxity-comparison-handle,
+	.praxity-edge-arrow,
+	.praxity-labeled-graphic-dot
+) {
+	border-radius: var(--radius-round);
+}
+[data-praxity-root] input[type="checkbox"] {
+	border-radius: var(--radius-key);
+}
+
+/* Labels use type roles even when a renderer uses SVG text attributes. */
+.praxity-chart-container :is(text, tspan) {
+	font-size: var(--type-small);
+	font-family: var(--praxity-font-family);
+}
+.praxity-chart-container .praxity-chart-mark {
+	font-size: var(--type-h3);
+}
+.praxity-slides-dot {
+	min-width: var(--target-size);
+	min-height: var(--target-size);
+}
+.praxity-code-copy-btn,
+.praxity-assessment-select-input {
+	min-height: var(--target-size);
+}
+[data-praxity-root] .praxity-signature-tab {
+	border-radius: 0;
+}
+.praxity-assessment-select-clear {
+	min-width: var(--target-size);
+	min-height: var(--target-size);
+}
+
+/* Keep the image and its authored coordinates together in a local scroller.
+   At zoom widths, shrinking the image further would collide fixed-size targets. */
+.praxity-hotspot-scroll {
+	max-inline-size: 100%;
+	overflow-x: auto;
+}
+.praxity-hotspot-caption {
+	align-self: stretch;
+	text-align: start;
+	margin: 0;
+}
+@container course-shell (width < 240px) {
+	.praxity-hotspot-image {
+		min-inline-size: 240px;
+	}
+}
+
+/* One owner styles the inert and hydrated hotspot controls. Geometry is authored. */
+.praxity-hotspot-region {
+	position: absolute;
+	z-index: 1;
+	border: 0;
+	border-radius: 0;
+}
+.praxity-hotspot-region:focus-within {
+	outline: var(--focus-width) solid var(--accent);
+	outline-offset: var(--focus-offset);
+}
+.praxity-hotspot-region button {
+	width: 100%;
+	height: 100%;
+	background: transparent !important;
+	border: 0 !important;
+	padding: 0 !important;
+}
+.praxity-hotspot-region > span {
+	position: absolute;
+	inset-inline-start: 0;
+	inset-block-start: 0;
+	display: grid;
+	place-items: center;
+	min-inline-size: var(--space-8);
+	min-block-size: var(--space-8);
+	pointer-events: none;
+	font-weight: var(--weight-strong);
+	font-size: var(--type-small);
+	background: var(--paper);
+	color: var(--ink);
+	outline: 1px solid var(--line);
+	border-radius: var(--radius-control);
+	padding-inline: var(--space-1);
+}
+.praxity-hotspot-region button[aria-pressed="true"] + span {
+	background: var(--accent) !important;
+	color: var(--on-accent) !important;
+	outline-color: var(--accent);
+}
+.praxity-hotspot-region button[aria-disabled="true"] {
+	cursor: default;
+	pointer-events: none;
+}
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		.praxity-hotspot-region button[aria-disabled="true"][aria-pressed="true"] + span {
+			background: Canvas;
+			color: CanvasText;
+		}
+	}
+}
+
+/* Reading titles align with their own text; comparisons have one separating rule. */
+.praxity-block [data-block-type="heading"] {
+	--type-h1: var(--type-h3);
+	--type-h2: var(--type-h3);
+	--praxity-type-h1: var(--type-h3);
+	--praxity-type-h2: var(--type-h3);
+	--praxity-type-chapter: var(--type-h3);
+	text-align: start;
+}
+[data-praxity-root] .praxity-block-title,
+[data-praxity-root] .praxity-column-preset-header {
+	font-family: var(--praxity-font-heading);
+	font-size: var(--type-h3);
+	font-weight: var(--weight-strong);
+	line-height: var(--leading-heading);
+	text-align: start;
+	margin: 0 0 var(--space-3);
+}
+[data-praxity-root] .praxity-columns:is([data-preset="comparison"], [data-preset="beforeAfter"]) {
+	gap: var(--space-6);
+}
+.praxity-columns:is([data-preset="comparison"], [data-preset="beforeAfter"])
+	> .praxity-column
+	+ .praxity-column {
+	position: relative;
+}
+.praxity-columns:is([data-preset="comparison"], [data-preset="beforeAfter"])
+	> .praxity-column
+	+ .praxity-column::before {
+	content: "";
+	position: absolute;
+	inset-block: 0;
+	inset-inline-start: calc(-1 * var(--space-3));
+	border-inline-start: 1px solid var(--line);
+}
+@container preview-content (max-width: 480px) {
+	.praxity-columns:is([data-preset="comparison"], [data-preset="beforeAfter"])
+		> .praxity-column
+		+ .praxity-column::before {
+		display: none;
+	}
+	.praxity-columns:is([data-preset="comparison"], [data-preset="beforeAfter"])
+		> .praxity-column
+		+ .praxity-column {
+		border-inline-start: 0;
+		padding-inline-start: 0;
+		border-block-start: 1px solid var(--line);
+		padding-block-start: var(--space-6);
+	}
+}
+
+/* Exposed edges share one radius per role in both published CSS bundles. */
+[data-praxity-root] :is(.praxity-accordion-panel, .mantine-Accordion-panel) {
+	border-radius: var(--radius-control);
+}
+[data-praxity-root] .praxity-table-scroll-region {
+	border-radius: 0;
+	overflow: auto;
+}
+[data-praxity-root] img:not(.praxity-dialogue-avatar) {
+	border-radius: 0;
+}
+
+[data-praxity-root] .praxity-required-marker {
+	border-radius: var(--radius-mark);
+}

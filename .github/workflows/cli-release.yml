@@ -1,0 +1,432 @@
+name: CLI release
+run-name: CLI release ${{ inputs.ref }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Full Studio SHA on main with successful CI
+        required: true
+        type: string
+      pack_version:
+        description: New stable Rubato version
+        required: true
+        type: string
+      publish_pack:
+        description: Publish the verified pack, otherwise dry-run only
+        required: false
+        default: false
+        type: boolean
+
+env:
+  STUDIO_SOURCE_REPO: ${{ github.repository }}
+  STUDIO_CANDIDATE_REPO: ${{ github.repository }}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cli-release
+  cancel-in-progress: false
+
+jobs:
+  admit:
+    if: github.repository == (vars.STUDIO_SOURCE_REPO || github.repository) && (github.event_name == 'workflow_dispatch')
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    outputs:
+      rubato_sha: ${{ steps.admit.outputs.rubato_sha }}
+      source_ref: ${{ steps.admit.outputs.source_ref }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.22.1
+      - name: Admit green Studio main SHA
+        id: admit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_REF: ${{ inputs.ref || github.sha }}
+          FORMAL_RELEASE: "true"
+          PACK_VERSION: ${{ inputs.pack_version }}
+          PUBLISH_PACK: ${{ inputs.publish_pack }}
+        run: node apps/desktop/scripts/admit-rubato-release.mjs
+
+  build:
+    needs: admit
+    if: ${{ github.repository == (vars.STUDIO_SOURCE_REPO || github.repository) && (!cancelled() && needs.admit.result == 'success') }}
+    runs-on: macos-15-intel
+    timeout-minutes: 90
+    outputs:
+      arm64_name: ${{ steps.digests.outputs.arm64_name }}
+      arm64_sha256: ${{ steps.digests.outputs.arm64_sha256 }}
+      x64_name: ${{ steps.digests.outputs.x64_name }}
+      x64_sha256: ${{ steps.digests.outputs.x64_sha256 }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: source
+    steps:
+      # Keep tooling available even when the selected source predates this workflow.
+      - name: Checkout workflow tooling
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: workflow
+          persist-credentials: false
+
+      - name: Prepare candidate workspace
+        working-directory: ${{ runner.temp }}
+        run: |
+          set -euo pipefail
+          df -k "$GITHUB_WORKSPACE" "$RUNNER_TEMP" /tmp
+          printf 'PLAYWRIGHT_BROWSERS_PATH=%s\n' "$RUNNER_TEMP/cli-candidate-$GITHUB_RUN_ID/browsers" >> "$GITHUB_ENV"
+      - name: Checkout source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ needs.admit.outputs.source_ref }}
+          submodules: true
+          path: source
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          package_json_file: source/package.json
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.22.1
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --store-dir "$RUNNER_TEMP/cli-candidate-$GITHUB_RUN_ID/pnpm-store"
+
+      - name: Install headless browsers
+        run: pnpm --filter @praxity/desktop exec playwright install chromium firefox webkit
+
+      # macOS WebKit skips native buttons on Tab when Keyboard navigation is off.
+      # Save the runner user's preference before changing it, including absence.
+      - name: Enable macOS keyboard navigation
+        id: keyboard_navigation
+        run: source ../workflow/apps/desktop/scripts/enable-macos-keyboard-navigation.sh
+
+      # Retain the existing archive and browser-journey budget until measured on hosted Intel.
+      - name: Build and verify standalone CLI archives
+        timeout-minutes: 75
+        env:
+          TMPDIR: /tmp/cc-${{ github.run_id }}
+        run: |
+          source "$GITHUB_WORKSPACE/workflow/apps/desktop/scripts/prepare-macos-tmpdir.sh"
+          bash ../workflow/apps/desktop/scripts/build-cli-archives.sh --browser-editor
+
+      - name: Capture verified archive digests
+        id: digests
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          for arch in arm64 x64; do
+            archives=(apps/desktop/release/praxity-cli-*-macos-"$arch".tar.gz)
+            [[ ${#archives[@]} == 1 ]] || exit 1
+            digest="$(shasum -a 256 "${archives[0]}")"
+            digest="${digest%% *}"
+            [[ "$digest" =~ ^[a-f0-9]{64}$ ]] || exit 1
+            printf '%s_name=%s\n' "$arch" "${archives[0]##*/}" >> "$GITHUB_OUTPUT"
+            printf '%s_sha256=%s\n' "$arch" "$digest" >> "$GITHUB_OUTPUT"
+            wc -c "${archives[0]}"
+          done
+
+      # Restore the non-admin runner account's setting even if build or tests fail.
+      - name: Restore macOS keyboard navigation
+        if: always()
+        working-directory: ${{ runner.temp }}
+        env:
+          ORIGINAL_MODE: ${{ steps.keyboard_navigation.outputs.original_mode }}
+        run: source "$GITHUB_WORKSPACE/workflow/apps/desktop/scripts/restore-macos-keyboard-navigation.sh"
+
+      - name: Hand off private CLI candidate
+        env:
+          CANDIDATE_RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          [[ "$CANDIDATE_RUN_ID" =~ ^[0-9]+$ ]]
+          handoff="$HOME/.praxity-candidate-handoff/$CANDIDATE_RUN_ID"
+          mkdir -p "$HOME/.praxity-candidate-handoff"
+          # No -p here: a retry must refuse an existing handoff.
+          mkdir "$handoff"
+          shopt -s nullglob
+          archives=(apps/desktop/release/praxity-cli-*.tar.gz)
+          [[ ${#archives[@]} -gt 0 ]]
+          for archive in "${archives[@]}"; do
+            [[ -f "$archive" && -f "$archive.sha256" ]]
+            cp "$archive" "$archive.sha256" "$handoff/"
+          done
+          commit="$(git rev-parse HEAD)"
+          [[ "$commit" =~ ^[a-fA-F0-9]{40}$ ]]
+          printf '%s\n' "$commit" > "$handoff/commit.txt"
+
+      - name: Upload release handoff
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: cli-release-handoff
+          path: ~/.praxity-candidate-handoff/${{ github.run_id }}/*
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Clean candidate workspace and downloads
+        if: always()
+        working-directory: ${{ runner.temp }}
+        env:
+          BUILD_STATUS: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          [[ -n "$GITHUB_WORKSPACE" && "$GITHUB_WORKSPACE" != / ]] || exit 1
+          [[ -n "$RUNNER_TEMP" && "$RUNNER_TEMP" != / ]] || exit 1
+          [[ "$GITHUB_RUN_ID" =~ ^[0-9]+$ ]] || exit 1
+          trap 'df -k "$GITHUB_WORKSPACE" "$RUNNER_TEMP" /tmp' EXIT
+          for path in "$GITHUB_WORKSPACE/source" "$GITHUB_WORKSPACE/workflow" "$RUNNER_TEMP/cli-candidate-$GITHUB_RUN_ID" "/tmp/cc-$GITHUB_RUN_ID"; do
+            if [[ -e "$path" ]]; then
+              du -sk "$path"
+              rm -rf -- "$path"
+            fi
+          done
+          rm -rf -- "$HOME/.praxity-candidate-handoff/$GITHUB_RUN_ID"
+
+  publish:
+    if: github.repository == (vars.STUDIO_SOURCE_REPO || github.repository)
+    needs: build
+    runs-on: macos-15-intel
+    permissions:
+      contents: write
+      actions: read
+    timeout-minutes: 10
+    outputs:
+      release_id: ${{ steps.candidate.outputs.release_id }}
+    defaults:
+      run:
+        shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+    env:
+      CANDIDATE_RUN_ID: ${{ github.run_id }}
+    steps:
+      - name: Download this run's release handoff
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [[ "$CANDIDATE_RUN_ID" =~ ^[0-9]+$ ]] || exit 1
+          mkdir -p "$HOME/.praxity-candidate-handoff"
+          handoff="$HOME/.praxity-candidate-handoff/$CANDIDATE_RUN_ID"
+          [[ ! -e "$handoff" && ! -L "$handoff" ]] || exit 1
+          gh run download "$CANDIDATE_RUN_ID" --repo "$GITHUB_REPOSITORY" --name cli-release-handoff --dir "$handoff"
+      # The selected ref ran as this macOS user. Do not execute repository code
+      # or tools from PATH, and ignore the user's curl configuration with -q.
+      - name: Verify and publish private CLI candidate
+        id: candidate
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          EXPECTED_ARM64_NAME: ${{ needs.build.outputs.arm64_name }}
+          EXPECTED_ARM64_SHA256: ${{ needs.build.outputs.arm64_sha256 }}
+          EXPECTED_X64_NAME: ${{ needs.build.outputs.x64_name }}
+          EXPECTED_X64_SHA256: ${{ needs.build.outputs.x64_sha256 }}
+        run: |
+          set -euo pipefail
+          # macOS Bash 3.2 does not apply errexit to failed [[ conditions ]].
+          [[ "$CANDIDATE_RUN_ID" =~ ^[0-9]+$ ]] || exit 1
+          handoff="$HOME/.praxity-candidate-handoff/$CANDIDATE_RUN_ID"
+          [[ -d "$HOME/.praxity-candidate-handoff" && ! -L "$HOME/.praxity-candidate-handoff" ]] || exit 1
+          [[ -d "$handoff" && ! -L "$handoff" ]] || exit 1
+          cd "$handoff"
+          shopt -s nullglob dotglob
+          files=(*)
+          archives=()
+          for file in "${files[@]}"; do
+            [[ -f "$file" && ! -L "$file" ]] || exit 1
+            if [[ "$file" == commit.txt ]]; then
+              continue
+            fi
+            [[ "$file" =~ ^praxity-cli-[A-Za-z0-9._-]+\.tar\.gz(\.sha256)?$ ]] || exit 1
+            if [[ "$file" == *.tar.gz ]]; then
+              archives+=("$file")
+              [[ -f "$file.sha256" ]] || exit 1
+            else
+              [[ -f "${file%.sha256}" ]] || exit 1
+            fi
+          done
+          [[ ${#archives[@]} -gt 0 ]] || exit 1
+          commit="$(< commit.txt)"
+          [[ "$commit" =~ ^[a-f0-9]{40}$ ]] || exit 1
+          [[ "$GITHUB_SHA" =~ ^[a-f0-9]{40}$ ]] || exit 1
+          for archive in "${archives[@]}"; do
+            expected=
+            if [[ "$archive" == "$EXPECTED_ARM64_NAME" ]]; then
+              expected="$EXPECTED_ARM64_SHA256"
+            elif [[ "$archive" == "$EXPECTED_X64_NAME" ]]; then
+              expected="$EXPECTED_X64_SHA256"
+            fi
+            [[ "$expected" =~ ^[a-f0-9]{64}$ ]] || exit 1
+            actual="$(/usr/bin/shasum -a 256 "$archive")"
+            [[ "${actual%% *}" == "$expected" ]] || exit 1
+            # Each checksum may name only its paired archive, never another path.
+            checksum="$(< "$archive.sha256")"
+            [[ "$checksum" =~ ^[a-fA-F0-9]{64}\ [\ *](praxity-cli-[A-Za-z0-9._-]+\.tar\.gz)$ ]] || exit 1
+            [[ "${BASH_REMATCH[1]}" == "$archive" ]] || exit 1
+            /usr/bin/shasum -a 256 -c "$archive.sha256"
+          done
+          # Headers come from stdin (-H @-), so the token never appears in a
+          # process's arguments, where same-user processes could read it.
+          response="$(printf 'Authorization: Bearer %s\n' "$GITHUB_TOKEN" | /usr/bin/curl -q --fail-with-body --silent --show-error \
+            -H @- \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'Content-Type: application/json' \
+            --data "{\"tag_name\":\"cli-candidate-$CANDIDATE_RUN_ID\",\"target_commitish\":\"$GITHUB_SHA\",\"body\":\"Studio SHA: $commit\",\"draft\":true,\"prerelease\":true}" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/releases")"
+          # Match only top-level fields in GitHub's formatted response. An
+          # unexpected format fails closed; nested author/asset IDs never match.
+          release_id=
+          upload_url=
+          id_pattern='^  "id": ([1-9][0-9]*),$'
+          upload_pattern='^  "upload_url": "([^"[:space:]]+)",$'
+          while IFS= read -r line; do
+            if [[ "$line" =~ $id_pattern ]]; then
+              [[ -z "$release_id" ]] || exit 1
+              release_id="${BASH_REMATCH[1]}"
+            elif [[ "$line" =~ $upload_pattern ]]; then
+              [[ -z "$upload_url" ]] || exit 1
+              upload_url="${BASH_REMATCH[1]}"
+            fi
+          done <<< "$response"
+          [[ -n "$release_id" ]] || exit 1
+          expected_url="https://uploads.github.com/repos/$GITHUB_REPOSITORY/releases/$release_id/assets"
+          [[ "$upload_url" == "$expected_url{?name,label}" ]] || exit 1
+          for archive in "${archives[@]}"; do
+            for file in "$archive" "$archive.sha256"; do
+              printf 'Authorization: Bearer %s\n' "$GITHUB_TOKEN" | /usr/bin/curl -q --fail-with-body --silent --show-error \
+                -H @- \
+                -H 'Accept: application/vnd.github+json' \
+                -H 'Content-Type: application/octet-stream' \
+                --data-binary "@$file" "$expected_url?name=$file"
+            done
+          done
+          printf 'release_id=%s\n' "$release_id" >> "$GITHUB_OUTPUT"
+
+      - name: Remove private CLI candidate handoff
+        if: always()
+        run: |
+          set -euo pipefail
+          [[ "$CANDIDATE_RUN_ID" =~ ^[0-9]+$ ]] || exit 1
+          [[ -d "$HOME/.praxity-candidate-handoff" && ! -L "$HOME/.praxity-candidate-handoff" ]] || exit 1
+          /bin/rm -rf -- "$HOME/.praxity-candidate-handoff/$CANDIDATE_RUN_ID"
+
+  native-smoke:
+    if: github.repository == (vars.STUDIO_SOURCE_REPO || github.repository) && (inputs.pack_version != '')
+    needs: [build, publish]
+    # Both package smokes run on native hosted Macs. PRs never use the self-hosted Mac.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+          - runner: macos-15-intel
+            arch: x64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
+    permissions:
+      contents: write # GitHub requires push access to download private draft assets.
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: workflow
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.22.1
+      - name: Download verified private candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_RELEASE_ID: ${{ needs.publish.outputs.release_id }}
+          NATIVE_ARCH: ${{ matrix.arch }}
+          EXPECTED_ARM64_NAME: ${{ needs.build.outputs.arm64_name }}
+          EXPECTED_ARM64_SHA256: ${{ needs.build.outputs.arm64_sha256 }}
+          EXPECTED_X64_NAME: ${{ needs.build.outputs.x64_name }}
+          EXPECTED_X64_SHA256: ${{ needs.build.outputs.x64_sha256 }}
+        run: node workflow/apps/desktop/scripts/download-candidate.mjs
+      - name: Verify native package smoke
+        env:
+          NATIVE_ARCH: ${{ matrix.arch }}
+          EXPECTED_SHA256: ${{ matrix.arch == 'arm64' && needs.build.outputs.arm64_sha256 || needs.build.outputs.x64_sha256 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(node -p process.arch)" = "$NATIVE_ARCH"
+          cd "$RUNNER_TEMP/candidate"
+          shopt -s nullglob
+          archives=(*.tar.gz)
+          test "${#archives[@]}" = 1
+          printf '%s  %s\n' "$EXPECTED_SHA256" "${archives[0]}" | shasum -a 256 -c -
+          unset GH_TOKEN GITHUB_TOKEN
+          tar -xzf "${archives[0]}"
+          node studio-cli/praxity.mjs --help
+          studio-cli/typst/typst --version
+
+  rubato-publish:
+    if: github.repository == (vars.STUDIO_SOURCE_REPO || github.repository) && (inputs.pack_version != '')
+    needs: [admit, build, publish, native-smoke]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: rubato-release
+    permissions:
+      contents: write # Download the private draft; the Rubato token is step-scoped.
+    concurrency:
+      group: rubato-pack-publisher
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: Praxity/rubato
+          ref: ${{ needs.admit.outputs.rubato_sha }}
+          persist-credentials: false
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: workflow
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.22.1
+      - name: Download verified private candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_RELEASE_ID: ${{ needs.publish.outputs.release_id }}
+          EXPECTED_ARM64_NAME: ${{ needs.build.outputs.arm64_name }}
+          EXPECTED_ARM64_SHA256: ${{ needs.build.outputs.arm64_sha256 }}
+          EXPECTED_X64_NAME: ${{ needs.build.outputs.x64_name }}
+          EXPECTED_X64_SHA256: ${{ needs.build.outputs.x64_sha256 }}
+        run: node workflow/apps/desktop/scripts/download-candidate.mjs
+      - name: Publish verified Rubato pack
+        env:
+          GH_TOKEN: ${{ secrets.RUBATO_RELEASE_TOKEN }}
+          FORMAL_RELEASE: "true"
+          PACK_VERSION: ${{ inputs.pack_version }}
+          STUDIO_SHA: ${{ inputs.ref }}
+          PUBLISH_PACK: ${{ inputs.publish_pack }}
+          EXPECTED_ARM64_SHA256: ${{ needs.build.outputs.arm64_sha256 }}
+          EXPECTED_X64_SHA256: ${{ needs.build.outputs.x64_sha256 }}
+        run: |
+          set -euo pipefail
+          mode=--dry-run
+          # shortcut: refuse publication until Rubato verifies this exact pack by SHA-256 on native arm64.
+          if [ "$PUBLISH_PACK" = true ]; then
+            echo "Formal release needs the native arm64 install check on Rubato's macos-15 job; not wired yet." >&2
+            exit 1
+          fi
+          node scripts/publish-studio-pack.mjs --version "$PACK_VERSION" --studio-sha "$STUDIO_SHA" --expect-arm64-sha256 "$EXPECTED_ARM64_SHA256" --expect-x64-sha256 "$EXPECTED_X64_SHA256" --archives "$RUNNER_TEMP/candidate" --output "$RUNNER_TEMP/pack" "$mode"

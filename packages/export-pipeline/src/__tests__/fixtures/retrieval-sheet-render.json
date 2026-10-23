@@ -1,0 +1,132 @@
+[
+	{
+		"locale": "en",
+		"rows": 1,
+		"content": {
+			"title": "Recall later",
+			"questions": [
+				{
+					"id": "q1",
+					"question": "Question 1?",
+					"answer": "Answer 1."
+				}
+			]
+		},
+		"html": "<div class=\"praxity-retrieval-sheet\" data-retrieval-sheet lang=\"en\"><h2 id=\"sheet-retrieval-title\">Recall later</h2><p>On your chosen date, answer from memory. Then check the back.</p><p>Test myself on <span class=\"praxity-retrieval-sheet-date-line\" data-retrieval-date-line aria-hidden=\"true\"></span></p><p class=\"praxity-retrieval-sheet-secondary\" data-retrieval-no-date>Choose a date when the controls are available, or write one on your printed sheet.</p><div role=\"status\" aria-live=\"polite\" aria-atomic=\"true\" class=\"praxity-sr-only\" data-retrieval-status data-retrieval-unavailable=\"Date and side controls are unavailable. Both sides remain readable and printable.\"></div><div data-retrieval-controls hidden></div><div id=\"sheet-retrieval-front\" data-retrieval-side=\"front\"><h3 id=\"sheet-retrieval-front-heading\">Questions</h3><ol><li data-retrieval-question=\"q1\"><p>Question 1?</p><div class=\"praxity-retrieval-sheet-space\" aria-hidden=\"true\"></div></li></ol></div><div id=\"sheet-retrieval-back\" data-retrieval-side=\"back\"><h3 id=\"sheet-retrieval-back-heading\">Answers</h3><p>Check your answers. Review what you missed.</p><ol><li data-retrieval-question=\"q1\"><p>Answer 1.</p></li></ol></div><p class=\"praxity-retrieval-sheet-secondary\" data-retrieval-print-hint>Questions print first, then answers. For one double-sided sheet, choose the long-edge flip in your print settings.</p></div>"
+	},
+	{
+		"locale": "en",
+		"rows": 8,
+		"content": {
+			"title": "Recall later",
+			"questions": [
+				{
+					"id": "q1",
+					"question": "Question 1?",
+					"answer": "Answer 1."
+				},
+				{
+					"id": "q2",
+					"question": "Question 2?",
+					"answer": "Answer 2."
+				},
+				{
+					"id": "q3",
+					"question": "Question 3?",
+					"answer": "Answer 3."
+				},
+				{
+					"id": "q4",
+					"question": "Question 4?",
+					"answer": "Answer 4."
+				},
+				{
+					"id": "q5",
+					"question": "Question 5?",
+					"answer": "Answer 5."
+				},
+				{
+					"id": "q6",
+					"question": "Question 6?",
+					"answer": "Answer 6."
+				},
+				{
+					"id": "q7",
+					"question": "Question 7?",
+					"answer": "Answer 7."
+				},
+				{
+					"id": "q8",
+					"question": "Question 8?",
+					"answer": "Answer 8."
+				}
+			]
+		},
+		"html": "<div class=\"praxity-retrieval-sheet\" data-retrieval-sheet lang=\"en\"><h2 id=\"sheet-retrieval-title\">Recall later</h2><p>On your chosen date, answer from memory. Then check the back.</p><p>Test myself on <span class=\"praxity-retrieval-sheet-date-line\" data-retrieval-date-line aria-hidden=\"true\"></span></p><p class=\"praxity-retrieval-sheet-secondary\" data-retrieval-no-date>Choose a date when the controls are available, or write one on your printed sheet.</p><div role=\"status\" aria-live=\"polite\" aria-atomic=\"true\" class=\"praxity-sr-only\" data-retrieval-status data-retrieval-unavailable=\"Date and side controls are unavailable. Both sides remain readable and printable.\"></div><div data-retrieval-controls hidden></div><div id=\"sheet-retrieval-front\" data-retrieval-side=\"front\"><h3 id=\"sheet-retrieval-front-heading\">Questions</h3><ol><li data-retrieval-question=\"q1\"><p>Question 1?</p><div class=\"praxity-retrieval-sheet-space\" aria-hidden=\"true\"></div></li><li data-retrieval-question=\"q2\"><p>Question 2?</p><div class=\"praxity-retrieval-sheet-space\" aria-hidden=\"true\"></div></li><li data-retrieval-question=\"q3\"><p>Question 3?</p><div class=\"praxity-retrieval-sheet-space\" aria-hidden=\"true\"></div></li><li data-retrieval-question=\"q4\"><p>Question 4?</p><div class=\"praxity-retrieval-sheet-space\" aria-hidden=\"true\"></div></li><li data-retrieval-question=\"q5\"><p>Question 5?</p><div class=\"praxity-retrieval-sheet-space\" aria-hidden=\"true\"></div></li><li data-retrieval-question=\"q6\"><p>Question 6?</p><div class=\"praxity-retrieval-sheet-space\" aria-hidden=\"true\"></div></li><li data-retrieval-question=\"q7\"><p>Question 7?</p><div class=\"praxity-retrieval-sheet-space\" aria-hidden=\"true\"></div></li><li data-retrieval-question=\"q8\"><p>Question 8?</p><div class=\"praxity-retrieval-sheet-space\" aria-hidden=\"true\"></div></li></ol></div><div id=\"sheet-retrieval-back\" data-retrieval-side=\"back\"><h3 id=\"sheet-retrieval-back-heading\">Answers</h3><p>Check your answers. Review what you missed.</p><ol><li data-retrieval-question=\"q1\"><p>Answer 1.</p></li><li data-retrieval-question=\"q2\"><p>Answer 2.</p></li><li data-retrieval-question=\"q3\"><p>Answer 3.</p></li><li data-retrieval-question=\"q4\"><p>Answer 4.</p></li><li data-retrieval-question=\"q5\"><p>Answer 5.</p></li><li data-retrieval-question=\"q6\"><p>Answer 6.</p></li><li data-retrieval-question=\"q7\"><p>Answer 7.</p></li><li data-retrieval-question=\"q8\"><p>Answer 8.</p></li></ol></div><p class=\"praxity-retrieval-sheet-secondary\" data-retrieval-print-hint>Questions print first, then answers. For one double-sided sheet, choose the long-edge flip in your print settings.</p></div>"
+	},
+	{
+		"locale": "fr",
+		"rows": 1,
+		"content": {
+			"title": "Rappel ultérieur",
+			"questions": [
+				{
+					"id": "q1",
+					"question": "Question 1?",
+					"answer": "Réponse 1."
+				}
+			]
+		},
+		"html": "<div class=\"praxity-retrieval-sheet\" data-retrieval-sheet lang=\"fr\"><h2 id=\"sheet-retrieval-title\">Rappel ultérieur</h2><p>À la date choisie, répondez de mémoire. Vérifiez ensuite au verso.</p><p>Me tester le <span class=\"praxity-retrieval-sheet-date-line\" data-retrieval-date-line aria-hidden=\"true\"></span></p><p class=\"praxity-retrieval-sheet-secondary\" data-retrieval-no-date>Choisissez une date lorsque les commandes sont disponibles, ou inscrivez-en une sur la feuille imprimée.</p><div role=\"status\" aria-live=\"polite\" aria-atomic=\"true\" class=\"praxity-sr-only\" data-retrieval-status data-retrieval-unavailable=\"Les commandes de date et de côté ne sont pas disponibles. Les deux côtés restent lisibles et imprimables.\"></div><div data-retrieval-controls hidden></div><div id=\"sheet-retrieval-front\" data-retrieval-side=\"front\"><h3 id=\"sheet-retrieval-front-heading\">Questions</h3><ol><li data-retrieval-question=\"q1\"><p>Question 1?</p><div class=\"praxity-retrieval-sheet-space\" aria-hidden=\"true\"></div></li></ol></div><div id=\"sheet-retrieval-back\" data-retrieval-side=\"back\"><h3 id=\"sheet-retrieval-back-heading\">Réponses</h3><p>Vérifiez vos réponses. Revoyez ce que vous avez manqué.</p><ol><li data-retrieval-question=\"q1\"><p>Réponse 1.</p></li></ol></div><p class=\"praxity-retrieval-sheet-secondary\" data-retrieval-print-hint>Les questions s'impriment avant les réponses. Pour une feuille recto verso, choisissez le retournement sur le bord long dans les réglages d'impression.</p></div>"
+	},
+	{
+		"locale": "fr",
+		"rows": 8,
+		"content": {
+			"title": "Rappel ultérieur",
+			"questions": [
+				{
+					"id": "q1",
+					"question": "Question 1?",
+					"answer": "Réponse 1."
+				},
+				{
+					"id": "q2",
+					"question": "Question 2?",
+					"answer": "Réponse 2."
+				},
+				{
+					"id": "q3",
+					"question": "Question 3?",
+					"answer": "Réponse 3."
+				},
+				{
+					"id": "q4",
+					"question": "Question 4?",
+					"answer": "Réponse 4."
+				},
+				{
+					"id": "q5",
+					"question": "Question 5?",
+					"answer": "Réponse 5."
+				},
+				{
+					"id": "q6",
+					"question": "Question 6?",
+					"answer": "Réponse 6."
+				},
+				{
+					"id": "q7",
+					"question": "Question 7?",
+					"answer": "Réponse 7."
+				},
+				{
+					"id": "q8",
+					"question": "Question 8?",
+					"answer": "Réponse 8."
+				}
+			]
+		},
+		"html": "<div class=\"praxity-retrieval-sheet\" data-retrieval-sheet lang=\"fr\"><h2 id=\"sheet-retrieval-title\">Rappel ultérieur</h2><p>À la date choisie, répondez de mémoire. Vérifiez ensuite au verso.</p><p>Me tester le <span class=\"praxity-retrieval-sheet-date-line\" data-retrieval-date-line aria-hidden=\"true\"></span></p><p class=\"praxity-retrieval-sheet-secondary\" data-retrieval-no-date>Choisissez une date lorsque les commandes sont disponibles, ou inscrivez-en une sur la feuille imprimée.</p><div role=\"status\" aria-live=\"polite\" aria-atomic=\"true\" class=\"praxity-sr-only\" data-retrieval-status data-retrieval-unavailable=\"Les commandes de date et de côté ne sont pas disponibles. Les deux côtés restent lisibles et imprimables.\"></div><div data-retrieval-controls hidden></div><div id=\"sheet-retrieval-front\" data-retrieval-side=\"front\"><h3 id=\"sheet-retrieval-front-heading\">Questions</h3><ol><li data-retrieval-question=\"q1\"><p>Question 1?</p><div class=\"praxity-retrieval-sheet-space\" aria-hidden=\"true\"></div></li><li data-retrieval-question=\"q2\"><p>Question 2?</p><div class=\"praxity-retrieval-sheet-space\" aria-hidden=\"true\"></div></li><li data-retrieval-question=\"q3\"><p>Question 3?</p><div class=\"praxity-retrieval-sheet-space\" aria-hidden=\"true\"></div></li><li data-retrieval-question=\"q4\"><p>Question 4?</p><div class=\"praxity-retrieval-sheet-space\" aria-hidden=\"true\"></div></li><li data-retrieval-question=\"q5\"><p>Question 5?</p><div class=\"praxity-retrieval-sheet-space\" aria-hidden=\"true\"></div></li><li data-retrieval-question=\"q6\"><p>Question 6?</p><div class=\"praxity-retrieval-sheet-space\" aria-hidden=\"true\"></div></li><li data-retrieval-question=\"q7\"><p>Question 7?</p><div class=\"praxity-retrieval-sheet-space\" aria-hidden=\"true\"></div></li><li data-retrieval-question=\"q8\"><p>Question 8?</p><div class=\"praxity-retrieval-sheet-space\" aria-hidden=\"true\"></div></li></ol></div><div id=\"sheet-retrieval-back\" data-retrieval-side=\"back\"><h3 id=\"sheet-retrieval-back-heading\">Réponses</h3><p>Vérifiez vos réponses. Revoyez ce que vous avez manqué.</p><ol><li data-retrieval-question=\"q1\"><p>Réponse 1.</p></li><li data-retrieval-question=\"q2\"><p>Réponse 2.</p></li><li data-retrieval-question=\"q3\"><p>Réponse 3.</p></li><li data-retrieval-question=\"q4\"><p>Réponse 4.</p></li><li data-retrieval-question=\"q5\"><p>Réponse 5.</p></li><li data-retrieval-question=\"q6\"><p>Réponse 6.</p></li><li data-retrieval-question=\"q7\"><p>Réponse 7.</p></li><li data-retrieval-question=\"q8\"><p>Réponse 8.</p></li></ol></div><p class=\"praxity-retrieval-sheet-secondary\" data-retrieval-print-hint>Les questions s'impriment avant les réponses. Pour une feuille recto verso, choisissez le retournement sur le bord long dans les réglages d'impression.</p></div>"
+	}
+]

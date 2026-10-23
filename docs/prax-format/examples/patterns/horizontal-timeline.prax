@@ -1,0 +1,33 @@
+---
+title: Incident Response Process
+description: Horizontal timeline showing a linear process. Use breakout layout
+  so the full sequence is visible without wrapping on standard screens.
+lang: en
+design:
+  palette: clean
+  colorMode: light
+  accentHue: 22
+---
+
+# How We Respond to Incidents {hideTitle}
+
+## How We Respond to Incidents
+
+Every reported incident follows the same five-step process. The horizontal layout lets you see the full sequence at once. Use it for a workflow where each step depends on the previous step.
+
+::: sequence {style=timeline orientation=horizontal width=breakout}
+:: Contain
+Stop work in the affected area immediately. Secure access points to prevent others from entering. If any person is injured, call emergency services before doing anything else.
+
+:: Notify
+Contact your direct supervisor and the on-call safety officer within 15 minutes of the incident. Use the safety line if your supervisor is unavailable. Do not attempt to investigate or clean up until you have confirmation to proceed.
+
+:: Investigate
+The safety officer leads the investigation. This includes photographing the scene, collecting witness statements, and reviewing relevant SOPs and equipment logs. Workers involved are expected to cooperate fully and honestly.
+
+:: Document
+Complete the official incident report in the EHS portal. Include timeline, contributing factors, and a preliminary root cause. The full report is due within 48 hours. Supervisors countersign within 72 hours.
+
+:: Close Out
+Once the safety officer confirms updated procedures, equipment repairs and training, they close the incident file and notify affected workers of the outcome and changes to their work process.
+:::

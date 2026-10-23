@@ -1,0 +1,17 @@
+---
+title: Expliquer un retard
+lang: fr
+---
+# Mise en pratique
+
+::: self-check Expliquez pourquoi le rapport exige une journée de plus. {required}
+model: Les données sont arrivées en retard. Puis-je vous envoyer le rapport mardi?
+:: Raison du retard
+missed: Expliquez ce qui a causé le retard.
+evidence: Les données sont arrivées en retard.
+:: Nouvelle date de livraison
+missed: Proposez une date de livraison précise.
+evidence: mardi
+:: Formulation respectueuse
+missed: Formulez une demande claire sans blâmer qui que ce soit.
+:::

@@ -1,0 +1,60 @@
+frontmatter@1-7
+page@9-20
+  part:nav@10-10
+  image@12-12
+  body@14-14
+  block:quote@16-19
+    body@17-17
+    part:speaker@18-18
+page@21-54
+  body@23-23
+  block:sequence@25-53
+    item@26-29
+      body@27-29
+    item@31-39
+      body@32-33
+      body@35-39
+    item@41-47
+      body@42-47
+    item@49-52
+      body@50-52
+page@55-80
+  part:nav@56-56
+  block:group@58-79
+    part:button@59-59
+    block:choice@60-69
+      body@61-68
+    block:categorize@70-78
+      item@71-72
+        body@72-72
+      item@73-74
+        body@74-74
+      item@75-77
+        body@76-77
+page@81-100
+  block:dialogue@83-88
+    body@84-84
+    body@86-87
+  block:choice@90-99
+    body@91-98
+page@101-119
+  image@103-103
+  body@105-105
+  block:rating@107-118
+    body@108-117
+page@120-147
+  body@122-122
+  block:checklist@124-129
+    body@125-128
+  block:group@131-145
+    part:button@132-132
+    block:free-response@133-136
+      body@134-134
+      part:placeholder@135-135
+    block:free-response@137-140
+      body@138-138
+      part:placeholder@139-139
+    block:free-response@141-144
+      body@142-142
+      part:placeholder@143-143
+  body@147-147

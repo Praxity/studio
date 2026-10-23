@@ -1,0 +1,21 @@
+{
+	"accordion": "# Untitled {hideTitle}\n\n::: accordion\n:: Before the meeting {level=3}\nSend the agenda so everyone knows what to prepare.\n\n:: After the meeting {level=3}\nShare the decisions and the tasks each person agreed to complete.\n:::\n",
+	"tabs": "# Untitled {hideTitle}\n\n::: tabs\n:: Draft {level=3}\nWrite one sentence that tells the reader what to do.\n\n:: Revise {level=3}\nRead the sentence aloud. Replace words that make it hard to follow.\n:::\n",
+	"card": "# Untitled {hideTitle}\n\n::: cards {columns=2}\n:: Make the next step clear {level=3}\nStart with the action you want the reader to take.\n\n:: Keep it focused {level=3}\nInclude only what the reader needs for that step.\n:::\n",
+	"sequence": "# Untitled {hideTitle}\n\n::: sequence {style=numbered}\n:: Prepare the agenda {level=3}\nList the topics and the decisions the group needs to make.\n\n:: Share the agenda {level=3}\nSend it to everyone attending before the meeting.\n:::\n",
+	"rate": "# Untitled {hideTitle}\n\n::: rating How confident are you? {level=3}\n1. Not confident\n2. Somewhat confident\n3. Confident\n:::\n",
+	"assessment-group": "# Knowledge check {hideTitle}\n\n::: group Knowledge check {mode=all showResultsSummary passingScore=80}\n::: choice Choose the correct answer {scored attempts=2 points=10}\n(x) Correct answer\n( ) Incorrect answer\n:::\n:::\n",
+	"signature": "# Untitled {hideTitle}\n\n::: signature Sign to confirm completion {mode=draw level=3}\n:::\n",
+	"comparison": "# Untitled {hideTitle}\n\n::: comparison {layout=slider}\n:: Before {level=3}\n![Describe the image before the change](/assets/before-illustration.svg)\n\n:: After {level=3}\n![Describe the image after the change](/assets/after-illustration.svg)\n:::\n",
+	"choose-one": "# Untitled {hideTitle}\n\n::: choice How can you help participants prepare for the discussion? {scored attempts=2 points=10 level=3}\nChoose one answer.\n(x) Send the agenda before the meeting.\nfeedback: An agenda tells participants which topics to prepare.\n( ) Send the agenda after the meeting.\nfeedback: Send it before the meeting so participants have time to prepare.\n( ) Share only the meeting time.\nfeedback: Participants also need to know what the meeting will cover.\n:::\n",
+	"choose-many": "# Untitled {hideTitle}\n\n::: choice Select all that apply. {scored attempts=2 points=10 level=3}\n[x] First correct option\n[ ] First incorrect option\n[x] Second correct option\n[ ] Second incorrect option\n:::\n",
+	"match": "# Untitled {hideTitle}\n\n::: match Match items on the left with the right {scored attempts=2 points=10 shuffle level=3}\n- Left item 1 -> Right item 1\n- Left item 2 -> Right item 2\n- Left item 3 -> Right item 3\n:::\n",
+	"order": "# Untitled {hideTitle}\n\n::: order Put these items in the correct order {scored attempts=2 points=10 level=3}\n1. First item\n2. Second item\n3. Third item\n4. Fourth item\n:::\n",
+	"free-response": "# Untitled {hideTitle}\n\n::: free-response Your open-ended question here {scored=false attempts=0 level=3}\nProvide guidance or context for the learner.\nplaceholder: Type your response\n:::\n",
+	"fill-blank": "# Untitled {hideTitle}\n\n::: fill-blank Complete the sentence {scored=false attempts=0 level=3}\nThe answer is {recall|remembering} and it helps learners practice.\n:::\n",
+	"categorize": "# Untitled {hideTitle}\n\n::: categorize Sort these items into the correct category {scored attempts=2 points=10 shuffle level=3}\n:: Category A\n- Item belonging to A\n- Another item for A\n:: Category B\n- Item belonging to B\n- Another item for B\n:::\n",
+	"matrix": "# Untitled {hideTitle}\n\n::: matrix How confident are you? {scored=false attempts=0 level=3}\n1. Not confident\n2. Somewhat confident\n3. Confident\n- Using the first skill\n- Using the second skill\n:::\n",
+	"hotspot": "# Untitled {hideTitle}\n\n::: hotspot Select the relevant areas on the image. {scored attempts=2}\n![Describe the image](/assets/hotspot.webp)\n- Correct area {x=30 y=40 correct}\n- Distractor area {x=60 y=50}\n:::\n",
+	"divider": "# Untitled {hideTitle}\n\n---\n",
+	"dialogue": "---\n{ cast: { alex: {}, sam: {} } }\n---\n\n# Untitled {hideTitle}\n\n::: dialogue\n- Alex: What should I say when the meeting starts?\n- Sam: Start with the goal, then ask what everyone needs.\n:::\n"
+}

@@ -1,0 +1,149 @@
+/* Adapted from learning-patterns/patterns/highlight/pattern.css at
+   b3f82d2415982da20dda28b61770d7e85084901b, MIT, Copyright (c) 2026 Ariel Harlap.
+   Studio owns this presentation. See LICENSE in this folder. */
+.praxity-highlight {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+/* Decks keep navigation's no-JS class off. Successful highlight attachment
+   owns the visibility of its controls independently of that navigation class. */
+.praxity-highlight[data-highlight-enhanced] [data-praxity-js-control] {
+	display: inline-flex;
+}
+/* Native hidden state wins over button and feedback display rules. */
+.praxity-highlight [hidden] {
+	display: none !important;
+}
+.praxity-highlight > * + *,
+.praxity-highlight-passage > p + p,
+.praxity-highlight-answer > li + li {
+	margin-block-start: var(--space-4);
+}
+/* Match retrieval's paragraph gap with enough specificity to retain it in shared prose. */
+.praxity-highlight[data-highlight] > [data-highlight-flow],
+.praxity-highlight [data-highlight-controls],
+.praxity-highlight[data-highlight] > [data-highlight-memory-notice] {
+	margin-block-start: var(--space-4);
+}
+.praxity-highlight-question {
+	color: var(--praxity-color-text);
+	font-size: var(--root-font-size);
+	line-height: var(--leading-body);
+}
+.praxity-highlight-chunk {
+	border-radius: var(--radius-mark);
+	-webkit-box-decoration-break: clone;
+	box-decoration-break: clone;
+}
+.praxity-highlight-chunk[role="button"] {
+	cursor: pointer;
+}
+.praxity-highlight :is([role="button"], button, summary):focus-visible {
+	outline: var(--focus-width) solid var(--praxity-color-focus);
+	outline-offset: var(--focus-offset);
+}
+.praxity-highlight-chunk[aria-pressed="true"] {
+	background: color-mix(in oklab, var(--praxity-color-accent) 25%, transparent);
+}
+.praxity-highlight-chunk[data-highlight-outcome="correct"] {
+	background: color-mix(in oklab, var(--praxity-color-success) 16%, transparent);
+	text-decoration: underline solid var(--praxity-color-success-text, var(--praxity-color-success))
+		2px;
+	text-underline-offset: 4px;
+}
+.praxity-highlight-chunk[data-highlight-outcome="missed"] {
+	text-decoration: underline dashed var(--praxity-color-warning) 2px;
+	text-underline-offset: 4px;
+}
+.praxity-highlight-chunk[data-highlight-outcome="wrong"] {
+	text-decoration: none;
+}
+.praxity-highlight-chunk[aria-disabled="true"] {
+	cursor: default;
+}
+.praxity-highlight-feedback {
+	margin-inline-start: var(--space-1);
+	font-size: var(--type-small);
+	font-weight: var(--weight-strong);
+}
+.praxity-highlight-feedback[data-highlight-outcome="correct"] {
+	color: var(--praxity-color-success-text, var(--praxity-color-success));
+}
+.praxity-highlight-feedback[data-highlight-outcome="missed"] {
+	color: var(--praxity-color-warning);
+}
+/* Keep a verdict with the chunk's last word while allowing long labels to wrap. */
+.praxity-highlight-feedback[data-highlight-outcome="correct"]::before,
+.praxity-highlight-feedback[data-highlight-outcome="missed"]::before,
+.praxity-highlight-feedback[data-highlight-outcome="wrong"]::before {
+	content: "\2060" / "";
+}
+.praxity-highlight-note {
+	font-weight: var(--weight-body);
+}
+.praxity-highlight [data-highlight-count] {
+	font-variant-numeric: tabular-nums;
+}
+.praxity-highlight-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-2);
+}
+.praxity-highlight .praxity-button {
+	min-width: 0;
+	white-space: normal;
+	overflow-wrap: anywhere;
+}
+.praxity-highlight summary {
+	cursor: pointer;
+	font-weight: var(--weight-strong);
+}
+.praxity-highlight-answer {
+	padding-inline-start: 1.75em;
+	list-style: disc outside;
+}
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		.praxity-highlight-chunk[aria-pressed="true"] {
+			border: 1px solid Highlight;
+			text-decoration: underline solid Highlight 2px;
+		}
+		.praxity-highlight-chunk[data-highlight-outcome="correct"] {
+			text-decoration: underline solid CanvasText 2px;
+		}
+		.praxity-highlight-chunk[data-highlight-outcome="missed"] {
+			text-decoration: underline dashed CanvasText 2px;
+		}
+		.praxity-highlight-chunk[data-highlight-outcome="wrong"] {
+			text-decoration: none;
+		}
+		.praxity-highlight :is([role="button"], button, summary):focus-visible {
+			outline-color: Highlight;
+		}
+	}
+}
+
+@media print {
+	.praxity-highlight
+		:is(
+			[data-highlight-flow],
+			[data-highlight-instructions],
+			[data-highlight-feedback],
+			[data-highlight-status],
+			[data-highlight-fallback]
+		),
+	[data-highlight-memory-notice] {
+		display: none !important;
+	}
+	.praxity-highlight [data-highlight-print-answer][hidden] {
+		display: block !important;
+	}
+	.praxity-highlight [data-highlight-chunk] {
+		background: transparent !important;
+		border: 0 !important;
+		text-decoration: none !important;
+	}
+	.praxity-highlight-answer li {
+		break-inside: avoid;
+	}
+}

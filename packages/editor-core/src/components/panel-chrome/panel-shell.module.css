@@ -1,0 +1,53 @@
+.root {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	background: var(--panel-bg);
+}
+
+/*
+ * `padding-bottom` used to be 0, leaning on `.title`'s own margin for the gap
+ * below the header. Panels that pass a `header` node have no such margin, so a
+ * control in the header sat flush on the first row of panel content: the Design
+ * panel's Reset button touched the "Basic" accordion header with a 0px gap,
+ * which reads as a seam and fails WCAG 2.5.8 target spacing (a 24px circle on
+ * the 19px-tall Reset button intersects the neighbour below).
+ */
+.header {
+	flex-shrink: 0;
+	padding: var(--panel-padding);
+	padding-bottom: 12px;
+}
+
+/* Matches .right-panel-frame__title in the desktop shell: sentence case, not
+   uppercase, so self-headed panels read as peers of Blocks / Design / Publish. */
+.title {
+	font-size: var(--panel-title-size);
+	font-weight: 600;
+	color: var(--panel-text);
+	line-height: var(--panel-line-height);
+	margin: 0;
+}
+
+/* Separates the title from a header node; the header's own padding-bottom
+   carries the gap when the title is the only thing in there. */
+.title:not(:last-child) {
+	margin-bottom: 12px;
+}
+
+.scrollArea {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+
+.content {
+	padding: var(--panel-padding);
+	min-width: 0;
+	overflow-x: hidden;
+}
+
+.contentNoPadding {
+	padding: 0;
+}

@@ -1,0 +1,15 @@
+# Course context for the two dialogue patterns. Other patterns are separate lessons.
+title: Dialogue patterns
+locale: en
+lessons:
+  - dialogue.prax
+  - dialogue-branching.prax
+cast:
+  alex:
+    name: Alex
+  sam:
+    name: Sam
+  Roger:
+    name: Roger
+  Roxanne:
+    name: Roxanne

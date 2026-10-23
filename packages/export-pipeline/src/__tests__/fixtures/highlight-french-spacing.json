@@ -1,0 +1,38 @@
+[
+	{
+		"locale": "fr",
+		"content": {
+			"mode": "evidence",
+			"title": "Pourquoi ? « midi » ! oui : non",
+			"question": "Pourquoi ? « midi » ! oui : non",
+			"paragraphs": [
+				[
+					{
+						"id": "spacing",
+						"text": "Pourquoi ? « midi » ! oui : non",
+						"key": true,
+						"note": "Pourquoi ? « midi » ! oui : non"
+					}
+				]
+			]
+		}
+	},
+	{
+		"locale": "fr-CA",
+		"content": {
+			"mode": "evidence",
+			"title": "Pourquoi ? « midi » ! oui : non",
+			"question": "Pourquoi ? « midi » ! oui : non",
+			"paragraphs": [
+				[
+					{
+						"id": "spacing",
+						"text": "Pourquoi ? « midi » ! oui : non",
+						"key": true,
+						"note": "Pourquoi ? « midi » ! oui : non"
+					}
+				]
+			]
+		}
+	}
+]

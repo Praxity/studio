@@ -1,0 +1,423 @@
+---
+title: Roundtrip Full Fixture
+lang: en
+design:
+  palette: standard
+  colorMode: light
+  accentHue: 220
+variables:
+  attempts: 0
+  passedQuiz: false
+  userName: Learner
+---
+
+# Module 1: SCORM Round-Trip Coverage
+
+# Introduction {hideTitle}
+
+This fixture exercises all grammar keywords and their implemented variants for round-trip fidelity testing.
+
+## Images
+
+Three image variants: standard with alt, decorative, and sized with alignment.
+
+::: figure
+![Factory floor safety overview](/assets/placeholder.png)
+Main safety inspection area
+:::
+
+![Decorative separator](/assets/placeholder.png){decorative size=small alignment=center}
+
+::: figure
+![Safety diagram showing exit routes](/assets/placeholder.png){size=large alignment=right}
+Emergency exit route map
+:::
+
+## Video and Audio
+
+Embedded YouTube video and local audio file.
+
+::: video https://www.youtube.com/embed/aqz-KE-bpKQ
+:::
+
+::: audio /assets/safety-briefing.mp3
+title: Safety Briefing Episode 12
+:::
+
+## Embeds
+
+Generic embed and document/bookmark embed.
+
+::: embed https://app.example.com/widget {height=400}
+:::
+
+::: bookmark [OSHA Safety Guidelines](https://example.com/safety-manual.pdf)
+:::
+
+## Quotes
+
+Three decorator variants: line-left, quotation-marks, and cinematic.
+
+::: quote
+Consistency beats speed when safety is involved.
+speaker: Safety Lead
+:::
+
+::: quote
+The only way to do great work is to love what you do.
+speaker: Steve Jobs
+:::
+
+::: quote
+In learning, there are no shortcuts to mastery.
+:::
+
+## Notes
+
+Four color variants: warning, accent, success, and error.
+
+::: note {tone=warning style=shaded}
+Always wear PPE in designated zones.
+:::
+
+::: note {tone=note style=outline}
+This is an accent-colored outline note for reference.
+:::
+
+::: note {tone=success style=shaded}
+Congratulations on completing the safety module.
+:::
+
+::: note {tone=warning style=shaded}
+Critical: Do not proceed without supervisor approval.
+:::
+
+## Buttons
+
+Three variant styles: filled, outline, and light.
+
+::: button [Open SOP Handbook](https://example.com/sop-handbook) {style=filled newTab}
+:::
+
+::: button [Download Manual](https://example.com/manual.pdf) {style=outline}
+:::
+
+::: button [Learn More](https://example.com/details) {style=light newTab}
+:::
+
+## Code and Math
+
+A fenced code block and a LaTeX equation.
+
+```python
+def calculate_risk(level, exposure):
+    return level * exposure
+```
+
+$$
+E = mc^2
+$$
+
+---
+
+## Accordion — Contained
+
+::: accordion {style=outline}
+:: Lockout/Tagout
+Confirm equipment is de-energized before maintenance.
+
+:: PPE Check
+Verify gloves, eyewear, and hearing protection before work starts.
+
+:: Incident Report
+Document all near-miss events within 24 hours.
+:::
+
+## Accordion — Separated
+
+::: accordion {style=shaded}
+:: Module 1
+Introduction to workplace safety regulations.
+
+:: Module 2
+Advanced hazard identification techniques.
+:::
+
+## Tabs
+
+::: tabs {orientation=vertical style=pills}
+:: Incident Types
+Near miss, first aid, recordable, and lost-time incidents.
+
+:: Response Flow
+Stop work, secure area, notify supervisor, and document details.
+
+:: Follow-Up
+Review, re-train, and update procedures as needed.
+:::
+
+## Columns
+
+Three-column comparison of risk management approaches.
+
+::: columns
+::
+**Hazards** — Chemical, biological, physical, and ergonomic risks.
+
+::
+**Controls** — Engineering, administrative, and PPE-based solutions.
+
+::
+**Review** — Annual audits and monthly spot checks.
+:::
+
+## Sequence — Numbered
+
+::: sequence {style=numbered}
+:: 1. Identify Hazard
+Report any unsafe condition immediately.
+
+:: 2. Assess Risk
+Determine severity and likelihood of harm.
+
+:: 3. Apply Controls
+Implement engineering or procedural safeguards.
+
+:: 4. Monitor
+Verify controls remain effective over time.
+:::
+
+## Sequence — Timeline
+
+::: sequence {style=timeline}
+:: 2020 — Foundation
+Established initial safety protocols.
+
+:: 2022 — Expansion
+Added chemical handling procedures.
+
+:: 2024 — Automation
+Deployed IoT monitoring sensors.
+:::
+
+## Sequence — Plain
+
+::: sequence {style=none}
+:: Observation
+Note conditions before starting work.
+
+:: Action
+Apply controls and begin task.
+
+:: Verification
+Confirm controls held throughout.
+:::
+
+## Comparison
+
+::: comparison {layout=side-by-side}
+:: Before
+Manual incident logging with paper forms, 48-hour reporting delay.
+
+:: After
+Digital incident capture with real-time alerts, under 2-hour response.
+:::
+
+## Single Choice
+
+::: choice Which action should happen first after spotting a hazard? {scored}
+( ) Continue working while monitoring
+(x) Stop work and secure the area
+( ) Wait until shift handoff
+:::
+
+## Single Choice — Shuffled with Feedback
+
+::: choice What is the minimum PPE for construction zones? {scored shuffle}
+( ) Hard hat only
+(x) Hard hat, safety glasses, and high-vis vest
+feedback: Correct! All three are required.
+( ) Steel-toed boots only
+feedback: Important but insufficient on its own.
+:::
+
+## Multiple Choice
+
+::: choice Which items are required before operating the machine?
+The machine has been idle overnight and the **guard is open**.
+[x] Safety glasses
+[x] Pre-start inspection
+[ ] Personal phone nearby
+[x] Hearing protection
+:::
+
+## Multiple Choice — Shuffled
+
+::: choice Select all valid emergency exits. {scored shuffle}
+[x] North stairwell
+[ ] Elevator
+[x] South fire escape
+[ ] Maintenance shaft
+:::
+
+## Matching
+
+::: match Match each hazard to its control measure. {scored}
+Every hazard has exactly one correct control.
+- Chemical spill -> Containment kit
+- Electrical fault -> Lockout/tagout
+- Fall risk -> Harness and guardrail
+placeholder: Choose a control
+:::
+
+## Ordering
+
+::: order Put the emergency response steps in correct order. {scored}
+1. Assess the situation
+2. Call emergency services
+3. Administer first aid
+4. Document the incident
+:::
+
+## Free Response
+
+::: free-response Describe three ways to improve workplace safety in your area. {scored}
+Consider both physical and procedural improvements.
+placeholder: Type your three ideas here
+:::
+
+## Fill in the Blank
+
+::: fill-blank Complete the safety procedure.
+Before entering a confined space, workers must complete a
+{permit} and test for {oxygen} levels.
+:::
+
+## Rating
+
+::: rating How confident are you in using fire extinguishers correctly? {style=stars}
+1. Not confident
+2. Slightly confident
+3. Moderately confident
+4. Very confident
+5. Extremely confident
+:::
+
+## Hotspot
+
+::: hotspot Identify parts on the fire extinguisher diagram.
+![Fire extinguisher diagram](/assets/placeholder.png)
+- Pressure gauge {x=30 y=15}
+- Handle {x=45 y=25 correct}
+- Nozzle {x=60 y=40}
+:::
+
+## Categorize
+
+::: categorize Sort items into the correct PPE category. {shuffle}
+:: Head Protection
+- Hard hat
+- Bump cap
+:: Eye Protection
+- Safety goggles
+- Face shield
+:::
+
+## Checklist
+
+::: checklist {required}
+- [ ] Verify emergency exits are clear
+- [ ] Check fire extinguisher accessibility
+- [ ] Inspect personal protective equipment
+- [ ] Confirm first aid kit is stocked
+:::
+
+## Signature — Draw
+
+::: signature I confirm I have read and understood these safety procedures {mode=draw}
+:::
+
+## Signature — Type
+
+::: signature Supervisor acknowledgment {mode=type}
+:::
+
+## Variables and Logic
+
+Track attempt count.
+
+Track quiz completion state.
+
+Personalize with learner name.
+
+Show remediation for learners who haven't passed.
+
+::: rule
+if: passedQuiz is false
+then: show @remediation
+:::
+
+# Second Page — Data Tables {hideTitle}
+
+## Second Page — Data Tables
+
+This second page verifies page-break handling, tables, and charts across the round-trip pipeline.
+
+| Quarter | Incidents | Near Misses |
+| Q1      | 3         | 12          |
+| Q2      | 1         | 8           |
+| Q3      | 2         | 15          |
+| Q4      | 0         | 6           |
+
+::: table {chart=bar}
+| Quarter | Revenue | Costs |
+| Q1      | 120     | 80    |
+| Q2      | 150     | 90    |
+xLabel: Quarter
+yLabel: Amount
+:::
+
+::: note {tone=tip style=shaded}
+Escalate any unresolved hazard before resuming normal operations.
+:::
+
+# Catalog contract additions {hideTitle}
+
+::: matrix Confidence by task {scored=false attempts=0 level=3}
+1. Needs practice
+2. Confident
+- Identify a hazard
+- Report an incident
+:::
+
+::: group Safety knowledge check {mode=all passingScore=80 showResultsSummary}
+::: choice Choose the safe action {scored points=10}
+(x) Report the hazard
+( ) Ignore the hazard
+:::
+:::
+
+::: rating Confidence slider {style=slider level=3}
+1. Needs practice
+2. Confident
+:::
+
+# Cards
+::: cards Safety Terms {layout=slides transition=fade showProgress}
+:: What is PPE? {level=3}
+Personal Protective Equipment refers to protective clothing, helmets, goggles, or other garments designed to protect the wearer's body from injury or infection.
+::: back
+Use PPE when residual hazard remains after engineering and administrative controls.
+:::
+:: When is PPE required? {level=3}
+Whenever there is a risk of injury from hazards that cannot be eliminated through engineering or administrative controls.
+::: back
+PPE is the final layer in the hierarchy of controls, not the first control.
+:::
+:::
+::: cards
+:: What does LOTO stand for?
+::: back
+Lockout / Tagout — the process of isolating energy sources before maintenance.
+:::
+:::

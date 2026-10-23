@@ -1,0 +1,153 @@
+/* Native controls reuse Studio's existing field/button tokens. */
+.praxity-write-distractors {
+	min-inline-size: 0;
+	overflow-wrap: anywhere;
+}
+/* Published pages reset paragraph margins. The activity owns its reading rhythm. */
+.praxity-write-distractors p:not([role="status"]) {
+	margin-block: var(--space-2);
+}
+.praxity-write-distractors > label {
+	display: block;
+	margin-block: var(--space-4) var(--space-2);
+}
+.praxity-write-distractors [data-distractor-preview] li + li {
+	margin-block-start: var(--space-6);
+}
+.praxity-write-distractors [hidden] {
+	display: none !important;
+}
+.praxity-write-distractors button {
+	white-space: normal;
+	max-inline-size: 100%;
+	margin-inline-end: var(--space-2);
+	margin-block: var(--space-2);
+}
+.praxity-write-distractors :is(textarea, select, input) {
+	max-inline-size: 100%;
+	inline-size: 100%;
+	box-sizing: border-box;
+}
+.praxity-write-distractors button[aria-disabled="true"] {
+	opacity: 0.65;
+	cursor: default;
+}
+.praxity-write-distractors [role="group"] {
+	margin-block: var(--space-4);
+}
+.praxity-write-distractors[data-write-distractors] fieldset {
+	border: 0;
+	padding: 0;
+}
+.praxity-write-distractors legend {
+	padding: 0;
+	font-weight: var(--weight-strong);
+}
+
+/* The inert matching baseline suppresses the arrow. Active native selects retain it. */
+.praxity-write-distractors[data-write-distractors] select.praxity-assessment-select-input {
+	appearance: auto;
+	padding-inline-end: var(--space-8);
+}
+.praxity-write-distractors .praxity-distractor-label {
+	font-weight: var(--weight-strong);
+}
+.praxity-write-distractors textarea[readonly] {
+	background: var(--praxity-color-surface, var(--praxity-color-background)) !important;
+	border-color: var(--praxity-color-border) !important;
+	resize: none;
+}
+.praxity-write-distractors[data-write-distractors] fieldset {
+	margin-block: var(--space-6);
+	min-inline-size: 0;
+}
+.praxity-write-distractors fieldset > :is(textarea, select, input) {
+	margin-block: var(--space-2) var(--space-6);
+}
+.praxity-write-distractors fieldset > label {
+	display: block;
+	margin: 0;
+}
+.praxity-write-distractors p[data-distractor-notice] {
+	margin-block: var(--space-2) var(--space-4);
+}
+
+.praxity-write-distractors [data-recovery-id] {
+	margin-block: var(--space-6);
+}
+.praxity-write-distractors [data-recovery-id] > label {
+	display: block;
+	margin: 0;
+}
+.praxity-write-distractors [data-recovery-id] > textarea {
+	margin-block-start: var(--space-2);
+}
+.praxity-write-distractors [data-distractor-preview] > ol {
+	list-style: none;
+	padding-inline-start: 0;
+}
+.praxity-write-distractors [data-distractor-preview="author"],
+.praxity-write-distractors p[data-distractor-coverage] {
+	margin-block-start: var(--space-8);
+}
+
+@media print {
+	.praxity-write-distractors
+		:is(
+			button,
+			.praxity-text-error,
+			[data-distractor-baseline],
+			[data-distractor-notice],
+			[data-distractor-save],
+			[data-distractor-destination],
+			[data-distractor-status],
+			[id$="-reset-hint"]
+		) {
+		display: none !important;
+	}
+}
+
+.praxity-distractor-print,
+.praxity-write-distractors [data-distractor-writing-space] {
+	display: none;
+}
+@media print {
+	.praxity-write-distractors :is(textarea, input, select) {
+		display: none !important;
+	}
+	.praxity-write-distractors .praxity-distractor-print {
+		display: block;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+		margin-block: 0.5em 1em;
+	}
+	.praxity-write-distractors [data-distractor-writing-space] {
+		display: block;
+		min-block-size: 4cm;
+		border-block-end: 1px solid currentColor;
+	}
+	.praxity-write-distractors
+		.praxity-distractor-print:not(:empty)
+		+ [data-distractor-writing-space] {
+		display: none;
+	}
+}
+
+@media print {
+	/* The selected rating is already text in the DOM; remove its control chrome. */
+	.praxity-write-distractors button[aria-pressed="true"] {
+		display: inline !important;
+		appearance: none;
+		border: 0;
+		background: none;
+		padding: 0;
+		margin: 0;
+		min-inline-size: 0;
+		min-block-size: 0;
+		box-shadow: none;
+		outline: 0;
+		color: inherit !important;
+		font: inherit;
+		opacity: 1;
+	}
+}

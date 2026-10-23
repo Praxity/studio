@@ -1,0 +1,98 @@
+/* Continue gate (`disableCompletion`). The logic runtime appends the reason inside
+   the primary page nav and marks forward controls aria-disabled; nothing here
+   applies to ungated pages. */
+
+[data-completion-reason] {
+	box-sizing: border-box;
+	max-width: var(--praxity-max-width, 680px);
+	margin: 0 auto;
+	padding: 0 max(1rem, env(safe-area-inset-left), env(safe-area-inset-right))
+		max(1rem, env(safe-area-inset-bottom));
+	color: var(--praxity-color-text, #1f2937);
+	text-align: end;
+	overflow-wrap: anywhere;
+}
+
+/* Keyboard-only navigation still needs a visible prerequisite while blocked. */
+#praxity-page-nav.praxity-navigation-proxy:has(> [data-completion-reason]) {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+	padding: 1rem;
+}
+
+.praxity-navigation-proxy > [data-completion-reason] {
+	grid-column: 1 / -1;
+	width: 100%;
+}
+
+/* Minimal mode replaces the full navigation with this visible control band. */
+.praxity-embed-nav:has(> [data-completion-reason]) {
+	flex-wrap: wrap;
+}
+
+.praxity-embed-nav > [data-completion-reason] {
+	flex: 1 0 100%;
+	min-width: 0;
+	padding: 0 0.5rem 0.5rem;
+	text-align: center;
+}
+
+/* The reason takes its own row inside the SlideNav pill. */
+.praxity-slide-nav:has(> [data-completion-reason]) {
+	flex-wrap: wrap;
+	justify-content: center;
+}
+
+.praxity-slide-nav > [data-completion-reason] {
+	flex: 1 0 100%;
+	padding: 0 0.5rem 0.25rem;
+	text-align: center;
+}
+
+/* In the slides nav band the pill must shrink with the reason instead of scrolling. */
+.praxity-nav-band > .praxity-slide-nav:has(> [data-completion-reason]) {
+	flex-shrink: 1;
+	min-width: 0;
+}
+
+/* Edge-only navigation hides its nav on narrow screens; keep the reason, hide the arrows. */
+.praxity-edge-arrow-nav:has(> [data-completion-reason]) {
+	display: block;
+	padding-top: 1rem;
+}
+
+body.praxity-layout-slides:has(.praxity-slide[data-slide-chrome="minimal"])
+	.praxity-edge-arrow-nav:has(> [data-completion-reason]) {
+	display: block;
+}
+
+@media (max-width: 1024px) {
+	.praxity-edge-arrow-nav:has(> [data-completion-reason]) > .praxity-edge-arrow {
+		display: none;
+	}
+}
+
+/* Blocked Continue stays focusable: no opacity, so the label and focus ring keep their contrast. */
+[data-continue-button][aria-disabled="true"] {
+	border-style: dashed;
+	cursor: not-allowed;
+}
+
+.praxity-native-page-nav :is(a, button).praxity-nav-next[aria-disabled="true"] {
+	background: transparent;
+	color: var(--praxity-color-text, #1f2937);
+	box-shadow: none;
+}
+
+:is(.praxity-slide-nav__arrow, .praxity-edge-arrow)[aria-disabled="true"] {
+	border-color: var(--praxity-color-text-light, #596673);
+}
+
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		[data-continue-button][aria-disabled="true"] {
+			border-color: GrayText;
+			color: GrayText;
+		}
+	}
+}

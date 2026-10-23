@@ -1,0 +1,131 @@
+{
+	"_comment": "Per-block accessibility audit tracker. Update lastAuditDate after Tier 3 deep audits.",
+	"blocks": {
+		"text": {
+			"lastAuditDate": "2026-03-08",
+			"lastModifiedCommit": "",
+			"wcagCriteriaCovered": ["1.1.1", "1.3.1", "4.1.2"]
+		},
+		"heading": {
+			"lastAuditDate": "2026-03-08",
+			"lastModifiedCommit": "",
+			"wcagCriteriaCovered": ["1.3.1", "2.4.6"]
+		},
+		"image": {
+			"lastAuditDate": "2026-03-08",
+			"lastModifiedCommit": "",
+			"wcagCriteriaCovered": ["1.1.1", "1.4.5"]
+		},
+		"video": {
+			"lastAuditDate": "2026-03-08",
+			"lastModifiedCommit": "",
+			"wcagCriteriaCovered": ["1.2.1", "1.2.2", "1.2.3"]
+		},
+		"audio": {
+			"lastAuditDate": "2026-03-08",
+			"lastModifiedCommit": "",
+			"wcagCriteriaCovered": ["1.2.1"]
+		},
+		"document": {
+			"lastAuditDate": "2026-03-08",
+			"lastModifiedCommit": "",
+			"wcagCriteriaCovered": ["1.1.1"]
+		},
+		"quote": {
+			"lastAuditDate": "2026-03-08",
+			"lastModifiedCommit": "",
+			"wcagCriteriaCovered": ["1.3.1"]
+		},
+		"divider": {
+			"lastAuditDate": "2026-03-08",
+			"lastModifiedCommit": "",
+			"wcagCriteriaCovered": []
+		},
+		"embed": {
+			"lastAuditDate": "2026-03-08",
+			"lastModifiedCommit": "",
+			"wcagCriteriaCovered": ["1.1.1", "4.1.2"]
+		},
+		"button": {
+			"lastAuditDate": "2026-03-08",
+			"lastModifiedCommit": "",
+			"wcagCriteriaCovered": ["2.1.1", "4.1.2"]
+		},
+		"imageComparison": {
+			"lastAuditDate": "2026-03-08",
+			"lastModifiedCommit": "",
+			"wcagCriteriaCovered": ["1.1.1"]
+		},
+		"chart": {
+			"lastAuditDate": "2026-03-08",
+			"lastModifiedCommit": "",
+			"wcagCriteriaCovered": ["1.1.1"]
+		},
+		"table": {
+			"lastAuditDate": "2026-03-08",
+			"lastModifiedCommit": "",
+			"wcagCriteriaCovered": ["1.3.1", "1.3.2"]
+		},
+		"accordion": {
+			"lastAuditDate": "2026-03-08",
+			"lastModifiedCommit": "",
+			"wcagCriteriaCovered": ["2.1.1", "4.1.2"]
+		},
+		"tabs": {
+			"lastAuditDate": "2026-03-08",
+			"lastModifiedCommit": "",
+			"wcagCriteriaCovered": ["2.1.1", "4.1.2"]
+		},
+		"columns": {
+			"lastAuditDate": "2026-03-08",
+			"lastModifiedCommit": "",
+			"wcagCriteriaCovered": ["1.3.1"]
+		},
+		"sequence": {
+			"lastAuditDate": "2026-03-08",
+			"lastModifiedCommit": "",
+			"wcagCriteriaCovered": ["2.1.1"]
+		},
+		"card": {
+			"lastAuditDate": "2026-03-08",
+			"lastModifiedCommit": "",
+			"wcagCriteriaCovered": ["2.1.1", "4.1.2"]
+		},
+		"labeledGraphic": {
+			"lastAuditDate": "2026-03-08",
+			"lastModifiedCommit": "",
+			"wcagCriteriaCovered": ["1.1.1", "2.1.1"]
+		},
+		"checklist": {
+			"lastAuditDate": "2026-03-08",
+			"lastModifiedCommit": "",
+			"wcagCriteriaCovered": ["2.1.1", "4.1.2"]
+		},
+		"rating": {
+			"lastAuditDate": "2026-03-08",
+			"lastModifiedCommit": "",
+			"wcagCriteriaCovered": ["2.1.1", "4.1.2"]
+		},
+		"signature": {
+			"lastAuditDate": "2026-03-08",
+			"lastModifiedCommit": "",
+			"wcagCriteriaCovered": ["2.1.1"]
+		},
+		"assessment": {
+			"lastAuditDate": "2026-03-08",
+			"lastModifiedCommit": "",
+			"wcagCriteriaCovered": ["1.3.1", "2.1.1", "3.3.1", "3.3.2", "4.1.2"]
+		},
+		"variable": {
+			"lastAuditDate": "2026-03-08",
+			"lastModifiedCommit": "",
+			"wcagCriteriaCovered": []
+		},
+		"logic": { "lastAuditDate": "2026-03-08", "lastModifiedCommit": "", "wcagCriteriaCovered": [] },
+		"code": {
+			"lastAuditDate": "2026-03-29",
+			"lastModifiedCommit": "",
+			"wcagCriteriaCovered": ["1.3.1", "1.3.2", "1.4.3", "2.1.1", "2.1.2", "4.1.2"]
+		}
+	}
+}

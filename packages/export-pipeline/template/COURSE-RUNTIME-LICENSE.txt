@@ -1,0 +1,55 @@
+Praxity course delivery runtime permission
+Version 1.1, effective September 29, 2026
+Copyright (c) 2026 Praxity. All rights reserved except as granted below.
+
+Praxity grants authors and recipients permission to copy, execute and
+redistribute the Praxity-owned runtime supplied with this generated output,
+including through an LMS or commercial course-hosting service. Recipients may
+retain and run lawfully received outputs without an authoring licence,
+registration or continuing trial. These rights survive termination or expiry
+of the author's software permissions.
+
+This permission covers only the runtime required to deliver this output.
+It does not permit reconstructing or supplying an authoring, export or
+optimization service, or distributing a compiler or packager as delivery
+runtime. Preserve this notice and required third-party notices. Dependencies,
+fonts, artwork and other separately licensed material retain their own terms.
+
+Praxity claims no ownership of user projects or generated content. This notice
+does not impose authoring terms on that content or on recipients exercising
+this delivery permission.
+
+To the extent permitted by law, the runtime is provided as is, without
+warranty. Praxity is not liable for damages arising from its use. Nothing here
+excludes rights or liability that cannot legally be excluded.
+
+Questions: hello@arielharlap.com.
+
+Permission relative aux composants d'exécution des cours Praxity
+Version 1.1, en vigueur le 29 septembre 2026
+Droit d'auteur (c) 2026 Praxity. Tous droits réservés sauf ceux accordés ici.
+
+Praxity autorise les auteurs et destinataires à copier, exécuter et
+redistribuer les composants d'exécution appartenant à Praxity et fournis avec
+ce résultat, y compris par un LMS ou un service commercial d'hébergement de
+cours. Les destinataires peuvent conserver et exécuter les résultats reçus
+légalement sans licence de création, inscription ni essai en cours. Ces droits
+survivent à la résiliation ou à l'expiration des permissions de l'auteur.
+
+Cette permission couvre uniquement les composants nécessaires à la diffusion
+de ce résultat. Elle n'autorise pas la reconstitution ou la fourniture d'un
+service de création, d'exportation ou d'optimisation, ni la distribution d'un
+compilateur ou d'un outil d'empaquetage comme composant de diffusion. Conservez
+cet avis et les avis tiers requis. Les dépendances, polices, illustrations et
+autres éléments sous licence distincte conservent leurs propres conditions.
+
+Praxity ne revendique aucun droit de propriété sur les projets ou contenus
+générés des utilisateurs. Cet avis n'impose pas de conditions de création à ce
+contenu ou aux destinataires qui exercent cette permission de diffusion.
+
+Dans la mesure permise par la loi, les composants sont fournis en l'état, sans
+garantie. Praxity n'est pas responsable des dommages découlant de leur
+utilisation. Rien ici n'exclut les droits ou responsabilités que la loi
+interdit d'exclure.
+
+Questions : hello@arielharlap.com.

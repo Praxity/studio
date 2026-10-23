@@ -1,0 +1,227 @@
+/* Baseline and enhanced sheets share the published presentation. */
+.praxity-retrieval-sheet {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+.praxity-retrieval-sheet :is(p, li) {
+	text-wrap: pretty;
+}
+
+.praxity-retrieval-sheet[data-retrieval-sheet] > * + :is(p, div),
+.praxity-retrieval-sheet [data-retrieval-side] > * + * {
+	margin-block-start: var(--space-4);
+}
+
+.praxity-retrieval-sheet > [data-retrieval-side] {
+	margin-block-start: var(--space-8);
+}
+
+.praxity-retrieval-sheet-secondary {
+	color: var(--praxity-color-text-muted);
+	font-size: var(--type-small);
+}
+
+.praxity-retrieval-sheet-date-line {
+	display: inline-block;
+	width: 10ch;
+	max-width: 100%;
+	border-bottom: 1px solid currentColor;
+}
+
+.praxity-retrieval-sheet ol {
+	padding-inline-start: 1.75em;
+	margin-block-end: 0;
+	list-style: decimal outside;
+}
+
+.praxity-retrieval-sheet-space {
+	height: var(--space-8);
+	border-block-end: 1px solid var(--praxity-color-border);
+}
+
+@media print {
+	.praxity-retrieval-sheet [data-retrieval-no-date],
+	.praxity-retrieval-sheet [data-retrieval-print-hint] {
+		display: none;
+	}
+
+	.praxity-retrieval-sheet li {
+		break-inside: avoid;
+	}
+
+	.praxity-retrieval-sheet [data-retrieval-side="back"] {
+		break-inside: avoid;
+	}
+	/* Printed sides have no tab chrome needing the shared panel padding. */
+	.praxity-retrieval-sheet [data-retrieval-side] {
+		padding: 0;
+	}
+
+	/* One 0.75 pt writing rule per question, including ordinary course print. */
+	.praxity-retrieval-sheet-space {
+		/* 64 px is about 17 mm, enough for two handwriting lines. */
+		height: var(--space-16);
+		border-block-end: 1px solid currentColor;
+		margin-block-start: 0;
+	}
+	/* Spend the front page on writing room rather than paragraph/container gaps. */
+	.praxity-retrieval-sheet[data-retrieval-sheet] > :is(h1, h2, h3, h4, h5, h6, p) {
+		margin-block: 0 var(--space-2);
+	}
+	.praxity-retrieval-sheet [data-retrieval-side="front"] li p {
+		margin-block: 0;
+	}
+	.praxity-retrieval-sheet [data-retrieval-side="front"] li + li {
+		margin-block-start: var(--space-1);
+	}
+}
+
+.praxity-retrieval-sheet li + li {
+	margin-block-start: var(--space-4);
+}
+
+.praxity-retrieval-sheet fieldset {
+	border: 0;
+	padding: 0;
+	margin: 0;
+	min-inline-size: 0;
+}
+
+.praxity-retrieval-sheet legend {
+	font-weight: var(--weight-strong);
+	margin-block-end: var(--space-2);
+}
+
+.praxity-retrieval-sheet-choices {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-2);
+}
+
+.praxity-retrieval-sheet-custom {
+	margin-block-start: var(--space-4);
+}
+
+.praxity-retrieval-sheet-custom label {
+	display: block;
+}
+
+.praxity-retrieval-sheet-custom input {
+	font: inherit;
+	color: var(--ink);
+	background: var(--praxity-color-background);
+	border: 1px solid var(--praxity-color-activity-border);
+	border-radius: var(--radius-control);
+	padding: var(--space-2);
+	min-block-size: var(--target-size);
+	max-inline-size: 100%;
+}
+
+.praxity-retrieval-sheet :is(input, button):focus-visible {
+	outline: var(--focus-width) solid var(--praxity-color-focus);
+	outline-offset: var(--focus-offset);
+}
+
+.praxity-retrieval-sheet .praxity-tabs-list {
+	flex-wrap: wrap;
+}
+
+.praxity-retrieval-sheet .praxity-tabs-tab[role="tab"] {
+	white-space: normal;
+}
+
+@media (max-width: 400px) {
+	.praxity-retrieval-sheet-choices {
+		flex-direction: column;
+	}
+	.praxity-retrieval-sheet-custom input {
+		inline-size: 100%;
+		box-sizing: border-box;
+	}
+}
+
+@media print {
+	.praxity-retrieval-sheet
+		:is([data-retrieval-controls], .praxity-tabs-list, button, [role="status"]),
+	.praxity-retrieval-sheet[data-retrieval-enhanced] > .praxity-retrieval-sheet-secondary {
+		display: none !important;
+	}
+	.praxity-retrieval-sheet [data-retrieval-side][hidden] {
+		display: block !important;
+	}
+	/* Keep the path in the document. A hidden container must never hide the sheet. */
+	html[data-praxity-retrieval-print]
+		[data-praxity-print-path]
+		> :not([data-praxity-print-path], [data-praxity-print-selected]) {
+		display: none !important;
+	}
+	html[data-praxity-retrieval-print][data-praxity-print-path],
+	html[data-praxity-retrieval-print] :is([data-praxity-print-path], [data-praxity-print-selected]) {
+		display: block !important;
+		position: static !important;
+		inset: auto !important;
+		float: none !important;
+		width: auto !important;
+		min-width: 0 !important;
+		max-width: none !important;
+		height: auto !important;
+		min-height: 0 !important;
+		max-height: none !important;
+		overflow: visible !important;
+		clip: auto !important;
+		clip-path: none !important;
+		transform: none !important;
+		perspective: none !important;
+		visibility: visible !important;
+		opacity: 1 !important;
+		contain: none !important;
+		content-visibility: visible !important;
+		columns: auto !important;
+		margin: 0 !important;
+		padding: 0 !important;
+		border: 0 !important;
+		box-shadow: none !important;
+		background: transparent !important;
+		break-before: auto !important;
+		break-after: auto !important;
+		break-inside: auto !important;
+	}
+	html[data-praxity-retrieval-print] [data-praxity-print-path]::before,
+	html[data-praxity-retrieval-print] [data-praxity-print-path]::after {
+		display: none !important;
+	}
+	/* Closed native details use an internal content-visibility boundary in Chromium. */
+	html[data-praxity-retrieval-print] details[data-praxity-print-path]::details-content {
+		content-visibility: visible !important;
+		display: block !important;
+	}
+	/* A sheet inside the chosen sheet is a separate instance. */
+	html[data-praxity-retrieval-print] [data-praxity-print-selected] [data-retrieval-sheet] {
+		display: none !important;
+	}
+	html[data-praxity-retrieval-print]
+		[data-praxity-print-selected]
+		:is(.praxity-tabs-static, [data-retrieval-side], ol) {
+		display: block !important;
+		height: auto !important;
+		max-height: none !important;
+		overflow: visible !important;
+		break-inside: auto;
+	}
+	html[data-praxity-retrieval-print] [data-praxity-print-selected] li {
+		display: list-item !important;
+		break-inside: avoid;
+	}
+	html[data-praxity-retrieval-print] [data-praxity-print-selected] [data-retrieval-side="back"] {
+		break-before: page;
+	}
+}
+
+.praxity-retrieval-sheet > .praxity-button {
+	margin-block-start: var(--space-6);
+}
+.praxity-retrieval-sheet > .praxity-button:disabled {
+	opacity: 0.55;
+	cursor: default;
+}

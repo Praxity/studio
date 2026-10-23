@@ -1,0 +1,179 @@
+{
+	"$schema": "./resources.schema.json",
+	"canonicalPage": "https://www.adlnet.gov/past-projects/scorm/#scorm-versions-and-resources",
+	"lastVerified": "2026-05-12",
+	"assetRepository": {
+		"tag": "scorm-adl-2026-05-12",
+		"commit": "c3b59d03269209e4f580fcefa75686216354c2ff"
+	},
+	"resources": [
+		{
+			"id": "scorm2004-4ed-technical-specification",
+			"scormVersion": "2004-4th",
+			"category": "specification",
+			"title": "SCORM 2004 4th Edition Technical Specification",
+			"sourceLabel": "Technical Specification (4th Ed.)",
+			"downloadUrl": "https://www.adlnet.gov/assets/uploads/SCORM_2004_4ED_v1_1_Doc_Suite.zip",
+			"status": "ready",
+			"localFilename": "SCORM_2004_4ED_v1_1_Doc_Suite.zip",
+			"sizeBytes": 5616762,
+			"sha256": "07c91d596cf63b3b4eb951d94eeb8d9ad92e41ef2535c4254d0f27517b58dfc3"
+		},
+		{
+			"id": "scorm2004-4ed-testing-requirements",
+			"scormVersion": "2004-4th",
+			"category": "testing-requirements",
+			"title": "SCORM 2004 4th Edition Testing Requirements / Conformance Requirements Version 1.1",
+			"sourceLabel": "2004 4th Edition Conformance Requirements Version 1.1",
+			"downloadUrl": "https://www.adlnet.gov/assets/uploads/SCORM_2004_4ED_v1_1_TR_20090814.pdf",
+			"status": "ready",
+			"localFilename": "SCORM_2004_4ED_v1_1_TR_20090814.pdf",
+			"sizeBytes": 2192915,
+			"sha256": "17e55c59efda3daca825f904d0bc17a3752108418081a45577375e280e3f4a16"
+		},
+		{
+			"id": "scorm2004-4ed-conformance-test-suite",
+			"scormVersion": "2004-4th",
+			"category": "conformance-suite",
+			"title": "SCORM 2004 4th Edition Conformance Test Suite 1.1.1",
+			"sourceLabel": "Conformance Test Suite 1.1.1",
+			"downloadUrl": "https://www.adlnet.gov/assets/uploads/SCORM.2004.4ED.TS_.v1.1.1.zip",
+			"status": "ready",
+			"localFilename": "SCORM.2004.4ED.TS_.v1.1.1.zip",
+			"sizeBytes": 10370540,
+			"sha256": "fc6312dd41d3c3310e127a358e04f690ab25b1dd9f12241ba31c07d0c183f953"
+		},
+		{
+			"id": "scorm2004-4ed-lms-test-packages",
+			"scormVersion": "2004-4th",
+			"category": "lms-test-packages",
+			"title": "SCORM 2004 4th Edition LMS Test Packages",
+			"sourceLabel": "LMS Test Packages (4th Ed.)",
+			"downloadUrl": "https://www.adlnet.gov/assets/uploads/SCORM.2004.4ED.TS_.v1.1.1.LMS_.Packages1.zip",
+			"status": "ready",
+			"localFilename": "SCORM.2004.4ED.TS_.v1.1.1.LMS_.Packages1.zip",
+			"sizeBytes": 11605899,
+			"sha256": "7703f63081ebc39e606637274fcac2a861b76a381ce4c01f1bf594529903f408"
+		},
+		{
+			"id": "scorm2004-4ed-sample-rte",
+			"scormVersion": "2004-4th",
+			"category": "sample-rte",
+			"title": "SCORM 2004 4th Edition Sample Run-time Environment 1.1.1",
+			"sourceLabel": "Sample Run-time Environment 1.1.1",
+			"downloadUrl": "https://www.adlnet.gov/assets/uploads/SCORM.2004.4ED.SRTE_.v1.1.1.zip",
+			"status": "ready",
+			"localFilename": "SCORM.2004.4ED.SRTE_.v1.1.1.zip",
+			"sizeBytes": 34690809,
+			"sha256": "540e115bfd304a65003423c197af8fb7f13085c5644bd6f560f80313ad1b9a8d"
+		},
+		{
+			"id": "scorm2004-4ed-example-bookmarking",
+			"scormVersion": "2004-4th",
+			"category": "content-example",
+			"title": "SCORM 2004 4th Edition Bookmarking Content Example",
+			"sourceLabel": "Bookmarking",
+			"downloadUrl": "https://www.adlnet.gov/assets/uploads/SCORM2004.4.BKME_.1.0.zip",
+			"status": "ready",
+			"localFilename": "SCORM2004.4.BKME_.1.0.zip",
+			"sizeBytes": 1539071,
+			"sha256": "8a9f18498187a9d0f26fc911c5c39ebec33abb8d314c0439cc47d9d9b8c3a96c"
+		},
+		{
+			"id": "scorm2004-4ed-example-data-model",
+			"scormVersion": "2004-4th",
+			"category": "content-example",
+			"title": "SCORM 2004 4th Edition Data Model Content Example",
+			"sourceLabel": "Data Model",
+			"downloadUrl": "https://www.adlnet.gov/assets/uploads/SCORM2004.4.DMCE_.1.0.zip",
+			"status": "ready",
+			"localFilename": "SCORM2004.4.DMCE_.1.0.zip",
+			"sizeBytes": 2705961,
+			"sha256": "9a0164aa5915617e8362a375adaeb7da12006aff8ef3b0e60d33bd6d1ba7b7c0"
+		},
+		{
+			"id": "scorm2004-4ed-example-manifest-basics",
+			"scormVersion": "2004-4th",
+			"category": "content-example",
+			"title": "SCORM 2004 4th Edition Manifest Basics Content Example",
+			"sourceLabel": "Manifest Basics",
+			"downloadUrl": "https://www.adlnet.gov/assets/uploads/SCORM2004.4.MBCE_.1.0.zip",
+			"status": "ready",
+			"localFilename": "SCORM2004.4.MBCE_.1.0.zip",
+			"sizeBytes": 520606,
+			"sha256": "4b43aeead68b8035f6f59937c0988bf5d1bdbc3a44672e9653fb87328e720b68"
+		},
+		{
+			"id": "scorm2004-4ed-example-sequencing-essentials",
+			"scormVersion": "2004-4th",
+			"category": "content-example",
+			"title": "SCORM 2004 4th Edition Sequencing Essentials Content Example",
+			"sourceLabel": "Sequencing Essentials",
+			"downloadUrl": "https://www.adlnet.gov/assets/uploads/SCORM2004.4.MSCE_.1.0.zip",
+			"status": "ready",
+			"localFilename": "SCORM2004.4.MSCE_.1.0.zip",
+			"sizeBytes": 2477623,
+			"sha256": "d921e63501e0c635d2966ee8b853eb22a56e9fd4b7358f6ada32292b40fcfba2"
+		},
+		{
+			"id": "scorm12-technical-specification",
+			"scormVersion": "1.2",
+			"category": "specification",
+			"title": "SCORM 1.2 Technical Specification",
+			"sourceLabel": "Technical Specification (Version 1.2)",
+			"downloadUrl": "https://www.adlnet.gov/assets/uploads/SCORM_1_2_pdf.zip",
+			"status": "ready",
+			"localFilename": "SCORM_1_2_pdf.zip",
+			"sizeBytes": 2312729,
+			"sha256": "039673c87c3c3dc3de9adae1f4ac1fd7168d4d3573ae3d98191023e2cc469637"
+		},
+		{
+			"id": "scorm12-conformance-test-suite",
+			"scormVersion": "1.2",
+			"category": "conformance-suite",
+			"title": "SCORM 1.2 Conformance Test Suite 1.2.7",
+			"sourceLabel": "Conformance Test Suite 1.2.7",
+			"downloadUrl": "https://www.adlnet.gov/assets/uploads/SCORM1_2_TestSuite1_2_7ST.zip",
+			"status": "ready",
+			"localFilename": "SCORM1_2_TestSuite1_2_7ST.zip",
+			"sizeBytes": 6814005,
+			"sha256": "98d998fd33a5ee1d11df07eaf01da847c2e405ff58b5223dfdc0d5d71f9ca516"
+		},
+		{
+			"id": "scorm12-sample-rte",
+			"scormVersion": "1.2",
+			"category": "sample-rte",
+			"title": "SCORM 1.2 Sample Run-time Environment 1.2.2",
+			"sourceLabel": "Sample Run-time Environment 1.2.2",
+			"downloadUrl": "https://www.adlnet.gov/assets/uploads/SCORM1_2_SampleRTE1_2_2.zip",
+			"status": "ready",
+			"localFilename": "SCORM1_2_SampleRTE1_2_2.zip",
+			"sizeBytes": 14609809,
+			"sha256": "e7c13a4419eec46cd49355ecbaa889b21fdde0e06dee065b2ddbcee4747e0d55"
+		},
+		{
+			"id": "scorm12-api-wrappers",
+			"scormVersion": "1.2",
+			"category": "api-wrapper",
+			"title": "Official ADL SCORM API Wrappers",
+			"sourceLabel": "Official ADL SCORM API Wrappers",
+			"downloadUrl": "https://www.adlnet.gov/assets/uploads/apiwrappers.zip",
+			"status": "ready",
+			"localFilename": "apiwrappers.zip",
+			"sizeBytes": 9303,
+			"sha256": "b945c7d86e35ad9df169cbf55832242e31a860c7d89a2ee0648b5c6f51618d9e"
+		},
+		{
+			"id": "scorm12-content-package-examples",
+			"scormVersion": "1.2",
+			"category": "content-example",
+			"title": "SCORM 1.2 Content Package Examples",
+			"sourceLabel": "SCORM 1.2 Content Package Examples",
+			"downloadUrl": "https://www.adlnet.gov/assets/uploads/SCORMContentPackageExamples.zip",
+			"status": "ready",
+			"localFilename": "SCORMContentPackageExamples.zip",
+			"sizeBytes": 916188,
+			"sha256": "8b1377a47ca612821999193114918cef4534ef42d980a67c67156fc24b2ea515"
+		}
+	]
+}

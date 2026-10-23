@@ -1,0 +1,391 @@
+{
+	"vectors": [
+		{
+			"name": "text",
+			"html": "Hello\t world",
+			"canonical": ["Hello world"],
+			"hash": "sha256:02d4c0de8582e9d7c54749e4e7acbbe8da461dfe5cd630c87ff3a3e77a34dd54"
+		},
+		{
+			"name": "emphasis",
+			"html": "<b>Hello</b><i> world</i>",
+			"canonical": ["Hello world"],
+			"hash": "sha256:02d4c0de8582e9d7c54749e4e7acbbe8da461dfe5cd630c87ff3a3e77a34dd54"
+		},
+		{
+			"name": "link-first",
+			"html": "<a href=\"/go\">Stop</a> Go",
+			"canonical": [["http://www.w3.org/1999/xhtml", "a", [["href", "/go"]], ["Stop"]], " Go"],
+			"hash": "sha256:8fd7d8cb5f69f7d45df5259ba34cabc9c36f52e8d463b9f6b81296cb6d94329b"
+		},
+		{
+			"name": "link-last",
+			"html": "Stop <a href=\"/go\">Go</a>",
+			"canonical": ["Stop ", ["http://www.w3.org/1999/xhtml", "a", [["href", "/go"]], ["Go"]]],
+			"hash": "sha256:8967f38b7496eacd568002302acb95991bfb689508db13e4035af2c6647d0a73"
+		},
+		{
+			"name": "attributes",
+			"html": "<span lang=\"fr\" aria-hidden=\"true\" class=\"x\" style=\"color:red\">mot</span>",
+			"canonical": [
+				["http://www.w3.org/1999/xhtml", "span", [["aria-hidden", "true"], ["lang", "fr"]], ["mot"]]
+			],
+			"hash": "sha256:9eb8f33f073c08abf7ffa612bd4b08579b79068b83182bb19197bf03bb8c9f18"
+		},
+		{
+			"name": "code",
+			"html": "<pre><code>a  b\n c</code></pre>",
+			"canonical": [
+				[
+					"http://www.w3.org/1999/xhtml",
+					"pre",
+					[],
+					[["http://www.w3.org/1999/xhtml", "code", [], ["a  b\n c"]]]
+				]
+			],
+			"hash": "sha256:05bd3bddfc5790a89c2e4a8cda38ab0cd488bd7b4ea7083d9cce5522cbf8b1ed"
+		},
+		{
+			"name": "list",
+			"html": "<ol start=\"3\"><li>A</li><li>B</li></ol>",
+			"canonical": [
+				[
+					"http://www.w3.org/1999/xhtml",
+					"ol",
+					[["start", "3"]],
+					[
+						["http://www.w3.org/1999/xhtml", "li", [], ["A"]],
+						["http://www.w3.org/1999/xhtml", "li", [], ["B"]]
+					]
+				]
+			],
+			"hash": "sha256:33e09fe1588e98526685713069a3cdf1ae8636bdcefd450df3c855b1a64f7a98"
+		},
+		{
+			"name": "nested-list",
+			"html": "<ul><li>A<ol><li>B</li></ol></li></ul>",
+			"canonical": [
+				[
+					"http://www.w3.org/1999/xhtml",
+					"ul",
+					[],
+					[
+						[
+							"http://www.w3.org/1999/xhtml",
+							"li",
+							[],
+							[
+								"A",
+								[
+									"http://www.w3.org/1999/xhtml",
+									"ol",
+									[],
+									[["http://www.w3.org/1999/xhtml", "li", [], ["B"]]]
+								]
+							]
+						]
+					]
+				]
+			],
+			"hash": "sha256:f7bf29b86bc8f89bf8d4ebe531049bbfe92674c8bc85dc09d4814bc8d3fed755"
+		},
+		{
+			"name": "media",
+			"html": "<video src=\"a.mp4\" controls><source src=\"b.mp4\" type=\"video/mp4\"></video>",
+			"canonical": [
+				[
+					"http://www.w3.org/1999/xhtml",
+					"video",
+					[["controls", ""], ["src", "a.mp4"]],
+					[
+						[
+							"http://www.w3.org/1999/xhtml",
+							"source",
+							[["src", "b.mp4"], ["type", "video/mp4"]],
+							[]
+						]
+					]
+				]
+			],
+			"hash": "sha256:f31bac0c44b80f4acea5e0be3b75a91bbc478f5ac525ee36a6c35e0e940b2a3e"
+		},
+		{
+			"name": "audio",
+			"html": "<audio src=\"a.mp3\"></audio>",
+			"canonical": [["http://www.w3.org/1999/xhtml", "audio", [["src", "a.mp3"]], []]],
+			"hash": "sha256:69d339970e7f8e9f4061536425a22e2820465f3d38b4beceefd1a7db54b68bc3"
+		},
+		{
+			"name": "image",
+			"html": "<img src=\"a.png\" alt=\"A\">",
+			"canonical": [["http://www.w3.org/1999/xhtml", "img", [["alt", "A"], ["src", "a.png"]], []]],
+			"hash": "sha256:15345bee78b90d5b0f43e2e348a911cae6b7ceffb36dc8d8a5152dce8a304545"
+		},
+		{
+			"name": "table",
+			"html": "<table><tbody><tr><td headers=\"h\">A</td></tr></tbody></table>",
+			"canonical": [
+				[
+					"http://www.w3.org/1999/xhtml",
+					"table",
+					[],
+					[
+						[
+							"http://www.w3.org/1999/xhtml",
+							"tbody",
+							[],
+							[
+								[
+									"http://www.w3.org/1999/xhtml",
+									"tr",
+									[],
+									[["http://www.w3.org/1999/xhtml", "td", [["headers", "h"]], ["A"]]]
+								]
+							]
+						]
+					]
+				]
+			],
+			"hash": "sha256:0b281f633af90416d7ca52f1c0ce99a2ffa6fa43a7c9e7bcc3dd80ee2c0a71c5"
+		},
+		{
+			"name": "math",
+			"html": "<math><mrow><mi>x</mi><mo>+</mo><mn>1</mn></mrow></math>",
+			"canonical": [
+				[
+					"http://www.w3.org/1998/Math/MathML",
+					"math",
+					[],
+					[
+						[
+							"http://www.w3.org/1998/Math/MathML",
+							"mrow",
+							[],
+							[
+								["http://www.w3.org/1998/Math/MathML", "mi", [], ["x"]],
+								["http://www.w3.org/1998/Math/MathML", "mo", [], ["+"]],
+								["http://www.w3.org/1998/Math/MathML", "mn", [], ["1"]]
+							]
+						]
+					]
+				]
+			],
+			"hash": "sha256:cf3fadfc0060c8f39f4fd20e41fbd0e30fc853a22c23f0b3d1e6ebf989e02318"
+		},
+		{
+			"name": "svg",
+			"html": "<svg viewBox=\"0 0 2 2\"><path d=\"M0 0L2 2\"></path></svg>",
+			"canonical": [
+				[
+					"http://www.w3.org/2000/svg",
+					"svg",
+					[["viewBox", "0 0 2 2"]],
+					[["http://www.w3.org/2000/svg", "path", [["d", "M0 0L2 2"]], []]]
+				]
+			],
+			"hash": "sha256:d47f694279ed2dfb9a1f9641f966a66ea42242cbb8a2181480f72b273176dc43"
+		},
+		{
+			"name": "sub",
+			"html": "H<sub>2</sub>O",
+			"canonical": ["H", ["http://www.w3.org/1999/xhtml", "sub", [], ["2"]], "O"],
+			"hash": "sha256:d0439d202aa32a4799781a71199438cd086f43f04bd32a66e43db50383573855"
+		},
+		{
+			"name": "sup",
+			"html": "x<sup>2</sup>",
+			"canonical": ["x", ["http://www.w3.org/1999/xhtml", "sup", [], ["2"]]],
+			"hash": "sha256:a082c5f0537694c15d03eee9c17545d136d18a239ddee39894172417e0cde90a"
+		},
+		{
+			"name": "strike",
+			"html": "<del>old</del><s>other</s>",
+			"canonical": [
+				["http://www.w3.org/1999/xhtml", "del", [], ["old"]],
+				["http://www.w3.org/1999/xhtml", "s", [], ["other"]]
+			],
+			"hash": "sha256:0a4b19b5493fd8143759b57963110b39ce8259446be5738094384d977bb22f6e"
+		},
+		{
+			"name": "authored-footnote-class",
+			"html": "<sup class=\"praxity-footnote-ref\">7</sup>",
+			"canonical": [["http://www.w3.org/1999/xhtml", "sup", [], ["7"]]],
+			"hash": "sha256:c925d943d907ae960c575316269fc95c606e027f95644920774822f59861745a"
+		},
+		{
+			"name": "authored-doodle-data",
+			"html": "<span class=\"praxity-doodle\" data-doodle=\"circle\">word</span>",
+			"canonical": [
+				["http://www.w3.org/1999/xhtml", "span", [["data-doodle", "circle"]], ["word"]]
+			],
+			"hash": "sha256:e12bd9210e5324f1e69cfdd581847118f09597ce3be7874e82bf2d80a6f3a7c9"
+		},
+		{
+			"name": "unicode",
+			"html": "café 😀",
+			"canonical": ["café 😀"],
+			"hash": "sha256:a22194403f0117ef55e96c0d99b7976ae8199b6b3861d6db1396622b1725bbe6"
+		},
+		{
+			"name": "textarea",
+			"html": "<textarea>a  b\n c</textarea>",
+			"canonical": [["http://www.w3.org/1999/xhtml", "textarea", [], ["a  b\n c"]]],
+			"hash": "sha256:6ccc5c34dd0342962acbd8dfded9b45fe9955857d9da8eb2e0725abcf57f0576"
+		},
+		{
+			"name": "block-edges",
+			"html": " \n<p>\t Pick \n</p>\r ",
+			"canonical": [["http://www.w3.org/1999/xhtml", "p", [], ["Pick"]]],
+			"hash": "sha256:1dcdf442b6a5e78e9b4ef16988c1483ff40e60f2875b59f5eb7d111f5f6818c3"
+		},
+		{
+			"name": "inline-edges",
+			"html": "<a href=\"/go\"> one </a> two",
+			"canonical": [["http://www.w3.org/1999/xhtml", "a", [["href", "/go"]], [" one "]], " two"],
+			"hash": "sha256:ada22bf2c0a28ba4d1173e1650398d84cfdf3d0943548112021fdc51441b36ae"
+		},
+		{
+			"name": "code-edges",
+			"html": "<pre>  x \n</pre>",
+			"canonical": [["http://www.w3.org/1999/xhtml", "pre", [], ["  x \n"]]],
+			"hash": "sha256:b41ec8376d8180bc09e8267fb6fa42a0d1de0a4454e5f89c9b67cd288be4e904"
+		}
+	],
+	"inline": [
+		{
+			"source": "Plain",
+			"interactive": "Plain",
+			"label": "Plain",
+			"material": "Plain",
+			"hash": "sha256:d32dd450136d73bbf72ad90fb3ec61cbbd5f8c09245053bb0fcc59a3b17fda8c",
+			"canonical": ["Plain"],
+			"signature": "sha256:a1a4fa8b2cd4e77ccf4720a0a9be6349e2309807ae03e1222d0f2fd4dc9cd35b"
+		},
+		{
+			"source": "**Bold** *word*",
+			"interactive": "<strong>Bold</strong> <em>word</em>",
+			"label": "<strong>Bold</strong> <em>word</em>",
+			"material": "<strong>Bold</strong> <em>word</em>",
+			"hash": "sha256:bc3687d3e18ef1491d86321f6e5052ae0de80862c4b0b32c76dc399d80312244",
+			"canonical": ["Bold word"],
+			"signature": "sha256:bb1b8bd17a47d0065269122548f41bf741b0536eeb5d895d326b5b0ba0dda817"
+		},
+		{
+			"source": "[word]{Definition}",
+			"interactive": "<span class=\"inline-tooltip-trigger\" data-tooltip-content=\"Definition\">word</span>",
+			"label": "word (Definition)",
+			"material": "word",
+			"hash": "sha256:b6384bafc7652e997f5aeb7d8ebe57990a17f2f834d1c1dfb8d7982056e56faa",
+			"canonical": ["word"],
+			"signature": "sha256:6c7002883647e73b1fb74fb4d703a33946af766eb29c8b4bf004b70c57c1c666"
+		},
+		{
+			"source": "==word==",
+			"interactive": "<mark>word</mark>",
+			"label": "<mark>word</mark>",
+			"material": "word",
+			"hash": "sha256:b6384bafc7652e997f5aeb7d8ebe57990a17f2f834d1c1dfb8d7982056e56faa",
+			"canonical": ["word"],
+			"signature": "sha256:6c7002883647e73b1fb74fb4d703a33946af766eb29c8b4bf004b70c57c1c666"
+		},
+		{
+			"source": "@circle.red{word}",
+			"interactive": "<span class=\"praxity-doodle\" data-doodle=\"circle\" data-doodle-mods=\"red\">word</span>",
+			"label": "<span class=\"praxity-doodle\" data-doodle=\"circle\" data-doodle-mods=\"red\">word</span>",
+			"material": "word",
+			"hash": "sha256:b6384bafc7652e997f5aeb7d8ebe57990a17f2f834d1c1dfb8d7982056e56faa",
+			"canonical": ["word"],
+			"signature": "sha256:6c7002883647e73b1fb74fb4d703a33946af766eb29c8b4bf004b70c57c1c666"
+		},
+		{
+			"source": "[==word==]{Definition}",
+			"interactive": "<span class=\"inline-tooltip-trigger\" data-tooltip-content=\"Definition\"><mark>word</mark></span>",
+			"label": "<mark>word</mark> (Definition)",
+			"material": "word",
+			"hash": "sha256:b6384bafc7652e997f5aeb7d8ebe57990a17f2f834d1c1dfb8d7982056e56faa",
+			"canonical": ["word"],
+			"signature": "sha256:6c7002883647e73b1fb74fb4d703a33946af766eb29c8b4bf004b70c57c1c666"
+		},
+		{
+			"source": "~~word~~",
+			"interactive": "<del>word</del>",
+			"label": "<del>word</del>",
+			"material": "<del>word</del>",
+			"hash": "sha256:08380ac74d749c21fbc34b0a537570461c1a7c61c7c0022216e29d08d8d4e8fd",
+			"canonical": [["http://www.w3.org/1999/xhtml", "del", [], ["word"]]],
+			"signature": "sha256:241f1dc741454fe0a1ccf41ae587cb79908e73eaa89c5e3a6d6b275ccbcf118d"
+		},
+		{
+			"source": "`[word]{literal}`",
+			"interactive": "<code>[word]{literal}</code>",
+			"label": "<code>[word]{literal}</code>",
+			"material": "<code>[word]{literal}</code>",
+			"hash": "sha256:4f73d7f6eb4731ad53ca37ed7cab07cbd699b7745abf6f2933ceb1b56589bcd7",
+			"canonical": [["http://www.w3.org/1999/xhtml", "code", [], ["[word]{literal}"]]],
+			"signature": "sha256:5ebb63d56e5c4f214e0972c79a1d46ca5f33c7786dccb9030f29a9a3ccc0da7f"
+		}
+	],
+	"footnote": {
+		"stem": {
+			"Yes": "sha256:09972dd2cc34b975a31b363ce22a43ec7809356f4cb729568d8798a6e79accb6",
+			"Y es": "sha256:bf139d4974017b142ce89050699847c7549abff4b2c101ae549ef6e0a77a5745",
+			"Pick one": "sha256:eb5b315f6b6c2f5f35b72c653a621fed5f4e5e5fec8fe89517c9005198c3fe23",
+			"Pick one.": "sha256:7f035ced851a5b217d79ed64972c47886d3c5ac90425445ae1110787482682e0"
+		},
+		"option": {
+			"Yes": "sha256:7ca3027328a02f5abd410bca916da30ef9fad61acbf8989058b72c7a9a403e07",
+			"Y es": "sha256:75988bb3803c548743ea6df07d9257ee33aae51463505da0e670fe857ace352a",
+			"Pick one": "sha256:f101b5087e2969c1e490cd65a8dbb0774cf4c35805e06bdb31414c075b8e21ef",
+			"Pick one.": "sha256:00a62e806d4c3d139c417868d21af434962e83fe4fd86f2f1d4ed21320186133"
+		}
+	},
+	"visibleOptionHash": "sha256:9420ecb732b5cbb6b40a41647d816a3bd85fb1f847b9aae88ecf9be0b8a64f5b",
+	"question": {
+		"data": {
+			"assessmentType": "choice",
+			"stem": "Pick",
+			"gradingMode": "exact",
+			"points": 100,
+			"required": true,
+			"feedback": {},
+			"response": {
+				"type": "choice",
+				"selectionMode": "single",
+				"options": [
+					{
+						"id": "a",
+						"label": "Yes",
+						"isCorrect": true
+					},
+					{
+						"id": "b",
+						"label": "No",
+						"isCorrect": false
+					}
+				]
+			}
+		},
+		"question": [
+			[["Pick"], []],
+			[],
+			"exact",
+			100,
+			1,
+			true,
+			"single",
+			false,
+			"sha256:0eb5b8d6f81bc677da8a08567cc4fa9a06a57e9ec8da85ed73a7f62727996002"
+		],
+		"options": [["a", ["Yes"], null, true], ["b", ["No"], null, false]],
+		"payload": [
+			"choice-material",
+			3,
+			"sha256:3840945b47f799e0d113ca24555afa3a81bafae784c217deb0a5578489269433",
+			[
+				"sha256:61aeba2abbf47ea53222427727e8d6ba8b9e3cd4fda295082362ae369b763ecc",
+				"sha256:6a3f9563cbba984ddeaf82ab5d4cd01270e0bf6ec883624afb88e11edba9ad77"
+			]
+		],
+		"hash": "sha256:7ca3027328a02f5abd410bca916da30ef9fad61acbf8989058b72c7a9a403e07"
+	}
+}

@@ -1,0 +1,1776 @@
+[
+	{
+		"name": "text: en markup",
+		"block": {
+			"id": "pilot",
+			"type": "text",
+			"data": {
+				"content": "<p>Hello <em>world</em> &amp; friends.</p>"
+			},
+			"locale": "en"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-text praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"text\" data-focus-row><div class=\"praxity-text\"><p>Hello <em>world</em> &amp; friends.</p></div></div>"
+	},
+	{
+		"name": "text: en missing fields",
+		"block": {
+			"id": "pilot",
+			"type": "text",
+			"data": {},
+			"locale": "en"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-text praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"text\" data-focus-row><div class=\"praxity-text\"></div></div>"
+	},
+	{
+		"name": "text: en empty content",
+		"block": {
+			"id": "pilot",
+			"type": "text",
+			"data": {
+				"content": ""
+			},
+			"locale": "en"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-text praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"text\" data-focus-row><div class=\"praxity-text\"></div></div>"
+	},
+	{
+		"name": "heading: en markup",
+		"block": {
+			"id": "pilot",
+			"type": "heading",
+			"data": {
+				"content": "<p>Hello <em>world</em> &amp; friends.</p>"
+			},
+			"locale": "en"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-heading praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"heading\" data-heading-level=\"2\" data-focus-row data-focus-exempt=\"heading\"><h2 style=\"font-size:var(--praxity-type-h2);font-family:var(--praxity-font-family-h2, var(--praxity-font-heading));font-weight:var(--praxity-font-weight-h2, var(--praxity-font-weight-heading));font-style:var(--praxity-font-style-h2, var(--praxity-font-style-heading));line-height:var(--leading-heading);letter-spacing:normal\">Hello <em>world</em> &amp; friends.</h2></div>"
+	},
+	{
+		"name": "heading: en missing fields",
+		"block": {
+			"id": "pilot",
+			"type": "heading",
+			"data": {},
+			"locale": "en"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-heading praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"heading\" data-heading-level=\"2\" data-focus-row data-focus-exempt=\"heading\"><h2 style=\"font-size:var(--praxity-type-h2);font-family:var(--praxity-font-family-h2, var(--praxity-font-heading));font-weight:var(--praxity-font-weight-h2, var(--praxity-font-weight-heading));font-style:var(--praxity-font-style-h2, var(--praxity-font-style-heading));line-height:var(--leading-heading);letter-spacing:normal\"></h2></div>"
+	},
+	{
+		"name": "heading: en empty content",
+		"block": {
+			"id": "pilot",
+			"type": "heading",
+			"data": {
+				"content": ""
+			},
+			"locale": "en"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-heading praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"heading\" data-heading-level=\"2\" data-focus-row data-focus-exempt=\"heading\"><h2 style=\"font-size:var(--praxity-type-h2);font-family:var(--praxity-font-family-h2, var(--praxity-font-heading));font-weight:var(--praxity-font-weight-h2, var(--praxity-font-weight-heading));font-style:var(--praxity-font-style-h2, var(--praxity-font-style-heading));line-height:var(--leading-heading);letter-spacing:normal\"></h2></div>"
+	},
+	{
+		"name": "quote: en markup",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"content": "<p>Hello <em>world</em> &amp; friends.</p>"
+			},
+			"locale": "en"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-size=\"default\"><blockquote><p>Hello <em>world</em> &amp; friends.</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: en missing fields",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {},
+			"locale": "en"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-size=\"default\"><blockquote><p></p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: en empty content",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"content": ""
+			},
+			"locale": "en"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-size=\"default\"><blockquote><p></p></blockquote></figure></div>"
+	},
+	{
+		"name": "note: en markup",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"content": "<p>Hello <em>world</em> &amp; friends.</p>"
+			},
+			"locale": "en"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"note\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><strong class=\"praxity-note-label\">Note</strong> Hello <em>world</em> &amp; friends.</p></div></aside></div>"
+	},
+	{
+		"name": "note: en missing fields",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {},
+			"locale": "en"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"note\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><strong class=\"praxity-note-label\">Note</strong> </p></div></aside></div>"
+	},
+	{
+		"name": "note: en empty content",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"content": ""
+			},
+			"locale": "en"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"note\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><strong class=\"praxity-note-label\">Note</strong> </p></div></aside></div>"
+	},
+	{
+		"name": "divider: en markup",
+		"block": {
+			"id": "pilot",
+			"type": "divider",
+			"data": {
+				"content": "<p>Hello <em>world</em> &amp; friends.</p>"
+			},
+			"locale": "en"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-divider praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"divider\" data-focus-row><hr class=\"praxity-divider praxity-divider-line\" /></div>"
+	},
+	{
+		"name": "divider: en missing fields",
+		"block": {
+			"id": "pilot",
+			"type": "divider",
+			"data": {},
+			"locale": "en"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-divider praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"divider\" data-focus-row><hr class=\"praxity-divider praxity-divider-line\" /></div>"
+	},
+	{
+		"name": "divider: en empty content",
+		"block": {
+			"id": "pilot",
+			"type": "divider",
+			"data": {
+				"content": ""
+			},
+			"locale": "en"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-divider praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"divider\" data-focus-row><hr class=\"praxity-divider praxity-divider-line\" /></div>"
+	},
+	{
+		"name": "text: fr markup",
+		"block": {
+			"id": "pilot",
+			"type": "text",
+			"data": {
+				"content": "<p>Bonjour <em>équipe</em> &amp; collègues.</p>"
+			},
+			"locale": "fr"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-text praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"text\" data-focus-row><div class=\"praxity-text\"><p>Bonjour <em>équipe</em> &amp; collègues.</p></div></div>"
+	},
+	{
+		"name": "text: fr missing fields",
+		"block": {
+			"id": "pilot",
+			"type": "text",
+			"data": {},
+			"locale": "fr"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-text praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"text\" data-focus-row><div class=\"praxity-text\"></div></div>"
+	},
+	{
+		"name": "text: fr empty content",
+		"block": {
+			"id": "pilot",
+			"type": "text",
+			"data": {
+				"content": ""
+			},
+			"locale": "fr"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-text praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"text\" data-focus-row><div class=\"praxity-text\"></div></div>"
+	},
+	{
+		"name": "heading: fr markup",
+		"block": {
+			"id": "pilot",
+			"type": "heading",
+			"data": {
+				"content": "<p>Bonjour <em>équipe</em> &amp; collègues.</p>"
+			},
+			"locale": "fr"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-heading praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"heading\" data-heading-level=\"2\" data-focus-row data-focus-exempt=\"heading\"><h2 style=\"font-size:var(--praxity-type-h2);font-family:var(--praxity-font-family-h2, var(--praxity-font-heading));font-weight:var(--praxity-font-weight-h2, var(--praxity-font-weight-heading));font-style:var(--praxity-font-style-h2, var(--praxity-font-style-heading));line-height:var(--leading-heading);letter-spacing:normal\">Bonjour <em>équipe</em> &amp; collègues.</h2></div>"
+	},
+	{
+		"name": "heading: fr missing fields",
+		"block": {
+			"id": "pilot",
+			"type": "heading",
+			"data": {},
+			"locale": "fr"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-heading praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"heading\" data-heading-level=\"2\" data-focus-row data-focus-exempt=\"heading\"><h2 style=\"font-size:var(--praxity-type-h2);font-family:var(--praxity-font-family-h2, var(--praxity-font-heading));font-weight:var(--praxity-font-weight-h2, var(--praxity-font-weight-heading));font-style:var(--praxity-font-style-h2, var(--praxity-font-style-heading));line-height:var(--leading-heading);letter-spacing:normal\"></h2></div>"
+	},
+	{
+		"name": "heading: fr empty content",
+		"block": {
+			"id": "pilot",
+			"type": "heading",
+			"data": {
+				"content": ""
+			},
+			"locale": "fr"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-heading praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"heading\" data-heading-level=\"2\" data-focus-row data-focus-exempt=\"heading\"><h2 style=\"font-size:var(--praxity-type-h2);font-family:var(--praxity-font-family-h2, var(--praxity-font-heading));font-weight:var(--praxity-font-weight-h2, var(--praxity-font-weight-heading));font-style:var(--praxity-font-style-h2, var(--praxity-font-style-heading));line-height:var(--leading-heading);letter-spacing:normal\"></h2></div>"
+	},
+	{
+		"name": "quote: fr markup",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"content": "<p>Bonjour <em>équipe</em> &amp; collègues.</p>"
+			},
+			"locale": "fr"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-size=\"default\"><blockquote><p>Bonjour <em>équipe</em> &amp; collègues.</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: fr missing fields",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {},
+			"locale": "fr"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-size=\"default\"><blockquote><p></p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: fr empty content",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"content": ""
+			},
+			"locale": "fr"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-size=\"default\"><blockquote><p></p></blockquote></figure></div>"
+	},
+	{
+		"name": "note: fr markup",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"content": "<p>Bonjour <em>équipe</em> &amp; collègues.</p>"
+			},
+			"locale": "fr"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"note\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><strong class=\"praxity-note-label\">Note</strong> Bonjour <em>équipe</em> &amp; collègues.</p></div></aside></div>"
+	},
+	{
+		"name": "note: fr missing fields",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {},
+			"locale": "fr"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"note\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><strong class=\"praxity-note-label\">Note</strong> </p></div></aside></div>"
+	},
+	{
+		"name": "note: fr empty content",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"content": ""
+			},
+			"locale": "fr"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"note\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><strong class=\"praxity-note-label\">Note</strong> </p></div></aside></div>"
+	},
+	{
+		"name": "divider: fr markup",
+		"block": {
+			"id": "pilot",
+			"type": "divider",
+			"data": {
+				"content": "<p>Bonjour <em>équipe</em> &amp; collègues.</p>"
+			},
+			"locale": "fr"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-divider praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"divider\" data-focus-row><hr class=\"praxity-divider praxity-divider-line\" /></div>"
+	},
+	{
+		"name": "divider: fr missing fields",
+		"block": {
+			"id": "pilot",
+			"type": "divider",
+			"data": {},
+			"locale": "fr"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-divider praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"divider\" data-focus-row><hr class=\"praxity-divider praxity-divider-line\" /></div>"
+	},
+	{
+		"name": "divider: fr empty content",
+		"block": {
+			"id": "pilot",
+			"type": "divider",
+			"data": {
+				"content": ""
+			},
+			"locale": "fr"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-divider praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"divider\" data-focus-row><hr class=\"praxity-divider praxity-divider-line\" /></div>"
+	},
+	{
+		"name": "text: untrusted 17",
+		"block": {
+			"id": "pilot",
+			"type": "text",
+			"data": {
+				"content": 17
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-text praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"text\" data-focus-row><div class=\"praxity-text\"></div></div>"
+	},
+	{
+		"name": "text: untrusted None",
+		"block": {
+			"id": "pilot",
+			"type": "text",
+			"data": {
+				"content": null
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-text praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"text\" data-focus-row><div class=\"praxity-text\"></div></div>"
+	},
+	{
+		"name": "text: untrusted '<script>bad()</script><p onclick=\"bad()\">Safe <a href=\"javascript:bad()\">link</a></p>'",
+		"block": {
+			"id": "pilot",
+			"type": "text",
+			"data": {
+				"content": "<script>bad()</script><p onclick=\"bad()\">Safe <a href=\"javascript:bad()\">link</a></p>"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-text praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"text\" data-focus-row><div class=\"praxity-text\"><p>Safe <a>link</a></p></div></div>"
+	},
+	{
+		"name": "heading: level 1",
+		"block": {
+			"id": "pilot",
+			"type": "heading",
+			"data": {
+				"level": 1,
+				"content": " <p>Heading <em>text</em></p> "
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-heading praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"heading\" data-heading-level=\"1\" data-focus-row data-focus-exempt=\"heading\"><h1 style=\"font-size:var(--praxity-type-h1);font-family:var(--praxity-font-family-h1, var(--praxity-font-heading));font-weight:var(--praxity-font-weight-h1, var(--praxity-font-weight-heading));font-style:var(--praxity-font-style-h1, var(--praxity-font-style-heading));line-height:var(--leading-heading);letter-spacing:normal\">Heading <em>text</em></h1></div>"
+	},
+	{
+		"name": "heading: level 2",
+		"block": {
+			"id": "pilot",
+			"type": "heading",
+			"data": {
+				"level": 2,
+				"content": " <p>Heading <em>text</em></p> "
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-heading praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"heading\" data-heading-level=\"2\" data-focus-row data-focus-exempt=\"heading\"><h2 style=\"font-size:var(--praxity-type-h2);font-family:var(--praxity-font-family-h2, var(--praxity-font-heading));font-weight:var(--praxity-font-weight-h2, var(--praxity-font-weight-heading));font-style:var(--praxity-font-style-h2, var(--praxity-font-style-heading));line-height:var(--leading-heading);letter-spacing:normal\">Heading <em>text</em></h2></div>"
+	},
+	{
+		"name": "heading: level 3",
+		"block": {
+			"id": "pilot",
+			"type": "heading",
+			"data": {
+				"level": 3,
+				"content": " <p>Heading <em>text</em></p> "
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-heading praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"heading\" data-heading-level=\"3\" data-focus-row data-focus-exempt=\"heading\"><h3 style=\"font-size:var(--praxity-type-h3);font-family:var(--praxity-font-family-h3, var(--praxity-font-heading));font-weight:var(--praxity-font-weight-h3, var(--praxity-font-weight-heading));font-style:var(--praxity-font-style-h3, var(--praxity-font-style-heading));line-height:var(--leading-heading);letter-spacing:normal\">Heading <em>text</em></h3></div>"
+	},
+	{
+		"name": "heading: level 4",
+		"block": {
+			"id": "pilot",
+			"type": "heading",
+			"data": {
+				"level": 4,
+				"content": " <p>Heading <em>text</em></p> "
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-heading praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"heading\" data-heading-level=\"4\" data-focus-row data-focus-exempt=\"heading\"><h4 style=\"font-size:var(--praxity-type-h4);font-family:var(--praxity-font-family-h4, var(--praxity-font-heading));font-weight:var(--praxity-font-weight-h4, var(--praxity-font-weight-heading));font-style:var(--praxity-font-style-h4, var(--praxity-font-style-heading));line-height:var(--leading-heading);letter-spacing:normal\">Heading <em>text</em></h4></div>"
+	},
+	{
+		"name": "heading: level 5",
+		"block": {
+			"id": "pilot",
+			"type": "heading",
+			"data": {
+				"level": 5,
+				"content": " <p>Heading <em>text</em></p> "
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-heading praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"heading\" data-heading-level=\"5\" data-focus-row data-focus-exempt=\"heading\"><h5 style=\"font-size:var(--praxity-type-h5);font-family:var(--praxity-font-family-h5, var(--praxity-font-heading));font-weight:var(--praxity-font-weight-h5, var(--praxity-font-weight-heading));font-style:var(--praxity-font-style-h5, var(--praxity-font-style-heading));line-height:var(--leading-heading);letter-spacing:normal\">Heading <em>text</em></h5></div>"
+	},
+	{
+		"name": "heading: level 6",
+		"block": {
+			"id": "pilot",
+			"type": "heading",
+			"data": {
+				"level": 6,
+				"content": " <p>Heading <em>text</em></p> "
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-heading praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"heading\" data-heading-level=\"6\" data-focus-row data-focus-exempt=\"heading\"><h6 style=\"font-size:var(--praxity-type-h6);font-family:var(--praxity-font-family-h6, var(--praxity-font-heading));font-weight:var(--praxity-font-weight-h6, var(--praxity-font-weight-heading));font-style:var(--praxity-font-style-h6, var(--praxity-font-style-heading));line-height:var(--leading-heading);letter-spacing:normal\">Heading <em>text</em></h6></div>"
+	},
+	{
+		"name": "heading: level 0",
+		"block": {
+			"id": "pilot",
+			"type": "heading",
+			"data": {
+				"level": 0,
+				"content": " <p>Heading <em>text</em></p> "
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-heading praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"heading\" data-heading-level=\"1\" data-focus-row data-focus-exempt=\"heading\"><h1 style=\"font-size:var(--praxity-type-h1);font-family:var(--praxity-font-family-h1, var(--praxity-font-heading));font-weight:var(--praxity-font-weight-h1, var(--praxity-font-weight-heading));font-style:var(--praxity-font-style-h1, var(--praxity-font-style-heading));line-height:var(--leading-heading);letter-spacing:normal\">Heading <em>text</em></h1></div>"
+	},
+	{
+		"name": "heading: level 9",
+		"block": {
+			"id": "pilot",
+			"type": "heading",
+			"data": {
+				"level": 9,
+				"content": " <p>Heading <em>text</em></p> "
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-heading praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"heading\" data-heading-level=\"6\" data-focus-row data-focus-exempt=\"heading\"><h6 style=\"font-size:var(--praxity-type-h6);font-family:var(--praxity-font-family-h6, var(--praxity-font-heading));font-weight:var(--praxity-font-weight-h6, var(--praxity-font-weight-heading));font-style:var(--praxity-font-style-h6, var(--praxity-font-style-heading));line-height:var(--leading-heading);letter-spacing:normal\">Heading <em>text</em></h6></div>"
+	},
+	{
+		"name": "heading: level 2.9",
+		"block": {
+			"id": "pilot",
+			"type": "heading",
+			"data": {
+				"level": 2.9,
+				"content": " <p>Heading <em>text</em></p> "
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-heading praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"heading\" data-heading-level=\"2\" data-focus-row data-focus-exempt=\"heading\"><h2 style=\"font-size:var(--praxity-type-h2);font-family:var(--praxity-font-family-h2, var(--praxity-font-heading));font-weight:var(--praxity-font-weight-h2, var(--praxity-font-weight-heading));font-style:var(--praxity-font-style-h2, var(--praxity-font-style-heading));line-height:var(--leading-heading);letter-spacing:normal\">Heading <em>text</em></h2></div>"
+	},
+	{
+		"name": "heading: level '3'",
+		"block": {
+			"id": "pilot",
+			"type": "heading",
+			"data": {
+				"level": "3",
+				"content": " <p>Heading <em>text</em></p> "
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-heading praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"heading\" data-heading-level=\"3\" data-focus-row data-focus-exempt=\"heading\"><h3 style=\"font-size:var(--praxity-type-h3);font-family:var(--praxity-font-family-h3, var(--praxity-font-heading));font-weight:var(--praxity-font-weight-h3, var(--praxity-font-weight-heading));font-style:var(--praxity-font-style-h3, var(--praxity-font-style-heading));line-height:var(--leading-heading);letter-spacing:normal\">Heading <em>text</em></h3></div>"
+	},
+	{
+		"name": "heading: level 'invalid'",
+		"block": {
+			"id": "pilot",
+			"type": "heading",
+			"data": {
+				"level": "invalid",
+				"content": " <p>Heading <em>text</em></p> "
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-heading praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"heading\" data-heading-level=\"2\" data-focus-row data-focus-exempt=\"heading\"><h2 style=\"font-size:var(--praxity-type-h2);font-family:var(--praxity-font-family-h2, var(--praxity-font-heading));font-weight:var(--praxity-font-weight-h2, var(--praxity-font-weight-heading));font-style:var(--praxity-font-style-h2, var(--praxity-font-style-heading));line-height:var(--leading-heading);letter-spacing:normal\">Heading <em>text</em></h2></div>"
+	},
+	{
+		"name": "heading: level None",
+		"block": {
+			"id": "pilot",
+			"type": "heading",
+			"data": {
+				"level": null,
+				"content": " <p>Heading <em>text</em></p> "
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-heading praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"heading\" data-heading-level=\"1\" data-focus-row data-focus-exempt=\"heading\"><h1 style=\"font-size:var(--praxity-type-h1);font-family:var(--praxity-font-family-h1, var(--praxity-font-heading));font-weight:var(--praxity-font-weight-h1, var(--praxity-font-weight-heading));font-style:var(--praxity-font-style-h1, var(--praxity-font-style-heading));line-height:var(--leading-heading);letter-spacing:normal\">Heading <em>text</em></h1></div>"
+	},
+	{
+		"name": "heading: offset 2.9",
+		"block": {
+			"id": "pilot",
+			"type": "heading",
+			"data": {
+				"level": 2,
+				"headingOffset": 2.9,
+				"content": "Heading"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-heading praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"heading\" data-heading-level=\"2\" data-focus-row data-focus-exempt=\"heading\"><h4 style=\"font-size:var(--praxity-type-h2);font-family:var(--praxity-font-family-h2, var(--praxity-font-heading));font-weight:var(--praxity-font-weight-h2, var(--praxity-font-weight-heading));font-style:var(--praxity-font-style-h2, var(--praxity-font-style-heading));line-height:var(--leading-heading);letter-spacing:normal\">Heading</h4></div>"
+	},
+	{
+		"name": "heading: offset -3",
+		"block": {
+			"id": "pilot",
+			"type": "heading",
+			"data": {
+				"level": 2,
+				"headingOffset": -3,
+				"content": "Heading"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-heading praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"heading\" data-heading-level=\"2\" data-focus-row data-focus-exempt=\"heading\"><h2 style=\"font-size:var(--praxity-type-h2);font-family:var(--praxity-font-family-h2, var(--praxity-font-heading));font-weight:var(--praxity-font-weight-h2, var(--praxity-font-weight-heading));font-style:var(--praxity-font-style-h2, var(--praxity-font-style-heading));line-height:var(--leading-heading);letter-spacing:normal\">Heading</h2></div>"
+	},
+	{
+		"name": "heading: offset '2'",
+		"block": {
+			"id": "pilot",
+			"type": "heading",
+			"data": {
+				"level": 2,
+				"headingOffset": "2",
+				"content": "Heading"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-heading praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"heading\" data-heading-level=\"2\" data-focus-row data-focus-exempt=\"heading\"><h4 style=\"font-size:var(--praxity-type-h2);font-family:var(--praxity-font-family-h2, var(--praxity-font-heading));font-weight:var(--praxity-font-weight-h2, var(--praxity-font-weight-heading));font-style:var(--praxity-font-style-h2, var(--praxity-font-style-heading));line-height:var(--leading-heading);letter-spacing:normal\">Heading</h4></div>"
+	},
+	{
+		"name": "heading: offset 'invalid'",
+		"block": {
+			"id": "pilot",
+			"type": "heading",
+			"data": {
+				"level": 2,
+				"headingOffset": "invalid",
+				"content": "Heading"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-heading praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"heading\" data-heading-level=\"2\" data-focus-row data-focus-exempt=\"heading\"><h2 style=\"font-size:var(--praxity-type-h2);font-family:var(--praxity-font-family-h2, var(--praxity-font-heading));font-weight:var(--praxity-font-weight-h2, var(--praxity-font-weight-heading));font-style:var(--praxity-font-style-h2, var(--praxity-font-style-heading));line-height:var(--leading-heading);letter-spacing:normal\">Heading</h2></div>"
+	},
+	{
+		"name": "heading: offset 100",
+		"block": {
+			"id": "pilot",
+			"type": "heading",
+			"data": {
+				"level": 2,
+				"headingOffset": 100,
+				"content": "Heading"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-heading praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"heading\" data-heading-level=\"2\" data-focus-row data-focus-exempt=\"heading\"><h6 style=\"font-size:var(--praxity-type-h2);font-family:var(--praxity-font-family-h2, var(--praxity-font-heading));font-weight:var(--praxity-font-weight-h2, var(--praxity-font-weight-heading));font-style:var(--praxity-font-style-h2, var(--praxity-font-style-heading));line-height:var(--leading-heading);letter-spacing:normal\">Heading</h6></div>"
+	},
+	{
+		"name": "heading: presentation {\"kicker\": \"<em>ÉQUIPE</em> ET APPRENTISSAGE\", \"content\": \"<p>Title</p>\"}",
+		"block": {
+			"id": "pilot",
+			"type": "heading",
+			"data": {
+				"kicker": "<em>ÉQUIPE</em> ET APPRENTISSAGE",
+				"content": "<p>Title</p>"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-heading praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"heading\" data-heading-level=\"2\" data-focus-row data-focus-exempt=\"heading\"><div class=\"praxity-heading-with-kicker\"><p class=\"praxity-kicker\"><em>Équipe</em> et apprentissage</p><h2 style=\"font-size:var(--praxity-type-h2);font-family:var(--praxity-font-family-h2, var(--praxity-font-heading));font-weight:var(--praxity-font-weight-h2, var(--praxity-font-weight-heading));font-style:var(--praxity-font-style-h2, var(--praxity-font-style-heading));line-height:var(--leading-heading);letter-spacing:normal\">Title</h2></div></div>"
+	},
+	{
+		"name": "heading: presentation {\"display\": \"chapter\", \"level\": 3, \"kicker\": \"IGNORED\", \"content\": \"Chapter\"}",
+		"block": {
+			"id": "pilot",
+			"type": "heading",
+			"data": {
+				"display": "chapter",
+				"level": 3,
+				"kicker": "IGNORED",
+				"content": "Chapter"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-heading praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"heading\" data-heading-level=\"3\" data-focus-row data-focus-exempt=\"heading\"><div class=\"praxity-heading-chapter\"><h3 style=\"font-size:var(--praxity-type-chapter);font-family:var(--praxity-font-family-h3, var(--praxity-font-heading));font-weight:var(--praxity-font-weight-h3, var(--praxity-font-weight-heading));font-style:var(--praxity-font-style-h3, var(--praxity-font-style-heading));line-height:var(--leading-heading);letter-spacing:-0.02em\">Chapter</h3><div class=\"praxity-heading-chapter-divider\" aria-hidden=\"true\"></div></div></div>"
+	},
+	{
+		"name": "heading: presentation {\"display\": \"invalid\", \"level\": 4, \"content\": \"<h2>Nested</h2>\"}",
+		"block": {
+			"id": "pilot",
+			"type": "heading",
+			"data": {
+				"display": "invalid",
+				"level": 4,
+				"content": "<h2>Nested</h2>"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-heading praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"heading\" data-heading-level=\"4\" data-focus-row data-focus-exempt=\"heading\"><h4 style=\"font-size:var(--praxity-type-h4);font-family:var(--praxity-font-family-h4, var(--praxity-font-heading));font-weight:var(--praxity-font-weight-h4, var(--praxity-font-weight-heading));font-style:var(--praxity-font-style-h4, var(--praxity-font-style-heading));line-height:var(--leading-heading);letter-spacing:normal\"><h2>Nested</h2></h4></div>"
+	},
+	{
+		"name": "heading: presentation {\"kicker\": 22, \"display\": 17, \"content\": null}",
+		"block": {
+			"id": "pilot",
+			"type": "heading",
+			"data": {
+				"kicker": 22,
+				"display": 17,
+				"content": null
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-heading praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"heading\" data-heading-level=\"2\" data-focus-row data-focus-exempt=\"heading\"><div class=\"praxity-heading-with-kicker\"><p class=\"praxity-kicker\">22</p><h2 style=\"font-size:var(--praxity-type-h2);font-family:var(--praxity-font-family-h2, var(--praxity-font-heading));font-weight:var(--praxity-font-weight-h2, var(--praxity-font-weight-heading));font-style:var(--praxity-font-style-h2, var(--praxity-font-style-heading));line-height:var(--leading-heading);letter-spacing:normal\"></h2></div></div>"
+	},
+	{
+		"name": "quote: attribution {\"text\": \"<p>First</p><p>Second</p>\", \"content\": \"ignored\", \"speaker\": \"<b>Ada</b>\", \"work\": \"<i>Book</i>\", \"sourceUrl\": \"https://example.com/book?q=a&b=c\"}",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "<p>First</p><p>Second</p>",
+				"content": "ignored",
+				"speaker": "<b>Ada</b>",
+				"work": "<i>Book</i>",
+				"sourceUrl": "https://example.com/book?q=a&b=c"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-size=\"default\"><blockquote cite=\"https://example.com/book?q=a&amp;b=c\"><p>First</p><p>Second</p></blockquote><figcaption class=\"praxity-quote-attribution\"><span class=\"praxity-quote__speaker\">Ada</span>, <cite><a href=\"https://example.com/book?q=a&amp;b=c\">Book</a></cite></figcaption></figure></div>"
+	},
+	{
+		"name": "quote: attribution {\"text\": \"\", \"content\": \"ignored\", \"attribution\": \"Legacy author\"}",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "",
+				"content": "ignored",
+				"attribution": "Legacy author"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-size=\"default\"><blockquote><p></p></blockquote><figcaption class=\"praxity-quote-attribution\"><span class=\"praxity-quote__speaker\">Legacy author</span></figcaption></figure></div>"
+	},
+	{
+		"name": "quote: attribution {\"text\": 17, \"content\": \"Fallback\", \"speaker\": \"<script>bad()</script>\", \"attribution\": \"<b>Legacy</b>\"}",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": 17,
+				"content": "Fallback",
+				"speaker": "<script>bad()</script>",
+				"attribution": "<b>Legacy</b>"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-size=\"default\"><blockquote><p>Fallback</p></blockquote><figcaption class=\"praxity-quote-attribution\"><span class=\"praxity-quote__speaker\">Legacy</span></figcaption></figure></div>"
+	},
+	{
+		"name": "quote: attribution {\"content\": \"Words\", \"work\": \"<script>bad()</script><em>Book</em>\"}",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"content": "Words",
+				"work": "<script>bad()</script><em>Book</em>"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-size=\"default\"><blockquote><p>Words</p></blockquote><figcaption class=\"praxity-quote-attribution\"><cite>Book</cite></figcaption></figure></div>"
+	},
+	{
+		"name": "quote: attribution {\"content\": \"Words\", \"sourceUrl\": \"http://example.com\"}",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"content": "Words",
+				"sourceUrl": "http://example.com"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-size=\"default\"><blockquote cite=\"http://example.com/\"><p>Words</p></blockquote><figcaption class=\"praxity-quote-attribution\"><a href=\"http://example.com/\">http://example.com/</a></figcaption></figure></div>"
+	},
+	{
+		"name": "quote: attribution {\"content\": \"Words\", \"sourceUrl\": \"javascript:bad()\", \"work\": \"Book\"}",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"content": "Words",
+				"sourceUrl": "javascript:bad()",
+				"work": "Book"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-size=\"default\"><blockquote><p>Words</p></blockquote><figcaption class=\"praxity-quote-attribution\"><cite>Book</cite></figcaption></figure></div>"
+	},
+	{
+		"name": "quote: attribution {\"content\": \"Words\", \"sourceUrl\": \"not a URL\", \"speaker\": \"Speaker\"}",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"content": "Words",
+				"sourceUrl": "not a URL",
+				"speaker": "Speaker"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-size=\"default\"><blockquote><p>Words</p></blockquote><figcaption class=\"praxity-quote-attribution\"><span class=\"praxity-quote__speaker\">Speaker</span></figcaption></figure></div>"
+	},
+	{
+		"name": "quote: attribution {\"content\": \"Words\", \"sourceUrl\": 22, \"speaker\": 22, \"work\": 22}",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"content": "Words",
+				"sourceUrl": 22,
+				"speaker": 22,
+				"work": 22
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-size=\"default\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: attribution {\"content\": \"<script>bad()</script><p onclick=\\\"bad()\\\">Safe</p>\", \"speaker\": \"A &amp; B\", \"work\": \"C &amp; D\"}",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"content": "<script>bad()</script><p onclick=\"bad()\">Safe</p>",
+				"speaker": "A &amp; B",
+				"work": "C &amp; D"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-size=\"default\"><blockquote><p>Safe</p></blockquote><figcaption class=\"praxity-quote-attribution\"><span class=\"praxity-quote__speaker\">A &amp; B</span>, <cite>C &amp; D</cite></figcaption></figure></div>"
+	},
+	{
+		"name": "quote: style 'none', size default",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "Words",
+				"style": "none",
+				"size": "default"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-style=\"none\" data-size=\"default\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: style 'none', size large",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "Words",
+				"style": "none",
+				"size": "large"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-style=\"none\" data-size=\"large\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: style 'none', size very-large",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "Words",
+				"style": "none",
+				"size": "very-large"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-style=\"none\" data-size=\"very-large\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: style 'none', size invalid",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "Words",
+				"style": "none",
+				"size": "invalid"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-style=\"none\" data-size=\"default\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: style 'outline', size default",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "Words",
+				"style": "outline",
+				"size": "default"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-style=\"outline\" data-size=\"default\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: style 'outline', size large",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "Words",
+				"style": "outline",
+				"size": "large"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-style=\"outline\" data-size=\"large\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: style 'outline', size very-large",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "Words",
+				"style": "outline",
+				"size": "very-large"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-style=\"outline\" data-size=\"very-large\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: style 'outline', size invalid",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "Words",
+				"style": "outline",
+				"size": "invalid"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-style=\"outline\" data-size=\"default\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: style 'shaded', size default",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "Words",
+				"style": "shaded",
+				"size": "default"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-style=\"shaded\" data-size=\"default\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: style 'shaded', size large",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "Words",
+				"style": "shaded",
+				"size": "large"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-style=\"shaded\" data-size=\"large\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: style 'shaded', size very-large",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "Words",
+				"style": "shaded",
+				"size": "very-large"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-style=\"shaded\" data-size=\"very-large\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: style 'shaded', size invalid",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "Words",
+				"style": "shaded",
+				"size": "invalid"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-style=\"shaded\" data-size=\"default\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: style 'primary', size default",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "Words",
+				"style": "primary",
+				"size": "default"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-style=\"primary\" data-size=\"default\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: style 'primary', size large",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "Words",
+				"style": "primary",
+				"size": "large"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-style=\"primary\" data-size=\"large\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: style 'primary', size very-large",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "Words",
+				"style": "primary",
+				"size": "very-large"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-style=\"primary\" data-size=\"very-large\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: style 'primary', size invalid",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "Words",
+				"style": "primary",
+				"size": "invalid"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-style=\"primary\" data-size=\"default\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: style 'secondary', size default",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "Words",
+				"style": "secondary",
+				"size": "default"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-style=\"secondary\" data-size=\"default\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: style 'secondary', size large",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "Words",
+				"style": "secondary",
+				"size": "large"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-style=\"secondary\" data-size=\"large\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: style 'secondary', size very-large",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "Words",
+				"style": "secondary",
+				"size": "very-large"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-style=\"secondary\" data-size=\"very-large\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: style 'secondary', size invalid",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "Words",
+				"style": "secondary",
+				"size": "invalid"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-style=\"secondary\" data-size=\"default\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: style 'invalid', size default",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "Words",
+				"style": "invalid",
+				"size": "default"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-size=\"default\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: style 'invalid', size large",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "Words",
+				"style": "invalid",
+				"size": "large"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-size=\"large\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: style 'invalid', size very-large",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "Words",
+				"style": "invalid",
+				"size": "very-large"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-size=\"very-large\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: style 'invalid', size invalid",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "Words",
+				"style": "invalid",
+				"size": "invalid"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-size=\"default\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: style 17, size default",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "Words",
+				"style": 17,
+				"size": "default"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-size=\"default\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: style 17, size large",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "Words",
+				"style": 17,
+				"size": "large"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-size=\"large\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: style 17, size very-large",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "Words",
+				"style": 17,
+				"size": "very-large"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-size=\"very-large\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "quote: style 17, size invalid",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"text": "Words",
+				"style": 17,
+				"size": "invalid"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-quote praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row><figure class=\"praxity-quote\" data-size=\"default\"><blockquote><p>Words</p></blockquote></figure></div>"
+	},
+	{
+		"name": "note: en color 'note'",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"color": "note",
+				"content": "<p>First</p><p>Second</p>"
+			},
+			"locale": "en"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"note\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><strong class=\"praxity-note-label\">Note</strong> First</p><p>Second</p></div></aside></div>"
+	},
+	{
+		"name": "note: en color 'warning'",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"color": "warning",
+				"content": "<p>First</p><p>Second</p>"
+			},
+			"locale": "en"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"warning\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"tabler-icon tabler-icon-alert-triangle praxity-note-icon\" aria-hidden=\"true\"><path d=\"M12 9v4\"></path><path d=\"M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0\"></path><path d=\"M12 16h.01\"></path></svg><strong class=\"praxity-note-label\">Warning</strong> First</p><p>Second</p></div></aside></div>"
+	},
+	{
+		"name": "note: en color 'error'",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"color": "error",
+				"content": "<p>First</p><p>Second</p>"
+			},
+			"locale": "en"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"error\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"tabler-icon tabler-icon-alert-triangle praxity-note-icon\" aria-hidden=\"true\"><path d=\"M12 9v4\"></path><path d=\"M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0\"></path><path d=\"M12 16h.01\"></path></svg><strong class=\"praxity-note-label\">Error</strong> First</p><p>Second</p></div></aside></div>"
+	},
+	{
+		"name": "note: en color 'danger'",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"color": "danger",
+				"content": "<p>First</p><p>Second</p>"
+			},
+			"locale": "en"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"error\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"tabler-icon tabler-icon-alert-triangle praxity-note-icon\" aria-hidden=\"true\"><path d=\"M12 9v4\"></path><path d=\"M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0\"></path><path d=\"M12 16h.01\"></path></svg><strong class=\"praxity-note-label\">Error</strong> First</p><p>Second</p></div></aside></div>"
+	},
+	{
+		"name": "note: en color 'info'",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"color": "info",
+				"content": "<p>First</p><p>Second</p>"
+			},
+			"locale": "en"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"note\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><strong class=\"praxity-note-label\">Note</strong> First</p><p>Second</p></div></aside></div>"
+	},
+	{
+		"name": "note: en color 'tip'",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"color": "tip",
+				"content": "<p>First</p><p>Second</p>"
+			},
+			"locale": "en"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"note\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><strong class=\"praxity-note-label\">Note</strong> First</p><p>Second</p></div></aside></div>"
+	},
+	{
+		"name": "note: en color 'success'",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"color": "success",
+				"content": "<p>First</p><p>Second</p>"
+			},
+			"locale": "en"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"note\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><strong class=\"praxity-note-label\">Note</strong> First</p><p>Second</p></div></aside></div>"
+	},
+	{
+		"name": "note: en color 17",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"color": 17,
+				"content": "<p>First</p><p>Second</p>"
+			},
+			"locale": "en"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"note\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><strong class=\"praxity-note-label\">Note</strong> First</p><p>Second</p></div></aside></div>"
+	},
+	{
+		"name": "note: fr color 'note'",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"color": "note",
+				"content": "<p>First</p><p>Second</p>"
+			},
+			"locale": "fr"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"note\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><strong class=\"praxity-note-label\">Note</strong> First</p><p>Second</p></div></aside></div>"
+	},
+	{
+		"name": "note: fr color 'warning'",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"color": "warning",
+				"content": "<p>First</p><p>Second</p>"
+			},
+			"locale": "fr"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"warning\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"tabler-icon tabler-icon-alert-triangle praxity-note-icon\" aria-hidden=\"true\"><path d=\"M12 9v4\"></path><path d=\"M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0\"></path><path d=\"M12 16h.01\"></path></svg><strong class=\"praxity-note-label\">Avertissement</strong> First</p><p>Second</p></div></aside></div>"
+	},
+	{
+		"name": "note: fr color 'error'",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"color": "error",
+				"content": "<p>First</p><p>Second</p>"
+			},
+			"locale": "fr"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"error\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"tabler-icon tabler-icon-alert-triangle praxity-note-icon\" aria-hidden=\"true\"><path d=\"M12 9v4\"></path><path d=\"M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0\"></path><path d=\"M12 16h.01\"></path></svg><strong class=\"praxity-note-label\">Erreur</strong> First</p><p>Second</p></div></aside></div>"
+	},
+	{
+		"name": "note: fr color 'danger'",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"color": "danger",
+				"content": "<p>First</p><p>Second</p>"
+			},
+			"locale": "fr"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"error\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"tabler-icon tabler-icon-alert-triangle praxity-note-icon\" aria-hidden=\"true\"><path d=\"M12 9v4\"></path><path d=\"M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0\"></path><path d=\"M12 16h.01\"></path></svg><strong class=\"praxity-note-label\">Erreur</strong> First</p><p>Second</p></div></aside></div>"
+	},
+	{
+		"name": "note: fr color 'info'",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"color": "info",
+				"content": "<p>First</p><p>Second</p>"
+			},
+			"locale": "fr"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"note\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><strong class=\"praxity-note-label\">Note</strong> First</p><p>Second</p></div></aside></div>"
+	},
+	{
+		"name": "note: fr color 'tip'",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"color": "tip",
+				"content": "<p>First</p><p>Second</p>"
+			},
+			"locale": "fr"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"note\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><strong class=\"praxity-note-label\">Note</strong> First</p><p>Second</p></div></aside></div>"
+	},
+	{
+		"name": "note: fr color 'success'",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"color": "success",
+				"content": "<p>First</p><p>Second</p>"
+			},
+			"locale": "fr"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"note\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><strong class=\"praxity-note-label\">Note</strong> First</p><p>Second</p></div></aside></div>"
+	},
+	{
+		"name": "note: fr color 17",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"color": 17,
+				"content": "<p>First</p><p>Second</p>"
+			},
+			"locale": "fr"
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"note\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><strong class=\"praxity-note-label\">Note</strong> First</p><p>Second</p></div></aside></div>"
+	},
+	{
+		"name": "note: style 'outline'",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"style": "outline",
+				"content": "Body"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"note\" data-style=\"outline\"><div class=\"praxity-note-body\"><p><strong class=\"praxity-note-label\">Note</strong> Body</p></div></aside></div>"
+	},
+	{
+		"name": "note: style 'light'",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"style": "light",
+				"content": "Body"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"note\" data-style=\"outline\"><div class=\"praxity-note-body\"><p><strong class=\"praxity-note-label\">Note</strong> Body</p></div></aside></div>"
+	},
+	{
+		"name": "note: style 'shaded'",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"style": "shaded",
+				"content": "Body"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"note\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><strong class=\"praxity-note-label\">Note</strong> Body</p></div></aside></div>"
+	},
+	{
+		"name": "note: style 'filled'",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"style": "filled",
+				"content": "Body"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"note\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><strong class=\"praxity-note-label\">Note</strong> Body</p></div></aside></div>"
+	},
+	{
+		"name": "note: style 'invalid'",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"style": "invalid",
+				"content": "Body"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"note\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><strong class=\"praxity-note-label\">Note</strong> Body</p></div></aside></div>"
+	},
+	{
+		"name": "note: style 17",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"style": 17,
+				"content": "Body"
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"note\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><strong class=\"praxity-note-label\">Note</strong> Body</p></div></aside></div>"
+	},
+	{
+		"name": "note: title/body {\"title\": \"<em>Custom</em> &amp; title\", \"content\": \"<ul><li>Item</li></ul>\", \"icon\": \"heart\", \"_tablerIconNodes\": [[\"path\", {\"d\": \"M0 0\"}]]}",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"title": "<em>Custom</em> &amp; title",
+				"content": "<ul><li>Item</li></ul>",
+				"icon": "heart",
+				"_tablerIconNodes": [
+					[
+						"path",
+						{
+							"d": "M0 0"
+						}
+					]
+				]
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"note\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><strong class=\"praxity-note-label\"><em>Custom</em> &amp; title</strong> </p><ul><li>Item</li></ul></div></aside></div>"
+	},
+	{
+		"name": "note: title/body {\"title\": \"   \", \"content\": \"<div><p>Nested</p></div>\", \"icon\": \"heart\", \"_tablerIconNodes\": [[\"path\", {\"d\": \"M0 0\"}]]}",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"title": "   ",
+				"content": "<div><p>Nested</p></div>",
+				"icon": "heart",
+				"_tablerIconNodes": [
+					[
+						"path",
+						{
+							"d": "M0 0"
+						}
+					]
+				]
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"note\" data-style=\"shaded\"><div class=\"praxity-note-body\"><div><p><strong class=\"praxity-note-label\">Note</strong> Nested</p></div></div></aside></div>"
+	},
+	{
+		"name": "note: title/body {\"title\": 17, \"content\": \"<h3>Heading</h3>\", \"icon\": \"heart\", \"_tablerIconNodes\": [[\"path\", {\"d\": \"M0 0\"}]]}",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"title": 17,
+				"content": "<h3>Heading</h3>",
+				"icon": "heart",
+				"_tablerIconNodes": [
+					[
+						"path",
+						{
+							"d": "M0 0"
+						}
+					]
+				]
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"note\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><strong class=\"praxity-note-label\">Note</strong> </p><h3>Heading</h3></div></aside></div>"
+	},
+	{
+		"name": "note: title/body {\"title\": \"\", \"content\": \"<p class=\\\"intro\\\">Body</p>\", \"icon\": \"heart\", \"_tablerIconNodes\": [[\"path\", {\"d\": \"M0 0\"}]]}",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"title": "",
+				"content": "<p class=\"intro\">Body</p>",
+				"icon": "heart",
+				"_tablerIconNodes": [
+					[
+						"path",
+						{
+							"d": "M0 0"
+						}
+					]
+				]
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"note\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p class=\"intro\"><strong class=\"praxity-note-label\">Note</strong> Body</p></div></aside></div>"
+	},
+	{
+		"name": "note: title/body {\"title\": \"Custom\", \"content\": \"<script>bad()</script><p onclick=\\\"bad()\\\">Safe</p>\", \"icon\": \"heart\", \"_tablerIconNodes\": [[\"path\", {\"d\": \"M0 0\"}]]}",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"title": "Custom",
+				"content": "<script>bad()</script><p onclick=\"bad()\">Safe</p>",
+				"icon": "heart",
+				"_tablerIconNodes": [
+					[
+						"path",
+						{
+							"d": "M0 0"
+						}
+					]
+				]
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"note\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><strong class=\"praxity-note-label\">Custom</strong> Safe</p></div></aside></div>"
+	},
+	{
+		"name": "note: locale {\"block\": null, \"sourceLocale\": \"fr-CA\"}",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"color": "warning"
+			}
+		},
+		"options": {
+			"sourceLocale": "fr-CA"
+		},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"warning\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"tabler-icon tabler-icon-alert-triangle praxity-note-icon\" aria-hidden=\"true\"><path d=\"M12 9v4\"></path><path d=\"M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0\"></path><path d=\"M12 16h.01\"></path></svg><strong class=\"praxity-note-label\">Avertissement</strong> </p></div></aside></div>"
+	},
+	{
+		"name": "note: locale {\"block\": \"en\", \"sourceLocale\": \"fr\"}",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"color": "warning"
+			},
+			"locale": "en"
+		},
+		"options": {
+			"sourceLocale": "fr"
+		},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"warning\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"tabler-icon tabler-icon-alert-triangle praxity-note-icon\" aria-hidden=\"true\"><path d=\"M12 9v4\"></path><path d=\"M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0\"></path><path d=\"M12 16h.01\"></path></svg><strong class=\"praxity-note-label\">Warning</strong> </p></div></aside></div>"
+	},
+	{
+		"name": "note: locale {\"block\": \"fr\", \"sourceLocale\": \"en\", \"strings\": {\"warningNoteType\": \"Override\"}}",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"color": "warning"
+			},
+			"locale": "fr"
+		},
+		"options": {
+			"sourceLocale": "en",
+			"strings": {
+				"warningNoteType": "Override"
+			}
+		},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"warning\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"tabler-icon tabler-icon-alert-triangle praxity-note-icon\" aria-hidden=\"true\"><path d=\"M12 9v4\"></path><path d=\"M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0\"></path><path d=\"M12 16h.01\"></path></svg><strong class=\"praxity-note-label\">Avertissement</strong> </p></div></aside></div>"
+	},
+	{
+		"name": "note: locale {\"block\": null, \"sourceLocale\": \"fr\", \"strings\": {\"warningNoteType\": \"Override\"}}",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"color": "warning"
+			}
+		},
+		"options": {
+			"sourceLocale": "fr",
+			"strings": {
+				"warningNoteType": "Override"
+			}
+		},
+		"html": "<div id=\"block-pilot\" class=\"praxity-block praxity-block-note praxity-block-pilot\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row><aside role=\"note\" class=\"praxity-note-base\" data-color=\"warning\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"tabler-icon tabler-icon-alert-triangle praxity-note-icon\" aria-hidden=\"true\"><path d=\"M12 9v4\"></path><path d=\"M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0\"></path><path d=\"M12 16h.01\"></path></svg><strong class=\"praxity-note-label\">Override</strong> </p></div></aside></div>"
+	},
+	{
+		"name": "text: wrapper options",
+		"block": {
+			"id": "pilot",
+			"type": "text",
+			"data": {
+				"content": "Body",
+				"level": 3
+			}
+		},
+		"options": {
+			"classNames": ["custom", "with\"quote"],
+			"extraAttributes": ["data-example=\"literal\""],
+			"hiddenBlockIds": ["pilot"],
+			"includeDataBlockJson": true
+		},
+		"html": "<div id=\"block-pilot\" class=\"custom with&quot;quote\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"text\" data-focus-row data-example=\"literal\" hidden data-block-json='{\"id\":\"pilot\",\"type\":\"text\",\"data\":{\"content\":\"Body\",\"level\":3}}'><div class=\"praxity-text\">Body</div></div>"
+	},
+	{
+		"name": "heading: wrapper options",
+		"block": {
+			"id": "pilot",
+			"type": "heading",
+			"data": {
+				"content": "Body",
+				"level": 3
+			}
+		},
+		"options": {
+			"classNames": ["custom", "with\"quote"],
+			"extraAttributes": ["data-example=\"literal\""],
+			"hiddenBlockIds": ["pilot"],
+			"includeDataBlockJson": true
+		},
+		"html": "<div id=\"block-pilot\" class=\"custom with&quot;quote\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"heading\" data-heading-level=\"3\" data-focus-row data-focus-exempt=\"heading\" data-example=\"literal\" hidden data-block-json='{\"id\":\"pilot\",\"type\":\"heading\",\"data\":{\"content\":\"Body\",\"level\":3}}'><h3 style=\"font-size:var(--praxity-type-h3);font-family:var(--praxity-font-family-h3, var(--praxity-font-heading));font-weight:var(--praxity-font-weight-h3, var(--praxity-font-weight-heading));font-style:var(--praxity-font-style-h3, var(--praxity-font-style-heading));line-height:var(--leading-heading);letter-spacing:normal\">Body</h3></div>"
+	},
+	{
+		"name": "quote: wrapper options",
+		"block": {
+			"id": "pilot",
+			"type": "quote",
+			"data": {
+				"content": "Body",
+				"level": 3
+			}
+		},
+		"options": {
+			"classNames": ["custom", "with\"quote"],
+			"extraAttributes": ["data-example=\"literal\""],
+			"hiddenBlockIds": ["pilot"],
+			"includeDataBlockJson": true
+		},
+		"html": "<div id=\"block-pilot\" class=\"custom with&quot;quote\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"quote\" data-focus-row data-example=\"literal\" hidden data-block-json='{\"id\":\"pilot\",\"type\":\"quote\",\"data\":{\"content\":\"Body\",\"level\":3}}'><figure class=\"praxity-quote\" data-size=\"default\"><blockquote><p>Body</p></blockquote></figure></div>"
+	},
+	{
+		"name": "note: wrapper options",
+		"block": {
+			"id": "pilot",
+			"type": "note",
+			"data": {
+				"content": "Body",
+				"level": 3
+			}
+		},
+		"options": {
+			"classNames": ["custom", "with\"quote"],
+			"extraAttributes": ["data-example=\"literal\""],
+			"hiddenBlockIds": ["pilot"],
+			"includeDataBlockJson": true
+		},
+		"html": "<div id=\"block-pilot\" class=\"custom with&quot;quote\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"note\" data-focus-row data-example=\"literal\" hidden data-block-json='{\"id\":\"pilot\",\"type\":\"note\",\"data\":{\"content\":\"Body\",\"level\":3}}'><aside role=\"note\" class=\"praxity-note-base\" data-color=\"note\" data-style=\"shaded\"><div class=\"praxity-note-body\"><p><strong class=\"praxity-note-label\">Note</strong> Body</p></div></aside></div>"
+	},
+	{
+		"name": "divider: wrapper options",
+		"block": {
+			"id": "pilot",
+			"type": "divider",
+			"data": {
+				"content": "Body",
+				"level": 3
+			}
+		},
+		"options": {
+			"classNames": ["custom", "with\"quote"],
+			"extraAttributes": ["data-example=\"literal\""],
+			"hiddenBlockIds": ["pilot"],
+			"includeDataBlockJson": true
+		},
+		"html": "<div id=\"block-pilot\" class=\"custom with&quot;quote\" data-block-id=\"pilot\" data-node-id=\"pilot\" data-block-type=\"divider\" data-focus-row data-example=\"literal\" hidden data-block-json='{\"id\":\"pilot\",\"type\":\"divider\",\"data\":{\"content\":\"Body\",\"level\":3}}'><hr class=\"praxity-divider praxity-divider-line\" /></div>"
+	}
+]

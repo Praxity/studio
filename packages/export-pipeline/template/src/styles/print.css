@@ -1,0 +1,100 @@
+[data-self-check-print-answer] {
+	display: none;
+}
+
+@media print {
+	.praxity-self-check [data-self-check-print-answer] {
+		display: block;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+		min-height: 5em;
+	}
+	.praxity-self-check
+		:is(
+			button,
+			input,
+			[role="status"],
+			[data-self-check-error],
+			[data-self-check-count],
+			[data-self-check-mode],
+			[data-self-check-save]
+		) {
+		display: none !important;
+	}
+	.praxity-self-check-response:has([data-self-check-print-answer]) textarea {
+		display: none;
+	}
+	.praxity-page-nav,
+	.praxity-course-menu,
+	.praxity-skip-link,
+	.praxity-menu-toggle {
+		display: none !important;
+	}
+
+	.praxity-accordion-panel,
+	.praxity-media-transcript [data-disclosure-panel],
+	.praxity-tab-panel,
+	.praxity-tabs-panel[hidden] {
+		display: block !important;
+	}
+
+	/* Print both card faces in reading order. */
+	.praxity-flashcard-inner {
+		display: block;
+	}
+	.praxity-flashcard-face {
+		display: block !important;
+		opacity: 1 !important;
+		transform: none !important;
+		transition: none !important;
+		animation: none !important;
+	}
+	.praxity-flashcard-toggle,
+	[data-card-play] {
+		display: none !important;
+	}
+	[data-card-root] .praxity-slides-grid {
+		display: block;
+	}
+	[data-card-root] .praxity-slides-item {
+		position: static;
+		opacity: 1 !important;
+		visibility: visible !important;
+		transform: none !important;
+		transition: none !important;
+	}
+
+	.praxity-assessment-results {
+		break-inside: avoid;
+	}
+
+	.praxity-page-content .praxity-block-image > figure[data-image-float][data-image-width] {
+		float: none;
+		width: auto;
+		margin-block-end: 0;
+		break-inside: avoid;
+	}
+
+	.praxity-page-content
+		.praxity-block-image
+		> figure[data-image-float][data-image-alignment="center"] {
+		margin-inline: auto !important;
+	}
+
+	.praxity-page-content
+		.praxity-block-image
+		> figure[data-image-float][data-image-alignment="left"] {
+		margin-inline: 0 auto !important;
+	}
+
+	.praxity-page-content
+		.praxity-block-image
+		> figure[data-image-float][data-image-alignment="right"] {
+		margin-inline: auto 0 !important;
+	}
+
+	.praxity-page-content {
+		max-width: none;
+		padding: 0;
+	}
+}

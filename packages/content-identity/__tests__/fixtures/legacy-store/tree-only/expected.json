@@ -1,0 +1,394 @@
+{
+	"readerRoles": false,
+	"history": [
+		"070db0d8c678ff25171446e757dfc7f87e6711a23a47923a45bfbfdfc9c39de7",
+		"fccd696acf8834644726b8c51d4f71bfc58154703783429858feddc1eb11694f",
+		"4c936ec67a6e3dd8f5dae37fad33b9ed0d36a91630fb9a25fd65be9c97919435"
+	],
+	"lessonId": "00000000-0000-4000-8000-000000000002",
+	"sourceMappings": [
+		{
+			"file": "lesson.prax",
+			"path": [],
+			"id": "00000000-0000-4000-8000-000000000002",
+			"fingerprint": "f88ed8ea34e8386cc2b5724159bbd408403a9b550e4868dea1c25adba33a4a42",
+			"span": {
+				"start": 0,
+				"end": 517,
+				"tokenStart": 0,
+				"tokenEnd": 101
+			},
+			"status": "active"
+		},
+		{
+			"file": "lesson.prax",
+			"path": [1],
+			"id": "00000000-0000-4000-8000-000000000003",
+			"fingerprint": "03d5e8dfe043b030e8badece30d4495c94c009de7ad3f44bd3b7a7c1dcaae2fd",
+			"span": {
+				"start": 69,
+				"end": 506,
+				"tokenStart": 10,
+				"tokenEnd": 96
+			},
+			"status": "active"
+		},
+		{
+			"file": "lesson.prax",
+			"path": [1, 0],
+			"id": "00000000-0000-4000-8000-000000000004",
+			"fingerprint": "f6bdc57a301f520416e02210f2b5034ffa2033eabe9ac10dcae52efd8866bd61",
+			"span": {
+				"start": 81,
+				"end": 185,
+				"tokenStart": 15,
+				"tokenEnd": 35
+			},
+			"status": "active"
+		},
+		{
+			"file": "lesson.prax",
+			"path": [1, 0, 0],
+			"id": "00000000-0000-4000-8000-000000000005",
+			"fingerprint": "f326fcd7b5f416f5527b5912e75d8ad24af6e73ad72d310a5a9bd15f6aa11796",
+			"span": {
+				"start": 105,
+				"end": 142,
+				"tokenStart": 21,
+				"tokenEnd": 27
+			},
+			"status": "active"
+		},
+		{
+			"file": "lesson.prax",
+			"path": [1, 0, 0, 0],
+			"id": "00000000-0000-4000-8000-000000000006",
+			"fingerprint": "6ea9e01d636cf55de8dc884a9c956b473ff19de62be60ee874a37cd2915e4d70",
+			"span": {
+				"start": 114,
+				"end": 142,
+				"tokenStart": 25,
+				"tokenEnd": 27
+			},
+			"status": "active"
+		},
+		{
+			"file": "lesson.prax",
+			"path": [1, 0, 1],
+			"id": "00000000-0000-4000-8000-000000000007",
+			"fingerprint": "e9c45c5b35350ddd6da494fedb0eaebe2349ca43d2d0be6a3bdbc6e048ac9366",
+			"span": {
+				"start": 142,
+				"end": 181,
+				"tokenStart": 27,
+				"tokenEnd": 33
+			},
+			"status": "active"
+		},
+		{
+			"file": "lesson.prax",
+			"path": [1, 0, 1, 0],
+			"id": "00000000-0000-4000-8000-000000000008",
+			"fingerprint": "d83b01a4cebe5e1bba840cb0c68e967450918dfa4601329a3fb476d63c015fea",
+			"span": {
+				"start": 152,
+				"end": 181,
+				"tokenStart": 31,
+				"tokenEnd": 33
+			},
+			"status": "active"
+		},
+		{
+			"file": "lesson.prax",
+			"path": [1, 1],
+			"id": "00000000-0000-4000-8000-000000000009",
+			"fingerprint": "8d2c04cab05722f6a60afdb9015b598c1206234ec0422abff6ad26ab8d0015d1",
+			"span": {
+				"start": 186,
+				"end": 212,
+				"tokenStart": 36,
+				"tokenEnd": 46
+			},
+			"status": "active"
+		},
+		{
+			"file": "lesson.prax",
+			"path": [1, 1, 0],
+			"id": "00000000-0000-4000-8000-000000000010",
+			"fingerprint": "010caddb7cadff77363acf56005eb2e0312152ae699e3764c68ebced4d514680",
+			"span": {
+				"start": 186,
+				"end": 194,
+				"tokenStart": 36,
+				"tokenEnd": 39
+			},
+			"status": "active"
+		},
+		{
+			"file": "lesson.prax",
+			"path": [1, 1, 1],
+			"id": "00000000-0000-4000-8000-000000000011",
+			"fingerprint": "80808f0316a01ef8cc002253692a6a96d5b95b2fd47d561c2c9ee3657373aebb",
+			"span": {
+				"start": 194,
+				"end": 212,
+				"tokenStart": 39,
+				"tokenEnd": 46
+			},
+			"status": "active"
+		},
+		{
+			"file": "lesson.prax",
+			"path": [1, 1, 1, 0],
+			"id": "00000000-0000-4000-8000-000000000012",
+			"fingerprint": "8e7771062f60a5e3565555ff0fd2875ffc0cdee9cb7b0fcb8ceb0c01a2f964ae",
+			"span": {
+				"start": 201,
+				"end": 212,
+				"tokenStart": 42,
+				"tokenEnd": 46
+			},
+			"status": "active"
+		},
+		{
+			"file": "lesson.prax",
+			"path": [1, 1, 1, 0, 0],
+			"id": "00000000-0000-4000-8000-000000000013",
+			"fingerprint": "4af7baf8b2857202173dd4724bac8bb843f396194e5526dca1836d629998e813",
+			"span": {
+				"start": 201,
+				"end": 212,
+				"tokenStart": 42,
+				"tokenEnd": 46
+			},
+			"status": "active"
+		},
+		{
+			"file": "lesson.prax",
+			"path": [1, 2],
+			"id": "00000000-0000-4000-8000-000000000014",
+			"fingerprint": "4c623947b1578a48ecea2de1a559d81b02efefd0206a6ef7b4803eb1ec6951cb",
+			"span": {
+				"start": 213,
+				"end": 345,
+				"tokenStart": 47,
+				"tokenEnd": 63
+			},
+			"status": "active"
+		},
+		{
+			"file": "lesson.prax",
+			"path": [1, 2, 0],
+			"id": "00000000-0000-4000-8000-000000000015",
+			"fingerprint": "12cd9ba25adee02b8f3b0951725e54e015cfbef9ee139a7e877ac90b03b813a9",
+			"span": {
+				"start": 245,
+				"end": 292,
+				"tokenStart": 53,
+				"tokenEnd": 57
+			},
+			"status": "active"
+		},
+		{
+			"file": "lesson.prax",
+			"path": [1, 2, 1],
+			"id": "00000000-0000-4000-8000-000000000016",
+			"fingerprint": "90fc8e58f593075fdfeccc959e8a5f22b5e41a8c43146337c632acedb44f5b5c",
+			"span": {
+				"start": 292,
+				"end": 341,
+				"tokenStart": 57,
+				"tokenEnd": 61
+			},
+			"status": "active"
+		},
+		{
+			"file": "lesson.prax",
+			"path": [1, 3],
+			"id": "00000000-0000-4000-8000-000000000017",
+			"fingerprint": "9ead45d52e9380d9a123cc71727238975e19643a4b58c9a42014ed7ca668871c",
+			"span": {
+				"start": 346,
+				"end": 366,
+				"tokenStart": 64,
+				"tokenEnd": 66
+			},
+			"status": "active"
+		},
+		{
+			"file": "lesson.prax",
+			"path": [1, 4],
+			"id": "00000000-0000-4000-8000-000000000018",
+			"fingerprint": "9ead45d52e9380d9a123cc71727238975e19643a4b58c9a42014ed7ca668871c",
+			"span": {
+				"start": 367,
+				"end": 387,
+				"tokenStart": 67,
+				"tokenEnd": 69
+			},
+			"status": "active"
+		},
+		{
+			"file": "lesson.prax",
+			"path": [1, 5],
+			"id": "00000000-0000-4000-8000-000000000019",
+			"fingerprint": "e8f1eb42d19326416121c4ff542675bf553b4b5a7faa8f0aaccc1bd5baabef11",
+			"span": {
+				"start": 388,
+				"end": 448,
+				"tokenStart": 70,
+				"tokenEnd": 80
+			},
+			"status": "active"
+		},
+		{
+			"file": "lesson.prax",
+			"path": [1, 5, 0],
+			"id": "00000000-0000-4000-8000-000000000020",
+			"fingerprint": "8d8d66c2866f66be063603b35faa951878eb156fbf4a8d55f61b5fc14a9e34af",
+			"span": {
+				"start": 425,
+				"end": 444,
+				"tokenStart": 76,
+				"tokenEnd": 78
+			},
+			"status": "active"
+		},
+		{
+			"file": "lesson.prax",
+			"path": [1, 5, 0, 0],
+			"id": "00000000-0000-4000-8000-000000000021",
+			"fingerprint": "66068530c6ee26faaf58228ee3c81df1de42eb3f0cf528231cdd7a398a2ad50e",
+			"span": {
+				"start": 436,
+				"end": 442,
+				"tokenStart": 76,
+				"tokenEnd": 78
+			},
+			"status": "active"
+		},
+		{
+			"file": "lesson.prax",
+			"path": [1, 6],
+			"id": "00000000-0000-4000-8000-000000000022",
+			"fingerprint": "30aa13bcf4c1657f923c8d0d1a24cb6a2b15a4b8f761c66c6f36e90dab2ea5fd",
+			"span": {
+				"start": 449,
+				"end": 505,
+				"tokenStart": 81,
+				"tokenEnd": 95
+			},
+			"status": "active"
+		},
+		{
+			"file": "lesson.prax",
+			"path": [1, 6, 0],
+			"id": "00000000-0000-4000-8000-000000000023",
+			"fingerprint": "6ab5f82d880efc620ba8b1bf09f63102018dfbd51229f92a567f319de98cb721",
+			"span": {
+				"start": 479,
+				"end": 501,
+				"tokenStart": 87,
+				"tokenEnd": 93
+			},
+			"status": "active"
+		},
+		{
+			"file": "lesson.prax",
+			"path": [1, 6, 0, 0],
+			"id": "00000000-0000-4000-8000-000000000024",
+			"fingerprint": "d972500c29d2204b149bde52a4fc95d0cfa80e7fc173f506637c396f841bd2e4",
+			"span": {
+				"start": 479,
+				"end": 492,
+				"tokenStart": 87,
+				"tokenEnd": 90
+			},
+			"status": "active"
+		},
+		{
+			"file": "lesson.prax",
+			"path": [1, 6, 0, 1],
+			"id": "00000000-0000-4000-8000-000000000025",
+			"fingerprint": "cb95bfca5fb2b988cbd8b254d503fb5c7049430f05bc2de06492ee12fbfdceab",
+			"span": {
+				"start": 492,
+				"end": 501,
+				"tokenStart": 90,
+				"tokenEnd": 93
+			},
+			"status": "active"
+		},
+		{
+			"file": "lesson.prax",
+			"path": [2],
+			"id": "00000000-0000-4000-8000-000000000026",
+			"fingerprint": "2141381f655c85b7e4f3cf3aea40451b999ac038e7f6dbac9d45b79f44047b25",
+			"span": {
+				"start": 506,
+				"end": 517,
+				"tokenStart": 96,
+				"tokenEnd": 101
+			},
+			"status": "active"
+		}
+	],
+	"exportIds": [
+		"00000000-0000-4000-8000-000000000002",
+		"00000000-0000-4000-8000-000000000003",
+		"00000000-0000-4000-8000-000000000004",
+		"00000000-0000-4000-8000-000000000005",
+		"00000000-0000-4000-8000-000000000006",
+		"00000000-0000-4000-8000-000000000007",
+		"00000000-0000-4000-8000-000000000008",
+		"00000000-0000-4000-8000-000000000009",
+		"00000000-0000-4000-8000-000000000010",
+		"00000000-0000-4000-8000-000000000011",
+		"00000000-0000-4000-8000-000000000012",
+		"00000000-0000-4000-8000-000000000013",
+		"00000000-0000-4000-8000-000000000014",
+		"00000000-0000-4000-8000-000000000015",
+		"00000000-0000-4000-8000-000000000016",
+		"00000000-0000-4000-8000-000000000017",
+		"00000000-0000-4000-8000-000000000018",
+		"00000000-0000-4000-8000-000000000019",
+		"00000000-0000-4000-8000-000000000020",
+		"00000000-0000-4000-8000-000000000021",
+		"00000000-0000-4000-8000-000000000022",
+		"00000000-0000-4000-8000-000000000023",
+		"00000000-0000-4000-8000-000000000024",
+		"00000000-0000-4000-8000-000000000025",
+		"00000000-0000-4000-8000-000000000026"
+	],
+	"statuses": {
+		"00000000-0000-4000-8000-000000000002": "active",
+		"00000000-0000-4000-8000-000000000003": "active",
+		"00000000-0000-4000-8000-000000000004": "active",
+		"00000000-0000-4000-8000-000000000005": "active",
+		"00000000-0000-4000-8000-000000000006": "active",
+		"00000000-0000-4000-8000-000000000007": "active",
+		"00000000-0000-4000-8000-000000000008": "active",
+		"00000000-0000-4000-8000-000000000009": "active",
+		"00000000-0000-4000-8000-000000000010": "active",
+		"00000000-0000-4000-8000-000000000011": "active",
+		"00000000-0000-4000-8000-000000000012": "active",
+		"00000000-0000-4000-8000-000000000013": "active",
+		"00000000-0000-4000-8000-000000000014": "active",
+		"00000000-0000-4000-8000-000000000015": "active",
+		"00000000-0000-4000-8000-000000000016": "active",
+		"00000000-0000-4000-8000-000000000017": "active",
+		"00000000-0000-4000-8000-000000000018": "active",
+		"00000000-0000-4000-8000-000000000019": "active",
+		"00000000-0000-4000-8000-000000000020": "active",
+		"00000000-0000-4000-8000-000000000021": "active",
+		"00000000-0000-4000-8000-000000000022": "active",
+		"00000000-0000-4000-8000-000000000023": "active",
+		"00000000-0000-4000-8000-000000000024": "active",
+		"00000000-0000-4000-8000-000000000025": "active",
+		"00000000-0000-4000-8000-000000000026": "active",
+		"00000000-0000-4000-8000-000000000027": "cut",
+		"00000000-0000-4000-8000-000000000028": "cut",
+		"00000000-0000-4000-8000-000000000029": "retired",
+		"00000000-0000-4000-8000-000000000030": "retired"
+	}
+}

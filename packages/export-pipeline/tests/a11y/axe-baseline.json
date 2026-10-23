@@ -1,0 +1,11 @@
+{
+	"_notes": {
+		"comprehensive-grammar-v3-test-course.html::default": "Known issue: scroll containers in fixture are missing keyboard-focus affordance (tracked separately)."
+	},
+	"comprehensive-grammar-v3-test-course.html::default": [
+		{
+			"id": "scrollable-region-focusable",
+			"count": 4
+		}
+	]
+}

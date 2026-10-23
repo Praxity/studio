@@ -1,0 +1,937 @@
+[
+	{
+		"name": "en single uncertainty false description false",
+		"block": {
+			"id": "choice",
+			"type": "assessment",
+			"locale": "en",
+			"data": {
+				"assessmentType": "choice",
+				"required": true,
+				"_dontKnow": false,
+				"stem": [
+					{
+						"id": "stem",
+						"type": "text",
+						"data": {
+							"content": "<p>Pick <em>carefully</em>.</p>"
+						}
+					}
+				],
+				"response": {
+					"type": "choice",
+					"selectionMode": "single",
+					"options": [
+						{
+							"id": "first",
+							"label": "First"
+						},
+						{
+							"id": "second",
+							"label": "Second"
+						}
+					]
+				}
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-choice\" class=\"praxity-block praxity-block-assessment praxity-block-choice\" data-block-id=\"choice\" data-node-id=\"choice\" data-block-type=\"assessment\" data-focus-row><form class=\"praxity-block-assessment praxity-assessment-choice-baseline\"><div class=\"praxity-assessment-question-header\"><p id=\"assessment-question-choice\" class=\"praxity-assessment-stem\"><span class=\"praxity-assessment-stem-content\">Pick <em>carefully</em>.</span><span class=\"praxity-required-indicator\"><span aria-hidden=\"true\" class=\"praxity-required-marker\"></span><span class=\"praxity-sr-only\">Required</span></span></p></div><fieldset class=\"praxity-fieldset-reset praxity-assessment-choice\" role=\"radiogroup\" aria-required=\"true\" aria-labelledby=\"assessment-question-choice\"><div class=\"praxity-assessment-choice-options\"><label data-node-id=\"first\" class=\"praxity-assessment-choice-option\" for=\"choice-option-first\"><input id=\"choice-option-first\" type=\"radio\" name=\"choice\" value=\"first\" aria-labelledby=\"choice-option-first-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"choice-option-first-label\" class=\"praxity-choice-label\">First</span></span></label><label data-node-id=\"second\" class=\"praxity-assessment-choice-option\" for=\"choice-option-second\"><input id=\"choice-option-second\" type=\"radio\" name=\"choice\" value=\"second\" aria-labelledby=\"choice-option-second-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"choice-option-second-label\" class=\"praxity-choice-label\">Second</span></span></label></div></fieldset><div data-assessment-feedback></div><div class=\"praxity-assessment-actions\"></div><noscript><p class=\"praxity-assessment-needs-script\">Answering this question needs JavaScript. Turn it on to answer and see feedback.</p></noscript></form></div>"
+	},
+	{
+		"name": "en single uncertainty false description true",
+		"block": {
+			"id": "choice",
+			"type": "assessment",
+			"locale": "en",
+			"data": {
+				"assessmentType": "choice",
+				"required": true,
+				"_dontKnow": false,
+				"stem": [
+					{
+						"id": "stem",
+						"type": "text",
+						"data": {
+							"content": "<p>Pick <em>carefully</em>.</p>"
+						}
+					}
+				],
+				"description": [
+					{
+						"id": "description",
+						"type": "text",
+						"data": {
+							"content": "<p>Read <strong>all</strong> options.</p>"
+						}
+					}
+				],
+				"response": {
+					"type": "choice",
+					"selectionMode": "single",
+					"options": [
+						{
+							"id": "first",
+							"label": "First"
+						},
+						{
+							"id": "second",
+							"label": "Second"
+						}
+					]
+				}
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-choice\" class=\"praxity-block praxity-block-assessment praxity-block-choice\" data-block-id=\"choice\" data-node-id=\"choice\" data-block-type=\"assessment\" data-focus-row><form class=\"praxity-block-assessment praxity-assessment-choice-baseline\"><div class=\"praxity-assessment-question-header\"><p id=\"assessment-question-choice\" class=\"praxity-assessment-stem\"><span class=\"praxity-assessment-stem-content\">Pick <em>carefully</em>.</span><span class=\"praxity-required-indicator\"><span aria-hidden=\"true\" class=\"praxity-required-marker\"></span><span class=\"praxity-sr-only\">Required</span></span></p></div><div id=\"choice-description\" class=\"praxity-assessment-description\"><div data-node-id=\"description\"><p>Read <strong>all</strong> options.</p></div></div><fieldset class=\"praxity-fieldset-reset praxity-assessment-choice\" role=\"radiogroup\" aria-required=\"true\" aria-labelledby=\"assessment-question-choice\" aria-describedby=\"choice-description\"><div class=\"praxity-assessment-choice-options\"><label data-node-id=\"first\" class=\"praxity-assessment-choice-option\" for=\"choice-option-first\"><input id=\"choice-option-first\" type=\"radio\" name=\"choice\" value=\"first\" aria-labelledby=\"choice-option-first-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"choice-option-first-label\" class=\"praxity-choice-label\">First</span></span></label><label data-node-id=\"second\" class=\"praxity-assessment-choice-option\" for=\"choice-option-second\"><input id=\"choice-option-second\" type=\"radio\" name=\"choice\" value=\"second\" aria-labelledby=\"choice-option-second-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"choice-option-second-label\" class=\"praxity-choice-label\">Second</span></span></label></div></fieldset><div data-assessment-feedback></div><div class=\"praxity-assessment-actions\"></div><noscript><p class=\"praxity-assessment-needs-script\">Answering this question needs JavaScript. Turn it on to answer and see feedback.</p></noscript></form></div>"
+	},
+	{
+		"name": "en single uncertainty true description false",
+		"block": {
+			"id": "choice",
+			"type": "assessment",
+			"locale": "en",
+			"data": {
+				"assessmentType": "choice",
+				"required": true,
+				"_dontKnow": true,
+				"stem": [
+					{
+						"id": "stem",
+						"type": "text",
+						"data": {
+							"content": "<p>Pick <em>carefully</em>.</p>"
+						}
+					}
+				],
+				"response": {
+					"type": "choice",
+					"selectionMode": "single",
+					"options": [
+						{
+							"id": "first",
+							"label": "First"
+						},
+						{
+							"id": "second",
+							"label": "Second"
+						}
+					]
+				}
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-choice\" class=\"praxity-block praxity-block-assessment praxity-block-choice\" data-block-id=\"choice\" data-node-id=\"choice\" data-block-type=\"assessment\" data-focus-row><form class=\"praxity-block-assessment praxity-assessment-choice-baseline\"><div class=\"praxity-assessment-question-header\"><p id=\"assessment-question-choice\" class=\"praxity-assessment-stem\"><span class=\"praxity-assessment-stem-content\">Pick <em>carefully</em>.</span><span class=\"praxity-required-indicator\"><span aria-hidden=\"true\" class=\"praxity-required-marker\"></span><span class=\"praxity-sr-only\">Required</span></span></p></div><fieldset class=\"praxity-fieldset-reset praxity-assessment-choice\" role=\"radiogroup\" aria-required=\"true\" aria-labelledby=\"assessment-question-choice\"><div class=\"praxity-assessment-choice-options\"><label data-node-id=\"first\" class=\"praxity-assessment-choice-option\" for=\"choice-option-first\"><input id=\"choice-option-first\" type=\"radio\" name=\"choice\" value=\"first\" aria-labelledby=\"choice-option-first-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"choice-option-first-label\" class=\"praxity-choice-label\">First</span></span></label><label data-node-id=\"second\" class=\"praxity-assessment-choice-option\" for=\"choice-option-second\"><input id=\"choice-option-second\" type=\"radio\" name=\"choice\" value=\"second\" aria-labelledby=\"choice-option-second-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"choice-option-second-label\" class=\"praxity-choice-label\">Second</span></span></label><label data-node-id=\"dont-know\" data-dont-know class=\"praxity-assessment-choice-option\" for=\"choice-option-dont-know\"><input id=\"choice-option-dont-know\" type=\"radio\" name=\"choice\" value=\"dont-know\" aria-labelledby=\"choice-option-dont-know-label\" disabled /><span class=\"praxity-choice-key-spacer\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"choice-option-dont-know-label\" class=\"praxity-choice-label\">I don't know</span></span></label></div></fieldset><div data-assessment-feedback></div><div class=\"praxity-assessment-actions\"></div><noscript><p class=\"praxity-assessment-needs-script\">Answering this question needs JavaScript. Turn it on to answer and see feedback.</p></noscript></form></div>"
+	},
+	{
+		"name": "en single uncertainty true description true",
+		"block": {
+			"id": "choice",
+			"type": "assessment",
+			"locale": "en",
+			"data": {
+				"assessmentType": "choice",
+				"required": true,
+				"_dontKnow": true,
+				"stem": [
+					{
+						"id": "stem",
+						"type": "text",
+						"data": {
+							"content": "<p>Pick <em>carefully</em>.</p>"
+						}
+					}
+				],
+				"description": [
+					{
+						"id": "description",
+						"type": "text",
+						"data": {
+							"content": "<p>Read <strong>all</strong> options.</p>"
+						}
+					}
+				],
+				"response": {
+					"type": "choice",
+					"selectionMode": "single",
+					"options": [
+						{
+							"id": "first",
+							"label": "First"
+						},
+						{
+							"id": "second",
+							"label": "Second"
+						}
+					]
+				}
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-choice\" class=\"praxity-block praxity-block-assessment praxity-block-choice\" data-block-id=\"choice\" data-node-id=\"choice\" data-block-type=\"assessment\" data-focus-row><form class=\"praxity-block-assessment praxity-assessment-choice-baseline\"><div class=\"praxity-assessment-question-header\"><p id=\"assessment-question-choice\" class=\"praxity-assessment-stem\"><span class=\"praxity-assessment-stem-content\">Pick <em>carefully</em>.</span><span class=\"praxity-required-indicator\"><span aria-hidden=\"true\" class=\"praxity-required-marker\"></span><span class=\"praxity-sr-only\">Required</span></span></p></div><div id=\"choice-description\" class=\"praxity-assessment-description\"><div data-node-id=\"description\"><p>Read <strong>all</strong> options.</p></div></div><fieldset class=\"praxity-fieldset-reset praxity-assessment-choice\" role=\"radiogroup\" aria-required=\"true\" aria-labelledby=\"assessment-question-choice\" aria-describedby=\"choice-description\"><div class=\"praxity-assessment-choice-options\"><label data-node-id=\"first\" class=\"praxity-assessment-choice-option\" for=\"choice-option-first\"><input id=\"choice-option-first\" type=\"radio\" name=\"choice\" value=\"first\" aria-labelledby=\"choice-option-first-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"choice-option-first-label\" class=\"praxity-choice-label\">First</span></span></label><label data-node-id=\"second\" class=\"praxity-assessment-choice-option\" for=\"choice-option-second\"><input id=\"choice-option-second\" type=\"radio\" name=\"choice\" value=\"second\" aria-labelledby=\"choice-option-second-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"choice-option-second-label\" class=\"praxity-choice-label\">Second</span></span></label><label data-node-id=\"dont-know\" data-dont-know class=\"praxity-assessment-choice-option\" for=\"choice-option-dont-know\"><input id=\"choice-option-dont-know\" type=\"radio\" name=\"choice\" value=\"dont-know\" aria-labelledby=\"choice-option-dont-know-label\" disabled /><span class=\"praxity-choice-key-spacer\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"choice-option-dont-know-label\" class=\"praxity-choice-label\">I don't know</span></span></label></div></fieldset><div data-assessment-feedback></div><div class=\"praxity-assessment-actions\"></div><noscript><p class=\"praxity-assessment-needs-script\">Answering this question needs JavaScript. Turn it on to answer and see feedback.</p></noscript></form></div>"
+	},
+	{
+		"name": "en multiple uncertainty false description false",
+		"block": {
+			"id": "choice",
+			"type": "assessment",
+			"locale": "en",
+			"data": {
+				"assessmentType": "choice",
+				"required": true,
+				"_dontKnow": false,
+				"stem": [
+					{
+						"id": "stem",
+						"type": "text",
+						"data": {
+							"content": "<p>Pick <em>carefully</em>.</p>"
+						}
+					}
+				],
+				"response": {
+					"type": "choice",
+					"selectionMode": "multiple",
+					"options": [
+						{
+							"id": "first",
+							"label": "First"
+						},
+						{
+							"id": "second",
+							"label": "Second"
+						}
+					]
+				}
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-choice\" class=\"praxity-block praxity-block-assessment praxity-block-choice\" data-block-id=\"choice\" data-node-id=\"choice\" data-block-type=\"assessment\" data-focus-row><form class=\"praxity-block-assessment praxity-assessment-choice-baseline\"><div class=\"praxity-assessment-question-header\"><p id=\"assessment-question-choice\" class=\"praxity-assessment-stem\"><span class=\"praxity-assessment-stem-content\">Pick <em>carefully</em>.</span><span class=\"praxity-required-indicator\"><span aria-hidden=\"true\" class=\"praxity-required-marker\"></span><span class=\"praxity-sr-only\">Required</span></span></p></div><fieldset class=\"praxity-fieldset-reset praxity-assessment-choice\" aria-labelledby=\"assessment-question-choice\"><div class=\"praxity-assessment-choice-options\"><label data-node-id=\"first\" class=\"praxity-assessment-choice-option\" for=\"choice-option-first\"><input id=\"choice-option-first\" type=\"checkbox\" name=\"choice\" value=\"first\" aria-labelledby=\"choice-option-first-label\" disabled /><span class=\"praxity-choice-text\"><span id=\"choice-option-first-label\" class=\"praxity-choice-label\">First</span></span></label><label data-node-id=\"second\" class=\"praxity-assessment-choice-option\" for=\"choice-option-second\"><input id=\"choice-option-second\" type=\"checkbox\" name=\"choice\" value=\"second\" aria-labelledby=\"choice-option-second-label\" disabled /><span class=\"praxity-choice-text\"><span id=\"choice-option-second-label\" class=\"praxity-choice-label\">Second</span></span></label></div></fieldset><div data-assessment-feedback></div><div class=\"praxity-assessment-actions\"></div><noscript><p class=\"praxity-assessment-needs-script\">Answering this question needs JavaScript. Turn it on to answer and see feedback.</p></noscript></form></div>"
+	},
+	{
+		"name": "en multiple uncertainty false description true",
+		"block": {
+			"id": "choice",
+			"type": "assessment",
+			"locale": "en",
+			"data": {
+				"assessmentType": "choice",
+				"required": true,
+				"_dontKnow": false,
+				"stem": [
+					{
+						"id": "stem",
+						"type": "text",
+						"data": {
+							"content": "<p>Pick <em>carefully</em>.</p>"
+						}
+					}
+				],
+				"description": [
+					{
+						"id": "description",
+						"type": "text",
+						"data": {
+							"content": "<p>Read <strong>all</strong> options.</p>"
+						}
+					}
+				],
+				"response": {
+					"type": "choice",
+					"selectionMode": "multiple",
+					"options": [
+						{
+							"id": "first",
+							"label": "First"
+						},
+						{
+							"id": "second",
+							"label": "Second"
+						}
+					]
+				}
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-choice\" class=\"praxity-block praxity-block-assessment praxity-block-choice\" data-block-id=\"choice\" data-node-id=\"choice\" data-block-type=\"assessment\" data-focus-row><form class=\"praxity-block-assessment praxity-assessment-choice-baseline\"><div class=\"praxity-assessment-question-header\"><p id=\"assessment-question-choice\" class=\"praxity-assessment-stem\"><span class=\"praxity-assessment-stem-content\">Pick <em>carefully</em>.</span><span class=\"praxity-required-indicator\"><span aria-hidden=\"true\" class=\"praxity-required-marker\"></span><span class=\"praxity-sr-only\">Required</span></span></p></div><div id=\"choice-description\" class=\"praxity-assessment-description\"><div data-node-id=\"description\"><p>Read <strong>all</strong> options.</p></div></div><fieldset class=\"praxity-fieldset-reset praxity-assessment-choice\" aria-labelledby=\"assessment-question-choice\" aria-describedby=\"choice-description\"><div class=\"praxity-assessment-choice-options\"><label data-node-id=\"first\" class=\"praxity-assessment-choice-option\" for=\"choice-option-first\"><input id=\"choice-option-first\" type=\"checkbox\" name=\"choice\" value=\"first\" aria-labelledby=\"choice-option-first-label\" disabled /><span class=\"praxity-choice-text\"><span id=\"choice-option-first-label\" class=\"praxity-choice-label\">First</span></span></label><label data-node-id=\"second\" class=\"praxity-assessment-choice-option\" for=\"choice-option-second\"><input id=\"choice-option-second\" type=\"checkbox\" name=\"choice\" value=\"second\" aria-labelledby=\"choice-option-second-label\" disabled /><span class=\"praxity-choice-text\"><span id=\"choice-option-second-label\" class=\"praxity-choice-label\">Second</span></span></label></div></fieldset><div data-assessment-feedback></div><div class=\"praxity-assessment-actions\"></div><noscript><p class=\"praxity-assessment-needs-script\">Answering this question needs JavaScript. Turn it on to answer and see feedback.</p></noscript></form></div>"
+	},
+	{
+		"name": "en multiple uncertainty true description false",
+		"block": {
+			"id": "choice",
+			"type": "assessment",
+			"locale": "en",
+			"data": {
+				"assessmentType": "choice",
+				"required": true,
+				"_dontKnow": true,
+				"stem": [
+					{
+						"id": "stem",
+						"type": "text",
+						"data": {
+							"content": "<p>Pick <em>carefully</em>.</p>"
+						}
+					}
+				],
+				"response": {
+					"type": "choice",
+					"selectionMode": "multiple",
+					"options": [
+						{
+							"id": "first",
+							"label": "First"
+						},
+						{
+							"id": "second",
+							"label": "Second"
+						}
+					]
+				}
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-choice\" class=\"praxity-block praxity-block-assessment praxity-block-choice\" data-block-id=\"choice\" data-node-id=\"choice\" data-block-type=\"assessment\" data-focus-row><form class=\"praxity-block-assessment praxity-assessment-choice-baseline\"><div class=\"praxity-assessment-question-header\"><p id=\"assessment-question-choice\" class=\"praxity-assessment-stem\"><span class=\"praxity-assessment-stem-content\">Pick <em>carefully</em>.</span><span class=\"praxity-required-indicator\"><span aria-hidden=\"true\" class=\"praxity-required-marker\"></span><span class=\"praxity-sr-only\">Required</span></span></p></div><fieldset class=\"praxity-fieldset-reset praxity-assessment-choice\" aria-labelledby=\"assessment-question-choice\"><div class=\"praxity-assessment-choice-options\"><label data-node-id=\"first\" class=\"praxity-assessment-choice-option\" for=\"choice-option-first\"><input id=\"choice-option-first\" type=\"checkbox\" name=\"choice\" value=\"first\" aria-labelledby=\"choice-option-first-label\" disabled /><span class=\"praxity-choice-text\"><span id=\"choice-option-first-label\" class=\"praxity-choice-label\">First</span></span></label><label data-node-id=\"second\" class=\"praxity-assessment-choice-option\" for=\"choice-option-second\"><input id=\"choice-option-second\" type=\"checkbox\" name=\"choice\" value=\"second\" aria-labelledby=\"choice-option-second-label\" disabled /><span class=\"praxity-choice-text\"><span id=\"choice-option-second-label\" class=\"praxity-choice-label\">Second</span></span></label><label data-node-id=\"dont-know\" data-dont-know class=\"praxity-assessment-choice-option\" for=\"choice-option-dont-know\"><input id=\"choice-option-dont-know\" type=\"checkbox\" name=\"choice\" value=\"dont-know\" aria-labelledby=\"choice-option-dont-know-label\" disabled /><span class=\"praxity-choice-text\"><span id=\"choice-option-dont-know-label\" class=\"praxity-choice-label\">I don't know</span></span></label></div></fieldset><div data-assessment-feedback></div><div class=\"praxity-assessment-actions\"></div><noscript><p class=\"praxity-assessment-needs-script\">Answering this question needs JavaScript. Turn it on to answer and see feedback.</p></noscript></form></div>"
+	},
+	{
+		"name": "en multiple uncertainty true description true",
+		"block": {
+			"id": "choice",
+			"type": "assessment",
+			"locale": "en",
+			"data": {
+				"assessmentType": "choice",
+				"required": true,
+				"_dontKnow": true,
+				"stem": [
+					{
+						"id": "stem",
+						"type": "text",
+						"data": {
+							"content": "<p>Pick <em>carefully</em>.</p>"
+						}
+					}
+				],
+				"description": [
+					{
+						"id": "description",
+						"type": "text",
+						"data": {
+							"content": "<p>Read <strong>all</strong> options.</p>"
+						}
+					}
+				],
+				"response": {
+					"type": "choice",
+					"selectionMode": "multiple",
+					"options": [
+						{
+							"id": "first",
+							"label": "First"
+						},
+						{
+							"id": "second",
+							"label": "Second"
+						}
+					]
+				}
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-choice\" class=\"praxity-block praxity-block-assessment praxity-block-choice\" data-block-id=\"choice\" data-node-id=\"choice\" data-block-type=\"assessment\" data-focus-row><form class=\"praxity-block-assessment praxity-assessment-choice-baseline\"><div class=\"praxity-assessment-question-header\"><p id=\"assessment-question-choice\" class=\"praxity-assessment-stem\"><span class=\"praxity-assessment-stem-content\">Pick <em>carefully</em>.</span><span class=\"praxity-required-indicator\"><span aria-hidden=\"true\" class=\"praxity-required-marker\"></span><span class=\"praxity-sr-only\">Required</span></span></p></div><div id=\"choice-description\" class=\"praxity-assessment-description\"><div data-node-id=\"description\"><p>Read <strong>all</strong> options.</p></div></div><fieldset class=\"praxity-fieldset-reset praxity-assessment-choice\" aria-labelledby=\"assessment-question-choice\" aria-describedby=\"choice-description\"><div class=\"praxity-assessment-choice-options\"><label data-node-id=\"first\" class=\"praxity-assessment-choice-option\" for=\"choice-option-first\"><input id=\"choice-option-first\" type=\"checkbox\" name=\"choice\" value=\"first\" aria-labelledby=\"choice-option-first-label\" disabled /><span class=\"praxity-choice-text\"><span id=\"choice-option-first-label\" class=\"praxity-choice-label\">First</span></span></label><label data-node-id=\"second\" class=\"praxity-assessment-choice-option\" for=\"choice-option-second\"><input id=\"choice-option-second\" type=\"checkbox\" name=\"choice\" value=\"second\" aria-labelledby=\"choice-option-second-label\" disabled /><span class=\"praxity-choice-text\"><span id=\"choice-option-second-label\" class=\"praxity-choice-label\">Second</span></span></label><label data-node-id=\"dont-know\" data-dont-know class=\"praxity-assessment-choice-option\" for=\"choice-option-dont-know\"><input id=\"choice-option-dont-know\" type=\"checkbox\" name=\"choice\" value=\"dont-know\" aria-labelledby=\"choice-option-dont-know-label\" disabled /><span class=\"praxity-choice-text\"><span id=\"choice-option-dont-know-label\" class=\"praxity-choice-label\">I don't know</span></span></label></div></fieldset><div data-assessment-feedback></div><div class=\"praxity-assessment-actions\"></div><noscript><p class=\"praxity-assessment-needs-script\">Answering this question needs JavaScript. Turn it on to answer and see feedback.</p></noscript></form></div>"
+	},
+	{
+		"name": "fr single uncertainty false description false",
+		"block": {
+			"id": "choice",
+			"type": "assessment",
+			"locale": "fr",
+			"data": {
+				"assessmentType": "choice",
+				"required": true,
+				"_dontKnow": false,
+				"stem": [
+					{
+						"id": "stem",
+						"type": "text",
+						"data": {
+							"content": "<p>Pick <em>carefully</em>.</p>"
+						}
+					}
+				],
+				"response": {
+					"type": "choice",
+					"selectionMode": "single",
+					"options": [
+						{
+							"id": "first",
+							"label": "First"
+						},
+						{
+							"id": "second",
+							"label": "Second"
+						}
+					]
+				}
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-choice\" class=\"praxity-block praxity-block-assessment praxity-block-choice\" data-block-id=\"choice\" data-node-id=\"choice\" data-block-type=\"assessment\" data-focus-row><form class=\"praxity-block-assessment praxity-assessment-choice-baseline\"><div class=\"praxity-assessment-question-header\"><p id=\"assessment-question-choice\" class=\"praxity-assessment-stem\"><span class=\"praxity-assessment-stem-content\">Pick <em>carefully</em>.</span><span class=\"praxity-required-indicator\"><span aria-hidden=\"true\" class=\"praxity-required-marker\"></span><span class=\"praxity-sr-only\">Obligatoire</span></span></p></div><fieldset class=\"praxity-fieldset-reset praxity-assessment-choice\" role=\"radiogroup\" aria-required=\"true\" aria-labelledby=\"assessment-question-choice\"><div class=\"praxity-assessment-choice-options\"><label data-node-id=\"first\" class=\"praxity-assessment-choice-option\" for=\"choice-option-first\"><input id=\"choice-option-first\" type=\"radio\" name=\"choice\" value=\"first\" aria-labelledby=\"choice-option-first-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"choice-option-first-label\" class=\"praxity-choice-label\">First</span></span></label><label data-node-id=\"second\" class=\"praxity-assessment-choice-option\" for=\"choice-option-second\"><input id=\"choice-option-second\" type=\"radio\" name=\"choice\" value=\"second\" aria-labelledby=\"choice-option-second-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"choice-option-second-label\" class=\"praxity-choice-label\">Second</span></span></label></div></fieldset><div data-assessment-feedback></div><div class=\"praxity-assessment-actions\"></div><noscript><p class=\"praxity-assessment-needs-script\">Répondre à cette question nécessite JavaScript. Activez-le pour répondre et voir la rétroaction.</p></noscript></form></div>"
+	},
+	{
+		"name": "fr single uncertainty false description true",
+		"block": {
+			"id": "choice",
+			"type": "assessment",
+			"locale": "fr",
+			"data": {
+				"assessmentType": "choice",
+				"required": true,
+				"_dontKnow": false,
+				"stem": [
+					{
+						"id": "stem",
+						"type": "text",
+						"data": {
+							"content": "<p>Pick <em>carefully</em>.</p>"
+						}
+					}
+				],
+				"description": [
+					{
+						"id": "description",
+						"type": "text",
+						"data": {
+							"content": "<p>Read <strong>all</strong> options.</p>"
+						}
+					}
+				],
+				"response": {
+					"type": "choice",
+					"selectionMode": "single",
+					"options": [
+						{
+							"id": "first",
+							"label": "First"
+						},
+						{
+							"id": "second",
+							"label": "Second"
+						}
+					]
+				}
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-choice\" class=\"praxity-block praxity-block-assessment praxity-block-choice\" data-block-id=\"choice\" data-node-id=\"choice\" data-block-type=\"assessment\" data-focus-row><form class=\"praxity-block-assessment praxity-assessment-choice-baseline\"><div class=\"praxity-assessment-question-header\"><p id=\"assessment-question-choice\" class=\"praxity-assessment-stem\"><span class=\"praxity-assessment-stem-content\">Pick <em>carefully</em>.</span><span class=\"praxity-required-indicator\"><span aria-hidden=\"true\" class=\"praxity-required-marker\"></span><span class=\"praxity-sr-only\">Obligatoire</span></span></p></div><div id=\"choice-description\" class=\"praxity-assessment-description\"><div data-node-id=\"description\"><p>Read <strong>all</strong> options.</p></div></div><fieldset class=\"praxity-fieldset-reset praxity-assessment-choice\" role=\"radiogroup\" aria-required=\"true\" aria-labelledby=\"assessment-question-choice\" aria-describedby=\"choice-description\"><div class=\"praxity-assessment-choice-options\"><label data-node-id=\"first\" class=\"praxity-assessment-choice-option\" for=\"choice-option-first\"><input id=\"choice-option-first\" type=\"radio\" name=\"choice\" value=\"first\" aria-labelledby=\"choice-option-first-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"choice-option-first-label\" class=\"praxity-choice-label\">First</span></span></label><label data-node-id=\"second\" class=\"praxity-assessment-choice-option\" for=\"choice-option-second\"><input id=\"choice-option-second\" type=\"radio\" name=\"choice\" value=\"second\" aria-labelledby=\"choice-option-second-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"choice-option-second-label\" class=\"praxity-choice-label\">Second</span></span></label></div></fieldset><div data-assessment-feedback></div><div class=\"praxity-assessment-actions\"></div><noscript><p class=\"praxity-assessment-needs-script\">Répondre à cette question nécessite JavaScript. Activez-le pour répondre et voir la rétroaction.</p></noscript></form></div>"
+	},
+	{
+		"name": "fr single uncertainty true description false",
+		"block": {
+			"id": "choice",
+			"type": "assessment",
+			"locale": "fr",
+			"data": {
+				"assessmentType": "choice",
+				"required": true,
+				"_dontKnow": true,
+				"stem": [
+					{
+						"id": "stem",
+						"type": "text",
+						"data": {
+							"content": "<p>Pick <em>carefully</em>.</p>"
+						}
+					}
+				],
+				"response": {
+					"type": "choice",
+					"selectionMode": "single",
+					"options": [
+						{
+							"id": "first",
+							"label": "First"
+						},
+						{
+							"id": "second",
+							"label": "Second"
+						}
+					]
+				}
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-choice\" class=\"praxity-block praxity-block-assessment praxity-block-choice\" data-block-id=\"choice\" data-node-id=\"choice\" data-block-type=\"assessment\" data-focus-row><form class=\"praxity-block-assessment praxity-assessment-choice-baseline\"><div class=\"praxity-assessment-question-header\"><p id=\"assessment-question-choice\" class=\"praxity-assessment-stem\"><span class=\"praxity-assessment-stem-content\">Pick <em>carefully</em>.</span><span class=\"praxity-required-indicator\"><span aria-hidden=\"true\" class=\"praxity-required-marker\"></span><span class=\"praxity-sr-only\">Obligatoire</span></span></p></div><fieldset class=\"praxity-fieldset-reset praxity-assessment-choice\" role=\"radiogroup\" aria-required=\"true\" aria-labelledby=\"assessment-question-choice\"><div class=\"praxity-assessment-choice-options\"><label data-node-id=\"first\" class=\"praxity-assessment-choice-option\" for=\"choice-option-first\"><input id=\"choice-option-first\" type=\"radio\" name=\"choice\" value=\"first\" aria-labelledby=\"choice-option-first-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"choice-option-first-label\" class=\"praxity-choice-label\">First</span></span></label><label data-node-id=\"second\" class=\"praxity-assessment-choice-option\" for=\"choice-option-second\"><input id=\"choice-option-second\" type=\"radio\" name=\"choice\" value=\"second\" aria-labelledby=\"choice-option-second-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"choice-option-second-label\" class=\"praxity-choice-label\">Second</span></span></label><label data-node-id=\"dont-know\" data-dont-know class=\"praxity-assessment-choice-option\" for=\"choice-option-dont-know\"><input id=\"choice-option-dont-know\" type=\"radio\" name=\"choice\" value=\"dont-know\" aria-labelledby=\"choice-option-dont-know-label\" disabled /><span class=\"praxity-choice-key-spacer\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"choice-option-dont-know-label\" class=\"praxity-choice-label\">Je ne sais pas</span></span></label></div></fieldset><div data-assessment-feedback></div><div class=\"praxity-assessment-actions\"></div><noscript><p class=\"praxity-assessment-needs-script\">Répondre à cette question nécessite JavaScript. Activez-le pour répondre et voir la rétroaction.</p></noscript></form></div>"
+	},
+	{
+		"name": "fr single uncertainty true description true",
+		"block": {
+			"id": "choice",
+			"type": "assessment",
+			"locale": "fr",
+			"data": {
+				"assessmentType": "choice",
+				"required": true,
+				"_dontKnow": true,
+				"stem": [
+					{
+						"id": "stem",
+						"type": "text",
+						"data": {
+							"content": "<p>Pick <em>carefully</em>.</p>"
+						}
+					}
+				],
+				"description": [
+					{
+						"id": "description",
+						"type": "text",
+						"data": {
+							"content": "<p>Read <strong>all</strong> options.</p>"
+						}
+					}
+				],
+				"response": {
+					"type": "choice",
+					"selectionMode": "single",
+					"options": [
+						{
+							"id": "first",
+							"label": "First"
+						},
+						{
+							"id": "second",
+							"label": "Second"
+						}
+					]
+				}
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-choice\" class=\"praxity-block praxity-block-assessment praxity-block-choice\" data-block-id=\"choice\" data-node-id=\"choice\" data-block-type=\"assessment\" data-focus-row><form class=\"praxity-block-assessment praxity-assessment-choice-baseline\"><div class=\"praxity-assessment-question-header\"><p id=\"assessment-question-choice\" class=\"praxity-assessment-stem\"><span class=\"praxity-assessment-stem-content\">Pick <em>carefully</em>.</span><span class=\"praxity-required-indicator\"><span aria-hidden=\"true\" class=\"praxity-required-marker\"></span><span class=\"praxity-sr-only\">Obligatoire</span></span></p></div><div id=\"choice-description\" class=\"praxity-assessment-description\"><div data-node-id=\"description\"><p>Read <strong>all</strong> options.</p></div></div><fieldset class=\"praxity-fieldset-reset praxity-assessment-choice\" role=\"radiogroup\" aria-required=\"true\" aria-labelledby=\"assessment-question-choice\" aria-describedby=\"choice-description\"><div class=\"praxity-assessment-choice-options\"><label data-node-id=\"first\" class=\"praxity-assessment-choice-option\" for=\"choice-option-first\"><input id=\"choice-option-first\" type=\"radio\" name=\"choice\" value=\"first\" aria-labelledby=\"choice-option-first-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"choice-option-first-label\" class=\"praxity-choice-label\">First</span></span></label><label data-node-id=\"second\" class=\"praxity-assessment-choice-option\" for=\"choice-option-second\"><input id=\"choice-option-second\" type=\"radio\" name=\"choice\" value=\"second\" aria-labelledby=\"choice-option-second-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"choice-option-second-label\" class=\"praxity-choice-label\">Second</span></span></label><label data-node-id=\"dont-know\" data-dont-know class=\"praxity-assessment-choice-option\" for=\"choice-option-dont-know\"><input id=\"choice-option-dont-know\" type=\"radio\" name=\"choice\" value=\"dont-know\" aria-labelledby=\"choice-option-dont-know-label\" disabled /><span class=\"praxity-choice-key-spacer\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"choice-option-dont-know-label\" class=\"praxity-choice-label\">Je ne sais pas</span></span></label></div></fieldset><div data-assessment-feedback></div><div class=\"praxity-assessment-actions\"></div><noscript><p class=\"praxity-assessment-needs-script\">Répondre à cette question nécessite JavaScript. Activez-le pour répondre et voir la rétroaction.</p></noscript></form></div>"
+	},
+	{
+		"name": "fr multiple uncertainty false description false",
+		"block": {
+			"id": "choice",
+			"type": "assessment",
+			"locale": "fr",
+			"data": {
+				"assessmentType": "choice",
+				"required": true,
+				"_dontKnow": false,
+				"stem": [
+					{
+						"id": "stem",
+						"type": "text",
+						"data": {
+							"content": "<p>Pick <em>carefully</em>.</p>"
+						}
+					}
+				],
+				"response": {
+					"type": "choice",
+					"selectionMode": "multiple",
+					"options": [
+						{
+							"id": "first",
+							"label": "First"
+						},
+						{
+							"id": "second",
+							"label": "Second"
+						}
+					]
+				}
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-choice\" class=\"praxity-block praxity-block-assessment praxity-block-choice\" data-block-id=\"choice\" data-node-id=\"choice\" data-block-type=\"assessment\" data-focus-row><form class=\"praxity-block-assessment praxity-assessment-choice-baseline\"><div class=\"praxity-assessment-question-header\"><p id=\"assessment-question-choice\" class=\"praxity-assessment-stem\"><span class=\"praxity-assessment-stem-content\">Pick <em>carefully</em>.</span><span class=\"praxity-required-indicator\"><span aria-hidden=\"true\" class=\"praxity-required-marker\"></span><span class=\"praxity-sr-only\">Obligatoire</span></span></p></div><fieldset class=\"praxity-fieldset-reset praxity-assessment-choice\" aria-labelledby=\"assessment-question-choice\"><div class=\"praxity-assessment-choice-options\"><label data-node-id=\"first\" class=\"praxity-assessment-choice-option\" for=\"choice-option-first\"><input id=\"choice-option-first\" type=\"checkbox\" name=\"choice\" value=\"first\" aria-labelledby=\"choice-option-first-label\" disabled /><span class=\"praxity-choice-text\"><span id=\"choice-option-first-label\" class=\"praxity-choice-label\">First</span></span></label><label data-node-id=\"second\" class=\"praxity-assessment-choice-option\" for=\"choice-option-second\"><input id=\"choice-option-second\" type=\"checkbox\" name=\"choice\" value=\"second\" aria-labelledby=\"choice-option-second-label\" disabled /><span class=\"praxity-choice-text\"><span id=\"choice-option-second-label\" class=\"praxity-choice-label\">Second</span></span></label></div></fieldset><div data-assessment-feedback></div><div class=\"praxity-assessment-actions\"></div><noscript><p class=\"praxity-assessment-needs-script\">Répondre à cette question nécessite JavaScript. Activez-le pour répondre et voir la rétroaction.</p></noscript></form></div>"
+	},
+	{
+		"name": "fr multiple uncertainty false description true",
+		"block": {
+			"id": "choice",
+			"type": "assessment",
+			"locale": "fr",
+			"data": {
+				"assessmentType": "choice",
+				"required": true,
+				"_dontKnow": false,
+				"stem": [
+					{
+						"id": "stem",
+						"type": "text",
+						"data": {
+							"content": "<p>Pick <em>carefully</em>.</p>"
+						}
+					}
+				],
+				"description": [
+					{
+						"id": "description",
+						"type": "text",
+						"data": {
+							"content": "<p>Read <strong>all</strong> options.</p>"
+						}
+					}
+				],
+				"response": {
+					"type": "choice",
+					"selectionMode": "multiple",
+					"options": [
+						{
+							"id": "first",
+							"label": "First"
+						},
+						{
+							"id": "second",
+							"label": "Second"
+						}
+					]
+				}
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-choice\" class=\"praxity-block praxity-block-assessment praxity-block-choice\" data-block-id=\"choice\" data-node-id=\"choice\" data-block-type=\"assessment\" data-focus-row><form class=\"praxity-block-assessment praxity-assessment-choice-baseline\"><div class=\"praxity-assessment-question-header\"><p id=\"assessment-question-choice\" class=\"praxity-assessment-stem\"><span class=\"praxity-assessment-stem-content\">Pick <em>carefully</em>.</span><span class=\"praxity-required-indicator\"><span aria-hidden=\"true\" class=\"praxity-required-marker\"></span><span class=\"praxity-sr-only\">Obligatoire</span></span></p></div><div id=\"choice-description\" class=\"praxity-assessment-description\"><div data-node-id=\"description\"><p>Read <strong>all</strong> options.</p></div></div><fieldset class=\"praxity-fieldset-reset praxity-assessment-choice\" aria-labelledby=\"assessment-question-choice\" aria-describedby=\"choice-description\"><div class=\"praxity-assessment-choice-options\"><label data-node-id=\"first\" class=\"praxity-assessment-choice-option\" for=\"choice-option-first\"><input id=\"choice-option-first\" type=\"checkbox\" name=\"choice\" value=\"first\" aria-labelledby=\"choice-option-first-label\" disabled /><span class=\"praxity-choice-text\"><span id=\"choice-option-first-label\" class=\"praxity-choice-label\">First</span></span></label><label data-node-id=\"second\" class=\"praxity-assessment-choice-option\" for=\"choice-option-second\"><input id=\"choice-option-second\" type=\"checkbox\" name=\"choice\" value=\"second\" aria-labelledby=\"choice-option-second-label\" disabled /><span class=\"praxity-choice-text\"><span id=\"choice-option-second-label\" class=\"praxity-choice-label\">Second</span></span></label></div></fieldset><div data-assessment-feedback></div><div class=\"praxity-assessment-actions\"></div><noscript><p class=\"praxity-assessment-needs-script\">Répondre à cette question nécessite JavaScript. Activez-le pour répondre et voir la rétroaction.</p></noscript></form></div>"
+	},
+	{
+		"name": "fr multiple uncertainty true description false",
+		"block": {
+			"id": "choice",
+			"type": "assessment",
+			"locale": "fr",
+			"data": {
+				"assessmentType": "choice",
+				"required": true,
+				"_dontKnow": true,
+				"stem": [
+					{
+						"id": "stem",
+						"type": "text",
+						"data": {
+							"content": "<p>Pick <em>carefully</em>.</p>"
+						}
+					}
+				],
+				"response": {
+					"type": "choice",
+					"selectionMode": "multiple",
+					"options": [
+						{
+							"id": "first",
+							"label": "First"
+						},
+						{
+							"id": "second",
+							"label": "Second"
+						}
+					]
+				}
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-choice\" class=\"praxity-block praxity-block-assessment praxity-block-choice\" data-block-id=\"choice\" data-node-id=\"choice\" data-block-type=\"assessment\" data-focus-row><form class=\"praxity-block-assessment praxity-assessment-choice-baseline\"><div class=\"praxity-assessment-question-header\"><p id=\"assessment-question-choice\" class=\"praxity-assessment-stem\"><span class=\"praxity-assessment-stem-content\">Pick <em>carefully</em>.</span><span class=\"praxity-required-indicator\"><span aria-hidden=\"true\" class=\"praxity-required-marker\"></span><span class=\"praxity-sr-only\">Obligatoire</span></span></p></div><fieldset class=\"praxity-fieldset-reset praxity-assessment-choice\" aria-labelledby=\"assessment-question-choice\"><div class=\"praxity-assessment-choice-options\"><label data-node-id=\"first\" class=\"praxity-assessment-choice-option\" for=\"choice-option-first\"><input id=\"choice-option-first\" type=\"checkbox\" name=\"choice\" value=\"first\" aria-labelledby=\"choice-option-first-label\" disabled /><span class=\"praxity-choice-text\"><span id=\"choice-option-first-label\" class=\"praxity-choice-label\">First</span></span></label><label data-node-id=\"second\" class=\"praxity-assessment-choice-option\" for=\"choice-option-second\"><input id=\"choice-option-second\" type=\"checkbox\" name=\"choice\" value=\"second\" aria-labelledby=\"choice-option-second-label\" disabled /><span class=\"praxity-choice-text\"><span id=\"choice-option-second-label\" class=\"praxity-choice-label\">Second</span></span></label><label data-node-id=\"dont-know\" data-dont-know class=\"praxity-assessment-choice-option\" for=\"choice-option-dont-know\"><input id=\"choice-option-dont-know\" type=\"checkbox\" name=\"choice\" value=\"dont-know\" aria-labelledby=\"choice-option-dont-know-label\" disabled /><span class=\"praxity-choice-text\"><span id=\"choice-option-dont-know-label\" class=\"praxity-choice-label\">Je ne sais pas</span></span></label></div></fieldset><div data-assessment-feedback></div><div class=\"praxity-assessment-actions\"></div><noscript><p class=\"praxity-assessment-needs-script\">Répondre à cette question nécessite JavaScript. Activez-le pour répondre et voir la rétroaction.</p></noscript></form></div>"
+	},
+	{
+		"name": "fr multiple uncertainty true description true",
+		"block": {
+			"id": "choice",
+			"type": "assessment",
+			"locale": "fr",
+			"data": {
+				"assessmentType": "choice",
+				"required": true,
+				"_dontKnow": true,
+				"stem": [
+					{
+						"id": "stem",
+						"type": "text",
+						"data": {
+							"content": "<p>Pick <em>carefully</em>.</p>"
+						}
+					}
+				],
+				"description": [
+					{
+						"id": "description",
+						"type": "text",
+						"data": {
+							"content": "<p>Read <strong>all</strong> options.</p>"
+						}
+					}
+				],
+				"response": {
+					"type": "choice",
+					"selectionMode": "multiple",
+					"options": [
+						{
+							"id": "first",
+							"label": "First"
+						},
+						{
+							"id": "second",
+							"label": "Second"
+						}
+					]
+				}
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-choice\" class=\"praxity-block praxity-block-assessment praxity-block-choice\" data-block-id=\"choice\" data-node-id=\"choice\" data-block-type=\"assessment\" data-focus-row><form class=\"praxity-block-assessment praxity-assessment-choice-baseline\"><div class=\"praxity-assessment-question-header\"><p id=\"assessment-question-choice\" class=\"praxity-assessment-stem\"><span class=\"praxity-assessment-stem-content\">Pick <em>carefully</em>.</span><span class=\"praxity-required-indicator\"><span aria-hidden=\"true\" class=\"praxity-required-marker\"></span><span class=\"praxity-sr-only\">Obligatoire</span></span></p></div><div id=\"choice-description\" class=\"praxity-assessment-description\"><div data-node-id=\"description\"><p>Read <strong>all</strong> options.</p></div></div><fieldset class=\"praxity-fieldset-reset praxity-assessment-choice\" aria-labelledby=\"assessment-question-choice\" aria-describedby=\"choice-description\"><div class=\"praxity-assessment-choice-options\"><label data-node-id=\"first\" class=\"praxity-assessment-choice-option\" for=\"choice-option-first\"><input id=\"choice-option-first\" type=\"checkbox\" name=\"choice\" value=\"first\" aria-labelledby=\"choice-option-first-label\" disabled /><span class=\"praxity-choice-text\"><span id=\"choice-option-first-label\" class=\"praxity-choice-label\">First</span></span></label><label data-node-id=\"second\" class=\"praxity-assessment-choice-option\" for=\"choice-option-second\"><input id=\"choice-option-second\" type=\"checkbox\" name=\"choice\" value=\"second\" aria-labelledby=\"choice-option-second-label\" disabled /><span class=\"praxity-choice-text\"><span id=\"choice-option-second-label\" class=\"praxity-choice-label\">Second</span></span></label><label data-node-id=\"dont-know\" data-dont-know class=\"praxity-assessment-choice-option\" for=\"choice-option-dont-know\"><input id=\"choice-option-dont-know\" type=\"checkbox\" name=\"choice\" value=\"dont-know\" aria-labelledby=\"choice-option-dont-know-label\" disabled /><span class=\"praxity-choice-text\"><span id=\"choice-option-dont-know-label\" class=\"praxity-choice-label\">Je ne sais pas</span></span></label></div></fieldset><div data-assessment-feedback></div><div class=\"praxity-assessment-actions\"></div><noscript><p class=\"praxity-assessment-needs-script\">Répondre à cette question nécessite JavaScript. Activez-le pour répondre et voir la rétroaction.</p></noscript></form></div>"
+	},
+	{
+		"name": "en missing labels and IDs",
+		"block": {
+			"id": "fallback",
+			"type": "assessment",
+			"locale": "en",
+			"data": {
+				"assessmentType": "choice",
+				"required": false,
+				"_dontKnow": false,
+				"stem": [],
+				"response": {
+					"type": "choice",
+					"selectionMode": "single",
+					"options": [
+						{
+							"id": "missing"
+						},
+						{
+							"id": "empty",
+							"label": ""
+						},
+						{
+							"label": "No ID"
+						},
+						{
+							"id": "",
+							"label": "Empty ID"
+						}
+					]
+				}
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-fallback\" class=\"praxity-block praxity-block-assessment praxity-block-fallback\" data-block-id=\"fallback\" data-node-id=\"fallback\" data-block-type=\"assessment\" data-focus-row><form class=\"praxity-block-assessment praxity-assessment-choice-baseline\"><div class=\"praxity-assessment-question-header\"><p id=\"assessment-question-fallback\" class=\"praxity-assessment-stem\"><span class=\"praxity-assessment-stem-content\">Question</span></p></div><fieldset class=\"praxity-fieldset-reset praxity-assessment-choice\" role=\"radiogroup\" aria-labelledby=\"assessment-question-fallback\"><div class=\"praxity-assessment-choice-options\"><label data-node-id=\"missing\" class=\"praxity-assessment-choice-option\" for=\"fallback-option-missing\"><input id=\"fallback-option-missing\" type=\"radio\" name=\"fallback\" value=\"missing\" aria-labelledby=\"fallback-option-missing-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"fallback-option-missing-label\" class=\"praxity-choice-label\">Option 1</span></span></label><label data-node-id=\"empty\" class=\"praxity-assessment-choice-option\" for=\"fallback-option-empty\"><input id=\"fallback-option-empty\" type=\"radio\" name=\"fallback\" value=\"empty\" aria-labelledby=\"fallback-option-empty-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"fallback-option-empty-label\" class=\"praxity-choice-label\">Option 2</span></span></label><label data-node-id=\"fallback-option-2\" class=\"praxity-assessment-choice-option\" for=\"fallback-option-2\"><input id=\"fallback-option-2\" type=\"radio\" name=\"fallback\" value=\"2\" aria-labelledby=\"fallback-option-2-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"fallback-option-2-label\" class=\"praxity-choice-label\">No ID</span></span></label><label data-node-id=\"fallback-option-3\" class=\"praxity-assessment-choice-option\" for=\"fallback-option-3\"><input id=\"fallback-option-3\" type=\"radio\" name=\"fallback\" value=\"3\" aria-labelledby=\"fallback-option-3-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"fallback-option-3-label\" class=\"praxity-choice-label\">Empty ID</span></span></label></div></fieldset><div data-assessment-feedback></div><div class=\"praxity-assessment-actions\"></div><noscript><p class=\"praxity-assessment-needs-script\">Answering this question needs JavaScript. Turn it on to answer and see feedback.</p></noscript></form></div>"
+	},
+	{
+		"name": "fr missing labels and IDs",
+		"block": {
+			"id": "fallback",
+			"type": "assessment",
+			"locale": "fr",
+			"data": {
+				"assessmentType": "choice",
+				"required": false,
+				"_dontKnow": false,
+				"stem": [],
+				"response": {
+					"type": "choice",
+					"selectionMode": "single",
+					"options": [
+						{
+							"id": "missing"
+						},
+						{
+							"id": "empty",
+							"label": ""
+						},
+						{
+							"label": "No ID"
+						},
+						{
+							"id": "",
+							"label": "Empty ID"
+						}
+					]
+				}
+			}
+		},
+		"options": {},
+		"html": "<div id=\"block-fallback\" class=\"praxity-block praxity-block-assessment praxity-block-fallback\" data-block-id=\"fallback\" data-node-id=\"fallback\" data-block-type=\"assessment\" data-focus-row><form class=\"praxity-block-assessment praxity-assessment-choice-baseline\"><div class=\"praxity-assessment-question-header\"><p id=\"assessment-question-fallback\" class=\"praxity-assessment-stem\"><span class=\"praxity-assessment-stem-content\">Question</span></p></div><fieldset class=\"praxity-fieldset-reset praxity-assessment-choice\" role=\"radiogroup\" aria-labelledby=\"assessment-question-fallback\"><div class=\"praxity-assessment-choice-options\"><label data-node-id=\"missing\" class=\"praxity-assessment-choice-option\" for=\"fallback-option-missing\"><input id=\"fallback-option-missing\" type=\"radio\" name=\"fallback\" value=\"missing\" aria-labelledby=\"fallback-option-missing-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"fallback-option-missing-label\" class=\"praxity-choice-label\">Option 1</span></span></label><label data-node-id=\"empty\" class=\"praxity-assessment-choice-option\" for=\"fallback-option-empty\"><input id=\"fallback-option-empty\" type=\"radio\" name=\"fallback\" value=\"empty\" aria-labelledby=\"fallback-option-empty-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"fallback-option-empty-label\" class=\"praxity-choice-label\">Option 2</span></span></label><label data-node-id=\"fallback-option-2\" class=\"praxity-assessment-choice-option\" for=\"fallback-option-2\"><input id=\"fallback-option-2\" type=\"radio\" name=\"fallback\" value=\"2\" aria-labelledby=\"fallback-option-2-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"fallback-option-2-label\" class=\"praxity-choice-label\">No ID</span></span></label><label data-node-id=\"fallback-option-3\" class=\"praxity-assessment-choice-option\" for=\"fallback-option-3\"><input id=\"fallback-option-3\" type=\"radio\" name=\"fallback\" value=\"3\" aria-labelledby=\"fallback-option-3-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"fallback-option-3-label\" class=\"praxity-choice-label\">Empty ID</span></span></label></div></fieldset><div data-assessment-feedback></div><div class=\"praxity-assessment-actions\"></div><noscript><p class=\"praxity-assessment-needs-script\">Répondre à cette question nécessite JavaScript. Activez-le pour répondre et voir la rétroaction.</p></noscript></form></div>"
+	},
+	{
+		"name": "hostile text, IDs and locale strings",
+		"block": {
+			"id": "choice\"<&",
+			"type": "assessment",
+			"data": {
+				"assessmentType": "choice",
+				"required": false,
+				"_dontKnow": true,
+				"stem": [
+					{
+						"id": "stem",
+						"type": "text",
+						"data": {
+							"content": "<p>Pick &lt;unsafe&gt; &amp; \"quoted\"</p>"
+						}
+					}
+				],
+				"description": [
+					{
+						"id": "desc\"<&",
+						"type": "text",
+						"data": {
+							"content": "<p>Safe <em>prose</em><script>alert(1)</script><img src=x onerror=alert(2)></p>"
+						}
+					}
+				],
+				"response": {
+					"type": "choice",
+					"selectionMode": "single",
+					"options": [
+						{
+							"id": "a\"<&",
+							"label": "<img src=x onerror=alert(3)> A & B <script>alert(4)</script>"
+						},
+						{
+							"label": "&lt;script&gt;literal&lt;/script&gt;"
+						}
+					]
+				}
+			}
+		},
+		"options": {
+			"sourceLocale": "fr",
+			"strings": {
+				"dontKnow": "Unknown < & \"test\"",
+				"assessmentNeedsScript": "Script < & \"test\""
+			}
+		},
+		"html": "<div id=\"block-choice&quot;&lt;&amp;\" class=\"praxity-block praxity-block-assessment praxity-block-choice&quot;&lt;&amp;\" data-block-id=\"choice&quot;&lt;&amp;\" data-node-id=\"choice&quot;&lt;&amp;\" data-block-type=\"assessment\" data-focus-row><form class=\"praxity-block-assessment praxity-assessment-choice-baseline\"><div class=\"praxity-assessment-question-header\"><p id=\"assessment-question-choice&quot;&lt;&amp;\" class=\"praxity-assessment-stem\"><span class=\"praxity-assessment-stem-content\">Pick &lt;unsafe&gt; &amp; \"quoted\"</span></p></div><div id=\"choice&quot;&lt;&amp;-description\" class=\"praxity-assessment-description\"><div data-node-id=\"desc&quot;&amp;lt;&amp;amp;\"><p>Safe <em>prose</em><img src=\"x\"></p></div></div><fieldset class=\"praxity-fieldset-reset praxity-assessment-choice\" role=\"radiogroup\" aria-labelledby=\"assessment-question-choice&quot;&lt;&amp;\" aria-describedby=\"choice&quot;&lt;&amp;-description\"><div class=\"praxity-assessment-choice-options\"><label data-node-id=\"a&quot;&amp;lt;&amp;amp;\" class=\"praxity-assessment-choice-option\" for=\"choice&quot;&lt;&amp;-option-a&quot;&amp;lt;&amp;amp;\"><input id=\"choice&quot;&lt;&amp;-option-a&quot;&amp;lt;&amp;amp;\" type=\"radio\" name=\"choice&quot;&lt;&amp;\" value=\"a&quot;&amp;lt;&amp;amp;\" aria-labelledby=\"choice&quot;&lt;&amp;-option-a&quot;&amp;lt;&amp;amp;-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"choice&quot;&lt;&amp;-option-a&quot;&amp;lt;&amp;amp;-label\" class=\"praxity-choice-label\">&lt;img src=x onerror=alert(3)&gt; A &amp; B &lt;script&gt;alert(4)&lt;/script&gt;</span></span></label><label data-node-id=\"choice&quot;&lt;&amp;-option-1\" class=\"praxity-assessment-choice-option\" for=\"choice&quot;&lt;&amp;-option-1\"><input id=\"choice&quot;&lt;&amp;-option-1\" type=\"radio\" name=\"choice&quot;&lt;&amp;\" value=\"1\" aria-labelledby=\"choice&quot;&lt;&amp;-option-1-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"choice&quot;&lt;&amp;-option-1-label\" class=\"praxity-choice-label\">&amp;lt;script&amp;gt;literal&amp;lt;/script&amp;gt;</span></span></label><label data-node-id=\"dont-know\" data-dont-know class=\"praxity-assessment-choice-option\" for=\"choice&quot;&lt;&amp;-option-dont-know\"><input id=\"choice&quot;&lt;&amp;-option-dont-know\" type=\"radio\" name=\"choice&quot;&lt;&amp;\" value=\"dont-know\" aria-labelledby=\"choice&quot;&lt;&amp;-option-dont-know-label\" disabled /><span class=\"praxity-choice-key-spacer\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"choice&quot;&lt;&amp;-option-dont-know-label\" class=\"praxity-choice-label\">Unknown &lt; &amp; &quot;test&quot;</span></span></label></div></fieldset><div data-assessment-feedback></div><div class=\"praxity-assessment-actions\"></div><noscript><p class=\"praxity-assessment-needs-script\">Script &lt; &amp; &quot;test&quot;</p></noscript></form></div>"
+	},
+	{
+		"name": "custom fallback template \"\"",
+		"block": {
+			"id": "fallback",
+			"type": "assessment",
+			"data": {
+				"assessmentType": "choice",
+				"required": false,
+				"_dontKnow": true,
+				"stem": [],
+				"response": {
+					"type": "choice",
+					"selectionMode": "single",
+					"options": [
+						{
+							"id": "a"
+						},
+						{
+							"id": "b",
+							"label": ""
+						}
+					]
+				}
+			}
+		},
+		"options": {
+			"strings": {
+				"optionLabel": "",
+				"assessmentNeedsScript": ""
+			}
+		},
+		"html": "<div id=\"block-fallback\" class=\"praxity-block praxity-block-assessment praxity-block-fallback\" data-block-id=\"fallback\" data-node-id=\"fallback\" data-block-type=\"assessment\" data-focus-row><form class=\"praxity-block-assessment praxity-assessment-choice-baseline\"><div class=\"praxity-assessment-question-header\"><p id=\"assessment-question-fallback\" class=\"praxity-assessment-stem\"><span class=\"praxity-assessment-stem-content\">Question</span></p></div><fieldset class=\"praxity-fieldset-reset praxity-assessment-choice\" role=\"radiogroup\" aria-labelledby=\"assessment-question-fallback\"><div class=\"praxity-assessment-choice-options\"><label data-node-id=\"a\" class=\"praxity-assessment-choice-option\" for=\"fallback-option-a\"><input id=\"fallback-option-a\" type=\"radio\" name=\"fallback\" value=\"a\" aria-labelledby=\"fallback-option-a-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"fallback-option-a-label\" class=\"praxity-choice-label\">Option 1</span></span></label><label data-node-id=\"b\" class=\"praxity-assessment-choice-option\" for=\"fallback-option-b\"><input id=\"fallback-option-b\" type=\"radio\" name=\"fallback\" value=\"b\" aria-labelledby=\"fallback-option-b-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"fallback-option-b-label\" class=\"praxity-choice-label\">Option 2</span></span></label><label data-node-id=\"dont-know\" data-dont-know class=\"praxity-assessment-choice-option\" for=\"fallback-option-dont-know\"><input id=\"fallback-option-dont-know\" type=\"radio\" name=\"fallback\" value=\"dont-know\" aria-labelledby=\"fallback-option-dont-know-label\" disabled /><span class=\"praxity-choice-key-spacer\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"fallback-option-dont-know-label\" class=\"praxity-choice-label\">I don't know</span></span></label></div></fieldset><div data-assessment-feedback></div><div class=\"praxity-assessment-actions\"></div><noscript><p class=\"praxity-assessment-needs-script\">Answering this question needs JavaScript. Turn it on to answer and see feedback.</p></noscript></form></div>"
+	},
+	{
+		"name": "custom fallback template \"Item\"",
+		"block": {
+			"id": "fallback",
+			"type": "assessment",
+			"data": {
+				"assessmentType": "choice",
+				"required": false,
+				"_dontKnow": true,
+				"stem": [],
+				"response": {
+					"type": "choice",
+					"selectionMode": "single",
+					"options": [
+						{
+							"id": "a"
+						},
+						{
+							"id": "b",
+							"label": ""
+						}
+					]
+				}
+			}
+		},
+		"options": {
+			"strings": {
+				"optionLabel": "Item",
+				"assessmentNeedsScript": ""
+			}
+		},
+		"html": "<div id=\"block-fallback\" class=\"praxity-block praxity-block-assessment praxity-block-fallback\" data-block-id=\"fallback\" data-node-id=\"fallback\" data-block-type=\"assessment\" data-focus-row><form class=\"praxity-block-assessment praxity-assessment-choice-baseline\"><div class=\"praxity-assessment-question-header\"><p id=\"assessment-question-fallback\" class=\"praxity-assessment-stem\"><span class=\"praxity-assessment-stem-content\">Question</span></p></div><fieldset class=\"praxity-fieldset-reset praxity-assessment-choice\" role=\"radiogroup\" aria-labelledby=\"assessment-question-fallback\"><div class=\"praxity-assessment-choice-options\"><label data-node-id=\"a\" class=\"praxity-assessment-choice-option\" for=\"fallback-option-a\"><input id=\"fallback-option-a\" type=\"radio\" name=\"fallback\" value=\"a\" aria-labelledby=\"fallback-option-a-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"fallback-option-a-label\" class=\"praxity-choice-label\">Item 1</span></span></label><label data-node-id=\"b\" class=\"praxity-assessment-choice-option\" for=\"fallback-option-b\"><input id=\"fallback-option-b\" type=\"radio\" name=\"fallback\" value=\"b\" aria-labelledby=\"fallback-option-b-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"fallback-option-b-label\" class=\"praxity-choice-label\">Item 2</span></span></label><label data-node-id=\"dont-know\" data-dont-know class=\"praxity-assessment-choice-option\" for=\"fallback-option-dont-know\"><input id=\"fallback-option-dont-know\" type=\"radio\" name=\"fallback\" value=\"dont-know\" aria-labelledby=\"fallback-option-dont-know-label\" disabled /><span class=\"praxity-choice-key-spacer\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"fallback-option-dont-know-label\" class=\"praxity-choice-label\">I don't know</span></span></label></div></fieldset><div data-assessment-feedback></div><div class=\"praxity-assessment-actions\"></div><noscript><p class=\"praxity-assessment-needs-script\">Answering this question needs JavaScript. Turn it on to answer and see feedback.</p></noscript></form></div>"
+	},
+	{
+		"name": "custom fallback template \"Item {index}/{index}\"",
+		"block": {
+			"id": "fallback",
+			"type": "assessment",
+			"data": {
+				"assessmentType": "choice",
+				"required": false,
+				"_dontKnow": true,
+				"stem": [],
+				"response": {
+					"type": "choice",
+					"selectionMode": "single",
+					"options": [
+						{
+							"id": "a"
+						},
+						{
+							"id": "b",
+							"label": ""
+						}
+					]
+				}
+			}
+		},
+		"options": {
+			"strings": {
+				"optionLabel": "Item {index}/{index}",
+				"assessmentNeedsScript": ""
+			}
+		},
+		"html": "<div id=\"block-fallback\" class=\"praxity-block praxity-block-assessment praxity-block-fallback\" data-block-id=\"fallback\" data-node-id=\"fallback\" data-block-type=\"assessment\" data-focus-row><form class=\"praxity-block-assessment praxity-assessment-choice-baseline\"><div class=\"praxity-assessment-question-header\"><p id=\"assessment-question-fallback\" class=\"praxity-assessment-stem\"><span class=\"praxity-assessment-stem-content\">Question</span></p></div><fieldset class=\"praxity-fieldset-reset praxity-assessment-choice\" role=\"radiogroup\" aria-labelledby=\"assessment-question-fallback\"><div class=\"praxity-assessment-choice-options\"><label data-node-id=\"a\" class=\"praxity-assessment-choice-option\" for=\"fallback-option-a\"><input id=\"fallback-option-a\" type=\"radio\" name=\"fallback\" value=\"a\" aria-labelledby=\"fallback-option-a-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"fallback-option-a-label\" class=\"praxity-choice-label\">Item 1/1</span></span></label><label data-node-id=\"b\" class=\"praxity-assessment-choice-option\" for=\"fallback-option-b\"><input id=\"fallback-option-b\" type=\"radio\" name=\"fallback\" value=\"b\" aria-labelledby=\"fallback-option-b-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"fallback-option-b-label\" class=\"praxity-choice-label\">Item 2/2</span></span></label><label data-node-id=\"dont-know\" data-dont-know class=\"praxity-assessment-choice-option\" for=\"fallback-option-dont-know\"><input id=\"fallback-option-dont-know\" type=\"radio\" name=\"fallback\" value=\"dont-know\" aria-labelledby=\"fallback-option-dont-know-label\" disabled /><span class=\"praxity-choice-key-spacer\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"fallback-option-dont-know-label\" class=\"praxity-choice-label\">I don't know</span></span></label></div></fieldset><div data-assessment-feedback></div><div class=\"praxity-assessment-actions\"></div><noscript><p class=\"praxity-assessment-needs-script\">Answering this question needs JavaScript. Turn it on to answer and see feedback.</p></noscript></form></div>"
+	},
+	{
+		"name": "empty uncertainty label uses the next indexed fallback",
+		"block": {
+			"id": "fallback",
+			"type": "assessment",
+			"data": {
+				"assessmentType": "choice",
+				"required": false,
+				"_dontKnow": true,
+				"stem": [],
+				"response": {
+					"type": "choice",
+					"selectionMode": "single",
+					"options": [
+						{
+							"id": "a",
+							"label": "A"
+						},
+						{
+							"id": "b",
+							"label": "B"
+						}
+					]
+				}
+			}
+		},
+		"options": {
+			"strings": {
+				"dontKnow": ""
+			}
+		},
+		"html": "<div id=\"block-fallback\" class=\"praxity-block praxity-block-assessment praxity-block-fallback\" data-block-id=\"fallback\" data-node-id=\"fallback\" data-block-type=\"assessment\" data-focus-row><form class=\"praxity-block-assessment praxity-assessment-choice-baseline\"><div class=\"praxity-assessment-question-header\"><p id=\"assessment-question-fallback\" class=\"praxity-assessment-stem\"><span class=\"praxity-assessment-stem-content\">Question</span></p></div><fieldset class=\"praxity-fieldset-reset praxity-assessment-choice\" role=\"radiogroup\" aria-labelledby=\"assessment-question-fallback\"><div class=\"praxity-assessment-choice-options\"><label data-node-id=\"a\" class=\"praxity-assessment-choice-option\" for=\"fallback-option-a\"><input id=\"fallback-option-a\" type=\"radio\" name=\"fallback\" value=\"a\" aria-labelledby=\"fallback-option-a-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"fallback-option-a-label\" class=\"praxity-choice-label\">A</span></span></label><label data-node-id=\"b\" class=\"praxity-assessment-choice-option\" for=\"fallback-option-b\"><input id=\"fallback-option-b\" type=\"radio\" name=\"fallback\" value=\"b\" aria-labelledby=\"fallback-option-b-label\" disabled /><span class=\"praxity-choice-key\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"fallback-option-b-label\" class=\"praxity-choice-label\">B</span></span></label><label data-node-id=\"dont-know\" data-dont-know class=\"praxity-assessment-choice-option\" for=\"fallback-option-dont-know\"><input id=\"fallback-option-dont-know\" type=\"radio\" name=\"fallback\" value=\"dont-know\" aria-labelledby=\"fallback-option-dont-know-label\" disabled /><span class=\"praxity-choice-key-spacer\" aria-hidden=\"true\"></span><span class=\"praxity-choice-text\"><span id=\"fallback-option-dont-know-label\" class=\"praxity-choice-label\">Option 3</span></span></label></div></fieldset><div data-assessment-feedback></div><div class=\"praxity-assessment-actions\"></div><noscript><p class=\"praxity-assessment-needs-script\">Answering this question needs JavaScript. Turn it on to answer and see feedback.</p></noscript></form></div>"
+	}
+]

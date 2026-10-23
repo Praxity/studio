@@ -1,0 +1,7 @@
+# Refused private group
+::: group Group
+::: choice Private group member {private=true dontKnow=true scored=false required=false}
+(x) One
+( ) Two
+:::
+:::
