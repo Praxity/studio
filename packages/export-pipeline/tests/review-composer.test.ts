@@ -158,14 +158,14 @@ async function open(
 		await settle();
 	};
 	const type = async (body: string) => {
-		const field = doc.querySelector("textarea") as HTMLTextAreaElement;
+		const field = doc.querySelector(".prx-review-composer textarea") as HTMLTextAreaElement;
 		field.value = body;
 		field.dispatchEvent(new win.Event("input", { bubbles: true }));
 		await settle();
 	};
 	const pick = async (index = 1) => {
 		await click(".prx-review-choose");
-		const radios = doc.querySelectorAll<HTMLInputElement>('input[type="radio"]');
+		const radios = doc.querySelectorAll<HTMLInputElement>('.prx-review-picker input[type="radio"]');
 		radios[index].checked = true;
 		await click(".prx-review-next");
 	};
@@ -253,6 +253,112 @@ function heldPost() {
 	};
 }
 
+it("removes the capability bootstrap after parsing while list and create keep working", async () => {
+	const server = realReview();
+	const ui = await open({ fetch: server.fetch });
+	expect(ui.doc.querySelector("#praxity-review-config")).toBeNull();
+	expect(Reflect.get(ui.win, "praxity-review-config")).toBeUndefined();
+	expect(ui.fetchMock.mock.calls[0][0]).toBe(`/api/reviews/${reviewId}/comments`);
+	expect(ui.fetchMock.mock.calls[0][1].headers["X-Praxity-Review"]).toBe(capability);
+	await ui.pick(0);
+	await ui.type("Created with closure-held configuration");
+	await ui.click(".prx-review-submit");
+	await vi.waitFor(() => expect(server.state().threads).toHaveLength(1));
+	await vi.waitFor(() =>
+		expect(ui.doc.querySelector(".prx-review-list")?.textContent).toContain(
+			"Created with closure-held configuration",
+		),
+	);
+	ui.win.dispatchEvent(new ui.win.Event("focus"));
+	await settle();
+	expect(ui.doc.querySelector("#praxity-review-config")).toBeNull();
+	expect(ui.doc.querySelectorAll(".prx-review-comment")).toHaveLength(1);
+	expect(posts(ui)).toHaveLength(1);
+});
+
+it.each(["en", "fr"].flatMap((locale) => [true, false].map((valid) => ({ locale, valid }))))(
+	"keeps the local footer and hides the name field after consuming config ($locale, valid=$valid)",
+	async ({ locale, valid }) => {
+		const ui = await open({
+			locale,
+			prepare: (dom) => {
+				dom.window.document
+					.querySelector("[data-praxity-review-comments]")!
+					.setAttribute("data-review-locale", locale);
+				if (!valid) {
+					const script = dom.window.document.querySelector("#praxity-review-config")!;
+					script.textContent = JSON.stringify({ ...JSON.parse(script.textContent!), schema: 999 });
+				}
+			},
+		});
+		expect(ui.doc.querySelector("#praxity-review-config")).toBeNull();
+		expect(ui.doc.querySelector(".prx-review-footer")?.firstChild?.textContent).toBe(
+			locale === "fr" ? "Révision locale" : "Local review",
+		);
+		expect(ui.doc.querySelector("#prx-review-name:not([hidden])")).toBeNull();
+		expect(ui.doc.querySelector('label[for="prx-review-name"]:not([hidden])')).toBeNull();
+		if (!valid)
+			expect(ui.doc.querySelector<HTMLInputElement>("#prx-review-name")?.required).toBe(false);
+	},
+);
+
+it.each([true, false])(
+	"re-arms polling after a create during an in-flight poll (settles=%s)",
+	async (settles) => {
+		const server = realReview();
+		const scheduled: number[] = [];
+		let tick!: () => Promise<void>,
+			release!: () => void,
+			holdNext = false;
+		const fetch = vi.fn((url: string, init?: RequestInit) => {
+			if (init?.method !== "POST" && holdNext) {
+				holdNext = false;
+				return new Promise<Response>((resolve) => {
+					release = () => resolve(server.fetch(url, init));
+				});
+			}
+			return server.fetch(url, init);
+		});
+		const ui = await open({
+			fetch,
+			prepare: (dom) => {
+				const native = dom.window.setTimeout.bind(dom.window);
+				vi.spyOn(dom.window, "setTimeout").mockImplementation((callback, delay, ...args) => {
+					if (delay && delay >= 5000) {
+						scheduled.push(delay);
+						tick = callback as () => Promise<void>;
+						return 987654;
+					}
+					return native(callback, delay, ...args);
+				});
+			},
+		});
+		await vi.waitFor(() => expect(scheduled.length).toBeGreaterThan(0));
+		holdNext = true;
+		const poll = tick();
+		await settle();
+		expect(release).toBeTypeOf("function");
+		const beforeCreate = scheduled.length;
+		await ui.pick(0);
+		await ui.type("Created during a poll");
+		await ui.click(".prx-review-submit");
+		await vi.waitFor(() =>
+			expect(ui.doc.querySelector(".prx-review-list")?.textContent).toContain(
+				"Created during a poll",
+			),
+		);
+		const before = scheduled.length;
+		if (settles) {
+			release();
+			await poll;
+			expect(scheduled.length).toBeGreaterThan(before);
+		} else expect(scheduled.length).toBeGreaterThan(beforeCreate);
+		const calls = fetch.mock.calls.length;
+		await tick();
+		expect(fetch.mock.calls.length).toBeGreaterThan(calls);
+	},
+);
+
 it("a queued event cannot unlock a send or let its acknowledgement remove a successor draft", async () => {
 	const storage = sharedDraftStorage(),
 		held = heldPost();
@@ -264,7 +370,9 @@ it("a queued event cannot unlock a send or let its acknowledgement remove a succ
 	await a.click(".prx-review-submit");
 	const submitted = posts(a)[0];
 	storage.deliver();
-	expect(a.doc.querySelector<HTMLTextAreaElement>("textarea")?.readOnly).toBe(true);
+	expect(a.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.readOnly).toBe(
+		true,
+	);
 	await a.click(".prx-review-cancel");
 	await b.type("Successor draft");
 	storage.deliver();
@@ -274,7 +382,9 @@ it("a queued event cannot unlock a send or let its acknowledgement remove a succ
 	await settle();
 	expect(bodies(storage)).toEqual(["New unsent correction"]);
 	expect(submitted.body).toBe("Sending text");
-	expect(a.doc.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe("New unsent correction");
+	expect(a.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.value).toBe(
+		"New unsent correction",
+	);
 });
 it("the second editor forks a changed draft and keeps both exact texts with a notice", async () => {
 	const storage = sharedDraftStorage();
@@ -292,7 +402,9 @@ it("the second editor forks a changed draft and keeps both exact texts with a no
 	expect(b.doc.querySelector(".prx-review-composer-notice")?.textContent).toBe(
 		"Another tab changed this draft. Your text was kept as a separate draft.",
 	);
-	expect(b.doc.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe("Second writer");
+	expect(b.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.value).toBe(
+		"Second writer",
+	);
 });
 it.each(["acknowledge", "discard"])(
 	"a clean stale composer reports another tab's %s and never resurrects it",
@@ -345,14 +457,18 @@ it.each(["send", "discard"])(
 		} else await a.click(".prx-review-discard-draft");
 		await b.type("Original plus B");
 		expect(bodies(storage)).toEqual(["Original plus B"]);
-		expect(b.doc.querySelector<HTMLTextAreaElement>("textarea")?.readOnly).toBe(false);
+		expect(
+			b.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.readOnly,
+		).toBe(false);
 		await b.click(".prx-review-cancel");
 		const c = await open({
 			prepare: storage.prepare,
 			fetch: server.fetch,
 		});
 		await c.click(".prx-review-open-draft");
-		expect(c.doc.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe("Original plus B");
+		expect(c.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.value).toBe(
+			"Original plus B",
+		);
 		storage.deliver();
 		expect(a.doc.querySelector(".prx-review-draft-body")?.textContent).toBe("Original plus B");
 	},
@@ -371,7 +487,9 @@ it("Keep as new draft retains the draft ID after another tab discards", async ()
 	await b.click(".prx-review-keep-new");
 	expect(bodies(storage)).toEqual(["Kept text"]);
 	expect(records(storage)[0][0].slice(-36)).toBe(id);
-	expect(b.doc.querySelector<HTMLTextAreaElement>("textarea")?.readOnly).toBe(false);
+	expect(b.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.readOnly).toBe(
+		false,
+	);
 	await b.click(".prx-review-submit");
 	await settle();
 	expect(posts(b)).toHaveLength(1);
@@ -443,13 +561,15 @@ it("full-anchor matching keeps a previous revision reachable without replacing t
 	await a.click(".prx-review-cancel");
 	const b = await open({ stored: Object.entries(a.win.localStorage), revision: "new-revision" });
 	await b.pick();
-	expect(b.doc.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe("");
+	expect(b.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.value).toBe("");
 	await b.type("New revision");
 	await b.click(".prx-review-submit");
 	await settle();
 	expect(posts(b)[0].anchor.revision).toBe("new-revision");
 	await b.click(".prx-review-open-draft");
-	expect(b.doc.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe("Earlier revision");
+	expect(b.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.value).toBe(
+		"Earlier revision",
+	);
 	await b.click(".prx-review-submit");
 	await settle();
 	expect(posts(b)[1].anchor.revision).toBe("revision");
@@ -638,7 +758,7 @@ it("selection opens one composer and saves the literal quote anchor, then focuse
 	expect(down.defaultPrevented).toBe(true);
 	button.click();
 	expect(button.hidden).toBe(true);
-	expect(ui.doc.activeElement).toBe(ui.doc.querySelector("textarea"));
+	expect(ui.doc.activeElement).toBe(ui.doc.querySelector(".prx-review-composer textarea"));
 	expect(ui.doc.querySelector(".prx-review-composer blockquote")?.textContent).toBe(
 		"Read this passage.",
 	);
@@ -693,7 +813,9 @@ it("orders picker targets, defaults to the first visible block and returns focus
 	expect(Array.from(ui.doc.querySelectorAll(".prx-review-target"), (el) => el.textContent)).toEqual(
 		["Whole page", "Text: First prose", "Note: Second heading"],
 	);
-	expect(ui.doc.activeElement).toBe(ui.doc.querySelectorAll("input[type=radio]")[1]);
+	expect(ui.doc.activeElement).toBe(
+		ui.doc.querySelectorAll(".prx-review-picker input[type=radio]")[1],
+	);
 	ui.doc
 		.querySelector(".prx-review-picker")
 		?.dispatchEvent(new ui.win.Event("cancel", { cancelable: true }));
@@ -857,7 +979,7 @@ it("retains exact payload and request ID on repeated failure and Retry", async (
 	await ui.type("Kept exactly ");
 	await ui.click(".prx-review-submit");
 	await settle();
-	const field = ui.doc.querySelector("textarea") as HTMLTextAreaElement;
+	const field = ui.doc.querySelector(".prx-review-composer textarea") as HTMLTextAreaElement;
 	expect(field.value).toBe("Kept exactly ");
 	expect(field.getAttribute("aria-describedby")).toContain("prx-review-error");
 	expect(field.getAttribute("aria-invalid")).toBe("true");
@@ -915,7 +1037,7 @@ it.each([
 		const originalDraftKey = Object.keys(ui.win.localStorage)[0];
 		await ui.click(".prx-review-submit");
 		await settle();
-		const field = ui.doc.querySelector("textarea") as HTMLTextAreaElement;
+		const field = ui.doc.querySelector(".prx-review-composer textarea") as HTMLTextAreaElement;
 		expect(field.readOnly).toBe(false);
 		expect(field.value).toBe("First intent");
 		expect(ui.doc.querySelector(".prx-review-error")?.textContent).toBe(message);
@@ -944,7 +1066,9 @@ it.each(["bad\u000btext", "bad\u0000text", "bad\ud800text"])(
 		await ui.click(".prx-review-submit");
 		await settle();
 		expect(ui.fetchMock.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(0);
-		expect((ui.doc.querySelector("textarea") as HTMLTextAreaElement).readOnly).toBe(false);
+		expect(
+			(ui.doc.querySelector(".prx-review-composer textarea") as HTMLTextAreaElement).readOnly,
+		).toBe(false);
 	},
 );
 it("persists drafts without a capability, restores after reload/new capability, and explicitly discards", async () => {
@@ -968,9 +1092,9 @@ it("persists drafts without a capability, restores after reload/new capability, 
 	const reloaded = await open({ stored, capability: "B".repeat(43) });
 	expect(reloaded.doc.querySelector(".prx-review-drafts")?.textContent).toContain("Unsent draft");
 	await reloaded.click(".prx-review-open-draft");
-	expect((reloaded.doc.querySelector("textarea") as HTMLTextAreaElement).value).toBe(
-		"Unsent exact text",
-	);
+	expect(
+		(reloaded.doc.querySelector(".prx-review-composer textarea") as HTMLTextAreaElement).value,
+	).toBe("Unsent exact text");
 	await reloaded.click(".prx-review-cancel");
 	await reloaded.click(".prx-review-discard-draft");
 	expect(Object.keys(reloaded.win.localStorage)).toEqual([]);
@@ -991,9 +1115,12 @@ it("keeps the composer usable and explains storage failure", async () => {
 	expect(messages).toEqual([
 		"Drafts cannot be saved in this browser. Keep this page open until your comment is saved.",
 	]);
-	expect(ui.doc.querySelector("textarea")?.getAttribute("aria-describedby")?.split(" ")).toContain(
-		"prx-review-storage-error",
-	);
+	expect(
+		ui.doc
+			.querySelector(".prx-review-composer textarea")
+			?.getAttribute("aria-describedby")
+			?.split(" "),
+	).toContain("prx-review-storage-error");
 	expect(ui.doc.querySelector(".prx-review-storage-error")?.textContent).toBe(
 		"Drafts cannot be saved in this browser. Keep this page open until your comment is saved.",
 	);
@@ -1036,7 +1163,7 @@ it("keeps separate page drafts on slide navigation and isolates dialog keys from
 	const courseKey = vi.fn();
 	ui.doc.addEventListener("keydown", courseKey);
 	ui.doc
-		.querySelector("textarea")
+		.querySelector(".prx-review-composer textarea")
 		?.dispatchEvent(new ui.win.KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
 	expect(courseKey).not.toHaveBeenCalled();
 	const navigate = (pageId: string) =>
@@ -1050,7 +1177,9 @@ it("keeps separate page drafts on slide navigation and isolates dialog keys from
 	navigate("page");
 	await settle();
 	await ui.click(".prx-review-open-draft");
-	expect((ui.doc.querySelector("textarea") as HTMLTextAreaElement).value).toBe("First page draft");
+	expect((ui.doc.querySelector(".prx-review-composer textarea") as HTMLTextAreaElement).value).toBe(
+		"First page draft",
+	);
 	expect(ui.win.localStorage.length).toBe(2);
 });
 it.each([false, true])(
@@ -1071,7 +1200,9 @@ it.each([false, true])(
 		const reloaded = await open({ prepare: storage.prepare });
 		expect(reloaded.doc.querySelectorAll(".prx-review-draft")).toHaveLength(0);
 		await reloaded.pick(0);
-		expect((reloaded.doc.querySelector("textarea") as HTMLTextAreaElement).value).toBe("");
+		expect(
+			(reloaded.doc.querySelector(".prx-review-composer textarea") as HTMLTextAreaElement).value,
+		).toBe("");
 	},
 );
 it("an emptied quota successor stays blocked until its durable predecessor can retire", async () => {
@@ -1277,7 +1408,10 @@ it.each([
 		expect(note.hidden).toBe(false);
 		expect(note.textContent).toBe(warning);
 		expect(
-			ui.doc.querySelector("textarea")?.getAttribute("aria-describedby")?.split(" "),
+			ui.doc
+				.querySelector(".prx-review-composer textarea")
+				?.getAttribute("aria-describedby")
+				?.split(" "),
 		).toContain(note.id);
 		await ui.type("One draft");
 		await ui.click(".prx-review-cancel");
@@ -1313,7 +1447,9 @@ it("uses French quote and target templates with narrow no-break spaces", async (
 	expect(ui.doc.querySelector(".prx-review-target")?.textContent).toBe(
 		"Texte sélectionné\u202f: «\u202fRead this passage.\u202f»",
 	);
-	(ui.doc.querySelectorAll('input[type="radio"]')[1] as HTMLInputElement).checked = true;
+	(
+		ui.doc.querySelectorAll('.prx-review-picker input[type="radio"]')[1] as HTMLInputElement
+	).checked = true;
 	await ui.click(".prx-review-next");
 	expect(ui.doc.querySelector(".prx-review-composer h2")?.textContent).toBe(
 		"Commentaire sur toute la page",
@@ -1364,7 +1500,9 @@ it("pins tab titles and their panels at equal fractions without substituting eit
 				clientY: 120,
 			}),
 		);
-		expect(ui.doc.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe("");
+		expect(ui.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.value).toBe(
+			"",
+		);
 		await ui.type(index === 0 ? "Title draft" : "Panel draft");
 		await ui.click(".prx-review-cancel");
 	}
@@ -1589,8 +1727,12 @@ it("an edit interleaved inside Discard retains its changed text after the lock",
 	});
 	await a.click(".prx-review-discard-draft");
 	await edit;
-	expect(b.doc.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe("New unsent text in B");
-	expect(b.doc.querySelector<HTMLTextAreaElement>("textarea")?.readOnly).toBe(false);
+	expect(b.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.value).toBe(
+		"New unsent text in B",
+	);
+	expect(b.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.readOnly).toBe(
+		false,
+	);
 	await b.click(".prx-review-cancel");
 	b.win.dispatchEvent(new b.win.Event("pagehide"));
 	await settle();
@@ -1808,12 +1950,14 @@ it("without Web Locks persists only in sessionStorage and explains the tab scope
 		"Coordination between tabs is unavailable. Drafts are kept only in this tab.",
 	);
 	expect(ui.doc.querySelector<HTMLElement>(".prx-review-tab-warning")?.hidden).toBe(false);
-	expect(ui.doc.querySelector("textarea")?.getAttribute("aria-describedby")).toContain(
-		"prx-review-tab-warning",
-	);
+	expect(
+		ui.doc.querySelector(".prx-review-composer textarea")?.getAttribute("aria-describedby"),
+	).toContain("prx-review-tab-warning");
 	const next = await open({ noLocks: true, stored: Object.entries(ui.win.sessionStorage) });
 	await next.pick(0);
-	expect(next.doc.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe("Only this tab");
+	expect(next.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.value).toBe(
+		"Only this tab",
+	);
 });
 
 it("reopening a composer while its write waits for a lock keeps the latest local text", async () => {
@@ -1826,7 +1970,7 @@ it("reopening a composer while its write waits for a lock keeps the latest local
 		await ui.type("Latest text while locked");
 		await ui.click(".prx-review-cancel");
 		await ui.pick(0);
-		expect(ui.doc.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe(
+		expect(ui.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.value).toBe(
 			"Latest text while locked",
 		);
 		expect(bodies(storage)).toEqual(["Persisted predecessor"]);
@@ -1846,14 +1990,18 @@ it("reopening during a locked send stays frozen and a focused Save moves to the 
 	try {
 		ui.doc.querySelector<HTMLButtonElement>(".prx-review-submit")?.focus();
 		await ui.click(".prx-review-submit");
-		expect(ui.doc.activeElement).toBe(ui.doc.querySelector("textarea"));
-		expect(ui.doc.querySelector<HTMLTextAreaElement>("textarea")?.readOnly).toBe(true);
+		expect(ui.doc.activeElement).toBe(ui.doc.querySelector(".prx-review-composer textarea"));
+		expect(
+			ui.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.readOnly,
+		).toBe(true);
 		await ui.click(".prx-review-cancel");
 		await ui.pick(0);
-		expect(ui.doc.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe(
+		expect(ui.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.value).toBe(
 			"Frozen pending transfer",
 		);
-		expect(ui.doc.querySelector<HTMLTextAreaElement>("textarea")?.readOnly).toBe(true);
+		expect(
+			ui.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.readOnly,
+		).toBe(true);
 		await ui.click(".prx-review-submit");
 		expect(posts(ui)).toHaveLength(0);
 	} finally {
@@ -1908,7 +2056,7 @@ it.each(["get", "set"])(
 		await ui.type("Still reachable after denial");
 		await ui.click(".prx-review-cancel");
 		await ui.pick(0);
-		expect(ui.doc.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe(
+		expect(ui.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.value).toBe(
 			"Still reachable after denial",
 		);
 		await ui.click(".prx-review-submit");
@@ -1922,7 +2070,9 @@ it.each(["get", "set"])(
 it("without Web Locks the tab store contains the text before the input event returns", async () => {
 	const ui = await open({ noLocks: true });
 	await ui.pick(0);
-	const field = ui.doc.querySelector<HTMLTextAreaElement>("textarea") as HTMLTextAreaElement;
+	const field = ui.doc.querySelector<HTMLTextAreaElement>(
+		".prx-review-composer textarea",
+	) as HTMLTextAreaElement;
 	field.value = "Synchronous tab-only draft";
 	field.dispatchEvent(new ui.win.Event("input", { bubbles: true }));
 	expect(Object.values(ui.win.sessionStorage).map((raw) => JSON.parse(raw).body)).toEqual([
@@ -1935,7 +2085,9 @@ it("immediate input and close keep unload protection until the newest locked wri
 	await ui.pick(0);
 	const release = await holdDraftLock(storage);
 	try {
-		const field = ui.doc.querySelector<HTMLTextAreaElement>("textarea") as HTMLTextAreaElement;
+		const field = ui.doc.querySelector<HTMLTextAreaElement>(
+			".prx-review-composer textarea",
+		) as HTMLTextAreaElement;
 		field.value = "Immediate reload boundary";
 		field.dispatchEvent(new ui.win.Event("input", { bubbles: true }));
 		ui.doc.querySelector<HTMLButtonElement>(".prx-review-cancel")?.click();
@@ -1949,7 +2101,7 @@ it("immediate input and close keep unload protection until the newest locked wri
 	expect(bodies(storage)).toEqual(["Immediate reload boundary"]);
 	const next = await open({ prepare: storage.prepare });
 	await next.click(".prx-review-open-draft");
-	expect(next.doc.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe(
+	expect(next.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.value).toBe(
 		"Immediate reload boundary",
 	);
 });
@@ -2044,17 +2196,19 @@ it.each(["same", "other"])(
 		complete(reply({ ok: false, code: "invalid_input" }, 400));
 		await settle();
 		expect(ui.doc.querySelector<HTMLDialogElement>(".prx-review-composer")?.open).toBe(true);
-		expect(ui.doc.querySelector<HTMLTextAreaElement>("textarea")?.readOnly).toBe(false);
-		expect(ui.doc.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe(
+		expect(
+			ui.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.readOnly,
+		).toBe(false);
+		expect(ui.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.value).toBe(
 			target === "same" ? "Correct this comment" : "Other target stays editable",
 		);
 		expect(ui.doc.querySelector(".prx-review-error")?.textContent).toBe(
 			target === "same" ? "The comment or its target is invalid." : "",
 		);
 		if (target === "same") {
-			expect(ui.doc.querySelector("textarea")?.getAttribute("aria-describedby")).toContain(
-				"prx-review-error",
-			);
+			expect(
+				ui.doc.querySelector(".prx-review-composer textarea")?.getAttribute("aria-describedby"),
+			).toContain("prx-review-error");
 			expect(ui.doc.querySelector(".prx-review-composer-status")?.textContent).toBe(
 				"The comment or its target is invalid.",
 			);
@@ -2093,9 +2247,9 @@ it.each(["500", "network"])(
 		expect(submit?.disabled).toBe(false);
 		expect(submit?.textContent).toBe("Retry");
 		expect(ui.doc.querySelector(".prx-review-error")?.textContent).not.toBe("");
-		expect(ui.doc.querySelector("textarea")?.getAttribute("aria-describedby")).toContain(
-			"prx-review-error",
-		);
+		expect(
+			ui.doc.querySelector(".prx-review-composer textarea")?.getAttribute("aria-describedby"),
+		).toContain("prx-review-error");
 		await ui.click(".prx-review-submit");
 		await settle();
 		expect(posts(ui)).toHaveLength(2);
@@ -2135,7 +2289,7 @@ it("the selected-target radio uses a 60-character preview while the composer kee
 	expect(ui.doc.querySelector(".prx-review-target")?.textContent).toBe(
 		`Selected text: “${"a".repeat(59)}…”`,
 	);
-	(ui.doc.querySelector("input[type=radio]") as HTMLInputElement).checked = true;
+	(ui.doc.querySelector(".prx-review-picker input[type=radio]") as HTMLInputElement).checked = true;
 	await ui.click(".prx-review-next");
 	expect(ui.doc.querySelector(".prx-review-composer blockquote")?.textContent).toBe(quote);
 });
@@ -2197,8 +2351,10 @@ it("an obsolete clean close cannot retire newer input queued after reopening und
 	}
 	await settle();
 	expect(bodies(storage)).toEqual(["New unsent text from B", "Newer text from A"]);
-	expect(b.doc.querySelector<HTMLTextAreaElement>("textarea")?.readOnly).toBe(false);
-	expect(b.doc.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe(
+	expect(b.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.readOnly).toBe(
+		false,
+	);
+	expect(b.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.value).toBe(
 		"New unsent text from B",
 	);
 	expect(b.doc.querySelector(".prx-review-composer-notice")?.textContent).toBe(
@@ -2206,7 +2362,7 @@ it("an obsolete clean close cannot retire newer input queued after reopening und
 	);
 	await b.click(".prx-review-cancel");
 	await b.pick(0);
-	expect(b.doc.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe(
+	expect(b.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.value).toBe(
 		"New unsent text from B",
 	);
 });
@@ -2290,7 +2446,7 @@ it.each(["reject", "throw"])(
 		expect(ui.doc.querySelectorAll(".prx-review-draft")).toHaveLength(1);
 		expect(unloadWarns(ui)).toBe(true);
 		await ui.pick(0);
-		expect(ui.doc.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe(
+		expect(ui.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.value).toBe(
 			"  Unsent text after lock refusal\n  ",
 		);
 		expect(denied).toHaveBeenCalledTimes(reads);
@@ -2313,7 +2469,9 @@ it("a refused outbox with failed removal keeps one blocked successor through Ret
 	expect(ui.doc.querySelectorAll(".prx-review-open-draft,.prx-review-discard-draft")).toHaveLength(
 		0,
 	);
-	expect(ui.doc.querySelector<HTMLTextAreaElement>("textarea")?.readOnly).toBe(true);
+	expect(ui.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.readOnly).toBe(
+		true,
+	);
 	expect(ui.doc.querySelector(".prx-review-error")?.textContent).toBe(
 		"The comment or its target is invalid.",
 	);
@@ -2327,7 +2485,9 @@ it("a refused outbox with failed removal keeps one blocked successor through Ret
 	await next.click(".prx-review-submit");
 	expect(posts(next)).toHaveLength(0);
 	expect([...storage.values.keys()].sort()).toEqual(initialKeys);
-	expect(next.doc.querySelector<HTMLTextAreaElement>("textarea")?.readOnly).toBe(true);
+	expect(
+		next.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.readOnly,
+	).toBe(true);
 	storage.failRemovals(false);
 	const messages: string[] = [],
 		observer = new ui.win.MutationObserver(() => {
@@ -2339,8 +2499,12 @@ it("a refused outbox with failed removal keeps one blocked successor through Ret
 	});
 	await ui.click(".prx-review-submit");
 	expect(posts(ui)).toHaveLength(1);
-	expect(ui.doc.querySelector<HTMLTextAreaElement>("textarea")?.readOnly).toBe(false);
-	expect(ui.doc.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe("Refused body");
+	expect(ui.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.readOnly).toBe(
+		false,
+	);
+	expect(ui.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.value).toBe(
+		"Refused body",
+	);
 	expect(ui.doc.querySelector(".prx-review-error")?.textContent).toBe(
 		"The comment or its target is invalid.",
 	);
@@ -2361,7 +2525,7 @@ it("a quota edit announces storage failure and retires its unchanged durable pre
 	await ui.type("Version one, edited after quota");
 	expect(ui.doc.querySelector(".prx-review-composer-notice")?.textContent).toBe("");
 	const description = ui.doc
-		.querySelector("textarea")
+		.querySelector(".prx-review-composer textarea")
 		?.getAttribute("aria-describedby")
 		?.split(" ")
 		.map((id) => ui.doc.getElementById(id)?.textContent)
@@ -2498,7 +2662,9 @@ it("lock denial sets the storage warning even when reads work and performs no un
 	await ui.type("Memory only");
 	await ui.click(".prx-review-cancel");
 	await ui.pick(0);
-	expect(ui.doc.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe("Memory only");
+	expect(ui.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.value).toBe(
+		"Memory only",
+	);
 	expect(unloadWarns(ui)).toBe(true);
 	await ui.click(".prx-review-submit");
 	expect(posts(ui)).toHaveLength(1);
@@ -2609,7 +2775,9 @@ it("an invalid_input refusal keeps the draft ID for a corrected C1 create", asyn
 	const id = Object.keys(a.win.localStorage)[0].slice(-36);
 	await a.click(".prx-review-submit");
 	await settle();
-	expect(a.doc.querySelector<HTMLTextAreaElement>("textarea")?.readOnly).toBe(false);
+	expect(a.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.readOnly).toBe(
+		false,
+	);
 	await a.type("Corrected");
 	await a.click(".prx-review-submit");
 	await server.idle();
@@ -2660,7 +2828,9 @@ it.each([
 		else {
 			await b.click(".prx-review-submit");
 			expect(posts(b)).toHaveLength(0);
-			expect(b.doc.querySelector<HTMLTextAreaElement>("textarea")?.readOnly).toBe(true);
+			expect(
+				b.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.readOnly,
+			).toBe(true);
 			await b.click(".prx-review-keep-new");
 			expect(records(storage)[0][0].slice(-36)).toBe(id);
 		}
@@ -2673,17 +2843,24 @@ it.each([
 		if (edit) {
 			const response = await b.fetchMock.mock.results.at(-1)?.value;
 			expect(response.status).toBe(409);
-			expect(b.doc.querySelector<HTMLTextAreaElement>("textarea")?.readOnly).toBe(false);
-			expect(b.doc.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe("Edited B");
+			expect(
+				b.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.readOnly,
+			).toBe(false);
+			expect(b.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.value).toBe(
+				"Edited B",
+			);
 			const notice =
 				locale === "fr"
 					? "Ce brouillon a été publié depuis un autre onglet. Votre texte a été conservé dans un nouveau brouillon."
 					: "This draft was posted from another tab. Your text was kept as a new draft.";
 			expect(b.doc.querySelector(".prx-review-composer-status")?.textContent).toBe(notice);
 			expect(b.doc.querySelector(".prx-review-composer-notice")?.textContent).toBe(notice);
-			expect(b.doc.querySelector("textarea")?.getAttribute("aria-describedby")?.split(" ")).toEqual(
-				["prx-review-error", "prx-review-composer-notice"],
-			);
+			expect(
+				b.doc
+					.querySelector(".prx-review-composer textarea")
+					?.getAttribute("aria-describedby")
+					?.split(" "),
+			).toEqual(["prx-review-error", "prx-review-composer-notice"]);
 			expect(records(storage)[0][0].slice(-36)).not.toBe(id);
 			await b.click(".prx-review-submit");
 			await server.idle();
@@ -2788,7 +2965,9 @@ it("shared draft writes leave no synchronous session journal while waiting for t
 		expect(bodies(storage)).toEqual(["Saved baseline"]);
 		const b = await open({ prepare: storage.prepare });
 		await b.click(".prx-review-open-draft");
-		expect(b.doc.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe("Saved baseline");
+		expect(b.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.value).toBe(
+			"Saved baseline",
+		);
 	} finally {
 		release();
 	}
@@ -2861,21 +3040,27 @@ it.each([
 		await a.click(".prx-review-retry-outbox");
 		await a.click(".prx-review-submit");
 		expect(records(storage).map(([, raw]) => JSON.parse(raw).body)).toEqual(["Saved outbox text"]);
-		expect(a.doc.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe("Saved outbox text");
+		expect(a.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.value).toBe(
+			"Saved outbox text",
+		);
 		if (mode === "failPuts") {
 			expect(storage.values.get(outboxKey)).toBe(outboxRaw);
-			expect(a.doc.querySelector<HTMLTextAreaElement>("textarea")?.readOnly).toBe(true);
+			expect(
+				a.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.readOnly,
+			).toBe(true);
 		} else {
 			expect(storage.values.has(outboxKey)).toBe(false);
-			expect(a.doc.querySelector<HTMLTextAreaElement>("textarea")?.readOnly).toBe(false);
+			expect(
+				a.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.readOnly,
+			).toBe(false);
 		}
 		a.win.dispatchEvent(new a.win.Event("pagehide"));
 		await settle();
 		const reloaded = await open({ prepare: storage.prepare });
 		await reloaded.click(".prx-review-open-draft,.prx-review-retry-outbox");
-		expect(reloaded.doc.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe(
-			"Saved outbox text",
-		);
+		expect(
+			reloaded.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.value,
+		).toBe("Saved outbox text");
 		expect(records(storage).map(([, raw]) => JSON.parse(raw).body)).toEqual(["Saved outbox text"]);
 	},
 );
@@ -2908,12 +3093,14 @@ it.each(["invalid_input", "request_id_reused"] as const)(
 		held.respond(reply({ ok: false, code }, refusalStatuses[code]));
 		await settle();
 		expect(records(storage)).toEqual([[key, raw]]);
-		expect(ui.doc.querySelector<HTMLTextAreaElement>("textarea")?.readOnly).toBe(true);
+		expect(
+			ui.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.readOnly,
+		).toBe(true);
 		const reloaded = await open({ prepare: storage.prepare });
 		await reloaded.click(".prx-review-retry-outbox");
-		expect(reloaded.doc.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe(
-			"Restore my saved text",
-		);
+		expect(
+			reloaded.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.value,
+		).toBe("Restore my saved text");
 	},
 );
 
@@ -3029,7 +3216,9 @@ it.each([
 		expect(Object.keys(ui.win.localStorage)).toEqual([
 			`praxity-review-draft:${reviewId}:page:${expected}`,
 		]);
-		expect(ui.doc.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe(body);
+		expect(ui.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.value).toBe(
+			body,
+		);
 		expect(posts(ui)).toHaveLength(1);
 	},
 );
@@ -3084,8 +3273,12 @@ it("a reused ID adopts its equal deterministic successor despite anchor property
 	await ui.click(".prx-review-retry-outbox");
 	await ui.click(".prx-review-submit");
 	expect(Object.entries(ui.win.localStorage)).toEqual([[draftKey, draftRaw]]);
-	expect(ui.doc.querySelector<HTMLTextAreaElement>("textarea")?.readOnly).toBe(false);
-	expect(ui.doc.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe("Kept text");
+	expect(ui.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.readOnly).toBe(
+		false,
+	);
+	expect(ui.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.value).toBe(
+		"Kept text",
+	);
 });
 
 async function changedReusedSuccessor(blockRemoval = false) {
@@ -3136,7 +3329,9 @@ it("a refusal and two local Retries keep one successor when the derived slot cha
 		[successorKey, storage.values.get(successorKey as string)],
 	]);
 	expect(storage.values.has(`praxity-review-outbox:${reviewId}:page:${originalId}`)).toBe(false);
-	expect(c.doc.querySelector<HTMLTextAreaElement>("textarea")?.readOnly).toBe(false);
+	expect(c.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.readOnly).toBe(
+		false,
+	);
 	expect(posts(c)).toHaveLength(1);
 	expect(c.doc.querySelector(".prx-review-composer-notice")?.textContent).toBe(
 		"This draft was posted from another tab. Your text was kept as a new draft.",
@@ -3245,7 +3440,9 @@ it.each([1, 7, 8])(
 		if (occupied < 8)
 			expect(kept[0][0]).toBe(`praxity-review-draft:${reviewId}:page:${collisionIds[occupied]}`);
 		else expect(collisionIds).not.toContain(kept[0][0].slice(-36));
-		expect(ui.doc.querySelector<HTMLTextAreaElement>("textarea")?.readOnly).toBe(false);
+		expect(
+			ui.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.readOnly,
+		).toBe(false);
 		const notice =
 			occupied < 8
 				? "This draft was posted from another tab. Your text was kept as a new draft."
@@ -3271,7 +3468,9 @@ it("reused refusals adopt an equal outbox along the chain without touching a com
 	await ui.click(".prx-review-retry-outbox");
 	await ui.click(".prx-review-submit");
 	expect(Object.entries(ui.win.localStorage).sort()).toEqual(saved.slice(1).sort());
-	expect(ui.doc.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe("Kept text");
+	expect(ui.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.value).toBe(
+		"Kept text",
+	);
 	await ui.click(".prx-review-submit");
 	expect(posts(ui).at(-1)?.requestId).toBe(candidate);
 });
@@ -3294,7 +3493,9 @@ it("a definitive refusal accepts and announces a written conflict fork instead o
 	expect(
 		Object.keys(ui.win.localStorage).every((key) => key.startsWith("praxity-review-draft:")),
 	).toBe(true);
-	expect(ui.doc.querySelector<HTMLTextAreaElement>("textarea")?.readOnly).toBe(false);
+	expect(ui.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")?.readOnly).toBe(
+		false,
+	);
 	expect(ui.doc.querySelector(".prx-review-composer-status")?.textContent).toBe(
 		"Another tab changed this draft. Your text was kept as a separate draft.",
 	);

@@ -56,16 +56,16 @@ test("review-enabled Read page loads shipped assets without legacy requests or a
 			"/_praxity/review/review-comments.css",
 			"/_praxity/review/review-comments.js",
 		]);
-		expect(await page.locator("#praxity-review-config").getAttribute("type")).toBe(
-			"application/json",
-		);
+		await expect(page.locator(".prx-review-sidebar")).toHaveCount(1);
+		await expect(page.locator("#praxity-review-config")).toHaveCount(0);
 		const readUrl = page.url();
 		for (const navigate of [
 			() => page.reload(),
 			() => page.locator("a.praxity-nav-next").click(),
 		]) {
 			await navigate();
-			await expect(page.locator("#praxity-review-config")).toHaveCount(1);
+			await expect(page.locator(".prx-review-sidebar")).toHaveCount(1);
+			await expect(page.locator("#praxity-review-config")).toHaveCount(0);
 			expect(await page.content()).not.toContain(authorToken);
 			expect(
 				await page.evaluate(() => [
@@ -79,7 +79,8 @@ test("review-enabled Read page loads shipped assets without legacy requests or a
 		await expect(page.getByRole("link", { name: "Read mode", exact: true })).toBeVisible();
 		await expect(page.locator("#praxity-review-config")).toHaveCount(0);
 		await page.getByRole("link", { name: "Read mode", exact: true }).click();
-		await expect(page.locator("#praxity-review-config")).toHaveCount(1);
+		await expect(page.locator(".prx-review-sidebar")).toHaveCount(1);
+		await expect(page.locator("#praxity-review-config")).toHaveCount(0);
 		expect(new URL(page.url()).origin).toBe(new URL(readUrl).origin);
 		expect(legacy).toEqual([]);
 		expect(errors).toEqual([]);

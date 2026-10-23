@@ -182,7 +182,11 @@ export function createReviewHttp(store: ReviewStore, capability: string) {
 					}
 					const result = await store.list(principal, options);
 					if ("ok" in result) return sendRefusal(result);
-					return json(res, 200, { ok: true, ...result });
+					return json(res, 200, {
+						ok: true,
+						...result,
+						principal: { id: principal.id, role: principal.role },
+					});
 				}
 				if (url.search) refuse(422, "invalid_input");
 				const kind = route[3] === "reply" ? "reply" : route[3] === "reopen" ? "reopen" : "create";

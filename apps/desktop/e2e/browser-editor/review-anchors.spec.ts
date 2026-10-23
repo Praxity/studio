@@ -17,7 +17,9 @@ test("stored quote and pin follow reflow, expose keyboard names and focus their 
 			await page.setViewportSize({ width: 1536, height: 900 });
 			await page.goto(fixture.url);
 			await expect(page.locator(".prx-review-status")).toHaveText(
-				locale === "fr" ? "Aucun commentaire pour cette page." : "No comments on this page yet.",
+				locale === "fr"
+					? "Aucun commentaire dans cette révision."
+					: "No comments in this review yet.",
 			);
 			const capturedAnchors = await page.evaluate(() => {
 				const api = (
@@ -153,7 +155,7 @@ test("stored quote and pin follow reflow, expose keyboard names and focus their 
 		await page.emulateMedia({ colorScheme: "light" });
 		await page.setViewportSize({ width: 390, height: 900 });
 		await page.goto(deck.url);
-		await expect(page.locator(".prx-review-status")).toHaveText("No comments on this page yet.");
+		await expect(page.locator(".prx-review-status")).toHaveText("No comments in this review yet.");
 		const anchor = await page.evaluate(() =>
 			(
 				window as unknown as { PraxityReview: { fromBlock(target: Element): ReviewAnchor } }
