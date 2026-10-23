@@ -52,8 +52,8 @@ jobs:
       output: ${{ github.event_name == 'pull_request' && 'false' || steps.full_browser.outputs.output || steps.browser.outputs.browser || 'true' }}
       browser_editor: ${{ github.event_name == 'pull_request' && 'false' || steps.full_browser.outputs.browser_editor || steps.browser.outputs.browser || 'true' }}
       browser: ${{ github.event_name == 'pull_request' && 'false' || steps.full_browser.outputs.browser || steps.browser.outputs.browser || 'true' }}
-      published_engines: ${{ (github.event_name == 'pull_request' || inputs.gate == 'candidate') && '[{"browser":"chromium","shard":"1/3","artifact":"chromium-1"},{"browser":"chromium","shard":"2/3","artifact":"chromium-2"},{"browser":"chromium","shard":"3/3","artifact":"chromium-3"}]' || '[{"browser":"chromium","shard":"1/3","artifact":"chromium-1"},{"browser":"chromium","shard":"2/3","artifact":"chromium-2"},{"browser":"chromium","shard":"3/3","artifact":"chromium-3"},{"browser":"firefox","shard":"1/1","artifact":"firefox"},{"browser":"webkit","shard":"1/2","artifact":"webkit-1"},{"browser":"webkit","shard":"2/2","artifact":"webkit-2"}]' }}
-      deck_engines: ${{ (github.event_name == 'pull_request' || inputs.gate == 'candidate') && '[{"browser":"chromium","shard":"1/2","artifact":"chromium-1"},{"browser":"chromium","shard":"2/2","artifact":"chromium-2"}]' || '[{"browser":"chromium","shard":"1/2","artifact":"chromium-1"},{"browser":"chromium","shard":"2/2","artifact":"chromium-2"},{"browser":"firefox","shard":"1/1","artifact":"firefox"},{"browser":"webkit","shard":"1/2","artifact":"webkit-1"},{"browser":"webkit","shard":"2/2","artifact":"webkit-2"}]' }}
+      published_engines: ${{ (github.event_name == 'pull_request' || inputs.gate == 'candidate') && '[{"browser":"chromium","shard":"1/3","artifact":"chromium-1"},{"browser":"chromium","shard":"2/3","artifact":"chromium-2"},{"browser":"chromium","shard":"3/3","artifact":"chromium-3"}]' || '[{"browser":"chromium","shard":"1/3","artifact":"chromium-1"},{"browser":"chromium","shard":"2/3","artifact":"chromium-2"},{"browser":"chromium","shard":"3/3","artifact":"chromium-3"},{"browser":"firefox","shard":"1/2","artifact":"firefox-1"},{"browser":"firefox","shard":"2/2","artifact":"firefox-2"},{"browser":"webkit","shard":"1/2","artifact":"webkit-1"},{"browser":"webkit","shard":"2/2","artifact":"webkit-2"}]' }}
+      deck_engines: ${{ (github.event_name == 'pull_request' || inputs.gate == 'candidate') && '[{"browser":"chromium","shard":"1/2","artifact":"chromium-1"},{"browser":"chromium","shard":"2/2","artifact":"chromium-2"}]' || '[{"browser":"chromium","shard":"1/2","artifact":"chromium-1"},{"browser":"chromium","shard":"2/2","artifact":"chromium-2"},{"browser":"firefox","shard":"1/2","artifact":"firefox-1"},{"browser":"firefox","shard":"2/2","artifact":"firefox-2"},{"browser":"webkit","shard":"1/2","artifact":"webkit-1"},{"browser":"webkit","shard":"2/2","artifact":"webkit-2"}]' }}
       editor_engines: ${{ (github.event_name == 'pull_request' || inputs.gate == 'candidate') && '["chromium"]' || '["chromium","webkit"]' }}
     steps:
       - name: Verify candidate SHA
@@ -469,8 +469,13 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}-${{ matrix.browser }}
-      - run: pnpm --filter @praxity/export-pipeline exec playwright install --with-deps ${{ matrix.browser }}
+      - name: Install Playwright with cached system dependencies
+        uses: ./.github/actions/install-playwright
         if: needs.changes.outputs.output == 'true'
+        with:
+          browser: ${{ matrix.browser }}
+          playwright-version: ${{ steps.playwright-version.outputs.version }}
+          package: '@praxity/export-pipeline'
       - name: Install Poppler
         uses: ./.github/actions/install-poppler
         timeout-minutes: 5
@@ -560,8 +565,13 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}-${{ matrix.browser }}
-      - run: pnpm --filter @praxity/export-pipeline exec playwright install --with-deps ${{ matrix.browser }}
+      - name: Install Playwright with cached system dependencies
+        uses: ./.github/actions/install-playwright
         if: needs.changes.outputs.output == 'true'
+        with:
+          browser: ${{ matrix.browser }}
+          playwright-version: ${{ steps.playwright-version.outputs.version }}
+          package: '@praxity/export-pipeline'
       - run: pnpm --filter @praxity/export-pipeline prebuild:client
         if: needs.changes.outputs.output == 'true'
       # CLI release journeys consume desktop export assets as well as the compiler cache.
@@ -651,7 +661,12 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}-${{ matrix.browser }}
-      - run: pnpm --filter @praxity/desktop exec playwright install --with-deps ${{ matrix.browser }}
+      - name: Install Playwright with cached system dependencies
+        uses: ./.github/actions/install-playwright
+        with:
+          browser: ${{ matrix.browser }}
+          playwright-version: ${{ steps.playwright-version.outputs.version }}
+          package: '@praxity/desktop'
       - run: pnpm --filter @praxity/desktop prebuild
       # Without the export-pipeline bundle, each worker's first publish rebuilds it into
       # prebuilt/ concurrently, and one worker can read another's half-copied chunks.
