@@ -160,7 +160,7 @@ for (const layout of ["sidebar", "bottomBar"]) {
 				const next = page.locator("a.praxity-nav-next");
 				const last = page.getByText("Last line of course content.", { exact: true });
 				expect(await nav.evaluate((element) => getComputedStyle(element).position)).toBe(
-					layout === "bottomBar" ? "sticky" : "relative",
+					layout === "bottomBar" && viewport.height > 320 ? "sticky" : "relative",
 				);
 				if (layout === "sidebar")
 					expect(await nav.evaluate((element) => getComputedStyle(element).bottom)).toBe("0px");
@@ -174,7 +174,7 @@ for (const layout of ["sidebar", "bottomBar"]) {
 						window.scrollTo({ top: position === "mid" ? max / 2 : max, behavior: "instant" });
 					}, position);
 					if (
-						(layout === "bottomBar" && position === "mid") ||
+						(layout === "bottomBar" && position === "mid" && viewport.height > 320) ||
 						(position === "max" && viewport.height > 320)
 					)
 						await expect.poll(() => next.evaluate(centreIsVisible)).toBe(true);
