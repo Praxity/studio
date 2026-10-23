@@ -98,16 +98,16 @@ const TEST_ISLAND_FILES = Object.fromEntries(
 ) as Record<IslandManifestEntryName, string>;
 // Size caps don't block working features (owner rule): SHA-256 pair verification in the host bundle; tighten during final size work.
 const HOST_GZIP_BUDGETS: Record<ViewerHostName, number> = {
-	// Measured 10,573 B gzip; add 1 KiB rounded up to 256 B.
-	standalone: 11776,
-	// Measured 13,824 B gzip; add 1 KiB rounded up to 256 B.
-	electronPreview: 14848,
+	// Size caps don't block working features (owner rule): SCORM capture save admission measured 11,863 B gzip; add 1 KiB rounded up to 256 B, tighten during final size work.
+	standalone: 13056,
+	// Size caps don't block working features (owner rule): SCORM capture save admission measured 15,150 B gzip; add 1 KiB rounded up to 256 B, tighten during final size work.
+	electronPreview: 16384,
 	// Measured 17,484 B gzip; add 1 KiB rounded up to 256 B.
 	scorm12: 18688,
 	// Measured 11,656 B gzip; add 1 KiB rounded up to 256 B.
 	scorm2004: 12800,
-	// Measured 12,650 B gzip; add 1 KiB rounded up to 256 B.
-	xapi: 13824,
+	// Size caps don't block working features (owner rule): SCORM capture save admission measured 13,949 B gzip; add 1 KiB rounded up to 256 B, tighten during final size work.
+	xapi: 15104,
 };
 
 const PRIVATE_HOST_GZIP_BUDGETS: Record<ViewerHostName, number> = {
@@ -125,16 +125,16 @@ const PRIVATE_HOST_GZIP_BUDGETS: Record<ViewerHostName, number> = {
 
 // Size caps don't block working features (owner rule): SHA-256 pair verification in the host bundle; tighten during final size work.
 const COLD_HOST_GZIP_BUDGETS: Record<ViewerHostName, number> = {
-	// Measured 10,573 B gzip; add 1 KiB rounded up to 256 B.
-	standalone: 11776,
-	// Measured 13,824 B gzip; add 1 KiB rounded up to 256 B.
-	electronPreview: 14848,
+	// Size caps don't block working features (owner rule): SCORM capture save admission measured 11,863 B gzip; add 1 KiB rounded up to 256 B, tighten during final size work.
+	standalone: 13056,
+	// Size caps don't block working features (owner rule): SCORM capture save admission measured 15,150 B gzip; add 1 KiB rounded up to 256 B, tighten during final size work.
+	electronPreview: 16384,
 	// Measured 17,484 B gzip; add 1 KiB rounded up to 256 B.
 	scorm12: 18688,
 	// Measured 11,656 B gzip; add 1 KiB rounded up to 256 B.
 	scorm2004: 12800,
-	// Measured 12,650 B gzip; add 1 KiB rounded up to 256 B.
-	xapi: 13824,
+	// Size caps don't block working features (owner rule): SCORM capture save admission measured 13,949 B gzip; add 1 KiB rounded up to 256 B, tighten during final size work.
+	xapi: 15104,
 };
 
 // owner 2026-10-11: raised for S9b; size optimisation at the end

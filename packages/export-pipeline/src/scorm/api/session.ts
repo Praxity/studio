@@ -1,6 +1,11 @@
 import { findWindowProperty, type WindowLike } from "../api-discovery";
-import type { GroupObjectiveReplayLedger } from "../tracking";
+
 import type { RuntimeCommitPreparation } from "../types";
+
+/** Acknowledgement belongs to the launch, including synchronous writer reentry. */
+export interface GroupObjectiveReplayLedger {
+	objectives?: Map<string, "writing" | "written">;
+}
 
 /** Shared by every runtime in one LMS launch, including cached older documents. */
 export interface ScormSessionState extends RuntimeCommitPreparation, GroupObjectiveReplayLedger {

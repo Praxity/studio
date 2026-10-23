@@ -9,6 +9,7 @@ import {
 import {
 	type LearnerStateValue,
 	readSavedAssessmentGroupState,
+	readSubmittedAssessmentGroup,
 	type SavedAssessmentGroupState,
 } from "../learner-state";
 import {
@@ -156,7 +157,6 @@ function readAssessmentGroupState(group: AssessmentGroupMeta): SavedAssessmentGr
 	return view && view.status(group.id) !== "current"
 		? ({ ...value, completed: false } as unknown as SavedAssessmentGroupState)
 		: (value as unknown as SavedAssessmentGroupState);
-
 }
 
 function writeAssessmentGroupState(
@@ -166,19 +166,21 @@ function writeAssessmentGroupState(
 	current: () => boolean,
 	submitted?: ChoiceGroupSubmission,
 ) {
+	const previous = readLearnerBlockState(group.id);
+	const retained = readSubmittedAssessmentGroup(previous)?.submitted;
 	const next = {
 		version: 1,
 		kind: "assessmentGroup",
 		mode: group.mode,
 		selectedMemberId,
 		completed,
+		...(retained !== undefined ? { submitted: retained } : {}),
 	};
 	const view = window.__praxityBlockState?.getChoiceDependencyView?.();
-	const prepared = view?.prepareGroupState?.(readLearnerBlockState(group.id), next, submitted);
+	const prepared = view?.prepareGroupState?.(previous, next, submitted);
 	return prepared === null
 		? current()
 		: writeLearnerBlockState(group.id, prepared ?? next, current);
-
 }
 
 function isLayoutMode(value: unknown): value is BlockLayoutMode {

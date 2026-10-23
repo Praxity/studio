@@ -81,6 +81,13 @@ export function isGroupObjectiveScore(value: unknown): value is number {
 	return isFiniteNumber(value) && value >= 0 && value <= 100;
 }
 
+export function isGroupObjectiveId(value: unknown): value is string {
+	return (
+		typeof value === "string" &&
+		/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+	);
+}
+
 /** Undefined is absent; null refuses corrupt evidence without normalizing its raw fields. */
 export function readDeferredGroupObjective(
 	value: unknown,
@@ -90,7 +97,7 @@ export function readDeferredGroupObjective(
 	if (objective === undefined) return undefined;
 	if (
 		!isRecord(objective) ||
-		!isNonemptyString(objective.id) ||
+		!isGroupObjectiveId(objective.id) ||
 		!isGroupObjectiveScore(objective.score) ||
 		typeof objective.passed !== "boolean"
 	)
@@ -98,14 +105,7 @@ export function readDeferredGroupObjective(
 	return objective as unknown as DeferredGroupObjective;
 }
 
-export function groupObjectiveSequence(value: unknown): number {
-	const sequence = isRecord(value) ? value.objectiveSequence : undefined;
-	if (sequence === undefined) return 0;
-	if (!isCounter(sequence)) throw new TypeError("Invalid group objective sequence");
-	return sequence as number;
-}
-
-/** The objective event precedes the group save on non-staging destinations. */
+/** Preserve only named rejected metadata; a replacement never inherits an old capture. */
 export function prepareGroupObjectiveSave(
 	previous: unknown,
 	next: LearnerStateValue,
@@ -113,43 +113,40 @@ export function prepareGroupObjectiveSave(
 	clearId?: string,
 ): LearnerStateValue {
 	if (!readSavedAssessmentGroupState(next) || !isRecord(next)) return next;
-	const previousObjective = readDeferredGroupObjective(previous);
-	const nextObjective = readDeferredGroupObjective(next);
-	const sequence = Math.max(groupObjectiveSequence(previous), groupObjectiveSequence(next));
-	const state = { ...next };
-	const submitted = isRecord(state.submitted) ? state.submitted : undefined;
-	const previousSubmission =
-		isRecord(previous) && isRecord(previous.submitted) ? previous.submitted : undefined;
-	// Preserve rejected raw evidence while allowing picker, retry and new-capture saves.
-	if (previousObjective === null || nextObjective === null) {
-		const rejected = previousObjective === null ? previousSubmission : submitted;
-		state.submitted = {
-			...rejected,
-			...submitted,
-			deferredObjective: rejected?.deferredObjective,
-		} as LearnerStateValue;
-		if (sequence) state.objectiveSequence = sequence;
-		return state as LearnerStateValue;
+	const { objectiveSequence: _sequence, ...state } = next;
+	const rejected: LearnerStateValue[] = [];
+	for (const source of [previous, next]) {
+		if (!isRecord(source)) continue;
+		const entries = Array.isArray(source.rejectedObjectives) ? [...source.rejectedObjectives] : [];
+		if (Object.hasOwn(source, "objectiveSequence"))
+			entries.push({ field: "objectiveSequence", value: source.objectiveSequence });
+		if (readDeferredGroupObjective(source) === null && isRecord(source.submitted))
+			entries.push({ field: "deferredObjective", value: source.submitted.deferredObjective });
+		for (const entry of entries)
+			if (!rejected.some((retained) => JSON.stringify(retained) === JSON.stringify(entry)))
+				rejected.push(entry as LearnerStateValue);
 	}
-	if (submitted) {
-		const { deferredObjective: _previous, ...capture } = submitted;
-		// Reentrant submission may have replaced the obligation being acknowledged.
+	if (rejected.length) state.rejectedObjectives = rejected;
+	if (isRecord(state.submitted)) {
+		const { deferredObjective: _objective, ...capture } = state.submitted;
+		const old = readSubmittedAssessmentGroup(previous);
+		const incoming = readDeferredGroupObjective(next);
 		const retained =
-			previousSubmission?.contentSignature === submitted.contentSignature &&
-			previousObjective?.id !== clearId
-				? previousObjective
-				: undefined;
+			old?.submitted.contentSignature === capture.contentSignature ? old.objective : undefined;
 		const objective =
-			pending && pending.contentSignature === submitted.contentSignature ? pending : retained;
-		state.submitted = objective
-			? {
-					...capture,
-					deferredObjective: { id: objective.id, score: objective.score, passed: objective.passed },
-				}
-			: capture;
+			pending?.contentSignature === capture.contentSignature ? pending : (incoming ?? retained);
+		state.submitted =
+			objective && objective.id !== clearId
+				? {
+						...capture,
+						deferredObjective: {
+							id: objective.id,
+							score: objective.score,
+							passed: objective.passed,
+						},
+					}
+				: capture;
 	}
-	const nextSequence = Math.max(sequence, pending ? Number(pending.id) : 0);
-	if (nextSequence) state.objectiveSequence = nextSequence;
 	return state as LearnerStateValue;
 }
 
@@ -160,6 +157,7 @@ export interface SavedAssessmentGroupState {
 	selectedMemberId: string | null;
 	completed: boolean;
 	submitted?: LearnerStateValue;
+	rejectedObjectives?: LearnerStateValue[];
 }
 
 export function readSavedAssessmentGroupState(value: unknown): SavedAssessmentGroupState | null {
@@ -193,13 +191,11 @@ export function readSubmittedAssessmentGroup(value: unknown):
 	)
 		return undefined;
 	const objective = readDeferredGroupObjective(value);
-	if (objective === null) return undefined;
+
 	return {
 		state: value as Record<string, LearnerStateValue>,
 		submitted: value.submitted as Record<string, LearnerStateValue>,
-		...(objective === undefined
-			? {}
-			: { objective: objective as unknown as DeferredGroupObjective }),
+		...(objective == null ? {} : { objective: objective as unknown as DeferredGroupObjective }),
 	};
 }
 

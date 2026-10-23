@@ -12,17 +12,22 @@ import {
 	captureLearnerBlockState,
 	type GroupObjectiveWriter,
 	type LearnerBlockStateRuntime,
+	withLearnerStateAuthority,
 	writeCourseOutcome,
 } from "@praxity/shared-blocks/learner-block-state";
 import {
 	type DeferredGroupObjective,
-	groupObjectiveSequence,
 	isChoiceContentSignature,
 	isGroupObjectiveScore,
+	type LearnerStateValue,
 	prepareGroupObjectiveSave,
 	readSavedAssessmentGroupState,
 	readSubmittedAssessmentGroup,
 } from "@praxity/shared-blocks/learner-state";
+import type { GroupObjectiveReplayLedger } from "./api/session";
+
+export type { GroupObjectiveReplayLedger } from "./api/session";
+
 import type { InteractionRecord, SCORMRuntime, TrackInteractionOptions } from "./types.ts";
 
 /** The pass mark as the manifest declares it, so the LMS and the SCO agree at the boundary. */
@@ -89,55 +94,68 @@ type OutcomeIntent =
 	| "finish"
 	| { id: string; score: number; passed: boolean; contentSignature?: unknown };
 
-/** Belongs to the launch, so document and tracker replacement retain acknowledgement. */
-export interface GroupObjectiveReplayLedger {
-	objectives?: Map<string, "writing" | "written">;
-}
+/** One handoff belongs to the provider, across every tracker admitted to it. */
+const objectiveCoordinators = new WeakMap<
+	LearnerBlockStateRuntime,
+	Map<
+		string,
+		{
+			objective: DeferredGroupObjective & { contentSignature: string };
+			current: () => boolean;
+		}
+	>
+>();
 
-/** Storage and replay stay out of ordinary bundles until a provider installs this owner. */
+/** Absent on adapters without SCORM objective storage and acknowledgement. */
 export function createDeferredGroupObjectiveWriter(
 	provider: LearnerBlockStateRuntime,
 	current: () => boolean,
 	ledger: GroupObjectiveReplayLedger,
-): GroupObjectiveWriter {
+): GroupObjectiveWriter | undefined {
+	if (
+		!provider.saveGroupObjective ||
+		!provider.confirmGroupObjective ||
+		!provider.clearGroupObjective
+	)
+		return undefined;
 	if (!ledger) throw new TypeError("Group objectives require a launch replay ledger");
-	const ticket = { current };
-	const access = captureLearnerBlockState(provider, current);
-	const pending = new Map<string, DeferredGroupObjective & { contentSignature: string }>();
-	let clearing: { groupId: string; id: string } | undefined;
-	provider.prepareGroupState = (id, next) => {
-		if (!current()) throw new Error("EACTIVITYPROVIDER");
-		const previous = provider.get(id);
-		const queued = pending.get(id);
-		const clearId = clearing?.groupId === id ? clearing.id : undefined;
-		const prepared = prepareGroupObjectiveSave(
-			previous,
-			next,
-			clearId ? undefined : queued,
-			clearId,
-		);
-		// Consume before calling storage: a reentrant save may queue its successor.
-		if (!clearId) pending.delete(id);
-		return prepared;
-	};
-	const clear = (id: string, obligation: string) => {
-		const saved = readSubmittedAssessmentGroup(provider.get(id));
-		if (!saved) return;
-		clearing = { groupId: id, id: obligation };
-		try {
-			access.write(id, saved.state, ticket);
-		} finally {
-			clearing = undefined;
-		}
-	};
-	return (runtime, outcome, view, submittedObjective) => {
-		if (
-			typeof submittedObjective === "object" &&
-			submittedObjective &&
-			Object.hasOwn(view?.groups ?? {}, submittedObjective.id)
-		) {
-			const { id, score, passed, contentSignature } = submittedObjective;
-			pending.delete(id);
+	let pending = objectiveCoordinators.get(provider);
+	if (!pending) {
+		pending = new Map();
+		objectiveCoordinators.set(provider, pending);
+		const handoffs = pending;
+		provider.prepareGroupState = (id, next) => {
+			const queued = handoffs.get(id);
+			const previous = provider.get(id);
+			const adopted =
+				queued &&
+				readSubmittedAssessmentGroup(previous)?.objective?.id === queued.objective.id &&
+				provider.getSaveResult?.(id)?.status !== "pending";
+			if (adopted) handoffs.delete(id);
+			if (
+				queued &&
+				!adopted &&
+				(!queued.current() ||
+					readSubmittedAssessmentGroup(next)?.submitted.contentSignature !==
+						queued.objective.contentSignature)
+			) {
+				handoffs.delete(id);
+				return null;
+			}
+			return prepareGroupObjectiveSave(previous, next, adopted ? undefined : queued?.objective);
+		};
+	}
+	const handoffs = pending;
+	return (runtime, outcome, view, intent, replayOutcome = () => outcome) => {
+		const reporting = withLearnerStateAuthority(runtime, current);
+		if (!current()) return false;
+		const submitted =
+			typeof intent === "object" && Object.hasOwn(view?.groups ?? {}, intent.id)
+				? intent
+				: undefined;
+		if (submitted) {
+			const { id, score, passed, contentSignature } = submitted;
+			handoffs.delete(id);
 			if (
 				!isGroupObjectiveScore(score) ||
 				typeof passed !== "boolean" ||
@@ -145,78 +163,100 @@ export function createDeferredGroupObjectiveWriter(
 			)
 				return false;
 			const previous = provider.get(id);
-			const previousState = readSavedAssessmentGroupState(previous);
-			const saved = readSubmittedAssessmentGroup(previous);
-			if (previous !== undefined && !previousState) return false;
-			if (previousState?.submitted !== undefined && !saved) return false;
+			if (!current() || (previous !== undefined && !readSavedAssessmentGroupState(previous)))
+				return false;
 			if (outcome.kind === "waiting") {
-				let sequence: number;
-				try {
-					sequence = groupObjectiveSequence(previous) + 1;
-				} catch {
-					return false;
-				}
-				if (!Number.isSafeInteger(sequence)) return false;
-				pending.set(id, { id: String(sequence), contentSignature, score, passed });
-				// Only a provisional save can accept this event before its following interaction.
+				const objective = { id: crypto.randomUUID(), contentSignature, score, passed };
+				handoffs.set(id, { objective, current });
 				if (provider.getSaveResult?.(id)?.status === "pending") {
-					if (saved?.submitted.contentSignature !== contentSignature) {
-						pending.delete(id);
+					const saved = readSubmittedAssessmentGroup(previous);
+					if (!saved || saved.submitted.contentSignature !== contentSignature) {
+						handoffs.delete(id);
 						return false;
 					}
-					access.write(id, saved.state, ticket);
+					if (!captureLearnerBlockState(provider, current).write(id, saved.state, { current }))
+						return false;
 				}
 			}
 		}
-		let superseded: { id: string; obligation: string; key: string } | undefined;
-		let acknowledged = false;
-		try {
-			if (outcome.kind === "decided" && view) {
-				for (const id of Object.keys(view.groups ?? {})) {
-					const saved = readSubmittedAssessmentGroup(provider.get(id));
-					const objective = saved?.objective;
-					if (!objective) continue;
-					const key = JSON.stringify([id, objective.id]);
-					const replays = (ledger.objectives ??= new Map());
-					if (replays.get(key) === "written") {
-						clear(id, objective.id);
-						continue;
-					}
+		const replays = (ledger.objectives ??= new Map());
+		const clear = (id: string, uuid: string) =>
+			current() &&
+			provider.clearGroupObjective?.(
+				id,
+				(saved) =>
+					readSubmittedAssessmentGroup(saved)?.objective?.id === uuid
+						? prepareGroupObjectiveSave(saved, saved as LearnerStateValue, undefined, uuid)
+						: undefined,
+				current,
+			);
+		if (replayOutcome().kind === "decided" && view) {
+			for (const id of Object.keys(view.groups ?? {})) {
+				if (!current()) return false;
+				const objective = readSubmittedAssessmentGroup(provider.get(id))?.objective;
+				if (!objective || !current()) continue;
+				const key = JSON.stringify([id, objective.id]);
+				if (replays.get(key) === "written") {
+					clear(id, objective.id);
+					continue;
+				}
+				// A speculative incoming view never confirms or replays the preceding capture.
+				if (replays.has(key) || (outcome.kind === "decided" && outcome.objective?.id === id))
+					continue;
+				replays.set(key, "writing");
+				let accepted = false;
+				try {
 					if (
-						replays.has(key) ||
-						provider.getSaveResult?.(id)?.status === "not-saved" ||
-						view.status(id) !== "current"
+						provider.confirmGroupObjective?.(
+							id,
+							(saved) => readSubmittedAssessmentGroup(saved)?.objective?.id === objective.id,
+							current,
+						) &&
+						current() &&
+						view.status(id) === "current" &&
+						replayOutcome().kind === "decided" &&
+						current()
 					)
-						continue;
-					if (outcome.objective?.id === id) {
-						replays.set(key, "writing");
-						superseded = { id, obligation: objective.id, key };
-						continue;
-					}
-					replays.set(key, "writing");
-					let acknowledged = false;
-					try {
-						acknowledged = writeCourseOutcome(runtime, {
+						accepted = writeCourseOutcome(reporting, {
 							kind: "decided",
 							objective: { id, score: objective.score, passed: objective.passed },
 						});
-					} finally {
-						if (acknowledged) replays.set(key, "written");
-						else replays.delete(key);
-					}
-					if (!acknowledged) continue;
+				} finally {
+					if (accepted) replays.set(key, "written");
+					else replays.delete(key);
+				}
+				if (accepted) {
+					if (handoffs.get(id)?.objective.id === objective.id) handoffs.delete(id);
 					clear(id, objective.id);
 				}
 			}
-			acknowledged = writeCourseOutcome(runtime, outcome);
-			if (acknowledged && superseded) clear(superseded.id, superseded.obligation);
-			return acknowledged;
+		}
+		if (!current()) return false;
+		const superseded =
+			outcome.kind === "decided" && outcome.objective
+				? readSubmittedAssessmentGroup(provider.get(outcome.objective.id))?.objective
+				: undefined;
+		const supersededKey =
+			superseded && outcome.kind === "decided" && outcome.objective
+				? JSON.stringify([outcome.objective.id, superseded.id])
+				: undefined;
+		if (supersededKey) replays.set(supersededKey, "writing");
+		let accepted = false;
+		try {
+			accepted = writeCourseOutcome(reporting, outcome);
 		} finally {
-			if (superseded) {
-				if (acknowledged) ledger.objectives?.set(superseded.key, "written");
-				else ledger.objectives?.delete(superseded.key);
+			if (supersededKey) {
+				if (accepted) replays.set(supersededKey, "written");
+				else replays.delete(supersededKey);
 			}
 		}
+		if (accepted && superseded && outcome.kind === "decided" && outcome.objective) {
+			if (handoffs.get(outcome.objective.id)?.objective.id === superseded.id)
+				handoffs.delete(outcome.objective.id);
+			clear(outcome.objective.id, superseded.id);
+		}
+		// Optional objective refusal is independent of admission of a valid submission.
+		return submitted ? current() : accepted && current();
 	};
 }
 
@@ -257,7 +297,6 @@ export class CourseTracker {
 		this.runtime.trackInteraction(id, response, correct, score, options);
 
 		if (score !== undefined) this.writeOutcome("score", this.runtime, view);
-
 
 		this.checkCompletion(view);
 	}
@@ -317,19 +356,24 @@ export class CourseTracker {
 		view?: ChoiceDependencyEvidence,
 		contentSignature?: unknown,
 	): boolean {
-		return this.writeOutcome({ id, score, passed, contentSignature }, runtime, view);
-
+		const accepted = this.writeOutcome({ id, score, passed, contentSignature }, runtime, view);
+		return this.config.writeObjectives ? accepted : true;
 	}
 
 	finish(explicitFinish = false, runtime = this.runtime): boolean {
 		return this.writeOutcome(explicitFinish ? "finish" : "end", runtime);
 	}
 
-	private writeOutcome(intent: OutcomeIntent = "check", runtime = this.runtime, candidate?: ChoiceDependencyEvidence): boolean {
-		const view = candidate ?? this.config.getChoiceDependencyView?.();
-		const outcome = this.outcome(intent, view);
+	private writeOutcome(
+		intent: OutcomeIntent = "check",
+		runtime = this.runtime,
+		candidate?: ChoiceDependencyEvidence,
+	): boolean {
+		const view = this.config.getChoiceDependencyView?.();
+		const outcome = this.outcome(intent, candidate ?? view ?? null);
+		const replayOutcome = () => this.outcome("prepareCommit", view ?? null);
 		return (
-			this.config.writeObjectives?.(runtime, outcome, view, intent) ??
+			this.config.writeObjectives?.(runtime, outcome, view, intent, replayOutcome) ??
 			writeCourseOutcome(runtime, outcome)
 		);
 	}
@@ -352,7 +396,7 @@ export class CourseTracker {
 		return latest;
 	}
 
-	private historyIsWaiting(view: ChoiceDependencyEvidence | undefined): boolean {
+	private historyIsWaiting(view: ChoiceDependencyEvidence | undefined | null): boolean {
 		if (!view) return false;
 		const ids = new Set(this.config.requiredAssessmentIds ?? []);
 		const hasPassMark = this.hasPassMark();
@@ -375,7 +419,6 @@ export class CourseTracker {
 	 */
 	checkCompletion(view?: ChoiceDependencyEvidence): void {
 		this.writeOutcome("check", this.runtime, view);
-
 	}
 
 	/** A decided commit preserves the adapter's existing write log. */
@@ -449,7 +492,7 @@ export class CourseTracker {
 	 */
 	outcome(
 		intent: OutcomeIntent = "check",
-		view = this.config.getChoiceDependencyView?.(),
+		view: ChoiceDependencyEvidence | null = this.config.getChoiceDependencyView?.() ?? null,
 	): TrackerOutcome {
 		if (this.historyIsWaiting(view))
 			return {

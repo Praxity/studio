@@ -17,7 +17,52 @@ export function blockReportingDestination(
 
 export function createBlockStateRuntime(runtime: SCORMRuntime): LearnerBlockStateRuntime {
 	const results = new Map<string, LearnerBlockSaveResult>();
-	return {
+	let lastSaveAccepted = false;
+	function saveBlockState(blockId: string, value: LearnerStateValue) {
+		lastSaveAccepted = false;
+		if (!blockId) return;
+		const held = runtime.getBlockSaveResult?.(blockId);
+		if (held?.status === "not-saved" && held.code === "unreadable-state") {
+			runtime.setUnsavedBlockState?.(blockId, value);
+			return;
+		}
+		try {
+			if (runtime.setBlockState) {
+				const saved = runtime.setBlockState(blockId, value);
+				lastSaveAccepted = saved !== false;
+				if (!runtime.stageSubmission)
+					return globalThis.__praxityPrivateState !== false
+						? saved === false
+							? { status: "not-saved", code: "storage-unavailable" }
+							: { status: "saved", destination: "device" }
+						: undefined;
+				results.set(
+					blockId,
+					saved === false
+						? { status: "not-saved", code: "storage-unavailable" }
+						: { status: "saved", destination: runtime.destinations.state },
+				);
+				return results.get(blockId);
+			}
+			const suspendData = parseJsonRecord(runtime.getSuspendData()) ?? {};
+			const blockState = suspendData[BLOCK_STATE_KEY];
+			suspendData[BLOCK_STATE_KEY] = {
+				...(isRecord(blockState) ? blockState : {}),
+				[blockId]: value,
+			};
+			const saved = runtime.setSuspendData(JSON.stringify(suspendData));
+			lastSaveAccepted = saved === true;
+			if (!runtime.stageSubmission) return;
+			if (saved === false) throw new Error("EBLOCKSAVE");
+			results.set(blockId, { status: "saved", destination: runtime.destinations.state });
+		} catch {
+			if (runtime.stageSubmission)
+				results.set(blockId, { status: "not-saved", code: "runtime-write-failed" });
+		}
+		return results.get(blockId);
+	}
+
+	const provider: LearnerBlockStateRuntime = {
 		getSavedBuildRevision: () => runtime.getSavedBuildRevision?.() ?? null,
 		stageSubmission: runtime.stageSubmission
 			? (blockId, write) => {
@@ -51,45 +96,38 @@ export function createBlockStateRuntime(runtime: SCORMRuntime): LearnerBlockStat
 				return undefined;
 			}
 		},
-		set(blockId, value) {
-			if (!blockId) return;
-			const held = runtime.getBlockSaveResult?.(blockId);
-			if (held?.status === "not-saved" && held.code === "unreadable-state") {
-				runtime.setUnsavedBlockState?.(blockId, value);
-				return;
-			}
-			try {
-				if (runtime.setBlockState) {
-					const saved = runtime.setBlockState(blockId, value);
-					if (!runtime.stageSubmission)
-						return globalThis.__praxityPrivateState !== false
-							? saved === false
-								? { status: "not-saved", code: "storage-unavailable" }
-								: { status: "saved", destination: "device" }
-							: undefined;
-					results.set(
-						blockId,
-						saved === false
-							? { status: "not-saved", code: "storage-unavailable" }
-							: { status: "saved", destination: runtime.destinations.state },
-					);
-					return results.get(blockId);
-				}
-				const suspendData = parseJsonRecord(runtime.getSuspendData()) ?? {};
-				const blockState = suspendData[BLOCK_STATE_KEY];
-				suspendData[BLOCK_STATE_KEY] = {
-					...(isRecord(blockState) ? blockState : {}),
-					[blockId]: value,
-				};
-				const saved = runtime.setSuspendData(JSON.stringify(suspendData));
-				if (!runtime.stageSubmission) return;
-				if (saved === false) throw new Error("EBLOCKSAVE");
-				results.set(blockId, { status: "saved", destination: runtime.destinations.state });
-			} catch {
-				if (runtime.stageSubmission)
-					results.set(blockId, { status: "not-saved", code: "runtime-write-failed" });
-			}
-			return results.get(blockId);
-		},
+		set: saveBlockState,
 	};
+	if ("trackObjective" in runtime && runtime.destinations.state === "lms") {
+		provider.saveGroupObjective = (blockId, value, current) => {
+			if (!current()) return false;
+			saveBlockState(blockId, value);
+			return lastSaveAccepted && current();
+		};
+		provider.confirmGroupObjective = (blockId, matches, current) => {
+			if (!current() || provider.getSaveResult?.(blockId)?.status === "pending") return false;
+			const before = provider.get(blockId);
+			if (!current() || !matches(before)) return false;
+			const committed = runtime.commit();
+			return (
+				committed &&
+				current() &&
+				JSON.stringify(provider.get(blockId)) === JSON.stringify(before) &&
+				current()
+			);
+		};
+		provider.clearGroupObjective = (blockId, prepare, current) => {
+			if (!current()) return false;
+			const before = provider.get(blockId);
+			const next = prepare(before);
+			if (!current() || next === undefined) return false;
+			saveBlockState(blockId, next);
+			if (!lastSaveAccepted || !current()) return false;
+			const committed = runtime.commit();
+			if (!committed && current() && JSON.stringify(provider.get(blockId)) === JSON.stringify(next))
+				saveBlockState(blockId, before as LearnerStateValue);
+			return committed && current();
+		};
+	}
+	return provider;
 }

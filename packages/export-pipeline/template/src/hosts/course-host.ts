@@ -445,12 +445,21 @@ export function initializeCourseHost(
 		}
 		// Keep the event's existing adapter and ticket; tracker writes have their own lifetime.
 		if (
-			hasScore &&
+			(hasScore || (submissionView && detail.score !== undefined)) &&
 			runtime &&
-			tracker.trackGroupObjective(groupId, score, passed, runtime, submissionView, detail.contentSignature) ===
-				false
-		)
+			tracker.trackGroupObjective(
+				groupId,
+				score,
+				detail.passed as boolean,
+				runtime,
+				submissionView,
+				detail.contentSignature,
+			) === false
+		) {
+			runtime.abortSubmission?.(groupId);
 			event.preventDefault();
+			return;
+		}
 
 		if (!owned()) return;
 		try {

@@ -10,6 +10,7 @@ export type GroupObjectiveWriter = (
 	outcome: CourseOutcome,
 	view: ChoiceDependencyEvidence | undefined,
 	intent?: string | { id: string; score: number; passed: boolean; contentSignature?: unknown },
+	replayOutcome?: () => CourseOutcome,
 ) => boolean;
 
 export type LearnerBlockSaveResult =
@@ -27,11 +28,24 @@ export type LearnerBlockSaveResult =
 
 export interface LearnerBlockStateRuntime {
 	/** The admitted obligation owner joins an objective-first submission to its following save. */
-	prepareGroupState?(blockId: string, value: LearnerStateValue): LearnerStateValue;
+	prepareGroupState?(blockId: string, value: LearnerStateValue): LearnerStateValue | null;
+	/** The admitted SCORM path consumes native save acceptance without changing ordinary receipts. */
+	saveGroupObjective?(blockId: string, value: LearnerStateValue, current: () => boolean): boolean;
+	/** SCORM-only persistence acknowledgement, through the existing native Commit owner. */
+	confirmGroupObjective?(
+		blockId: string,
+		matches: (value: unknown) => boolean,
+		current: () => boolean,
+	): boolean;
+	clearGroupObjective?(
+		blockId: string,
+		prepare: (value: LearnerStateValue | undefined) => LearnerStateValue | undefined,
+		current: () => boolean,
+	): boolean;
 	/** Optional reporting capability, captured for the admitted tracker's lifetime. */
 	getChoiceReporting?(current: () => boolean): {
 		getChoiceDependencyView: () => ChoiceDependencyEvidence | undefined;
-		writeObjectives: GroupObjectiveWriter;
+		writeObjectives?: GroupObjectiveWriter;
 	};
 	/** Absent until the host admits evidence-aware consumers together. */
 	getChoiceDependencyView?(): ChoiceDependencyEvidence | undefined;
@@ -149,8 +163,10 @@ function storeLearnerBlockState(
 	value: LearnerStateValue,
 	current: () => boolean,
 ): boolean {
-	const prepared = provider.prepareGroupState?.(blockId, value) ?? value;
-	if (!current()) return false;
+	const prepared = provider.prepareGroupState ? provider.prepareGroupState(blockId, value) : value;
+	if (prepared === null || !current()) return false;
+	if (provider.prepareGroupState && provider.saveGroupObjective)
+		return provider.saveGroupObjective(blockId, prepared, current) && current();
 	provider.set(blockId, prepared);
 	return true;
 }
