@@ -19,11 +19,18 @@ import {
 	isChoiceContentSignature,
 	isGroupObjectiveScore,
 	type LearnerStateValue,
+	prepareGroupObjectiveRetirement,
 	prepareGroupObjectiveSave,
 	readSavedAssessmentGroupState,
 	readSubmittedAssessmentGroup,
 } from "@praxity/shared-blocks/learner-state";
-import type { GroupObjectiveReplayLedger } from "./api/session";
+import {
+	claimGroupObjective,
+	dirtyGroupObjectiveReplay,
+	type GroupObjectiveReplayLedger,
+	settleGroupObjective,
+	withGroupObjectiveReplay,
+} from "./api/session";
 import type { InteractionRecord, SCORMRuntime, TrackInteractionOptions } from "./types.ts";
 
 /** The pass mark as the manifest declares it, so the LMS and the SCO agree at the boundary. */
@@ -93,6 +100,7 @@ export function createDeferredGroupObjectiveWriter(
 		prepare: prepareGroupObjectiveSave,
 	});
 	if (!handoff) return undefined;
+	dirtyGroupObjectiveReplay(ledger ?? null);
 	const clear = (id: string, uuid: string) =>
 		provider.clearGroupObjective?.(
 			id,
@@ -103,78 +111,116 @@ export function createDeferredGroupObjectiveWriter(
 			current,
 		);
 	const writer: GroupObjectiveWriter = (runtime, outcome, view, intent, readReplay) => {
+		if (intent && intent !== "prepareCommit" && ledger && !ledger.objectiveReplay)
+			return withGroupObjectiveReplay(ledger, current, () =>
+				writer(runtime, outcome, view, intent, readReplay),
+			);
 		const reporting = runtime && withLearnerStateAuthority(runtime, current);
-		if (!intent) {
-			let evidence = view;
-			let latestOutcome = outcome;
-			if (ledger && evidence && readReplay) {
-				const refresh = () => {
-					const fresh = readReplay();
-					evidence = fresh.view;
-					latestOutcome = fresh.outcome;
-				};
-				const claims = (ledger.objectives ??= new Map());
-				for (const id of Object.keys(evidence.groups ?? {})) {
-					const saved = readSubmittedAssessmentGroup(provider.get(id));
-					const objective = saved?.objective;
-					if (!current()) return false;
-					if (!objective) continue;
-					const key = JSON.stringify([id, objective.id]);
-					if (claims.get(key) === "written") {
-						clear(id, objective.id);
-						refresh();
-						continue;
-					}
-					if (
-						claims.has(key) ||
-						latestOutcome.kind !== "decided" ||
-						evidence?.status(id) !== "current"
-					)
-						continue;
-					claims.set(key, "writing");
-					let accepted = false;
-					try {
-						const confirmed = provider.confirmGroupObjective?.(
-							id,
-							(state) =>
-								JSON.stringify(readSubmittedAssessmentGroup(state)) === JSON.stringify(saved),
-							current,
-						);
-						// Commit callbacks can acknowledge this UUID or replace both state and rows.
-						refresh();
-						if (
-							confirmed &&
-							current() &&
-							latestOutcome.kind === "decided" &&
-							evidence?.status(id) === "current" &&
-							JSON.stringify(readSubmittedAssessmentGroup(provider.get(id))) ===
-								JSON.stringify(saved) &&
-							current() &&
-							claims.get(key) === "writing"
-						) {
-							accepted =
-								writeCourseOutcome(reporting, {
-									kind: "decided",
-									objective: { id, score: objective.score, passed: objective.passed },
-								}) && current();
-							refresh();
-						}
-					} finally {
-						// A nested decided submission owns any acknowledgement made during confirmation.
-						if (claims.get(key) === "writing") {
-							if (accepted) claims.set(key, "written");
-							else claims.delete(key);
-						}
-					}
-					if (accepted) {
-						handoff(id, null, objective.id);
-						clear(id, objective.id);
-						refresh();
-					}
-				}
+		if (!intent || intent === "prepareCommit") {
+			if (!ledger || !readReplay) {
+				const initial = readReplay?.();
+				return writeCourseOutcome(reporting, initial?.outcome ?? outcome) && current();
 			}
-			return current() && writeCourseOutcome(reporting, latestOutcome) && current();
+			const running = ledger.objectiveReplay;
+			if (running) {
+				running.dirty = true;
+				if (!running.current())
+					running.retry = () => writer(runtime, outcome, view, intent, readReplay);
+				// Ordinary preparation must cancel queued credit before the adapter flushes it.
+				if (intent === "prepareCommit")
+					return writeCourseOutcome(reporting, readReplay().outcome) && current();
+				return current();
+			}
+			return withGroupObjectiveReplay(ledger, current, (flight) => {
+				let evidence = view;
+				let latestOutcome = outcome;
+				const confirmations = new Map<string, boolean>();
+				const cleared = new Set<string>();
+				const originalIds = new Map<string, string>();
+				let refresh = false;
+				do {
+					flight.dirty = false;
+					if (!evidence) {
+						const initial = readReplay();
+						evidence = initial.view;
+						latestOutcome = initial.outcome;
+					}
+					// Read captures before rebuilding evidence. No callback-capable read follows admission.
+					const captures = Object.keys(evidence?.groups ?? {}).map(
+						(id) => [id, readSubmittedAssessmentGroup(provider.get(id))] as const,
+					);
+					if (!refresh)
+						for (const [id, saved] of captures)
+							if (saved?.objective) originalIds.set(id, saved.objective.id);
+					if (refresh) {
+						const fresh = readReplay();
+						evidence = fresh.view;
+						latestOutcome = fresh.outcome;
+					}
+					refresh = true;
+					if (!current()) return false;
+					if (flight.dirty) continue;
+					for (const [id, saved] of captures) {
+						const objective = saved?.objective;
+						if (!objective || originalIds.get(id) !== objective.id) continue;
+						const key = JSON.stringify([id, objective.id]);
+						if (ledger.objectives?.get(key) === "written") {
+							if (!cleared.has(key)) {
+								// Clear also Commits; cancel queued credit while preserving the final Finish intent.
+								if (latestOutcome.kind === "waiting")
+									writeCourseOutcome(reporting, { kind: "waiting" });
+								cleared.add(key);
+								clear(id, objective.id);
+								flight.dirty = true;
+								break;
+							}
+							continue;
+						}
+						const eligible =
+							!saved.retired &&
+							latestOutcome.kind === "decided" &&
+							evidence?.status(id) === "current";
+						if (flight.dirty) break;
+						if (!eligible) continue;
+						const claim = claimGroupObjective(ledger, key);
+						if (!claim) continue;
+						const capture = JSON.stringify([id, saved]);
+						let accepted = false;
+						try {
+							if (!confirmations.has(capture)) {
+								confirmations.set(
+									capture,
+									provider.confirmGroupObjective?.(
+										id,
+										(state) =>
+											JSON.stringify(readSubmittedAssessmentGroup(state)) === JSON.stringify(saved),
+										current,
+									) === true,
+								);
+								flight.dirty = true;
+							} else if (confirmations.get(capture)) {
+								accepted =
+									writeCourseOutcome(reporting, {
+										kind: "decided",
+										objective: { id, score: objective.score, passed: objective.passed },
+									}) && current();
+								if (!accepted) return false;
+								handoff(id, null, objective.id);
+								flight.dirty = true;
+							}
+						} finally {
+							settleGroupObjective(ledger, key, claim, accepted);
+						}
+						if (flight.dirty) break;
+					}
+					if (!flight.dirty) {
+						if (!writeCourseOutcome(reporting, latestOutcome) || !current()) return false;
+					}
+				} while (flight.dirty);
+				return true;
+			});
 		}
+		dirtyGroupObjectiveReplay(ledger ?? null);
 		if (!Object.hasOwn(view?.groups ?? {}, intent.id))
 			return writeCourseOutcome(reporting, outcome) && current();
 		const { id, score, passed, contentSignature } = intent;
@@ -192,19 +238,30 @@ export function createDeferredGroupObjectiveWriter(
 			return writeCourseOutcome(reporting, outcome) && current();
 		const pending =
 			outcome.kind === "waiting" ? { id: crypto.randomUUID(), score, passed } : undefined;
-		const clearId = pending ? undefined : readSubmittedAssessmentGroup(previous)?.objective?.id;
-		// Outcome callbacks can revoke authority before a waiting handoff is queued.
-		const claims = ledger && (ledger.objectives ??= new Map());
+		const submitted = readSubmittedAssessmentGroup(previous);
+		const clearId = pending ? undefined : submitted?.objective?.id;
 		const key = clearId && JSON.stringify([id, clearId]);
-		if (key) claims?.set(key, "writing");
+		const previousClaim = key ? ledger?.objectives?.get(key) : undefined;
+		const claim = key && ledger ? claimGroupObjective(ledger, key) : undefined;
+		if (
+			clearId &&
+			!provider.retireGroupObjective?.(
+				id,
+				(saved) => prepareGroupObjectiveRetirement(saved, clearId),
+				current,
+			)
+		) {
+			if (key && ledger) settleGroupObjective(ledger, key, claim, false);
+			return false;
+		}
 		let accepted = false;
 		try {
 			accepted = writeCourseOutcome(reporting, outcome) && current();
 		} finally {
-			if (key && claims?.get(key) === "writing") {
-				if (accepted) claims.set(key, "written");
-				else claims.delete(key);
-			}
+			// The replay attempt owns its in-flight claim; a decided submission reports acceptance to it.
+			if (accepted && previousClaim && previousClaim !== "written")
+				previousClaim.acknowledged = true;
+			if (key && ledger) settleGroupObjective(ledger, key, claim, accepted);
 		}
 		if (!accepted) return false;
 		if (pending || clearId) {
@@ -349,14 +406,19 @@ export class CourseTracker {
 		runtime = this.runtime,
 		candidate?: ChoiceDependencyEvidence,
 	): boolean {
+		if (this.config.writeObjectives && !candidate)
+			return this.config.writeObjectives(
+				runtime,
+				{ kind: "decided" },
+				undefined,
+				intent === "prepareCommit" ? intent : undefined,
+				() => {
+					const view = this.config.getChoiceDependencyView?.();
+					return { view, outcome: this.outcome(intent, view ?? null) };
+				},
+			);
 		const view = this.config.getChoiceDependencyView?.();
-		const outcome = this.outcome(intent, candidate ?? view ?? null);
-		return this.config.writeObjectives
-			? this.config.writeObjectives(runtime, outcome, view, undefined, () => {
-					const fresh = this.config.getChoiceDependencyView?.();
-					return { view: fresh, outcome: this.outcome(intent, fresh ?? null) };
-				})
-			: writeCourseOutcome(runtime, outcome);
+		return writeCourseOutcome(runtime, this.outcome(intent, candidate ?? view ?? null));
 	}
 
 	private average(scores: InteractionRecord[]): number {

@@ -36,6 +36,8 @@ import {
 	readSessionState,
 	type ScormSessionState,
 	sessionAllowsCalls,
+	withGroupObjectiveState,
+	writeScormSuspendData,
 	writeSessionState,
 } from "./session.ts";
 import { sessionTime } from "./session-time.ts";
@@ -284,11 +286,17 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	}
 
 	private setLmsValue(element: string, value: string, terminating = false): boolean {
-		if (!this.canCallLms(terminating)) return false;
-		const result = this.api?.SetValue(element, value);
-		if (!this.canCallLms(terminating)) return false;
-		this.checkError(terminating, element);
-		return result === "true";
+		const write = (bytes: string) => {
+			if (!this.canCallLms(terminating)) return false;
+			const result = this.api?.SetValue(element, bytes);
+			if (!this.canCallLms(terminating)) return false;
+			this.checkError(terminating, element);
+			return result === "true";
+		};
+		return element === "cmi.suspend_data" &&
+			(this.session?.objectiveReplay || this.session?.suspendWrite)
+			? writeScormSuspendData(this.session, value, write)
+			: write(value);
 	}
 
 	// -------------------------------------------------------------------
@@ -517,6 +525,14 @@ export class Scorm2004Runtime implements SCORMRuntime {
 
 	setSuspendData(data: string): boolean {
 		return this.setValue("cmi.suspend_data", data);
+	}
+
+	withSavedState(write: () => boolean): boolean {
+		return withGroupObjectiveState(this.session, write);
+	}
+
+	getSuspendDataRevision(): number {
+		return this.session?.suspendRevision ?? 0;
 	}
 
 	getSuspendData(): string | null {

@@ -20,7 +20,14 @@ export type GroupObjectiveWriter = ((
 	runtime: OutcomeRuntime | undefined,
 	outcome: CourseOutcome,
 	view: ChoiceDependencyEvidence | undefined,
-	intent?: { id: string; score: number; passed: boolean; contentSignature?: unknown },
+	intent?:
+		| "prepareCommit"
+		| {
+				id: string;
+				score: number;
+				passed: boolean;
+				contentSignature?: unknown;
+		  },
 	readReplay?: () => { view: ChoiceDependencyEvidence | undefined; outcome: CourseOutcome },
 ) => boolean) & { discard(id: string): void };
 
@@ -52,6 +59,11 @@ export interface LearnerBlockStateRuntime {
 	confirmGroupObjective?(
 		blockId: string,
 		matches: (value: unknown) => boolean,
+		current: () => boolean,
+	): boolean;
+	retireGroupObjective?(
+		blockId: string,
+		prepare: (value: LearnerStateValue | undefined) => LearnerStateValue | undefined,
 		current: () => boolean,
 	): boolean;
 	clearGroupObjective?(

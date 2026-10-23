@@ -332,7 +332,8 @@ describe("deferred group objective syntax", () => {
 			completed: false,
 		};
 		expect(api.prepareGroupObjectiveSave(undefined, ordinary)).toEqual(ordinary);
-		expect(api.prepareGroupObjectiveSave(group(objective), "not a group")).toBe("not a group");
+		expect(api.prepareGroupObjectiveSave(undefined, "not a group")).toBe("not a group");
+		expect(api.prepareGroupObjectiveSave(group(objective), "not a group")).toBeNull();
 		expect(api.readSavedAssessmentGroupState(ordinary)).toEqual(ordinary);
 		const oneOf = { ...group(objective), mode: "oneOf", selectedMemberId: "q" };
 		expect(api.readSubmittedAssessmentGroup(oneOf)?.objective).toEqual(objective);

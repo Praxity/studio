@@ -1640,6 +1640,10 @@ describe("computeViewerSourceHash", () => {
 					typeof import("../scorm/api-discovery");
 			});
 			const api2004 = { GetValue: () => "resume" };
+			for (const runtime of sessions) {
+				expect(typeof runtime.withGroupObjectiveState).toBe("function");
+				expect(typeof runtime.writeScormSuspendData).toBe("function");
+			}
 			const dualApiWindow = { API: api, API_1484_11: api2004 };
 			expect(sessions[0].findScormApi(dualApiWindow, "1.2")?.api).toBe(api);
 			expect(sessions[0].findScormApi(dualApiWindow, "2004")?.api).toBe(api2004);

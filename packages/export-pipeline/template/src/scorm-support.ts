@@ -3,6 +3,8 @@ import {
 	getSessionState,
 	readSessionState,
 	sessionAllowsCalls,
+	withGroupObjectiveState,
+	writeScormSuspendData,
 	writeSessionState,
 } from "../../src/scorm/api/session";
 import { findScormApi, findWindowProperty, readScormEntry } from "../../src/scorm/api-discovery";
@@ -14,6 +16,8 @@ const support = {
 	getSessionState,
 	readSessionState,
 	sessionAllowsCalls,
+	withGroupObjectiveState,
+	writeScormSuspendData,
 	writeSessionState,
 	findScormApi,
 	findWindowProperty,

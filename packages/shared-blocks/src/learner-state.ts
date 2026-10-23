@@ -113,11 +113,16 @@ export function prepareGroupObjectiveSave(
 	clearId?: string,
 ): LearnerStateValue {
 	const group = readSavedAssessmentGroupState(next);
+	const previousCapture = readSubmittedAssessmentGroup(previous)?.submitted;
+	const retiredId = isGroupObjectiveId(previousCapture?.retiredObjectiveId)
+		? previousCapture.retiredObjectiveId
+		: undefined;
 	// Incoming proposals refuse atomically; corrupt saved metadata is retained below.
 	if (
 		pending !== undefined &&
 		(!isRecord(pending) ||
 			pending.id === clearId ||
+			pending.id === retiredId ||
 			!group ||
 			!isRecord(group.submitted) ||
 			!isChoiceContentSignature(pending.contentSignature) ||
@@ -125,7 +130,7 @@ export function prepareGroupObjectiveSave(
 			readDeferredGroupObjective({ submitted: { deferredObjective: pending } }) == null)
 	)
 		return null;
-	if (!group) return next;
+	if (!group) return readDeferredGroupObjective(previous) ? null : next;
 	const { objectiveSequence: _sequence, ...state } = next as Record<string, LearnerStateValue>;
 	const rejected: LearnerStateValue[] = [];
 	for (const source of [previous, next]) {
@@ -146,7 +151,11 @@ export function prepareGroupObjectiveSave(
 	}
 	if (rejected.length) state.rejectedObjectives = rejected;
 	if (isRecord(state.submitted)) {
-		const { deferredObjective: _objective, ...capture } = state.submitted;
+		const {
+			deferredObjective: _objective,
+			retiredObjectiveId: _retired,
+			...capture
+		} = state.submitted;
 		const old = readSubmittedAssessmentGroup(previous);
 		const incoming = readDeferredGroupObjective(next);
 		// A retained capture is authoritative over a draft copied before a reentrant save.
@@ -158,16 +167,17 @@ export function prepareGroupObjectiveSave(
 					? old.objective
 					: incoming);
 		state.submitted =
-			objective && objective.id !== clearId
+			objective && objective.id !== clearId && objective.id !== retiredId
 				? {
 						...capture,
+						...(retiredId ? { retiredObjectiveId: retiredId } : {}),
 						deferredObjective: {
 							id: objective.id,
 							score: objective.score,
 							passed: objective.passed,
 						},
 					}
-				: capture;
+				: { ...capture, ...(retiredId ? { retiredObjectiveId: retiredId } : {}) };
 	}
 	return state as LearnerStateValue;
 }
@@ -203,6 +213,7 @@ export function readSubmittedAssessmentGroup(value: unknown):
 			state: Record<string, LearnerStateValue>;
 			submitted: Record<string, LearnerStateValue>;
 			objective?: DeferredGroupObjective;
+			retired?: true;
 	  }
 	| undefined {
 	const state = readSavedAssessmentGroupState(value);
@@ -218,7 +229,20 @@ export function readSubmittedAssessmentGroup(value: unknown):
 		state: value as Record<string, LearnerStateValue>,
 		submitted: state.submitted as Record<string, LearnerStateValue>,
 		...(objective == null ? {} : { objective }),
+		...(objective && state.submitted.retiredObjectiveId === objective.id
+			? { retired: true as const }
+			: {}),
 	};
+}
+
+/** Retirement changes only the obligation; the incoming capture keeps its existing save order. */
+export function prepareGroupObjectiveRetirement(
+	value: unknown,
+	uuid: string,
+): LearnerStateValue | undefined {
+	const saved = readSubmittedAssessmentGroup(value);
+	if (saved?.objective?.id !== uuid) return undefined;
+	return { ...saved.state, submitted: { ...saved.submitted, retiredObjectiveId: uuid } };
 }
 
 export interface LearnerStateInteraction {

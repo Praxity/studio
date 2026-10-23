@@ -127,16 +127,50 @@ export function createBlockStateRuntime(runtime: SCORMRuntime): LearnerBlockStat
 				runtime.commit() && current() && JSON.stringify(provider.get(id)) === bytes && current()
 			);
 		};
-		provider.clearGroupObjective = (id, prepare, current) => {
-			if (!current()) return false;
-			const before = provider.get(id);
-			const next = prepare(before);
-			if (!current() || next === undefined || !saveBlockState(id, next).accepted || !current())
-				return false;
-			const committed = runtime.commit();
-			if (!committed && current() && JSON.stringify(provider.get(id)) === JSON.stringify(next))
-				saveBlockState(id, before as LearnerStateValue);
-			return committed && current();
+		const updateObjective: NonNullable<LearnerBlockStateRuntime["clearGroupObjective"]> = (
+			id,
+			prepare,
+			current,
+		) => {
+			const write = () => {
+				if (!current()) return false;
+				const readRevision = runtime.getSuspendDataRevision?.();
+				const before = provider.get(id);
+				const next = prepare(before);
+				if (
+					!current() ||
+					next === undefined ||
+					JSON.stringify(provider.get(id)) !== JSON.stringify(before) ||
+					runtime.getSuspendDataRevision?.() !== readRevision ||
+					!current()
+				)
+					return false;
+				if (!saveBlockState(id, next).accepted || !current()) return false;
+				const writtenRevision = runtime.getSuspendDataRevision?.();
+				if (
+					JSON.stringify(provider.get(id)) !== JSON.stringify(next) ||
+					runtime.getSuspendDataRevision?.() !== writtenRevision ||
+					!current()
+				)
+					return false;
+				const committed = runtime.commit();
+				if (!committed && current() && JSON.stringify(provider.get(id)) === JSON.stringify(next))
+					saveBlockState(id, before as LearnerStateValue);
+				return (
+					committed &&
+					current() &&
+					JSON.stringify(provider.get(id)) === JSON.stringify(next) &&
+					runtime.getSuspendDataRevision?.() === writtenRevision &&
+					current()
+				);
+			};
+			return runtime.withSavedState ? runtime.withSavedState(write) : write();
+		};
+		provider.clearGroupObjective = updateObjective;
+		provider.retireGroupObjective = (id, prepare, current) => {
+			const retired = updateObjective(id, prepare, current);
+			if (!retired) results.set(id, { status: "not-saved", code: "runtime-write-failed" });
+			return retired;
 		};
 		provider.admitGroupObjectives = (current, schema) => {
 			provider.prepareGroupState ??= (id, next) => {

@@ -71,10 +71,14 @@ export interface SCORMRuntime {
 	getBookmark(): string | null;
 	setSuspendData(data: string): void | boolean;
 	getSuspendData(): string | null;
+	/** Shared across adapters in this launch; detects writes inside a native read callback. */
+	getSuspendDataRevision?(): number;
 	/** Editable device drafts while original LMS bytes are held unreadable. Never LMS credit. */
 	getUnsavedBlockState?(blockId: string): LearnerStateValue | undefined;
 	setUnsavedBlockState?(blockId: string, value: LearnerStateValue): boolean;
 	stageSubmission?(blockId: string, write: () => boolean): boolean;
+	/** Retirement must reach saved storage even while an incoming capture is provisional. */
+	withSavedState?(write: () => boolean): boolean;
 	/** Discard only the matching provisional submission when its host refuses reporting. */
 	abortSubmission?(blockId: string): void;
 	getBlockSaveResult?(blockId: string): LearnerBlockSaveResult | undefined;

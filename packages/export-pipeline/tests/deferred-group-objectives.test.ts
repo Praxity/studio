@@ -595,7 +595,7 @@ describe.each(["scorm12", "scorm2004"] as const)("%s objective capture persisten
 		expect(pending(host)).toBeUndefined();
 	});
 
-	it("a decided staged or ordinary dispatch retires the previous record without an extra Commit", () => {
+	it("a decided dispatch commits retirement before reporting its successor", () => {
 		const host = launch(format, true, true);
 		submit(host);
 		host.provider.set("q", answer(signature));
@@ -603,7 +603,7 @@ describe.each(["scorm12", "scorm2004"] as const)("%s objective capture persisten
 		expect(submit(host, { score: 0, passed: false }).accepted).toBe(true);
 		expect(pending(host)).toBeUndefined();
 		expect(objectives(host)).toEqual(["g", "0", "failed"]);
-		expect(commit).toHaveBeenCalledExactlyOnceWith();
+		expect(commit).toHaveBeenCalledTimes(2);
 	});
 
 	for (const field of ["score", "passed", "contentSignature"] as const)

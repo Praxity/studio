@@ -35,6 +35,8 @@ import {
 	readSessionState,
 	type ScormSessionState,
 	sessionAllowsCalls,
+	withGroupObjectiveState,
+	writeScormSuspendData,
 	writeSessionState,
 } from "./session.ts";
 import { sessionTime } from "./session-time.ts";
@@ -157,6 +159,30 @@ export class Scorm12Runtime implements SCORMRuntime {
 		if (this.submission?.blockId !== blockId) return;
 		this.submission = undefined;
 		this.blockSaveResults.set(blockId, { status: "not-saved", code: "runtime-write-failed" });
+	}
+
+	withSavedState(write: () => boolean): boolean {
+		return withGroupObjectiveState(this.session, () => {
+			const staged = this.submission;
+			this.submission = undefined;
+			try {
+				return write();
+			} finally {
+				if (staged) {
+					const draft = JSON.parse(staged.data.custom ?? "{}");
+					const saved = this.loadSuspendPayload();
+					const custom = JSON.parse(saved.custom ?? "{}");
+					// Retain this stage's group capture while adopting all newly saved rows and other blocks.
+					custom.blockState = {
+						...custom.blockState,
+						[staged.blockId]: draft.blockState?.[staged.blockId],
+					};
+					saved.custom = JSON.stringify(custom);
+					staged.data = saved;
+				}
+				this.submission = staged;
+			}
+		});
 	}
 
 	getBlockSaveResult(blockId: string) {
@@ -470,6 +496,10 @@ export class Scorm12Runtime implements SCORMRuntime {
 		return this.saveSuspendPayload(payload);
 	}
 
+	getSuspendDataRevision(): number {
+		return this.session?.suspendRevision ?? 0;
+	}
+
 	getSuspendData(): string | null {
 		this.ensureInitialized();
 		const payload = this.loadSuspendPayload();
@@ -552,13 +582,18 @@ export class Scorm12Runtime implements SCORMRuntime {
 	}
 
 	private lmsSetValue(element: string, value: string, terminating = false): boolean {
-		if (!this.canCallLms(terminating)) return false;
-		const result = this.api?.LMSSetValue(element, value);
-		if (!this.canCallLms(terminating)) return false;
-		if (result !== "true") {
-			this.throwIfError(`LMSSetValue("${element}", "${value}")`, terminating);
-		}
-		return result === "true";
+		const write = (bytes: string) => {
+			if (!this.canCallLms(terminating)) return false;
+			const result = this.api?.LMSSetValue(element, bytes);
+			if (!this.canCallLms(terminating)) return false;
+			if (result !== "true")
+				this.throwIfError(`LMSSetValue("${element}", "${bytes}")`, terminating);
+			return result === "true";
+		};
+		return element === "cmi.suspend_data" &&
+			(this.session?.objectiveReplay || this.session?.suspendWrite)
+			? writeScormSuspendData(this.session, value, write)
+			: write(value);
 	}
 
 	private optionalSetValue(element: string, value: string): void {

@@ -1235,7 +1235,7 @@ export async function bundleViewer(
 					builder.onLoad({ filter: /^scorm-support$/, namespace: "praxity-runtime" }, () => ({
 						contents: `const runtime = window.__praxityScormSupport;
 if (!runtime) throw new Error("Missing SCORM support runtime.");
-export const { configureSessionOutcome, getSessionState, readSessionState, writeSessionState, sessionAllowsCalls, findScormApi, findWindowProperty, readScormEntry, CourseTracker } = runtime;`,
+export const { configureSessionOutcome, getSessionState, readSessionState, writeSessionState, sessionAllowsCalls, withGroupObjectiveState, writeScormSuspendData, findScormApi, findWindowProperty, readScormEntry, CourseTracker } = runtime;`,
 						loader: "js",
 					}));
 				},

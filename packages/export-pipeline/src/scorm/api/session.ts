@@ -3,7 +3,99 @@ import type { RuntimeCommitPreparation } from "../types";
 
 /** Shared by every runtime in one LMS launch, including cached older documents. */
 export interface GroupObjectiveReplayLedger {
-	objectives?: Map<string, "writing" | "written">;
+	objectives?: Map<string, GroupObjectiveClaim | "written">;
+	objectiveReplay?: { dirty: boolean; current: () => boolean; retry?: () => boolean };
+	suspendWrite?: { successor?: { value: string; write: (value: string) => boolean } };
+	suspendRevision?: number;
+}
+
+interface GroupObjectiveClaim {
+	attempt: symbol;
+	acknowledged?: true;
+}
+
+export function claimGroupObjective(ledger: GroupObjectiveReplayLedger, key: string) {
+	const claims = (ledger.objectives ??= new Map());
+	if (claims.has(key)) return undefined;
+	const claim: GroupObjectiveClaim = { attempt: Symbol() };
+	claims.set(key, claim);
+	return claim;
+}
+
+export function settleGroupObjective(
+	ledger: GroupObjectiveReplayLedger,
+	key: string,
+	claim: GroupObjectiveClaim | undefined,
+	accepted: boolean,
+): void {
+	if (!claim || ledger.objectives?.get(key) !== claim) return;
+	if (accepted || claim.acknowledged) ledger.objectives.set(key, "written");
+	else ledger.objectives.delete(key);
+}
+
+export function dirtyGroupObjectiveReplay(ledger: GroupObjectiveReplayLedger | null): void {
+	if (ledger?.objectiveReplay) ledger.objectiveReplay.dirty = true;
+}
+
+/** Incoming retirement and saved replay share one owner across their callbacks. */
+export function withGroupObjectiveReplay(
+	ledger: GroupObjectiveReplayLedger,
+	current: () => boolean,
+	write: (flight: NonNullable<GroupObjectiveReplayLedger["objectiveReplay"]>) => boolean,
+): boolean {
+	const flight: NonNullable<GroupObjectiveReplayLedger["objectiveReplay"]> = {
+		dirty: false,
+		current,
+	};
+	ledger.objectiveReplay = flight;
+	try {
+		return write(flight);
+	} finally {
+		ledger.objectiveReplay = undefined;
+		flight.retry?.();
+	}
+}
+
+/** Only objective storage operations enable native envelope repair outside a replay. */
+export function withGroupObjectiveState(
+	ledger: GroupObjectiveReplayLedger | null,
+	write: () => boolean,
+): boolean {
+	if (!ledger) return write();
+	const parent = ledger.suspendWrite;
+	ledger.suspendWrite ??= {};
+	try {
+		return write();
+	} finally {
+		ledger.suspendWrite = parent;
+	}
+}
+
+/** A nested accepted envelope wins even when the outer native call applies its bytes last. */
+export function writeScormSuspendData(
+	ledger: GroupObjectiveReplayLedger | null,
+	value: string,
+	write: (value: string) => boolean,
+): boolean {
+	if (!ledger) return write(value);
+	ledger.suspendRevision = (ledger.suspendRevision ?? 0) + 1;
+	dirtyGroupObjectiveReplay(ledger);
+	const parent = ledger.suspendWrite;
+	const attempt: NonNullable<GroupObjectiveReplayLedger["suspendWrite"]> = {};
+	ledger.suspendWrite = attempt;
+	try {
+		let accepted = write(value);
+		let winner = { value, write };
+		while (attempt.successor) {
+			winner = attempt.successor;
+			attempt.successor = undefined;
+			accepted = winner.write(winner.value);
+		}
+		if (accepted && parent) parent.successor = winner;
+		return accepted;
+	} finally {
+		ledger.suspendWrite = parent;
+	}
 }
 
 export interface ScormSessionState extends RuntimeCommitPreparation, GroupObjectiveReplayLedger {
