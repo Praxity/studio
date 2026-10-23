@@ -8,7 +8,7 @@ import { serveStudioAuthorDocument } from "../../src/main/studio/author-document
 import { readIdentityFixture } from "../../src/test-utils/identity-fixture";
 import { startJourney } from "./global-setup";
 
-type ReviewWindow = Window & { reviewEvents: number };
+type ReviewWindow = typeof window & { reviewEvents: number };
 
 const source = "# Page\n\n## Before\n\nBody.\n\n## Second\n";
 let stop: (() => Promise<void>) | undefined;
