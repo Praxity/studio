@@ -14,6 +14,8 @@ import {
 import {
 	DEVICE_DESTINATIONS,
 	type InteractionRecord,
+	prepareRuntimeCommit,
+	type RuntimeCommitPreparation,
 	type SCORMRuntime,
 	type TrackInteractionOptions,
 } from "./types.ts";
@@ -38,6 +40,7 @@ export class LocalStorageRuntime implements SCORMRuntime {
 	private generation = 0;
 	private persistent = true;
 	private lastWriteSaved = false;
+	private commitPreparation: RuntimeCommitPreparation = {};
 
 	constructor(storage?: Storage, courseId?: string, attemptId = "default", revision?: string) {
 		try {
@@ -63,7 +66,7 @@ export class LocalStorageRuntime implements SCORMRuntime {
 	}
 
 	terminate(): boolean {
-		return true;
+		return prepareRuntimeCommit(this.commitPreparation);
 	}
 
 	trackPageVisit(pageId: string): void {
@@ -219,8 +222,12 @@ export class LocalStorageRuntime implements SCORMRuntime {
 		);
 	}
 
+	setCommitPreparation(prepare: () => void): void {
+		this.commitPreparation.prepareCommit = prepare;
+	}
+
 	commit(): boolean {
-		return true;
+		return prepareRuntimeCommit(this.commitPreparation);
 	}
 
 	private readState(): LearnerStateV1 {
