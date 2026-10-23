@@ -25,6 +25,7 @@ import {
 	assertNoRetiredCommands,
 	assertNoRetiredRunner,
 	assertSlowConfirmation,
+	browserRunner,
 	couldBeSelfHosted,
 	isPrivateWorkflow,
 	nodePartitionFixture,
@@ -38,8 +39,6 @@ const workflow = (name) =>
 	parse(readFileSync(new URL(`../../../.github/workflows/${name}.yml`, import.meta.url), "utf8"));
 const ci = workflow("ci");
 const security = workflow("security");
-const forkAwareRunner =
-	"${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-24.04' || 'ubicloud-standard-2' }}";
 const actionlintConfig = parse(
 	readFileSync(new URL("../../../.github/actionlint.yaml", import.meta.url), "utf8"),
 );
@@ -720,7 +719,7 @@ test("root Node checks run once while Vitest shards bypass the local test prefix
 	assert.ok(nodeSteps.every((step) => nodeJob.steps.includes(step)));
 	for (const event_name of ["pull_request", "workflow_dispatch", "schedule"])
 		assert.equal(enabled(nodeJob.if.slice(3, -2), { event_name }, { code: "true" }), true);
-	assert.equal(nodeJob["runs-on"], forkAwareRunner);
+	assert.equal(nodeJob["runs-on"], "ubuntu-24.04");
 	assert.equal(nodeJob["timeout-minutes"], 15);
 	assert.ok(ci.jobs.test.strategy.matrix.shard.includes(1));
 	assert.ok(
@@ -956,7 +955,7 @@ test("machine-path checks run on every PR, including docs-only changes", () => {
 
 test("Linux Vitest shards prepare the native PDF compiler and Poppler before tests", () => {
 	const job = ci.jobs.test;
-	assert.equal(job["runs-on"], forkAwareRunner);
+	assert.equal(job["runs-on"], "ubuntu-24.04");
 	assert.deepEqual(job.strategy.matrix.shard, [1, 2, 3, 4]);
 	assert.equal(job.name, "Test ${{ matrix.shard }}/4");
 	const run = job.steps.findIndex((step) => step.run?.includes("vitest run"));
@@ -1163,12 +1162,17 @@ test("Test tmpfs scripts restore temp paths whether or not setup succeeded", () 
 		const env = join(directory, "env");
 		const log = join(directory, "log");
 		const prefix = `
-mktemp() { printf '%s\\n' "$TEST_TMPFS"; }
+mktemp() { if [ "$MKTEMP_STATUS" != 0 ]; then return "$MKTEMP_STATUS"; fi; printf '%s\\n' "$TEST_TMPFS"; }
 sudo() { printf '%s\\n' "$*" >> "$TEST_LOG"; if [ "$1" = mount ]; then return "$MOUNT_STATUS"; fi; return 32; }
 df() { :; }
 free() { :; }
 `;
-		for (const status of [0, 1]) {
+		for (const [mountStatus, mktempStatus] of [
+			[0, 0],
+			[1, 0],
+			[0, 1],
+		]) {
+			const mountedSuccessfully = mountStatus === 0 && mktempStatus === 0;
 			writeFileSync(output, "");
 			writeFileSync(env, "");
 			writeFileSync(log, "");
@@ -1181,17 +1185,22 @@ free() { :; }
 					RUNNER_TEMP: "/disk-temp",
 					TEST_TMPFS: "/dev/shm/vitest.fixture",
 					TEST_LOG: log,
-					MOUNT_STATUS: String(status),
+					MOUNT_STATUS: String(mountStatus),
+					MKTEMP_STATUS: String(mktempStatus),
 				},
 			};
 			const run = (step) =>
 				spawnSync(bash, ["-e", "-o", "pipefail", "-c", prefix + step.run], options);
 			const mounted = run(prepare);
-			assert.equal(mounted.status, status, mounted.stderr);
-			assert.match(readFileSync(output, "utf8"), /path=\/dev\/shm\/vitest.fixture/);
+			assert.equal(mounted.status, 0, mounted.stderr);
+			assert.equal(
+				readFileSync(output, "utf8"),
+				mountedSuccessfully ? "path=/dev/shm/vitest.fixture\n" : "",
+			);
+			if (!mountedSuccessfully) assert.match(mounted.stdout, /tmpfs unavailable.*runner temp/i);
 			assert.equal(
 				readFileSync(env, "utf8"),
-				status === 0 ? "TMPDIR=/dev/shm/vitest.fixture\n" : "",
+				mountedSuccessfully ? "TMPDIR=/dev/shm/vitest.fixture\n" : "TMPDIR=/disk-temp\n",
 			);
 			const cleaned = run(cleanup);
 			assert.equal(cleaned.status, 0, cleaned.stderr);
@@ -1209,7 +1218,7 @@ for (const [suite, output, shards] of [
 ]) {
 	test(`${suite} published output runs on four CPUs with complete Chromium shards`, () => {
 		const job = ci.jobs[`published-output-${suite}`];
-		assert.equal(job["runs-on"], "ubicloud-standard-4");
+		assert.equal(job["runs-on"], browserRunner);
 		assert.equal(job.strategy["fail-fast"], false);
 		assert.deepEqual(
 			engines(output, "workflow_dispatch", { gate: "candidate" }).map((entry) => entry.shard),
@@ -1883,7 +1892,7 @@ test("nightly and manual runs run every gate; merges to main do not", () => {
 		"github.event_name == 'pull_request'",
 	);
 	for (const entry of Object.values(ci.jobs))
-		assert.ok(entry["runs-on"] === forkAwareRunner || /^ubicloud-/.test(entry["runs-on"]));
+		assert.ok(entry["runs-on"] === "ubuntu-24.04" || entry["runs-on"] === browserRunner);
 });
 
 function assertForkRunner(job, name) {
@@ -1899,7 +1908,18 @@ function assertForkRunner(job, name) {
 				!enabled(expression, github, { code, vitest, browser: "true", format: "true" })
 			)
 				continue;
-			assert.equal(job["runs-on"], forkAwareRunner, name);
+			const routing = job["runs-on"];
+			const runner = routing.startsWith("${{")
+				? workflowFunction(
+						"github",
+						"vars",
+						`return (${routing.slice(3, -2)});`,
+					)(
+						{ ...github, repository: "fixture/studio" },
+						{ STUDIO_BROWSER_RUNNER: "ubicloud-standard-4" },
+					)
+				: routing;
+			assert.equal(runner, "ubuntu-24.04", name);
 		}
 }
 
@@ -1924,21 +1944,39 @@ test("fork routing policy detects a PR-reachable disjunction before a non-PR cla
 	);
 });
 
-test("fork PRs run on free hosted runners, never Ubicloud", () => {
+test("browser fallback defaults to free hosted runners and never routes fork PRs to the variable", () => {
 	// GitHub sets these fields from the PR's head repository, not from anything the PR edits.
-	const runner = (event_name, head) =>
+	const runner = (event_name, head, selected) =>
 		workflowFunction(
 			"github",
-			`return (${forkAwareRunner.slice(3, -2)});`,
-		)({
-			event_name,
-			repository: "fixture/studio",
-			event: { pull_request: head && { head: { repo: { full_name: head } } } },
-		});
-	assert.equal(runner("pull_request", "someone/studio"), "ubuntu-24.04");
-	assert.equal(runner("pull_request", "fixture/studio"), "ubicloud-standard-2");
-	for (const event of ["schedule", "workflow_dispatch"])
-		assert.equal(runner(event, undefined), "ubicloud-standard-2");
+			"vars",
+			`return (${browserRunner.slice(3, -2)});`,
+		)(
+			{
+				event_name,
+				repository: "fixture/studio",
+				event: { pull_request: head && { head: { repo: { full_name: head } } } },
+			},
+			{ STUDIO_BROWSER_RUNNER: selected },
+		);
+	for (const selected of [undefined, "", "ubicloud-standard-4"])
+		assert.equal(runner("pull_request", "someone/studio", selected), "ubuntu-24.04");
+	for (const [event, head] of [
+		["pull_request", "fixture/studio"],
+		["schedule"],
+		["workflow_dispatch"],
+	]) {
+		for (const selected of [undefined, ""])
+			assert.equal(runner(event, head, selected), "ubuntu-24.04");
+		assert.equal(runner(event, head, "ubicloud-standard-4"), "ubicloud-standard-4");
+	}
+	for (const name of ["published-output-a11y", "published-output-deck", "browser-editor"]) {
+		assert.equal(ci.jobs[name]["runs-on"], browserRunner);
+		assert.equal(
+			enabled(ci.jobs[name].if.slice(3, -2), { event_name: "pull_request" }, { browser: "true" }),
+			false,
+		);
+	}
 	for (const config of [ci, security])
 		for (const [name, job] of Object.entries(config.jobs)) assertForkRunner(job, name);
 });
@@ -1970,13 +2008,67 @@ const allWorkflows = readdirSync(new URL("../../../.github/workflows/", import.m
 		parse(readFileSync(new URL(`../../../.github/workflows/${name}`, import.meta.url), "utf8")),
 	]);
 function assertPublicRunners(name, config) {
+	assertNoPaidLabel(name, JSON.stringify(config));
+	for (const [jobName, job] of Object.entries(config.jobs)) {
+		if (JSON.stringify(job).includes("STUDIO_BROWSER_RUNNER")) {
+			assert.equal(name, "ci", "Only CI browser jobs may use the runner variable");
+			assert.ok(
+				["published-output-a11y", "published-output-deck", "browser-editor"].includes(jobName),
+			);
+			assert.equal(job["runs-on"], browserRunner, "The runner variable must guard fork PRs");
+		}
+	}
 	const selfHosted = Object.values(config.jobs).some((job) =>
 		couldBeSelfHosted(job["runs-on"], job.strategy?.matrix),
 	);
-	assert.equal(selfHosted, false, `${name} must use only hosted or Ubicloud runners`);
+	assert.equal(
+		selfHosted,
+		false,
+		`${name} must use hosted runners or the guarded browser variable`,
+	);
 }
-test("public workflows use only hosted or Ubicloud runners", () => {
+function assertNoPaidLabel(name, source) {
+	assert.doesNotMatch(source, /ubicloud-[\w.-]+/i, `${name}: direct paid label`);
+}
+test("public workflows use free hosted runners with only the guarded browser fallback", () => {
+	const directory = new URL("../../../.github/workflows/", import.meta.url);
+	for (const name of readdirSync(directory).filter((name) => /\.ya?ml$/.test(name)))
+		assertNoPaidLabel(name, readFileSync(new URL(name, directory), "utf8"));
 	for (const [name, config] of allWorkflows) assertPublicRunners(name, config);
+});
+test("runner policy rejects planted paid labels and unguarded or misplaced browser variables", () => {
+	for (const [name, jobName, runner] of [
+		["probe", "probe", "ubicloud-standard-2"],
+		["probe", "probe", "ubicloud-standard-4"],
+		["probe", "probe", "${{ matrix.runner }}"],
+		["ci", "published-output-a11y", "${{ vars.STUDIO_BROWSER_RUNNER || 'ubuntu-24.04' }}"],
+		["ci", "published-output-deck", "${{ vars.STUDIO_BROWSER_RUNNER || 'ubuntu-24.04' }}"],
+		["ci", "browser-editor", "${{ vars.STUDIO_BROWSER_RUNNER || 'ubuntu-24.04' }}"],
+		["ci", "test", browserRunner],
+		["security", "browser-editor", browserRunner],
+	]) {
+		assert.throws(
+			() =>
+				assertPublicRunners(name, {
+					jobs: {
+						[jobName]: {
+							"runs-on": runner,
+							...(runner === "${{ matrix.runner }}"
+								? { strategy: { matrix: { runner: ["ubicloud-standard-4"] } } }
+								: {}),
+						},
+					},
+				}),
+			undefined,
+			`${name}/${jobName}: ${runner}`,
+		);
+	}
+	const safe = structuredClone(ci);
+	for (const jobName of ["published-output-a11y", "published-output-deck", "browser-editor"])
+		safe.jobs[jobName]["runs-on"] = browserRunner;
+	for (const job of Object.values(safe.jobs))
+		if (job["runs-on"] !== browserRunner) job["runs-on"] = "ubuntu-24.04";
+	assert.doesNotThrow(() => assertPublicRunners("ci", safe));
 });
 test("public runner policy rejects planted self-hosted labels and unresolved matrices", () => {
 	for (const runsOn of [
