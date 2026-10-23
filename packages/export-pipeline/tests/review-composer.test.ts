@@ -13,6 +13,7 @@ import {
 	type ReviewState,
 } from "../../review-share/src/review";
 import { renderBlockHtml } from "../src/render-block-html";
+import { reviewPageLayout } from "./fixtures/review-page-layout";
 
 const source = await readFile(new URL("../template/review-comments.js", import.meta.url), "utf8");
 const reviewId = "11111111-1111-4111-8111-111111111111";
@@ -66,6 +67,7 @@ async function open(
 		},
 	);
 	doms.push(dom);
+	reviewPageLayout(dom);
 	const { window: win } = dom;
 	Object.defineProperty(win, "TextEncoder", { value: TextEncoder });
 	// JSDOM has no SubtleCrypto. Keep native SHA-256 behind that platform seam.
@@ -108,10 +110,6 @@ async function open(
 	});
 	win.HTMLElement.prototype.getBoundingClientRect = () =>
 		({ left: 60, top: 100, right: 360, bottom: 140, width: 300, height: 40 }) as DOMRect;
-	win.Range.prototype.getClientRects = () =>
-		[
-			{ left: 60, top: 100, right: 260, bottom: 120, width: 200, height: 20 },
-		] as unknown as DOMRectList;
 	for (const [key, value] of options.stored ?? [])
 		win[options.noLocks ? "sessionStorage" : "localStorage"].setItem(key, value);
 	if (options.brokenStorage)
@@ -207,6 +205,94 @@ const posts = (ui: Awaited<ReturnType<typeof open>>) =>
 	ui.fetchMock.mock.calls
 		.filter(([, init]) => init?.method === "POST")
 		.map(([, init]) => JSON.parse(init.body));
+
+it.each(["MacIntel", "Win32", "iPhone", "iPad", "iPod"])(
+	"keyboard save shares composer guards and frozen retries (%s)",
+	async (platform) => {
+		const held = heldPost();
+		const ui = await open({
+			fetch: held.fetch,
+			prepare(dom) {
+				Object.defineProperty(dom.window.navigator, "platform", { value: platform });
+			},
+		});
+		await ui.pick(0);
+		const field = ui.doc.querySelector<HTMLTextAreaElement>(".prx-review-composer textarea")!;
+		const save = ui.doc.querySelector<HTMLButtonElement>(".prx-review-submit")!;
+		const mac = /Mac|iPhone|iPad|iPod/.test(platform);
+		expect(save.getAttribute("aria-keyshortcuts")).toBe(mac ? "Meta+Enter" : "Control+Enter");
+		const press = (modifiers = { metaKey: mac, ctrlKey: !mac }) => {
+			const event = new ui.win.KeyboardEvent("keydown", {
+				key: "Enter",
+				bubbles: true,
+				cancelable: true,
+				...modifiers,
+			});
+			field.dispatchEvent(event);
+			return event;
+		};
+		for (const body of ["", " ", "x".repeat(REVIEW_LIMITS.body + 1)]) {
+			await ui.type(body);
+			press();
+			await settle();
+			expect(posts(ui)).toHaveLength(0);
+			expect(field.getAttribute("aria-invalid")).toBe("true");
+		}
+		await ui.type("First line\nSecond line");
+		expect(press({ metaKey: false, ctrlKey: false }).defaultPrevented).toBe(false);
+		press({ metaKey: !mac, ctrlKey: mac });
+		await settle();
+		expect(posts(ui)).toHaveLength(0);
+		for (const flags of [{ isComposing: true }, { keyCode: 229 }, { repeat: true }]) {
+			field.dispatchEvent(
+				new ui.win.KeyboardEvent("keydown", {
+					key: "Enter",
+					bubbles: true,
+					metaKey: mac,
+					ctrlKey: !mac,
+					...flags,
+				}),
+			);
+		}
+		await settle();
+		expect(posts(ui)).toHaveLength(0);
+		expect(press().defaultPrevented).toBe(true);
+		press();
+		await settle();
+		expect(posts(ui)).toHaveLength(1);
+		press();
+		await settle();
+		expect(posts(ui)).toHaveLength(1);
+		held.respond(reply({ ok: false, code: "temporary" }, 500));
+		await settle();
+		expect(field.readOnly).toBe(true);
+		field.value = "Changed behind the frozen field";
+		press();
+		await settle();
+		expect(posts(ui)).toHaveLength(2);
+		expect(posts(ui)[1]).toEqual(posts(ui)[0]);
+		held.ack(posts(ui)[0]);
+		await settle();
+	},
+);
+
+it.each(["en", "fr"])("decorative action icons keep their visible labels (%s)", async (locale) => {
+	const ui = await open({ locale });
+	await ui.pick(0);
+	await ui.type("Retained draft");
+	await ui.click(".prx-review-cancel");
+	const controls = [
+		[".prx-review-submit", locale === "fr" ? "Enregistrer le commentaire" : "Save comment"],
+		[".prx-review-pin", locale === "fr" ? "Repère" : "Pin"],
+		[".prx-review-discard-draft", locale === "fr" ? "Supprimer le brouillon" : "Discard draft"],
+	];
+	for (const [selector, label] of controls) {
+		const control = ui.doc.querySelector(selector)!;
+		expect(control.textContent).toBe(label);
+		expect(control.querySelector("svg")?.getAttribute("aria-hidden")).toBe("true");
+		expect(control.querySelector("svg")?.getAttribute("stroke")).toBe("currentColor");
+	}
+});
 const records = (storage: ReturnType<typeof sharedDraftStorage>) => [...storage.values];
 const bodies = (storage: ReturnType<typeof sharedDraftStorage>) =>
 	records(storage)
