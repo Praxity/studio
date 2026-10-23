@@ -32,7 +32,6 @@
 		config.locale === "fr"
 			? {
 					comments: "Commentaires",
-					collapse: "Réduire les commentaires",
 					expand: "Développer les commentaires",
 					loading: "Chargement des commentaires…",
 					empty: "Aucun commentaire pour cette page.",
@@ -50,7 +49,6 @@
 				}
 			: {
 					comments: "Comments",
-					collapse: "Collapse comments",
 					expand: "Expand comments",
 					loading: "Loading comments…",
 					empty: "No comments on this page yet.",
@@ -262,6 +260,8 @@
 					resolvedBy: "Résolu par {author}",
 					targetNotFound: "Cible introuvable",
 					anotherPage: "Sur une autre page",
+					notOnPage: "Pas sur cette page",
+					closeComments: "Fermer les commentaires",
 					pendingAction: "Réessayez l’action précédente avant d’en commencer une autre.",
 					stale: "Commentaires hors ligne ou périmés. Nouvelle tentative automatique.",
 					leaveReply: "Vous avez des modifications de révision non envoyées. Quitter quand même ?",
@@ -290,6 +290,8 @@
 					resolvedBy: "Resolved by {author}",
 					targetNotFound: "Target not found",
 					anotherPage: "On another page",
+					notOnPage: "Not on this page",
+					closeComments: "Close comments",
 					pendingAction: "Retry the earlier action before starting another.",
 					stale: "Comments are offline or out of date. Retrying automatically.",
 					leaveReply: "You have unsent review changes. Leave anyway?",
@@ -495,6 +497,54 @@
 		if (text !== undefined) node.textContent = text;
 		return node;
 	}
+	// Tabler outline paths from the installed @tabler/icons catalog, as in published notes.
+	var actionIcons = {
+		save: "M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2M10 14a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M14 4l0 4l-6 0l0 -4",
+		close: "M18 6l-12 12M6 6l12 12",
+		show: "M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0M21 21l-6 -6",
+		pin: "M9 4v6l-2 4v2h10v-2l-2 -4v-6M12 16l0 5M8 4l8 0",
+		trash:
+			"M4 7l16 0M10 11l0 6M14 11l0 6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3",
+	};
+	function actionIcon(name) {
+		var icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+		Object.entries({
+			class: "prx-review-action-icon",
+			viewBox: "0 0 24 24",
+			fill: "none",
+			stroke: "currentColor",
+			"stroke-width": "2",
+			"stroke-linecap": "round",
+			"stroke-linejoin": "round",
+			"aria-hidden": "true",
+			focusable: "false",
+		}).forEach(([key, value]) => icon.setAttribute(key, value));
+		var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+		path.setAttribute("d", actionIcons[name]);
+		icon.append(path);
+		return icon;
+	}
+	function labelAction(control, icon, label) {
+		control.replaceChildren(actionIcon(icon), element("span", "", label));
+	}
+	function keyboardSave(field, button) {
+		var mac = /Mac|iPhone|iPad|iPod/i.test(navigator.userAgentData?.platform || navigator.platform);
+		button.setAttribute("aria-keyshortcuts", mac ? "Meta+Enter" : "Control+Enter");
+		field.addEventListener("keydown", (event) => {
+			if (
+				event.key !== "Enter" ||
+				event.isComposing ||
+				event.keyCode === 229 ||
+				event.repeat ||
+				!(mac ? event.metaKey : event.ctrlKey) ||
+				event.altKey ||
+				event.shiftKey
+			)
+				return;
+			event.preventDefault();
+			button.click();
+		});
+	}
 
 	function createLegacyShareTransport() {
 		function shareBaseUrl() {
@@ -567,6 +617,23 @@
 		return false;
 	}
 
+	function measureSpot(target, range) {
+		var quote = Boolean(range);
+		if (!range && getComputedStyle(target).display === "contents") {
+			range = document.createRange();
+			range.selectNodeContents(target);
+		}
+		var rects = Array.from((range || target).getClientRects()).filter(
+			(rect) => rect.width || rect.height,
+		);
+		return {
+			box: !rects.length
+				? null
+				: quote
+					? rects[rects.length - 1]
+					: (range || target).getBoundingClientRect(),
+		};
+	}
 	function createAnchors(pageRoot, pageId) {
 		var limits = localConfig.limits;
 		// Runtime answer projections are private even when their native controls are hidden.
@@ -581,10 +648,12 @@
 		function asElement(node) {
 			return node?.nodeType === 1 ? node : node?.parentElement;
 		}
-		function usable(el) {
-			return el && pageRoot().contains(el) && !el.closest(excluded) && !hidden(el);
+		function usable(el, includeHidden = false) {
+			return (
+				el && pageRoot().contains(el) && !el.closest(excluded) && (includeHidden || !hidden(el))
+			);
 		}
-		function stream(root) {
+		function stream(root, includeHidden = false) {
 			var text = "",
 				points = [];
 			var previousBlock = null;
@@ -597,7 +666,7 @@
 			}
 			var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
 			for (var node = walker.nextNode(); node; node = walker.nextNode()) {
-				if (!usable(node.parentElement)) continue;
+				if (!usable(node.parentElement, includeHidden)) continue;
 				var block = blockOwner(node.parentElement);
 				if (
 					text &&
@@ -629,8 +698,8 @@
 			if (end < text.length && /[\uD800-\uDBFF]/.test(text[end - 1])) end--;
 			return text.slice(0, end);
 		}
-		function label(el) {
-			return bounded(stream(el).text.trim(), limits.title) || null;
+		function label(el, includeHidden = false) {
+			return bounded(stream(el, includeHidden).text.trim(), limits.title) || null;
 		}
 		function pathFrom(root, target, max, depth) {
 			var steps = [];
@@ -655,7 +724,9 @@
 				return null;
 			var target = root.querySelector(`:scope > ${path}`);
 			// The whole-course revision guards positional paths across re-exports.
-			return target && targetLabel(target) === anchor.context.targetLabel ? target : null;
+			return target && targetLabel(target, hidden(target)) === anchor.context.targetLabel
+				? target
+				: null;
 		}
 		function base(target, node, block) {
 			var root = pageRoot();
@@ -717,29 +788,32 @@
 				? wrapper
 				: node;
 		}
-		function identityLabel(target) {
+		function identityLabel(target, includeHidden = false) {
 			var label = target.matches(".praxity-order-item")
 				? target.querySelector(".praxity-order-label")
 				: target.matches("summary,[data-disclosure-label],.praxity-disclosure-title")
 					? target
 					: target.querySelector(".praxity-disclosure-title,[data-disclosure-label]");
-			if (!label || hidden(label)) return "";
+			if (!label || (!includeHidden && hidden(label))) return "";
 			var text = "",
 				walker = document.createTreeWalker(label, NodeFilter.SHOW_TEXT);
 			for (var node = walker.nextNode(); node; node = walker.nextNode()) {
 				if (
 					!node.parentElement.closest(
-						"input,textarea,select,output,script,style,[aria-live],[aria-hidden='true'],.praxity-order-position,.praxity-order-controls",
+						"input,textarea,select,output,script,style,[aria-live],.praxity-order-position,.praxity-order-controls",
 					) &&
-					!hidden(node.parentElement)
+					(includeHidden ||
+						(!node.parentElement.closest("[aria-hidden='true']") && !hidden(node.parentElement)))
 				)
 					text += node.data;
 			}
 			return Array.from(text.replace(/\s+/gu, " ").trim()).slice(0, 60).join("");
 		}
-		function targetLabel(target) {
+		function targetLabel(target, includeHidden = false) {
 			var identity = target.closest(identitySelector);
-			return identity ? identityLabel(identity) || null : label(target);
+			return identity
+				? identityLabel(identity, includeHidden) || null
+				: label(target, includeHidden);
 		}
 		function fromBlock(target) {
 			// Identity can name controls and graphics; their text stays outside the quote stream.
@@ -823,9 +897,9 @@
 			};
 			return anchor;
 		}
-		function matches(root, quote) {
+		function matches(root, quote, includeHidden = false) {
 			if (!quote?.exact) return [];
-			var flat = stream(root),
+			var flat = stream(root, includeHidden),
 				found = [];
 			for (
 				var i = flat.text.indexOf(quote.exact);
@@ -861,6 +935,22 @@
 		}
 		function resolve(anchor) {
 			var root = pageRoot();
+			function concealment(target, extra = {}) {
+				var revealable = anchor.tab || anchor.revealPath.length;
+				for (var el = target; el && root.contains(el) && !revealable; el = el.parentElement) {
+					revealable =
+						el.matches("details:not([open])") ||
+						(el.id &&
+							Array.from(root.querySelectorAll("button[aria-controls]")).some((control) =>
+								control.getAttribute("aria-controls").split(/\s+/).includes(el.id),
+							));
+				}
+				return {
+					...extra,
+					target,
+					state: revealable || measureSpot(target, extra.range).box ? "notVisible" : "notOnPage",
+				};
+			}
 			function concealedWithin(scope) {
 				return [scope, ...scope.querySelectorAll("[id]")].find(
 					(el) => (el.id === anchor.tab || anchor.revealPath.includes(el.id)) && hidden(el),
@@ -902,8 +992,7 @@
 					candidates = [anchor.tab === panel.id ? panel : tab];
 			}
 			var visible = candidates.filter((el) => !hidden(el));
-			if (candidates.length && !visible.length)
-				return { state: "notVisible", target: candidates[0] };
+			if (candidates.length && !visible.length) return concealment(candidates[0]);
 			var target = visible[0],
 				match;
 			if (visible.length > 1) {
@@ -920,27 +1009,33 @@
 				if (concealed) return { state: "notVisible", target: concealed };
 			}
 			if (target && anchor.quote) {
-				var found = best(matches(target, anchor.quote));
+				var found = best(matches(target, anchor.quote, true));
 				if (!found.length) return { state: "textChanged", target };
 				if (found.length > 1) return { state: "ambiguous", target };
 				match = found[0];
+				if (hidden(match.target)) return concealment(match.target, { range: match.range });
 			}
 			if (!target) {
 				var closed = concealedWithin(root);
 				if (closed) return { state: "notVisible", target: closed };
 			}
 			if (!target && anchor.quote) {
-				var elsewhere = matches(root, anchor.quote);
+				var elsewhere = matches(root, anchor.quote, true);
 				var full = elsewhere.filter(
 					(hit) => hit.score === anchor.quote.prefix.length + anchor.quote.suffix.length,
 				);
-				if (!anchor.nodeId && full.length === 1) return { ...full[0], state: "placed" };
+				if (!anchor.nodeId && full.length === 1)
+					return hidden(full[0].target)
+						? concealment(full[0].target, { range: full[0].range })
+						: { ...full[0], state: "placed" };
 				if (elsewhere.length > 1) return { state: "ambiguous" };
 				if (elsewhere.length === 1)
-					return {
-						...elsewhere[0],
-						state: "moved",
-					};
+					return hidden(elsewhere[0].target)
+						? concealment(elsewhere[0].target, { range: elsewhere[0].range })
+						: {
+								...elsewhere[0],
+								state: "moved",
+							};
 				return missing();
 			}
 			if (!target && !anchor.nodeId && !anchor.quote && !anchor.pin && !anchor.cssPath)
@@ -954,11 +1049,13 @@
 				target = verifiedPath(root, anchor.cssPath, anchor);
 			}
 			if (!target) return missing();
-			if (hidden(target)) return { state: "notVisible", target };
+			if (hidden(target)) return concealment(target);
 			if (anchor.pin) {
 				var pinned = anchor.pin.path ? verifiedPath(target, anchor.pin.path, anchor) : target;
 				if (!pinned) return { state: "pinMoved", target, pin: { x: 1, y: 0 } };
-				return { state: hidden(pinned) ? "notVisible" : "placed", target: pinned, pin: anchor.pin };
+				return hidden(pinned)
+					? concealment(pinned, { pin: anchor.pin })
+					: { state: "placed", target: pinned, pin: anchor.pin };
 			}
 			return { state: "placed", target, range: match?.range };
 		}
@@ -1202,7 +1299,26 @@
 				entry.spot = anchors.resolve(entry.thread.anchor);
 				entry.resolutionVersion = resolutionVersion;
 			}
-			return entry.spot;
+			return renderedSpot(entry.spot, entry.thread.anchor);
+		}
+		function renderedSpot(spot, anchor) {
+			// Recheck boxes each frame: cached identity can outlive a player's rendered step.
+			if (
+				!spot.target ||
+				spot.state === "page" ||
+				spot.state === "notVisible" ||
+				spot.state === "notOnPage"
+			)
+				return spot;
+			var measured = measureSpot(spot.target, spot.range);
+			if (
+				!measured.box &&
+				["placed", "moved", "pinMoved"].includes(spot.state) &&
+				!anchor.tab &&
+				!anchor.revealPath.length
+			)
+				return { state: "notOnPage", target: spot.target };
+			return { ...spot, ...measured };
 		}
 		function scheduleMarkers() {
 			if (!overlay || frame) return;
@@ -1229,15 +1345,15 @@
 					entry.item.hidden ||
 					entry.thread.status !== "open" ||
 					spot.state === "notVisible" ||
+					spot.state === "notOnPage" ||
 					!spot.target ||
+					!spot.box ||
 					spot.state === "page"
 				)
 					return { entry, spot, hidden: true };
-				var box = spot.target.getBoundingClientRect();
+				var box = spot.box;
 				if (spot.range) {
 					ranges.push(spot.range);
-					var rects = Array.from(spot.range.getClientRects?.() || []);
-					box = rects[rects.length - 1] || box;
 				}
 				var x = spot.pin ? box.left + spot.pin.x * box.width : box.right;
 				var y = spot.pin ? box.top + spot.pin.y * box.height : box.top;
@@ -1423,8 +1539,8 @@
 					if (controls.length === 1) controls[0].click();
 				}
 			});
-			spot = anchors.resolve(entry.thread.anchor);
-			if (spot.state === "notVisible" || !spot.target) {
+			spot = renderedSpot(anchors.resolve(entry.thread.anchor), entry.thread.anchor);
+			if (spot.state === "notVisible" || spot.state === "notOnPage" || !spot.target) {
 				status.textContent = strings[spot.state] || strings.notVisible;
 				scheduleMarkers();
 				return;
@@ -1579,8 +1695,8 @@
 			var mobileMore = moreButton && getComputedStyle(moreButton).display !== "none";
 			sidebar.classList.toggle("prx-review-sidebar--collapsed", collapsed);
 			toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
-			toggle.setAttribute("aria-label", collapsed ? strings.expand : strings.collapse);
-			toggle.title = collapsed ? strings.expand : strings.collapse;
+			toggle.setAttribute("aria-label", collapsed ? strings.expand : strings.closeComments);
+			toggle.title = collapsed ? strings.expand : strings.closeComments;
 			toggle.textContent = "";
 			if (isDeck) {
 				if (collapsed) {
@@ -1596,8 +1712,8 @@
 					sidebar.hidden = true;
 				} else {
 					if (mobileMore && moreButton.getAttribute("aria-expanded") === "true") moreButton.click();
-					toggle.textContent = "»";
-					header.append(toggle);
+					labelAction(toggle, "close", strings.closeComments);
+					title.after(toggle);
 					sidebar.hidden = false;
 				}
 				if (restoreFocus) toggle.focus();
@@ -1609,7 +1725,8 @@
 					toggle.append(badge);
 				}
 			} else {
-				toggle.textContent = "»";
+				labelAction(toggle, "close", strings.closeComments);
+				if (toggle.previousSibling !== title) title.after(toggle);
 			}
 			if (reviewTools) reviewTools.placeActions();
 			var draftCount = reviewTools?.draftCount() || 0;
@@ -1756,6 +1873,7 @@
 			var show = button("prx-review-show prx-review-action", strings.showOnPage, () =>
 				showOnPage(entry),
 			);
+			labelAction(show, "show", strings.showOnPage);
 			var replyToggle = button("prx-review-reply-toggle prx-review-action", strings.reply, () => {
 				replyForm.hidden = !replyForm.hidden;
 				replyToggle.setAttribute("aria-expanded", String(!replyForm.hidden));
@@ -1785,6 +1903,7 @@
 			var send = button("prx-review-reply-send prx-review-action", strings.sendReply, () =>
 				mutateThread(entry, "reply"),
 			);
+			keyboardSave(field, send);
 			var cancel = button("prx-review-reply-cancel prx-review-action", strings.cancel, closeReply);
 			function closeReply() {
 				replyForm.hidden = true;
@@ -2198,16 +2317,23 @@
 			var pin = button("prx-review-pin prx-review-action", strings.pin, () =>
 				pinning ? exitPin(true) : enterPin(pin),
 			);
+			labelAction(pin, "pin", strings.pin);
 			pin.setAttribute("aria-pressed", "false");
 			function placeActions() {
 				var parent = isDeck && collapsed ? deckUtilities : header;
 				var focused = [choose, pin].includes(document.activeElement)
 					? document.activeElement
 					: null;
-				if (pin.parentElement !== parent || pin.nextSibling !== toggle)
-					parent.insertBefore(pin, toggle);
-				if (choose.parentElement !== parent || choose.nextSibling !== pin)
-					parent.insertBefore(choose, pin);
+				if (parent === header) {
+					if (toggle.previousSibling !== title) title.after(toggle);
+					if (choose.previousSibling !== toggle) toggle.after(choose);
+					if (pin.previousSibling !== choose) choose.after(pin);
+				} else {
+					if (pin.parentElement !== parent || pin.nextSibling !== toggle)
+						parent.insertBefore(pin, toggle);
+					if (choose.parentElement !== parent || choose.nextSibling !== pin)
+						parent.insertBefore(choose, pin);
+				}
 				if (focused && document.activeElement !== focused) focused.focus({ preventScroll: true });
 			}
 			placeActions();
@@ -2354,6 +2480,7 @@
 			);
 			var composerActions = element("div", "prx-review-actions");
 			composerActions.append(submit, keepNew, cancel);
+			keyboardSave(textInput, submit);
 			error.id = "prx-review-error";
 			error.removeAttribute("role");
 			textInput.removeAttribute("maxlength");
@@ -2963,6 +3090,8 @@
 								),
 							);
 						draftRows.set(row.key, view);
+						var discard = view.node.querySelector(".prx-review-discard-draft");
+						if (discard) labelAction(discard, "trash", strings.discardDraft);
 					}
 					view.row = row;
 					view.summary.id = `prx-review-draft-${row.id}`;
@@ -3116,11 +3245,11 @@
 				submit.disabled =
 					loading || !current || Boolean(isSending(current)) || Boolean(current.gone);
 				cancel.disabled = false;
-				submit.textContent = sending
-					? strings.posting
-					: current?.kind === "outbox"
-						? strings.retry
-						: strings.save;
+				labelAction(
+					submit,
+					"save",
+					sending ? strings.posting : current?.kind === "outbox" ? strings.retry : strings.save,
+				);
 				error.textContent = current?.error || "";
 				error.hidden = !error.textContent;
 				if (error.textContent) textInput.setAttribute("aria-invalid", "true");

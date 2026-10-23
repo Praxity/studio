@@ -13,6 +13,7 @@ import {
 } from "../../review-share/src/review";
 import { contrastRatio } from "../../shared-blocks/src/color-math";
 import { resolveDesignTokens } from "../../shared-blocks/src/themes/resolve-design-tokens";
+import { reviewPageLayout } from "./fixtures/review-page-layout";
 
 const script = await readFile(new URL("../template/review-comments.js", import.meta.url), "utf8");
 const stylesheet = await readFile(
@@ -74,6 +75,7 @@ async function open(
 		},
 	);
 	doms.push(dom);
+	reviewPageLayout(dom);
 	dom.window.fetch = fetchMock;
 	dom.window.HTMLDialogElement.prototype.showModal = function () {
 		this.open = true;
@@ -172,6 +174,75 @@ function openPageComposer(doc: Document) {
 	(doc.querySelector(".prx-review-next") as HTMLButtonElement).click();
 }
 
+it.each(
+	["en", "fr"].flatMap((locale) =>
+		["quote", "pin", "block", "quote-range", "pin-child"].map((kind) => ({ locale, kind })),
+	),
+)(
+	"omits boxes, highlights and hit tests for an unrendered $kind ($locale)",
+	async ({ locale, kind }) => {
+		const anchor = {
+			...pageAnchor,
+			nodeId: "node",
+			quote: kind.startsWith("quote")
+				? { type: "TextQuoteSelector" as const, exact: "Target", prefix: "", suffix: "" }
+				: null,
+			pin: kind.startsWith("pin")
+				? { path: kind === "pin-child" ? "span:nth-of-type(1)" : "", x: 0.5, y: 0.5 }
+				: null,
+			context: { pageTitle: "Page title", targetLabel: "Target" },
+		};
+		let clock!: ReturnType<typeof manualFrames>;
+		const highlights = new Map();
+		const hit = vi.fn();
+		const { doc, dom } = await open(
+			'<div data-node-id="node"><span>Target</span></div>',
+			vi
+				.fn()
+				.mockResolvedValue(response({ ok: true, threads: [thread(anchor)], nextCursor: null })),
+			{ ...settings, locale },
+			(dom) => {
+				clock = manualFrames(dom);
+				dom.window.document.elementFromPoint = hit;
+				Object.assign(dom.window, {
+					Highlight: class {
+						constructor(...ranges: unknown[]) {
+							Object.assign(this, { ranges });
+						}
+					},
+					CSS: { highlights },
+				});
+				const target = dom.window.document.querySelector(
+					kind === "pin-child" ? "span" : "[data-node-id]",
+				)!;
+				target.getBoundingClientRect = () => box(0, 0, 0, 0);
+				if (kind !== "quote-range") target.getClientRects = () => [] as unknown as DOMRectList;
+				dom.window.Range.prototype.getClientRects = () => [] as unknown as DOMRectList;
+			},
+		);
+		await vi.waitFor(() => expect(doc.querySelectorAll(".prx-review-comment")).toHaveLength(1));
+		clock.flush();
+		const marker = doc.querySelector<HTMLElement>(".prx-review-marker")!;
+		expect(marker.hidden).toBe(true);
+		expect([marker.style.left, marker.style.top]).toEqual(["", ""]);
+		expect(highlights.has("prx-review-quote")).toBe(false);
+		expect(hit).not.toHaveBeenCalled();
+		expect(doc.querySelector(".prx-review-anchor-status")?.textContent).toBe(
+			locale === "fr" ? "⚠ Pas sur cette page" : "⚠ Not on this page",
+		);
+		// A layout-only reveal must recover even while identity resolution stays cached.
+		const target = doc.querySelector(kind === "pin-child" ? "span" : "[data-node-id]")!;
+		target.getClientRects = () => [box()] as unknown as DOMRectList;
+		target.getBoundingClientRect = () => box();
+		dom.window.Range.prototype.getClientRects = () => [box()] as unknown as DOMRectList;
+		doc.elementFromPoint = () => doc.querySelector("main");
+		dom.window.dispatchEvent(new dom.window.Event("scroll"));
+		clock.flush();
+		expect(marker.hidden).toBe(false);
+		expect(doc.querySelector<HTMLElement>(".prx-review-anchor-status")!.hidden).toBe(true);
+	},
+);
+
 it.each([true, false])(
 	"places a text pin tip at cap height and keeps a graphic's stored point (text=%s)",
 	async (text) => {
@@ -209,6 +280,158 @@ it.each([true, false])(
 		);
 	},
 );
+
+it.each(
+	["en", "fr"].flatMap((locale) =>
+		["quote", "pin"].flatMap((kind) =>
+			["player", "tab", "details", "accordion"].map((reveal) => ({ locale, kind, reveal })),
+		),
+	),
+)(
+	"keeps a concealed $kind child inside its rendered owner ($locale, $reveal)",
+	async ({ locale, kind, reveal }) => {
+		let clock!: ReturnType<typeof manualFrames>;
+		const highlights = new Map();
+		const fetch = vi.fn().mockResolvedValue(response({ ok: true, threads: [], nextCursor: null }));
+		const child = '<span class="target">Target</span>';
+		const wrapped =
+			reveal === "details"
+				? `<details id="reveal" open><summary>Open</summary>${child}</details>`
+				: reveal === "tab"
+					? `<div id="reveal" role="tabpanel">${child}</div>`
+					: reveal === "accordion"
+						? `<button aria-expanded="true" aria-controls="reveal">Open</button><div id="reveal">${child}</div>`
+						: child;
+		const { doc, dom, api } = await open(
+			`<div data-node-id="node">${wrapped}<p>Other visible content</p></div>`,
+			fetch,
+			{ ...settings, locale },
+			(dom) => {
+				clock = manualFrames(dom);
+				dom.window.Element.prototype.getBoundingClientRect = () => box(80, 100, 100, 40);
+				Object.assign(dom.window, { CSS: { highlights }, Highlight: class {} });
+			},
+		);
+		const target = doc.querySelector<HTMLElement>(".target")!;
+		const captured =
+			kind === "quote"
+				? api.fromSelection(range(doc, target.firstChild!, 0))
+				: api.fromPin(target, 130, 120);
+		expect(captured).not.toBeNull();
+		fetch.mockResolvedValue(response({ ok: true, threads: [thread(captured!)], nextCursor: null }));
+		dom.window.dispatchEvent(new dom.window.Event("focus"));
+		await vi.waitFor(() => expect(doc.querySelectorAll(".prx-review-comment")).toHaveLength(1));
+		clock.flush();
+		const marker = doc.querySelector<HTMLElement>(".prx-review-marker")!;
+		expect(marker.hidden).toBe(false);
+		const panel = doc.querySelector<HTMLElement>("#reveal") ?? target;
+		if (reveal === "details") (panel as HTMLDetailsElement).open = false;
+		else panel.hidden = true;
+		await Promise.resolve();
+		clock.flush();
+		expect(marker.hidden).toBe(true);
+		expect(highlights.has("prx-review-quote")).toBe(false);
+		expect(doc.querySelector(".prx-review-anchor-status")?.textContent).toBe(
+			reveal === "player"
+				? locale === "fr"
+					? "⚠ Pas sur cette page"
+					: "⚠ Not on this page"
+				: locale === "fr"
+					? "⚠ Non visible ici"
+					: "⚠ Not visible here",
+		);
+		if (reveal === "player") expect(api.resolve(captured!).target).toBe(target);
+		if (reveal === "details") (panel as HTMLDetailsElement).open = true;
+		else panel.hidden = false;
+		await Promise.resolve();
+		clock.flush();
+		expect(marker.hidden).toBe(false);
+		expect(doc.querySelector<HTMLElement>(".prx-review-anchor-status")!.hidden).toBe(true);
+		// Actual edits retain their own warning instead of being treated as concealment.
+		target.textContent = "Edited";
+		await Promise.resolve();
+		clock.flush();
+		expect(api.resolve(captured!).state).toBe(kind === "quote" ? "textChanged" : "pinMoved");
+	},
+);
+
+it.each(["en", "fr"].flatMap((locale) => ["quote", "block"].map((kind) => ({ locale, kind }))))(
+	"measures a display:contents owner through its $kind boxes ($locale)",
+	async ({ locale, kind }) => {
+		let clock!: ReturnType<typeof manualFrames>;
+		const targetAnchor = {
+			...pageAnchor,
+			nodeId: "node",
+			quote:
+				kind === "quote"
+					? { type: "TextQuoteSelector" as const, exact: "Target", prefix: "", suffix: "" }
+					: null,
+		};
+		const { doc, dom } = await open(
+			'<div class="praxity-matching-row" data-node-id="node" style="display:contents"><span class="praxity-matching-prompt">Target</span></div>',
+			vi
+				.fn()
+				.mockResolvedValue(
+					response({ ok: true, threads: [thread(targetAnchor)], nextCursor: null }),
+				),
+			{ ...settings, locale },
+			(dom) => {
+				clock = manualFrames(dom);
+				dom.window.Range.prototype.getClientRects = () => [box()] as unknown as DOMRectList;
+			},
+		);
+		await vi.waitFor(() => expect(doc.querySelectorAll(".prx-review-comment")).toHaveLength(1));
+		const rects = vi.spyOn(dom.window.Range.prototype, "getClientRects");
+		clock.flush();
+		expect(doc.querySelector<HTMLElement>(".prx-review-marker")!.hidden).toBe(false);
+		expect(doc.querySelector<HTMLElement>(".prx-review-anchor-status")!.hidden).toBe(true);
+		if (kind === "quote") expect(rects).toHaveBeenCalledTimes(1);
+		const target = doc.querySelector<HTMLElement>("[data-node-id]")!;
+		expect(target.getClientRects()).toHaveLength(0);
+		const scroll = vi.fn();
+		target.scrollIntoView = scroll;
+		doc.querySelector<HTMLButtonElement>(".prx-review-show")!.click();
+		expect(scroll).toHaveBeenCalledTimes(1);
+		expect(doc.activeElement).toBe(target);
+	},
+);
+
+it.each(
+	["en", "fr"].flatMap((locale) =>
+		["textChanged", "ambiguous"].map((state) => ({ locale, state })),
+	),
+)("keeps the $state warning when its owner has no boxes ($locale)", async ({ locale, state }) => {
+	let clock!: ReturnType<typeof manualFrames>;
+	const targetAnchor = {
+		...pageAnchor,
+		nodeId: "node",
+		quote: { type: "TextQuoteSelector" as const, exact: "Target", prefix: "", suffix: "" },
+	};
+	const { doc } = await open(
+		`<div data-node-id="node">${state === "textChanged" ? "Edited" : "Target Target"}</div>`,
+		vi
+			.fn()
+			.mockResolvedValue(response({ ok: true, threads: [thread(targetAnchor)], nextCursor: null })),
+		{ ...settings, locale },
+		(dom) => {
+			clock = manualFrames(dom);
+			dom.window.document.querySelector("[data-node-id]")!.getClientRects = () =>
+				[] as unknown as DOMRectList;
+		},
+	);
+	await vi.waitFor(() => expect(doc.querySelectorAll(".prx-review-comment")).toHaveLength(1));
+	clock.flush();
+	expect(doc.querySelector<HTMLElement>(".prx-review-marker")!.hidden).toBe(true);
+	expect(doc.querySelector(".prx-review-anchor-status")?.textContent).toBe(
+		state === "textChanged"
+			? locale === "fr"
+				? "⚠ Texte modifié"
+				: "⚠ Text changed"
+			: locale === "fr"
+				? "⚠ Ambigu"
+				: "⚠ Ambiguous",
+	);
+});
 
 describe("review anchor capture and immutable resolution", () => {
 	it("exposes only a frozen read-only DOM interface", async () => {
@@ -942,7 +1165,7 @@ describe("marker placement and learner controls", () => {
 		["block", 20, "24px", "96px"],
 		["textChanged", 80, "64px", "126px"],
 		["pinMoved", 80, "64px", "126px"],
-		["pin", 80, "142px", "103px"],
+		["pin", 80, "142px", "88px"],
 	])(
 		"places %s markers using the readable line/gutter geometry at left %s",
 		async (kind, left, expectedX, expectedY) => {
@@ -999,6 +1222,7 @@ describe("marker placement and learner controls", () => {
 			settings,
 			(dom) => {
 				clock = manualFrames(dom);
+				dom.window.Range.prototype.getClientRects = () => [box()] as unknown as DOMRectList;
 			},
 		);
 		await vi.waitFor(() => expect(doc.querySelectorAll(".prx-review-comment")).toHaveLength(2));
@@ -1096,6 +1320,8 @@ describe("marker placement and learner controls", () => {
 				(dom) => {
 					clock = manualFrames(dom);
 					const readStyle = dom.window.getComputedStyle.bind(dom.window);
+					(dom.window.document.querySelector(".responsive") as Element).getClientRects = () =>
+						(concealed ? [] : [box()]) as unknown as DOMRectList;
 					vi.spyOn(dom.window, "getComputedStyle").mockImplementation((el) => {
 						const style = readStyle(el);
 						// The platform changes computed visibility without a body mutation.
@@ -1122,7 +1348,7 @@ describe("marker placement and learner controls", () => {
 			(doc.querySelector('[data-node-id="node"]') as Element).getBoundingClientRect = () => box();
 			clock.flush();
 			const chip = doc.querySelector(".prx-review-anchor-status") as HTMLElement;
-			expect(chip.textContent).toBe("⚠ Not visible here");
+			expect(chip.textContent).toBe("⚠ Not on this page");
 			concealed = false;
 			if (change === "resize") {
 				Object.defineProperty(dom.window, "innerWidth", { value: 800, configurable: true });
@@ -1169,6 +1395,8 @@ describe("marker placement and learner controls", () => {
 						}) as unknown as MediaQueryList,
 				);
 				const native = dom.window.getComputedStyle.bind(dom.window);
+				(dom.window.document.querySelector(".responsive") as Element).getClientRects = () =>
+					(concealed ? [] : [box()]) as unknown as DOMRectList;
 				vi.spyOn(dom.window, "getComputedStyle").mockImplementation(
 					(el) =>
 						new Proxy(native(el), {
@@ -1195,7 +1423,7 @@ describe("marker placement and learner controls", () => {
 		concealed = true;
 		mediaChange();
 		clock.flush();
-		expect(doc.querySelector(".prx-review-anchor-status")?.textContent).toBe("⚠ Not visible here");
+		expect(doc.querySelector(".prx-review-anchor-status")?.textContent).toBe("⚠ Not on this page");
 	});
 	it("follows page-root layout shifts without invalidating cached resolution", async () => {
 		let clock!: ReturnType<typeof manualFrames>;
@@ -1262,6 +1490,8 @@ describe("marker placement and learner controls", () => {
 					},
 				});
 				const native = dom.window.getComputedStyle.bind(dom.window);
+				(dom.window.document.querySelector(".responsive") as Element).getClientRects = () =>
+					(concealed ? [] : [box()]) as unknown as DOMRectList;
 				vi.spyOn(dom.window, "getComputedStyle").mockImplementation(
 					(el) =>
 						new Proxy(native(el), {
@@ -1283,7 +1513,7 @@ describe("marker placement and learner controls", () => {
 		concealed = true;
 		resize([{ target: root, borderBoxSize: [{ inlineSize: 500 }] }]);
 		clock.flush();
-		expect(doc.querySelector(".prx-review-anchor-status")?.textContent).toBe("⚠ Not visible here");
+		expect(doc.querySelector(".prx-review-anchor-status")?.textContent).toBe("⚠ Not on this page");
 	});
 	it("moves focus to its thread before hiding a focused occluded marker", async () => {
 		let clock!: ReturnType<typeof manualFrames>;
