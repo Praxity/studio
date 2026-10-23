@@ -10,7 +10,6 @@ import { Scorm12Runtime } from "../src/scorm/api/scorm12";
 import { Scorm2004Runtime } from "../src/scorm/api/scorm2004";
 import { XapiRuntime } from "../src/scorm/api/xapi";
 import { LocalStorageRuntime } from "../src/scorm/local-storage-runtime";
-import * as tracking from "../src/scorm/tracking";
 import { CourseTracker } from "../src/scorm/tracking";
 import type { SCORMRuntime } from "../src/scorm/types";
 import { createBlockStateRuntime } from "../template/src/hosts/block-state-runtime";
@@ -149,10 +148,6 @@ function launch(format: Format, evidence = false, waiting = false) {
 			set: (value: LearnerBlockStateRuntime) => {
 				provider = value;
 				provider.getChoiceDependencyView = view;
-				provider.getChoiceReporting = (current) => ({
-					getChoiceDependencyView: view,
-					writeObjectives: tracking.createDeferredGroupObjectiveWriter?.(value, current),
-				});
 			},
 		});
 	}
@@ -197,7 +192,6 @@ function launch(format: Format, evidence = false, waiting = false) {
 			completionMethod: "allPages",
 			requiredAssessmentIds: ["q"],
 			getChoiceDependencyView: view,
-			writeObjectives: tracking.createDeferredGroupObjectiveWriter?.(provider, () => true),
 		});
 		expect(view().status("q")).toBe(waiting ? "history" : "current");
 	}
@@ -267,9 +261,6 @@ describe.each(["xapi", "standalone"] as const)("%s without an objective sink", (
 	it("the shared writer treats the absent method as a successful no-op", () => {
 		const host = launch(format);
 		expect("trackObjective" in host.runtime).toBe(false);
-		expect(
-			tracking.createDeferredGroupObjectiveWriter?.(host.provider, () => true),
-		).toBeUndefined();
 		expect(
 			writeCourseOutcome(host.runtime, {
 				kind: "decided",

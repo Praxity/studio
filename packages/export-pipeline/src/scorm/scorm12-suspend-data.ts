@@ -72,7 +72,7 @@ function isObject(value: JsonValue): value is { [key: string]: JsonValue } {
 }
 
 /** Dictionary bytes stay outside DEFLATE; only shapes and references are compressed. */
-export function encodeEvidence(raw: string): string {
+function encodeEvidence(raw: string): string {
 	const bytes = strToU8(raw);
 	if (bytes.length > LEARNER_STATE_MAX_BYTES)
 		throw new Error("ESCORM12STORAGE: evidence exceeds the decoded limit");
