@@ -392,6 +392,13 @@ jobs:
       # Studio RPC integration tests consume shipped assets and compile real PDFs.
       - run: pnpm --filter @praxity/desktop prebuild
         if: needs.changes.outputs.code == 'true'
+      # The script verifies cached archives against pinned digests, so a cache hit skips only the download.
+      - name: Cache Typst downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        if: needs.changes.outputs.code == 'true'
+        with:
+          path: apps/desktop/resources/.typst-cache
+          key: typst-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/desktop/scripts/prepare-typst.mjs') }}
       - run: pnpm --filter @praxity/desktop prepare:typst
         if: needs.changes.outputs.code == 'true'
       # Native format-renderers checks inspect PDF content and tags with Poppler.
@@ -556,6 +563,13 @@ jobs:
       - run: pnpm --filter @praxity/desktop prebuild
         if: needs.changes.outputs.output == 'true'
       # The distractor acceptance fixture also exports and scans native CLI PDFs.
+      # The script verifies cached archives against pinned digests, so a cache hit skips only the download.
+      - name: Cache Typst downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        if: needs.changes.outputs.output == 'true'
+        with:
+          path: apps/desktop/resources/.typst-cache
+          key: typst-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/desktop/scripts/prepare-typst.mjs') }}
       - run: pnpm --filter @praxity/desktop prepare:typst
         if: needs.changes.outputs.output == 'true'
       - name: Install Poppler
@@ -637,6 +651,12 @@ jobs:
       # Without the export-pipeline bundle, each worker's first publish rebuilds it into
       # prebuilt/ concurrently, and one worker can read another's half-copied chunks.
       - run: pnpm --filter @praxity/export-pipeline prebuild
+      # The script verifies cached archives against pinned digests, so a cache hit skips only the download.
+      - name: Cache Typst downloads
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: apps/desktop/resources/.typst-cache
+          key: typst-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/desktop/scripts/prepare-typst.mjs') }}
       - run: pnpm --filter @praxity/desktop prepare:typst
       - name: Browser authoring journeys
         # The runner context is unavailable in job-level env.
