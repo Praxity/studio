@@ -166,7 +166,17 @@ describe.each(["scorm12", "scorm2004"] as const)("%s objective slots", (format) 
 		},
 	);
 
-	it.each(["-1", "1.5", "1tail", "9007199254740992"])(
+	it("resubmits a group from another document in the same session into its slot", () => {
+		const host = lms(format);
+		const first = host.open();
+		first.trackObjective("g", 100, true);
+		const second = host.open();
+		second.trackObjective("g", 0, false);
+		expect(host.row(0)).toEqual(["g", "0", "failed"]);
+		expect(host.values.get("cmi.objectives._count")).toBe("1");
+	});
+
+	it.each(["-1", "1.5", "1tail", "1e1", "9007199254740992"])(
 		"skips malformed or unsafe objective count %s",
 		(count) => {
 			const host = lms(format);
