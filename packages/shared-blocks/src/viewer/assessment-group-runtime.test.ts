@@ -65,7 +65,6 @@ it("picker writes retain the raw capture through the view's single preparation p
 	const submitted = {
 		payload: { mode: "oneOf", selectedMemberId: "q1", dependencies: [["q1", null]] },
 		contentSignature: `sha256:${"a".repeat(64)}`,
-		deferredObjective: { id: "f029fc9d-1759-47f2-8e31-4f2f570d223e", score: 100, passed: true },
 	};
 	values.set("group", {
 		version: 1,
