@@ -5,6 +5,10 @@
  * detection based on configurable criteria (all pages, percentage, or quiz).
  */
 
+import {
+	type ChoiceDependencyView,
+	choiceDependencyStatus,
+} from "@praxity/shared-blocks/choice-learner-state";
 import { DEFAULT_COMPLETION_THRESHOLD } from "@praxity/shared-blocks/constants";
 import { type CourseOutcome, writeCourseOutcome } from "@praxity/shared-blocks/learner-block-state";
 import type { InteractionRecord, SCORMRuntime, TrackInteractionOptions } from "./types.ts";
@@ -51,6 +55,8 @@ export interface TrackingConfig {
 	isAssessmentFinal?: (id: string) => boolean;
 	/** Hosts supply saved answers; the tracker owns their finality decision. */
 	getAssessmentState?: (id: string) => unknown;
+	/** Absent until the host admits evidence-aware reporting. */
+	getChoiceDependencyView?: () => ChoiceDependencyView | undefined;
 }
 
 interface CourseResult {
@@ -59,9 +65,7 @@ interface CourseResult {
 	retryable: boolean;
 }
 
-interface TrackerOutcome extends CourseOutcome {
-	result?: CourseResult | null;
-}
+type TrackerOutcome = CourseOutcome & { result?: CourseResult | null };
 
 // ---------------------------------------------------------------------------
 // CourseTracker
@@ -154,6 +158,30 @@ export class CourseTracker {
 		return latest;
 	}
 
+	private currentInteractions(view: ChoiceDependencyView | undefined): InteractionRecord[] {
+		return this.runtime
+			.getInteractions()
+			.filter((row) => !view || choiceDependencyStatus(row.id, view) === "current");
+	}
+
+	private historyIsWaiting(view: ChoiceDependencyView | undefined): boolean {
+		if (!view) return false;
+		const ids = new Set(this.config.requiredAssessmentIds ?? []);
+		if (this.hasPassMark()) for (const id of this.config.scoredAssessmentIds ?? []) ids.add(id);
+		else if (this.config.completionMethod === "quiz") {
+			for (const [id, question] of Object.entries(view.questions))
+				if (question.graded && choiceDependencyStatus(id, view) !== "unanswered") ids.add(id);
+			// Only compiled groups and identifiable invalid facts can wait on scored rows.
+			for (const id of [...Object.keys(view.groups ?? {}), ...(view.invalidIds ?? [])])
+				if (
+					id !== "*" &&
+					this.runtime.getInteractions().some((row) => row.id === id && Number.isFinite(row.score))
+				)
+					ids.add(id);
+		}
+		return [...ids].some((id) => choiceDependencyStatus(id, view) === "history");
+	}
+
 	/**
 	 * Evaluate whether the course should be marked as completed, passed, or
 	 * failed based on the configured completion method.
@@ -231,7 +259,7 @@ export class CourseTracker {
 	 * would end the attempt before a result exists, so it stays "incomplete" until
 	 * the course has a final failure, or passes with the page rule met.
 	 */
-	private outcome(
+	outcome(
 		intent:
 			| "check"
 			| "score"
@@ -239,8 +267,18 @@ export class CourseTracker {
 			| "prepareCommit"
 			| "end"
 			| "finish"
-			| NonNullable<CourseOutcome["objective"]> = "check",
+			| { id: string; score: number; passed: boolean } = "check",
+		view = this.config.getChoiceDependencyView?.(),
 	): TrackerOutcome {
+		if (this.historyIsWaiting(view))
+			return {
+				kind: "waiting",
+				...(intent === "end"
+					? { finish: "complete" as const }
+					: intent === "finish"
+						? { finish: "terminate" as const }
+						: {}),
+			};
 		if (intent === "prepareCommit") return { kind: "decided" };
 		if (typeof intent === "object") return { kind: "decided", objective: intent };
 		if (intent === "finish") return { kind: "decided", finish: "terminate" };
@@ -261,7 +299,7 @@ export class CourseTracker {
 			]);
 			if (![...required].every((id) => this.isAssessmentFinal(id))) return { kind: "decided" };
 		}
-		const interactions = this.runtime.getInteractions();
+		const interactions = this.currentInteractions(view);
 		const latest = this.latestScored(interactions);
 		const authored = hasPassMark && (intent !== "check" || this.config.reportOutcome !== false);
 		const legacyQuiz = !authored && this.config.completionMethod === "quiz";

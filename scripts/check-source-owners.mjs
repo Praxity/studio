@@ -1466,6 +1466,7 @@ export function checkDisplayIdImports(path, source, program) {
 /** History must not activate before the reporting wait and learner recovery ship together. */
 export function checkDormantChoiceImports(path, source, program) {
 	const owner = "packages/shared-blocks/src/choice-learner-state.ts";
+	const tracker = "packages/export-pipeline/src/scorm/tracking.ts";
 	return checkOwnedImports(
 		path,
 		source,
@@ -1480,14 +1481,14 @@ export function checkDormantChoiceImports(path, source, program) {
 				"choiceGroupSignature",
 				"prepareChoiceGroupSubmission",
 				"createChoiceDependencyView",
-			].map((name) => [name, [owner]]),
+			].map((name) => [name, name === "choiceDependencyStatus" ? [owner, tracker] : [owner]]),
 		),
 		{
 			definition: owner,
 			module:
 				/(?:^@praxity\/shared-blocks\/choice-learner-state$|(?:^|\/)choice-learner-state(?:\.[cm]?[jt]s)?$)/u,
 			barrels: [],
-			forbidModuleLoads: true,
+			forbidModuleLoads: path.replaceAll("\\", "/") !== tracker,
 			message:
 				"choice admission is dormant until reporting waits and learner recovery is available",
 		},
@@ -1587,7 +1588,13 @@ function checkOwnedImports(path, source, program, ownership, options) {
 function checkOutcomeOwners(path, file) {
 	const owner = "packages/shared-blocks/src/tracking.ts";
 	if (path === owner || exemptTestPath(path)) return [];
-	const writes = new Set(["setCompletion", "setSuccess", "setScore", "trackObjective"]);
+	const writes = new Set([
+		"setCompletion",
+		"setSuccess",
+		"setScore",
+		"trackObjective",
+		"suppressTerminationResult",
+	]);
 	const constants = new Map();
 	const writerNames = new Set(["writeCourseOutcome"]);
 	function collect(node) {

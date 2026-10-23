@@ -29,6 +29,7 @@ import {
 } from "../types.ts";
 import { deviceAttemptId } from "./device-attempt";
 import {
+	configureSessionOutcome,
 	getSessionState,
 	readSessionState,
 	type ScormSessionState,
@@ -72,6 +73,9 @@ export interface Scorm2004Runtime {
 
 // biome-ignore lint/suspicious/noUnsafeDeclarationMerging: The static capability block installs these methods; interface declarations erase without emitting fields that shadow the prototype.
 export class Scorm2004Runtime implements SCORMRuntime {
+	configureOutcome(policy: { waiting: boolean }): void {
+		configureSessionOutcome(this.session, policy);
+	}
 	readonly destinations = LMS_DESTINATIONS;
 	static {
 		if (globalThis.__praxityPrivateState !== false) {
@@ -177,6 +181,7 @@ export class Scorm2004Runtime implements SCORMRuntime {
 			if (!this.flushCompletion(true)) return false;
 			if (
 				explicitFinish &&
+				!session.outcomeWaiting &&
 				!session.courseFailure &&
 				!this.setLmsValue("cmi.completion_status", "completed", true)
 			)
@@ -246,6 +251,7 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		// ADL RTE: suspended exit preserves the attempt and yields entry=resume. With a pass
 		// mark, keep the attempt open until it is passed so the learner can finish or retry.
 		const finished =
+			!this.session?.outcomeWaiting &&
 			this.getLmsValue("cmi.completion_status", terminating) === "completed" &&
 			(!this.session?.successTracked ||
 				this.getLmsValue("cmi.success_status", terminating) === "passed");

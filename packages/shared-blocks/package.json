@@ -26,6 +26,7 @@
 		"./narration": "./src/narration.ts",
 		"./learner-state": "./src/learner-state.ts",
 		"./choice-state-facts": "./src/choice-state-facts.ts",
+		"./choice-learner-state": "./src/choice-learner-state.ts",
 		"./learner-block-response": "./src/learner-block-response.ts",
 		"./learner-block-state": "./src/learner-block-state.ts",
 		"./block-state-policy": "./src/block-state-policy.ts",
