@@ -1,6 +1,8 @@
 import { readLesson as readBlockSource } from "@praxity/grammar";
 import { strFromU8, unzipSync } from "fflate";
 import { afterEach, assert, describe, expect, it, vi } from "vitest";
+import { createChoiceDependencyView } from "../choice-learner-state";
+import { admitChoiceStateFacts } from "../choice-state-facts";
 import { getStrings } from "../i18n/strings";
 import type { PraxityBlock } from "../types";
 import { initAssessmentGroups, resolveAssessmentGroupLayout } from "./assessment-group-runtime";
@@ -22,6 +24,99 @@ function installLearnerBlockState() {
 function assessmentMember(id: string, completed = false): string {
 	return `<div class="praxity-block praxity-block-assessment" data-block-id="${id}"><div class="praxity-block-assessment" data-block-id="${id}" data-assessment-display="standard" data-assessment-answered="false" data-score="100" data-max-score="100" data-passed="true"${completed ? ' data-completed="true"' : ""}><p class="praxity-assessment-stem">Question ${id}</p><input type="radio" name="${id}" aria-label="Answer ${id}"><button type="button" data-assessment-submit="true">Submit</button></div></div>`;
 }
+
+it.each([
+	["mode mismatch", "all", "q1"],
+	["removed oneOf member", "oneOf", "removed"],
+])("starts fresh after a saved %s", async (_reason, mode, selectedMemberId) => {
+	const values = installLearnerBlockState();
+	const saved = {
+		version: 1,
+		kind: "assessmentGroup",
+		mode: "oneOf",
+		selectedMemberId,
+		completed: true,
+	};
+	values.set("group", saved);
+	document.body.innerHTML = assessmentMember("q1", true) + assessmentMember("q2", true);
+	for (const card of document.querySelectorAll("[data-assessment-display]"))
+		card.setAttribute("data-assessment-answered", "true");
+	const dispose = initAssessmentGroups({
+		blocks: [
+			{ id: "group", type: "assessmentGroup", data: { mode, memberBlockIds: ["q1", "q2"] } },
+			{ id: "q1", type: "assessment", data: { gradingMode: "exact" } },
+			{ id: "q2", type: "assessment", data: { gradingMode: "exact" } },
+		] as PraxityBlock[],
+		root: document.body,
+	});
+	try {
+		await vi.waitFor(() => expect(document.querySelector(".praxity-ag-submit-btn")).not.toBeNull());
+		expect(document.querySelector("[data-assessment-group-results]")).toBeEmptyDOMElement();
+		if (mode === "oneOf")
+			expect(document.querySelector<HTMLInputElement>('input[value="q1"]')).toBeChecked();
+		expect(values.get("group")).toEqual(saved);
+	} finally {
+		dispose();
+	}
+});
+
+it("picker writes retain the raw capture through the view's single preparation path", async () => {
+	const values = installLearnerBlockState();
+	const submitted = {
+		payload: { mode: "oneOf", selectedMemberId: "q1", dependencies: [["q1", null]] },
+		contentSignature: `sha256:${"a".repeat(64)}`,
+		deferredObjective: { id: "f029fc9d-1759-47f2-8e31-4f2f570d223e", score: 100, passed: true },
+	};
+	values.set("group", {
+		version: 1,
+		kind: "assessmentGroup",
+		mode: "oneOf",
+		selectedMemberId: "q1",
+		completed: false,
+		submitted,
+	});
+	const view = createChoiceDependencyView(admitChoiceStateFacts({}), {
+		rows: [],
+		readState: (id) => values.get(id) as never,
+	});
+	assert(window.__praxityBlockState);
+	Object.assign(window.__praxityBlockState, { getChoiceDependencyView: () => view });
+	const prepare = vi.spyOn(view, "prepareGroupState");
+	document.body.innerHTML = assessmentMember("q1") + assessmentMember("q2");
+	const dispose = initAssessmentGroups({
+		blocks: [
+			{
+				id: "group",
+				type: "assessmentGroup",
+				data: { mode: "oneOf", memberBlockIds: ["q1", "q2"] },
+			},
+			{ id: "q1", type: "assessment", data: { gradingMode: "exact" } },
+			{ id: "q2", type: "assessment", data: { gradingMode: "exact" } },
+		] as PraxityBlock[],
+		root: document.body,
+	});
+	try {
+		const second = await vi.waitFor(() => {
+			const input = document.querySelector<HTMLInputElement>('input[value="q2"]');
+			expect(input).not.toBeNull();
+			return input;
+		});
+		prepare.mockClear();
+		second?.click();
+		expect(prepare).toHaveBeenCalledOnce();
+		expect(prepare.mock.calls[0][1]).not.toHaveProperty("submitted");
+		expect(values.get("group")).toEqual({
+			version: 1,
+			kind: "assessmentGroup",
+			mode: "oneOf",
+			selectedMemberId: "q2",
+			completed: false,
+			submitted,
+		});
+	} finally {
+		dispose();
+	}
+});
 
 it.each([
 	["en", 1, '1 of 2 correct, 1 "I don\'t know" · Not passed'],

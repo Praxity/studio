@@ -6,6 +6,7 @@ import {
 	readLearnerBlockState,
 	writeLearnerBlockState,
 } from "../learner-block-state";
+import { readSavedAssessmentGroupState, type SavedAssessmentGroupState } from "../learner-state";
 import {
 	dispatchSelfCheckEvent,
 	observeSelfCheckLifetime,
@@ -135,28 +136,12 @@ export function assessmentGroupSubmitLabel(
 	return group.isGraded ? labels.assessmentGroupSubmitAll : labels.assessmentGroupCheckAll;
 }
 
-interface SavedAssessmentGroupState {
-	version: 1;
-	kind: "assessmentGroup";
-	mode: AssessmentGroupBlockData["mode"];
-	selectedMemberId: string | null;
-	completed: boolean;
-}
-
 function readAssessmentGroupState(group: AssessmentGroupMeta): SavedAssessmentGroupState | null {
-	const value = readLearnerBlockState(group.id);
+	const value = readSavedAssessmentGroupState(readLearnerBlockState(group.id));
 	if (
-		typeof value !== "object" ||
-		value === null ||
-		Array.isArray(value) ||
-		value.version !== 1 ||
-		value.kind !== "assessmentGroup" ||
+		!value ||
 		value.mode !== group.mode ||
-		typeof value.completed !== "boolean" ||
-		(group.mode === "all"
-			? value.selectedMemberId !== null
-			: typeof value.selectedMemberId !== "string" ||
-				!group.memberBlockIds.includes(value.selectedMemberId))
+		(group.mode === "oneOf" && !group.memberBlockIds.includes(value.selectedMemberId as string))
 	) {
 		return null;
 	}
