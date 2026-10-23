@@ -167,7 +167,7 @@ function thread(anchor: ReviewAnchor, id = "thread") {
 
 function openPageComposer(doc: Document) {
 	(doc.querySelector(".prx-review-choose") as HTMLButtonElement).click();
-	const page = doc.querySelector('input[type="radio"]') as HTMLInputElement;
+	const page = doc.querySelector('.prx-review-picker input[type="radio"]') as HTMLInputElement;
 	page.checked = true;
 	(doc.querySelector(".prx-review-next") as HTMLButtonElement).click();
 }
@@ -1453,10 +1453,7 @@ describe("local transport at the fetch seam", () => {
 				if (options?.method !== "POST")
 					return response({
 						ok: true,
-						threads: state.threads.filter(
-							(thread) =>
-								thread.anchor.pageId === new URL(url, "http://127.0.0.1").searchParams.get("page"),
-						),
+						threads: state.threads,
 						nextCursor: null,
 					});
 				const result = await createThread(
@@ -1480,8 +1477,9 @@ describe("local transport at the fetch seam", () => {
 			await vi.waitFor(() =>
 				expect((doc.querySelector(".prx-review-submit") as HTMLButtonElement).disabled).toBe(false),
 			);
-			(doc.querySelector("textarea") as HTMLTextAreaElement).value = "Same draft";
-			const form = doc.querySelector("form") as HTMLFormElement;
+			(doc.querySelector(".prx-review-composer textarea") as HTMLTextAreaElement).value =
+				"Same draft";
+			const form = doc.querySelector(".prx-review-composer form") as HTMLFormElement;
 			form.dispatchEvent(new dom.window.Event("submit", { cancelable: true }));
 			await vi.waitFor(() =>
 				expect(doc.querySelector(".prx-review-error")?.textContent).toBe(
@@ -1494,7 +1492,7 @@ describe("local transport at the fetch seam", () => {
 					new dom.window.CustomEvent("praxity:active-page-change", { detail: { pageId: "other" } }),
 				);
 				await vi.waitFor(() =>
-					expect(fetchMock.mock.calls.at(-1)?.[0]).toBe(`${settings.endpoint}/comments?page=other`),
+					expect(fetchMock.mock.calls.at(-1)?.[0]).toBe(`${settings.endpoint}/comments`),
 				);
 				dom.window.dispatchEvent(
 					new dom.window.CustomEvent("praxity:active-page-change", { detail: { pageId: "page" } }),
@@ -1524,12 +1522,14 @@ describe("local transport at the fetch seam", () => {
 		);
 		const { doc, dom } = await open("", fetchMock);
 		openPageComposer(doc);
-		const input = doc.querySelector("textarea") as HTMLTextAreaElement;
+		const input = doc.querySelector(".prx-review-composer textarea") as HTMLTextAreaElement;
 		await vi.waitFor(() =>
 			expect((doc.querySelector(".prx-review-submit") as HTMLButtonElement).disabled).toBe(false),
 		);
 		input.value = "Submitted draft";
-		doc.querySelector("form")?.dispatchEvent(new dom.window.Event("submit", { cancelable: true }));
+		doc
+			.querySelector(".prx-review-composer form")
+			?.dispatchEvent(new dom.window.Event("submit", { cancelable: true }));
 		expect(input.readOnly).toBe(true);
 		dom.window.dispatchEvent(
 			new dom.window.CustomEvent("praxity:active-page-change", { detail: { pageId: "other" } }),
@@ -1546,22 +1546,20 @@ describe("local transport at the fetch seam", () => {
 		expect(doc.querySelectorAll(".prx-review-comment")).toHaveLength(0);
 		expect(
 			fetchMock.mock.calls.filter(([, options]) => options?.method !== "POST").map(([url]) => url),
-		).toEqual([
-			`${settings.endpoint}/comments?page=page`,
-			`${settings.endpoint}/comments?page=other`,
-		]);
+		).toEqual([`${settings.endpoint}/comments`, `${settings.endpoint}/comments`]);
 	});
 	it("reads only the inert JSON script even when an earlier element uses its ID", async () => {
-		const { doc, dom } = await open("");
-		doc.querySelector(".prx-review-sidebar")?.remove();
-		const impostor = doc.createElement("div");
-		impostor.id = "praxity-review-config";
-		impostor.textContent = '{"schema":999}';
-		doc.head.prepend(impostor);
-		dom.window.eval(script);
+		const { doc, dom } = await open("", undefined, settings, (dom) => {
+			const impostor = dom.window.document.createElement("div");
+			impostor.id = "praxity-review-config";
+			impostor.textContent = '{"schema":999}';
+			dom.window.document.head.prepend(impostor);
+		});
 		expect((dom.window as unknown as { PraxityReview: ReviewClient }).PraxityReview.page()).toEqual(
 			pageAnchor,
 		);
+		expect(doc.querySelector('script[type="application/json"]#praxity-review-config')).toBeNull();
+		expect(doc.querySelector("div#praxity-review-config")?.textContent).toBe('{"schema":999}');
 	});
 	it.each([
 		[
@@ -1614,10 +1612,10 @@ describe("local transport at the fetch seam", () => {
 		const { doc, dom } = await open("", fetchMock);
 		await vi.waitFor(() => expect(doc.querySelectorAll(".prx-review-comment")).toHaveLength(2));
 		expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
-			`${settings.endpoint}/comments?page=page`,
-			`${settings.endpoint}/comments?page=page&cursor=cursor`,
-			`${settings.endpoint}/comments?page=page`,
-			`${settings.endpoint}/comments?page=page&cursor=next`,
+			`${settings.endpoint}/comments`,
+			`${settings.endpoint}/comments?cursor=cursor`,
+			`${settings.endpoint}/comments`,
+			`${settings.endpoint}/comments?cursor=next`,
 		]);
 		for (const [url, options] of fetchMock.mock.calls) {
 			expect(url).not.toContain(capability);
@@ -1638,8 +1636,8 @@ describe("local transport at the fetch seam", () => {
 			.mockResolvedValueOnce(response({ ok: true, thread: thread(pageAnchor) }));
 		const { doc, dom } = await open("", fetchMock);
 		openPageComposer(doc);
-		const input = doc.querySelector("textarea") as HTMLTextAreaElement;
-		const form = doc.querySelector("form") as HTMLFormElement;
+		const input = doc.querySelector(".prx-review-composer textarea") as HTMLTextAreaElement;
+		const form = doc.querySelector(".prx-review-composer form") as HTMLFormElement;
 		await vi.waitFor(() =>
 			expect((doc.querySelector(".prx-review-submit") as HTMLButtonElement).disabled).toBe(false),
 		);
@@ -1665,7 +1663,7 @@ describe("local transport at the fetch seam", () => {
 			"Content-Type": "application/json",
 		});
 		expect(doc.querySelector("#prx-review-name")).toBeNull();
-		expect(doc.querySelector(".prx-review-comment")?.textContent).toContain("Reviewer");
+		expect(doc.querySelector(".prx-review-comment")?.textContent).toContain("Local user");
 		expect(doc.querySelector(".prx-review-comment b")).toBeNull();
 	});
 	it("retries busy once after Retry-After and reports the second refusal", async () => {
@@ -1687,6 +1685,7 @@ describe("local transport at the fetch seam", () => {
 		async (schema) => {
 			const { doc, fetchMock } = await open("", undefined, { ...settings, schema });
 			expect(fetchMock).not.toHaveBeenCalled();
+			expect(doc.querySelector("#praxity-review-config")).toBeNull();
 			expect(doc.querySelector(".prx-review-status")?.textContent).toBe(
 				"Comments could not be loaded.",
 			);

@@ -107,7 +107,7 @@ test("direct compiled course, admitted mode links and separate learner authority
 	const read = await (await request.get(readUrl)).text();
 	expect(
 		read.replace(
-			/<a href="[^"]+" rel="noreferrer" style="position:relative;z-index:2147483647">Edit text<\/a>/,
+			/<style data-praxity-studio-read>[\s\S]*?<\/style><div class="praxity-studio-read-tools">[\s\S]*?<\/div>/,
 			"",
 		),
 	).toBe(original);
