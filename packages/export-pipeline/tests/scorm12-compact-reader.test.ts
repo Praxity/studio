@@ -311,3 +311,33 @@ it("applies the ordinary envelope shape contract after decoding", () => {
 	expect(read(frame([0, 0, 0], null))).toBeNull();
 	expect(read(frame(typedCustom([0]), { ...empty, custom: null }))).toBeNull();
 });
+
+it("rejects a nested transport envelope instead of decoding it as the compact payload", () => {
+	const bytes = Buffer.from(JSON.stringify(empty));
+	const compressed = deflateSync(bytes);
+	const nested = {
+		encoding: "praxity-zlib-1",
+		size: bytes.length,
+		crc32: crc32(bytes),
+		compressedCrc32: crc32(compressed),
+		data: compressed.toString("base64"),
+	};
+	const keys = Object.keys(nested);
+	const typed = [
+		0,
+		1,
+		keys.length,
+		...keys.flatMap(text),
+		8,
+		0,
+		...text(nested.encoding),
+		3,
+		...uint(nested.size),
+		3,
+		...uint(nested.crc32),
+		3,
+		...uint(nested.compressedCrc32),
+		...text(nested.data),
+	];
+	expect(read(frame(typed, nested))).toBeNull();
+});

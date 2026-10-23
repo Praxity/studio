@@ -52,7 +52,7 @@ function isObject(value: JsonValue): value is { [key: string]: JsonValue } {
 	return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function decodeEvidence(envelope: unknown[]): string {
+function decodeEvidence(envelope: unknown[]): JsonValue {
 	if (envelope.length !== 7 || envelope[0] !== EVIDENCE_FORMAT) throw new Error("Evidence format");
 	const [, size, typedSize, counts, crc, bodyCrc, text] = envelope;
 	if (
@@ -227,7 +227,7 @@ function decodeEvidence(envelope: unknown[]): string {
 	const bytes = strToU8(serialized);
 	if (bytes.length !== size || crc32(bytes) !== crc)
 		throw new Error("Evidence original CRC/length");
-	return serialized;
+	return data;
 }
 
 /** Dormant compact reader for replacement preflight and later restoration admission. */
@@ -237,7 +237,7 @@ export function parseScorm12CompactSuspendData(raw: string): Scorm12SuspendData 
 		const envelope: unknown = JSON.parse(raw);
 		if (!Array.isArray(envelope)) return null;
 		// Reuse ordinary payload validation; compact input stays held by that parser.
-		return parseScorm12SuspendData(decodeEvidence(envelope));
+		return suspendDataPayload(decodeEvidence(envelope));
 	} catch {
 		return null;
 	}
