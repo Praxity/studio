@@ -125,6 +125,7 @@ function encodeEvidence(raw: string): string {
 	collect(data);
 	const output = [expanded ? 1 : 0];
 	function uint(input: number): void {
+		if (!Number.isSafeInteger(input) || input < 0) throw new Error("ESCORM12STORAGE: Integer");
 		do {
 			const next = Math.floor(input / 128);
 			output.push((input % 128) | (next ? 128 : 0));
