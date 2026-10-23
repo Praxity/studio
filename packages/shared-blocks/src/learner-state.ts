@@ -76,6 +76,30 @@ export interface DeferredGroupObjective {
 	passed: boolean;
 }
 
+export interface SavedAssessmentGroupState {
+	version: 1;
+	kind: "assessmentGroup";
+	mode: "all" | "oneOf";
+	selectedMemberId: string | null;
+	completed: boolean;
+	submitted?: LearnerStateValue;
+}
+
+export function readSavedAssessmentGroupState(value: unknown): SavedAssessmentGroupState | null {
+	if (
+		!isRecord(value) ||
+		value.version !== 1 ||
+		value.kind !== "assessmentGroup" ||
+		(value.mode !== "all" && value.mode !== "oneOf") ||
+		typeof value.completed !== "boolean" ||
+		(value.mode === "all"
+			? value.selectedMemberId !== null
+			: typeof value.selectedMemberId !== "string")
+	)
+		return null;
+	return value as unknown as SavedAssessmentGroupState;
+}
+
 /** Syntax only. Material admission remains with the choice status owner. */
 export function readSubmittedAssessmentGroup(value: unknown):
 	| {
@@ -85,14 +109,8 @@ export function readSubmittedAssessmentGroup(value: unknown):
 	  }
 	| undefined {
 	if (
+		!readSavedAssessmentGroupState(value) ||
 		!isRecord(value) ||
-		value.version !== 1 ||
-		value.kind !== "assessmentGroup" ||
-		(value.mode !== "all" && value.mode !== "oneOf") ||
-		typeof value.completed !== "boolean" ||
-		(value.mode === "all"
-			? value.selectedMemberId !== null
-			: !isNonemptyString(value.selectedMemberId)) ||
 		!isRecord(value.submitted) ||
 		!isChoiceContentSignature(value.submitted.contentSignature)
 	)

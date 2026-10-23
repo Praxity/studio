@@ -8,6 +8,7 @@ import { Scorm2004Runtime } from "../src/scorm/api/scorm2004";
 import { CourseTracker, type TrackingConfig } from "../src/scorm/tracking";
 import { createBlockStateRuntime } from "../template/src/hosts/block-state-runtime";
 import { initializeScormCourseHost } from "../template/src/hosts/course-host";
+import { selfCheckDocument } from "../template/src/self-check-document";
 import { withChoiceDependencyStatus } from "./fixtures/choice-facts";
 
 const documents: JSDOM[] = [];
@@ -280,4 +281,249 @@ describe.each(["scorm12", "scorm2004"] as const)("%s deferred group objectives",
 		host.tracker.checkCompletion();
 		expect(host.objectives().map(([, value]) => value)).toEqual(["g", "100", "passed"]);
 	});
+
+	it("reentrant checks write once and clear only the acknowledged obligation", () => {
+		const host = launch(format);
+		host.seed();
+		host.submit();
+		const original = host.runtime.trackObjective.bind(host.runtime);
+		const report = vi
+			.spyOn(host.runtime, "trackObjective")
+			.mockImplementation((id, score, passed) => {
+				original(id, score, passed);
+				host.tracker.checkCompletion();
+				const saved = host.stored();
+				host.provider.set("g", {
+					...saved,
+					submitted: {
+						...saved.submitted,
+						deferredObjective: { id: "successor", score: 0, passed: false },
+					},
+				});
+			});
+		host.provider.set("q", answer());
+		host.tracker.checkCompletion();
+		expect(report).toHaveBeenCalledTimes(1);
+		expect(host.stored().submitted.deferredObjective).toEqual({
+			id: "successor",
+			score: 0,
+			passed: false,
+		});
+		report.mockRestore();
+		host.tracker.checkCompletion();
+		host.tracker.checkCompletion();
+		expect(host.objectives().map(([, value]) => value)).toEqual([
+			"g",
+			"100",
+			"passed",
+			"g",
+			"0",
+			"failed",
+		]);
+	});
+
+	it("a decided submission supersedes its deferred objective only after acknowledgement", () => {
+		const host = launch(format);
+		host.seed();
+		host.submit();
+		host.provider.set("q", answer());
+		const report = vi.spyOn(host.runtime, "trackObjective").mockImplementation(() => false);
+		host.tracker.trackGroupObjective("g", 0, false);
+		expect(host.stored().submitted.deferredObjective?.score).toBe(100);
+		report.mockRestore();
+		host.tracker.trackGroupObjective("g", 0, false);
+		host.tracker.checkCompletion();
+		expect(host.objectives().map(([, value]) => value)).toEqual(["g", "0", "failed"]);
+		expect(host.stored()).toEqual(groupState());
+	});
+
+	it("unacknowledged provider memory cannot replay an unsaved obligation", () => {
+		const host = launch(format);
+		host.seed();
+		host.submit();
+		const saved = host.stored();
+		expect(saved.submitted.deferredObjective?.score).toBe(100);
+		const provider = {
+			...host.provider,
+			getSaveResult: () => ({ status: "not-saved" as const, code: "storage-unavailable" as const }),
+		};
+		const tracker = new CourseTracker(host.runtime, {
+			...host.config(),
+			groupObjectiveState: provider,
+		} as TrackingConfig);
+		host.provider.set("q", answer());
+		tracker.checkCompletion();
+		expect(host.objectives()).toEqual([]);
+	});
+
+	for (const field of ["id", "score", "passed"] as const)
+		it(`rejects a malformed obligation ${field}`, () => {
+			const host = launch(format);
+			host.seed();
+			host.submit();
+			const saved = host.stored();
+			expect(saved.submitted.deferredObjective?.score).toBe(100);
+			host.provider.set("g", {
+				...saved,
+				submitted: {
+					...saved.submitted,
+					deferredObjective: { ...saved.submitted.deferredObjective, [field]: null },
+				},
+			});
+			host.replace(true);
+			host.repair();
+			expect(host.objectives()).toEqual([]);
+		});
+
+	it("announce replacement replays the saved obligation with fresh provider authority", () => {
+		const host = launch(format);
+		host.seed();
+		const win = host.dom.window as unknown as Window & typeof globalThis;
+		vi.stubGlobal("document", win.document);
+		vi.stubGlobal("Event", win.Event);
+		vi.stubGlobal("__PRAXITY_SELF_CHECK_BUILD__", "objectives");
+		const owner = selfCheckDocument(win.document, true);
+		const descriptor = Object.getOwnPropertyDescriptor(win, "__praxityBlockState");
+		if (!descriptor?.set) throw new Error("Missing provider installation");
+		const installProvider = descriptor.set.bind(win);
+		Object.defineProperty(win, "__praxityBlockState", {
+			...descriptor,
+			set(provider: LearnerBlockStateRuntime) {
+				provider.getChoiceDependencyView = host.evidence;
+				installProvider(provider);
+			},
+		});
+		const page = {
+			version: 1,
+			courseId: "course",
+			pageId: "one",
+			pageTitle: "One",
+			currentPage: 1,
+			totalPages: 2,
+			currentSlug: "one",
+			availableSlugs: ["one"],
+			pageIdMap: { one: "one" },
+			completionMethod: "allPages",
+			requiredAssessmentIds: ["q"],
+			pageRole: "content",
+			strings: {},
+		};
+		win.document.body.innerHTML = `<script id="praxity-host-config" type="application/json">${JSON.stringify(page)}</script><script id="praxity-deployment-config" type="application/json">${JSON.stringify({ format })}</script>`;
+		Object.defineProperty(win.document, "readyState", { value: "complete" });
+		expect(
+			initializeScormCourseHost(
+				{ format, readEntry: () => null, createRuntime: () => host.runtime },
+				{
+					win,
+					doc: win.document,
+					location: { href: win.location.href, search: "", replace() {} },
+					history: win.history,
+				},
+			),
+		).toBe(true);
+		const first = win.__praxityTracker as CourseTracker;
+		first.trackGroupObjective("g", 100, true);
+		first.trackInteraction("g", "100%", true, 100);
+		host.runtime.commit();
+		expect(host.objectives()).toEqual([]);
+		owner.reset();
+		const successor = win.__praxityTracker as CourseTracker;
+		expect(successor).not.toBe(first);
+		host.provider.set("q", answer());
+		first.checkCompletion();
+		expect(host.objectives()).toEqual([]);
+		expect(host.stored().submitted.deferredObjective?.score).toBe(100);
+		successor.trackInteraction("q", "a", true, 100);
+		successor.checkCompletion();
+		expect(host.objectives().map(([, value]) => value)).toEqual(["g", "100", "passed"]);
+		owner.dispose();
+	});
+
+	it("a decided objective through the evidence view stays objective-first with no obligation", () => {
+		const host = launch(format);
+		host.seed();
+		host.provider.set("q", answer());
+		host.writes.length = 0;
+		host.tracker.trackGroupObjective("g", 100, true);
+		expect(host.writes.map(([, value]) => value)).toEqual(["g", "100", "passed"]);
+		expect(host.stored()).toEqual(groupState());
+	});
+
+	it("only compiled groups can acquire a deferred objective", () => {
+		const host = launch(format);
+		host.seed();
+		host.submit();
+		expect(host.stored().submitted.deferredObjective?.score).toBe(100);
+		host.provider.set("other", groupState() as LearnerStateValue);
+		const before = host.runtime.getSuspendData();
+		host.tracker.trackGroupObjective("other", 100, true);
+		expect(host.runtime.getSuspendData()).toBe(before);
+	});
+
+	it("a newer deferred submission owns a fresh identity and its latest objective values", () => {
+		const host = launch(format);
+		host.seed();
+		host.submit();
+		const previous = host.stored().submitted.deferredObjective;
+		expect(previous?.score).toBe(100);
+		host.tracker.trackGroupObjective("g", 0, false);
+		const latest = host.stored().submitted.deferredObjective;
+		expect(latest?.id).not.toBe(previous?.id);
+		expect(latest?.score).toBe(0);
+		host.replace(true);
+		host.repair();
+		expect(host.objectives().map(([, value]) => value)).toEqual(["g", "0", "failed"]);
+	});
+
+	it("a null obligation is rejected without replacing durable evidence", () => {
+		const host = launch(format);
+		host.seed();
+		host.submit();
+		const saved = host.stored();
+		expect(saved.submitted.deferredObjective?.score).toBe(100);
+		host.provider.set("g", {
+			...saved,
+			submitted: { ...saved.submitted, deferredObjective: null },
+		});
+		const before = host.runtime.getSuspendData();
+		host.tracker.trackGroupObjective("g", 0, false);
+		expect(host.runtime.getSuspendData()).toBe(before);
+		host.replace(true);
+		host.repair();
+		expect(host.objectives()).toEqual([]);
+	});
+
+	it("a refused replay keeps the obligation until a writer acknowledges it", () => {
+		const host = launch(format);
+		host.seed();
+		host.submit();
+		host.provider.set("q", answer());
+		const report = vi.spyOn(host.runtime, "trackObjective").mockImplementation(() => false);
+		host.tracker.checkCompletion();
+		expect(host.stored().submitted.deferredObjective?.score).toBe(100);
+		report.mockRestore();
+		host.tracker.checkCompletion();
+		expect(host.objectives().map(([, value]) => value)).toEqual(["g", "100", "passed"]);
+	});
+
+	for (const [name, patch] of [
+		["version", { version: 2 }],
+		["kind", { kind: "assessment" }],
+		["mode", { mode: "invalid", selectedMemberId: "a" }],
+		["completed", { completed: null }],
+		["all selection", { selectedMemberId: "a" }],
+		["oneOf selection", { mode: "oneOf", selectedMemberId: null }],
+		["submission", { submitted: null }],
+		["signature", { submitted: { ...submission(), contentSignature: "broken" } }],
+	] as const)
+		it(`malformed group ${name} cannot replace durable evidence`, () => {
+			const host = launch(format);
+			host.seed();
+			host.submit();
+			expect(host.stored().submitted.deferredObjective?.score).toBe(100);
+			host.provider.set("g", { ...host.stored(), ...patch } as LearnerStateValue);
+			const before = host.runtime.getSuspendData();
+			host.tracker.trackGroupObjective("g", 0, false);
+			expect(host.runtime.getSuspendData()).toBe(before);
+		});
 });

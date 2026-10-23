@@ -153,6 +153,7 @@ export function initializeCourseHost(
 	) =>
 		new CourseTracker(withLearnerStateAuthority(runtime, current), {
 			groupObjectiveState: withLearnerStateAuthority(provider, current),
+			groupObjectiveCurrent: current,
 			getChoiceDependencyView: () => provider.getChoiceDependencyView?.(),
 			totalPages: page.totalPages,
 			completionMethod: page.completionMethod,

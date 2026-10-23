@@ -23,6 +23,54 @@ function assessmentMember(id: string, completed = false): string {
 	return `<div class="praxity-block praxity-block-assessment" data-block-id="${id}"><div class="praxity-block-assessment" data-block-id="${id}" data-assessment-display="standard" data-assessment-answered="false" data-score="100" data-max-score="100" data-passed="true"${completed ? ' data-completed="true"' : ""}><p class="praxity-assessment-stem">Question ${id}</p><input type="radio" name="${id}" aria-label="Answer ${id}"><button type="button" data-assessment-submit="true">Submit</button></div></div>`;
 }
 
+it("picker writes retain the submitted evidence and its deferred objective", async () => {
+	const values = installLearnerBlockState();
+	const submitted = {
+		payload: { mode: "oneOf", selectedMemberId: "q1", dependencies: [["q1", null]] },
+		contentSignature: `sha256:${"a".repeat(64)}`,
+		deferredObjective: { id: "pending", score: 100, passed: true },
+	};
+	values.set("group", {
+		version: 1,
+		kind: "assessmentGroup",
+		mode: "oneOf",
+		selectedMemberId: "q1",
+		completed: false,
+		submitted,
+	});
+	document.body.innerHTML = assessmentMember("q1") + assessmentMember("q2");
+	const dispose = initAssessmentGroups({
+		blocks: [
+			{
+				id: "group",
+				type: "assessmentGroup",
+				data: { mode: "oneOf", memberBlockIds: ["q1", "q2"] },
+			},
+			{ id: "q1", type: "assessment", data: { gradingMode: "exact" } },
+			{ id: "q2", type: "assessment", data: { gradingMode: "exact" } },
+		] as PraxityBlock[],
+		root: document.body,
+	});
+	try {
+		const second = await vi.waitFor(() => {
+			const input = document.querySelector<HTMLInputElement>('input[value="q2"]');
+			expect(input).not.toBeNull();
+			return input;
+		});
+		second?.click();
+		expect(values.get("group")).toEqual({
+			version: 1,
+			kind: "assessmentGroup",
+			mode: "oneOf",
+			selectedMemberId: "q2",
+			completed: false,
+			submitted,
+		});
+	} finally {
+		dispose();
+	}
+});
+
 it.each([
 	["en", 1, '1 of 2 correct, 1 "I don\'t know" · Not passed'],
 	["fr", 1, "1 sur 2 correctes, 1 « Je ne sais pas » · Non réussi"],

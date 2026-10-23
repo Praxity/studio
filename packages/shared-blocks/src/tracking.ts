@@ -40,7 +40,8 @@ export function writeCourseOutcome(
 	}
 	if (outcome.objective) {
 		const { id, score, passed } = outcome.objective;
-		if (runtime.trackObjective?.(id, score, passed) === false) return false;
+		if (!runtime.trackObjective || runtime.trackObjective(id, score, passed) === false)
+			return false;
 	}
 	if (outcome.score !== undefined) runtime.setScore?.(outcome.score, 0, 100);
 	if (outcome.courseFailure !== undefined) runtime.setCourseFailure?.(outcome.courseFailure);
