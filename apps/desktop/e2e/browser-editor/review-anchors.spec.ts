@@ -4,6 +4,159 @@ import { expect, test } from "@playwright/test";
 import type { ReviewAnchor } from "@praxity/review-share/review";
 import { servedReview } from "./review-fixture";
 
+for (const locale of ["en", "fr"]) {
+	test(`a quote in a display:contents matching row stays visible (${locale})`, async ({ page }) => {
+		const fixture = await servedReview(locale);
+		const matchingRow = () => {
+			const row = document.querySelector('[data-node-id="quote"]') as HTMLElement;
+			row.style.display = "contents";
+			row.className = "praxity-matching-row";
+			const prompt = document.createElement("span");
+			prompt.className = "praxity-matching-prompt";
+			prompt.textContent = row.textContent;
+			row.replaceChildren(prompt);
+		};
+		try {
+			await page.goto(fixture.url);
+			await page.evaluate(matchingRow);
+			const anchor = await page.evaluate(() => {
+				const range = document.createRange();
+				range.selectNodeContents(document.querySelector(".praxity-matching-prompt") as Element);
+				return (
+					window as unknown as { PraxityReview: { fromSelection(range: Range): ReviewAnchor } }
+				).PraxityReview.fromSelection(range);
+			});
+			await fixture.seed(anchor, "Matching prompt review");
+			await page.reload();
+			await page.evaluate(matchingRow);
+			await expect(page.locator(".prx-review-marker")).toBeVisible();
+			await expect(page.locator(".prx-review-anchor-status")).toBeHidden();
+			await expect
+				.poll(() => page.evaluate(() => CSS.highlights.get("prx-review-quote")?.size ?? 0))
+				.toBe(1);
+		} finally {
+			await page.goto("about:blank");
+			await fixture.close();
+		}
+	});
+	test(`a hidden player step has no quote marker or highlight (${locale})`, async ({ page }) => {
+		const fixture = await servedReview(locale);
+		try {
+			await page.goto(fixture.url);
+			await expect(page.locator(".prx-review-status")).not.toHaveText(/Loading|Chargement/);
+			const anchor = await page.evaluate(() => {
+				const range = document.createRange();
+				range.selectNodeContents(document.querySelector('[data-node-id="quote"]')!);
+				return (
+					window as unknown as { PraxityReview: { fromSelection(range: Range): ReviewAnchor } }
+				).PraxityReview.fromSelection(range);
+			});
+			await fixture.seed(anchor, "Hidden step review");
+			await page.reload();
+			await expect(page.locator(".prx-review-marker")).toBeVisible();
+			await page.evaluate(() => {
+				const target = document.querySelector('[data-node-id="quote"]')!;
+				const step = document.createElement("section");
+				step.className = "praxity-player-step";
+				target.before(step);
+				step.append(target);
+				step.hidden = true;
+			});
+			await page
+				.getByRole("button", {
+					name: locale === "fr" ? "Développer les commentaires" : "Expand comments",
+				})
+				.click();
+			await expect(page.locator(".prx-review-anchor-status")).toHaveText(
+				locale === "fr" ? "⚠ Pas sur cette page" : "⚠ Not on this page",
+			);
+			await expect(page.locator(".prx-review-marker")).toBeHidden();
+			await expect
+				.poll(() => page.evaluate(() => CSS.highlights.get("prx-review-quote")?.size ?? 0))
+				.toBe(0);
+			await page.evaluate(() => {
+				(document.querySelector(".praxity-player-step") as HTMLElement).hidden = false;
+			});
+			await expect(page.locator(".prx-review-marker")).toBeVisible();
+			await expect(page.locator(".prx-review-anchor-status")).toBeHidden();
+		} finally {
+			await page.goto("about:blank");
+			await fixture.close();
+		}
+	});
+	test(`a numbered code quote follows its player step (${locale})`, async ({ page }) => {
+		const fixture = await servedReview(locale);
+		const codeStep = () => {
+			const target = document.querySelector('[data-node-id="quote"]') as HTMLElement;
+			const step = document.createElement("section");
+			step.className = "praxity-player-step";
+			target.before(step);
+			step.append(target);
+			const code = document.createElement("code");
+			["const a = 1;", "const b = 2;"].forEach((text, index) => {
+				const line = document.createElement("span");
+				line.className = "praxity-code-line";
+				line.style.display = "flex";
+				const number = document.createElement("span");
+				number.className = "praxity-code-line-number";
+				number.setAttribute("aria-hidden", "true");
+				number.textContent = String(index + 1);
+				const source = document.createElement("span");
+				source.setAttribute("data-code-line", "");
+				source.textContent = text;
+				line.append(number, source);
+				if (index) code.append("\n");
+				code.append(line);
+			});
+			const pre = document.createElement("pre");
+			pre.append(code);
+			target.replaceChildren(pre);
+		};
+		const highlights = () => page.evaluate(() => CSS.highlights.get("prx-review-quote")?.size ?? 0);
+		try {
+			await page.goto(fixture.url);
+			await expect(page.locator(".prx-review-status")).not.toHaveText(/Loading|Chargement/);
+			await page.evaluate(codeStep);
+			const anchor = await page.evaluate(() => {
+				const range = document.createRange();
+				range.selectNodeContents(document.querySelector('[data-node-id="quote"] code')!);
+				return (
+					window as unknown as { PraxityReview: { fromSelection(range: Range): ReviewAnchor } }
+				).PraxityReview.fromSelection(range);
+			});
+			expect(anchor.quote?.exact).toBe("const a = 1; const b = 2;");
+			await fixture.seed(anchor, "Code step review");
+			await page.reload();
+			await page.evaluate(codeStep);
+			await expect(page.locator(".prx-review-marker")).toBeVisible();
+			await expect(page.locator(".prx-review-anchor-status")).toBeHidden();
+			await expect.poll(highlights).toBe(1);
+			await page.evaluate(() => {
+				(document.querySelector(".praxity-player-step") as HTMLElement).hidden = true;
+			});
+			await page
+				.getByRole("button", {
+					name: locale === "fr" ? "Développer les commentaires" : "Expand comments",
+				})
+				.click();
+			await expect(page.locator(".prx-review-anchor-status")).toHaveText(
+				locale === "fr" ? "⚠ Pas sur cette page" : "⚠ Not on this page",
+			);
+			await expect(page.locator(".prx-review-marker")).toBeHidden();
+			await expect.poll(highlights).toBe(0);
+			await page.evaluate(() => {
+				(document.querySelector(".praxity-player-step") as HTMLElement).hidden = false;
+			});
+			await expect(page.locator(".prx-review-marker")).toBeVisible();
+			await expect(page.locator(".prx-review-anchor-status")).toBeHidden();
+			await expect.poll(highlights).toBe(1);
+		} finally {
+			await page.goto("about:blank");
+			await fixture.close();
+		}
+	});
+}
+
 test("stored quote and pin follow reflow, expose keyboard names and focus their thread", async ({
 	page,
 }) => {

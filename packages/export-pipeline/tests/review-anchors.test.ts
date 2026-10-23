@@ -174,6 +174,75 @@ function openPageComposer(doc: Document) {
 	(doc.querySelector(".prx-review-next") as HTMLButtonElement).click();
 }
 
+it.each(
+	["en", "fr"].flatMap((locale) =>
+		["quote", "pin", "block", "quote-range", "pin-child"].map((kind) => ({ locale, kind })),
+	),
+)(
+	"omits boxes, highlights and hit tests for an unrendered $kind ($locale)",
+	async ({ locale, kind }) => {
+		const anchor = {
+			...pageAnchor,
+			nodeId: "node",
+			quote: kind.startsWith("quote")
+				? { type: "TextQuoteSelector" as const, exact: "Target", prefix: "", suffix: "" }
+				: null,
+			pin: kind.startsWith("pin")
+				? { path: kind === "pin-child" ? "span:nth-of-type(1)" : "", x: 0.5, y: 0.5 }
+				: null,
+			context: { pageTitle: "Page title", targetLabel: "Target" },
+		};
+		let clock!: ReturnType<typeof manualFrames>;
+		const highlights = new Map();
+		const hit = vi.fn();
+		const { doc, dom } = await open(
+			'<div data-node-id="node"><span>Target</span></div>',
+			vi
+				.fn()
+				.mockResolvedValue(response({ ok: true, threads: [thread(anchor)], nextCursor: null })),
+			{ ...settings, locale },
+			(dom) => {
+				clock = manualFrames(dom);
+				dom.window.document.elementFromPoint = hit;
+				Object.assign(dom.window, {
+					Highlight: class {
+						constructor(...ranges: unknown[]) {
+							Object.assign(this, { ranges });
+						}
+					},
+					CSS: { highlights },
+				});
+				const target = dom.window.document.querySelector(
+					kind === "pin-child" ? "span" : "[data-node-id]",
+				)!;
+				target.getBoundingClientRect = () => box(0, 0, 0, 0);
+				if (kind !== "quote-range") target.getClientRects = () => [] as unknown as DOMRectList;
+				dom.window.Range.prototype.getClientRects = () => [] as unknown as DOMRectList;
+			},
+		);
+		await vi.waitFor(() => expect(doc.querySelectorAll(".prx-review-comment")).toHaveLength(1));
+		clock.flush();
+		const marker = doc.querySelector<HTMLElement>(".prx-review-marker")!;
+		expect(marker.hidden).toBe(true);
+		expect([marker.style.left, marker.style.top]).toEqual(["", ""]);
+		expect(highlights.has("prx-review-quote")).toBe(false);
+		expect(hit).not.toHaveBeenCalled();
+		expect(doc.querySelector(".prx-review-anchor-status")?.textContent).toBe(
+			locale === "fr" ? "⚠ Pas sur cette page" : "⚠ Not on this page",
+		);
+		// A layout-only reveal must recover even while identity resolution stays cached.
+		const target = doc.querySelector(kind === "pin-child" ? "span" : "[data-node-id]")!;
+		target.getClientRects = () => [box()] as unknown as DOMRectList;
+		target.getBoundingClientRect = () => box();
+		dom.window.Range.prototype.getClientRects = () => [box()] as unknown as DOMRectList;
+		doc.elementFromPoint = () => doc.querySelector("main");
+		dom.window.dispatchEvent(new dom.window.Event("scroll"));
+		clock.flush();
+		expect(marker.hidden).toBe(false);
+		expect(doc.querySelector<HTMLElement>(".prx-review-anchor-status")!.hidden).toBe(true);
+	},
+);
+
 it.each([true, false])(
 	"places a text pin tip at cap height and keeps a graphic's stored point (text=%s)",
 	async (text) => {
@@ -211,6 +280,479 @@ it.each([true, false])(
 		);
 	},
 );
+
+it.each(
+	["en", "fr"].flatMap((locale) =>
+		["quote", "pin"].flatMap((kind) =>
+			["player", "tab", "details", "accordion"].map((reveal) => ({ locale, kind, reveal })),
+		),
+	),
+)(
+	"keeps a concealed $kind child inside its rendered owner ($locale, $reveal)",
+	async ({ locale, kind, reveal }) => {
+		let clock!: ReturnType<typeof manualFrames>;
+		const highlights = new Map();
+		const fetch = vi.fn().mockResolvedValue(response({ ok: true, threads: [], nextCursor: null }));
+		const child = '<span class="target">Target</span>';
+		const wrapped =
+			reveal === "details"
+				? `<details id="reveal" open><summary>Open</summary>${child}</details>`
+				: reveal === "tab"
+					? `<div id="reveal" role="tabpanel">${child}</div>`
+					: reveal === "accordion"
+						? `<button aria-expanded="true" aria-controls="reveal">Open</button><div id="reveal">${child}</div>`
+						: child;
+		const { doc, dom, api } = await open(
+			`<div data-node-id="node">${wrapped}<p>Other visible content</p></div>`,
+			fetch,
+			{ ...settings, locale },
+			(dom) => {
+				clock = manualFrames(dom);
+				dom.window.Element.prototype.getBoundingClientRect = () => box(80, 100, 100, 40);
+				Object.assign(dom.window, { CSS: { highlights }, Highlight: class {} });
+			},
+		);
+		const target = doc.querySelector<HTMLElement>(".target")!;
+		const captured =
+			kind === "quote"
+				? api.fromSelection(range(doc, target.firstChild!, 0))
+				: api.fromPin(target, 130, 120);
+		expect(captured).not.toBeNull();
+		fetch.mockResolvedValue(response({ ok: true, threads: [thread(captured!)], nextCursor: null }));
+		dom.window.dispatchEvent(new dom.window.Event("focus"));
+		await vi.waitFor(() => expect(doc.querySelectorAll(".prx-review-comment")).toHaveLength(1));
+		clock.flush();
+		const marker = doc.querySelector<HTMLElement>(".prx-review-marker")!;
+		expect(marker.hidden).toBe(false);
+		const panel = doc.querySelector<HTMLElement>("#reveal") ?? target;
+		if (reveal === "details") (panel as HTMLDetailsElement).open = false;
+		else panel.hidden = true;
+		await Promise.resolve();
+		clock.flush();
+		expect(marker.hidden).toBe(true);
+		expect(highlights.has("prx-review-quote")).toBe(false);
+		expect(doc.querySelector(".prx-review-anchor-status")?.textContent).toBe(
+			reveal === "player"
+				? locale === "fr"
+					? "⚠ Pas sur cette page"
+					: "⚠ Not on this page"
+				: locale === "fr"
+					? "⚠ Non visible ici"
+					: "⚠ Not visible here",
+		);
+		if (reveal === "player") expect(api.resolve(captured!).target).toBe(target);
+		if (reveal === "details") (panel as HTMLDetailsElement).open = true;
+		else panel.hidden = false;
+		await Promise.resolve();
+		clock.flush();
+		expect(marker.hidden).toBe(false);
+		expect(doc.querySelector<HTMLElement>(".prx-review-anchor-status")!.hidden).toBe(true);
+		// Actual edits retain their own warning instead of being treated as concealment.
+		target.textContent = "Edited";
+		await Promise.resolve();
+		clock.flush();
+		expect(api.resolve(captured!).state).toBe(kind === "quote" ? "textChanged" : "pinMoved");
+	},
+);
+
+it.each(["en", "fr"].flatMap((locale) => ["quote", "block"].map((kind) => ({ locale, kind }))))(
+	"measures a display:contents owner through its $kind boxes ($locale)",
+	async ({ locale, kind }) => {
+		let clock!: ReturnType<typeof manualFrames>;
+		const targetAnchor = {
+			...pageAnchor,
+			nodeId: "node",
+			quote:
+				kind === "quote"
+					? { type: "TextQuoteSelector" as const, exact: "Target", prefix: "", suffix: "" }
+					: null,
+		};
+		const { doc, dom } = await open(
+			'<div class="praxity-matching-row" data-node-id="node" style="display:contents"><span class="praxity-matching-prompt">Target</span></div>',
+			vi
+				.fn()
+				.mockResolvedValue(
+					response({ ok: true, threads: [thread(targetAnchor)], nextCursor: null }),
+				),
+			{ ...settings, locale },
+			(dom) => {
+				clock = manualFrames(dom);
+				dom.window.Range.prototype.getClientRects = () => [box()] as unknown as DOMRectList;
+			},
+		);
+		await vi.waitFor(() => expect(doc.querySelectorAll(".prx-review-comment")).toHaveLength(1));
+		const rects = vi.spyOn(dom.window.Range.prototype, "getClientRects");
+		clock.flush();
+		expect(doc.querySelector<HTMLElement>(".prx-review-marker")!.hidden).toBe(false);
+		expect(doc.querySelector<HTMLElement>(".prx-review-anchor-status")!.hidden).toBe(true);
+		if (kind === "quote") expect(rects).toHaveBeenCalledTimes(1);
+		const target = doc.querySelector<HTMLElement>("[data-node-id]")!;
+		expect(target.getClientRects()).toHaveLength(0);
+		const scroll = vi.fn();
+		target.scrollIntoView = scroll;
+		doc.querySelector<HTMLButtonElement>(".prx-review-show")!.click();
+		expect(scroll).toHaveBeenCalledTimes(1);
+		expect(doc.activeElement).toBe(target);
+	},
+);
+
+it.each(
+	["en", "fr"].flatMap((locale) =>
+		["textChanged", "ambiguous"].map((state) => ({ locale, state })),
+	),
+)("keeps the $state warning when its owner has no boxes ($locale)", async ({ locale, state }) => {
+	let clock!: ReturnType<typeof manualFrames>;
+	const targetAnchor = {
+		...pageAnchor,
+		nodeId: "node",
+		quote: { type: "TextQuoteSelector" as const, exact: "Target", prefix: "", suffix: "" },
+	};
+	const { doc } = await open(
+		`<div data-node-id="node">${state === "textChanged" ? "Edited" : "Target Target"}</div>`,
+		vi
+			.fn()
+			.mockResolvedValue(response({ ok: true, threads: [thread(targetAnchor)], nextCursor: null })),
+		{ ...settings, locale },
+		(dom) => {
+			clock = manualFrames(dom);
+			dom.window.document.querySelector("[data-node-id]")!.getClientRects = () =>
+				[] as unknown as DOMRectList;
+		},
+	);
+	await vi.waitFor(() => expect(doc.querySelectorAll(".prx-review-comment")).toHaveLength(1));
+	clock.flush();
+	expect(doc.querySelector<HTMLElement>(".prx-review-marker")!.hidden).toBe(true);
+	expect(doc.querySelector(".prx-review-anchor-status")?.textContent).toBe(
+		state === "textChanged"
+			? locale === "fr"
+				? "⚠ Texte modifié"
+				: "⚠ Text changed"
+			: locale === "fr"
+				? "⚠ Ambigu"
+				: "⚠ Ambiguous",
+	);
+});
+
+describe("visible-first matching and the concealed label", () => {
+	const chips = {
+		notOnPage: { en: "⚠ Not on this page", fr: "⚠ Pas sur cette page" },
+		notVisible: { en: "⚠ Not visible here", fr: "⚠ Non visible ici" },
+		textChanged: { en: "⚠ Text changed", fr: "⚠ Texte modifié" },
+		pinMoved: { en: "⚠ Pin moved to block", fr: "⚠ Repère déplacé vers le bloc" },
+	};
+	type Locale = "en" | "fr";
+	/** Captures on the real DOM, then renders the stored thread with frames firing. */
+	async function captured(
+		markup: string,
+		locale: Locale,
+		capture: (doc: Document, api: ReviewClient) => ReviewAnchor | null,
+	) {
+		let clock!: ReturnType<typeof manualFrames>;
+		const highlights = new Map<string, { ranges: unknown[] }>();
+		const fetch = vi.fn().mockResolvedValue(response({ ok: true, threads: [], nextCursor: null }));
+		const page = await open(markup, fetch, { ...settings, locale }, (dom) => {
+			clock = manualFrames(dom);
+			dom.window.Element.prototype.getBoundingClientRect = () => box(80, 100, 100, 40);
+			Object.assign(dom.window, {
+				CSS: { highlights },
+				Highlight: class {
+					ranges: unknown[];
+					constructor(...ranges: unknown[]) {
+						this.ranges = ranges;
+					}
+				},
+			});
+		});
+		const anchor = capture(page.doc, page.api);
+		expect(anchor).not.toBeNull();
+		fetch.mockResolvedValue(response({ ok: true, threads: [thread(anchor!)], nextCursor: null }));
+		page.dom.window.dispatchEvent(new page.dom.window.Event("focus"));
+		await vi.waitFor(() =>
+			expect(page.doc.querySelectorAll(".prx-review-comment")).toHaveLength(1),
+		);
+		clock.flush();
+		const chip = page.doc.querySelector<HTMLElement>(".prx-review-anchor-status")!;
+		return {
+			...page,
+			anchor: anchor!,
+			markerShown: () => !page.doc.querySelector<HTMLElement>(".prx-review-marker")!.hidden,
+			highlighted: () => highlights.get("prx-review-quote")?.ranges.length ?? 0,
+			chip: () => (chip.hidden ? "" : chip.textContent),
+			async render() {
+				await Promise.resolve();
+				clock.flush();
+			},
+			/** Activates Show on page and returns what it announced, or "" for no announcement. */
+			show() {
+				const status = page.doc.querySelector(".prx-review-status")!;
+				const before = status.textContent;
+				page.doc.querySelector<HTMLButtonElement>(".prx-review-show")!.click();
+				return status.textContent === before ? "" : status.textContent;
+			},
+		};
+	}
+	function selectContents(doc: Document, start: Element, end = start) {
+		const selected = doc.createRange();
+		selected.setStartBefore(start.firstChild!);
+		selected.setEndAfter(end.lastChild!);
+		return selected;
+	}
+	const byId = (doc: Document, id: string) => doc.getElementById(id)!;
+	const locales: Locale[] = ["en", "fr"];
+
+	it.each(locales)("places a visible quote that spans hidden text (%s)", async (locale) => {
+		const page = await captured(
+			'<div data-node-id="node"><p><span id="a">Alpha </span><span hidden>secret </span><span id="b">Beta</span></p></div>',
+			locale,
+			(doc, api) => api.fromSelection(selectContents(doc, byId(doc, "a"), byId(doc, "b"))),
+		);
+		expect(page.anchor.quote?.exact).toBe("Alpha Beta");
+		expect(page.markerShown()).toBe(true);
+		expect(page.highlighted()).toBe(1);
+		expect(page.chip()).toBe("");
+	});
+
+	it.each(locales)(
+		"keeps a visible quote on its copy beside a hidden duplicate (%s)",
+		async (locale) => {
+			const page = await captured(
+				'<div data-node-id="node"><p><span id="a">Alpha </span><span hidden>secret </span><span id="b">Beta</span><span hidden>Alpha Beta</span></p></div>',
+				locale,
+				(doc, api) => api.fromSelection(selectContents(doc, byId(doc, "a"), byId(doc, "b"))),
+			);
+			expect(page.markerShown()).toBe(true);
+			expect(page.highlighted()).toBe(1);
+			expect(page.chip()).toBe("");
+			expect(page.show()).toBe("");
+			expect(page.api.resolve(page.anchor).range?.startContainer).toBe(
+				byId(page.doc, "a").firstChild,
+			);
+			expect(page.doc.activeElement).toBe(page.doc.querySelector("[data-node-id]"));
+		},
+	);
+
+	it.each(locales)(
+		"keeps a visible quote when hidden context scores higher (%s)",
+		async (locale) => {
+			const page = await captured(
+				'<div data-node-id="node"><p>Intro</p><section hidden><p>Choose one</p><p>Alpha</p></section><section><p id="choice">Choose one</p><p>Beta</p></section></div>',
+				locale,
+				(doc, api) => api.fromSelection(selectContents(doc, byId(doc, "choice"))),
+			);
+			expect(page.anchor.quote?.prefix).toBe("Intro ");
+			expect(page.markerShown()).toBe(true);
+			expect(page.highlighted()).toBe(1);
+			expect(page.chip()).toBe("");
+			expect(page.show()).toBe("");
+			expect(page.api.resolve(page.anchor).range?.startContainer).toBe(
+				byId(page.doc, "choice").firstChild,
+			);
+			expect(page.doc.activeElement).toBe(page.doc.querySelector("[data-node-id]"));
+		},
+	);
+
+	it.each(locales)("follows a numbered code quote through its player step (%s)", async (locale) => {
+		const line = (n: number, code: string) =>
+			`<span class="praxity-code-line" style="display:flex"><span class="praxity-code-line-number" aria-hidden="true">${n}</span><span data-code-line>${code}</span></span>`;
+		const page = await captured(
+			`<section class="praxity-player-step" id="step"><div data-node-id="node"><pre><code id="code">${line(1, "const a = 1;")}\n${line(2, "const b = 2;")}</code></pre></div></section>`,
+			locale,
+			(doc, api) => api.fromSelection(selectContents(doc, byId(doc, "code"))),
+		);
+		expect(page.anchor.quote?.exact).toBe("const a = 1; const b = 2;");
+		expect(page.markerShown()).toBe(true);
+		expect(page.highlighted()).toBe(1);
+		expect(page.chip()).toBe("");
+		byId(page.doc, "step").hidden = true;
+		await page.render();
+		expect(page.markerShown()).toBe(false);
+		expect(page.highlighted()).toBe(0);
+		expect(page.chip()).toBe(chips.notOnPage[locale]);
+		byId(page.doc, "step").hidden = false;
+		await page.render();
+		expect(page.markerShown()).toBe(true);
+		expect(page.highlighted()).toBe(1);
+		expect(page.chip()).toBe("");
+	});
+
+	it.each(
+		locales.flatMap((locale) =>
+			["visibility", "aria-hidden"].map((conceal) => ({ locale, conceal })),
+		),
+	)(
+		"labels a quote whose every segment is concealed by $conceal ($locale)",
+		async ({ locale, conceal }) => {
+			const page = await captured(
+				'<div data-node-id="node"><span id="a">Alpha </span><span id="b">Beta</span><p>Other visible content</p></div>',
+				locale,
+				(doc, api) => api.fromSelection(selectContents(doc, byId(doc, "a"), byId(doc, "b"))),
+			);
+			expect(page.markerShown()).toBe(true);
+			const spans = [byId(page.doc, "a"), byId(page.doc, "b")];
+			for (const span of spans)
+				if (conceal === "visibility") span.style.visibility = "hidden";
+				else span.setAttribute("aria-hidden", "true");
+			await page.render();
+			expect(page.markerShown()).toBe(false);
+			expect(page.highlighted()).toBe(0);
+			expect(page.chip()).toBe(chips.notVisible[locale]);
+			for (const span of spans) span.removeAttribute(conceal === "visibility" ? "style" : conceal);
+			await page.render();
+			expect(page.markerShown()).toBe(true);
+			expect(page.highlighted()).toBe(1);
+			expect(page.chip()).toBe("");
+		},
+	);
+
+	it.each(
+		locales.flatMap((locale) =>
+			[
+				["aria-hidden number", '<span aria-hidden="true">1</span> Wash hands'],
+				["hidden paragraph", "Wash hands<p hidden>Extra</p>"],
+			].map(([variant, item]) => ({ locale, variant, item })),
+		),
+	)(
+		"labels a pin with hidden text inside its hidden step ($variant, $locale)",
+		async ({ locale, item }) => {
+			const page = await captured(
+				`<div data-node-id="node"><section class="praxity-player-step" id="step"><ol><li id="pinned">${item}</li></ol></section><p>Other visible content</p></div>`,
+				locale,
+				(doc, api) => api.fromPin(byId(doc, "pinned"), 130, 120),
+			);
+			expect(page.anchor.context.targetLabel).toBe("Wash hands");
+			expect(page.markerShown()).toBe(true);
+			byId(page.doc, "step").hidden = true;
+			await page.render();
+			expect(page.markerShown()).toBe(false);
+			expect(page.chip()).toBe(chips.notOnPage[locale]);
+			expect(page.api.resolve(page.anchor)).toMatchObject({
+				state: "notOnPage",
+				target: byId(page.doc, "pinned"),
+			});
+			byId(page.doc, "step").hidden = false;
+			await page.render();
+			expect(page.markerShown()).toBe(true);
+			expect(page.chip()).toBe("");
+		},
+	);
+
+	it.each(locales.flatMap((locale) => ["quote", "pin"].map((kind) => ({ locale, kind }))))(
+		"still warns about a real $kind edit with no hidden copy ($locale)",
+		async ({ locale, kind }) => {
+			const page = await captured(
+				'<div data-node-id="node"><p id="t">Alpha Beta</p><p>Other visible content</p></div>',
+				locale,
+				(doc, api) =>
+					kind === "quote"
+						? api.fromSelection(selectContents(doc, byId(doc, "t")))
+						: api.fromPin(byId(doc, "t"), 130, 120),
+			);
+			byId(page.doc, "t").textContent = "Gamma Delta";
+			await page.render();
+			expect(page.markerShown()).toBe(true);
+			expect(page.highlighted()).toBe(0);
+			expect(page.chip()).toBe(chips[kind === "quote" ? "textChanged" : "pinMoved"][locale]);
+			expect(page.api.resolve(page.anchor).target).toBe(page.doc.querySelector("[data-node-id]"));
+		},
+	);
+
+	it.each(
+		locales.flatMap((locale) =>
+			["tab", "details", "accordion"].map((reveal) => ({ locale, reveal })),
+		),
+	)(
+		"reveals and focuses a quote in a closed $reveal from Show on page ($locale)",
+		async ({ locale, reveal }) => {
+			const target = '<p id="target">Target text</p>';
+			const page = await captured(
+				`<div data-node-id="node"><p>Intro</p>${
+					reveal === "tab"
+						? `<button role="tab" id="tab" aria-controls="reveal" aria-selected="true">Tab</button><div id="reveal" role="tabpanel" aria-labelledby="tab">${target}</div>`
+						: reveal === "details"
+							? `<details id="reveal" open><summary>Open</summary>${target}</details>`
+							: `<button id="tab" aria-expanded="true" aria-controls="reveal">Open</button><div id="reveal">${target}</div>`
+				}</div>`,
+				locale,
+				(doc, api) => api.fromSelection(selectContents(doc, byId(doc, "target"))),
+			);
+			const panel = byId(page.doc, "reveal");
+			const close = (closed: boolean) => {
+				if (reveal === "details") (panel as HTMLDetailsElement).open = !closed;
+				else panel.hidden = closed;
+				if (reveal === "accordion")
+					byId(page.doc, "tab").setAttribute("aria-expanded", String(!closed));
+			};
+			page.doc.getElementById("tab")?.addEventListener("click", () => close(false));
+			close(true);
+			await page.render();
+			expect(page.markerShown()).toBe(false);
+			expect(page.highlighted()).toBe(0);
+			expect(page.chip()).toBe(chips.notVisible[locale]);
+			expect(page.show()).toBe("");
+			expect(page.doc.activeElement).toBe(page.doc.querySelector("[data-node-id]"));
+			await page.render();
+			expect(page.markerShown()).toBe(true);
+			expect(page.chip()).toBe("");
+		},
+	);
+
+	it.each(locales)(
+		"labels a placed quote with a reveal path that loses its boxes (%s)",
+		async (locale) => {
+			const page = await captured(
+				'<details id="reveal" open><summary>Open</summary><div data-node-id="node"><p id="t">Target text</p></div></details>',
+				locale,
+				(doc, api) => api.fromSelection(selectContents(doc, byId(doc, "t"))),
+			);
+			expect(page.anchor.revealPath).toEqual(["reveal"]);
+			expect(page.markerShown()).toBe(true);
+			// Box loss the client cannot observe as a mutation.
+			const none = () => [] as unknown as DOMRectList;
+			page.dom.window.Range.prototype.getClientRects = none;
+			page.dom.window.Element.prototype.getClientRects = none;
+			page.dom.window.dispatchEvent(new page.dom.window.Event("scroll"));
+			await page.render();
+			expect(page.markerShown()).toBe(false);
+			expect(page.highlighted()).toBe(0);
+			expect(page.chip()).toBe(chips.notVisible[locale]);
+			expect(page.show()).toBe(chips.notVisible[locale].slice(2));
+		},
+	);
+
+	it.each(locales)(
+		"labels a partly concealed quote without a marker, its documented limit (%s)",
+		async (locale) => {
+			const page = await captured(
+				'<div data-node-id="node"><p id="a">Alpha</p><section class="praxity-player-step" id="step"><p id="b">Beta</p></section></div>',
+				locale,
+				(doc, api) => api.fromSelection(selectContents(doc, byId(doc, "a"), byId(doc, "b"))),
+			);
+			expect(page.anchor.quote?.exact).toBe("Alpha Beta");
+			byId(page.doc, "step").hidden = true;
+			await page.render();
+			expect(page.markerShown()).toBe(false);
+			expect(page.highlighted()).toBe(0);
+			expect(page.chip()).toBe(chips.notVisible[locale]);
+		},
+	);
+
+	it.each(locales.flatMap((locale) => ["quote", "block"].map((kind) => ({ locale, kind }))))(
+		"keeps a captured $kind marker on a display:contents matching row ($locale)",
+		async ({ locale, kind }) => {
+			const page = await captured(
+				'<div class="praxity-matching-row" data-node-id="node" style="display:contents"><span class="praxity-matching-prompt" id="prompt">Target</span></div>',
+				locale,
+				(doc, api) =>
+					kind === "quote"
+						? api.fromSelection(selectContents(doc, byId(doc, "prompt")))
+						: api.fromBlock(doc.querySelector("[data-node-id]")!),
+			);
+			expect(page.markerShown()).toBe(true);
+			expect(page.highlighted()).toBe(kind === "quote" ? 1 : 0);
+			expect(page.chip()).toBe("");
+		},
+	);
+});
 
 describe("review anchor capture and immutable resolution", () => {
 	it("exposes only a frozen read-only DOM interface", async () => {
@@ -1001,6 +1543,7 @@ describe("marker placement and learner controls", () => {
 			settings,
 			(dom) => {
 				clock = manualFrames(dom);
+				dom.window.Range.prototype.getClientRects = () => [box()] as unknown as DOMRectList;
 			},
 		);
 		await vi.waitFor(() => expect(doc.querySelectorAll(".prx-review-comment")).toHaveLength(2));
@@ -1098,6 +1641,8 @@ describe("marker placement and learner controls", () => {
 				(dom) => {
 					clock = manualFrames(dom);
 					const readStyle = dom.window.getComputedStyle.bind(dom.window);
+					(dom.window.document.querySelector(".responsive") as Element).getClientRects = () =>
+						(concealed ? [] : [box()]) as unknown as DOMRectList;
 					vi.spyOn(dom.window, "getComputedStyle").mockImplementation((el) => {
 						const style = readStyle(el);
 						// The platform changes computed visibility without a body mutation.
@@ -1124,7 +1669,7 @@ describe("marker placement and learner controls", () => {
 			(doc.querySelector('[data-node-id="node"]') as Element).getBoundingClientRect = () => box();
 			clock.flush();
 			const chip = doc.querySelector(".prx-review-anchor-status") as HTMLElement;
-			expect(chip.textContent).toBe("⚠ Not visible here");
+			expect(chip.textContent).toBe("⚠ Not on this page");
 			concealed = false;
 			if (change === "resize") {
 				Object.defineProperty(dom.window, "innerWidth", { value: 800, configurable: true });
@@ -1171,6 +1716,8 @@ describe("marker placement and learner controls", () => {
 						}) as unknown as MediaQueryList,
 				);
 				const native = dom.window.getComputedStyle.bind(dom.window);
+				(dom.window.document.querySelector(".responsive") as Element).getClientRects = () =>
+					(concealed ? [] : [box()]) as unknown as DOMRectList;
 				vi.spyOn(dom.window, "getComputedStyle").mockImplementation(
 					(el) =>
 						new Proxy(native(el), {
@@ -1197,7 +1744,7 @@ describe("marker placement and learner controls", () => {
 		concealed = true;
 		mediaChange();
 		clock.flush();
-		expect(doc.querySelector(".prx-review-anchor-status")?.textContent).toBe("⚠ Not visible here");
+		expect(doc.querySelector(".prx-review-anchor-status")?.textContent).toBe("⚠ Not on this page");
 	});
 	it("follows page-root layout shifts without invalidating cached resolution", async () => {
 		let clock!: ReturnType<typeof manualFrames>;
@@ -1264,6 +1811,8 @@ describe("marker placement and learner controls", () => {
 					},
 				});
 				const native = dom.window.getComputedStyle.bind(dom.window);
+				(dom.window.document.querySelector(".responsive") as Element).getClientRects = () =>
+					(concealed ? [] : [box()]) as unknown as DOMRectList;
 				vi.spyOn(dom.window, "getComputedStyle").mockImplementation(
 					(el) =>
 						new Proxy(native(el), {
@@ -1285,7 +1834,7 @@ describe("marker placement and learner controls", () => {
 		concealed = true;
 		resize([{ target: root, borderBoxSize: [{ inlineSize: 500 }] }]);
 		clock.flush();
-		expect(doc.querySelector(".prx-review-anchor-status")?.textContent).toBe("⚠ Not visible here");
+		expect(doc.querySelector(".prx-review-anchor-status")?.textContent).toBe("⚠ Not on this page");
 	});
 	it("moves focus to its thread before hiding a focused occluded marker", async () => {
 		let clock!: ReturnType<typeof manualFrames>;
