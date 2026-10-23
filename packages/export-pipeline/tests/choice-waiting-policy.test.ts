@@ -243,6 +243,7 @@ describe.each(["scorm12", "scorm2004", "xapi"] as const)("%s dormant waiting", (
 		const tracker = new CourseTracker(runtime, {
 			totalPages: 1,
 			completionMethod: "allPages",
+			scoredAssessmentIds: ["g"],
 			getChoiceDependencyView: () => withChoiceDependencyStatus(groupView(runtime)()),
 		});
 		expect(tracker.outcome().kind).toBe("decided");
@@ -328,6 +329,42 @@ describe.each(["scorm12", "scorm2004", "xapi"] as const)("%s dormant waiting", (
 			expect(outcomes()).toEqual([]);
 		},
 	);
+});
+
+it("decided quiz retains main's unscored historical retry state", () => {
+	const { runtime } = launch("scorm2004");
+	runtime.trackInteraction("other", "answer", false, 50, {
+		maxAttempts: 1,
+		attemptsUsed: 1,
+	});
+	runtime.trackInteraction("u", "answer", false, undefined, {
+		maxAttempts: 2,
+		attemptsUsed: 1,
+	});
+	const config: TrackingConfig = {
+		totalPages: 1,
+		completionMethod: "quiz",
+		deferRetryableFailure: true,
+	};
+	expect(new CourseTracker(runtime, config).outcome()).toMatchObject({
+		kind: "decided",
+		result: { score: 50, passed: false, retryable: true },
+		completion: "incomplete",
+	});
+	config.getChoiceDependencyView = () =>
+		withChoiceDependencyStatus({
+			rows: runtime.getInteractions(),
+			questions: {},
+			signatures: {},
+			invalidIds: ["u"],
+			readState: () => undefined,
+		});
+	expect(config.getChoiceDependencyView()?.status("u")).toBe("history");
+	expect(new CourseTracker(runtime, config).outcome()).toMatchObject({
+		kind: "decided",
+		result: { score: 50, passed: false, retryable: true },
+		completion: "incomplete",
+	});
 });
 
 it("pass-mark scored dependencies wait while an unrelated optional history row does not", () => {
