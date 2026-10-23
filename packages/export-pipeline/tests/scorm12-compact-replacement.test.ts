@@ -1,3 +1,8 @@
+import { createHash } from "node:crypto";
+import {
+	choiceEvidenceSignature,
+	choiceStateForDestination,
+} from "@praxity/shared-blocks/learner-state";
 import { JSDOM } from "jsdom";
 import { afterEach, expect, it, vi } from "vitest";
 import { Scorm12Runtime } from "../src/scorm/api/scorm12";
@@ -184,6 +189,70 @@ it("keeps the ordinary writer and compact hold selected without the capability",
 		expect(loaded.getSuspendData()).toBeNull();
 		expect(loaded.setSuspendData("replacement")).toBe(false);
 		expect(writes).toEqual([]);
+	} finally {
+		dom.window.close();
+	}
+});
+
+it("retains at least 42 original UUID answers and rows before an atomic capacity refusal", () => {
+	const { values, writes, dom } = lms();
+	const uuid = (seed: string) => {
+		const hex = createHash("sha256").update(seed).digest("hex").slice(0, 32);
+		return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+	};
+	try {
+		const runtime = new Runtime(undefined, compact);
+		runtime.initialize();
+		const provider = createBlockStateRuntime(runtime);
+		const saved = new Map();
+		let refused = false;
+		for (let index = 0; index < 100; index++) {
+			const id = uuid(`question-${index}`);
+			const signature = `sha256:${createHash("sha256").update(`material-${index}`).digest("hex")}`;
+			const selected = uuid(`option-${index}-0`);
+			const next = choiceStateForDestination(
+				{
+					...choice,
+					answer: [selected],
+					reviewedChoiceIds: [selected],
+					contentSignature: signature,
+					writtenAt: index + 1,
+				},
+				"scorm12",
+			);
+			const before = values.get("cmi.suspend_data");
+			writes.length = 0;
+			expect(
+				provider.stageSubmission?.(id, () => {
+					provider.set(id, next);
+					return true;
+				}),
+			).toBe(true);
+			try {
+				runtime.trackInteraction(id, "action-0", true, 100, {
+					assessmentType: "choice",
+					contentSignature: choiceEvidenceSignature(signature, "scorm12"),
+					attemptsUsed: 1,
+					maxAttempts: 2,
+				});
+			} catch (error) {
+				expect(String(error)).toContain("ESCORM12STORAGE");
+				expect(values.get("cmi.suspend_data")).toBe(before);
+				expect(writes).toEqual([]);
+				expect(provider.get(id)).toBeUndefined();
+				refused = true;
+				break;
+			}
+			saved.set(id, next);
+		}
+		expect(refused).toBe(true);
+		expect(saved.size).toBeGreaterThanOrEqual(42);
+		const loaded = new Runtime(undefined, compact);
+		loaded.initialize();
+		const restored = createBlockStateRuntime(loaded);
+		for (const [id, state] of saved) expect(restored.get(id)).toEqual(state);
+		expect(loaded.getInteractions()).toHaveLength(saved.size);
+		console.info("Compact capacity", saved.size, values.get("cmi.suspend_data")?.length);
 	} finally {
 		dom.window.close();
 	}

@@ -180,10 +180,8 @@ function encodeEvidence(raw: string): string {
 			return;
 		}
 		const keys = Object.keys(input);
-		const shape = shapeIndices.get(JSON.stringify(keys));
-		if (shape === undefined) throw new Error("Missing evidence shape");
 		output.push(8);
-		uint(shape);
+		uint(shapeIndices.get(JSON.stringify(keys)) as number);
 		keys.forEach((key) => value(input[key]));
 	}
 	uint(shapes.length);

@@ -10,10 +10,19 @@ const encode =
 		}
 	).serializeScorm12CompactSuspendData ?? codec.serializeScorm12SuspendData;
 const read = codec.parseScorm12CompactSuspendData;
+const preflight =
+	(
+		codec as Partial<typeof codec> & {
+			preflightScorm12SuspendData?: (data: codec.Scorm12SuspendData, candidate: string) => string;
+		}
+	).preflightScorm12SuspendData ?? ((_data, candidate) => candidate);
 
 function roundtrip(custom: string): void {
 	const data = { visitedPages: ["page"], interactions: [], custom };
-	const wire = encode(data);
+	let wire = "";
+	expect(() => {
+		wire = encode(data);
+	}).not.toThrow();
 	expect(JSON.parse(wire)[0]).toBe("praxity-evidence-1");
 	expect(wire.length).toBeLessThanOrEqual(4096);
 	expect(JSON.stringify(read(wire))).toBe(JSON.stringify(data));
@@ -55,7 +64,10 @@ it("preserves dictionary tokens, shapes, row order and optional fields", () => {
 			["__proto__"]: { answer: "kept" },
 		}),
 	};
-	const wire = encode(data);
+	let wire = "";
+	expect(() => {
+		wire = encode(data);
+	}).not.toThrow();
 	expect(JSON.parse(wire)[3]).toEqual([1, 1, 1]);
 	expect(JSON.stringify(read(wire))).toBe(JSON.stringify(data));
 	expect(codec.parseScorm12SuspendData(wire)).toBeNull();
@@ -83,6 +95,13 @@ it("refuses data beyond the reader's decoded and typed bounds", () => {
 });
 
 it("refuses excessive nesting", () => {
-	const custom = `${"[".repeat(65)}0${"]".repeat(65)}`;
+	roundtrip(`${"[".repeat(63)}0${"]".repeat(63)}`);
+	const custom = `${"[".repeat(64)}0${"]".repeat(64)}`;
 	expect(() => encode({ visitedPages: [], interactions: [], custom })).toThrow(/Evidence depth/);
+});
+
+it("preflight independently bounds a readable ordinary candidate", () => {
+	const data = { visitedPages: [], interactions: [], custom: "x".repeat(4096) };
+	expect(codec.parseScorm12SuspendData(JSON.stringify(data))).toEqual(data);
+	expect(() => preflight(data, JSON.stringify(data))).toThrow(/exceeds the character limit/);
 });
