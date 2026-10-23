@@ -1,8 +1,9 @@
 import { findWindowProperty, type WindowLike } from "../api-discovery";
+import type { GroupObjectiveReplayLedger } from "../tracking";
 import type { RuntimeCommitPreparation } from "../types";
 
 /** Shared by every runtime in one LMS launch, including cached older documents. */
-export interface ScormSessionState extends RuntimeCommitPreparation {
+export interface ScormSessionState extends RuntimeCommitPreparation, GroupObjectiveReplayLedger {
 	initialized: boolean;
 	closed: boolean;
 	terminationSucceeded: boolean;

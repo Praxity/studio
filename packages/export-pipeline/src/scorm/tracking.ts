@@ -14,7 +14,15 @@ import {
 	type LearnerBlockStateRuntime,
 	writeCourseOutcome,
 } from "@praxity/shared-blocks/learner-block-state";
-import { readSubmittedAssessmentGroup } from "@praxity/shared-blocks/learner-state";
+import {
+	type DeferredGroupObjective,
+	groupObjectiveSequence,
+	isChoiceContentSignature,
+	isGroupObjectiveScore,
+	prepareGroupObjectiveSave,
+	readDeferredGroupObjective,
+	readSubmittedAssessmentGroup,
+} from "@praxity/shared-blocks/learner-state";
 import type { InteractionRecord, SCORMRuntime, TrackInteractionOptions } from "./types.ts";
 
 /** The pass mark as the manifest declares it, so the LMS and the SCO agree at the boundary. */
@@ -72,21 +80,55 @@ interface CourseResult {
 }
 
 type TrackerOutcome = CourseOutcome & { result?: CourseResult | null };
+type OutcomeIntent =
+	| "check"
+	| "score"
+	| "display"
+	| "prepareCommit"
+	| "end"
+	| "finish"
+	| { id: string; score: number; passed: boolean; contentSignature?: string };
+
+/** Belongs to the launch, so document and tracker replacement retain acknowledgement. */
+export interface GroupObjectiveReplayLedger {
+	objectiveReplays?: Map<string, "writing" | "written">;
+}
 
 /** Storage and replay stay out of ordinary bundles until a provider installs this owner. */
 export function createDeferredGroupObjectiveWriter(
 	provider: LearnerBlockStateRuntime,
 	current: () => boolean,
+	ledger: GroupObjectiveReplayLedger,
 ): GroupObjectiveWriter {
+	if (!ledger) throw new TypeError("Group objectives require a launch replay ledger");
 	const ticket = { current };
 	const access = captureLearnerBlockState(provider, current);
-	let replaying = false;
+	const pending = new Map<string, DeferredGroupObjective & { contentSignature: string }>();
+	let clearing: { groupId: string; id: string } | undefined;
+	provider.prepareGroupState = (id, next) => {
+		if (!current()) throw new Error("EACTIVITYPROVIDER");
+		const previous = provider.get(id);
+		const queued = pending.get(id);
+		const clearId = clearing?.groupId === id ? clearing.id : undefined;
+		const prepared = prepareGroupObjectiveSave(
+			previous,
+			next,
+			clearId ? undefined : queued,
+			clearId,
+		);
+		// Consume before calling storage: a reentrant save may queue its successor.
+		if (!clearId) pending.delete(id);
+		return prepared;
+	};
 	const clear = (id: string, obligation: string) => {
 		const saved = readSubmittedAssessmentGroup(provider.get(id));
-		// Reentrant submission may have replaced this obligation while the writer ran.
-		if (saved?.objective?.id !== obligation) return;
-		const { deferredObjective: _replayed, ...submitted } = saved.submitted;
-		access.write(id, { ...saved.state, submitted }, ticket);
+		if (!saved) return;
+		clearing = { groupId: id, id: obligation };
+		try {
+			access.write(id, saved.state, ticket);
+		} finally {
+			clearing = undefined;
+		}
 	};
 	return (runtime, outcome, view, submittedObjective) => {
 		if (
@@ -95,47 +137,70 @@ export function createDeferredGroupObjectiveWriter(
 			Object.hasOwn(view?.groups ?? {}, submittedObjective.id)
 		) {
 			const { id, score, passed } = submittedObjective;
-			const saved = readSubmittedAssessmentGroup(provider.get(id));
-			if (saved)
-				access.write(
-					id,
-					{
-						...saved.state,
-						submitted: {
-							...saved.submitted,
-							deferredObjective: { id: crypto.randomUUID(), score, passed },
-						},
-					},
-					ticket,
-				);
+			if (!isGroupObjectiveScore(score) || typeof passed !== "boolean")
+				throw new TypeError("Invalid group objective values");
+			const previous = provider.get(id);
+			readDeferredGroupObjective(previous);
+			const saved = readSubmittedAssessmentGroup(previous);
+			const contentSignature =
+				submittedObjective.contentSignature ?? saved?.submitted.contentSignature;
+			if (!isChoiceContentSignature(contentSignature))
+				throw new TypeError("Missing group objective evidence");
+			const sequence = groupObjectiveSequence(previous) + 1;
+			if (!Number.isSafeInteger(sequence))
+				throw new TypeError("Group objective sequence exhausted");
+			pending.set(id, { id: String(sequence), contentSignature, score, passed });
+			if (saved && saved.submitted.contentSignature === contentSignature)
+				access.write(id, saved.state, ticket);
 		}
-		if (replaying) return writeCourseOutcome(runtime, outcome);
-		let superseded: { id: string; obligation: string } | undefined;
-		replaying = true;
+		let superseded: { id: string; obligation: string; key: string } | undefined;
+		let acknowledged = false;
 		try {
 			if (outcome.kind === "decided" && view) {
 				for (const id of Object.keys(view.groups ?? {})) {
-					if (provider.getSaveResult?.(id)?.status === "not-saved") continue;
 					const saved = readSubmittedAssessmentGroup(provider.get(id));
 					const objective = saved?.objective;
-					if (!objective || view.status(id) !== "current") continue;
-					if (outcome.objective?.id === id) {
-						superseded = { id, obligation: objective.id };
+					if (!objective) continue;
+					const key = JSON.stringify([id, objective.id]);
+					const replays = (ledger.objectiveReplays ??= new Map());
+					if (replays.get(key) === "written") {
+						clear(id, objective.id);
 						continue;
 					}
-					const acknowledged = writeCourseOutcome(runtime, {
-						kind: "decided",
-						objective: { id, score: objective.score, passed: objective.passed },
-					});
+					if (
+						replays.has(key) ||
+						provider.getSaveResult?.(id)?.status === "not-saved" ||
+						view.status(id) !== "current"
+					)
+						continue;
+					if (outcome.objective?.id === id) {
+						replays.set(key, "writing");
+						superseded = { id, obligation: objective.id, key };
+						continue;
+					}
+					replays.set(key, "writing");
+					let acknowledged = false;
+					try {
+						acknowledged = writeCourseOutcome(runtime, {
+							kind: "decided",
+							objective: { id, score: objective.score, passed: objective.passed },
+						});
+					} finally {
+						if (acknowledged) replays.set(key, "written");
+						else replays.delete(key);
+					}
 					if (!acknowledged) continue;
 					clear(id, objective.id);
 				}
 			}
-			const acknowledged = writeCourseOutcome(runtime, outcome);
+			acknowledged = writeCourseOutcome(runtime, outcome);
 			if (acknowledged && superseded) clear(superseded.id, superseded.obligation);
 			return acknowledged;
 		} finally {
-			replaying = false;
+			if (superseded) {
+				if (acknowledged) ledger.objectiveReplays?.set(superseded.key, "written");
+				else ledger.objectiveReplays?.delete(superseded.key);
+			}
 		}
 	};
 }
@@ -175,7 +240,7 @@ export class CourseTracker {
 	): void {
 		this.runtime.trackInteraction(id, response, correct, score, options);
 
-		if (score !== undefined) this.writeOutcome(this.runtime, this.outcome("score"));
+		if (score !== undefined) this.writeOutcome("score");
 
 		this.checkCompletion();
 	}
@@ -205,25 +270,33 @@ export class CourseTracker {
 		);
 	}
 
-	trackGroupObjective(id: string, score: number, passed: boolean, runtime = this.runtime): void {
-		const view = this.config.getChoiceDependencyView?.();
-		const objective = { id, score, passed };
-		this.writeOutcome(runtime, this.outcome(objective, view), view, objective);
+	trackGroupObjective(
+		id: string,
+		score: number,
+		passed: boolean,
+		runtime = this.runtime,
+		contentSignature?: string,
+	): void {
+		this.writeOutcome(
+			{ id, score, passed, ...(contentSignature ? { contentSignature } : {}) },
+			runtime,
+		);
 	}
 
 	finish(explicitFinish = false, runtime = this.runtime): boolean {
-		return this.writeOutcome(runtime, this.outcome(explicitFinish ? "finish" : "end"));
+		return this.writeOutcome(explicitFinish ? "finish" : "end", runtime);
 	}
 
-	private writeOutcome(
-		runtime: SCORMRuntime,
-		outcome: TrackerOutcome,
-		view = this.config.getChoiceDependencyView?.(),
-		objective?: { id: string; score: number; passed: boolean },
-	): boolean {
+	private writeOutcome(intent: OutcomeIntent = "check", runtime = this.runtime): boolean {
+		const view = this.config.getChoiceDependencyView?.();
+		const outcome = this.outcome(intent, view);
 		return (
-			this.config.writeObjectives?.(runtime, outcome, view, objective) ??
-			writeCourseOutcome(runtime, outcome)
+			this.config.writeObjectives?.(
+				runtime,
+				outcome,
+				view,
+				typeof intent === "object" ? intent : undefined,
+			) ?? writeCourseOutcome(runtime, outcome)
 		);
 	}
 
@@ -267,12 +340,12 @@ export class CourseTracker {
 	 * failed based on the configured completion method.
 	 */
 	checkCompletion(): void {
-		this.writeOutcome(this.runtime, this.outcome());
+		this.writeOutcome();
 	}
 
 	/** A decided commit preserves the adapter's existing write log. */
 	prepareCommit(): void {
-		this.writeOutcome(this.runtime, this.outcome("prepareCommit"));
+		this.writeOutcome("prepareCommit");
 	}
 
 	// ---- private completion strategies ------------------------------------
@@ -340,14 +413,7 @@ export class CourseTracker {
 	 * the course has a final failure, or passes with the page rule met.
 	 */
 	outcome(
-		intent:
-			| "check"
-			| "score"
-			| "display"
-			| "prepareCommit"
-			| "end"
-			| "finish"
-			| { id: string; score: number; passed: boolean } = "check",
+		intent: OutcomeIntent = "check",
 		view = this.config.getChoiceDependencyView?.(),
 	): TrackerOutcome {
 		if (this.historyIsWaiting(view))

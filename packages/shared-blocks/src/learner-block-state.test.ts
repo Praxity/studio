@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { compileBlockStatePolicy } from "./block-state-policy";
 import { reportLearnerBlockResponse } from "./learner-block-response";
 import {
+	captureLearnerBlockState,
 	finishLearnerCourse,
 	learnerRuntime,
 	learnerTracker,
@@ -10,6 +11,7 @@ import {
 	withLearnerStateAuthority,
 	writeLearnerBlockState,
 } from "./learner-block-state";
+import type { LearnerStateValue } from "./learner-state";
 import { selfCheckEpochTicket } from "./self-check-consumers";
 
 afterEach(() => {
@@ -92,6 +94,33 @@ it("refuses a revoked provider write without relying on the caller to check", ()
 	expect(writeLearnerBlockState("check", { answer: "fresh" }, selfCheckEpochTicket())).toBe(true);
 	expect(successor).toHaveBeenCalledExactlyOnceWith("check", { answer: "fresh" });
 });
+
+it.each(["document", "captured"] as const)(
+	"rechecks %s write authority after the group save handoff",
+	(owner) => {
+		let current = true;
+		const set = vi.fn();
+		const provider = {
+			get: () => undefined,
+			set,
+			prepareGroupState(_id: string, value: LearnerStateValue) {
+				current = false;
+				return value;
+			},
+		};
+		window.__praxityBlockState = provider;
+		if (owner === "document") expect(writeLearnerBlockState("g", {}, () => current)).toBe(false);
+		else
+			expect(
+				captureLearnerBlockState(provider, () => current).write(
+					"g",
+					{},
+					{ current: () => current },
+				),
+			).toBeUndefined();
+		expect(set).not.toHaveBeenCalled();
+	},
+);
 
 it("fences later tracker writes after an injected write revokes its lifetime", () => {
 	let active = true;

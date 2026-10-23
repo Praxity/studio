@@ -76,6 +76,70 @@ export interface DeferredGroupObjective {
 	passed: boolean;
 }
 
+/** Objective values are percentages, both when submitted and when restored. */
+export function isGroupObjectiveScore(value: unknown): value is number {
+	return isFiniteNumber(value) && value >= 0 && value <= 100;
+}
+
+/** Refuse malformed evidence without replacing or normalizing its saved bytes. */
+export function readDeferredGroupObjective(value: unknown): DeferredGroupObjective | undefined {
+	if (!isRecord(value) || !isRecord(value.submitted)) return undefined;
+	const objective = value.submitted.deferredObjective;
+	if (objective === undefined) return undefined;
+	if (
+		!isRecord(objective) ||
+		!isNonemptyString(objective.id) ||
+		!isGroupObjectiveScore(objective.score) ||
+		typeof objective.passed !== "boolean"
+	)
+		throw new TypeError("Invalid deferred group objective");
+	return objective as unknown as DeferredGroupObjective;
+}
+
+export function groupObjectiveSequence(value: unknown): number {
+	const sequence = isRecord(value) ? value.objectiveSequence : undefined;
+	if (sequence === undefined) return 0;
+	if (!isCounter(sequence)) throw new TypeError("Invalid group objective sequence");
+	return sequence as number;
+}
+
+/** The objective event precedes the group save on non-staging destinations. */
+export function prepareGroupObjectiveSave(
+	previous: unknown,
+	next: LearnerStateValue,
+	pending?: DeferredGroupObjective & { contentSignature: string },
+	clearId?: string,
+): LearnerStateValue {
+	if (!readSavedAssessmentGroupState(next) || !isRecord(next)) return next;
+	const previousObjective = readDeferredGroupObjective(previous);
+	readDeferredGroupObjective(next);
+	const sequence = Math.max(groupObjectiveSequence(previous), groupObjectiveSequence(next));
+	const state = { ...next };
+	const submitted = isRecord(state.submitted) ? state.submitted : undefined;
+	const previousSubmission =
+		isRecord(previous) && isRecord(previous.submitted) ? previous.submitted : undefined;
+	if (submitted) {
+		const { deferredObjective: _previous, ...capture } = submitted;
+		// Reentrant submission may have replaced the obligation being acknowledged.
+		const retained =
+			previousSubmission?.contentSignature === submitted.contentSignature &&
+			previousObjective?.id !== clearId
+				? previousObjective
+				: undefined;
+		const objective =
+			pending && pending.contentSignature === submitted.contentSignature ? pending : retained;
+		state.submitted = objective
+			? {
+					...capture,
+					deferredObjective: { id: objective.id, score: objective.score, passed: objective.passed },
+				}
+			: capture;
+	}
+	const nextSequence = Math.max(sequence, pending ? Number(pending.id) : 0);
+	if (nextSequence) state.objectiveSequence = nextSequence;
+	return state as LearnerStateValue;
+}
+
 export interface SavedAssessmentGroupState {
 	version: 1;
 	kind: "assessmentGroup";
@@ -115,15 +179,12 @@ export function readSubmittedAssessmentGroup(value: unknown):
 		!isChoiceContentSignature(value.submitted.contentSignature)
 	)
 		return undefined;
-	const objective = value.submitted.deferredObjective;
-	if (
-		objective !== undefined &&
-		(!isRecord(objective) ||
-			!isNonemptyString(objective.id) ||
-			!isFiniteNumber(objective.score) ||
-			typeof objective.passed !== "boolean")
-	)
+	let objective: DeferredGroupObjective | undefined;
+	try {
+		objective = readDeferredGroupObjective(value);
+	} catch {
 		return undefined;
+	}
 	return {
 		state: value as Record<string, LearnerStateValue>,
 		submitted: value.submitted as Record<string, LearnerStateValue>,

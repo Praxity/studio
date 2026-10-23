@@ -9,7 +9,7 @@ export type GroupObjectiveWriter = (
 	runtime: OutcomeRuntime,
 	outcome: CourseOutcome,
 	view: ChoiceDependencyEvidence | undefined,
-	objective?: { id: string; score: number; passed: boolean },
+	objective?: { id: string; score: number; passed: boolean; contentSignature?: string },
 ) => boolean;
 
 export type LearnerBlockSaveResult =
@@ -26,6 +26,8 @@ export type LearnerBlockSaveResult =
 	  };
 
 export interface LearnerBlockStateRuntime {
+	/** The admitted obligation owner joins an objective-first submission to its following save. */
+	prepareGroupState?(blockId: string, value: LearnerStateValue): LearnerStateValue;
 	/** Optional reporting capability, captured for the admitted tracker's lifetime. */
 	getChoiceReporting?(current: () => boolean): {
 		getChoiceDependencyView: () => ChoiceDependencyEvidence | undefined;
@@ -125,8 +127,19 @@ export function writeLearnerBlockState(
 ): boolean {
 	const provider = doc?.defaultView?.__praxityBlockState;
 	if (!provider || !current()) return false;
-	provider.set(blockId, value);
-	return current();
+	return storeLearnerBlockState(provider, blockId, value, current) && current();
+}
+
+function storeLearnerBlockState(
+	provider: LearnerBlockStateRuntime,
+	blockId: string,
+	value: LearnerStateValue,
+	current: () => boolean,
+): boolean {
+	const prepared = provider.prepareGroupState?.(blockId, value) ?? value;
+	if (!current()) return false;
+	provider.set(blockId, prepared);
+	return true;
 }
 
 export function readLearnerBlockSaveResult(blockId: string): LearnerBlockSaveResult | undefined {
@@ -168,7 +181,8 @@ export function captureLearnerBlockState(
 		},
 		write(blockId: string, value: LearnerStateValue, ticket: { current(): boolean }) {
 			if (!lifetime() || !ticket.current() || !provider) return undefined;
-			provider.set(blockId, value);
+			if (!storeLearnerBlockState(provider, blockId, value, () => lifetime() && ticket.current()))
+				return undefined;
 			// A saved receipt is also evidence of stored bytes, even if an injected set
 			// queued a newer edit. The session must not certify that newer draft with it.
 			return lifetime() ? provider.getSaveResult?.(blockId) : undefined;
