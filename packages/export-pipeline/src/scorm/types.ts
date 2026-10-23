@@ -149,6 +149,32 @@ export function assessmentEvidenceMetadata(input?: unknown): AssessmentAttemptMe
 	};
 }
 
+/** A rejected row carries identity, never a fabricated answer or result. */
+export interface RejectedInteractionEvidence {
+	id: string;
+	choiceEvidenceInvalid: true;
+}
+
+export type InteractionEvidence = InteractionRecord | RejectedInteractionEvidence;
+
+/** Dormant row admission. The transport owns ordinary row acceptance. */
+export function assessmentRowEvidence(
+	input: unknown,
+	accepted: boolean,
+): InteractionEvidence | null {
+	if (!input || typeof input !== "object") return null;
+	const record = input as Record<string, unknown>;
+	const metadata = assessmentEvidenceMetadata(record);
+	const signed = record.contentSignature !== undefined || metadata.choiceEvidenceInvalid === true;
+	// Without identity, no dependency can be marked invalid. Refuse the whole evidence read.
+	if (signed && !isNonemptyString(record.id))
+		throw new Error("Unidentifiable interaction evidence");
+	if (!accepted) {
+		return signed ? { id: record.id as string, choiceEvidenceInvalid: true } : null;
+	}
+	return { ...(record as unknown as InteractionRecord), ...metadata };
+}
+
 export interface TrackInteractionOptions extends AssessmentAttemptMetadata {
 	/** Report adapters own their field limits; learner UI may disclose a cut answer. */
 	onResponseTruncated?: (responseLimit: number) => void;

@@ -21,7 +21,9 @@ import { applyXapiPrivatePolicy } from "../private-xapi-policy";
 import { filterPrivateSuspendData } from "@praxity/shared-blocks/block-state-policy";
 import { declaredCourseActivityId, isAbsoluteIri } from "../activity-id.ts";
 import {
+	assessmentRowEvidence,
 	DEVICE_DESTINATIONS,
+	type InteractionEvidence,
 	type InteractionRecord,
 	prepareRuntimeCommit,
 	type RuntimeCommitPreparation,
@@ -48,6 +50,34 @@ const VERBS = {
 } as const;
 
 type VerbKey = keyof typeof VERBS;
+
+/** Ordinary transport validation also supplies the dormant signed reader's acceptance. */
+function isXapiInteractionRecord(item: unknown): item is InteractionRecord {
+	const record = item as Record<string, unknown> | null;
+	const isNumber = (value: unknown) => typeof value === "number" && Number.isFinite(value);
+	return (
+		!!record &&
+		typeof record.id === "string" &&
+		typeof record.response === "string" &&
+		isNumber(record.timestamp) &&
+		(record.correct === undefined || typeof record.correct === "boolean") &&
+		(record.score === undefined || isNumber(record.score))
+	);
+}
+
+/** Dormant restoration entry. Production keeps its ordinary reader until activation. */
+export function readXapiInteractionEvidence(raw: string): InteractionEvidence[] | null {
+	try {
+		const value = JSON.parse(raw) as { interactions?: unknown } | null;
+		if (!Array.isArray(value?.interactions)) return null;
+		return value.interactions.flatMap((item) => {
+			const row = assessmentRowEvidence(item, isXapiInteractionRecord(item));
+			return row ? [row] : [];
+		});
+	} catch {
+		return null;
+	}
+}
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -242,17 +272,7 @@ export class XapiRuntime implements SCORMRuntime {
 			if (Array.isArray(value.visitedPages))
 				this.visitedPages = value.visitedPages.filter(isString);
 			if (Array.isArray(value.interactions))
-				this.interactions = value.interactions.flatMap((item) => {
-					const record = item as Record<string, unknown>;
-					return record &&
-						isString(record.id) &&
-						isString(record.response) &&
-						isNumber(record.timestamp) &&
-						(record.correct === undefined || typeof record.correct === "boolean") &&
-						(record.score === undefined || isNumber(record.score))
-						? [record as unknown as InteractionRecord]
-						: [];
-				});
+				this.interactions = value.interactions.filter(isXapiInteractionRecord);
 			if (["incomplete", "completed", "passed", "failed"].includes(String(value.completionStatus)))
 				this.completionStatus = value.completionStatus as string;
 			if (value.successStatus === "passed" || value.successStatus === "failed")
