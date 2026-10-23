@@ -215,6 +215,7 @@ for (const { locale, variant, presentation, theme, key } of cases) {
 		page,
 	}, testInfo) => {
 		await page.goto(base + entries[key]);
+		await expect(page.locator("html")).toHaveAttribute("data-praxity-mode", theme);
 		const activity = page.locator(`[data-island="assessment"][data-block-id="${questionId}"]`);
 		await expect(activity).toHaveAttribute("data-hydrated", "");
 		const controls = activity.getByRole(variant === "multiple" ? "checkbox" : "radio");

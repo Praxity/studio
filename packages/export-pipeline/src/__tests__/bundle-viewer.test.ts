@@ -1267,12 +1267,15 @@ describe("computeViewerSourceHash", () => {
 				expect(await readFile(path.join(outDir, file), "utf8")).not.toContain("data-practice-mode");
 		});
 
-		it("keeps dormant admission and hashing out of SCORM support", () => {
-			expect(buildInputs).not.toContain(
+		it("keeps dormant recovery admission in the assessment UI and out of SCORM support", async () => {
+			expect(buildInputs).toContain(
 				path.resolve(import.meta.dirname, "../../../shared-blocks/src/choice-learner-state.ts"),
 			);
 			const support = result.manifest.hostDependencies?.scorm12?.[0];
 			if (!support) throw new Error("Missing SCORM support");
+			const source = await readFile(path.join(outDir, support), "utf8");
+			expect(source).not.toContain("Invalid compiled choice facts");
+			expect(source).not.toContain("choiceEvidenceInvalid");
 			expect(result.manifest.thirdPartyNotices?.outputs[support] ?? []).not.toEqual(
 				expect.arrayContaining([expect.stringMatching(/^@noble\/hashes@/)]),
 			);
