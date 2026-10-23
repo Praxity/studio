@@ -321,18 +321,20 @@ export class Scorm12Runtime implements SCORMRuntime {
 			const privateAppend =
 				globalThis.__praxityPrivateState !== false &&
 				Object.values(this.blockStatePolicy).includes("device");
-			const idx = privateAppend
-				? appendPrivateScorm12Interaction(
-						this.session,
-						(key) => this.lmsGetValue(key),
-						(key, value) => this.lmsSetValue(key, value),
-						id,
-						data.interactions.length - 1,
-					)
-				: Math.max(
-						data.interactions.length - 1,
-						Number(this.api?.LMSGetValue("cmi.interactions._count")) || 0,
-					);
+			let idx: number | undefined;
+			if (privateAppend) {
+				idx = appendPrivateScorm12Interaction(
+					this.session,
+					(key) => this.lmsGetValue(key),
+					(key, value) => this.lmsSetValue(key, value),
+					id,
+					data.interactions.length - 1,
+				);
+			} else {
+				// Suspend history can include refused rows; prefer the LMS's accepted count.
+				const count = Number(this.api?.LMSGetValue("cmi.interactions._count") || NaN);
+				idx = Number.isNaN(count) ? data.interactions.length - 1 : count;
+			}
 			if (globalThis.__praxityPrivateState === false || idx !== undefined) {
 				if (globalThis.__praxityPrivateState === false || !privateAppend)
 					this.lmsSetValue(`cmi.interactions.${idx}.id`, id);

@@ -356,7 +356,7 @@ export class Scorm2004Runtime implements SCORMRuntime {
 				? response
 				: truncateInteractionResponse(response, SCORM2004_RESPONSE_LIMIT);
 
-		this.setValue(`cmi.interactions.${n}.id`, id);
+		if (!this.setValue(`cmi.interactions.${n}.id`, id)) return;
 		// An accepted ID consumes the row, even if a later reporting field fails.
 		this.interactionCount++;
 
