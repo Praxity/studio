@@ -102,7 +102,7 @@ export function readDeferredGroupObjective(
 		typeof objective.passed !== "boolean"
 	)
 		return null;
-	return objective as unknown as DeferredGroupObjective;
+	return { id: objective.id, score: objective.score, passed: objective.passed };
 }
 
 /** Preserve only named rejected metadata; a replacement never inherits an old capture. */
@@ -130,6 +130,8 @@ export function prepareGroupObjectiveSave(
 	for (const source of [previous, next]) {
 		if (!isRecord(source)) continue;
 		const entries = Array.isArray(source.rejectedObjectives) ? [...source.rejectedObjectives] : [];
+		if (Object.hasOwn(source, "rejectedObjectives") && !Array.isArray(source.rejectedObjectives))
+			entries.push({ field: "rejectedObjectives", value: source.rejectedObjectives });
 		if (Object.hasOwn(source, "objectiveSequence"))
 			entries.push({ field: "objectiveSequence", value: source.objectiveSequence });
 		if (readDeferredGroupObjective(source) === null)

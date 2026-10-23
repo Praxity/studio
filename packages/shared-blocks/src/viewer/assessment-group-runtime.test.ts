@@ -25,6 +25,41 @@ function assessmentMember(id: string, completed = false): string {
 	return `<div class="praxity-block praxity-block-assessment" data-block-id="${id}"><div class="praxity-block-assessment" data-block-id="${id}" data-assessment-display="standard" data-assessment-answered="false" data-score="100" data-max-score="100" data-passed="true"${completed ? ' data-completed="true"' : ""}><p class="praxity-assessment-stem">Question ${id}</p><input type="radio" name="${id}" aria-label="Answer ${id}"><button type="button" data-assessment-submit="true">Submit</button></div></div>`;
 }
 
+it.each([
+	["mode mismatch", "all", "q1"],
+	["removed oneOf member", "oneOf", "removed"],
+])("starts fresh after a saved %s", async (_reason, mode, selectedMemberId) => {
+	const values = installLearnerBlockState();
+	const saved = {
+		version: 1,
+		kind: "assessmentGroup",
+		mode: "oneOf",
+		selectedMemberId,
+		completed: true,
+	};
+	values.set("group", saved);
+	document.body.innerHTML = assessmentMember("q1", true) + assessmentMember("q2", true);
+	for (const card of document.querySelectorAll("[data-assessment-display]"))
+		card.setAttribute("data-assessment-answered", "true");
+	const dispose = initAssessmentGroups({
+		blocks: [
+			{ id: "group", type: "assessmentGroup", data: { mode, memberBlockIds: ["q1", "q2"] } },
+			{ id: "q1", type: "assessment", data: { gradingMode: "exact" } },
+			{ id: "q2", type: "assessment", data: { gradingMode: "exact" } },
+		] as PraxityBlock[],
+		root: document.body,
+	});
+	try {
+		await vi.waitFor(() => expect(document.querySelector(".praxity-ag-submit-btn")).not.toBeNull());
+		expect(document.querySelector("[data-assessment-group-results]")).toBeEmptyDOMElement();
+		if (mode === "oneOf")
+			expect(document.querySelector<HTMLInputElement>('input[value="q1"]')).toBeChecked();
+		expect(values.get("group")).toEqual(saved);
+	} finally {
+		dispose();
+	}
+});
+
 it("picker writes retain the raw capture through the view's single preparation path", async () => {
 	const values = installLearnerBlockState();
 	const submitted = {

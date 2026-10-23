@@ -28,6 +28,38 @@ function owner() {
 }
 
 describe("deferred group objective syntax", () => {
+	it("reads and saves only the three objective fields without changing the raw record", () => {
+		const api = owner();
+		const saved = group({ ...objective, extra: "ignored" });
+		const before = JSON.stringify(saved);
+		expect(api.readDeferredGroupObjective(saved)).toEqual(objective);
+		expect(api.readSubmittedAssessmentGroup(saved)?.objective).toEqual(objective);
+		expect(api.prepareGroupObjectiveSave(undefined, value(saved))).toEqual(group(objective));
+		expect(JSON.stringify(saved)).toBe(before);
+	});
+
+	it.each([null, "broken", 0, false, { field: "deferredObjective", value: "x" }])(
+		"retains a malformed rejection container verbatim, case %#",
+		(raw) => {
+			const api = owner();
+			const corrupt = { ...group(objective), rejectedObjectives: raw };
+			const before = JSON.stringify(corrupt);
+			const expected = {
+				...group(objective),
+				rejectedObjectives: [{ field: "rejectedObjectives", value: raw }],
+			};
+			for (const [previous, next] of [
+				[corrupt, group()],
+				[undefined, corrupt],
+			]) {
+				const saved = api.prepareGroupObjectiveSave(previous, value(next));
+				expect(saved).toEqual(expected);
+				expect(api.prepareGroupObjectiveSave(saved, value(saved))).toEqual(expected);
+			}
+			expect(JSON.stringify(corrupt)).toBe(before);
+		},
+	);
+
 	it("rejects array-shaped records even when they carry every named field", () => {
 		const api = owner();
 		expect(api.isGroupObjectiveId([objective.id])).toBe(false);
@@ -107,6 +139,7 @@ describe("deferred group objective syntax", () => {
 		"f029fc9d-1759-17f2-8e31-4f2f570d223e",
 		"f029fc9d-1759-47f2-7e31-4f2f570d223e",
 		`${objective.id}x`,
+		`x${objective.id}`,
 		null,
 	])("3: an incoming identity %s refuses", (id) => {
 		expect(

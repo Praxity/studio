@@ -15,11 +15,11 @@ import { JSDOM } from "jsdom";
 import { expect, it, vi } from "vitest";
 import { Scorm12Runtime } from "../src/scorm/api/scorm12";
 import {
+	encodeEvidence,
 	type Scorm12SuspendData,
 	scorm12CompactSuspendDataCodec,
 } from "../src/scorm/scorm12-suspend-data";
 import { createBlockStateRuntime } from "../template/src/hosts/block-state-runtime";
-import { encodeEvidence } from "./fixtures/compact-capacity.fixture";
 
 // Select the dormant signed metadata owner only for this injected adapter test.
 vi.mock("../src/scorm/types", async (original) => {
@@ -96,9 +96,7 @@ it.each([0, 1, 2])("5: 42 originals and %i UUID records save or refuse atomicall
 		parse: scorm12CompactSuspendDataCodec.parse,
 		serialize: (data: Scorm12SuspendData) => {
 			attempts.push(encodeEvidence(JSON.stringify(data)).length);
-			const wire = scorm12CompactSuspendDataCodec.serialize(data);
-			expect(wire).toBe(encodeEvidence(JSON.stringify(data)));
-			return wire;
+			return scorm12CompactSuspendDataCodec.serialize(data);
 		},
 	};
 	const values = new Map<string, string>();
@@ -185,7 +183,7 @@ it.each([0, 1, 2])("5: 42 originals and %i UUID records save or refuse atomicall
 					contentSignature,
 				});
 			if (index === 1) {
-				expect(report).toThrow("ESCORM12STORAGE");
+				expect(report).toThrow("ESCORM12STORAGE: replacement exceeds the character limit");
 				expect(attempts.at(-1)).toBe(4180);
 				expect(provider.get(id)).toBeUndefined();
 				expect(values.get("cmi.suspend_data")).toBe(before);
