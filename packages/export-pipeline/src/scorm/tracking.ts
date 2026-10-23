@@ -10,6 +10,7 @@ import { DEFAULT_COMPLETION_THRESHOLD } from "@praxity/shared-blocks/constants";
 import {
 	type CourseOutcome,
 	captureLearnerBlockState,
+	type GroupObjectiveWriter,
 	type LearnerBlockStateRuntime,
 	writeCourseOutcome,
 } from "@praxity/shared-blocks/learner-block-state";
@@ -60,9 +61,8 @@ export interface TrackingConfig {
 	getAssessmentState?: (id: string) => unknown;
 	/** Absent until the host admits evidence-aware reporting. */
 	getChoiceDependencyView?: () => ChoiceDependencyEvidence | undefined;
-	/** Captured provider, retaining the admitted document's write authority. */
-	groupObjectiveState?: LearnerBlockStateRuntime;
-	groupObjectiveCurrent?: () => boolean;
+	/** Dormant obligation owner, supplied only by an evidence-aware provider. */
+	writeObjectives?: GroupObjectiveWriter;
 }
 
 interface CourseResult {
@@ -73,6 +73,73 @@ interface CourseResult {
 
 type TrackerOutcome = CourseOutcome & { result?: CourseResult | null };
 
+/** Storage and replay stay out of ordinary bundles until a provider installs this owner. */
+export function createDeferredGroupObjectiveWriter(
+	provider: LearnerBlockStateRuntime,
+	current: () => boolean,
+): GroupObjectiveWriter {
+	const ticket = { current };
+	const access = captureLearnerBlockState(provider, current);
+	let replaying = false;
+	const clear = (id: string, obligation: string) => {
+		const saved = readSubmittedAssessmentGroup(provider.get(id));
+		// Reentrant submission may have replaced this obligation while the writer ran.
+		if (saved?.objective?.id !== obligation) return;
+		const { deferredObjective: _replayed, ...submitted } = saved.submitted;
+		access.write(id, { ...saved.state, submitted }, ticket);
+	};
+	return (runtime, outcome, view, submittedObjective) => {
+		if (
+			outcome.kind === "waiting" &&
+			submittedObjective &&
+			Object.hasOwn(view?.groups ?? {}, submittedObjective.id)
+		) {
+			const { id, score, passed } = submittedObjective;
+			const saved = readSubmittedAssessmentGroup(provider.get(id));
+			if (saved)
+				access.write(
+					id,
+					{
+						...saved.state,
+						submitted: {
+							...saved.submitted,
+							deferredObjective: { id: crypto.randomUUID(), score, passed },
+						},
+					},
+					ticket,
+				);
+		}
+		if (replaying) return writeCourseOutcome(runtime, outcome);
+		let superseded: { id: string; obligation: string } | undefined;
+		replaying = true;
+		try {
+			if (outcome.kind === "decided" && view) {
+				for (const id of Object.keys(view.groups ?? {})) {
+					if (provider.getSaveResult?.(id)?.status === "not-saved") continue;
+					const saved = readSubmittedAssessmentGroup(provider.get(id));
+					const objective = saved?.objective;
+					if (!objective || view.status(id) !== "current") continue;
+					if (outcome.objective?.id === id) {
+						superseded = { id, obligation: objective.id };
+						continue;
+					}
+					const acknowledged = writeCourseOutcome(runtime, {
+						kind: "decided",
+						objective: { id, score: objective.score, passed: objective.passed },
+					});
+					if (!acknowledged) continue;
+					clear(id, objective.id);
+				}
+			}
+			const acknowledged = writeCourseOutcome(runtime, outcome);
+			if (acknowledged && superseded) clear(superseded.id, superseded.obligation);
+			return acknowledged;
+		} finally {
+			replaying = false;
+		}
+	};
+}
+
 // ---------------------------------------------------------------------------
 // CourseTracker
 // ---------------------------------------------------------------------------
@@ -80,18 +147,10 @@ type TrackerOutcome = CourseOutcome & { result?: CourseResult | null };
 export class CourseTracker {
 	private runtime: SCORMRuntime;
 	private config: TrackingConfig;
-	private replayingObjectives = false;
-	private groupObjectiveAccess: ReturnType<typeof captureLearnerBlockState>;
-	private groupObjectiveTicket: { current(): boolean };
 
 	constructor(runtime: SCORMRuntime, config: TrackingConfig) {
 		this.runtime = runtime;
 		this.config = config;
-		this.groupObjectiveTicket = { current: config.groupObjectiveCurrent ?? (() => true) };
-		this.groupObjectiveAccess = captureLearnerBlockState(
-			config.groupObjectiveState,
-			this.groupObjectiveTicket.current,
-		);
 	}
 
 	/**
@@ -148,24 +207,8 @@ export class CourseTracker {
 
 	trackGroupObjective(id: string, score: number, passed: boolean, runtime = this.runtime): void {
 		const view = this.config.getChoiceDependencyView?.();
-		const outcome = this.outcome({ id, score, passed }, view);
-		const provider = this.config.groupObjectiveState;
-		if (outcome.kind === "waiting" && provider && Object.hasOwn(view?.groups ?? {}, id)) {
-			const saved = readSubmittedAssessmentGroup(provider.get(id));
-			if (saved)
-				this.groupObjectiveAccess.write(
-					id,
-					{
-						...saved.state,
-						submitted: {
-							...saved.submitted,
-							deferredObjective: { id: crypto.randomUUID(), score, passed },
-						},
-					},
-					this.groupObjectiveTicket,
-				);
-		}
-		this.writeOutcome(runtime, outcome, view);
+		const objective = { id, score, passed };
+		this.writeOutcome(runtime, this.outcome(objective, view), view, objective);
 	}
 
 	finish(explicitFinish = false, runtime = this.runtime): boolean {
@@ -176,45 +219,12 @@ export class CourseTracker {
 		runtime: SCORMRuntime,
 		outcome: TrackerOutcome,
 		view = this.config.getChoiceDependencyView?.(),
+		objective?: { id: string; score: number; passed: boolean },
 	): boolean {
-		if (this.replayingObjectives) return writeCourseOutcome(runtime, outcome);
-		const provider = this.config.groupObjectiveState;
-		let superseded: { id: string; obligation: string } | undefined;
-		this.replayingObjectives = true;
-		try {
-			if (outcome.kind === "decided" && provider && view) {
-				for (const id of Object.keys(view.groups ?? {})) {
-					if (provider.getSaveResult?.(id)?.status === "not-saved") continue;
-					const saved = readSubmittedAssessmentGroup(provider.get(id));
-					const objective = saved?.objective;
-					if (!objective || view.status(id) !== "current") continue;
-					if (outcome.objective?.id === id) {
-						superseded = { id, obligation: objective.id };
-						continue;
-					}
-					const acknowledged = writeCourseOutcome(runtime, {
-						kind: "decided",
-						objective: { id, score: objective.score, passed: objective.passed },
-					});
-					if (!acknowledged) continue;
-					this.clearGroupObjective(provider, id, objective.id);
-				}
-			}
-			const acknowledged = writeCourseOutcome(runtime, outcome);
-			if (acknowledged && provider && superseded)
-				this.clearGroupObjective(provider, superseded.id, superseded.obligation);
-			return acknowledged;
-		} finally {
-			this.replayingObjectives = false;
-		}
-	}
-
-	private clearGroupObjective(provider: LearnerBlockStateRuntime, id: string, obligation: string) {
-		const current = readSubmittedAssessmentGroup(provider.get(id));
-		// Reentrant submission may have replaced this obligation while the writer ran.
-		if (current?.objective?.id !== obligation) return;
-		const { deferredObjective: _replayed, ...submitted } = current.submitted;
-		this.groupObjectiveAccess.write(id, { ...current.state, submitted }, this.groupObjectiveTicket);
+		return (
+			this.config.writeObjectives?.(runtime, outcome, view, objective) ??
+			writeCourseOutcome(runtime, outcome)
+		);
 	}
 
 	private average(scores: InteractionRecord[]): number {

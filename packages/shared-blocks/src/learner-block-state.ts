@@ -1,9 +1,16 @@
 import type { ChoiceDependencyEvidence } from "./choice-learner-state";
 import type { LearnerStateValue } from "./learner-state";
 import type { SelfCheckTicket } from "./self-check-session";
-import { finishRuntimeCourse } from "./tracking";
+import { type CourseOutcome, finishRuntimeCourse, type OutcomeRuntime } from "./tracking";
 
 export { type CourseOutcome, writeCourseOutcome } from "./tracking";
+
+export type GroupObjectiveWriter = (
+	runtime: OutcomeRuntime,
+	outcome: CourseOutcome,
+	view: ChoiceDependencyEvidence | undefined,
+	objective?: { id: string; score: number; passed: boolean },
+) => boolean;
 
 export type LearnerBlockSaveResult =
 	| { status: "pending" }
@@ -19,8 +26,11 @@ export type LearnerBlockSaveResult =
 	  };
 
 export interface LearnerBlockStateRuntime {
-	/** Optional evidence capability; ordinary providers do not install it. */
-	getChoiceDependencyView?(): ChoiceDependencyEvidence | undefined;
+	/** Optional reporting capability, captured for the admitted tracker's lifetime. */
+	getChoiceReporting?(current: () => boolean): {
+		getChoiceDependencyView: () => ChoiceDependencyEvidence | undefined;
+		writeObjectives: GroupObjectiveWriter;
+	};
 	get(blockId: string): LearnerStateValue | undefined;
 	/** Read-only saved envelope revision; null cannot establish preview build evidence. */
 	getSavedBuildRevision?(blockId: string): string | null;

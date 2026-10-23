@@ -152,9 +152,7 @@ export function initializeCourseHost(
 		provider: LearnerBlockStateRuntime,
 	) =>
 		new CourseTracker(withLearnerStateAuthority(runtime, current), {
-			groupObjectiveState: withLearnerStateAuthority(provider, current),
-			groupObjectiveCurrent: current,
-			getChoiceDependencyView: () => provider.getChoiceDependencyView?.(),
+			...provider.getChoiceReporting?.(current),
 			totalPages: page.totalPages,
 			completionMethod: page.completionMethod,
 			completionThreshold: page.completionThreshold,

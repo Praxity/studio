@@ -1288,6 +1288,7 @@ describe("computeViewerSourceHash", () => {
 				const code = await readFile(path.join(outDir, file), "utf8");
 				expect(code, file).not.toContain("Unidentifiable interaction evidence");
 				expect(code, file).not.toContain("choiceEvidenceInvalid");
+				expect(code, file).not.toContain("deferredObjective");
 			}
 		});
 

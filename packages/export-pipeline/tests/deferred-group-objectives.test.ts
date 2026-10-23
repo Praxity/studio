@@ -5,6 +5,7 @@ import { JSDOM } from "jsdom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Scorm12Runtime } from "../src/scorm/api/scorm12";
 import { Scorm2004Runtime } from "../src/scorm/api/scorm2004";
+import * as tracking from "../src/scorm/tracking";
 import { CourseTracker, type TrackingConfig } from "../src/scorm/tracking";
 import { createBlockStateRuntime } from "../template/src/hosts/block-state-runtime";
 import { initializeScormCourseHost } from "../template/src/hosts/course-host";
@@ -125,7 +126,7 @@ function launch(format: "scorm12" | "scorm2004") {
 			completionMethod: "allPages",
 			requiredAssessmentIds: ["q"],
 			getChoiceDependencyView: evidence,
-			groupObjectiveState: provider,
+			writeObjectives: tracking.createDeferredGroupObjectiveWriter?.(provider, () => true),
 		}) as TrackingConfig;
 	let tracker = new CourseTracker(runtime, config());
 	const objectives = () => writes.filter(([key]) => key.startsWith("cmi.objectives."));
@@ -270,7 +271,7 @@ describe.each(["scorm12", "scorm2004"] as const)("%s deferred group objectives",
 			withLearnerStateAuthority(host.runtime, () => false),
 			{
 				...host.config(),
-				groupObjectiveState: withLearnerStateAuthority(host.provider, () => false),
+				writeObjectives: tracking.createDeferredGroupObjectiveWriter?.(host.provider, () => false),
 			} as TrackingConfig,
 		);
 		host.provider.set("q", answer());
@@ -349,7 +350,7 @@ describe.each(["scorm12", "scorm2004"] as const)("%s deferred group objectives",
 		};
 		const tracker = new CourseTracker(host.runtime, {
 			...host.config(),
-			groupObjectiveState: provider,
+			writeObjectives: tracking.createDeferredGroupObjectiveWriter?.(provider, () => true),
 		} as TrackingConfig);
 		host.provider.set("q", answer());
 		tracker.checkCompletion();
@@ -389,7 +390,10 @@ describe.each(["scorm12", "scorm2004"] as const)("%s deferred group objectives",
 		Object.defineProperty(win, "__praxityBlockState", {
 			...descriptor,
 			set(provider: LearnerBlockStateRuntime) {
-				provider.getChoiceDependencyView = host.evidence;
+				provider.getChoiceReporting = (current) => ({
+					getChoiceDependencyView: host.evidence,
+					writeObjectives: tracking.createDeferredGroupObjectiveWriter?.(provider, current),
+				});
 				installProvider(provider);
 			},
 		});
