@@ -320,7 +320,7 @@ for (const { locale, variant, presentation, theme, key } of cases) {
 				await action.hover();
 				// Leave room above the action for its focus outline in the short pane.
 				await page.mouse.wheel(0, -16);
-				await action.focus({ preventScroll: true });
+				await action.focus();
 				await expect(async () => {
 					const layout = await readLayout();
 					expect(layout.pageWidth).toBeLessThanOrEqual(layout.viewport);
