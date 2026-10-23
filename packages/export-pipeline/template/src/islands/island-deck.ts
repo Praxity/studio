@@ -2,6 +2,7 @@ import { type DeckDesign, resolveDeckDesign } from "@praxity/grammar/src/deck-de
 import { getStrings, interpolate } from "@praxity/shared-blocks/i18n/strings";
 import {
 	learnerRuntime,
+	learnerScore,
 	learnerTracker,
 	readLearnerBlockPolicy,
 } from "@praxity/shared-blocks/learner-block-state";
@@ -205,7 +206,12 @@ export function initDeck(): (() => void) | undefined {
 	for (const page of pages)
 		for (const gate of page.gates)
 			if (selfCheckConsumers()?.read(gate.id)) selfCheckIds.add(gate.id);
+	const gateCurrent = (id: string) => {
+		const view = window.__praxityBlockState?.getChoiceDependencyView?.();
+		return !view || view.status(id) === "current";
+	};
 	const canPersistGate = (id: string) => {
+		if (!gateCurrent(id)) return false;
 		const policy = readLearnerBlockPolicy(id);
 		// Self-check reporting requires explicit host permission, including missing-provider paths.
 		return policy !== "device" && (!selfCheckIds.has(id) || policy === "lms");
@@ -227,7 +233,17 @@ export function initDeck(): (() => void) | undefined {
 	for (const response of (learnerRuntime(mount) as SCORMRuntime | undefined)?.getInteractions() ??
 		[]) {
 		const gate = pages.flatMap((page) => page.gates).find((item) => item.id === response.id);
-		if (gate && canPersistGate(gate.id) && gateSatisfied(gate.rule, response.correct))
+		if (
+			gate &&
+			canPersistGate(gate.id) &&
+			gateSatisfied(
+				gate.rule,
+				response.correct,
+				window.__praxityBlockState?.getChoiceDependencyView?.()
+					? learnerTracker(mount)?.isAssessmentFinal?.(gate.id)
+					: false,
+			)
+		)
 			released.add(gate.id);
 	}
 	// The self-check asset can restore before this chunk installs its listener.
@@ -334,13 +350,28 @@ export function initDeck(): (() => void) | undefined {
 		target.addEventListener(event, handler, { signal: listeners.signal });
 	// Module links and browser history leave the document without a local slide move.
 	on(window, "pagehide", () => removeScormResumeCue(root));
-	const gateReleased = (id: string) => {
+	const gateReleased = (gate: DeckPage["gates"][number]) => {
+		const id = gate.id;
+		if (!gateCurrent(id)) return false;
+		const view = window.__praxityBlockState?.getChoiceDependencyView?.();
+		if (view && (Object.hasOwn(view.questions, id) || Object.hasOwn(view.groups ?? {}, id))) {
+			const row = (learnerRuntime(mount) as SCORMRuntime | undefined)
+				?.getInteractions()
+				.slice()
+				.reverse()
+				.find((row) => row.id === id);
+			if (
+				!row ||
+				!gateSatisfied(gate.rule, row?.correct, learnerTracker(mount)?.isAssessmentFinal?.(id))
+			)
+				return false;
+		}
 		if (!selfCheckIds.has(id)) return released.has(id);
 		const activity = selfCheckConsumers()?.read(id);
 		return activity?.ready === true && activity.available && activity.completed;
 	};
 	const gateLimit = () => {
-		const locked = pages.findIndex((page) => page.gates.some((gate) => !gateReleased(gate.id)));
+		const locked = pages.findIndex((page) => page.gates.some((gate) => !gateReleased(gate)));
 		return locked < 0 ? pages.length - 1 : locked;
 	};
 	const reachLimit = (destination: number) => {
@@ -354,9 +385,7 @@ export function initDeck(): (() => void) | undefined {
 		return Math.min(reached + 1, gateLimit(), pages.length - 1);
 	};
 	const accessNotice = (destination: number): AccessNotice =>
-		pages[reachLimit(destination)].gates.some((gate) => !gateReleased(gate.id))
-			? "gate"
-			: "sequence";
+		pages[reachLimit(destination)].gates.some((gate) => !gateReleased(gate)) ? "gate" : "sequence";
 	const showAccessNotice = (reason: AccessNotice) =>
 		setStatus(
 			reason === "gate" ? t.locked : t.visitEarlier,
@@ -375,7 +404,7 @@ export function initDeck(): (() => void) | undefined {
 	const updateGateNotice = () => {
 		const gate =
 			status.dataset.kind === "gate"
-				? pages[current].gates.find((item) => !gateReleased(item.id))
+				? pages[current].gates.find((item) => !gateReleased(item))
 				: undefined;
 		gateTarget = gate
 			? Array.from(
@@ -444,10 +473,7 @@ export function initDeck(): (() => void) | undefined {
 		find("more-playback").hidden = completing || !player;
 		const nextLabel = nextModuleLabel(config.sourceLocale, pages[lastLocal + 1]);
 		updateGateNotice();
-		if (
-			status.dataset.kind === "gate" &&
-			pages[current].gates.every((gate) => gateReleased(gate.id))
-		)
+		if (status.dataset.kind === "gate" && pages[current].gates.every((gate) => gateReleased(gate)))
 			setStatus("");
 		for (const [id, label] of [
 			[
@@ -1073,7 +1099,7 @@ export function initDeck(): (() => void) | undefined {
 				if (!window.__praxityNavigatePageHref?.(href)) location.assign(href);
 			}
 		} else if (current === lastLocal && completion) {
-			if (pages[current].gates.some((gate) => !gateReleased(gate.id))) {
+			if (pages[current].gates.some((gate) => !gateReleased(gate))) {
 				showAccessNotice("gate");
 				return;
 			}
@@ -1106,7 +1132,7 @@ export function initDeck(): (() => void) | undefined {
 					root,
 					labels,
 					learnerTracker(mount)?.getOutcome?.(),
-					learnerRuntime(mount)?.getScore?.(),
+					learnerScore(mount),
 				);
 			refresh();
 			completion.querySelector<HTMLElement>("h1")?.focus({ preventScroll: true });

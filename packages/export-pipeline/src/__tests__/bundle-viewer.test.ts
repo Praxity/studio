@@ -1300,7 +1300,9 @@ describe("computeViewerSourceHash", () => {
 			// Owner C5 previously measured
 			// 39,577 / 131,639 B; HL04 caps were 36,864 / 129,024 B.
 			// Recovery measures at most 138,176 B gzip for the deck; add 1 KiB rounded up to 256 B.
-			const caps = { page: 44_288, deck: 139_264 };
+			// Size caps don't block working features (owner rule): dormant gate/display support measures 44,302 B gzip for the page; round up to 256 B.
+			// Keep this tighter page cap during prerequisites; measure the usual 1 KiB headroom with activation.
+			const caps = { page: 44_544, deck: 139_264 };
 			const page = {
 				id: "highlight-page",
 				title: "Highlight",

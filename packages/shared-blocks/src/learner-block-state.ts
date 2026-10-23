@@ -19,7 +19,7 @@ export type LearnerBlockSaveResult =
 	  };
 
 export interface LearnerBlockStateRuntime {
-	/** Absent until the host admits evidence-aware recovery and reporting. */
+	/** Absent until the host admits evidence-aware consumers together. */
 	getChoiceDependencyView?(): ChoiceDependencyEvidence | undefined;
 	get(blockId: string): LearnerStateValue | undefined;
 	/** Read-only saved envelope revision; null cannot establish preview build evidence. */
@@ -42,6 +42,8 @@ declare global {
 		__praxityTracker?: {
 			trackPageVisit?: (pageId: string, bookmark?: string) => void;
 			getOutcome?: () => { score: number; passed: boolean } | undefined;
+			getCurrentScore?: () => { raw: number; min: number; max: number } | null;
+			isAssessmentFinal?: (id: string) => boolean;
 		};
 		__praxityRuntime?: {
 			trackNavigation?: (fromPageId: string, toPageId: string, trigger: string) => void;
@@ -71,6 +73,15 @@ export function learnerTracker(
 ) {
 	const tracker = doc?.defaultView?.__praxityTracker;
 	return tracker && withLearnerStateAuthority(tracker, current);
+}
+
+/** The tracker preserves recorded display inputs unless admitted evidence has history. */
+export function learnerScore(
+	current: () => boolean,
+	doc: Document | undefined = globalThis.document,
+) {
+	const score = learnerTracker(current, doc)?.getCurrentScore?.();
+	return score === undefined ? learnerRuntime(current, doc)?.getScore?.() : score;
 }
 
 export function finishLearnerCourse(
