@@ -80,10 +80,8 @@ export function learnerScore(
 	current: () => boolean,
 	doc: Document | undefined = globalThis.document,
 ) {
-	const tracker = learnerTracker(current, doc);
-	return tracker?.getCurrentScore
-		? tracker.getCurrentScore()
-		: learnerRuntime(current, doc)?.getScore?.();
+	const score = learnerTracker(current, doc)?.getCurrentScore?.();
+	return score === undefined ? learnerRuntime(current, doc)?.getScore?.() : score;
 }
 
 export function finishLearnerCourse(

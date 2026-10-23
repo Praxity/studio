@@ -833,7 +833,9 @@ for (const format of ["xapi", "standalone"] as const)
 					...(scenario === "history" ? { contentSignature: `sha256:${"d".repeat(64)}` } : {}),
 				};
 				createBlockStateRuntime(original).set("check", state);
+				if (scenario === "retry") original.trackInteraction("check", "a", true, 100);
 				original.trackInteraction("check", "b", false, 0);
+				if (scenario === "retry") original.trackInteraction("other", "a", true, 100);
 				original.setSuspendData(
 					JSON.stringify({
 						...JSON.parse(original.getSuspendData() || "{}"),
@@ -881,7 +883,7 @@ it.each(["attempt", "pass"] as const)(
 	(rule) => {
 		setup(false);
 		const runtime = new LocalStorageRuntime(localStorage, "live-gate");
-		window.__praxityRuntime = runtime;
+		Object.assign(window, { __praxityRuntime: runtime });
 		const script = document.getElementById("praxity-config") as HTMLScriptElement;
 		const config = JSON.parse(script.textContent ?? "{}");
 		config.deckPages[0].gates = [{ id: "check", rule }];
@@ -923,6 +925,7 @@ it.each(["attempt", "pass"] as const)(
 		expect(
 			document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled"),
 		).toBe("true");
+		expect(JSON.parse(runtime.getSuspendData() || "{}").deck.released).toEqual([]);
 		current = true;
 		submit();
 		expect(
@@ -935,6 +938,101 @@ it.each(["attempt", "pass"] as const)(
 		).toBe("true");
 	},
 );
+
+it.each([false, true])(
+	"a cached choice release without a row retains legacy fallback, view=%s",
+	(admitted) => {
+		const { runtime } = setup(false);
+		runtime.getSuspendData.mockReturnValue(JSON.stringify({ deck: { released: ["check"] } }));
+		const view = () =>
+			createChoiceDependencyView(
+				admitChoiceStateFacts({
+					choiceStateQuestions: { check: gateQuestion },
+					choiceStateSignatures: { check: gateSignature },
+				}),
+				{ rows: [], readState: () => exhaustedGateState },
+			);
+		window.__praxityBlockState = {
+			get: () => exhaustedGateState,
+			set() {},
+			...(admitted ? { getChoiceDependencyView: view } : {}),
+		};
+		Object.assign(window.__praxityTracker ?? {}, { isAssessmentFinal: () => true });
+		expect(view().status("check")).toBe("current");
+		cleanup = initDeck();
+		expect(
+			document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled"),
+		).toBe(admitted ? "true" : "false");
+	},
+);
+
+it.each([false, true])("admitted group gate finality completed=%s", (completed) => {
+	setup(false);
+	const runtime = new LocalStorageRuntime(localStorage, "group-gate");
+	runtime.trackInteraction("check", "0%", false, 0);
+	runtime.setSuspendData(JSON.stringify({ deck: { released: ["check"] } }));
+	const state = { version: 1, kind: "assessmentGroup", mode: "all", completed };
+	const view = () =>
+		createChoiceDependencyView(
+			admitChoiceStateFacts({
+				choiceStateQuestions: {},
+				choiceStateSignatures: {},
+				choiceStateGroups: {
+					check: { mode: "all", memberIds: ["member"], requiredIds: ["member"] },
+				},
+			}),
+			{ rows: runtime.getInteractions(), readState: (id) => (id === "check" ? state : undefined) },
+		);
+	Object.assign(window, {
+		__praxityRuntime: runtime,
+		__praxityBlockState: { get: () => state, set() {}, getChoiceDependencyView: view },
+		__praxityTracker: new CourseTracker(runtime, {
+			totalPages: 3,
+			completionMethod: "allPages",
+			getChoiceDependencyView: view,
+		}),
+	});
+	expect(view().status("check")).toBe("current");
+	cleanup = initDeck();
+	expect(document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled")).toBe(
+		completed ? "false" : "true",
+	);
+});
+
+it("characterization: saved-state finality alone cannot restore a legacy pass gate", () => {
+	const { runtime } = setup(false);
+	runtime.getInteractions.mockReturnValue([{ id: "check", correct: false }]);
+	Object.assign(window.__praxityTracker ?? {}, { isAssessmentFinal: () => true });
+	cleanup = initDeck();
+	expect(document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled")).toBe(
+		"true",
+	);
+});
+
+it.each([80, null])("deck completion consumes the tracker's current score %s", (raw) => {
+	const { runtime, tracker } = setup(false, 2);
+	const script = document.getElementById("praxity-config") as HTMLScriptElement;
+	const config = JSON.parse(script.textContent ?? "{}");
+	config.deckPages[0].gates = [];
+	script.textContent = JSON.stringify(config);
+	Object.assign(runtime, { getScore: () => ({ raw: 75, min: 0, max: 100 }) });
+	Object.assign(tracker, {
+		getCurrentScore: () => (raw === null ? null : { raw, min: 0, max: 100 }),
+	});
+	Object.assign(window.__PRAXITY_STRINGS__ ?? {}, {
+		courseRecordedScore: "Score: {score} / {max}",
+		courseTimeSpent: "Time spent: {duration}",
+	});
+	cleanup = initDeck();
+	const next = document.getElementById("deck-next") as HTMLButtonElement;
+	next.click();
+	next.click();
+	expect(document.getElementById("deck-completion")?.hidden).toBe(false);
+	expect(document.getElementById("deck-completion-score")?.hidden).toBe(raw === null);
+	expect(document.getElementById("deck-completion-score")?.textContent).toBe(
+		raw === null ? "" : "Score: 80 / 100",
+	);
+});
 
 it.each([
 	["correct", "pass", true, 1, 2],

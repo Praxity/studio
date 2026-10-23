@@ -243,3 +243,25 @@ it.each(["state", "callback"] as const)("history refuses otherwise final %s", (s
 	else config.isAssessmentFinal = () => true;
 	expect(new CourseTracker(runtime, config).isAssessmentFinal("q")).toBe(false);
 });
+
+it("unanswered evidence cannot use a finality callback", () => {
+	const runtime = new LocalStorageRuntime(localStorage, "unanswered");
+	const tracker = new CourseTracker(runtime, {
+		totalPages: 1,
+		completionMethod: "allPages",
+		isAssessmentFinal: () => true,
+		getChoiceDependencyView: () => evidence(runtime),
+	});
+	expect(tracker.isAssessmentFinal("q")).toBe(false);
+});
+
+it("current evidence retains the host's unfinished saved-state decision", () => {
+	const runtime = new LocalStorageRuntime(localStorage, "unfinished");
+	const tracker = new CourseTracker(runtime, {
+		totalPages: 1,
+		completionMethod: "allPages",
+		getAssessmentState: () => ({ completed: false }),
+		getChoiceDependencyView: () => evidence(runtime, { q: exhaustedGateState }),
+	});
+	expect(tracker.isAssessmentFinal("q")).toBe(false);
+});
