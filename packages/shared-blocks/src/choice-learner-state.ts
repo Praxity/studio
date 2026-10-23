@@ -296,9 +296,87 @@ export interface ChoiceDependencyView {
 
 /** Readers receive the status owner with the evidence, without importing admission code. */
 export interface ChoiceDependencyEvidence extends ChoiceDependencyView {
-	status(id: string): ReturnType<typeof choiceDependencyStatus>;
+	status(id: string, candidate?: ChoiceDependencyView): ReturnType<typeof choiceDependencyStatus>;
 	/** Status-only readers may omit this; question finality requires the admitted host state. */
 	admitQuestionState?(id: string, state: unknown): SavedAssessmentState | null;
+	/** Group consumers use the owner without loading dormant admission into ordinary bundles. */
+	prepareGroupSubmission?(
+		id: string,
+		candidate: ChoiceDependencyView,
+	): ChoiceGroupSubmission | null;
+	prepareGroupState?(
+		previous: LearnerStateValue | undefined,
+		draft: Record<string, LearnerStateValue>,
+		submitted?: ChoiceGroupSubmission,
+	): LearnerStateValue | null;
+	verifyGroupSubmission?(
+		id: string,
+		input: Record<string, unknown>,
+		row: Pick<ChoiceDependencyView["rows"][number], "correct" | "memberIds">,
+	): ChoiceDependencyEvidence | null;
+}
+
+/** Bind dormant group operations beside the status owner, outside ordinary consumer bundles. */
+export function bindChoiceDependencyView(view: ChoiceDependencyView): ChoiceDependencyEvidence {
+	const bound: ChoiceDependencyEvidence = {
+		...view,
+		status: (id, candidate = bound) => choiceDependencyStatus(id, candidate),
+		admitQuestionState: (id, state) =>
+			Object.hasOwn(bound.questions, id)
+				? admitChoiceAssessmentState(
+						state,
+						{ question: bound.questions[id], signature: bound.signatures[id] },
+						bound.buildProof?.(id),
+					)
+				: null,
+		prepareGroupSubmission: prepareChoiceGroupSubmission,
+		prepareGroupState: prepareChoiceGroupState,
+		verifyGroupSubmission: (id, input, row) => {
+			const group = view.groups?.[id];
+			const state = {
+				version: 1,
+				kind: "assessmentGroup",
+				mode: group?.mode,
+				selectedMemberId: group?.mode === "oneOf" ? input.selectedMemberId : null,
+				completed: input.completed === true,
+			};
+			const selected = {
+				...view,
+				readState: (member: string) => (member === id ? state : view.readState(member)),
+			};
+			const submitted = prepareChoiceGroupSubmission(id, selected);
+			if (!submitted || submitted.contentSignature !== input.contentSignature) return null;
+			return bindChoiceDependencyView({
+				...view,
+				rows: [...view.rows, { ...row, id, contentSignature: submitted.contentSignature }],
+				readState: (member) => (member === id ? { ...state, submitted } : view.readState(member)),
+			});
+		},
+	};
+	return bound;
+}
+
+function prepareChoiceGroupState(
+	previous: LearnerStateValue | undefined,
+	draft: Record<string, LearnerStateValue>,
+	submitted?: ChoiceGroupSubmission,
+): LearnerStateValue | null {
+	const retained =
+		previous && typeof previous === "object" && !Array.isArray(previous)
+			? previous.submitted
+			: undefined;
+	const snapshot = submitted
+		? {
+				payload: {
+					mode: submitted.payload.mode,
+					selectedMemberId: submitted.payload.selectedMemberId,
+					dependencies: submitted.payload.dependencies,
+				},
+				contentSignature: submitted.contentSignature,
+			}
+		: retained;
+	const next = { ...draft, ...(snapshot !== undefined ? { submitted: snapshot } : {}) };
+	return snapshot !== undefined && JSON.stringify(previous) === JSON.stringify(next) ? null : next;
 }
 
 /** One context for future readers; construction never admits, signs or writes an answer. */
@@ -315,16 +393,7 @@ export function createChoiceDependencyView(
 ): ChoiceDependencyEvidence {
 	if (facts.choiceStateInvalidIds.includes("*")) throw new Error("Invalid choice facts");
 	const preview = evidence.preview;
-	const view: ChoiceDependencyEvidence = {
-		status: (id) => choiceDependencyStatus(id, view),
-		admitQuestionState: (id, state) =>
-			Object.hasOwn(view.questions, id)
-				? admitChoiceAssessmentState(
-						state,
-						{ question: view.questions[id], signature: view.signatures[id] },
-						view.buildProof?.(id),
-					)
-				: null,
+	return bindChoiceDependencyView({
 		invalidIds: facts.choiceStateInvalidIds,
 		rows: evidence.rows,
 		questions: facts.choiceStateQuestions,
@@ -339,8 +408,7 @@ export function createChoiceDependencyView(
 					}),
 				}
 			: {}),
-	};
-	return view;
+	});
 }
 
 /** References retained member material, never copies of answers or editable selection. */

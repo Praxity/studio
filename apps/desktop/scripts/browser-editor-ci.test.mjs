@@ -87,7 +87,6 @@ test("browser editor CI gates the selected engines in Linux shards with prepared
 	assert.ok(!commands.some((command) => command.includes("electron/install.js")));
 	for (const prerequisite of [
 		"pnpm install --frozen-lockfile",
-		"pnpm --filter @praxity/desktop exec playwright install --with-deps ${{ matrix.browser }}",
 		"pnpm --filter @praxity/desktop prebuild",
 		"pnpm --filter @praxity/export-pipeline prebuild",
 		"pnpm --filter @praxity/desktop prepare:typst",
@@ -95,6 +94,13 @@ test("browser editor CI gates the selected engines in Linux shards with prepared
 		assert.ok(commands.includes(prerequisite), `${prerequisite} must run`);
 		assert.ok(commands.indexOf(prerequisite) < commands.indexOf(run));
 	}
+	const browserInstall = job.steps.findIndex(
+		(step) => step.uses === "./.github/actions/install-playwright",
+	);
+	assert.ok(
+		browserInstall >= 0 && browserInstall < job.steps.findIndex((step) => step.run === run),
+	);
+	assert.equal(job.steps[browserInstall].with.package, "@praxity/desktop");
 	assert.equal(job["continue-on-error"], undefined);
 });
 

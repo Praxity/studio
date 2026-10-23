@@ -96,12 +96,13 @@ export class CourseTracker {
 		correct?: boolean,
 		score?: number,
 		options?: TrackInteractionOptions,
+		view?: ChoiceDependencyEvidence,
 	): void {
 		this.runtime.trackInteraction(id, response, correct, score, options);
 
-		if (score !== undefined) writeCourseOutcome(this.runtime, this.outcome("score"));
+		if (score !== undefined) writeCourseOutcome(this.runtime, this.outcome("score", view));
 
-		this.checkCompletion();
+		this.checkCompletion(view);
 	}
 
 	/**
@@ -151,8 +152,14 @@ export class CourseTracker {
 		return rows.length ? { raw: this.average(rows), min: 0, max: 100 } : null;
 	}
 
-	trackGroupObjective(id: string, score: number, passed: boolean, runtime = this.runtime): void {
-		writeCourseOutcome(runtime, this.outcome({ id, score, passed }));
+	trackGroupObjective(
+		id: string,
+		score: number,
+		passed: boolean,
+		runtime = this.runtime,
+		view?: ChoiceDependencyEvidence,
+	): void {
+		writeCourseOutcome(runtime, this.outcome({ id, score, passed }, view));
 	}
 
 	finish(explicitFinish = false, runtime = this.runtime): boolean {
@@ -198,8 +205,8 @@ export class CourseTracker {
 	 * Evaluate whether the course should be marked as completed, passed, or
 	 * failed based on the configured completion method.
 	 */
-	checkCompletion(): void {
-		writeCourseOutcome(this.runtime, this.outcome());
+	checkCompletion(view?: ChoiceDependencyEvidence): void {
+		writeCourseOutcome(this.runtime, this.outcome("check", view));
 	}
 
 	/** A decided commit preserves the adapter's existing write log. */

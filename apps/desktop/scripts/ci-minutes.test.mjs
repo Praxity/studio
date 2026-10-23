@@ -62,6 +62,14 @@ const actionsWithoutUploads = new Map([
 		"Restores and saves the Playwright browser cache, not artifacts.",
 	],
 	[
+		"actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830",
+		"Restores dependency archives, not artifacts.",
+	],
+	[
+		"actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830",
+		"Saves dependency archives, not artifacts.",
+	],
+	[
 		"dorny/paths-filter@0e4a8c6effa4802afeda77dc8d303f8176d7dfad",
 		"Reports changed paths as job outputs.",
 	],
@@ -913,7 +921,7 @@ for (const name of ["published-output-a11y", "published-output-deck", "browser-e
 		const install = steps.findIndex((step) => step.run === "pnpm install --frozen-lockfile");
 		const version = steps.findIndex((step) => step.id === "playwright-version");
 		const cache = steps.findIndex((step) => step.uses?.startsWith("actions/cache@"));
-		const browser = steps.findIndex((step) => step.run?.includes("playwright install --with-deps"));
+		const browser = steps.findIndex((step) => step.uses === "./.github/actions/install-playwright");
 		assert.ok(install >= 0 && install < version && version < cache && cache < browser);
 		assert.equal(steps[cache].with.path, "~/.cache/ms-playwright");
 		assert.equal(
@@ -925,7 +933,15 @@ for (const name of ["published-output-a11y", "published-output-deck", "browser-e
 		// The same admission on install and restore keeps apt and download recovery
 		// active on both cache hits and misses.
 		for (const index of [version, cache, browser]) assert.equal(steps[index].if, steps[install].if);
-		assert.match(steps[browser].run, /--with-deps \$\{\{ matrix\.browser \}\}/);
+		assert.equal(steps[browser].with.browser, "${{ matrix.browser }}");
+		assert.equal(
+			steps[browser].with["playwright-version"],
+			"${{ steps.playwright-version.outputs.version }}",
+		);
+		assert.equal(
+			steps[browser].with.package,
+			name === "browser-editor" ? "@praxity/desktop" : "@praxity/export-pipeline",
+		);
 		assert.match(steps[version].run, />> "\$GITHUB_OUTPUT"/);
 		const script = steps[version].run.match(/node -e "([^"]+)"/)?.[1];
 		assert.ok(script, "Execute the version output from the installed frozen-lockfile dependency");

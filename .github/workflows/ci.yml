@@ -469,8 +469,13 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}-${{ matrix.browser }}
-      - run: pnpm --filter @praxity/export-pipeline exec playwright install --with-deps ${{ matrix.browser }}
+      - name: Install Playwright with cached system dependencies
+        uses: ./.github/actions/install-playwright
         if: needs.changes.outputs.output == 'true'
+        with:
+          browser: ${{ matrix.browser }}
+          playwright-version: ${{ steps.playwright-version.outputs.version }}
+          package: '@praxity/export-pipeline'
       - name: Install Poppler
         uses: ./.github/actions/install-poppler
         timeout-minutes: 5
@@ -560,8 +565,13 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}-${{ matrix.browser }}
-      - run: pnpm --filter @praxity/export-pipeline exec playwright install --with-deps ${{ matrix.browser }}
+      - name: Install Playwright with cached system dependencies
+        uses: ./.github/actions/install-playwright
         if: needs.changes.outputs.output == 'true'
+        with:
+          browser: ${{ matrix.browser }}
+          playwright-version: ${{ steps.playwright-version.outputs.version }}
+          package: '@praxity/export-pipeline'
       - run: pnpm --filter @praxity/export-pipeline prebuild:client
         if: needs.changes.outputs.output == 'true'
       # CLI release journeys consume desktop export assets as well as the compiler cache.
@@ -651,7 +661,12 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}-${{ matrix.browser }}
-      - run: pnpm --filter @praxity/desktop exec playwright install --with-deps ${{ matrix.browser }}
+      - name: Install Playwright with cached system dependencies
+        uses: ./.github/actions/install-playwright
+        with:
+          browser: ${{ matrix.browser }}
+          playwright-version: ${{ steps.playwright-version.outputs.version }}
+          package: '@praxity/desktop'
       - run: pnpm --filter @praxity/desktop prebuild
       # Without the export-pipeline bundle, each worker's first publish rebuilds it into
       # prebuilt/ concurrently, and one worker can read another's half-copied chunks.

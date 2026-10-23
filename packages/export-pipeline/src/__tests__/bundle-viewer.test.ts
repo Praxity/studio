@@ -1310,9 +1310,8 @@ describe("computeViewerSourceHash", () => {
 			// Owner C5 previously measured
 			// 39,577 / 131,639 B; HL04 caps were 36,864 / 129,024 B.
 			// Recovery measures at most 138,176 B gzip for the deck; add 1 KiB rounded up to 256 B.
-			// Size caps don't block working features (owner rule): dormant gate/display support measures 44,302 B gzip for the page; round up to 256 B.
-			// Keep this tighter page cap during prerequisites; measure the usual 1 KiB headroom with activation.
-			const caps = { page: 44_544, deck: 139_264 };
+			// Size caps don't block working features (owner rule): group refusal/rollback runtime measures 44,590 B gzip for the page; add 1 KiB rounded up to 256 B, tighten during final size work.
+			const caps = { page: 45_824, deck: 139_264 };
 			const page = {
 				id: "highlight-page",
 				title: "Highlight",
@@ -1781,12 +1780,14 @@ describe("computeViewerSourceHash", () => {
 					// Owner C5: focus restoration adds 2,541 B across the two adapters.
 					// Measured 27,750 B + 1 KiB, rounded up to 256 B. Full page/deck caps stay unchanged.
 					expect(bytes, `${island} initial raw bytes`).toBeLessThanOrEqual(28_928);
-				} else
+				}
+				// Size caps don't block working features (owner rule): group refusal/retry runtime measures 24,850 B raw; add 1 KiB rounded up to 256 B, tighten during final size work.
+				else
 					expect(bytes, `${island} initial raw bytes`).toBeLessThan(
 						island === "island-self-check"
 							? SELF_CHECK_INITIAL_RAW_CEILING
 							: (island === "island-assessment-group"
-									? 24.25
+									? 25.5
 									: island === "island-rating"
 										? 18
 										: 16) * 1024,

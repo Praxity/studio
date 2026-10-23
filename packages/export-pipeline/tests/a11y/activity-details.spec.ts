@@ -12,10 +12,38 @@ import { computedContrast } from "./contrast-helpers";
 import { LONG_MATCH } from "./fixtures/activity-bugs-fixture";
 import { activityCardsFixture } from "./fixtures/activity-cards-fixture";
 import { buildLightweightCourse } from "./fixtures/lightweight-fixture";
+import { waitForSettledStyles } from "./helpers";
 
 let server: Server;
 let base: string;
 const entries = new Map<string, string>();
+
+async function ratingScrollBaseline(value: Locator) {
+	await expect(value.locator("xpath=ancestor::*[@data-island][1]")).toHaveAttribute(
+		"data-hydrated",
+		"",
+	);
+	await value.page().evaluate(() => document.fonts.ready);
+	await value.evaluate((element) =>
+		element.scrollIntoView({ block: "center", behavior: "instant" }),
+	);
+	await expect(value).toBeInViewport({ ratio: 1 });
+	await waitForSettledStyles(value.page());
+	await expect
+		.poll(() =>
+			value.evaluate(async (element) => {
+				const sample = () => {
+					const { x, y, width, height } = element.getBoundingClientRect();
+					return { x, y, width, height, scrollX, scrollY };
+				};
+				const before = sample();
+				await new Promise(requestAnimationFrame);
+				return JSON.stringify(sample()) === JSON.stringify(before);
+			}),
+		)
+		.toBe(true);
+	return value.page().evaluate(() => scrollY);
+}
 
 async function captureGroup(page: Page, name: string) {
 	const directory = process.env.PRAXITY_ACTIVITY_DETAILS_CAPTURES;
@@ -493,7 +521,7 @@ for (const locale of ["en", "fr"] as const) {
 					.soft(rating.locator(".praxity-rating-endpoints"))
 					.toHaveText("RarelyVery often");
 				const value = rating.locator(".praxity-rating-option").nth(4);
-				const scroll = await page.evaluate(() => window.scrollY);
+				const scroll = await ratingScrollBaseline(value);
 				await value.click();
 				expect.soft(await page.evaluate(() => window.scrollY)).toBe(scroll);
 				await expect.soft(value).toHaveCSS("border-top-width", "2px");
@@ -605,7 +633,7 @@ for (const width of [1280, 390]) {
 			await rating.scrollIntoViewIfNeeded();
 			await expect(rating).toHaveAttribute("data-hydrated", "");
 			const value = rating.locator(".praxity-rating-option").nth(4);
-			const before = await page.evaluate(() => scrollY);
+			const before = await ratingScrollBaseline(value);
 			await value.click();
 			expect(await page.evaluate(() => scrollY)).toBe(before);
 			await expect(value).toHaveCSS("border-radius", "10px");
