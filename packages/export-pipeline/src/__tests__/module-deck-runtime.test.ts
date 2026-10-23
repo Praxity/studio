@@ -1022,9 +1022,9 @@ it.each([false, true])(
 			};
 		Object.assign(window.__praxityTracker ?? {}, { isAssessmentFinal: () => true });
 		cleanup = initDeck();
-		expect(document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled")).toBe(
-			"true",
-		);
+		expect(
+			document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled"),
+		).toBe("true");
 	},
 );
 

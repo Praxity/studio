@@ -8,6 +8,8 @@ import { serveStudioAuthorDocument } from "../../src/main/studio/author-document
 import { readIdentityFixture } from "../../src/test-utils/identity-fixture";
 import { startJourney } from "./global-setup";
 
+type ReviewWindow = Window & { reviewEvents: number };
+
 const source = "# Page\n\n## Before\n\nBody.\n\n## Second\n";
 let stop: (() => Promise<void>) | undefined;
 let project = "";
@@ -315,10 +317,11 @@ test("C05-r1 outside page title change then Escape reads current disk", async ({
 test("C05-r1 startup invalidation during held initial snapshot is retained", async ({ page }) => {
 	await page.addInitScript(() => {
 		const parse = JSON.parse;
-		(window as any).reviewEvents = 0;
+		const reviewWindow = window as ReviewWindow;
+		reviewWindow.reviewEvents = 0;
 		JSON.parse = (...args: Parameters<typeof JSON.parse>) => {
 			const value = parse(...args);
-			if (value?.type === "editorChanged") (window as any).reviewEvents++;
+			if (value?.type === "editorChanged") reviewWindow.reviewEvents++;
 			return value;
 		};
 	});
@@ -337,7 +340,9 @@ test("C05-r1 startup invalidation during held initial snapshot is retained", asy
 	await page.goto(`${new URL(process.env.PRAXITY_BROWSER_READY_URL ?? "").origin}/launch?canvas=1`);
 	await expect.poll(() => Boolean(release)).toBe(true);
 	await writeFile(file, source.replace("## Before", "## Changed during startup"));
-	await expect.poll(() => page.evaluate(() => (window as any).reviewEvents)).toBeGreaterThan(0);
+	await expect
+		.poll(() => page.evaluate(() => (window as ReviewWindow).reviewEvents))
+		.toBeGreaterThan(0);
 	release?.();
 	await expect(page.getByRole("status")).toHaveText("Connected");
 	await expect(
