@@ -62,6 +62,14 @@ const actionsWithoutUploads = new Map([
 		"Restores and saves the Playwright browser cache, not artifacts.",
 	],
 	[
+		"actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830",
+		"Restores dependency archives, not artifacts.",
+	],
+	[
+		"actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830",
+		"Saves dependency archives, not artifacts.",
+	],
+	[
 		"dorny/paths-filter@0e4a8c6effa4802afeda77dc8d303f8176d7dfad",
 		"Reports changed paths as job outputs.",
 	],
@@ -309,14 +317,16 @@ const allPublished = [
 	{ browser: "chromium", shard: "1/3", artifact: "chromium-1" },
 	{ browser: "chromium", shard: "2/3", artifact: "chromium-2" },
 	{ browser: "chromium", shard: "3/3", artifact: "chromium-3" },
-	{ browser: "firefox", shard: "1/1", artifact: "firefox" },
+	{ browser: "firefox", shard: "1/2", artifact: "firefox-1" },
+	{ browser: "firefox", shard: "2/2", artifact: "firefox-2" },
 	{ browser: "webkit", shard: "1/2", artifact: "webkit-1" },
 	{ browser: "webkit", shard: "2/2", artifact: "webkit-2" },
 ];
 const allDeck = [
 	{ browser: "chromium", shard: "1/2", artifact: "chromium-1" },
 	{ browser: "chromium", shard: "2/2", artifact: "chromium-2" },
-	{ browser: "firefox", shard: "1/1", artifact: "firefox" },
+	{ browser: "firefox", shard: "1/2", artifact: "firefox-1" },
+	{ browser: "firefox", shard: "2/2", artifact: "firefox-2" },
 	{ browser: "webkit", shard: "1/2", artifact: "webkit-1" },
 	{ browser: "webkit", shard: "2/2", artifact: "webkit-2" },
 ];
@@ -325,10 +335,14 @@ test("candidate dispatches run Chromium only; nightly and ordinary manual runs g
 	assert.deepEqual(engines("published_engines", "pull_request"), allPublished.slice(0, 3));
 	assert.deepEqual(engines("deck_engines", "pull_request"), allDeck.slice(0, 2));
 	assert.deepEqual(engines("editor_engines", "pull_request"), ["chromium"]);
-	for (const event of ["schedule", "workflow_dispatch"]) {
-		assert.deepEqual(engines("published_engines", event), allPublished);
-		assert.deepEqual(engines("deck_engines", event), allDeck);
-		assert.deepEqual(engines("editor_engines", event), ["chromium", "webkit"]);
+	for (const [event, inputs] of [
+		["schedule", {}],
+		["workflow_dispatch", {}],
+		["workflow_dispatch", { gate: "all" }],
+	]) {
+		assert.deepEqual(engines("published_engines", event, inputs), allPublished);
+		assert.deepEqual(engines("deck_engines", event, inputs), allDeck);
+		assert.deepEqual(engines("editor_engines", event, inputs), ["chromium", "webkit"]);
 	}
 	for (const [output, expected] of [
 		["published_engines", allPublished.slice(0, 3)],
@@ -907,7 +921,7 @@ for (const name of ["published-output-a11y", "published-output-deck", "browser-e
 		const install = steps.findIndex((step) => step.run === "pnpm install --frozen-lockfile");
 		const version = steps.findIndex((step) => step.id === "playwright-version");
 		const cache = steps.findIndex((step) => step.uses?.startsWith("actions/cache@"));
-		const browser = steps.findIndex((step) => step.run?.includes("playwright install --with-deps"));
+		const browser = steps.findIndex((step) => step.uses === "./.github/actions/install-playwright");
 		assert.ok(install >= 0 && install < version && version < cache && cache < browser);
 		assert.equal(steps[cache].with.path, "~/.cache/ms-playwright");
 		assert.equal(
@@ -919,7 +933,15 @@ for (const name of ["published-output-a11y", "published-output-deck", "browser-e
 		// The same admission on install and restore keeps apt and download recovery
 		// active on both cache hits and misses.
 		for (const index of [version, cache, browser]) assert.equal(steps[index].if, steps[install].if);
-		assert.match(steps[browser].run, /--with-deps \$\{\{ matrix\.browser \}\}/);
+		assert.equal(steps[browser].with.browser, "${{ matrix.browser }}");
+		assert.equal(
+			steps[browser].with["playwright-version"],
+			"${{ steps.playwright-version.outputs.version }}",
+		);
+		assert.equal(
+			steps[browser].with.package,
+			name === "browser-editor" ? "@praxity/desktop" : "@praxity/export-pipeline",
+		);
 		assert.match(steps[version].run, />> "\$GITHUB_OUTPUT"/);
 		const script = steps[version].run.match(/node -e "([^"]+)"/)?.[1];
 		assert.ok(script, "Execute the version output from the installed frozen-lockfile dependency");
