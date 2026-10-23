@@ -251,13 +251,26 @@ for (const { locale, variant, presentation, theme, key } of cases) {
 			await page.locator("#deck-next").click();
 			await expect(page.locator('[data-deck-slide="recovery-page-1"]')).toBeVisible();
 			await expect(page.locator(".deck-gate-notice")).toBeVisible();
+			await page.locator(".deck-gate-notice").press("Enter");
 		}
+		const tabStops: string[] = [];
 		for (
 			let n = 0;
 			n < 40 && !(await action.evaluate((element) => element === document.activeElement));
 			n++
-		)
+		) {
 			await page.keyboard.press("Tab");
+			tabStops.push(
+				await page.evaluate(
+					() =>
+						`${document.activeElement?.tagName}: ${document.activeElement?.textContent?.slice(0, 80)}`,
+				),
+			);
+		}
+		await testInfo.attach("keyboard-route", {
+			body: JSON.stringify(tabStops),
+			contentType: "application/json",
+		});
 		await expect(action).toBeFocused();
 		await expectFocusRing(action, 2);
 		await testInfo.attach("waiting-1280", {
@@ -269,51 +282,67 @@ for (const { locale, variant, presentation, theme, key } of cases) {
 			[320, 1],
 			[640, 2],
 		] as const) {
-			await page.setViewportSize({ width, height: 800 });
-			await page.evaluate((scale) => {
-				document.documentElement.style.zoom = String(scale);
-			}, zoom);
+			// Browser zoom reduces the CSS viewport. CSS `zoom` on the root
+			// does not model this consistently for WebKit's fixed deck shell.
+			await page.setViewportSize({ width: width / zoom, height: 800 / zoom });
 			await page.keyboard.press("Escape");
-			await action.scrollIntoViewIfNeeded();
-			await action.click({ trial: true });
-			await action.focus();
-			const layout = await action.evaluate((button) => {
-				const bounds = button.getBoundingClientRect();
-				const label = button.querySelector<HTMLElement>(".mantine-Button-label");
-				if (!label) throw new Error("Missing action label");
-				return {
-					pageWidth: document.documentElement.scrollWidth,
-					viewport: innerWidth,
-					clipped: label.scrollWidth > label.clientWidth || label.scrollHeight > label.clientHeight,
-					insideViewport:
-						bounds.left >= 0 &&
-						bounds.top >= 0 &&
-						bounds.right <= innerWidth &&
-						bounds.bottom <= innerHeight,
-					uncovered: [
-						[bounds.left + 2, bounds.top + bounds.height / 2],
-						[bounds.right - 2, bounds.top + bounds.height / 2],
-						[bounds.left + bounds.width / 2, bounds.top + 2],
-						[bounds.left + bounds.width / 2, bounds.bottom - 2],
-					].every(([x, y]) => button.contains(document.elementFromPoint(x, y))),
-				};
-			});
-			expect(layout.pageWidth).toBeLessThanOrEqual(layout.viewport);
-			expect(layout.clipped).toBe(false);
-			expect(layout.insideViewport).toBe(true);
-			expect(layout.uncovered).toBe(true);
-			await testInfo.attach(`reflow-${width}-${zoom}`, {
-				body: JSON.stringify(layout),
-				contentType: "application/json",
-			});
-			await testInfo.attach(`waiting-${width}-${zoom}`, {
-				body: await page.screenshot(),
-				contentType: "image/png",
-			});
+			const readLayout = () =>
+				action.evaluate((button) => {
+					const bounds = button.getBoundingClientRect();
+					const label = button.querySelector<HTMLElement>(".mantine-Button-label");
+					if (!label) throw new Error("Missing action label");
+					return {
+						bounds: bounds.toJSON(),
+						viewportHeight: innerHeight,
+						pageWidth: document.documentElement.scrollWidth,
+						viewport: innerWidth,
+						clipped:
+							label.scrollWidth > label.clientWidth || label.scrollHeight > label.clientHeight,
+						insideViewport:
+							bounds.left >= 0 &&
+							bounds.top >= 0 &&
+							bounds.right <= innerWidth &&
+							bounds.bottom <= innerHeight,
+						uncovered: [
+							[bounds.left + 2, bounds.top + bounds.height / 2],
+							[bounds.right - 2, bounds.top + bounds.height / 2],
+							[bounds.left + bounds.width / 2, bounds.top + 2],
+							[bounds.left + bounds.width / 2, bounds.bottom - 2],
+						].every(([x, y]) => button.contains(document.elementFromPoint(x, y))),
+					};
+				});
+			// Deck resize observers can move its scrolling pane after the viewport
+			// changes. Wait for a fully visible, uncovered action after native scroll.
+			try {
+				await action.evaluate((element) =>
+					element.scrollIntoView({ block: "start", inline: "nearest", behavior: "instant" }),
+				);
+				await action.hover();
+				// Leave room above the action for its focus outline in the short pane.
+				await page.mouse.wheel(0, -16);
+				await action.focus({ preventScroll: true });
+				await expect(async () => {
+					const layout = await readLayout();
+					expect(layout.pageWidth).toBeLessThanOrEqual(layout.viewport);
+					expect(layout.clipped).toBe(false);
+					expect(layout.insideViewport).toBe(true);
+					expect(layout.uncovered).toBe(true);
+				}).toPass({ timeout: 5_000 });
+			} finally {
+				await testInfo.attach(`reflow-${width}-${zoom}`, {
+					body: JSON.stringify({
+						physicalViewport: { width, height: 800 },
+						zoom,
+						...(await readLayout()),
+					}),
+					contentType: "application/json",
+				});
+				await testInfo.attach(`waiting-${width}-${zoom}`, {
+					body: await page.screenshot(),
+					contentType: "image/png",
+				});
+			}
 		}
-		await page.evaluate(() => {
-			document.documentElement.style.zoom = "";
-		});
 		if (viewport) await page.setViewportSize(viewport);
 		await action.focus();
 		await action.press("Enter");

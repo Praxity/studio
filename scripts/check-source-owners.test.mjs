@@ -108,6 +108,7 @@ test("the recovery UI imports only its two state owners by name", () => {
 		'import { choiceGroupDependencyIds, choiceGroupSignature } from "../choice-learner-state";',
 		'import { futureExport } from "../choice-learner-state";',
 		'import { prepareChoiceAssessmentState, futureExport } from "../choice-learner-state";',
+		'import states, { prepareChoiceAssessmentState } from "../choice-learner-state";',
 		'import "../choice-learner-state";',
 		'import {} from "../choice-learner-state";',
 		'import * as states from "../choice-learner-state";',

@@ -16,7 +16,8 @@ history until the learner submits the new answer.
 
 EN/FR component and browser checks cover single and multiple answers, Don't know,
 draft reload, the accessible description and keyboard focus. The injected pages
-and deck journeys cover light/dark appearance, 320px and 200% reflow, and a waiting
+and deck journeys cover light/dark appearance, 320px and 200% reflow (a 640×800
+viewport's effective 320×400 CSS pixels), and a waiting
 pass gate released by a new correct submission in Chromium, WebKit and Firefox.
 These checks do not establish spoken delivery with a screen reader.
 

@@ -1564,6 +1564,7 @@ function checkOwnedImports(path, source, program, ownership, options) {
 		const ownedNamedImport =
 			options.allowOwnedNamedImports &&
 			ts.isImportDeclaration(node) &&
+			!node.importClause?.name &&
 			bindings &&
 			ts.isNamedImports(bindings) &&
 			bindings.elements.length > 0 &&
