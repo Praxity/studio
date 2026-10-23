@@ -30,16 +30,29 @@
 }
 
 html:has(> body > .prx-review-sidebar--local.prx-review-sidebar--collapsed) {
-	scroll-padding-block-end: var(--prx-review-toolbar-space, 0px);
+	--praxity-scroll-overlay-end: var(--prx-review-toolbar-space, 0px);
 }
 
 body:has(> .prx-review-sidebar--local.prx-review-sidebar--collapsed) > .praxity-layout-wrapper {
-	padding-block-end: var(--prx-review-toolbar-space, 0px);
+	padding-block-end: var(--praxity-scroll-overlay-end, 0px);
 }
 
 body.praxity-layout-bottombar:has(> .prx-review-sidebar--local.prx-review-sidebar--collapsed)
 	#praxity-page-nav {
-	bottom: var(--prx-review-toolbar-space, 0px);
+	bottom: var(--praxity-scroll-overlay-end, 0px);
+}
+
+/* Short viewports need the review actions in flow so course content has room to scroll. */
+@media (max-height: 20rem) {
+	html:has(> body > .prx-review-sidebar--local.prx-review-sidebar--collapsed) {
+		--praxity-scroll-overlay-end: 0px;
+	}
+
+	body > .prx-review-sidebar--local.prx-review-sidebar--collapsed {
+		position: static;
+		width: fit-content;
+		margin: 16px 16px 16px auto;
+	}
 }
 
 .prx-review-header {

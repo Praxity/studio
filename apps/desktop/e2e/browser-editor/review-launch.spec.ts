@@ -136,8 +136,11 @@ for (const layout of ["sidebar", "bottomBar"]) {
 			{ width: 1280, height: 900 },
 			{ width: 390, height: 844 },
 			{ width: 320, height: 256 },
+			{ width: 320, height: 180 },
 		]) {
-			test(`keeps content and Next clear at ${viewport.width}px`, async ({ page }, testInfo) => {
+			test(`keeps content and Next clear at ${viewport.width}x${viewport.height}px`, async ({
+				page,
+			}, testInfo) => {
 				await page.setViewportSize(viewport);
 				await page.emulateMedia({ reducedMotion: "reduce" });
 				await page.goto(result.stdout.trim());
@@ -145,7 +148,11 @@ for (const layout of ["sidebar", "bottomBar"]) {
 				await expect
 					.poll(() =>
 						page.evaluate(() =>
-							Number.parseFloat(getComputedStyle(document.documentElement).scrollPaddingBlockEnd),
+							Number.parseFloat(
+								getComputedStyle(document.documentElement).getPropertyValue(
+									"--prx-review-toolbar-space",
+								),
+							),
 						),
 					)
 					.toBeGreaterThan(0);
@@ -169,17 +176,19 @@ for (const layout of ["sidebar", "bottomBar"]) {
 					if (layout === "bottomBar" || position === "max")
 						await expect.poll(() => next.evaluate(centreIsVisible)).toBe(true);
 					if (position === "max") {
-						await expect.poll(() => last.evaluate(centreIsVisible)).toBe(true);
+						if (viewport.height > 320)
+							await expect.poll(() => last.evaluate(centreIsVisible)).toBe(true);
 						const navTop = await nav.evaluate((element) => element.getBoundingClientRect().top);
 						const lastBottom = await last.evaluate(
 							(element) => element.getBoundingClientRect().bottom,
 						);
 						expect(navTop).toBeGreaterThanOrEqual(lastBottom);
 					}
-					await page.screenshot({
-						path: join(output, `${layout}-${viewport.width}-${position}.png`),
-					});
+					const size = viewport.height === 180 ? "320-short" : String(viewport.width);
+					await page.screenshot({ path: join(output, `${layout}-${size}-${position}.png`) });
 				}
+				await last.scrollIntoViewIfNeeded();
+				await expect.poll(() => last.evaluate(centreIsVisible)).toBe(true);
 				await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
 				await next.focus();
 				await page.keyboard.press("Shift+Tab");
