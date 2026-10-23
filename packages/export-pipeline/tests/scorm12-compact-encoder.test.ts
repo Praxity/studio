@@ -63,7 +63,16 @@ it("preserves dictionary tokens, shapes, row order and optional fields", () => {
 		custom: JSON.stringify({
 			full: `sha256:${"ab".repeat(32)}`,
 			short: "s96:AAAAAAAAAAAAAAAA",
-			selection: [null, true, false, -2.5, Number.MAX_SAFE_INTEGER, 1e100],
+			selection: [
+				null,
+				true,
+				false,
+				-1,
+				Number.MIN_SAFE_INTEGER,
+				-2.5,
+				Number.MAX_SAFE_INTEGER,
+				1e100,
+			],
 			"\udc00": "\ud800",
 			["__proto__"]: { answer: "kept" },
 		}),
@@ -101,7 +110,9 @@ it("refuses data beyond the reader's decoded and typed bounds", () => {
 it("refuses excessive nesting", () => {
 	roundtrip(`${"[".repeat(63)}0${"]".repeat(63)}`);
 	const custom = `${"[".repeat(64)}0${"]".repeat(64)}`;
-	expect(() => encode({ visitedPages: [], interactions: [], custom })).toThrow(/Evidence depth/);
+	expect(() => encode({ visitedPages: [], interactions: [], custom })).toThrow(
+		/ESCORM12STORAGE: Evidence depth/,
+	);
 });
 
 it("preflight independently bounds a readable ordinary candidate", () => {

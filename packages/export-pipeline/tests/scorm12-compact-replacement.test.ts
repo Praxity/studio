@@ -252,7 +252,6 @@ it("retains at least 42 original UUID answers and rows before an atomic capacity
 		const restored = createBlockStateRuntime(loaded);
 		for (const [id, state] of saved) expect(restored.get(id)).toEqual(state);
 		expect(loaded.getInteractions()).toHaveLength(saved.size);
-		console.info("Compact capacity", saved.size, values.get("cmi.suspend_data")?.length);
 	} finally {
 		dom.window.close();
 	}

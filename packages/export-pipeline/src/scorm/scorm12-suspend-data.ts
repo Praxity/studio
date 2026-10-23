@@ -48,6 +48,7 @@ function hasAdler32(bytes: Uint8Array, compressed: Uint8Array): boolean {
 }
 
 const EVIDENCE_FORMAT = "praxity-evidence-1";
+// Dictionary tokens mirror learner-state signature syntax; update when that format changes.
 const EVIDENCE_TOKEN =
 	/sha256:[a-f0-9]{64}|s96:[A-Za-z0-9_-]{16}|[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/g;
 const TOKEN_WIDTHS = [16, 32, 12];
@@ -109,7 +110,7 @@ function encodeEvidence(raw: string): string {
 	const shapes: string[][] = [];
 	const shapeIndices = new Map<string, number>();
 	function collect(value: JsonValue, depth = 0): void {
-		if (depth > 64) throw new Error("Evidence depth");
+		if (depth > 64) throw new Error("ESCORM12STORAGE: Evidence depth");
 		if (Array.isArray(value)) for (const item of value) collect(item, depth + 1);
 		else if (isObject(value)) {
 			const keys = Object.keys(value),
