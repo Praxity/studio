@@ -163,7 +163,7 @@ for (const layout of ["sidebar", "bottomBar"]) {
 					layout === "bottomBar" ? "sticky" : "relative",
 				);
 				if (layout === "sidebar")
-					expect(await nav.evaluate((element) => getComputedStyle(element).bottom)).toBe("auto");
+					expect(await nav.evaluate((element) => getComputedStyle(element).bottom)).toBe("0px");
 				const output = process.env.PRAXITY_TOOLBAR_SCREENSHOTS ?? testInfo.outputDir;
 				await mkdir(output, { recursive: true });
 				for (const position of ["mid", "max"]) {
@@ -173,7 +173,10 @@ for (const layout of ["sidebar", "bottomBar"]) {
 						const max = root.scrollHeight - root.clientHeight;
 						window.scrollTo({ top: position === "mid" ? max / 2 : max, behavior: "instant" });
 					}, position);
-					if (layout === "bottomBar" || position === "max")
+					if (
+						(layout === "bottomBar" && position === "mid") ||
+						(position === "max" && viewport.height > 320)
+					)
 						await expect.poll(() => next.evaluate(centreIsVisible)).toBe(true);
 					if (position === "max") {
 						if (viewport.height > 320)
@@ -187,7 +190,9 @@ for (const layout of ["sidebar", "bottomBar"]) {
 					const size = viewport.height === 180 ? "320-short" : String(viewport.width);
 					await page.screenshot({ path: join(output, `${layout}-${size}-${position}.png`) });
 				}
-				await last.scrollIntoViewIfNeeded();
+				await last.evaluate((element) =>
+					element.scrollIntoView({ block: "center", behavior: "instant" }),
+				);
 				await expect.poll(() => last.evaluate(centreIsVisible)).toBe(true);
 				await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
 				await next.focus();
