@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { parse } from "yaml";
@@ -15,6 +15,72 @@ const steps = action.runs.steps;
 const prepare = steps.find((step) => step.name === "Prepare apt archive reuse");
 const install = steps.find((step) => step.name === "Install browser and system dependencies");
 const collect = steps.find((step) => step.name === "Collect current dependency archives");
+
+// Privileged modes/owners are recorded; fixture mkdir/cp also work on Windows without _apt.
+const sandboxSudo = `
+sudo() {
+  printf '%s\\n' "$*" >> "$RUNNER_TEMP/sudo-commands"
+  if [[ "$1" == cp || ( "$1" == install && "$2" != -d ) ]]; then
+    if [[ -n "\${TEST_RESTORE_EXIT:-}" ]]; then return "$TEST_RESTORE_EXIT"; fi
+  fi
+  if [[ "$1" == install ]]; then
+    shift
+    args=()
+    while (($#)); do
+      case "$1" in
+        -o|-g|-m) shift 2 ;;
+        *) args+=("$1"); shift ;;
+      esac
+    done
+    if [[ "\${args[0]}" == -d ]]; then
+      command mkdir -p "\${args[@]:1}"
+    else
+      command cp "\${args[@]}"
+    fi
+  else
+    "$@"
+  fi
+}
+`;
+
+test("same-name, same-size poisoned archives stay partial until apt validates them", (t) => {
+	const root = retentionFixture(t, { "temp/playwright-debs/pkg_1_amd64.deb": "poison" });
+	const path = (name) => fileURLToPath(new URL(name, root)).replaceAll("\\", "/");
+	mkdirSync(new URL("apt-config/", root));
+	const script = prepare.run
+		.replaceAll("/etc/apt/apt.conf.d", path("apt-config"))
+		.replaceAll("/var/cache/apt/archives", path("archives"));
+	stepArguments({}, { run: sandboxSudo + script, env: { RUNNER_TEMP: path("temp") } }, 0, root);
+	assert.equal(Buffer.byteLength("poison"), Buffer.byteLength("signed"));
+	assert.equal(existsSync(new URL("archives/pkg_1_amd64.deb", root)), false);
+	assert.equal(readFileSync(new URL("archives/partial/pkg_1_amd64.deb", root), "utf8"), "poison");
+	const commands = readFileSync(new URL("temp/sudo-commands", root), "utf8");
+	assert.ok(commands.includes(`install -d -o _apt -g root -m 0700 ${path("archives/partial")}`));
+	assert.ok(
+		commands.includes(
+			`install -o _apt -g root -m 0644 ${path("temp/playwright-debs/pkg_1_amd64.deb")} ${path("archives/partial/")}`,
+		),
+	);
+});
+
+test("a failed cached-archive restore fails preparation before installation can start", (t) => {
+	const root = retentionFixture(t, { "temp/playwright-debs/pkg_1_amd64.deb": "cached" });
+	const path = (name) => fileURLToPath(new URL(name, root)).replaceAll("\\", "/");
+	mkdirSync(new URL("apt-config/", root));
+	const script = prepare.run
+		.replaceAll("/etc/apt/apt.conf.d", path("apt-config"))
+		.replaceAll("/var/cache/apt/archives", path("archives"));
+	stepArguments(
+		{},
+		{
+			run: `${sandboxSudo}${script}\nprintf started > "$RUNNER_TEMP/install-started"`,
+			env: { RUNNER_TEMP: path("temp"), TEST_RESTORE_EXIT: "52" },
+		},
+		52,
+		root,
+	);
+	assert.equal(existsSync(new URL("temp/install-started", root)), false);
+});
 
 test("dependency keys isolate OS, architecture, browser and version; only image revision falls back", () => {
 	const restore = steps.find((step) => step.id === "debs");
@@ -79,13 +145,12 @@ for (const cached of [false, true]) {
 				.replaceAll("/etc/apt/apt.conf.d", path("apt-config"))
 				.replaceAll("/var/cache/apt/archives", path("archives"));
 			assert.ok(!script.includes("/etc/apt/") && !script.includes("/var/cache/apt/"));
-			const run = `
-sudo() { "$@"; }
+			const run = `${sandboxSudo}
 pnpm() {
   printf '%s\\n' "$@" > "$RUNNER_TEMP/arguments"
   test ! -e "${path("apt-config/docker-clean")}" || return 41
   grep -q 'Keep-Downloaded-Packages "true"' "${path("apt-config/99playwright-cache")}" || return 42
-  ${cached ? `test "$(cat '${path("archives/existing.deb")}')" = 'cached package bytes' || return 43` : ""}
+  ${cached ? `test "$(cat '${path("archives/partial/existing.deb")}')" = 'cached package bytes' || return 43` : ""}
   ${downloads ? `printf 'new package bytes' > "${path("archives/current.deb")}"` : ":"}
   return "$TEST_INSTALL_EXIT"
 }

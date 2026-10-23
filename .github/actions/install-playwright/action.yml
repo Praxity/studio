@@ -32,13 +32,16 @@ runs:
       run: |
         set -euo pipefail
         mkdir -p "$RUNNER_TEMP/playwright-debs"
-        sudo mkdir -p /var/cache/apt/archives
+        sudo install -d -o _apt -g root -m 0700 /var/cache/apt/archives/partial
         # Docker's cleanup hook otherwise deletes the downloads before we can save them.
         sudo rm -f /etc/apt/apt.conf.d/docker-clean
         echo 'APT::Keep-Downloaded-Packages "true";' | sudo tee /etc/apt/apt.conf.d/99playwright-cache >/dev/null
         shopt -s nullglob
         debs=("$RUNNER_TEMP/playwright-debs/"*.deb)
-        if ((${#debs[@]})); then sudo cp "${debs[@]}" /var/cache/apt/archives/; fi
+        # Completed archives bypass apt's hashes; partial files take its verified resume path.
+        if ((${#debs[@]})); then
+          sudo install -o _apt -g root -m 0644 "${debs[@]}" /var/cache/apt/archives/partial/
+        fi
     - name: Install browser and system dependencies
       shell: bash
       env:
