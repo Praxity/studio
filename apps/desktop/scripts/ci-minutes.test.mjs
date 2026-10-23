@@ -309,14 +309,16 @@ const allPublished = [
 	{ browser: "chromium", shard: "1/3", artifact: "chromium-1" },
 	{ browser: "chromium", shard: "2/3", artifact: "chromium-2" },
 	{ browser: "chromium", shard: "3/3", artifact: "chromium-3" },
-	{ browser: "firefox", shard: "1/1", artifact: "firefox" },
+	{ browser: "firefox", shard: "1/2", artifact: "firefox-1" },
+	{ browser: "firefox", shard: "2/2", artifact: "firefox-2" },
 	{ browser: "webkit", shard: "1/2", artifact: "webkit-1" },
 	{ browser: "webkit", shard: "2/2", artifact: "webkit-2" },
 ];
 const allDeck = [
 	{ browser: "chromium", shard: "1/2", artifact: "chromium-1" },
 	{ browser: "chromium", shard: "2/2", artifact: "chromium-2" },
-	{ browser: "firefox", shard: "1/1", artifact: "firefox" },
+	{ browser: "firefox", shard: "1/2", artifact: "firefox-1" },
+	{ browser: "firefox", shard: "2/2", artifact: "firefox-2" },
 	{ browser: "webkit", shard: "1/2", artifact: "webkit-1" },
 	{ browser: "webkit", shard: "2/2", artifact: "webkit-2" },
 ];
@@ -325,10 +327,14 @@ test("candidate dispatches run Chromium only; nightly and ordinary manual runs g
 	assert.deepEqual(engines("published_engines", "pull_request"), allPublished.slice(0, 3));
 	assert.deepEqual(engines("deck_engines", "pull_request"), allDeck.slice(0, 2));
 	assert.deepEqual(engines("editor_engines", "pull_request"), ["chromium"]);
-	for (const event of ["schedule", "workflow_dispatch"]) {
-		assert.deepEqual(engines("published_engines", event), allPublished);
-		assert.deepEqual(engines("deck_engines", event), allDeck);
-		assert.deepEqual(engines("editor_engines", event), ["chromium", "webkit"]);
+	for (const [event, inputs] of [
+		["schedule", {}],
+		["workflow_dispatch", {}],
+		["workflow_dispatch", { gate: "all" }],
+	]) {
+		assert.deepEqual(engines("published_engines", event, inputs), allPublished);
+		assert.deepEqual(engines("deck_engines", event, inputs), allDeck);
+		assert.deepEqual(engines("editor_engines", event, inputs), ["chromium", "webkit"]);
 	}
 	for (const [output, expected] of [
 		["published_engines", allPublished.slice(0, 3)],

@@ -44,6 +44,41 @@ const events = [
 	["plain dispatch", event(false, "workflow_dispatch"), { gate: "all" }, fullJobs],
 	["schedule", event(false, "schedule"), {}, fullJobs],
 ];
+const assertNonChromiumShards = (matrix) => {
+	for (const browser of new Set(matrix.map((entry) => entry.browser))) {
+		if (browser === "chromium") continue;
+		const shards = matrix.filter((entry) => entry.browser === browser);
+		assert.ok(shards.length >= 2, `${browser} published output needs at least two shards`);
+		assert.deepEqual(
+			shards.map((entry) => entry.shard).sort(),
+			Array.from({ length: shards.length }, (_, index) => `${index + 1}/${shards.length}`),
+		);
+	}
+};
+
+test("all-engine published output splits every non-Chromium engine into at least two shards", () => {
+	for (const output of ["published_engines", "deck_engines"])
+		for (const [, github, inputs] of events.filter(([label]) =>
+			["plain dispatch", "schedule"].includes(label),
+		))
+			assertNonChromiumShards(
+				JSON.parse(condition(ci.jobs.changes.outputs[output], github, {}, false, inputs)),
+			);
+});
+
+test("published-output shard policy rejects a planted single Firefox shard", () => {
+	assert.throws(
+		() => assertNonChromiumShards([{ browser: "firefox", shard: "1/1", artifact: "firefox" }]),
+		/firefox published output needs at least two shards/,
+	);
+	assert.throws(() =>
+		assertNonChromiumShards([
+			{ browser: "firefox", shard: "1/2", artifact: "firefox-1" },
+			{ browser: "firefox", shard: "1/2", artifact: "firefox-2" },
+		]),
+	);
+});
+
 const snapshot = (github = event(false, "schedule"), browser = "true") => ({
 	changes: {
 		result: "success",

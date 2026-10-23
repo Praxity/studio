@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import picomatch from "picomatch";
 import { parse } from "yaml";
-import { browserRunner } from "./ci-test-support.mjs";
+import { browserRunner, workflowFunction } from "./ci-test-support.mjs";
 
 const ci = parse(
 	await readFile(new URL("../../../.github/workflows/ci.yml", import.meta.url), "utf8"),
@@ -52,6 +52,18 @@ test("browser editor CI selects its source, fixtures, assets and configuration o
 });
 
 // ci-minutes.test.mjs checks which engines each event selects.
+test("published-output sharding keeps candidate editor engines Chromium only", () => {
+	const engines = workflowFunction(
+		"github",
+		"inputs",
+		`return (${ci.jobs.changes.outputs.editor_engines.slice(3, -2)});`,
+	);
+	assert.deepEqual(
+		JSON.parse(engines({ event_name: "workflow_dispatch" }, { gate: "candidate" })),
+		["chromium"],
+	);
+});
+
 test("browser editor CI gates the selected engines in Linux shards with prepared assets", () => {
 	const job = ci.jobs["browser-editor"];
 	assert.ok(job, "Browser authoring must have a CI job");
