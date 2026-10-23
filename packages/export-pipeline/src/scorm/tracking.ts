@@ -169,8 +169,7 @@ export class CourseTracker {
 		const ids = new Set(this.config.requiredAssessmentIds ?? []);
 		if (this.hasPassMark()) for (const id of this.config.scoredAssessmentIds ?? []) ids.add(id);
 		else if (this.config.completionMethod === "quiz") {
-			for (const [id, question] of Object.entries(view.questions))
-				if (question.graded && choiceDependencyStatus(id, view) !== "unanswered") ids.add(id);
+			for (const [id, question] of Object.entries(view.questions)) if (question.graded) ids.add(id);
 			// Only compiled groups and identifiable invalid facts can wait on scored rows.
 			for (const id of [...Object.keys(view.groups ?? {}), ...(view.invalidIds ?? [])])
 				if (

@@ -4,7 +4,7 @@ import {
 	type ChoiceDependencyView,
 	choiceDependencyStatus,
 } from "../../shared-blocks/src/choice-learner-state";
-import { finishRuntimeCourse } from "../../shared-blocks/src/tracking";
+import { finishRuntimeCourse, writeCourseOutcome } from "../../shared-blocks/src/tracking";
 import { Scorm12Runtime } from "../src/scorm/api/scorm12";
 import { Scorm2004Runtime } from "../src/scorm/api/scorm2004";
 import { XapiRuntime, type XapiStatement } from "../src/scorm/api/xapi";
@@ -215,6 +215,7 @@ describe.each(["scorm12", "scorm2004", "xapi"] as const)("%s dormant waiting", (
 		"unscored or sentinel history %s does not become a quiz dependency",
 		(id) => {
 			const { runtime } = launch(format);
+			runtime.trackInteraction("other", "answer", true, 100);
 			runtime.trackInteraction(id, "answer", false, id === "*" ? 0 : undefined, {
 				memberIds: ["a"],
 			});
@@ -227,6 +228,36 @@ describe.each(["scorm12", "scorm2004", "xapi"] as const)("%s dormant waiting", (
 			expect(tracker.outcome().kind).toBe("decided");
 		},
 	);
+
+	it("completion-only ignores optional historical scored groups", () => {
+		const { runtime } = launch(format);
+		runtime.trackInteraction("g", "100%", true, 100, { memberIds: ["a"] });
+		const tracker = new CourseTracker(runtime, {
+			totalPages: 1,
+			completionMethod: "allPages",
+			getChoiceDependencyView: groupView(runtime),
+		});
+		expect(tracker.outcome().kind).toBe("decided");
+	});
+
+	it("a decided quiz score uses current rows after excluding ungraded history", () => {
+		const { runtime } = launch(format);
+		runtime.trackInteraction("q", "answer", false, 0);
+		runtime.trackInteraction("other", "answer", true, 100);
+		const tracker = new CourseTracker(runtime, {
+			totalPages: 1,
+			completionMethod: "quiz",
+			getChoiceDependencyView: () => ({
+				rows: runtime
+					.getInteractions()
+					.map((row) => (row.id === "q" ? { ...row, choiceEvidenceInvalid: true } : row)),
+				questions: { q: { ...question, graded: false } },
+				signatures: { q: signature },
+				readState: () => undefined,
+			}),
+		});
+		expect(tracker.outcome("score")).toEqual({ kind: "decided", score: 100 });
+	});
 
 	it.each(["allPages", "percentage", "quiz"] as const)(
 		"%s waits before every outcome intent",
@@ -431,6 +462,27 @@ it("runtime-only End accepts a waiting outcome and never forces completion", () 
 	writes.length = 0;
 	expect(finishRuntimeCourse(runtime, { kind: "waiting", finish: "complete" })).toBe(true);
 	expect(outcomes()).toEqual([]);
+});
+
+it("the waiting writer cancels credit before any intent and terminates with explicitFinish=false", () => {
+	const calls: unknown[][] = [];
+	const runtime = {
+		configureOutcome: (policy: { waiting: boolean }) => calls.push(["policy", policy]),
+		setCompletion: () => calls.push(["completion"]),
+		setScore: () => calls.push(["score"]),
+		setSuccess: () => calls.push(["success"]),
+		trackObjective: () => calls.push(["objective"]),
+		suppressTerminationResult: () => calls.push(["suppress"]),
+		terminate: (explicitFinish?: boolean) => {
+			calls.push(["terminate", explicitFinish]);
+			return false;
+		},
+	};
+	expect(writeCourseOutcome(runtime, { kind: "waiting" })).toBe(true);
+	expect(calls).toEqual([["policy", { waiting: true }]]);
+	calls.length = 0;
+	expect(writeCourseOutcome(runtime, { kind: "waiting", finish: "terminate" })).toBe(false);
+	expect(calls).toEqual([["policy", { waiting: true }], ["suppress"], ["terminate", false]]);
 });
 
 it("xAPI consumes a suppressed result even when termination is already uninitialized", () => {
