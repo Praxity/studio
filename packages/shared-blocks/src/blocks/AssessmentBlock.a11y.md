@@ -1,18 +1,24 @@
-# Revised choice attempt route, 2026-10-22
+# Revised choice attempt route, 2026-10-23
+
+This route requires the provider's optional evidence capability. Ordinary hosts
+retain their existing choice restoration until that capability is installed.
 
 Reuse the outline action and secondary text. The new-attempt button is described
 by the history notice, so reaching it supplies the reason for the action without
 another live announcement. Activation uses the existing retry focus path to reach
-the first enabled answer control. History has no current result, score or completion.
+the first enabled radio or checkbox. The action remains mounted until focus moves.
+History has no current result, score or completion.
 The previous record remains saved until a deliberate new answer retains it in history.
 The notice does not display historical answer details. It also describes the
-radiogroup while its answers are disabled. A saved recovery draft restores its
+answer fieldset while its answers are disabled. A saved recovery draft restores its
 selection without showing New attempt again; its old submission still counts as
 history until the learner submits the new answer.
 
-EN/FR browser checks cover the accessible description, keyboard route, focus and
-retention in Chromium, WebKit and Firefox. They do not establish spoken delivery
-with a screen reader.
+EN/FR component and browser checks cover single and multiple answers, Don't know,
+draft reload, the accessible description and keyboard focus. The injected pages
+and deck journeys cover light/dark appearance, 320px and 200% reflow, and a waiting
+pass gate released by a new correct submission in Chromium, WebKit and Firefox.
+These checks do not establish spoken delivery with a screen reader.
 
 # Choice storage refusal, 2026-10-19
 

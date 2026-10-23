@@ -126,7 +126,11 @@ it.each(
 		expect(document.querySelector('[aria-live], [role="status"], [role="alert"]')).toBeNull();
 		for (const input of screen.getAllByRole(role)) expect(input).toBeDisabled();
 		expect(runtime.getBlockState("question")).toEqual(previous);
-		const bytes = runtime.getSuspendData();
+		const storedBytes = () =>
+			Object.keys(localStorage)
+				.sort()
+				.map((key) => [key, localStorage.getItem(key)]);
+		const bytes = storedBytes();
 		action.focus();
 		expect(action).toHaveFocus();
 		let noticeMountedAtFocus = false;
@@ -142,7 +146,7 @@ it.each(
 		expect(screen.getAllByRole(role)[0]).toHaveFocus();
 		for (const input of screen.getAllByRole(role)) expect(input).toBeEnabled();
 		expect(runtime.getBlockState("question")).toEqual(previous);
-		expect(runtime.getSuspendData()).toBe(bytes);
+		expect(storedBytes()).toEqual(bytes);
 		// Merely opening recovery is not a draft. A remount still offers recovery.
 		cleanup();
 		const mount = () =>
