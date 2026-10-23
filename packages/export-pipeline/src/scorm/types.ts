@@ -4,6 +4,10 @@
  */
 import type { LearnerBlockSaveResult } from "@praxity/shared-blocks/learner-block-state";
 import type { LearnerStateValue } from "@praxity/shared-blocks/learner-state";
+import {
+	isChoiceContentSignature,
+	isScorm12ChoiceSignature,
+} from "@praxity/shared-blocks/learner-state";
 
 export interface RuntimeDestinations {
 	readonly reporting: "device" | "lms";
@@ -85,6 +89,10 @@ export interface SCORMRuntime {
 }
 
 export interface AssessmentAttemptMetadata {
+	/** Submitted material evidence, never inferred from an editable answer. */
+	contentSignature?: string;
+	/** Rejected evidence must remain distinguishable from unsigned legacy rows. */
+	choiceEvidenceInvalid?: true;
 	/** Resolved UI attempt count, including attempts restored from learner state. */
 	attemptsUsed?: number;
 	/** Resolved UI limit. Zero represents unlimited attempts in suspend JSON. */
@@ -117,6 +125,27 @@ export function assessmentAttemptMetadata(input?: unknown): AssessmentAttemptMet
 			Array.isArray(memberIds) && memberIds.length && memberIds.every(isNonemptyString)
 				? memberIds
 				: undefined,
+	};
+}
+
+/** Dormant signed admission; ordinary adapter metadata remains selected until activation. */
+export function assessmentEvidenceMetadata(input?: unknown): AssessmentAttemptMetadata {
+	const metadata = assessmentAttemptMetadata(input);
+	if (!input || typeof input !== "object") return metadata;
+	const { contentSignature, choiceEvidenceInvalid, memberIds } = input as AssessmentAttemptMetadata;
+	const validSignature =
+		isChoiceContentSignature(contentSignature) || isScorm12ChoiceSignature(contentSignature);
+	// Keep ordinary member normalization unchanged until activation unifies the readers.
+	const validMembers = Array.isArray(memberIds) && Array.from(memberIds).every(isNonemptyString);
+	return {
+		...metadata,
+		...(choiceEvidenceInvalid !== undefined ||
+		(contentSignature !== undefined && !validSignature) ||
+		(memberIds !== undefined && !validMembers)
+			? { choiceEvidenceInvalid: true as const }
+			: {}),
+		...(validSignature ? { contentSignature } : {}),
+		memberIds: validMembers ? memberIds : undefined,
 	};
 }
 

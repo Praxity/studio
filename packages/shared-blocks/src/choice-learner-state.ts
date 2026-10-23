@@ -13,6 +13,7 @@ import {
 } from "./choice-state-facts";
 
 import type { LearnerStateV1, LearnerStateValue, SavedAssessmentState } from "./learner-state";
+import { choiceEvidenceSignature, isScorm12ChoiceSignature } from "./learner-state";
 
 export type { ChoiceStateGroup } from "./choice-state-facts";
 
@@ -65,6 +66,11 @@ function choiceStateMatchesSignature(
 	if (value.contentSignature === undefined)
 		return legacyChoiceStateIsCurrent(value, question, proof);
 	if (value.contentSignature === signature) return true;
+	if (isScorm12ChoiceSignature(value.contentSignature))
+		return (
+			value.materialProof === undefined &&
+			value.contentSignature === choiceEvidenceSignature(signature, "scorm12")
+		);
 	const old = value.materialProof;
 	if (!isRecord(old)) return false;
 	if (Array.isArray(old.optionIds)) {
@@ -184,7 +190,7 @@ export function prepareChoiceAssessmentState(
 	const prior = restored.current;
 	if (
 		prior?.checked &&
-		(prior.contentSignature !== facts.signature ||
+		(!sameSubmittedSignature(prior.contentSignature, facts.signature) ||
 			!next.checked ||
 			next.attemptCount !== prior.attemptCount)
 	) {
@@ -273,11 +279,13 @@ export function retainLegacyChoiceBuild(state: LearnerStateV1): void {
 }
 
 export interface ChoiceDependencyView {
+	invalidIds?: readonly string[];
 	rows: readonly {
 		id: string;
 		contentSignature?: string;
 		correct?: boolean;
 		memberIds?: readonly string[];
+		choiceEvidenceInvalid?: true;
 	}[];
 	questions: Readonly<Record<string, ChoiceStateQuestion>>;
 	signatures: Readonly<Record<string, string>>;
@@ -298,9 +306,10 @@ export function createChoiceDependencyView(
 		};
 	},
 ): ChoiceDependencyView {
-	if (facts.choiceStateFactsStatus === "invalid") throw new Error("Invalid choice facts");
+	if (facts.choiceStateInvalidIds.includes("*")) throw new Error("Invalid choice facts");
 	const preview = evidence.preview;
 	return {
+		invalidIds: facts.choiceStateInvalidIds,
 		rows: evidence.rows,
 		questions: facts.choiceStateQuestions,
 		signatures: facts.choiceStateSignatures,
@@ -345,6 +354,16 @@ function hasSubmittedChoice(value: unknown): boolean {
 	);
 }
 
+// Full aggregate references survive the member's first compact write.
+function sameSubmittedSignature(left: unknown, right: unknown): boolean {
+	if (left === right) return true;
+	if (isScorm12ChoiceSignature(left) && isChoiceContentSignature(right))
+		return left === choiceEvidenceSignature(right, "scorm12");
+	if (isChoiceContentSignature(left) && isScorm12ChoiceSignature(right))
+		return choiceEvidenceSignature(left, "scorm12") === right;
+	return false;
+}
+
 // Members and aggregate references consume the same admitted submitted evidence.
 type SubmittedChoiceResolution =
 	| {
@@ -361,6 +380,12 @@ export function choiceDependencyStatus(
 	id: string,
 	view: ChoiceDependencyView,
 ): "current" | "unanswered" | "history" {
+	if (view.invalidIds?.includes(id)) return "history";
+	if (
+		Object.hasOwn(view.groups ?? {}, id) &&
+		latestChoiceRow(id, view)?.choiceEvidenceInvalid === true
+	)
+		return "history";
 	if (view.groups && Object.hasOwn(view.groups, id)) return groupDependencyStatus(id, view);
 	return resolveMember(id, view).status;
 }
@@ -398,7 +423,9 @@ function resolveSubmittedChoice(
 	);
 	// A material reference resolves in its own verdict/origin context, not the newest row's.
 	let submitted = reference
-		? submissions.find((entry) => (entry.contentSignature ?? null) === reference.signature)
+		? submissions.find((entry) =>
+				sameSubmittedSignature(entry.contentSignature ?? null, reference.signature),
+			)
 		: submissions.at(-1);
 	if (reference && !submitted) {
 		const pending = history.find((entry) => isRecord(entry) && entry.legacyPending === true);
@@ -430,7 +457,7 @@ function resolveSubmittedChoice(
 	const answer = admitChoiceAssessmentState(submitted, facts, proof);
 	return answer?.checked &&
 		(!row ||
-			(row.contentSignature === answer.contentSignature &&
+			(sameSubmittedSignature(row.contentSignature, answer.contentSignature) &&
 				(row.correct === undefined || row.correct === answer.correct)))
 		? { status: "current", evidence: { kind: "submission", answer } }
 		: { status: "history", evidence: null };
@@ -481,7 +508,7 @@ function isGroupPayload(value: unknown): value is ChoiceGroupPayload {
 			pair.length !== 2 ||
 			!isNonemptyString(pair[0]) ||
 			pair[0] <= previous ||
-			(pair[1] !== null && !isChoiceContentSignature(pair[1]))
+			(pair[1] !== null && !isChoiceContentSignature(pair[1]) && !isScorm12ChoiceSignature(pair[1]))
 		)
 			return false;
 		previous = pair[0];
@@ -537,10 +564,13 @@ function resolveMember(
 	view: ChoiceDependencyView,
 	reference?: { signature: string | null },
 ): SubmittedChoiceResolution {
+	if (view.invalidIds?.includes(id)) return { status: "history", evidence: null };
 	if (!Object.hasOwn(view.questions, id))
 		return reference?.signature != null
 			? { status: "history", evidence: null }
 			: { status: "current", evidence: { kind: "base" } };
+	if (latestChoiceRow(id, view)?.choiceEvidenceInvalid === true)
+		return { status: "history", evidence: null };
 	return resolveSubmittedChoice(
 		view.readState(id),
 		{ question: view.questions[id], signature: view.signatures[id] },
