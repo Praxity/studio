@@ -1,6 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 import { LONG_MATCH } from "./fixtures/activity-bugs-fixture";
-import { readTestEnv } from "./helpers";
+import { readTestEnv, waitForSettledStyles } from "./helpers";
 
 async function open(page: Page, locale = "en", width = 1440) {
 	await page.setViewportSize({ width, height: 900 });
@@ -150,13 +150,35 @@ for (const locale of ["en", "fr"]) {
 			page,
 		}) => {
 			await open(page, locale, width);
+			await page.evaluate(() => document.fonts.ready);
 			for (const type of ["categorize", "matrix"]) {
 				const block = page.locator(`.mantine-Card-root[data-block-id="${type}"]`);
+				await expect(block.locator("xpath=ancestor::*[@data-island][1]")).toHaveAttribute(
+					"data-hydrated",
+					"",
+				);
 				const rows = block.locator("tbody tr");
 				for (let index = 0; index < (await rows.count()); index++)
 					await rows.nth(index).getByRole("radio").first().check();
 				const submit = block.locator("[data-assessment-submit]");
-				await submit.scrollIntoViewIfNeeded();
+				await submit.evaluate((element) =>
+					element.scrollIntoView({ block: "center", behavior: "instant" }),
+				);
+				await expect(submit).toBeInViewport({ ratio: 1 });
+				await waitForSettledStyles(page);
+				await expect
+					.poll(() =>
+						submit.evaluate(async (element) => {
+							const sample = () => {
+								const { x, y, width, height } = element.getBoundingClientRect();
+								return { x, y, width, height, scrollX, scrollY };
+							};
+							const position = sample();
+							await new Promise(requestAnimationFrame);
+							return JSON.stringify(sample()) === JSON.stringify(position);
+						}),
+					)
+					.toBe(true);
 				const before = await page.evaluate(() => scrollY);
 				await submit.click();
 				const summary = block.locator("[data-row-summary]");
@@ -182,6 +204,17 @@ for (const locale of ["en", "fr"]) {
 				});
 				await expect(action).toBeFocused();
 				await expect(action).toHaveAccessibleDescription(expectedSummary);
+				// Submission restores each ancestor's anchor after the reveal, then scrolls focus.
+				await expect
+					.poll(() =>
+						action.evaluate((element) => {
+							for (let node = element.parentElement; node; node = node.parentElement)
+								if (node.style.overflowAnchor === "none") return false;
+							return true;
+						}),
+					)
+					.toBe(true);
+				await waitForSettledStyles(page);
 				expect(Math.abs((await page.evaluate(() => scrollY)) - before)).toBeLessThanOrEqual(1);
 				await expect(rows.locator("[data-row-result='correct']")).toHaveCount(
 					type === "categorize" ? 2 : 1,
