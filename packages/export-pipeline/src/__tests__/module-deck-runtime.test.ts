@@ -1009,15 +1009,24 @@ it.each([false, true])("admitted group gate finality completed=%s", (completed) 
 	);
 });
 
-it("characterization: saved-state finality alone cannot restore a legacy pass gate", () => {
-	const { runtime } = setup(false);
-	runtime.getInteractions.mockReturnValue([{ id: "check", correct: false }]);
-	Object.assign(window.__praxityTracker ?? {}, { isAssessmentFinal: () => true });
-	cleanup = initDeck();
-	expect(document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled")).toBe(
-		"true",
-	);
-});
+it.each([false, true])(
+	"characterization: saved-state finality alone cannot restore a legacy pass gate, empty capability=%s",
+	(emptyCapability) => {
+		const { runtime } = setup(false);
+		runtime.getInteractions.mockReturnValue([{ id: "check", correct: false }]);
+		if (emptyCapability)
+			window.__praxityBlockState = {
+				get: () => undefined,
+				set() {},
+				getChoiceDependencyView: () => undefined,
+			};
+		Object.assign(window.__praxityTracker ?? {}, { isAssessmentFinal: () => true });
+		cleanup = initDeck();
+		expect(
+			document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled"),
+		).toBe("true");
+	},
+);
 
 it.each([80, null])("deck completion consumes the tracker's current score %s", (raw) => {
 	const { runtime, tracker } = setup(false, 2);
