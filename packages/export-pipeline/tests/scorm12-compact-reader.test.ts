@@ -231,7 +231,7 @@ it("rejects non-string keys even when coerced property names would match decoded
 		1,
 		4,
 		...rootKeys.flatMap(text),
-		0,
+		1,
 		8,
 		0,
 		7,
@@ -241,7 +241,7 @@ it("rejects non-string keys even when coerced property names would match decoded
 		...text("kept"),
 		...text("extra"),
 	];
-	expect(read(frame(typed, { ...empty, custom: "kept", null: "extra" }))).toBeNull();
+	expect(read(frame(typed, { ...empty, custom: "kept", false: "extra" }))).toBeNull();
 });
 
 it("rejects nonfinite numbers even when JSON null has matching decoded checks", () => {
