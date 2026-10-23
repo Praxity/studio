@@ -549,8 +549,8 @@ scheduling, each with its own browser context. They submit all six assessment
 islands once, then batch every island's review checks per width, text size and
 forced-colour state. JSON attachments retain the rendered colour pairs and control
 states for every configuration; failed theme tests retain a full-page screenshot.
-WebKit has two shards; Chromium and Firefox each have one. PRs run only the
-Chromium job. Whole
+Chromium has three shards; Firefox and WebKit each have two. Candidates run only
+Chromium; PRs run no browsers. Whole
 learner journeys stay inside individual tests. Each job uploads Playwright JSON,
 start/end timestamps, first-retry traces and a slowest-tests summary even on
 failure. The summary separates first-attempt work from time across all attempts.
@@ -600,7 +600,8 @@ use the short MP3 fixture; the authored-order and seek checks remain in place.
 
 The module-deck suite runs in the same three engines and is not included in
 `test:a11y`. CI gates it in separate `published-output-deck` jobs, with two
-WebKit shards and one shard each for Chromium and Firefox; PRs run only Chromium. Each job runs
+shards each for Chromium, Firefox and WebKit. Candidates run only Chromium;
+PRs run no browsers. Each job runs
 `prebuild:client` to warm `packages/export-pipeline/prebuilt` before source-mode
 browser fixtures read that shared compiler cache. Desktop prebuild serves the
 separate a11y fixture path; it does not warm this source-mode cache.

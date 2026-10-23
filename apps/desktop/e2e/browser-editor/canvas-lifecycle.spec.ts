@@ -2,6 +2,7 @@ import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { expect, type Page, test } from "@playwright/test";
 import { startJourney } from "./global-setup";
+import { captureJourneyRequests } from "./journey-diagnostics";
 
 const source =
 	"# First page\n\n## Original heading\n\nBody.\n\n# Second page\n\n## Other heading\n\nSecond body.\n";
@@ -423,6 +424,7 @@ test("idle Read tabs survive a closed author and retain Next and Edit", async ({
 test.describe("fifty saves across three authors and two Read tabs", () => {
 	test.describe.configure({ mode: "serial" });
 	let stop: () => Promise<void>;
+	let requests: ReturnType<typeof captureJourneyRequests>;
 	let authors: Page[];
 	let readers: Page[];
 	let heading = "Original heading";
@@ -433,6 +435,16 @@ test.describe("fifty saves across three authors and two Read tabs", () => {
 		for (const page of authors) await open(page);
 		readers = await Promise.all(Array.from({ length: 2 }, () => browser.newPage()));
 		for (const page of readers) await page.goto(ready());
+	});
+	test.beforeEach(() => {
+		requests = captureJourneyRequests(origin());
+	});
+	test.afterEach(async () => {
+		requests.mark("before-teardown");
+		await test.info().attach("journey-server-requests", {
+			body: requests.finish(),
+			contentType: "application/json",
+		});
 	});
 	test.afterAll(async () => {
 		await Promise.all([...authors, ...readers].map((page) => page.close()));
