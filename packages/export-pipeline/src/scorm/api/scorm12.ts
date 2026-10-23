@@ -332,12 +332,16 @@ export class Scorm12Runtime implements SCORMRuntime {
 				);
 			} else {
 				// Suspend history can include refused rows; prefer the LMS's accepted count.
-				const count = Number(this.api?.LMSGetValue("cmi.interactions._count") || NaN);
-				idx = Number.isNaN(count) ? data.interactions.length - 1 : count;
+				const raw = this.api?.LMSGetValue("cmi.interactions._count") ?? "";
+				idx =
+					/^\d+$/.test(raw) && Number.isSafeInteger(Number(raw))
+						? Number(raw)
+						: data.interactions.length - 1;
 			}
-			if (globalThis.__praxityPrivateState === false || idx !== undefined) {
-				if (globalThis.__praxityPrivateState === false || !privateAppend)
-					this.lmsSetValue(`cmi.interactions.${idx}.id`, id);
+			if (
+				(globalThis.__praxityPrivateState === false || idx !== undefined) &&
+				(privateAppend || this.lmsSetValue(`cmi.interactions.${idx}.id`, id))
+			) {
 				this.setReportValue(
 					`cmi.interactions.${idx}.type`,
 					// ADL 1.2 choice tokens are single characters; performance permits readable labels.
