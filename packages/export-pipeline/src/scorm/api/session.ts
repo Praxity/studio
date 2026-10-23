@@ -124,9 +124,12 @@ export function writeSessionState(
 	// Index marks the previous launch uninitialized. Initialize owns the next
 	// session's clock and completion state; navigation into an active session keeps both.
 	if (initialized && !state.initialized) {
-		state.startedAt = state.pendingCompletion = state.courseFailure = undefined;
-		state.outcomeWaiting = undefined;
-		state.objectiveReplays = undefined;
+		state.startedAt =
+			state.pendingCompletion =
+			state.courseFailure =
+			state.outcomeWaiting =
+			state.objectives =
+				undefined;
 	}
 	state.initialized = initialized && !state.closed;
 	storeSessionState(api, state, win);
@@ -155,8 +158,7 @@ export function resetSessionState(api: object | null, win: WindowLike): void {
 			const state = store?.get(api);
 			if (state && typeof state === "object" && !state.closed) {
 				state.initialized = false;
-				state.attemptId = undefined;
-				state.prepareCommit = undefined;
+				state.attemptId = state.prepareCommit = undefined;
 			} else store?.delete(api);
 		} catch {
 			// Restricted carriers are independent; reset every accessible one.

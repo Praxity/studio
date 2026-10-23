@@ -15,7 +15,11 @@ import { XapiRuntime } from "../src/scorm/api/xapi";
 import * as tracking from "../src/scorm/tracking";
 import { CourseTracker, type TrackingConfig } from "../src/scorm/tracking";
 import { createBlockStateRuntime } from "../template/src/hosts/block-state-runtime";
-import { initializeCourseHost, initializeScormCourseHost, readCourseDeploymentConfig } from "../template/src/hosts/course-host";
+import {
+	initializeCourseHost,
+	initializeScormCourseHost,
+	readCourseDeploymentConfig,
+} from "../template/src/hosts/course-host";
 import { selfCheckDocument } from "../template/src/self-check-document";
 import { withChoiceDependencyStatus } from "./fixtures/choice-facts";
 
@@ -235,7 +239,9 @@ describe.each(["scorm12", "scorm2004"] as const)("%s round-one regressions", (fo
 			host.seed();
 			host.submit();
 			const before = host.runtime.getSuspendData();
-			expect(host.tracker.trackGroupObjective("g", score as number, true, host.runtime, groupSignature)).toBe(false);
+			expect(
+				host.tracker.trackGroupObjective("g", score as number, true, host.runtime, groupSignature),
+			).toBe(false);
 			expect(host.runtime.getSuspendData()).toBe(before);
 			host.replace(true);
 			host.repair();
@@ -247,7 +253,15 @@ describe.each(["scorm12", "scorm2004"] as const)("%s round-one regressions", (fo
 		host.seed();
 		host.submit();
 		const before = host.runtime.getSuspendData();
-		expect(host.tracker.trackGroupObjective("g", 100, "passed" as unknown as boolean, host.runtime, groupSignature)).toBe(false);
+		expect(
+			host.tracker.trackGroupObjective(
+				"g",
+				100,
+				"passed" as unknown as boolean,
+				host.runtime,
+				groupSignature,
+			),
+		).toBe(false);
 		expect(host.runtime.getSuspendData()).toBe(before);
 	});
 
@@ -309,7 +323,9 @@ describe.each(["scorm12", "scorm2004"] as const)("%s round-one regressions", (fo
 			host.seed();
 			host.provider.set("g", { ...groupState(), objectiveSequence: sequence } as LearnerStateValue);
 			const before = host.runtime.getSuspendData();
-			expect(host.tracker.trackGroupObjective("g", 0, false, host.runtime, groupSignature)).toBe(false);
+			expect(host.tracker.trackGroupObjective("g", 0, false, host.runtime, groupSignature)).toBe(
+				false,
+			);
 			expect(host.runtime.getSuspendData()).toBe(before);
 		});
 
@@ -353,7 +369,12 @@ describe.each(["scorm12", "scorm2004"] as const)("%s round-two launch lifecycle"
 		expect(host.stored().submitted.deferredObjective).toEqual({ id: "1", score: 0, passed: false });
 		host.repair();
 		expect(host.objectives().map(([, value]) => value)).toEqual([
-			"g", "100", "passed", "g", "0", "failed",
+			"g",
+			"100",
+			"passed",
+			"g",
+			"0",
+			"failed",
 		]);
 	});
 
@@ -373,7 +394,12 @@ describe.each(["scorm12", "scorm2004"] as const)("%s round-two launch lifecycle"
 		host.replace(true);
 		host.tracker.checkCompletion();
 		expect(host.objectives().map(([, value]) => value)).toEqual([
-			"g", "100", "passed", "g", "100", "passed",
+			"g",
+			"100",
+			"passed",
+			"g",
+			"100",
+			"passed",
 		]);
 		expect(host.stored().submitted.deferredObjective).toBeUndefined();
 	});
@@ -390,8 +416,12 @@ describe.each(["scorm2004", "xapi"] as const)("%s round-two submission lifecycle
 		});
 		dispatchSelfCheckEvent(event, () => true, win.document);
 		expect(event.defaultPrevented).toBe(false);
-		host.saveGroup();
-		expect(host.stored().submitted.deferredObjective).toEqual({ id: "1", score: 100, passed: true });
+		expect(writeLearnerBlockState("g", groupState(), () => true, win.document)).toBe(true);
+		expect(host.stored().submitted.deferredObjective).toEqual({
+			id: "1",
+			score: 100,
+			passed: true,
+		});
 		owner.dispose();
 		host.replace(true);
 		host.repair();
@@ -407,15 +437,25 @@ describe.each(["scorm2004", "xapi"] as const)("%s round-two submission lifecycle
 		host.tracker.trackGroupObjective("g", 0, false, host.runtime, groupSignature);
 		expect(host.runtime.getSuspendData()).toBe(beforeEvent);
 		host.tracker.trackInteraction("g", "0%", false, 0);
-		const beforeSave = format === "xapi"
-			? host.dom.window.localStorage.getItem(host.dom.window.localStorage.key(0) ?? "")
-			: host.values.get("cmi.suspend_data");
-		const storage = format === "xapi" ? vi.spyOn(Object.getPrototypeOf(host.dom.window.localStorage), "setItem").mockImplementation(() => { throw new Error("storage refused"); }) : undefined;
+		const beforeSave =
+			format === "xapi"
+				? host.dom.window.localStorage.getItem(host.dom.window.localStorage.key(0) ?? "")
+				: host.values.get("cmi.suspend_data");
+		const storage =
+			format === "xapi"
+				? vi
+						.spyOn(Object.getPrototypeOf(host.dom.window.localStorage), "setItem")
+						.mockImplementation(() => {
+							throw new Error("storage refused");
+						})
+				: undefined;
 		host.refuse(true);
 		host.saveGroup({ ...groupState(), completed: false });
-		expect(format === "xapi"
-			? host.dom.window.localStorage.getItem(host.dom.window.localStorage.key(0) ?? "")
-			: host.values.get("cmi.suspend_data")).toBe(beforeSave);
+		expect(
+			format === "xapi"
+				? host.dom.window.localStorage.getItem(host.dom.window.localStorage.key(0) ?? "")
+				: host.values.get("cmi.suspend_data"),
+		).toBe(beforeSave);
 		storage?.mockRestore();
 		host.refuse(false);
 		host.replace(true);
@@ -445,10 +485,24 @@ describe.each(["scorm2004", "xapi"] as const)("%s round-two submission lifecycle
 			dispatchSelfCheckEvent(event, () => true, win.document);
 			expect(event.defaultPrevented).toBe(true);
 			expect(errors).toEqual([]);
-			expect(host.runtime.getInteractions().at(-1)).toMatchObject({ id: "g", score: 0, response: "0%" });
+			expect(host.runtime.getInteractions().at(-1)).toMatchObject({
+				id: "g",
+				score: 0,
+				response: "0%",
+			});
 			expect(commit).toHaveBeenCalled();
-			expect(host.saveGroup({ ...groupState(), completed: false, submitted: { ...submission(), contentSignature: changed } })).toBe(true);
-			expect(host.stored().submitted).toEqual({ ...submission(), contentSignature: changed, deferredObjective: corrupt });
+			expect(
+				host.saveGroup({
+					...groupState(),
+					completed: false,
+					submitted: { ...submission(), contentSignature: changed },
+				}),
+			).toBe(true);
+			expect(host.stored().submitted).toEqual({
+				...submission(),
+				contentSignature: changed,
+				deferredObjective: corrupt,
+			});
 			expect(host.stored().completed).toBe(false);
 			expect(host.stored()).toHaveProperty("objectiveSequence", 1);
 			owner.dispose();
@@ -462,7 +516,9 @@ describe.each(["scorm2004", "xapi"] as const)("%s round-two submission lifecycle
 		const host = launch(format);
 		host.seed();
 		const raw = { id: "damaged", score: 101, passed: true, retained: ["answer", 17] };
-		expect(host.saveGroup({ ...groupState(), submitted: { ...submission(), deferredObjective: raw } })).toBe(true);
+		expect(
+			host.saveGroup({ ...groupState(), submitted: { ...submission(), deferredObjective: raw } }),
+		).toBe(true);
 		expect(host.stored().submitted.deferredObjective).toEqual(raw);
 		expect(host.saveGroup({ ...groupState(), completed: false })).toBe(true);
 		expect(host.stored().submitted.deferredObjective).toEqual(raw);
@@ -481,7 +537,9 @@ describe.each(["scorm2004", "xapi"] as const)("%s round-two submission lifecycle
 			}
 			const before = host.runtime.getSuspendData();
 			let accepted: boolean | undefined;
-			expect(() => { accepted = host.tracker.trackGroupObjective("g", 0, false); }).not.toThrow();
+			expect(() => {
+				accepted = host.tracker.trackGroupObjective("g", 0, false);
+			}).not.toThrow();
 			expect(accepted).toBe(false);
 			expect(host.runtime.getSuspendData()).toBe(before);
 			const { win, owner } = installHost(host, format);
@@ -496,7 +554,11 @@ describe.each(["scorm2004", "xapi"] as const)("%s round-two submission lifecycle
 			dispatchSelfCheckEvent(event, () => true, win.document);
 			expect(event.defaultPrevented).toBe(true);
 			expect(errors).toEqual([]);
-			expect(host.runtime.getInteractions().at(-1)).toMatchObject({ id: "g", score: 0, response: "0%" });
+			expect(host.runtime.getInteractions().at(-1)).toMatchObject({
+				id: "g",
+				score: 0,
+				response: "0%",
+			});
 			expect(commit).toHaveBeenCalled();
 			expect(host.provider.get("g")).toEqual(previous);
 			expect(host.objectives()).toEqual([]);
@@ -514,15 +576,38 @@ describe.each(["scorm2004", "xapi"] as const)("%s round-two submission lifecycle
 });
 
 describe("objective-first save handoff", () => {
+	it("a string reevaluation intent cannot become a compiled group's submission", () => {
+		const host = launch("scorm2004");
+		const view = host.evidence();
+		const writer = tracking.createDeferredGroupObjectiveWriter(
+			host.provider,
+			() => true,
+			host.ledger() ?? {},
+		);
+		expect(
+			writer(
+				host.runtime,
+				{ kind: "waiting" },
+				{
+					...view,
+					groups: { undefined: { mode: "all", memberIds: ["a"], requiredIds: ["a"] } },
+				},
+				"check",
+			),
+		).toBe(true);
+	});
+
 	it("a staged event refuses a different capture without leaving a handoff for a later save", () => {
 		const host = launch("scorm12");
 		host.seed();
-		expect(host.provider.stageSubmission?.("g", () => {
-			host.saveGroup();
-			expect(host.tracker.trackGroupObjective("g", 0, false, host.runtime, changed)).toBe(false);
-			host.tracker.trackInteraction("g", "0%", false, 0);
-			return true;
-		})).toBe(true);
+		expect(
+			host.provider.stageSubmission?.("g", () => {
+				host.saveGroup();
+				expect(host.tracker.trackGroupObjective("g", 0, false, host.runtime, changed)).toBe(false);
+				host.tracker.trackInteraction("g", "0%", false, 0);
+				return true;
+			}),
+		).toBe(true);
 		expect(host.stored()).toEqual(groupState());
 		host.saveGroup({ ...groupState(), submitted: { ...submission(), contentSignature: changed } });
 		expect(host.stored().submitted.deferredObjective).toBeUndefined();
@@ -1160,7 +1245,9 @@ describe.each(["scorm12", "scorm2004"] as const)("%s deferred group objectives",
 			submitted: { ...saved.submitted, deferredObjective: null },
 		});
 		const before = host.runtime.getSuspendData();
-		expect(host.tracker.trackGroupObjective("g", 0, false, host.runtime, groupSignature)).toBe(false);
+		expect(host.tracker.trackGroupObjective("g", 0, false, host.runtime, groupSignature)).toBe(
+			false,
+		);
 		expect(host.runtime.getSuspendData()).toBe(before);
 		host.replace(true);
 		host.repair();
@@ -1197,7 +1284,9 @@ describe.each(["scorm12", "scorm2004"] as const)("%s deferred group objectives",
 			expect(host.stored().submitted.deferredObjective?.score).toBe(100);
 			host.provider.set("g", { ...host.stored(), ...patch } as LearnerStateValue);
 			const before = host.runtime.getSuspendData();
-			expect(host.tracker.trackGroupObjective("g", 0, false, host.runtime, groupSignature)).toBe(false);
+			expect(host.tracker.trackGroupObjective("g", 0, false, host.runtime, groupSignature)).toBe(
+				false,
+			);
 			expect(host.runtime.getSuspendData()).toBe(before);
 		});
 });
@@ -1244,7 +1333,12 @@ function installHost(host: ReturnType<typeof launch>, format: "scorm12" | "scorm
 	Object.defineProperty(win.document, "readyState", { value: "complete" });
 	expect(
 		(format === "xapi" ? initializeCourseHost : initializeScormCourseHost)(
-			{ format, readEntry: () => null, readDeploymentConfig: readCourseDeploymentConfig, createRuntime: () => host.runtime },
+			{
+				format,
+				readEntry: () => null,
+				readDeploymentConfig: readCourseDeploymentConfig,
+				createRuntime: () => host.runtime,
+			},
 			{
 				win,
 				doc: win.document,

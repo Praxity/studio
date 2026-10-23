@@ -9,7 +9,7 @@ export type GroupObjectiveWriter = (
 	runtime: OutcomeRuntime,
 	outcome: CourseOutcome,
 	view: ChoiceDependencyEvidence | undefined,
-	objective?: { id: string; score: number; passed: boolean; contentSignature?: string },
+	intent?: string | { id: string; score: number; passed: boolean; contentSignature?: unknown },
 ) => boolean;
 
 export type LearnerBlockSaveResult =

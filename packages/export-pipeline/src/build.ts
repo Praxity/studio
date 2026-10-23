@@ -68,7 +68,11 @@ import {
 	writeSelfCheckAssets,
 } from "./self-check.ts";
 import { embedTablerInlineIcons, embedTablerNoteIcons } from "./tabler-note-icons.ts";
-import { assertRuntimeLegalInputs, writePackageNotice } from "./third-party-notices.ts";
+import {
+	assertRuntimeLegalInputs,
+	type PackageNotice,
+	writePackageNotice,
+} from "./third-party-notices.ts";
 import { cacheViewerBundle, readCachedViewer, VIEWER_CACHE_DIR } from "./viewer-cache.ts";
 import {
 	type WriteDistractorsAssetReference,
@@ -555,7 +559,7 @@ interface CompiledCourseArtifact {
 	hostRuntimeDependencies: Partial<
 		Record<ViewerHostName, { filename: string; path: string | null }[]>
 	>;
-	reviewAssets: { js: string; css: string } | null;
+	reviewAssets: { js: string; css: string; iconNotice: PackageNotice | undefined } | null;
 	activeDeployments: number;
 }
 
@@ -983,6 +987,7 @@ async function compileCourseArtifact(
 				? {
 						js: path.join(deploymentAssetDir, "review-comments.js"),
 						css: path.join(deploymentAssetDir, "review-comments.css"),
+						iconNotice: islandManifest.thirdPartyNotices?.packages["@tabler/icons"],
 					}
 				: null;
 		if (reviewAssets) {
@@ -1399,6 +1404,7 @@ async function applyDeploymentTarget(
 		await Promise.all([
 			fs.copy(artifact.reviewAssets.js, path.join(distDir, "review-comments.js")),
 			fs.copy(artifact.reviewAssets.css, path.join(distDir, "review-comments.css")),
+			writePackageNotice(distDir, artifact.reviewAssets.iconNotice),
 		]);
 		const [jsVersion, cssVersion] = await Promise.all(
 			[artifact.reviewAssets.js, artifact.reviewAssets.css].map(async (file) =>

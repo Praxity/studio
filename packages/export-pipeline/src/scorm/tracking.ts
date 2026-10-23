@@ -87,11 +87,11 @@ type OutcomeIntent =
 	| "prepareCommit"
 	| "end"
 	| "finish"
-	| { id: string; score: number; passed: boolean; contentSignature?: string };
+	| { id: string; score: number; passed: boolean; contentSignature?: unknown };
 
 /** Belongs to the launch, so document and tracker replacement retain acknowledgement. */
 export interface GroupObjectiveReplayLedger {
-	objectiveReplays?: Map<string, "writing" | "written">;
+	objectives?: Map<string, "writing" | "written">;
 }
 
 /** Storage and replay stay out of ordinary bundles until a provider installs this owner. */
@@ -131,7 +131,11 @@ export function createDeferredGroupObjectiveWriter(
 		}
 	};
 	return (runtime, outcome, view, submittedObjective) => {
-		if (submittedObjective && Object.hasOwn(view?.groups ?? {}, submittedObjective.id)) {
+		if (
+			typeof submittedObjective === "object" &&
+			submittedObjective &&
+			Object.hasOwn(view?.groups ?? {}, submittedObjective.id)
+		) {
 			const { id, score, passed, contentSignature } = submittedObjective;
 			pending.delete(id);
 			if (
@@ -173,7 +177,7 @@ export function createDeferredGroupObjectiveWriter(
 					const objective = saved?.objective;
 					if (!objective) continue;
 					const key = JSON.stringify([id, objective.id]);
-					const replays = (ledger.objectiveReplays ??= new Map());
+					const replays = (ledger.objectives ??= new Map());
 					if (replays.get(key) === "written") {
 						clear(id, objective.id);
 						continue;
@@ -209,8 +213,8 @@ export function createDeferredGroupObjectiveWriter(
 			return acknowledged;
 		} finally {
 			if (superseded) {
-				if (acknowledged) ledger.objectiveReplays?.set(superseded.key, "written");
-				else ledger.objectiveReplays?.delete(superseded.key);
+				if (acknowledged) ledger.objectives?.set(superseded.key, "written");
+				else ledger.objectives?.delete(superseded.key);
 			}
 		}
 	};
@@ -308,12 +312,9 @@ export class CourseTracker {
 		score: number,
 		passed: boolean,
 		runtime = this.runtime,
-		contentSignature?: string,
+		contentSignature?: unknown,
 	): boolean {
-		return this.writeOutcome(
-			{ id, score, passed, ...(contentSignature ? { contentSignature } : {}) },
-			runtime,
-		);
+		return this.writeOutcome({ id, score, passed, contentSignature }, runtime);
 	}
 
 	finish(explicitFinish = false, runtime = this.runtime): boolean {
@@ -324,12 +325,8 @@ export class CourseTracker {
 		const view = this.config.getChoiceDependencyView?.();
 		const outcome = this.outcome(intent, view);
 		return (
-			this.config.writeObjectives?.(
-				runtime,
-				outcome,
-				view,
-				typeof intent === "object" ? intent : undefined,
-			) ?? writeCourseOutcome(runtime, outcome)
+			this.config.writeObjectives?.(runtime, outcome, view, intent) ??
+			writeCourseOutcome(runtime, outcome)
 		);
 	}
 

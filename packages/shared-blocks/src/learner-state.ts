@@ -82,7 +82,9 @@ export function isGroupObjectiveScore(value: unknown): value is number {
 }
 
 /** Undefined is absent; null refuses corrupt evidence without normalizing its raw fields. */
-export function readDeferredGroupObjective(value: unknown): DeferredGroupObjective | null | undefined {
+export function readDeferredGroupObjective(
+	value: unknown,
+): DeferredGroupObjective | null | undefined {
 	if (!isRecord(value) || !isRecord(value.submitted)) return undefined;
 	const objective = value.submitted.deferredObjective;
 	if (objective === undefined) return undefined;
@@ -121,7 +123,11 @@ export function prepareGroupObjectiveSave(
 	// Preserve rejected raw evidence while allowing picker, retry and new-capture saves.
 	if (previousObjective === null || nextObjective === null) {
 		const rejected = previousObjective === null ? previousSubmission : submitted;
-		state.submitted = { ...rejected, ...submitted, deferredObjective: rejected?.deferredObjective };
+		state.submitted = {
+			...rejected,
+			...submitted,
+			deferredObjective: rejected?.deferredObjective,
+		} as LearnerStateValue;
 		if (sequence) state.objectiveSequence = sequence;
 		return state as LearnerStateValue;
 	}
