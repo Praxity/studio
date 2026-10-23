@@ -1219,6 +1219,7 @@
 			if (layoutObserver && layoutRoot !== root) {
 				layoutObserver.disconnect();
 				layoutObserver.observe(root);
+				if (anchors && !isDeck) layoutObserver.observe(header);
 				layoutRoot = root;
 				layoutInlineSize = undefined;
 			}
@@ -1446,6 +1447,13 @@
 		if (overlay) {
 			if (typeof ResizeObserver === "function")
 				layoutObserver = new ResizeObserver((entries = []) => {
+					if (anchors && !isDeck) {
+						// Reserve the floating toolbar's wrapped height above the page navigation.
+						document.body.style.setProperty(
+							"--prx-review-toolbar-space",
+							`${header.getBoundingClientRect().height + 32}px`,
+						);
+					}
 					var entry = entries.find((entry) => entry.target === layoutRoot);
 					if (entry) {
 						var inlineSize = entry.borderBoxSize?.[0]?.inlineSize ?? entry.contentRect.width;

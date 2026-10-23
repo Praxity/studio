@@ -29,6 +29,14 @@
 	display: none;
 }
 
+body:has(> .prx-review-sidebar--local) > .praxity-layout-wrapper {
+	padding-block-end: var(--prx-review-toolbar-space, 0px);
+}
+
+body:has(> .prx-review-sidebar--local) #praxity-page-nav {
+	bottom: var(--prx-review-toolbar-space, 0px);
+}
+
 .prx-review-header {
 	display: flex;
 	align-items: center;

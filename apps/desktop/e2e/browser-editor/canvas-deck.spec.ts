@@ -115,7 +115,7 @@ test("top-level learner deck is ready, navigates and keeps isolated browser stat
 	const response = await request.get(readUrl);
 	expect(
 		(await response.text()).replace(
-			/<a href="[^"]+" rel="noreferrer" style="[^"]+">[^<]+<\/a>/,
+			/<style data-praxity-studio-read>[\s\S]*?<\/style><div class="praxity-studio-read-tools">[\s\S]*?<\/div>/,
 			"",
 		),
 	).toBe(original);
