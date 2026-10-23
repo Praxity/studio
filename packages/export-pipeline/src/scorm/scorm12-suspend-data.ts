@@ -11,6 +11,17 @@ export interface Scorm12SuspendData {
 
 export const SCORM12_SUSPEND_DATA_LIMIT = 4096;
 
+function suspendDataPayload(data: unknown): Scorm12SuspendData | null {
+	if (!data || typeof data !== "object") return null;
+	const value = data as Partial<Scorm12SuspendData>;
+	return Array.isArray(value.visitedPages) &&
+		value.visitedPages.every((id: unknown) => typeof id === "string") &&
+		Array.isArray(value.interactions) &&
+		(value.custom === undefined || typeof value.custom === "string")
+		? (value as Scorm12SuspendData)
+		: null;
+}
+
 // CRC-32/ISO-HDLC, also used by gzip and ZIP. fflate 0.8.3 has no public CRC export.
 const CRC32_TABLE = Uint32Array.from({ length: 256 }, (_, value) => {
 	let crc = value;
@@ -308,13 +319,7 @@ export function parseScorm12SuspendData(raw: string): Scorm12SuspendData | null 
 			if (((b << 16) | a) >>> 0 !== checksum) return null;
 			data = JSON.parse(strFromU8(bytes));
 		}
-		return data &&
-			Array.isArray(data.visitedPages) &&
-			data.visitedPages.every((id: unknown) => typeof id === "string") &&
-			Array.isArray(data.interactions) &&
-			(data.custom === undefined || typeof data.custom === "string")
-			? data
-			: null;
+		return suspendDataPayload(data);
 	} catch {
 		return null;
 	}
