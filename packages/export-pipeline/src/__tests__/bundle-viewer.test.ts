@@ -1307,7 +1307,9 @@ describe("computeViewerSourceHash", () => {
 			// Owner C5 previously measured
 			// 39,577 / 131,639 B; HL04 caps were 36,864 / 129,024 B.
 			// Size caps don't block working features (owner rule): waiting and exit mechanics measure 136,755 B gzip for the deck, plus 1 KiB rounded up to 256 B; tighten during final size work.
-			const caps = { page: 44_288, deck: 137_984 };
+			// Size caps don't block working features (owner rule): dormant gate/display support measures 44,302 B gzip for the page; round up to 256 B.
+			// Keep this tighter page cap during prerequisites; measure the usual 1 KiB headroom with activation.
+			const caps = { page: 44_544, deck: 137_984 };
 			const page = {
 				id: "highlight-page",
 				title: "Highlight",
