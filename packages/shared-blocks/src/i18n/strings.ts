@@ -1004,6 +1004,25 @@ const catalogs: Record<string, LearnerStrings> = { en, fr };
 export function getStrings(locale: string): LearnerStrings {
 	return catalogs[resolveLocale(locale)];
 }
+
+// Recovery copy is used by the optional UI, outside the ordinary serialized catalog.
+const choiceRecoveryCatalogs = {
+	en: {
+		choiceHistoryNotice:
+			"This question changed after you answered it, so your earlier answer no longer counts. Select New attempt to answer it again.",
+		choiceNewAttempt: "New attempt",
+	},
+	fr: {
+		choiceHistoryNotice:
+			"Cette question a été modifiée après votre réponse. Votre réponse précédente ne compte donc plus. Sélectionnez Nouvelle tentative pour y répondre de nouveau.",
+		choiceNewAttempt: "Nouvelle tentative",
+	},
+};
+
+export function getChoiceRecoveryStrings(locale: string) {
+	return choiceRecoveryCatalogs[resolveLocale(locale)];
+}
+
 // Preview diagnostics are not part of the learner catalog serialized into exports.
 interface PreviewStrings {
 	errorLine: string;
