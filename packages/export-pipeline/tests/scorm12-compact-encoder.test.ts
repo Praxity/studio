@@ -13,7 +13,11 @@ const read = codec.parseScorm12CompactSuspendData;
 const preflight =
 	(
 		codec as Partial<typeof codec> & {
-			preflightScorm12SuspendData?: (data: codec.Scorm12SuspendData, candidate: string) => string;
+			preflightScorm12SuspendData?: (
+				data: codec.Scorm12SuspendData,
+				candidate: string,
+				read: typeof codec.parseScorm12SuspendData,
+			) => string;
 		}
 	).preflightScorm12SuspendData ?? ((_data, candidate) => candidate);
 
@@ -103,5 +107,7 @@ it("refuses excessive nesting", () => {
 it("preflight independently bounds a readable ordinary candidate", () => {
 	const data = { visitedPages: [], interactions: [], custom: "x".repeat(4096) };
 	expect(codec.parseScorm12SuspendData(JSON.stringify(data))).toEqual(data);
-	expect(() => preflight(data, JSON.stringify(data))).toThrow(/exceeds the character limit/);
+	expect(() => preflight(data, JSON.stringify(data), codec.parseScorm12SuspendData)).toThrow(
+		/exceeds the character limit/,
+	);
 });

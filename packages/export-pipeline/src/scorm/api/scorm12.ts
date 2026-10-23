@@ -608,7 +608,11 @@ export class Scorm12Runtime implements SCORMRuntime {
 		if (globalThis.__praxityPrivateState !== false)
 			data = JSON.parse(filterPrivateSuspendData(JSON.stringify(data), this.blockStatePolicy));
 		const serialized = this.suspendDataCodec
-			? preflightScorm12SuspendData(data, this.suspendDataCodec.serialize(data))
+			? preflightScorm12SuspendData(
+					data,
+					this.suspendDataCodec.serialize(data),
+					this.suspendDataCodec.parse,
+				)
 			: fitScorm12SuspendData(data);
 		return this.lmsSetValue("cmi.suspend_data", serialized);
 	}

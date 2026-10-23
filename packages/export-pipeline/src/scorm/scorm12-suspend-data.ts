@@ -396,7 +396,11 @@ export interface Scorm12SuspendDataCodec {
 
 /** Dormant writer; hosts select this codec only when compact evidence is admitted. */
 export function serializeScorm12CompactSuspendData(data: Scorm12SuspendData): string {
-	return preflightScorm12SuspendData(data, encodeEvidence(JSON.stringify(data)));
+	return preflightScorm12SuspendData(
+		data,
+		encodeEvidence(JSON.stringify(data)),
+		parseScorm12CompactSuspendData,
+	);
 }
 
 export const scorm12CompactSuspendDataCodec: Scorm12SuspendDataCodec = {
@@ -405,10 +409,14 @@ export const scorm12CompactSuspendDataCodec: Scorm12SuspendDataCodec = {
 };
 
 /** Verify the exact filtered payload before replacing readable LMS bytes. */
-export function preflightScorm12SuspendData(data: Scorm12SuspendData, candidate: string): string {
+export function preflightScorm12SuspendData(
+	data: Scorm12SuspendData,
+	candidate: string,
+	read: Scorm12SuspendDataCodec["parse"],
+): string {
 	if (candidate.length > SCORM12_SUSPEND_DATA_LIMIT)
 		throw new Error("ESCORM12STORAGE: replacement exceeds the character limit");
-	const decoded = parseScorm12CompactSuspendData(candidate) ?? parseScorm12SuspendData(candidate);
+	const decoded = read(candidate);
 	if (JSON.stringify(decoded) !== JSON.stringify(data))
 		throw new Error("ESCORM12STORAGE: replacement does not preserve the payload");
 	return candidate;
