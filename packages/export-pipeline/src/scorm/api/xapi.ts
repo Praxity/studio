@@ -34,6 +34,7 @@ import {
 	type TrackInteractionOptions,
 } from "../types.ts";
 import { resolveLaunchAttempt } from "./device-attempt";
+import { runtimeUuid } from "./runtime-uuid";
 
 // ---------------------------------------------------------------------------
 // ADL verb registry
@@ -268,11 +269,21 @@ export class XapiRuntime implements SCORMRuntime {
 				this.score = { raw: score.raw, min: score.min, max: score.max };
 			if (isString(value.bookmark)) this.bookmark = value.bookmark;
 			if (isString(value.suspendData)) this.suspendData = value.suspendData;
-			if (Array.isArray(value.outbox))
+			if (Array.isArray(value.outbox)) {
 				this.outbox = value.outbox.filter(
 					(item): item is XapiStatement =>
 						!!item && typeof item === "object" && isString((item as XapiStatement).verb?.id),
 				);
+				let migrated = false;
+				for (const statement of this.outbox) {
+					if (!isString(statement.id)) {
+						statement.id = runtimeUuid();
+						migrated = true;
+					}
+				}
+				// Save legacy IDs before a send can lose its response or the page closes.
+				if (migrated) this.persist();
+			}
 		} catch {
 			// Unreadable or blocked storage starts a fresh in-memory state.
 		}
@@ -309,17 +320,7 @@ export class XapiRuntime implements SCORMRuntime {
 	 * Build a full xAPI statement with the configured actor and an ISO timestamp.
 	 */
 	buildStatement(verb: VerbKey, object: XapiObject, result?: XapiResult): XapiStatement {
-		let id: string;
-		if (typeof crypto.randomUUID === "function") {
-			id = crypto.randomUUID();
-		} else {
-			// LMS pages served over HTTP lack randomUUID, but still expose getRandomValues.
-			const bytes = crypto.getRandomValues(new Uint8Array(16));
-			bytes[6] = (bytes[6] & 0x0f) | 0x40;
-			bytes[8] = (bytes[8] & 0x3f) | 0x80;
-			const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
-			id = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-		}
+		const id = runtimeUuid();
 		const verbDef = VERBS[verb];
 		const actor = this.actor ?? { name: "Unknown Learner", mbox: "mailto:unknown@example.com" };
 		const statement: XapiStatement = {
@@ -363,7 +364,9 @@ export class XapiRuntime implements SCORMRuntime {
 				},
 				body: JSON.stringify(statement),
 			});
-			if (!response.ok) throw new Error(`LRS responded ${response.status}`);
+			// xAPI permits 409 for an already-stored statement with the same ID.
+			if (!response.ok && !(response.status === 409 && statement.id))
+				throw new Error(`LRS responded ${response.status}`);
 		} catch (error: unknown) {
 			const message = error instanceof Error ? error.message : String(error);
 			console.warn(`[xAPI] Failed to send statement: ${message}`);
@@ -529,7 +532,7 @@ export class XapiRuntime implements SCORMRuntime {
 	}
 
 	getInteractions(): InteractionRecord[] {
-		return [...this.interactions];
+		return this.interactions.map((record) => ({ ...record, ...assessmentAttemptMetadata(record) }));
 	}
 
 	setCompletion(status: "incomplete" | "completed" | "passed" | "failed"): void {

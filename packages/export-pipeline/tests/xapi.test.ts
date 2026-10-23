@@ -1349,6 +1349,121 @@ describe("XapiRuntime course state across pages", () => {
 		);
 	});
 
+	it("retires an already-stored statement when its resend receives 409", async () => {
+		const storage = memoryStorage();
+		const key = "praxity-xapi:course-1:mailto%3Alearner%40example.com";
+		const accepted = new Set<string>();
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		globalThis.fetch = vi.fn().mockImplementation(async (_url, init: RequestInit) => {
+			const statement = JSON.parse(init.body as string) as XapiStatement;
+			if (accepted.has(statement.id)) return new Response(null, { status: 409 });
+			accepted.add(statement.id);
+			if (statement.verb.id.endsWith("/completed")) throw new Error("Response lost after store");
+			return new Response(null, { status: 204 });
+		});
+		const first = new XapiRuntime(createConfig(), "course-1", storage);
+		const original = first.buildStatement("completed", { id: "https://example.com/course" });
+		await first.sendStatement(original);
+		expect(JSON.parse(storage.getItem(key) as string).outbox).toEqual([original]);
+		new XapiRuntime(createConfig(), "course-1", storage).initialize();
+		await new Promise((resolve) => setTimeout(resolve, 0));
+		expect(JSON.parse(storage.getItem(key) as string).outbox).toEqual([]);
+		new XapiRuntime(createConfig(), "course-1", storage).initialize();
+		await new Promise((resolve) => setTimeout(resolve, 0));
+		expect(allStatementsSent().filter((statement) => statement.id === original.id)).toEqual([
+			original,
+			original,
+		]);
+		expect(JSON.parse(storage.getItem(key) as string).outbox).toEqual([]);
+	});
+
+	it.each([409, 503])("retains a failed statement without an id on HTTP %i", async (status) => {
+		const storage = memoryStorage();
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		globalThis.fetch = vi.fn().mockResolvedValue(new Response(null, { status }));
+		const legacy = {
+			actor: { name: "Learner", mbox: "mailto:learner@example.com" },
+			verb: { id: "http://adlnet.gov/expapi/verbs/completed", display: { "en-US": "completed" } },
+			object: { id: "https://example.com/course" },
+			timestamp: "2026-01-01T00:00:00.000Z",
+		};
+		await new XapiRuntime(createConfig(), "course-1", storage).sendStatement(
+			legacy as XapiStatement,
+		);
+		expect(JSON.parse(storage.getItem(storage.key(0) as string) ?? "{}").outbox).toEqual([legacy]);
+	});
+
+	it("assigns and saves a legacy outbox UUID before sending and reuses it across reloads", async () => {
+		const storage = memoryStorage();
+		const key = "praxity-xapi:course-1:mailto%3Alearner%40example.com";
+		const legacy = {
+			actor: { name: "Learner", mbox: "mailto:learner@example.com" },
+			verb: { id: "http://adlnet.gov/expapi/verbs/completed", display: { "en-US": "completed" } },
+			object: { id: "https://example.com/course" },
+			timestamp: "2026-01-01T00:00:00.000Z",
+		};
+		storage.setItem(key, JSON.stringify({ outbox: [legacy] }));
+		const restored = new XapiRuntime(createConfig(), "course-1", storage);
+		const [migrated] = JSON.parse(storage.getItem(key) as string).outbox;
+		expect(migrated).toEqual(
+			expect.objectContaining({
+				id: expect.stringMatching(
+					/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+				),
+			}),
+		);
+		expect(migrated).toEqual({ ...legacy, id: migrated.id });
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		globalThis.fetch = vi.fn().mockResolvedValue(new Response(null, { status: 503 }));
+		restored.initialize();
+		await new Promise((resolve) => setTimeout(resolve, 0));
+		expect(allStatementsSent()[0]).toEqual(migrated);
+		globalThis.fetch = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+		new XapiRuntime(createConfig(), "course-1", storage).initialize();
+		await new Promise((resolve) => setTimeout(resolve, 0));
+		expect(allStatementsSent()[0]).toEqual(migrated);
+		expect(JSON.parse(storage.getItem(key) as string).outbox).toEqual([]);
+	});
+
+	it("normalizes corrupt restored attempt metadata before course decisions", () => {
+		const storage = memoryStorage();
+		const row = {
+			id: "q1",
+			response: "a",
+			timestamp: 1,
+			correct: false,
+			score: 0,
+			attemptsUsed: "2",
+			maxAttempts: -1,
+			memberIds: 5,
+		};
+		storage.setItem(
+			"praxity-xapi:course-1:mailto%3Alearner%40example.com",
+			JSON.stringify({ interactions: [row] }),
+		);
+		const restored = new XapiRuntime(createConfig(), "course-1", storage);
+		expect(restored.getInteractions()).toEqual([
+			{
+				id: "q1",
+				response: "a",
+				timestamp: 1,
+				correct: false,
+				score: 0,
+				attemptsUsed: undefined,
+				maxAttempts: undefined,
+				memberIds: undefined,
+			},
+		]);
+		const tracker = new CourseTracker(restored, {
+			totalPages: 1,
+			completionMethod: "allPages",
+			passMark: 80,
+			scoredAssessmentIds: ["q1"],
+		});
+		tracker.trackPageVisit("p1");
+		expect(restored.getSuccess()).toBe("failed");
+	});
+
 	it("keeps only the latest attempt and latest scored attempt per question", () => {
 		const storage = memoryStorage();
 		const saved = new XapiRuntime(createConfig(), "course-1", storage);

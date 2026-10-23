@@ -1,4 +1,5 @@
 import type { SCORMRuntime } from "../types";
+import { runtimeUuid } from "./runtime-uuid";
 import type { ScormSessionState } from "./session";
 
 /** SCORM has no attempt identifier. Keep an opaque token in its existing custom
@@ -23,7 +24,7 @@ export function deviceAttemptId(
 	const attemptId =
 		entry !== "ab-initio" && typeof saved === "string" && /^[0-9a-f-]{36}$/.test(saved)
 			? saved
-			: globalThis.crypto.randomUUID();
+			: runtimeUuid();
 	if (saved !== attemptId)
 		if (runtime.setSuspendData(JSON.stringify({ ...data, deviceAttemptId: attemptId })) === false)
 			throw new Error("EATTEMPTIDENTITY");
