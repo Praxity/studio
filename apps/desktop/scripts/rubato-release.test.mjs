@@ -129,7 +129,7 @@ test("public publisher stays manual and depends on every verification job", () =
 	assert.deepEqual(Object.keys(workflow.on), ["workflow_dispatch"]);
 	assert.equal(workflow.on.pull_request, undefined);
 	assert.equal(workflow.on.push, undefined);
-	assert.equal(workflow.jobs.admit["runs-on"], "ubicloud-standard-2");
+	assert.equal(workflow.jobs.admit["runs-on"], "ubuntu-24.04");
 	assert.equal(workflow.jobs.build.needs, "admit");
 	const smoke = workflow.jobs["native-smoke"];
 	assert.deepEqual(smoke.needs, ["build", "publish"]);
@@ -166,7 +166,7 @@ test("every candidate build requires admission, private candidates included", ()
 	const ci = parse(
 		readFileSync(new URL("../../../.github/workflows/ci.yml", import.meta.url), "utf8"),
 	);
-	assert.ok(ci.jobs.changes["runs-on"].endsWith(`'${workflow.jobs.admit["runs-on"]}' }}`));
+	assert.equal(ci.jobs.changes["runs-on"], workflow.jobs.admit["runs-on"]);
 	assert.equal(
 		workflow.jobs.admit.if,
 		"github.repository == (vars.STUDIO_SOURCE_REPO || github.repository) && (github.event_name == 'workflow_dispatch')",
