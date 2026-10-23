@@ -428,14 +428,16 @@ export function initializeCourseHost(
 		const passed = detail.passed === true;
 		const groupId = String(detail.groupId ?? "");
 		// Keep the event's existing adapter and ticket; tracker writes have their own lifetime.
-		if (hasScore && runtime)
-			tracker.trackGroupObjective(
+		if (hasScore && runtime) {
+			const accepted = tracker.trackGroupObjective(
 				groupId,
 				score,
 				passed,
 				runtime,
 				typeof detail.contentSignature === "string" ? detail.contentSignature : undefined,
 			);
+			if (!accepted) event.preventDefault();
+		}
 		if (!owned()) return;
 		tracker.trackInteraction(
 			groupId,

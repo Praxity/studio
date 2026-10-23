@@ -10,12 +10,12 @@ import { JSDOM } from "jsdom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Scorm12Runtime } from "../src/scorm/api/scorm12";
 import { Scorm2004Runtime } from "../src/scorm/api/scorm2004";
-import { getSessionState } from "../src/scorm/api/session";
+import { getSessionState, resetSessionState } from "../src/scorm/api/session";
 import { XapiRuntime } from "../src/scorm/api/xapi";
 import * as tracking from "../src/scorm/tracking";
 import { CourseTracker, type TrackingConfig } from "../src/scorm/tracking";
 import { createBlockStateRuntime } from "../template/src/hosts/block-state-runtime";
-import { initializeScormCourseHost } from "../template/src/hosts/course-host";
+import { initializeCourseHost, initializeScormCourseHost, readCourseDeploymentConfig } from "../template/src/hosts/course-host";
 import { selfCheckDocument } from "../template/src/self-check-document";
 import { withChoiceDependencyStatus } from "./fixtures/choice-facts";
 
@@ -177,6 +177,7 @@ describe.each(["scorm2004", "xapi"] as const)("%s objective-first submission", (
 
 describe.each(["scorm12", "scorm2004"] as const)("%s round-one regressions", (format) => {
 	it("a refused acknowledgement clear does not repeat the objective after reload", () => {
+		// A fresh LMS launch may replay retained bytes again; this ledger covers one launch only.
 		const host = launch(format);
 		host.seed();
 		host.submit();
@@ -234,9 +235,7 @@ describe.each(["scorm12", "scorm2004"] as const)("%s round-one regressions", (fo
 			host.seed();
 			host.submit();
 			const before = host.runtime.getSuspendData();
-			expect(() => host.tracker.trackGroupObjective("g", score as number, true)).toThrow(
-				"Invalid group objective values",
-			);
+			expect(host.tracker.trackGroupObjective("g", score as number, true, host.runtime, groupSignature)).toBe(false);
 			expect(host.runtime.getSuspendData()).toBe(before);
 			host.replace(true);
 			host.repair();
@@ -248,14 +247,12 @@ describe.each(["scorm12", "scorm2004"] as const)("%s round-one regressions", (fo
 		host.seed();
 		host.submit();
 		const before = host.runtime.getSuspendData();
-		expect(() =>
-			host.tracker.trackGroupObjective("g", 100, "passed" as unknown as boolean),
-		).toThrow("Invalid group objective values");
+		expect(host.tracker.trackGroupObjective("g", 100, "passed" as unknown as boolean, host.runtime, groupSignature)).toBe(false);
 		expect(host.runtime.getSuspendData()).toBe(before);
 	});
 
 	for (const score of [-1, 101, 1e21])
-		it(`saved score ${score} keeps its raw record and refuses a later group overwrite`, () => {
+		it(`saved score ${score} keeps its raw record without blocking a later group save`, () => {
 			const host = launch(format);
 			host.seed();
 			host.submit();
@@ -270,9 +267,9 @@ describe.each(["scorm12", "scorm2004"] as const)("%s round-one regressions", (fo
 			host.replace(true);
 			host.repair();
 			expect(host.objectives()).toEqual([]);
-			const before = host.runtime.getSuspendData();
-			expect(() => host.saveGroup()).toThrow("Invalid deferred group objective");
-			expect(host.runtime.getSuspendData()).toBe(before);
+			expect(host.saveGroup({ ...groupState(), completed: false })).toBe(true);
+			expect(host.stored().completed).toBe(false);
+			expect(host.stored().submitted.deferredObjective?.score).toBe(score);
 		});
 
 	it("the admitted evidence view is built once for an outcome write", () => {
@@ -292,7 +289,7 @@ describe.each(["scorm12", "scorm2004"] as const)("%s round-one regressions", (fo
 		expect(host.stored().submitted.deferredObjective).toBeUndefined();
 		host.saveGroup();
 		host.provider.set("q", answer(changed));
-		host.tracker.trackGroupObjective("g", 0, false);
+		host.submit(0, false);
 		expect(host.stored().submitted.deferredObjective?.id).toBe("2");
 		host.replace(true);
 		host.repair();
@@ -312,7 +309,7 @@ describe.each(["scorm12", "scorm2004"] as const)("%s round-one regressions", (fo
 			host.seed();
 			host.provider.set("g", { ...groupState(), objectiveSequence: sequence } as LearnerStateValue);
 			const before = host.runtime.getSuspendData();
-			expect(() => host.tracker.trackGroupObjective("g", 0, false)).toThrow();
+			expect(host.tracker.trackGroupObjective("g", 0, false, host.runtime, groupSignature)).toBe(false);
 			expect(host.runtime.getSuspendData()).toBe(before);
 		});
 
@@ -334,14 +331,203 @@ describe.each(["scorm12", "scorm2004"] as const)("%s round-one regressions", (fo
 		const host = launch(format);
 		host.seed();
 		const before = host.runtime.getSuspendData();
-		expect(() => host.tracker.trackGroupObjective("g", 0, false, host.runtime, "broken")).toThrow(
-			"Missing group objective evidence",
-		);
+		expect(host.tracker.trackGroupObjective("g", 0, false, host.runtime, "broken")).toBe(false);
 		expect(host.runtime.getSuspendData()).toBe(before);
 	});
 });
 
+describe.each(["scorm12", "scorm2004"] as const)("%s round-two launch lifecycle", (format) => {
+	it("a fresh attempt on the same active API reports its own sequence-one objective", () => {
+		const host = launch(format);
+		host.seed();
+		host.submit();
+		host.repair();
+		const api = (host.dom.window as unknown as { API: object; API_1484_11: object })[
+			format === "scorm12" ? "API" : "API_1484_11"
+		];
+		resetSessionState(api, host.dom.window as unknown as Window);
+		host.values.clear();
+		host.replace(true);
+		host.seed();
+		host.submit(0, false);
+		expect(host.stored().submitted.deferredObjective).toEqual({ id: "1", score: 0, passed: false });
+		host.repair();
+		expect(host.objectives().map(([, value]) => value)).toEqual([
+			"g", "100", "passed", "g", "0", "failed",
+		]);
+	});
+
+	it("a fresh launch replays retained evidence after the preceding launch's refused clear", () => {
+		const host = launch(format);
+		host.seed();
+		host.submit();
+		host.provider.set("q", answer());
+		host.runtime.trackInteraction("q", "a", true, 100);
+		host.refuse(true);
+		host.tracker.checkCompletion();
+		host.refuse(false);
+		const api = (host.dom.window as unknown as { API: object; API_1484_11: object })[
+			format === "scorm12" ? "API" : "API_1484_11"
+		];
+		resetSessionState(api, host.dom.window as unknown as Window);
+		host.replace(true);
+		host.tracker.checkCompletion();
+		expect(host.objectives().map(([, value]) => value)).toEqual([
+			"g", "100", "passed", "g", "100", "passed",
+		]);
+		expect(host.stored().submitted.deferredObjective).toBeUndefined();
+	});
+});
+
+describe.each(["scorm2004", "xapi"] as const)("%s round-two submission lifecycle", (format) => {
+	it("a signed host event stays accepted and joins its following capture", () => {
+		const host = launch(format);
+		host.seed();
+		const { win, owner } = installHost(host, format);
+		const event = new win.CustomEvent("praxity:assessment-group-complete", {
+			detail: { groupId: "g", score: 100, passed: true, contentSignature: groupSignature },
+			cancelable: true,
+		});
+		dispatchSelfCheckEvent(event, () => true, win.document);
+		expect(event.defaultPrevented).toBe(false);
+		host.saveGroup();
+		expect(host.stored().submitted.deferredObjective).toEqual({ id: "1", score: 100, passed: true });
+		owner.dispose();
+		host.replace(true);
+		host.repair();
+		expect(host.objectives().map(([, value]) => value)).toEqual(["g", "100", "passed"]);
+	});
+
+	it("a refused following group save retains the preceding capture and objective", () => {
+		const host = launch(format);
+		host.seed();
+		host.submit();
+		const previous = host.stored();
+		const beforeEvent = host.runtime.getSuspendData();
+		host.tracker.trackGroupObjective("g", 0, false, host.runtime, groupSignature);
+		expect(host.runtime.getSuspendData()).toBe(beforeEvent);
+		host.tracker.trackInteraction("g", "0%", false, 0);
+		const beforeSave = format === "xapi"
+			? host.dom.window.localStorage.getItem(host.dom.window.localStorage.key(0) ?? "")
+			: host.values.get("cmi.suspend_data");
+		const storage = format === "xapi" ? vi.spyOn(Object.getPrototypeOf(host.dom.window.localStorage), "setItem").mockImplementation(() => { throw new Error("storage refused"); }) : undefined;
+		host.refuse(true);
+		host.saveGroup({ ...groupState(), completed: false });
+		expect(format === "xapi"
+			? host.dom.window.localStorage.getItem(host.dom.window.localStorage.key(0) ?? "")
+			: host.values.get("cmi.suspend_data")).toBe(beforeSave);
+		storage?.mockRestore();
+		host.refuse(false);
+		host.replace(true);
+		expect(host.stored()).toEqual(previous);
+		host.repair();
+		expect(host.objectives().map(([, value]) => value)).toEqual(["g", "100", "passed"]);
+	});
+
+	for (const corrupt of [null, { id: "broken", score: 101, passed: true }] as const)
+		it(`a corrupt ${JSON.stringify(corrupt)} record keeps its raw fields without blocking host rows or later saves`, () => {
+			const host = launch(format);
+			host.seed();
+			host.submit();
+			host.provider.set("g", {
+				...host.stored(),
+				submitted: { ...submission(), deferredObjective: corrupt },
+			} as LearnerStateValue);
+			host.replace(true);
+			const { win, owner } = installHost(host, format);
+			const commit = vi.spyOn(host.runtime, "commit");
+			const errors: unknown[] = [];
+			win.addEventListener("error", (event) => errors.push(event.error));
+			const event = new win.CustomEvent("praxity:assessment-group-complete", {
+				detail: { groupId: "g", score: 0, passed: false, contentSignature: changed },
+				cancelable: true,
+			});
+			dispatchSelfCheckEvent(event, () => true, win.document);
+			expect(event.defaultPrevented).toBe(true);
+			expect(errors).toEqual([]);
+			expect(host.runtime.getInteractions().at(-1)).toMatchObject({ id: "g", score: 0, response: "0%" });
+			expect(commit).toHaveBeenCalled();
+			expect(host.saveGroup({ ...groupState(), completed: false, submitted: { ...submission(), contentSignature: changed } })).toBe(true);
+			expect(host.stored().submitted).toEqual({ ...submission(), contentSignature: changed, deferredObjective: corrupt });
+			expect(host.stored().completed).toBe(false);
+			expect(host.stored()).toHaveProperty("objectiveSequence", 1);
+			owner.dispose();
+			host.replace(true);
+			host.repair();
+			expect(host.stored().submitted.deferredObjective).toEqual(corrupt);
+			expect(host.objectives()).toEqual([]);
+		});
+
+	it("a corrupt record supplied by a restored capture remains raw through another group save", () => {
+		const host = launch(format);
+		host.seed();
+		const raw = { id: "damaged", score: 101, passed: true, retained: ["answer", 17] };
+		expect(host.saveGroup({ ...groupState(), submitted: { ...submission(), deferredObjective: raw } })).toBe(true);
+		expect(host.stored().submitted.deferredObjective).toEqual(raw);
+		expect(host.saveGroup({ ...groupState(), completed: false })).toBe(true);
+		expect(host.stored().submitted.deferredObjective).toEqual(raw);
+		host.replace(true);
+		host.repair();
+		expect(host.objectives()).toEqual([]);
+	});
+
+	for (const existing of [false, true])
+		it(`an unsigned event refuses without stopping its host interaction, existing capture=${existing}`, () => {
+			const host = launch(format);
+			host.provider.set("q", answer(changed));
+			if (existing) {
+				host.seed();
+				host.submit();
+			}
+			const before = host.runtime.getSuspendData();
+			let accepted: boolean | undefined;
+			expect(() => { accepted = host.tracker.trackGroupObjective("g", 0, false); }).not.toThrow();
+			expect(accepted).toBe(false);
+			expect(host.runtime.getSuspendData()).toBe(before);
+			const { win, owner } = installHost(host, format);
+			const commit = vi.spyOn(host.runtime, "commit");
+			const errors: unknown[] = [];
+			win.addEventListener("error", (event) => errors.push(event.error));
+			const previous = host.provider.get("g");
+			const event = new win.CustomEvent("praxity:assessment-group-complete", {
+				detail: { groupId: "g", score: 0, passed: false },
+				cancelable: true,
+			});
+			dispatchSelfCheckEvent(event, () => true, win.document);
+			expect(event.defaultPrevented).toBe(true);
+			expect(errors).toEqual([]);
+			expect(host.runtime.getInteractions().at(-1)).toMatchObject({ id: "g", score: 0, response: "0%" });
+			expect(commit).toHaveBeenCalled();
+			expect(host.provider.get("g")).toEqual(previous);
+			expect(host.objectives()).toEqual([]);
+			owner.dispose();
+		});
+
+	it("an unsigned successor cannot leave an earlier event queued for its following capture", () => {
+		const host = launch(format);
+		host.seed();
+		host.tracker.trackGroupObjective("g", 100, true, host.runtime, groupSignature);
+		expect(host.tracker.trackGroupObjective("g", 0, false)).toBe(false);
+		host.saveGroup();
+		expect(host.stored().submitted.deferredObjective).toBeUndefined();
+	});
+});
+
 describe("objective-first save handoff", () => {
+	it("a staged event refuses a different capture without leaving a handoff for a later save", () => {
+		const host = launch("scorm12");
+		host.seed();
+		expect(host.provider.stageSubmission?.("g", () => {
+			host.saveGroup();
+			expect(host.tracker.trackGroupObjective("g", 0, false, host.runtime, changed)).toBe(false);
+			host.tracker.trackInteraction("g", "0%", false, 0);
+			return true;
+		})).toBe(true);
+		expect(host.stored()).toEqual(groupState());
+		host.saveGroup({ ...groupState(), submitted: { ...submission(), contentSignature: changed } });
+		expect(host.stored().submitted.deferredObjective).toBeUndefined();
+	});
+
 	it("keeps non-group saves, including null, unchanged", () => {
 		const host = launch("scorm2004");
 		Object.assign(host.dom.window, { __praxityBlockState: host.provider });
@@ -627,8 +813,21 @@ function launch(format: "scorm12" | "scorm2004" | "xapi") {
 			runtime.trackInteraction("q", "a", true, 100);
 		},
 		submit(score = 100, passed = true) {
-			tracker.trackGroupObjective("g", score, passed);
-			tracker.trackInteraction("g", `${score}%`, passed, score);
+			const report = () => {
+				tracker.trackGroupObjective("g", score, passed, runtime, groupSignature);
+				tracker.trackInteraction("g", `${score}%`, passed, score);
+				return true;
+			};
+			const save = () => {
+				Object.assign(dom.window, { __praxityBlockState: provider });
+				return writeLearnerBlockState("g", groupState(), () => true, dom.window.document);
+			};
+			if (provider.stageSubmission) {
+				expect(provider.stageSubmission("g", () => save() && report())).toBe(true);
+			} else {
+				report();
+				save();
+			}
 			expect(runtime.commit()).toBe(true);
 		},
 		repair() {
@@ -719,7 +918,8 @@ describe.each(["scorm12", "scorm2004"] as const)("%s deferred group objectives",
 		host.submit();
 		const before = host.runtime.getSuspendData();
 		host.refuse(true);
-		host.tracker.trackGroupObjective("g", 0, false);
+		host.tracker.trackGroupObjective("g", 0, false, host.runtime, groupSignature);
+		host.saveGroup();
 		expect(host.runtime.getSuspendData()).toBe(before);
 		host.refuse(false);
 		host.replace(true);
@@ -797,10 +997,10 @@ describe.each(["scorm12", "scorm2004"] as const)("%s deferred group objectives",
 		host.submit();
 		host.provider.set("q", answer());
 		const report = vi.spyOn(host.runtime, "trackObjective").mockImplementation(() => false);
-		host.tracker.trackGroupObjective("g", 0, false);
+		host.tracker.trackGroupObjective("g", 0, false, host.runtime, groupSignature);
 		expect(host.stored().submitted.deferredObjective?.score).toBe(100);
 		report.mockRestore();
-		host.tracker.trackGroupObjective("g", 0, false);
+		host.tracker.trackGroupObjective("g", 0, false, host.runtime, groupSignature);
 		host.tracker.checkCompletion();
 		expect(host.objectives().map(([, value]) => value)).toEqual(["g", "0", "failed"]);
 		expect(host.stored()).toEqual(groupState(1));
@@ -867,9 +1067,9 @@ describe.each(["scorm12", "scorm2004"] as const)("%s deferred group objectives",
 			host.replace(true);
 			host.repair();
 			expect(host.objectives()).toEqual([]);
-			const before = host.runtime.getSuspendData();
-			expect(() => host.saveGroup()).toThrow("Invalid deferred group objective");
-			expect(host.runtime.getSuspendData()).toBe(before);
+			expect(host.saveGroup({ ...groupState(), completed: false })).toBe(true);
+			expect(host.stored().completed).toBe(false);
+			expect(host.stored().submitted.deferredObjective?.[field]).toBeNull();
 		});
 
 	it("announce replacement replays the saved obligation with fresh provider authority", () => {
@@ -882,56 +1082,7 @@ describe.each(["scorm12", "scorm2004"] as const)("%s deferred group objectives",
 			selectedMemberId: null,
 			completed: false,
 		});
-		const win = host.dom.window as unknown as Window & typeof globalThis;
-		vi.stubGlobal("document", win.document);
-		vi.stubGlobal("Event", win.Event);
-		vi.stubGlobal("__PRAXITY_SELF_CHECK_BUILD__", "objectives");
-		const owner = selfCheckDocument(win.document, true);
-		const descriptor = Object.getOwnPropertyDescriptor(win, "__praxityBlockState");
-		if (!descriptor?.set) throw new Error("Missing provider installation");
-		const installProvider = descriptor.set.bind(win);
-		Object.defineProperty(win, "__praxityBlockState", {
-			...descriptor,
-			set(provider: LearnerBlockStateRuntime) {
-				provider.getChoiceReporting = (current) => ({
-					getChoiceDependencyView: host.evidence,
-					writeObjectives: tracking.createDeferredGroupObjectiveWriter?.(
-						provider,
-						current,
-						host.ledger() ?? {},
-					),
-				});
-				installProvider(provider);
-			},
-		});
-		const page = {
-			version: 1,
-			courseId: "course",
-			pageId: "one",
-			pageTitle: "One",
-			currentPage: 1,
-			totalPages: 2,
-			currentSlug: "one",
-			availableSlugs: ["one"],
-			pageIdMap: { one: "one" },
-			completionMethod: "allPages",
-			requiredAssessmentIds: ["q"],
-			pageRole: "content",
-			strings: {},
-		};
-		win.document.body.innerHTML = `<script id="praxity-host-config" type="application/json">${JSON.stringify(page)}</script><script id="praxity-deployment-config" type="application/json">${JSON.stringify({ format })}</script>`;
-		Object.defineProperty(win.document, "readyState", { value: "complete" });
-		expect(
-			initializeScormCourseHost(
-				{ format, readEntry: () => null, createRuntime: () => host.runtime },
-				{
-					win,
-					doc: win.document,
-					location: { href: win.location.href, search: "", replace() {} },
-					history: win.history,
-				},
-			),
-		).toBe(true);
+		const { win, owner } = installHost(host, format);
 		const first = win.__praxityTracker as CourseTracker;
 		dispatchSelfCheckEvent(
 			new win.CustomEvent("praxity:assessment-group-complete", {
@@ -963,8 +1114,9 @@ describe.each(["scorm12", "scorm2004"] as const)("%s deferred group objectives",
 		host.seed();
 		host.provider.set("q", answer());
 		host.writes.length = 0;
-		host.tracker.trackGroupObjective("g", 100, true);
+		host.tracker.trackGroupObjective("g", 100, true, host.runtime, groupSignature);
 		expect(host.writes.map(([, value]) => value)).toEqual(["g", "100", "passed"]);
+		host.saveGroup();
 		expect(host.stored()).toEqual(groupState());
 	});
 
@@ -975,8 +1127,11 @@ describe.each(["scorm12", "scorm2004"] as const)("%s deferred group objectives",
 		expect(host.stored().submitted.deferredObjective?.score).toBe(100);
 		host.provider.set("other", groupState() as LearnerStateValue);
 		const before = host.runtime.getSuspendData();
-		host.tracker.trackGroupObjective("other", 100, true);
+		host.tracker.trackGroupObjective("other", 100, true, host.runtime, groupSignature);
 		expect(host.runtime.getSuspendData()).toBe(before);
+		Object.assign(host.dom.window, { __praxityBlockState: host.provider });
+		writeLearnerBlockState("other", groupState(), () => true, host.dom.window.document);
+		expect(host.provider.get("other")).toEqual(groupState());
 	});
 
 	it("a newer deferred submission owns a fresh identity and its latest objective values", () => {
@@ -985,7 +1140,7 @@ describe.each(["scorm12", "scorm2004"] as const)("%s deferred group objectives",
 		host.submit();
 		const previous = host.stored().submitted.deferredObjective;
 		expect(previous?.score).toBe(100);
-		host.tracker.trackGroupObjective("g", 0, false);
+		host.submit(0, false);
 		const latest = host.stored().submitted.deferredObjective;
 		expect(latest?.id).not.toBe(previous?.id);
 		expect(latest?.score).toBe(0);
@@ -1005,9 +1160,7 @@ describe.each(["scorm12", "scorm2004"] as const)("%s deferred group objectives",
 			submitted: { ...saved.submitted, deferredObjective: null },
 		});
 		const before = host.runtime.getSuspendData();
-		expect(() => host.tracker.trackGroupObjective("g", 0, false)).toThrow(
-			"Invalid deferred group objective",
-		);
+		expect(host.tracker.trackGroupObjective("g", 0, false, host.runtime, groupSignature)).toBe(false);
 		expect(host.runtime.getSuspendData()).toBe(before);
 		host.replace(true);
 		host.repair();
@@ -1044,7 +1197,61 @@ describe.each(["scorm12", "scorm2004"] as const)("%s deferred group objectives",
 			expect(host.stored().submitted.deferredObjective?.score).toBe(100);
 			host.provider.set("g", { ...host.stored(), ...patch } as LearnerStateValue);
 			const before = host.runtime.getSuspendData();
-			expect(() => host.tracker.trackGroupObjective("g", 0, false)).toThrow();
+			expect(host.tracker.trackGroupObjective("g", 0, false, host.runtime, groupSignature)).toBe(false);
 			expect(host.runtime.getSuspendData()).toBe(before);
 		});
 });
+
+function installHost(host: ReturnType<typeof launch>, format: "scorm12" | "scorm2004" | "xapi") {
+	const win = host.dom.window as unknown as Window & typeof globalThis;
+	vi.stubGlobal("document", win.document);
+	vi.stubGlobal("Event", win.Event);
+	vi.stubGlobal("__PRAXITY_SELF_CHECK_BUILD__", "objectives");
+	const owner = selfCheckDocument(win.document, true);
+	const descriptor = Object.getOwnPropertyDescriptor(win, "__praxityBlockState");
+	if (!descriptor?.set) throw new Error("Missing provider installation");
+	const installProvider = descriptor.set.bind(win);
+	Object.defineProperty(win, "__praxityBlockState", {
+		...descriptor,
+		set(provider: LearnerBlockStateRuntime) {
+			provider.getChoiceReporting = (current) => ({
+				getChoiceDependencyView: host.evidence,
+				writeObjectives: tracking.createDeferredGroupObjectiveWriter?.(
+					provider,
+					current,
+					host.ledger() ?? {},
+				),
+			});
+			installProvider(provider);
+		},
+	});
+	const page = {
+		version: 1,
+		courseId: "course",
+		pageId: "one",
+		pageTitle: "One",
+		currentPage: 1,
+		totalPages: 2,
+		currentSlug: "one",
+		availableSlugs: ["one"],
+		pageIdMap: { one: "one" },
+		completionMethod: "allPages",
+		requiredAssessmentIds: ["q"],
+		pageRole: "content",
+		strings: {},
+	};
+	win.document.body.innerHTML = `<script id="praxity-host-config" type="application/json">${JSON.stringify(page)}</script><script id="praxity-deployment-config" type="application/json">${JSON.stringify({ format })}</script>`;
+	Object.defineProperty(win.document, "readyState", { value: "complete" });
+	expect(
+		(format === "xapi" ? initializeCourseHost : initializeScormCourseHost)(
+			{ format, readEntry: () => null, readDeploymentConfig: readCourseDeploymentConfig, createRuntime: () => host.runtime },
+			{
+				win,
+				doc: win.document,
+				location: { href: win.location.href, search: "", replace() {} },
+				history: win.history,
+			},
+		),
+	).toBe(true);
+	return { win, owner };
+}

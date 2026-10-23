@@ -126,6 +126,7 @@ export function writeSessionState(
 	if (initialized && !state.initialized) {
 		state.startedAt = state.pendingCompletion = state.courseFailure = undefined;
 		state.outcomeWaiting = undefined;
+		state.objectiveReplays = undefined;
 	}
 	state.initialized = initialized && !state.closed;
 	storeSessionState(api, state, win);

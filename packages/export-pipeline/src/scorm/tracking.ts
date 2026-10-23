@@ -20,7 +20,7 @@ import {
 	isChoiceContentSignature,
 	isGroupObjectiveScore,
 	prepareGroupObjectiveSave,
-	readDeferredGroupObjective,
+	readSavedAssessmentGroupState,
 	readSubmittedAssessmentGroup,
 } from "@praxity/shared-blocks/learner-state";
 import type { InteractionRecord, SCORMRuntime, TrackInteractionOptions } from "./types.ts";
@@ -131,27 +131,38 @@ export function createDeferredGroupObjectiveWriter(
 		}
 	};
 	return (runtime, outcome, view, submittedObjective) => {
-		if (
-			outcome.kind === "waiting" &&
-			submittedObjective &&
-			Object.hasOwn(view?.groups ?? {}, submittedObjective.id)
-		) {
-			const { id, score, passed } = submittedObjective;
-			if (!isGroupObjectiveScore(score) || typeof passed !== "boolean")
-				throw new TypeError("Invalid group objective values");
+		if (submittedObjective && Object.hasOwn(view?.groups ?? {}, submittedObjective.id)) {
+			const { id, score, passed, contentSignature } = submittedObjective;
+			pending.delete(id);
+			if (
+				!isGroupObjectiveScore(score) ||
+				typeof passed !== "boolean" ||
+				!isChoiceContentSignature(contentSignature)
+			)
+				return false;
 			const previous = provider.get(id);
-			readDeferredGroupObjective(previous);
+			const previousState = readSavedAssessmentGroupState(previous);
 			const saved = readSubmittedAssessmentGroup(previous);
-			const contentSignature =
-				submittedObjective.contentSignature ?? saved?.submitted.contentSignature;
-			if (!isChoiceContentSignature(contentSignature))
-				throw new TypeError("Missing group objective evidence");
-			const sequence = groupObjectiveSequence(previous) + 1;
-			if (!Number.isSafeInteger(sequence))
-				throw new TypeError("Group objective sequence exhausted");
-			pending.set(id, { id: String(sequence), contentSignature, score, passed });
-			if (saved && saved.submitted.contentSignature === contentSignature)
-				access.write(id, saved.state, ticket);
+			if (previous !== undefined && !previousState) return false;
+			if (previousState?.submitted !== undefined && !saved) return false;
+			if (outcome.kind === "waiting") {
+				let sequence: number;
+				try {
+					sequence = groupObjectiveSequence(previous) + 1;
+				} catch {
+					return false;
+				}
+				if (!Number.isSafeInteger(sequence)) return false;
+				pending.set(id, { id: String(sequence), contentSignature, score, passed });
+				// Only a provisional save can accept this event before its following interaction.
+				if (provider.getSaveResult?.(id)?.status === "pending") {
+					if (saved?.submitted.contentSignature !== contentSignature) {
+						pending.delete(id);
+						return false;
+					}
+					access.write(id, saved.state, ticket);
+				}
+			}
 		}
 		let superseded: { id: string; obligation: string; key: string } | undefined;
 		let acknowledged = false;
@@ -260,8 +271,12 @@ export class CourseTracker {
 	}
 
 	isAssessmentFinal(id: string): boolean {
+		const view = this.config.getChoiceDependencyView?.();
+		if (view && view.status(id) !== "current") return false;
 		if (this.config.isAssessmentFinal) return this.config.isAssessmentFinal(id);
-		const state = this.config.getAssessmentState?.(id);
+		const saved = this.config.getAssessmentState?.(id) ?? view?.readState(id);
+		const state =
+			view && Object.hasOwn(view.questions, id) ? view.admitQuestionState?.(id, saved) : saved;
 		return (
 			typeof state === "object" &&
 			state !== null &&
@@ -270,14 +285,32 @@ export class CourseTracker {
 		);
 	}
 
+	/** History changes in-course display only; ordinary launches retain the recorded score. */
+	getCurrentScore(): { raw: number; min: number; max: number } | null {
+		const view = this.config.getChoiceDependencyView?.();
+		if (
+			!view ||
+			![
+				...Object.keys(view.questions),
+				...Object.keys(view.groups ?? {}),
+				...(view.invalidIds ?? []),
+			].some((id) => view.status(id) === "history")
+		)
+			return this.runtime.getScore();
+		const rows = [...this.latestScored().values()].filter(
+			(row) => view.status(row.id) === "current",
+		);
+		return rows.length ? { raw: this.average(rows), min: 0, max: 100 } : null;
+	}
+
 	trackGroupObjective(
 		id: string,
 		score: number,
 		passed: boolean,
 		runtime = this.runtime,
 		contentSignature?: string,
-	): void {
-		this.writeOutcome(
+	): boolean {
+		return this.writeOutcome(
 			{ id, score, passed, ...(contentSignature ? { contentSignature } : {}) },
 			runtime,
 		);
