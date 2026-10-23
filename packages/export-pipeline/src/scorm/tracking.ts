@@ -5,10 +5,7 @@
  * detection based on configurable criteria (all pages, percentage, or quiz).
  */
 
-import {
-	type ChoiceDependencyView,
-	choiceDependencyStatus,
-} from "@praxity/shared-blocks/choice-learner-state";
+import type { ChoiceDependencyEvidence } from "@praxity/shared-blocks/choice-learner-state";
 import { DEFAULT_COMPLETION_THRESHOLD } from "@praxity/shared-blocks/constants";
 import { type CourseOutcome, writeCourseOutcome } from "@praxity/shared-blocks/learner-block-state";
 import type { InteractionRecord, SCORMRuntime, TrackInteractionOptions } from "./types.ts";
@@ -56,7 +53,7 @@ export interface TrackingConfig {
 	/** Hosts supply saved answers; the tracker owns their finality decision. */
 	getAssessmentState?: (id: string) => unknown;
 	/** Absent until the host admits evidence-aware reporting. */
-	getChoiceDependencyView?: () => ChoiceDependencyView | undefined;
+	getChoiceDependencyView?: () => ChoiceDependencyEvidence | undefined;
 }
 
 interface CourseResult {
@@ -158,13 +155,13 @@ export class CourseTracker {
 		return latest;
 	}
 
-	private currentInteractions(view: ChoiceDependencyView | undefined): InteractionRecord[] {
+	private currentInteractions(view: ChoiceDependencyEvidence | undefined): InteractionRecord[] {
 		return this.runtime
 			.getInteractions()
-			.filter((row) => !view || choiceDependencyStatus(row.id, view) === "current");
+			.filter((row) => !view || view.status(row.id) === "current");
 	}
 
-	private historyIsWaiting(view: ChoiceDependencyView | undefined): boolean {
+	private historyIsWaiting(view: ChoiceDependencyEvidence | undefined): boolean {
 		if (!view) return false;
 		const ids = new Set(this.config.requiredAssessmentIds ?? []);
 		if (this.hasPassMark()) for (const id of this.config.scoredAssessmentIds ?? []) ids.add(id);
@@ -178,7 +175,7 @@ export class CourseTracker {
 				)
 					ids.add(id);
 		}
-		return [...ids].some((id) => choiceDependencyStatus(id, view) === "history");
+		return [...ids].some((id) => view.status(id) === "history");
 	}
 
 	/**

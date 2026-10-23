@@ -13,6 +13,7 @@ import type { SCORMRuntime } from "../src/scorm/types";
 import { initializeScormCourseHost } from "../template/src/hosts/course-host";
 import { initDeck } from "../template/src/islands/island-deck";
 import { selfCheckDocument } from "../template/src/self-check-document";
+import { withChoiceDependencyStatus } from "./fixtures/choice-facts";
 
 type Format = "scorm12" | "scorm2004";
 const cleanups: (() => void)[] = [];
@@ -340,7 +341,7 @@ describe.each(["scorm12", "scorm2004"] as const)("%s commit preparation", (forma
 				totalPages: 1,
 				completionMethod: "allPages",
 				requiredAssessmentIds: ["g"],
-				getChoiceDependencyView: view,
+				getChoiceDependencyView: () => withChoiceDependencyStatus(view()),
 			});
 			// Exercise the installed preparation boundary without installing a production evidence view.
 			Object.assign(win.__praxityTracker!, { prepareCommit: () => tracker.prepareCommit() });

@@ -1466,7 +1466,6 @@ export function checkDisplayIdImports(path, source, program) {
 /** History must not activate before the reporting wait and learner recovery ship together. */
 export function checkDormantChoiceImports(path, source, program) {
 	const owner = "packages/shared-blocks/src/choice-learner-state.ts";
-	const tracker = "packages/export-pipeline/src/scorm/tracking.ts";
 	return checkOwnedImports(
 		path,
 		source,
@@ -1481,14 +1480,14 @@ export function checkDormantChoiceImports(path, source, program) {
 				"choiceGroupSignature",
 				"prepareChoiceGroupSubmission",
 				"createChoiceDependencyView",
-			].map((name) => [name, name === "choiceDependencyStatus" ? [owner, tracker] : [owner]]),
+			].map((name) => [name, [owner]]),
 		),
 		{
 			definition: owner,
 			module:
 				/(?:^@praxity\/shared-blocks\/choice-learner-state$|(?:^|\/)choice-learner-state(?:\.[cm]?[jt]s)?$)/u,
 			barrels: [],
-			forbidModuleLoads: path.replaceAll("\\", "/") !== tracker,
+			forbidModuleLoads: true,
 			message:
 				"choice admission is dormant until reporting waits and learner recovery is available",
 		},

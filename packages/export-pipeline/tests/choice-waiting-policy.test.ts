@@ -11,6 +11,7 @@ import { XapiRuntime, type XapiStatement } from "../src/scorm/api/xapi";
 import { CourseTracker, type TrackingConfig } from "../src/scorm/tracking";
 import type { SCORMRuntime } from "../src/scorm/types";
 import { initializeScormCourseHost } from "../template/src/hosts/course-host";
+import { withChoiceDependencyStatus } from "./fixtures/choice-facts";
 
 const documents: JSDOM[] = [];
 const signature = `sha256:${"a".repeat(64)}`;
@@ -137,7 +138,7 @@ describe.each(["scorm12", "scorm2004", "xapi"] as const)("%s dormant waiting", (
 			totalPages: 1,
 			completionMethod: "quiz",
 			passMark: 60,
-			getChoiceDependencyView: view,
+			getChoiceDependencyView: () => withChoiceDependencyStatus(view()),
 		});
 		writes.length = 0;
 		tracker.trackInteraction("new", "answer", true, 100);
@@ -158,13 +159,14 @@ describe.each(["scorm12", "scorm2004", "xapi"] as const)("%s dormant waiting", (
 		const tracker = new CourseTracker(runtime, {
 			totalPages: 1,
 			completionMethod: "quiz",
-			getChoiceDependencyView: () => ({
-				rows: runtime.getInteractions(),
-				questions: {},
-				signatures: {},
-				invalidIds: ["x"],
-				readState: () => undefined,
-			}),
+			getChoiceDependencyView: () =>
+				withChoiceDependencyStatus({
+					rows: runtime.getInteractions(),
+					questions: {},
+					signatures: {},
+					invalidIds: ["x"],
+					readState: () => undefined,
+				}),
 		});
 		writes.length = 0;
 		tracker.trackInteraction("b", "answer", true, 100);
@@ -178,12 +180,13 @@ describe.each(["scorm12", "scorm2004", "xapi"] as const)("%s dormant waiting", (
 		const tracker = new CourseTracker(runtime, {
 			totalPages: 1,
 			completionMethod: "quiz",
-			getChoiceDependencyView: () => ({
-				rows: runtime.getInteractions(),
-				questions: {},
-				signatures: {},
-				readState: () => undefined,
-			}),
+			getChoiceDependencyView: () =>
+				withChoiceDependencyStatus({
+					rows: runtime.getInteractions(),
+					questions: {},
+					signatures: {},
+					readState: () => undefined,
+				}),
 		});
 		expect(tracker.outcome()).toMatchObject({ kind: "decided", completion: "passed" });
 	});
@@ -205,7 +208,7 @@ describe.each(["scorm12", "scorm2004", "xapi"] as const)("%s dormant waiting", (
 			const tracker = new CourseTracker(runtime, {
 				totalPages: 1,
 				completionMethod: "quiz",
-				getChoiceDependencyView: view,
+				getChoiceDependencyView: () => withChoiceDependencyStatus(view()),
 			});
 			expect(tracker.outcome().kind).toBe(kind === "graded history" ? "waiting" : "decided");
 		},
@@ -223,7 +226,8 @@ describe.each(["scorm12", "scorm2004", "xapi"] as const)("%s dormant waiting", (
 			const tracker = new CourseTracker(runtime, {
 				totalPages: 1,
 				completionMethod: "quiz",
-				getChoiceDependencyView: () => ({ ...view(), invalidIds: id === "g" ? [] : [id] }),
+				getChoiceDependencyView: () =>
+					withChoiceDependencyStatus({ ...view(), invalidIds: id === "g" ? [] : [id] }),
 			});
 			expect(tracker.outcome().kind).toBe("decided");
 		},
@@ -235,7 +239,7 @@ describe.each(["scorm12", "scorm2004", "xapi"] as const)("%s dormant waiting", (
 		const tracker = new CourseTracker(runtime, {
 			totalPages: 1,
 			completionMethod: "allPages",
-			getChoiceDependencyView: groupView(runtime),
+			getChoiceDependencyView: () => withChoiceDependencyStatus(groupView(runtime)()),
 		});
 		expect(tracker.outcome().kind).toBe("decided");
 	});
@@ -247,14 +251,15 @@ describe.each(["scorm12", "scorm2004", "xapi"] as const)("%s dormant waiting", (
 		const tracker = new CourseTracker(runtime, {
 			totalPages: 1,
 			completionMethod: "quiz",
-			getChoiceDependencyView: () => ({
-				rows: runtime
-					.getInteractions()
-					.map((row) => (row.id === "q" ? { ...row, choiceEvidenceInvalid: true } : row)),
-				questions: { q: { ...question, graded: false } },
-				signatures: { q: signature },
-				readState: () => undefined,
-			}),
+			getChoiceDependencyView: () =>
+				withChoiceDependencyStatus({
+					rows: runtime
+						.getInteractions()
+						.map((row) => (row.id === "q" ? { ...row, choiceEvidenceInvalid: true } : row)),
+					questions: { q: { ...question, graded: false } },
+					signatures: { q: signature },
+					readState: () => undefined,
+				}),
 		});
 		expect(tracker.outcome("score")).toEqual({ kind: "decided", score: 100 });
 	});
@@ -268,13 +273,14 @@ describe.each(["scorm12", "scorm2004", "xapi"] as const)("%s dormant waiting", (
 				totalPages: 1,
 				completionMethod,
 				requiredAssessmentIds: ["q"],
-				getChoiceDependencyView: () => ({
-					rows: runtime.getInteractions(),
-					questions: {},
-					signatures: {},
-					invalidIds: ["q"],
-					readState: () => undefined,
-				}),
+				getChoiceDependencyView: () =>
+					withChoiceDependencyStatus({
+						rows: runtime.getInteractions(),
+						questions: {},
+						signatures: {},
+						invalidIds: ["q"],
+						readState: () => undefined,
+					}),
 			});
 			for (const intent of [
 				"check",
@@ -304,22 +310,24 @@ it("pass-mark scored dependencies wait while an unrelated optional history row d
 		completionMethod: "allPages",
 		passMark: 80,
 		scoredAssessmentIds: ["q"],
-		getChoiceDependencyView: () => ({
+		getChoiceDependencyView: () =>
+			withChoiceDependencyStatus({
+				rows: runtime.getInteractions(),
+				questions: {},
+				signatures: {},
+				invalidIds: ["q"],
+				readState: () => undefined,
+			}),
+	};
+	expect(new CourseTracker(runtime, config).outcome().kind).toBe("waiting");
+	config.getChoiceDependencyView = () =>
+		withChoiceDependencyStatus({
 			rows: runtime.getInteractions(),
 			questions: {},
 			signatures: {},
-			invalidIds: ["q"],
+			invalidIds: ["optional"],
 			readState: () => undefined,
-		}),
-	};
-	expect(new CourseTracker(runtime, config).outcome().kind).toBe("waiting");
-	config.getChoiceDependencyView = () => ({
-		rows: runtime.getInteractions(),
-		questions: {},
-		signatures: {},
-		invalidIds: ["optional"],
-		readState: () => undefined,
-	});
+		});
 	expect(new CourseTracker(runtime, config).outcome().kind).toBe("decided");
 });
 
@@ -334,13 +342,14 @@ for (const format of ["scorm12", "scorm2004"] as const)
 				totalPages: 1,
 				completionMethod: "allPages",
 				requiredAssessmentIds: ["q"],
-				getChoiceDependencyView: () => ({
-					rows: [],
-					questions: {},
-					signatures: {},
-					invalidIds: ["q"],
-					readState: () => undefined,
-				}),
+				getChoiceDependencyView: () =>
+					withChoiceDependencyStatus({
+						rows: [],
+						questions: {},
+						signatures: {},
+						invalidIds: ["q"],
+						readState: () => undefined,
+					}),
 			});
 			runtime.setCommitPreparation?.(() => tracker.prepareCommit());
 			writes.length = 0;
@@ -363,13 +372,14 @@ it("decided preparation releases waiting without inventing a completion write", 
 		totalPages: 1,
 		completionMethod: "allPages",
 		requiredAssessmentIds: ["q"],
-		getChoiceDependencyView: () => ({
-			rows: [],
-			questions: {},
-			signatures: {},
-			invalidIds: waiting ? ["q"] : [],
-			readState: () => undefined,
-		}),
+		getChoiceDependencyView: () =>
+			withChoiceDependencyStatus({
+				rows: [],
+				questions: {},
+				signatures: {},
+				invalidIds: waiting ? ["q"] : [],
+				readState: () => undefined,
+			}),
 	});
 	runtime.setCommitPreparation?.(() => tracker.prepareCommit());
 	runtime.commit();
@@ -439,13 +449,14 @@ it.each(["end", "finish"] as const)(
 			totalPages: 1,
 			completionMethod: "allPages",
 			requiredAssessmentIds: ["q"],
-			getChoiceDependencyView: () => ({
-				rows: [],
-				questions: {},
-				signatures: {},
-				invalidIds: ["q"],
-				readState: () => undefined,
-			}),
+			getChoiceDependencyView: () =>
+				withChoiceDependencyStatus({
+					rows: [],
+					questions: {},
+					signatures: {},
+					invalidIds: ["q"],
+					readState: () => undefined,
+				}),
 		});
 		writes.length = 0;
 		expect(tracker.finish(intent === "finish")).toBe(true);

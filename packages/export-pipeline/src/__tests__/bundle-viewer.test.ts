@@ -1267,12 +1267,24 @@ describe("computeViewerSourceHash", () => {
 				expect(await readFile(path.join(outDir, file), "utf8")).not.toContain("data-practice-mode");
 		});
 
+		it("keeps dormant admission and hashing out of SCORM support", () => {
+			expect(buildInputs).not.toContain(
+				path.resolve(import.meta.dirname, "../../../shared-blocks/src/choice-learner-state.ts"),
+			);
+			const support = result.manifest.hostDependencies?.scorm12?.[0];
+			if (!support) throw new Error("Missing SCORM support");
+			expect(result.manifest.thirdPartyNotices?.outputs[support] ?? []).not.toEqual(
+				expect.arrayContaining([expect.stringMatching(/^@noble\/hashes@/)]),
+			);
+		});
+
 		it("budgets the entire highlight initial JS closure with default navigation", async () => {
 			// Size caps don't block working features (owner rule): SHA-256 pair verification in the host bundle; tighten during final size work.
-			// Measured full enhancer maxima: page 43,137 B gzip; deck 135,602 B gzip.
-			// Add 1 KiB rounded up to 256 B. Owner C5 previously measured
+			// Earlier full enhancer maxima: page 43,137 B gzip; deck 135,602 B gzip.
+			// Owner C5 previously measured
 			// 39,577 / 131,639 B; HL04 caps were 36,864 / 129,024 B.
-			const caps = { page: 44_288, deck: 136_704 };
+			// Size caps don't block working features (owner rule): waiting and exit mechanics measure 136,810 B gzip for the deck, plus 1 KiB rounded up to 256 B; tighten during final size work.
+			const caps = { page: 44_288, deck: 137_984 };
 			const page = {
 				id: "highlight-page",
 				title: "Highlight",

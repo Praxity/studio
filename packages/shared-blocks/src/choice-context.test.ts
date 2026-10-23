@@ -6,6 +6,30 @@ import {
 } from "./choice-learner-state";
 import { admitChoiceStateFacts, choiceGroupDefinitionIsValid } from "./choice-state-facts";
 
+it("evidence carries its status owner and observes later selection changes", () => {
+	let selectedMemberId = "a";
+	const evidence = createChoiceDependencyView(
+		admitChoiceStateFacts({
+			choiceStateGroups: { g: { mode: "oneOf", memberIds: ["a", "b"], requiredIds: ["a", "b"] } },
+		}),
+		{
+			rows: [{ id: "g", correct: true, memberIds: ["a"] }],
+			readState: () => ({
+				version: 1,
+				kind: "assessmentGroup",
+				mode: "oneOf",
+				selectedMemberId,
+				completed: false,
+			}),
+		},
+	);
+	expect(evidence.status("g")).toBe("current");
+	selectedMemberId = "b";
+	const status = evidence.status;
+	expect(status("g")).toBe("history");
+	expect(status("removed")).toBe("current");
+});
+
 it.each([
 	["undefined", undefined],
 	["null", null],

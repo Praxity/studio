@@ -122,16 +122,17 @@ test("dormant admission permits the existing envelope API, shared types and the 
 	);
 });
 
-test("the dormant tracker may consume status but cannot prepare or install evidence", () => {
+test("the dormant tracker imports evidence types without admission or hashing code", () => {
 	const path = "packages/export-pipeline/src/scorm/tracking.ts";
 	assert.deepEqual(
 		checkDormantChoiceImports(
 			path,
-			'import { type ChoiceDependencyView, choiceDependencyStatus as status } from "@praxity/shared-blocks/choice-learner-state"; status(id, view);',
+			'import type { ChoiceDependencyEvidence } from "@praxity/shared-blocks/choice-learner-state";',
 		),
 		[],
 	);
 	for (const source of [
+		'import { choiceDependencyStatus as status } from "@praxity/shared-blocks/choice-learner-state"; status(id, view);',
 		'import { prepareChoiceAssessmentState } from "@praxity/shared-blocks/choice-learner-state";',
 		'import { createChoiceDependencyView as install } from "@praxity/shared-blocks/choice-learner-state";',
 		'import * as states from "@praxity/shared-blocks/choice-learner-state";',
