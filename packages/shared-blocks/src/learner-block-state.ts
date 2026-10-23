@@ -1,3 +1,4 @@
+import type { ChoiceDependencyEvidence } from "./choice-learner-state";
 import type { LearnerStateValue } from "./learner-state";
 import type { SelfCheckTicket } from "./self-check-session";
 import { finishRuntimeCourse } from "./tracking";
@@ -18,6 +19,8 @@ export type LearnerBlockSaveResult =
 	  };
 
 export interface LearnerBlockStateRuntime {
+	/** Absent until the host admits evidence-aware consumers together. */
+	getChoiceDependencyView?(): ChoiceDependencyEvidence;
 	get(blockId: string): LearnerStateValue | undefined;
 	/** Read-only saved envelope revision; null cannot establish preview build evidence. */
 	getSavedBuildRevision?(blockId: string): string | null;
@@ -39,6 +42,8 @@ declare global {
 		__praxityTracker?: {
 			trackPageVisit?: (pageId: string, bookmark?: string) => void;
 			getOutcome?: () => { score: number; passed: boolean } | undefined;
+			getCurrentScore?: () => { raw: number; min: number; max: number } | null;
+			isAssessmentFinal?: (id: string) => boolean;
 		};
 		__praxityRuntime?: {
 			trackNavigation?: (fromPageId: string, toPageId: string, trigger: string) => void;
@@ -68,6 +73,17 @@ export function learnerTracker(
 ) {
 	const tracker = doc?.defaultView?.__praxityTracker;
 	return tracker && withLearnerStateAuthority(tracker, current);
+}
+
+/** The tracker preserves recorded display inputs unless admitted evidence has history. */
+export function learnerScore(
+	current: () => boolean,
+	doc: Document | undefined = globalThis.document,
+) {
+	const tracker = learnerTracker(current, doc);
+	return tracker?.getCurrentScore
+		? tracker.getCurrentScore()
+		: learnerRuntime(current, doc)?.getScore?.();
 }
 
 export function finishLearnerCourse(

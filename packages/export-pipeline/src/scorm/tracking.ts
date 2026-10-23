@@ -112,6 +112,26 @@ export class CourseTracker {
 		return this.average([...this.latestScored().values()]);
 	}
 
+	/** History changes in-course display only; ordinary launches retain the recorded score. */
+	getCurrentScore(): { raw: number; min: number; max: number } | null {
+		const view = this.config.getChoiceDependencyView?.();
+		if (
+			!view ||
+			![
+				...Object.keys(view.questions),
+				...Object.keys(view.groups ?? {}),
+				...(view.invalidIds ?? []),
+			].some((id) => view.status(id) === "history")
+		)
+			return this.runtime.getScore();
+		const rows = [
+			...this.latestScored(
+				this.runtime.getInteractions().filter((row) => view.status(row.id) === "current"),
+			).values(),
+		];
+		return rows.length ? { raw: this.average(rows), min: 0, max: 100 } : null;
+	}
+
 	/** Recompute the authored outcome; pending answers have no learner-visible result. */
 	getOutcome(): { score: number; passed: boolean } | undefined {
 		const { result } = this.outcome("display");
@@ -119,8 +139,10 @@ export class CourseTracker {
 	}
 
 	isAssessmentFinal(id: string): boolean {
+		const view = this.config.getChoiceDependencyView?.();
+		if (view && view.status(id) !== "current") return false;
 		if (this.config.isAssessmentFinal) return this.config.isAssessmentFinal(id);
-		const state = this.config.getAssessmentState?.(id);
+		const state = this.config.getAssessmentState?.(id) ?? view?.readState(id);
 		return (
 			typeof state === "object" &&
 			state !== null &&
