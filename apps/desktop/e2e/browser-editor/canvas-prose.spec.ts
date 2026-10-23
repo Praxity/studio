@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import type { CanvasTextBinding } from "../../src/renderer/browser/canvas-text";
 import { startJourney } from "./global-setup";
+import { captureJourneyRequests } from "./journey-diagnostics";
 
 const source =
 	"# Practice\n\nA [working link](#main-content)\nwrapped paragraph.\n\n- Parent\n  - Nested leaf\n- Other leaf\n\n::: choice Pick\ncorrect: Authored correct.\nincorrect: Authored incorrect.\n(x) Same label\n( ) Same label\n:::\n";
@@ -34,15 +35,29 @@ const kinds = [
 ] as const;
 
 let stop: (() => Promise<void>) | undefined;
+let requests: ReturnType<typeof captureJourneyRequests> | undefined;
 let file: string;
 test.afterEach(async () => {
-	await stop?.();
+	try {
+		if (requests) {
+			requests.mark("before-teardown");
+			await test.info().attach("journey-server-requests", {
+				body: requests.finish(),
+				contentType: "application/json",
+			});
+		}
+	} finally {
+		requests = undefined;
+		await stop?.();
+	}
 });
 
-async function open(page: Page, initial = source, lang = "en") {
+async function open(page: Page, initial = source, lang = "en", diagnostics = false) {
 	stop = await startJourney(page.context(), {
 		standaloneSource: lang === "fr" ? `---\nlang: fr\n---\n\n${initial}` : initial,
 	});
+	if (diagnostics)
+		requests = captureJourneyRequests(new URL(process.env.PRAXITY_BROWSER_READY_URL ?? "").origin);
 	file = join(process.env.PRAXITY_BROWSER_PROJECT ?? "", "second.prax");
 	const snapshot = page.waitForResponse(
 		(response) =>
@@ -90,7 +105,7 @@ for (const lang of ["en", "fr"]) {
 		const initial =
 			"# Practice\n\n- Same item\n  - Same item\n    - Same item\n      - Same item\n        - Same item\n          - Same item\n            - Same item\n              - Same item\n";
 		const observed = saves(page);
-		const fields = await open(page, initial, lang);
+		const fields = await open(page, initial, lang, true);
 		const listFields = fields.filter((field) => field.kind === "list-entry");
 		expect(listFields.map((field) => field.text)).toEqual(Array(8).fill("Same item"));
 		const prefix = lang === "fr" ? "Modifier l'élément de liste" : "Edit list item";
@@ -177,7 +192,12 @@ for (const [ending, bom] of [
 		}) => {
 			const initial = bom + source.replaceAll("\n", ending);
 			const observed = saves(page);
-			const fields = await open(page, initial);
+			const fields = await open(
+				page,
+				initial,
+				"en",
+				item.kind === "list-entry" && ending === "\n" && !bom,
+			);
 			const targets = fields.filter((field) => field.kind === item.kind);
 			const binding =
 				item.kind === "option"
