@@ -13,7 +13,7 @@ import AdmZip from "adm-zip";
 import { build } from "esbuild";
 import { compileCourse, deployCourse } from "../../src/build";
 import { extractDesktopDesignFromFrontmatter } from "../../src/desktop-design";
-import { expectFocusRing } from "../focus-assertions";
+import { expectFocusRing, expectForcedEmulationInert, forcedPalette } from "../focus-assertions";
 
 const questionId = "10000000-0000-4000-8000-000000000001";
 const firstId = "20000000-0000-4000-8000-000000000001";
@@ -427,4 +427,90 @@ for (const { locale, variant, presentation, theme, key } of cases) {
 		}
 		await testInfo.attach("recovered", { body: await page.screenshot(), contentType: "image/png" });
 	});
+}
+
+for (const locale of ["en", "fr"] as const) {
+	for (const presentation of ["pages", "deck"] as const) {
+		for (const width of [1280, 320]) {
+			test(`${locale} ${presentation} forced colours at ${width}px retain the recovery route`, async ({
+				page,
+			}, testInfo) => {
+				const key = `${locale}-single-${presentation}-light`;
+				await page.setViewportSize({ width, height: 900 });
+				await page.emulateMedia({ forcedColors: "active" });
+				await page.goto(base + entries[key]);
+				await page.evaluate(() => document.fonts.ready.then(() => {}));
+				const activity = page.locator(`[data-island="assessment"][data-block-id="${questionId}"]`);
+				await expect(activity).toHaveAttribute("data-hydrated", "");
+				const notice = activity.locator(`[id="${questionId}-choice-history-notice"]`);
+				const action = activity.getByRole("button", {
+					name: locale === "en" ? "New attempt" : "Nouvelle tentative",
+					exact: true,
+				});
+				const controls = activity.getByRole("radio");
+				const paletteActive = await forcedPalette(page);
+				if (!paletteActive) {
+					testInfo.annotations.push({
+						type: "unsupported-forced-colours",
+						description: "Palette emulation unavailable; screenshots show the authored fallback.",
+					});
+					await expectForcedEmulationInert(page, [notice, action]);
+				}
+				await action.focus();
+				await page.keyboard.press("Shift+Tab");
+				await page.keyboard.press("Tab");
+				await expect(action).toBeFocused();
+				await expectFocusRing(action, paletteActive ? 3 : 2, false, "Highlight");
+				await expect(notice).toBeInViewport({ ratio: 1 });
+				await expect(action).toBeInViewport({ ratio: 1 });
+				for (const control of await controls.all()) await expect(control).toBeDisabled();
+				const waiting = {
+					accessibility: await activity.ariaSnapshot(),
+					paint: await activity.evaluate((element) =>
+						[
+							...element.querySelectorAll(
+								".praxity-assessment-new-attempt, [id$='-choice-history-notice']",
+							),
+						].map((target) => {
+							const style = getComputedStyle(target);
+							return {
+								text: target.textContent,
+								color: style.color,
+								background: style.backgroundColor,
+								border: style.border,
+								outline: style.outline,
+								forcedColorAdjust: style.getPropertyValue("forced-color-adjust"),
+							};
+						}),
+					),
+				};
+				const evidenceName = paletteActive ? "forced-colours" : "unsupported-forced-colours";
+				await testInfo.attach(`${evidenceName}-waiting`, {
+					body: await page.screenshot({ fullPage: true }),
+					contentType: "image/png",
+				});
+				await action.press("Enter");
+				await expect(controls.first()).toBeFocused();
+				await expect(action).toHaveCount(0);
+				expect(
+					await page.evaluate((id) => window.__praxityBlockState?.get(id), questionId),
+				).toEqual(previous[key]);
+				await testInfo.attach(`${evidenceName}-new-attempt`, {
+					body: await page.screenshot({ fullPage: true }),
+					contentType: "image/png",
+				});
+				await testInfo.attach(`${evidenceName}-states`, {
+					body: JSON.stringify({
+						locale,
+						presentation,
+						width,
+						paletteActive,
+						waiting,
+						newAttempt: await activity.ariaSnapshot(),
+					}),
+					contentType: "application/json",
+				});
+			});
+		}
+	}
 }
