@@ -5,6 +5,7 @@
  * detection based on configurable criteria (all pages, percentage, or quiz).
  */
 
+import type { ChoiceDependencyEvidence } from "@praxity/shared-blocks/choice-learner-state";
 import { DEFAULT_COMPLETION_THRESHOLD } from "@praxity/shared-blocks/constants";
 import { type CourseOutcome, writeCourseOutcome } from "@praxity/shared-blocks/learner-block-state";
 import type { InteractionRecord, SCORMRuntime, TrackInteractionOptions } from "./types.ts";
@@ -51,6 +52,8 @@ export interface TrackingConfig {
 	isAssessmentFinal?: (id: string) => boolean;
 	/** Hosts supply saved answers; the tracker owns their finality decision. */
 	getAssessmentState?: (id: string) => unknown;
+	/** Absent until the host admits evidence-aware reporting. */
+	getChoiceDependencyView?: () => ChoiceDependencyEvidence | undefined;
 }
 
 interface CourseResult {
@@ -59,9 +62,7 @@ interface CourseResult {
 	retryable: boolean;
 }
 
-interface TrackerOutcome extends CourseOutcome {
-	result?: CourseResult | null;
-}
+type TrackerOutcome = CourseOutcome & { result?: CourseResult | null };
 
 // ---------------------------------------------------------------------------
 // CourseTracker
@@ -154,6 +155,23 @@ export class CourseTracker {
 		return latest;
 	}
 
+	private historyIsWaiting(view: ChoiceDependencyEvidence | undefined): boolean {
+		if (!view) return false;
+		const ids = new Set(this.config.requiredAssessmentIds ?? []);
+		const hasPassMark = this.hasPassMark();
+		if (hasPassMark) for (const id of this.config.scoredAssessmentIds ?? []) ids.add(id);
+		// One set covers every intent, including standalone's legacy quiz completion.
+		if (
+			this.config.completionMethod === "quiz" &&
+			(!hasPassMark || this.config.reportOutcome === false)
+		) {
+			for (const [id, question] of Object.entries(view.questions)) if (question.graded) ids.add(id);
+			const rows = this.runtime.getInteractions();
+			for (const row of rows) if (row.id !== "*" && Number.isFinite(row.score)) ids.add(row.id);
+		}
+		return [...ids].some((id) => view.status(id) === "history");
+	}
+
 	/**
 	 * Evaluate whether the course should be marked as completed, passed, or
 	 * failed based on the configured completion method.
@@ -231,7 +249,7 @@ export class CourseTracker {
 	 * would end the attempt before a result exists, so it stays "incomplete" until
 	 * the course has a final failure, or passes with the page rule met.
 	 */
-	private outcome(
+	outcome(
 		intent:
 			| "check"
 			| "score"
@@ -239,8 +257,18 @@ export class CourseTracker {
 			| "prepareCommit"
 			| "end"
 			| "finish"
-			| NonNullable<CourseOutcome["objective"]> = "check",
+			| { id: string; score: number; passed: boolean } = "check",
+		view = this.config.getChoiceDependencyView?.(),
 	): TrackerOutcome {
+		if (this.historyIsWaiting(view))
+			return {
+				kind: "waiting",
+				...(intent === "end"
+					? { finish: "complete" as const }
+					: intent === "finish"
+						? { finish: "terminate" as const }
+						: {}),
+			};
 		if (intent === "prepareCommit") return { kind: "decided" };
 		if (typeof intent === "object") return { kind: "decided", objective: intent };
 		if (intent === "finish") return { kind: "decided", finish: "terminate" };

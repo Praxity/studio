@@ -61,6 +61,10 @@ export interface SCORMRuntime {
 	getSuccess?(): string;
 	/** Preserve the tracker's unfinished failure status when explicit Finish closes the launch. */
 	setCourseFailure?(failed: boolean): void;
+	/** Waiting cancels queued credit and preserves the current LMS attempt. */
+	configureOutcome?(policy: { waiting: boolean }): void;
+	/** One waiting termination must not emit an xAPI course result. */
+	suppressTerminationResult?(): void;
 	setScore(raw: number, min: number, max: number): void;
 	getScore(): { raw: number; min: number; max: number } | null;
 	setBookmark(pageId: string): void;
