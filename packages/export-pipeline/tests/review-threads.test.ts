@@ -154,7 +154,24 @@ async function open(
 	);
 	doms.push(dom);
 	reviewPageLayout(dom);
-	dom.window.fetch = server.fetch as typeof dom.window.fetch;
+	let responseRead = Promise.resolve();
+	dom.window.fetch = ((...args: Parameters<typeof server.fetch>) => {
+		let read!: () => void;
+		responseRead = new Promise<void>((resolve) => {
+			read = resolve;
+		});
+		return server.fetch(...args).then(
+			(response) => {
+				const json = response.json.bind(response);
+				response.json = () => json().finally(read);
+				return response;
+			},
+			(error) => {
+				read();
+				throw error;
+			},
+		);
+	}) as typeof dom.window.fetch;
 	dom.window.requestAnimationFrame = () => 1;
 	dom.window.HTMLDialogElement.prototype.showModal = function () {
 		this.open = true;
@@ -181,7 +198,8 @@ async function open(
 		doc,
 		refresh: async () => {
 			dom.window.dispatchEvent(new dom.window.Event("focus"));
-			await new Promise((resolve) => setTimeout(resolve, 15));
+			// Native Response bodies need an event-loop turn, not just microtask draining.
+			await responseRead;
 			await settle();
 		},
 	};
