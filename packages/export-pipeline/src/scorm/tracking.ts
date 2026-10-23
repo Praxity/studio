@@ -18,10 +18,12 @@ import {
 import {
 	isChoiceContentSignature,
 	isGroupObjectiveScore,
+	type LearnerStateValue,
 	prepareGroupObjectiveSave,
 	readSavedAssessmentGroupState,
 	readSubmittedAssessmentGroup,
 } from "@praxity/shared-blocks/learner-state";
+import type { GroupObjectiveReplayLedger } from "./api/session";
 import type { InteractionRecord, SCORMRuntime, TrackInteractionOptions } from "./types.ts";
 
 /** The pass mark as the manifest declares it, so the LMS and the SCO agree at the boundary. */
@@ -80,18 +82,99 @@ interface CourseResult {
 
 type TrackerOutcome = CourseOutcome & { result?: CourseResult | null };
 
-/** Snapshot only the incoming submission. Saved obligations are never replayed here. */
+/** The provider owns capture saves; the SCORM launch owns replay acknowledgement. */
 export function createDeferredGroupObjectiveWriter(
 	provider: LearnerBlockStateRuntime,
 	current: () => boolean,
+	ledger?: GroupObjectiveReplayLedger,
 ): GroupObjectiveWriter | undefined {
 	const handoff = provider.admitGroupObjectives?.(current, {
 		read: readSubmittedAssessmentGroup,
 		prepare: prepareGroupObjectiveSave,
 	});
 	if (!handoff) return undefined;
-	const writer: GroupObjectiveWriter = (runtime, outcome, view, intent) => {
+	const clear = (id: string, uuid: string) =>
+		provider.clearGroupObjective?.(
+			id,
+			(saved) =>
+				readSubmittedAssessmentGroup(saved)?.objective?.id === uuid
+					? prepareGroupObjectiveSave(saved, saved as LearnerStateValue, undefined, uuid)
+					: undefined,
+			current,
+		);
+	const writer: GroupObjectiveWriter = (runtime, outcome, view, intent, readReplay) => {
 		const reporting = runtime && withLearnerStateAuthority(runtime, current);
+		if (!intent) {
+			let evidence = view;
+			let latestOutcome = outcome;
+			if (ledger && evidence && readReplay) {
+				const refresh = () => {
+					const fresh = readReplay();
+					evidence = fresh.view;
+					latestOutcome = fresh.outcome;
+				};
+				const claims = (ledger.objectives ??= new Map());
+				for (const id of Object.keys(evidence.groups ?? {})) {
+					const saved = readSubmittedAssessmentGroup(provider.get(id));
+					const objective = saved?.objective;
+					if (!current()) return false;
+					if (!objective) continue;
+					const key = JSON.stringify([id, objective.id]);
+					if (claims.get(key) === "written") {
+						clear(id, objective.id);
+						refresh();
+						continue;
+					}
+					if (
+						claims.has(key) ||
+						latestOutcome.kind !== "decided" ||
+						evidence?.status(id) !== "current"
+					)
+						continue;
+					claims.set(key, "writing");
+					let accepted = false;
+					try {
+						const confirmed = provider.confirmGroupObjective?.(
+							id,
+							(state) =>
+								JSON.stringify(readSubmittedAssessmentGroup(state)) === JSON.stringify(saved),
+							current,
+						);
+						// Commit callbacks can acknowledge this UUID or replace both state and rows.
+						refresh();
+						if (
+							confirmed &&
+							current() &&
+							latestOutcome.kind === "decided" &&
+							evidence?.status(id) === "current" &&
+							JSON.stringify(readSubmittedAssessmentGroup(provider.get(id))) ===
+								JSON.stringify(saved) &&
+							current() &&
+							claims.get(key) === "writing"
+						) {
+							accepted =
+								writeCourseOutcome(reporting, {
+									kind: "decided",
+									objective: { id, score: objective.score, passed: objective.passed },
+								}) && current();
+							refresh();
+						}
+					} finally {
+						// A nested decided submission owns any acknowledgement made during confirmation.
+						if (claims.get(key) === "writing") {
+							if (accepted) claims.set(key, "written");
+							else claims.delete(key);
+						}
+					}
+					if (accepted) {
+						handoff(id, null, objective.id);
+						clear(id, objective.id);
+						refresh();
+					}
+				}
+			}
+			return current() && writeCourseOutcome(reporting, latestOutcome) && current();
+		}
 		if (!Object.hasOwn(view?.groups ?? {}, intent.id))
 			return writeCourseOutcome(reporting, outcome) && current();
 		const { id, score, passed, contentSignature } = intent;
@@ -111,7 +194,19 @@ export function createDeferredGroupObjectiveWriter(
 			outcome.kind === "waiting" ? { id: crypto.randomUUID(), score, passed } : undefined;
 		const clearId = pending ? undefined : readSubmittedAssessmentGroup(previous)?.objective?.id;
 		// Outcome callbacks can revoke authority before a waiting handoff is queued.
-		if (!writeCourseOutcome(reporting, outcome) || !current()) return false;
+		const claims = ledger && (ledger.objectives ??= new Map());
+		const key = clearId && JSON.stringify([id, clearId]);
+		if (key) claims?.set(key, "writing");
+		let accepted = false;
+		try {
+			accepted = writeCourseOutcome(reporting, outcome) && current();
+		} finally {
+			if (key && claims?.get(key) === "writing") {
+				if (accepted) claims.set(key, "written");
+				else claims.delete(key);
+			}
+		}
+		if (!accepted) return false;
 		if (pending || clearId) {
 			handoff(id, { contentSignature, pending, clearId });
 			// SCORM 1.2 already holds the capture provisionally before its aggregate interaction.
@@ -168,7 +263,7 @@ export class CourseTracker {
 	): void {
 		this.runtime.trackInteraction(id, response, correct, score, options);
 
-		if (score !== undefined) writeCourseOutcome(this.runtime, this.outcome("score", view));
+		if (score !== undefined) this.writeOutcome("score", this.runtime, view);
 
 		this.checkCompletion(view);
 	}
@@ -228,7 +323,8 @@ export class CourseTracker {
 		view?: ChoiceDependencyEvidence,
 		contentSignature?: unknown,
 	): boolean {
-		const evidence = view ?? this.config.getChoiceDependencyView?.();
+		const ordinary = this.config.getChoiceDependencyView?.();
+		const evidence = view ?? ordinary;
 		const outcome = this.outcome({ id, score, passed: passed === true }, evidence ?? null);
 		return this.config.writeObjectives
 			? this.config.writeObjectives(runtime, outcome, evidence, {
@@ -245,7 +341,22 @@ export class CourseTracker {
 	}
 
 	finish(explicitFinish = false, runtime = this.runtime): boolean {
-		return writeCourseOutcome(runtime, this.outcome(explicitFinish ? "finish" : "end"));
+		return this.writeOutcome(explicitFinish ? "finish" : "end", runtime);
+	}
+
+	private writeOutcome(
+		intent: "check" | "score" | "prepareCommit" | "finish" | "end",
+		runtime = this.runtime,
+		candidate?: ChoiceDependencyEvidence,
+	): boolean {
+		const view = this.config.getChoiceDependencyView?.();
+		const outcome = this.outcome(intent, candidate ?? view ?? null);
+		return this.config.writeObjectives
+			? this.config.writeObjectives(runtime, outcome, view, undefined, () => {
+					const fresh = this.config.getChoiceDependencyView?.();
+					return { view: fresh, outcome: this.outcome(intent, fresh ?? null) };
+				})
+			: writeCourseOutcome(runtime, outcome);
 	}
 
 	private average(scores: InteractionRecord[]): number {
@@ -288,12 +399,12 @@ export class CourseTracker {
 	 * failed based on the configured completion method.
 	 */
 	checkCompletion(view?: ChoiceDependencyEvidence): void {
-		writeCourseOutcome(this.runtime, this.outcome("check", view));
+		this.writeOutcome("check", this.runtime, view);
 	}
 
 	/** A decided commit preserves the adapter's existing write log. */
 	prepareCommit(): void {
-		writeCourseOutcome(this.runtime, this.outcome("prepareCommit"));
+		this.writeOutcome("prepareCommit");
 	}
 
 	// ---- private completion strategies ------------------------------------

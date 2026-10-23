@@ -13,13 +13,15 @@ export { type CourseOutcome, writeCourseOutcome } from "./tracking";
 export type GroupObjectiveHandoff = (
 	id: string,
 	proposal: { contentSignature: string; pending?: DeferredGroupObjective; clearId?: string } | null,
+	acknowledgedId?: string,
 ) => boolean;
 
 export type GroupObjectiveWriter = ((
 	runtime: OutcomeRuntime | undefined,
 	outcome: CourseOutcome,
 	view: ChoiceDependencyEvidence | undefined,
-	intent: { id: string; score: number; passed: boolean; contentSignature?: unknown },
+	intent?: { id: string; score: number; passed: boolean; contentSignature?: unknown },
+	readReplay?: () => { view: ChoiceDependencyEvidence | undefined; outcome: CourseOutcome },
 ) => boolean) & { discard(id: string): void };
 
 export type LearnerBlockSaveResult =
@@ -47,6 +49,16 @@ export interface LearnerBlockStateRuntime {
 	prepareGroupState?(blockId: string, value: LearnerStateValue): LearnerStateValue | null;
 	/** Native save acceptance, independent of ordinary receipt capabilities. */
 	saveGroupObjective?(blockId: string, value: LearnerStateValue, current: () => boolean): boolean;
+	confirmGroupObjective?(
+		blockId: string,
+		matches: (value: unknown) => boolean,
+		current: () => boolean,
+	): boolean;
+	clearGroupObjective?(
+		blockId: string,
+		prepare: (value: LearnerStateValue | undefined) => LearnerStateValue | undefined,
+		current: () => boolean,
+	): boolean;
 	/** Production binds evidence and objective storage together at activation. */
 	getChoiceReporting?(current: () => boolean): {
 		getChoiceDependencyView: () => ChoiceDependencyEvidence | undefined;

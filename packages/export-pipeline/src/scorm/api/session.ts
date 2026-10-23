@@ -2,7 +2,11 @@ import { findWindowProperty, type WindowLike } from "../api-discovery";
 import type { RuntimeCommitPreparation } from "../types";
 
 /** Shared by every runtime in one LMS launch, including cached older documents. */
-export interface ScormSessionState extends RuntimeCommitPreparation {
+export interface GroupObjectiveReplayLedger {
+	objectives?: Map<string, "writing" | "written">;
+}
+
+export interface ScormSessionState extends RuntimeCommitPreparation, GroupObjectiveReplayLedger {
 	initialized: boolean;
 	closed: boolean;
 	terminationSucceeded: boolean;
@@ -125,6 +129,7 @@ export function writeSessionState(
 	if (initialized && !state.initialized) {
 		state.startedAt = state.pendingCompletion = state.courseFailure = undefined;
 		state.outcomeWaiting = undefined;
+		state.objectives = undefined;
 	}
 	state.initialized = initialized && !state.closed;
 	storeSessionState(api, state, win);

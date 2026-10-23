@@ -104,8 +104,8 @@ const HOST_GZIP_BUDGETS: Record<ViewerHostName, number> = {
 	electronPreview: 16384,
 	// Measured 18,698 B gzip for objective handoff admission; add 1 KiB rounded up to 256 B.
 	scorm12: 19968,
-	// Measured 11,656 B gzip; add 1 KiB rounded up to 256 B.
-	scorm2004: 12800,
+	// Measured 12,834 B gzip for objective confirmation; add 1 KiB rounded up to 256 B.
+	scorm2004: 14080,
 	// Measured 14,119 B gzip for objective handoff admission; add 1 KiB rounded up to 256 B.
 	xapi: 15360,
 };
@@ -131,8 +131,8 @@ const COLD_HOST_GZIP_BUDGETS: Record<ViewerHostName, number> = {
 	electronPreview: 16384,
 	// Measured 18,698 B gzip for objective handoff admission; add 1 KiB rounded up to 256 B.
 	scorm12: 19968,
-	// Measured 11,656 B gzip; add 1 KiB rounded up to 256 B.
-	scorm2004: 12800,
+	// Measured 12,834 B gzip for objective confirmation; add 1 KiB rounded up to 256 B.
+	scorm2004: 14080,
 	// Measured 14,119 B gzip for objective handoff admission; add 1 KiB rounded up to 256 B.
 	xapi: 15360,
 };

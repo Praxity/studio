@@ -118,6 +118,26 @@ export function createBlockStateRuntime(runtime: SCORMRuntime): LearnerBlockStat
 			const authorized = () => current() && (!queued || queued.current());
 			return authorized() && saveBlockState(id, value).accepted && authorized();
 		};
+		provider.confirmGroupObjective = (id, matches, current) => {
+			if (!current() || provider.getSaveResult?.(id)?.status === "pending") return false;
+			const before = provider.get(id);
+			const bytes = JSON.stringify(before);
+			if (!current() || !matches(before)) return false;
+			return (
+				runtime.commit() && current() && JSON.stringify(provider.get(id)) === bytes && current()
+			);
+		};
+		provider.clearGroupObjective = (id, prepare, current) => {
+			if (!current()) return false;
+			const before = provider.get(id);
+			const next = prepare(before);
+			if (!current() || next === undefined || !saveBlockState(id, next).accepted || !current())
+				return false;
+			const committed = runtime.commit();
+			if (!committed && current() && JSON.stringify(provider.get(id)) === JSON.stringify(next))
+				saveBlockState(id, before as LearnerStateValue);
+			return committed && current();
+		};
 		provider.admitGroupObjectives = (current, schema) => {
 			provider.prepareGroupState ??= (id, next) => {
 				const previous = provider.get(id);
@@ -134,14 +154,14 @@ export function createBlockStateRuntime(runtime: SCORMRuntime): LearnerBlockStat
 					(queued.proposal.pending ? saved?.id === queued.proposal.pending.id : !saved);
 				if (adopted) retire();
 				const active = adopted ? undefined : queued;
-				if (active && !active.current()) {
-					retire();
-					return null;
-				}
 				const matches =
 					active?.proposal.contentSignature === schema.read(next)?.submitted.contentSignature;
 				if (active && !matches) retire();
 				const proposal = active && matches ? active.proposal : undefined;
+				if (proposal && !active?.current()) {
+					retire();
+					return null;
+				}
 				const prepared = schema.prepare(
 					previous,
 					next,
@@ -150,8 +170,10 @@ export function createBlockStateRuntime(runtime: SCORMRuntime): LearnerBlockStat
 				);
 				return prepared;
 			};
-			return (id, proposal) => {
+			return (id, proposal, acknowledgedId) => {
 				if (!current()) return false;
+				if (acknowledgedId && handoffs.get(id)?.proposal.pending?.id !== acknowledgedId)
+					return true;
 				if (proposal) handoffs.set(id, { proposal, current });
 				else handoffs.delete(id);
 				return true;

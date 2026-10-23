@@ -117,6 +117,7 @@ export function prepareGroupObjectiveSave(
 	if (
 		pending !== undefined &&
 		(!isRecord(pending) ||
+			pending.id === clearId ||
 			!group ||
 			!isRecord(group.submitted) ||
 			!isChoiceContentSignature(pending.contentSignature) ||
@@ -148,9 +149,14 @@ export function prepareGroupObjectiveSave(
 		const { deferredObjective: _objective, ...capture } = state.submitted;
 		const old = readSubmittedAssessmentGroup(previous);
 		const incoming = readDeferredGroupObjective(next);
-		const retained =
-			old?.submitted.contentSignature === capture.contentSignature ? old.objective : undefined;
-		const objective = pending ?? incoming ?? retained;
+		// A retained capture is authoritative over a draft copied before a reentrant save.
+		const objective =
+			pending ??
+			(clearId && incoming && incoming.id !== clearId
+				? incoming
+				: old?.submitted.contentSignature === capture.contentSignature
+					? old.objective
+					: incoming);
 		state.submitted =
 			objective && objective.id !== clearId
 				? {
