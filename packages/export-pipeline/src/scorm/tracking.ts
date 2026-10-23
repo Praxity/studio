@@ -122,7 +122,9 @@ export class CourseTracker {
 		const view = this.config.getChoiceDependencyView?.();
 		if (view && view.status(id) !== "current") return false;
 		if (this.config.isAssessmentFinal) return this.config.isAssessmentFinal(id);
-		const state = this.config.getAssessmentState?.(id) ?? view?.readState(id);
+		const saved = this.config.getAssessmentState?.(id) ?? view?.readState(id);
+		const state =
+			view && Object.hasOwn(view.questions, id) ? view.admitQuestionState?.(id, saved) : saved;
 		return (
 			typeof state === "object" &&
 			state !== null &&

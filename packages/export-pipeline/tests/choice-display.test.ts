@@ -1,5 +1,8 @@
 // @vitest-environment jsdom
-import { createChoiceDependencyView } from "@praxity/shared-blocks/choice-learner-state";
+import {
+	createChoiceDependencyView,
+	restoreChoiceAssessmentState,
+} from "@praxity/shared-blocks/choice-learner-state";
 import { admitChoiceStateFacts } from "@praxity/shared-blocks/choice-state-facts";
 import * as learner from "@praxity/shared-blocks/learner-block-state";
 import { afterEach, expect, it, vi } from "vitest";
@@ -264,4 +267,71 @@ it("current evidence retains the host's unfinished saved-state decision", () => 
 		getChoiceDependencyView: () => evidence(runtime, { q: exhaustedGateState }),
 	});
 	expect(tracker.isAssessmentFinal("q")).toBe(false);
+});
+
+for (const source of ["view", "host", "host override"] as const)
+	it.each([
+		[1, true, false],
+		[2, false, true],
+	] as const)(
+		`round 1: ${source} legacy finality is admitted, attempts=%s, saved completed=%s`,
+		(attemptCount, completed, expected) => {
+			const runtime = new LocalStorageRuntime(localStorage, "normalized-finality");
+			runtime.trackInteraction("q", "b", false, 0);
+			const saved = Object.freeze({ ...exhaustedGateState, attemptCount, completed });
+			const view = evidence(runtime, {
+				q:
+					source === "host override"
+						? { ...saved, attemptCount: attemptCount === 1 ? 2 : 1, completed: !completed }
+						: saved,
+			});
+			expect(view.status("q")).toBe("current");
+			expect(
+				restoreChoiceAssessmentState(saved, { question: gateQuestion, signature: gateSignature })
+					.current?.completed,
+			).toBe(expected);
+			const tracker = new CourseTracker(runtime, {
+				totalPages: 1,
+				completionMethod: "allPages",
+				getChoiceDependencyView: () => view,
+				...(source !== "view" ? { getAssessmentState: () => saved } : {}),
+			});
+			expect(tracker.isAssessmentFinal("q")).toBe(expected);
+			expect(saved.completed).toBe(completed);
+		},
+	);
+
+it("question finality refuses a status-only view without admission", () => {
+	const runtime = new LocalStorageRuntime(localStorage, "status-only");
+	const view = evidence(runtime, { q: exhaustedGateState });
+	delete view.admitQuestionState;
+	const tracker = new CourseTracker(runtime, {
+		totalPages: 1,
+		completionMethod: "allPages",
+		getChoiceDependencyView: () => view,
+	});
+	expect(view.status("q")).toBe("current");
+	expect(tracker.isAssessmentFinal("q")).toBe(false);
+});
+
+it("question admission does not claim another finality owner's state", () => {
+	const runtime = new LocalStorageRuntime(localStorage, "other-finality");
+	const view = evidence(runtime);
+	expect(view.admitQuestionState?.("other", exhaustedGateState)).toBeNull();
+});
+
+it("question admission retains the saved preview build proof", () => {
+	const view = createChoiceDependencyView(
+		admitChoiceStateFacts({
+			choiceStateQuestions: { q: gateQuestion },
+			choiceStateSignatures: { q: gateSignature },
+		}),
+		{
+			rows: [{ id: "q", correct: false }],
+			readState: () => exhaustedGateState,
+			preview: { currentRevision: "new-build", readSavedRevision: () => "old-build" },
+		},
+	);
+	expect(view.status("q")).toBe("history");
+	expect(view.admitQuestionState?.("q", exhaustedGateState)).toBeNull();
 });

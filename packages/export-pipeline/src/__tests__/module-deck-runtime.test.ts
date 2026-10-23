@@ -804,7 +804,13 @@ it("keeps a pass gate locked during retries, then releases and restores it after
 });
 
 for (const format of ["xapi", "standalone"] as const)
-	for (const scenario of ["exhausted", "retry", "history"] as const)
+	for (const scenario of [
+		"exhausted",
+		"retry",
+		"history",
+		"retry marked complete",
+		"exhausted marked incomplete",
+	] as const)
 		for (const cachedRelease of [false, true])
 			it(`admitted ${format} ${scenario} gate, cached release=${cachedRelease}`, () => {
 				setup(false);
@@ -827,15 +833,18 @@ for (const format of ["xapi", "standalone"] as const)
 							);
 				const original = open();
 				expect(original.initialize()).toBe(true);
+				const retry = scenario === "retry" || scenario === "retry marked complete";
+				const exhausted = scenario === "exhausted" || scenario === "exhausted marked incomplete";
 				const state = {
 					...exhaustedGateState,
-					...(scenario === "retry" ? { attemptCount: 1, completed: false } : {}),
+					attemptCount: retry ? 1 : 2,
+					completed: scenario !== "retry" && scenario !== "exhausted marked incomplete",
 					...(scenario === "history" ? { contentSignature: `sha256:${"d".repeat(64)}` } : {}),
 				};
 				createBlockStateRuntime(original).set("check", state);
-				if (scenario === "retry") original.trackInteraction("check", "a", true, 100);
+				if (retry) original.trackInteraction("check", "a", true, 100);
 				original.trackInteraction("check", "b", false, 0);
-				if (scenario === "retry") original.trackInteraction("other", "a", true, 100);
+				if (retry) original.trackInteraction("other", "a", true, 100);
 				original.setSuspendData(
 					JSON.stringify({
 						...JSON.parse(original.getSuspendData() || "{}"),
@@ -861,6 +870,7 @@ for (const format of ["xapi", "standalone"] as const)
 						totalPages: 3,
 						completionMethod: "allPages",
 						getChoiceDependencyView: view,
+						...(format === "standalone" ? { getAssessmentState: provider.get } : {}),
 					}),
 				});
 				expect(runtime.getInteractions()[0]).not.toHaveProperty("attemptsUsed");
@@ -871,10 +881,10 @@ for (const format of ["xapi", "standalone"] as const)
 				const next = document.getElementById("deck-next") as HTMLButtonElement;
 				expect(
 					document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled"),
-				).toBe(scenario === "exhausted" ? "false" : "true");
+				).toBe(exhausted ? "false" : "true");
 				next.click();
 				expect(document.querySelector<HTMLElement>('[data-deck-slide="slide-2"]')?.hidden).toBe(
-					scenario !== "exhausted",
+					!exhausted,
 				);
 			});
 
