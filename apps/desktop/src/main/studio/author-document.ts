@@ -82,6 +82,7 @@ export async function addStudioReadModeLink(
 		reviewId: string;
 		capability: string;
 		page: CanvasPageScope | undefined;
+		pages?: { id: string; href: string }[];
 		draftOriginChanged?: boolean;
 	},
 ): Promise<string> {
@@ -104,10 +105,8 @@ export async function addStudioReadModeLink(
 		const offset =
 			body?.startTag?.endOffset ?? (first ? dom.nodeLocation(first)?.startOffset : undefined);
 		if (offset === undefined) throw new Error("Captured document has no body insertion boundary");
-		const style = deck
-			? "position:relative;z-index:2147483647;display:flex;flex:0 0 auto;align-items:center;align-self:flex-start;min-height:44px;padding:0 12px;color:var(--ink);background:var(--paper)"
-			: "position:relative;z-index:2147483647";
-		const link = `<a href="${escapeHtml(editUrl)}" rel="noreferrer" style="${style}">${escapeHtml(label)}</a>`;
+		// Reserve a row in plain Read; the review client moves this same link into its header.
+		const link = `<style data-praxity-studio-read>.praxity-studio-read-tools{flex:0 0 64px;min-height:64px}.praxity-studio-read-tools>a{position:fixed;inset-block-start:8px;inset-inline-end:8px;z-index:10001}.praxity-studio-edit-link{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;padding:8px 12px;border:2px solid var(--praxity-color-border,#8c959f);border-radius:6px;font:inherit;color:var(--praxity-color-text,#212529);background:var(--praxity-color-background,#fff)}.praxity-studio-edit-link:focus-visible{outline:3px solid var(--praxity-color-focus,#005fcc);outline-offset:2px}@media(forced-colors:active){.praxity-studio-edit-link{color:LinkText;background:Canvas;border-color:ButtonText}.praxity-studio-edit-link:focus-visible{outline-color:Highlight}}</style><div class="praxity-studio-read-tools"><a class="praxity-studio-edit-link" href="${escapeHtml(editUrl)}" rel="noreferrer">${escapeHtml(label)}</a></div>`;
 		const linked = html.slice(0, offset) + link + html.slice(offset);
 		if (!review) return linked;
 		const scope = review.page;
@@ -135,6 +134,7 @@ export async function addStudioReadModeLink(
 			},
 			blockNames: (locale === "fr" ? reviewFr : reviewEn).pedagogyAudit.blockTypes,
 			locale,
+			...(review.pages ? { pages: review.pages } : {}),
 			...(review.draftOriginChanged ? { draftOriginChanged: true } : {}),
 			page: {
 				lessonId: scope?.lessonId ?? null,
