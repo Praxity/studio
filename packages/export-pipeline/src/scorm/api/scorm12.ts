@@ -20,6 +20,8 @@ import {
 } from "../scorm12-suspend-data";
 import {
 	assessmentAttemptMetadata,
+	assessmentRowsEvidence,
+	type InteractionEvidence,
 	type InteractionRecord,
 	LMS_DESTINATIONS,
 	prepareRuntimeCommit,
@@ -28,6 +30,7 @@ import {
 } from "../types.ts";
 import { deviceAttemptId } from "./device-attempt";
 import {
+	configureSessionOutcome,
 	getSessionState,
 	readSessionState,
 	type ScormSessionState,
@@ -35,6 +38,12 @@ import {
 	writeSessionState,
 } from "./session.ts";
 import { sessionTime } from "./session-time.ts";
+
+/** Dormant export so ordinary adapter instances do not retain evidence code in bundles. */
+export function readScorm12InteractionEvidence(raw: string): InteractionEvidence[] | null {
+	const data = parseScorm12SuspendData(raw);
+	return data ? assessmentRowsEvidence(data.interactions) : null;
+}
 
 // See docs/context/scorm-xapi-standards.md for spec references
 
@@ -72,6 +81,9 @@ export interface Scorm12Runtime {
 
 // biome-ignore lint/suspicious/noUnsafeDeclarationMerging: The static capability block installs these methods; interface declarations erase without emitting fields that shadow the prototype.
 export class Scorm12Runtime implements SCORMRuntime {
+	configureOutcome(policy: { waiting: boolean }): void {
+		configureSessionOutcome(this.session, policy);
+	}
 	readonly destinations = LMS_DESTINATIONS;
 	static {
 		if (globalThis.__praxityPrivateState !== false) {
@@ -219,6 +231,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 			if (!this.flushCompletion(true)) return false;
 			if (
 				explicitFinish &&
+				!session.outcomeWaiting &&
 				!this.unreadableSuspendData &&
 				!session.courseFailure &&
 				!["failed", "passed"].includes(this.lmsGetValue("cmi.core.lesson_status", true)) &&
@@ -508,9 +521,9 @@ export class Scorm12Runtime implements SCORMRuntime {
 	private prepareExit(terminating = false): boolean {
 		// Persist the attempt across a window close; page navigation only commits. A failed
 		// attempt stays suspended so the learner can resume it and retry toward the pass mark.
-		const terminal = ["completed", "passed"].includes(
-			this.lmsGetValue("cmi.core.lesson_status", terminating),
-		);
+		const terminal =
+			!this.session?.outcomeWaiting &&
+			["completed", "passed"].includes(this.lmsGetValue("cmi.core.lesson_status", terminating));
 		return this.lmsSetValue("cmi.core.exit", terminal ? "" : "suspend", terminating);
 	}
 
