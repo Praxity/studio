@@ -437,7 +437,7 @@ const en: LearnerStrings = {
 	correctAnswers: "Correct answers",
 	tryAgain: "Try again",
 	choiceHistoryNotice:
-		"Your previous answer is kept in history and does not count toward this version of the question. Start a new attempt to continue.",
+		"This question changed after you answered it, so your earlier answer no longer counts. Select New attempt to answer it again.",
 	choiceNewAttempt: "New attempt",
 	assessmentAttemptOf: "Attempt {n} of {total}",
 	assessmentAttemptsUsed: "{n} of {total} attempts used",
@@ -761,7 +761,7 @@ const fr: LearnerStrings = {
 	correctAnswers: "Bonnes réponses",
 	tryAgain: "Réessayer",
 	choiceHistoryNotice:
-		"Votre réponse précédente est conservée dans l’historique et ne compte pas pour cette version de la question. Commencez une nouvelle tentative pour continuer.",
+		"Cette question a été modifiée après votre réponse. Votre réponse précédente ne compte donc plus. Sélectionnez Nouvelle tentative pour y répondre de nouveau.",
 	choiceNewAttempt: "Nouvelle tentative",
 	assessmentAttemptOf: "Tentative {n} sur {total}",
 	assessmentAttemptsUsed: "Tentatives utilisées\u00a0: {n} sur {total}",

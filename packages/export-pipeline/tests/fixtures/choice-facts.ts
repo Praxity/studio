@@ -13,11 +13,11 @@ export function stripChoiceRecoveryStrings(html: string): string {
 				return whole;
 			const labels = new Map([
 				[
-					"Your previous answer is kept in history and does not count toward this version of the question. Start a new attempt to continue.",
+					"This question changed after you answered it, so your earlier answer no longer counts. Select New attempt to answer it again.",
 					"New attempt",
 				],
 				[
-					"Votre réponse précédente est conservée dans l’historique et ne compte pas pour cette version de la question. Commencez une nouvelle tentative pour continuer.",
+					"Cette question a été modifiée après votre réponse. Votre réponse précédente ne compte donc plus. Sélectionnez Nouvelle tentative pour y répondre de nouveau.",
 					"Nouvelle tentative",
 				],
 			]);

@@ -15,6 +15,7 @@ export type CourseOutcome =
 
 /** The runtime-only End path and course tracker share this injected writer. */
 interface OutcomeRuntime {
+	configureOutcome?(policy: { waiting?: boolean; passMark?: boolean }): void;
 	setScore?(raw: number, min: number, max: number): void;
 	setSuccess?(status: "passed" | "failed" | "unknown"): void;
 	setCompletion?(status: "incomplete" | "completed" | "passed" | "failed"): void;
@@ -31,6 +32,7 @@ export function writeCourseOutcome(
 	outcome: CourseOutcome,
 ): boolean {
 	if (!runtime) return true;
+	runtime.configureOutcome?.({ waiting: outcome.kind === "waiting" });
 	if (outcome.kind === "waiting") {
 		if (!outcome.finish) return true;
 		runtime.suppressTerminationResult?.();

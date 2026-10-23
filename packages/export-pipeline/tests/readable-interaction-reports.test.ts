@@ -275,6 +275,11 @@ describe("readable interaction reports from a rendered course", () => {
 			});
 			const warnings = vi.spyOn(dom.window.console, "warn").mockImplementation(() => {});
 			const errors: string[] = [];
+			const savedInteractions = () => {
+				const raw = data.get("cmi.suspend_data") ?? "{}";
+				return (format === "scorm12" ? parseScorm12SuspendData(raw) : JSON.parse(raw))
+					?.interactions;
+			};
 			dom.window.addEventListener("error", (event) => {
 				errors.push(event.message);
 				event.preventDefault();
@@ -282,7 +287,7 @@ describe("readable interaction reports from a rendered course", () => {
 			try {
 				await answer("first");
 				expect(data.get("cmi.interactions.0.id")).toBe("first");
-				expect(JSON.parse(data.get("cmi.suspend_data") ?? "{}").interactions).toEqual([
+				expect(savedInteractions()).toEqual([
 					expect.objectContaining({ id: "first", response: "first-answer", score: 100 }),
 				]);
 				const reportFields = {
@@ -314,7 +319,7 @@ describe("readable interaction reports from a rendered course", () => {
 				if (field === "description")
 					expect(data.get(`cmi.interactions.0.${responseField}`)).toBe("first-answer");
 				expect(data.get(`cmi.interactions.1.${responseField}`)).toBe("second-answer");
-				expect(JSON.parse(data.get("cmi.suspend_data") ?? "{}").interactions).toEqual([
+				expect(savedInteractions()).toEqual([
 					expect.objectContaining({ id: "first", response: "first-answer", score: 100 }),
 					expect.objectContaining({ id: "second", response: "second-answer", score: 100 }),
 				]);

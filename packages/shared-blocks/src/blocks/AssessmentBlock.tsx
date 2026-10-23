@@ -1937,7 +1937,10 @@ export function PreviewAssessmentBlock({
 			choiceFacts,
 			view?.buildProof?.(blockId),
 		);
-		return view && choiceDependencyStatus(blockId, view) === "history"
+		const recovering =
+			restored.current?.checked === false &&
+			restored.history.some((entry) => isRecord(entry) && entry.checked === true);
+		return view && choiceDependencyStatus(blockId, view) === "history" && !recovering
 			? { ...restored, status: "review" as const, current: null }
 			: restored;
 	}, [blockId, choiceFacts]);
@@ -2533,7 +2536,10 @@ export function PreviewAssessmentBlock({
 						}
 						showAuthoredFeedback={authoredFeedbackEnabled}
 						stemText={stemPlainText}
-						describedBy={describedBy}
+						describedBy={joinIds(
+							describedBy,
+							choiceReviewPending ? `${blockId}-choice-history-notice` : undefined,
+						)}
 						required={effectiveRequired}
 						feedbackDescribedBy={
 							isChecked && (revealAnswers || (data.feedbackEnabled ?? isGraded))

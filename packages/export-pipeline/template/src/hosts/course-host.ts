@@ -159,11 +159,6 @@ export function initializeCourseHost(
 						getAssessmentState: (id: string) => hostWindow.__praxityBlockState?.get(id),
 					}
 				: {}),
-			...(page.choiceStateFactsStatus === "valid"
-				? {
-						getAssessmentState: (id: string) => provider?.get(id),
-					}
-				: {}),
 			pageAliases: Object.fromEntries(
 				Object.entries(page.pageIdMap).map(([id, slug]) => [slug, id]),
 			),
@@ -559,7 +554,10 @@ function installScormLifecycle(
 	});
 	let finished = false;
 	const commit = () => {
-		if (!finished && !session?.closed) runtime.commit();
+		if (!finished && !session?.closed) {
+			finishTracker.prepareCommit();
+			runtime.commit();
+		}
 	};
 	environment.win.addEventListener("beforeunload", commit);
 	environment.win.addEventListener("pagehide", commit);

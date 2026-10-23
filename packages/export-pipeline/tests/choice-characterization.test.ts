@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 import { stripChoiceRecoveryStrings } from "./fixtures/choice-facts";
 
 const notice =
-	"Your previous answer is kept in history and does not count toward this version of the question. Start a new attempt to continue.";
+	"This question changed after you answered it, so your earlier answer no longer counts. Select New attempt to answer it again.";
 const script = (strings: Record<string, string>) =>
 	`<script id="praxity-config" type="application/json">${JSON.stringify({ strings, choiceStateSignatures: { q: "retained" } })}</script>`;
 

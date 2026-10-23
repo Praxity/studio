@@ -138,7 +138,16 @@ it.each([5, 8, 12, 16, 20])(
 						revised++;
 						expect(next.history).toEqual([previous]);
 					}
-					saved.set(id, JSON.parse(JSON.stringify(next)));
+					const { materialProof: _proof, ...answer } = next;
+					saved.set(
+						id,
+						JSON.parse(
+							JSON.stringify({
+								...answer,
+								contentSignature: `s96:${Buffer.from(pair.signature.slice(7), "hex").subarray(0, 12).toString("base64url")}`,
+							}),
+						),
+					);
 					facts.set(id, pair);
 				}
 			const reload = new Scorm12Runtime();

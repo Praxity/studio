@@ -74,10 +74,12 @@ type TrackerOutcome = CourseOutcome & { result?: CourseResult | null };
 export class CourseTracker {
 	private runtime: SCORMRuntime;
 	private config: TrackingConfig;
+	private deferredObjectives = new Map<string, { id: string; score: number; passed: boolean }>();
 
 	constructor(runtime: SCORMRuntime, config: TrackingConfig) {
 		this.runtime = runtime;
 		this.config = config;
+		runtime.configureOutcome?.({ passMark: this.hasPassMark() });
 	}
 
 	/**
@@ -104,7 +106,7 @@ export class CourseTracker {
 		this.runtime.trackInteraction(id, response, correct, score, options);
 
 		if (score !== undefined)
-			writeCourseOutcome(this.runtime, this.outcome("score", submissionView));
+			this.writeOutcome(this.runtime, this.outcome("score", submissionView), submissionView);
 
 		this.checkCompletion(submissionView);
 	}
@@ -122,9 +124,11 @@ export class CourseTracker {
 		const view = this.config.getChoiceDependencyView?.();
 		if (
 			!view ||
-			(!Object.keys(view.questions).length &&
-				!Object.keys(view.groups ?? {}).length &&
-				!view.invalidIds?.length)
+			![
+				...Object.keys(view.questions),
+				...Object.keys(view.groups ?? {}),
+				...(view.invalidIds ?? []),
+			].some((id) => choiceDependencyStatus(id, view) === "history")
 		)
 			return this.runtime.getScore();
 		const rows = [...this.latestScored().values()];
@@ -141,7 +145,7 @@ export class CourseTracker {
 		const view = this.config.getChoiceDependencyView?.();
 		if (view && choiceDependencyStatus(id, view) !== "current") return false;
 		if (this.config.isAssessmentFinal) return this.config.isAssessmentFinal(id);
-		const state = this.config.getAssessmentState?.(id);
+		const state = this.config.getAssessmentState?.(id) ?? view?.readState(id);
 		return (
 			typeof state === "object" &&
 			state !== null &&
@@ -157,11 +161,37 @@ export class CourseTracker {
 		runtime = this.runtime,
 		submissionView?: ChoiceDependencyView,
 	): void {
-		writeCourseOutcome(runtime, this.outcome({ id, score, passed }, submissionView));
+		const outcome = this.outcome({ id, score, passed }, submissionView);
+		if (outcome.kind === "waiting") this.deferredObjectives.set(id, { id, score, passed });
+		this.writeOutcome(runtime, outcome, submissionView);
 	}
 
 	finish(explicitFinish = false, runtime = this.runtime): boolean {
-		return writeCourseOutcome(runtime, this.outcome(explicitFinish ? "finish" : "end"));
+		return this.writeOutcome(runtime, this.outcome(explicitFinish ? "finish" : "end"));
+	}
+
+	private writeOutcome(
+		runtime: SCORMRuntime,
+		outcome: TrackerOutcome,
+		view = this.config.getChoiceDependencyView?.(),
+	): boolean {
+		if (outcome.kind === "decided") {
+			for (const [id, objective] of this.deferredObjectives) {
+				if (outcome.objective?.id === id) {
+					this.deferredObjectives.delete(id);
+					continue;
+				}
+				if (
+					!view ||
+					!Object.hasOwn(view.groups ?? {}, id) ||
+					choiceDependencyStatus(id, view) !== "current"
+				)
+					continue;
+				writeCourseOutcome(runtime, { kind: "decided", objective });
+				this.deferredObjectives.delete(id);
+			}
+		}
+		return writeCourseOutcome(runtime, outcome);
 	}
 
 	private average(scores: InteractionRecord[]): number {
@@ -190,9 +220,12 @@ export class CourseTracker {
 		if (!view) return false;
 		const ids = new Set(this.config.requiredAssessmentIds ?? []);
 		if (this.hasPassMark()) for (const id of this.config.scoredAssessmentIds ?? []) ids.add(id);
-		else if (this.config.completionMethod === "quiz")
+		else if (this.config.completionMethod === "quiz") {
 			for (const [id, question] of Object.entries(view.questions))
 				if (question.graded && choiceDependencyStatus(id, view) !== "unanswered") ids.add(id);
+			for (const id of Object.keys(view.groups ?? {}))
+				if (view.rows.some((row) => row.id === id && Number.isFinite(row.score))) ids.add(id);
+		}
 		return [...ids].some((id) => choiceDependencyStatus(id, view) === "history");
 	}
 
@@ -201,7 +234,13 @@ export class CourseTracker {
 	 * failed based on the configured completion method.
 	 */
 	checkCompletion(submissionView?: ChoiceDependencyView): void {
-		writeCourseOutcome(this.runtime, this.outcome("check", submissionView));
+		this.writeOutcome(this.runtime, this.outcome("check", submissionView), submissionView);
+	}
+
+	/** Pagehide must cancel queued credit without adding decided writes to main's commit log. */
+	prepareCommit(): void {
+		const outcome = this.outcome();
+		if (outcome.kind === "waiting") this.writeOutcome(this.runtime, outcome);
 	}
 
 	// ---- private completion strategies ------------------------------------

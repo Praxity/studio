@@ -4,9 +4,15 @@ import { afterEach, expect, it, vi } from "vitest";
 import { LocalStorageRuntime } from "../../../export-pipeline/src/scorm/local-storage-runtime";
 import { createBlockStateRuntime } from "../../../export-pipeline/template/src/hosts/block-state-runtime";
 import { choiceContentSignature, choiceStateQuestion } from "../assessment-choice";
-import { prepareChoiceAssessmentState } from "../choice-learner-state";
+import {
+	choiceDependencyStatus,
+	createChoiceDependencyView,
+	prepareChoiceAssessmentState,
+} from "../choice-learner-state";
+import { admitChoiceStateFacts } from "../choice-state-facts";
 import { LocaleContext } from "../i18n/locale-context";
-import type { AssessmentBlockData } from "../types";
+import { choiceEvidenceSignature } from "../learner-state";
+import type { AssessmentBlockData, ChoiceResponse } from "../types";
 import { PreviewAssessmentBlock } from "./AssessmentBlock";
 
 const original: AssessmentBlockData = {
@@ -63,6 +69,16 @@ it.each(["en", "fr"] as const)(
 		);
 		runtime.setBlockState("question", JSON.parse(JSON.stringify(previous)));
 		window.__praxityBlockState = createBlockStateRuntime(runtime);
+		const provider = window.__praxityBlockState;
+		const admitted = admitChoiceStateFacts({
+			choiceStateQuestions: { question: facts(revised).question },
+			choiceStateSignatures: { question: facts(revised).signature },
+		});
+		provider.getChoiceDependencyView = () =>
+			createChoiceDependencyView(admitted, {
+				rows: [{ id: "question", contentSignature: facts(original).signature, correct: true }],
+				readState: provider.get,
+			});
 		render(
 			<MantineProvider>
 				<LocaleContext.Provider value={locale}>
@@ -78,7 +94,9 @@ it.each(["en", "fr"] as const)(
 			name: locale === "en" ? "New attempt" : "Nouvelle tentative",
 		});
 		expect(action).toHaveAccessibleDescription(
-			locale === "en" ? /previous answer is kept in history/ : /réponse précédente est conservée/,
+			locale === "en"
+				? /This question changed after you answered it/
+				: /Cette question a été modifiée/,
 		);
 		for (const input of screen.getAllByRole("radio")) expect(input).toBeDisabled();
 		expect(runtime.getBlockState("question")).toEqual(previous);
@@ -92,6 +110,26 @@ it.each(["en", "fr"] as const)(
 			attemptCount: 0,
 			history: [previous],
 		});
+		cleanup();
+		render(
+			<MantineProvider>
+				<LocaleContext.Provider value={locale}>
+					<PreviewAssessmentBlock
+						blockId="question"
+						data={revised}
+						compiledChoiceFacts={facts(revised)}
+					/>
+				</LocaleContext.Provider>
+			</MantineProvider>,
+		);
+		expect(
+			screen.queryByRole("button", {
+				name: locale === "en" ? "New attempt" : "Nouvelle tentative",
+			}),
+		).toBeNull();
+		expect(screen.getAllByRole("radio")[0]).toBeChecked();
+		expect(screen.getAllByRole("radio")[0]).toBeEnabled();
+		expect(choiceDependencyStatus("question", provider.getChoiceDependencyView())).toBe("history");
 		const response = vi.fn();
 		document.addEventListener("praxity:assessment-response", response);
 		try {
@@ -151,3 +189,61 @@ it("a current draft cannot hide the history status of its submitted evidence", (
 	expect(screen.getByRole("button", { name: "New attempt" })).toBeVisible();
 	for (const input of screen.getAllByRole("radio")) expect(input).toBeDisabled();
 });
+
+it.each(["en", "fr"] as const)(
+	"%s SCORM 1.2 added distractor shows New attempt without rewriting the answer",
+	(locale) => {
+		const signature = facts(original).signature;
+		const contentSignature = choiceEvidenceSignature(signature, "scorm12");
+		const saved = {
+			version: 1,
+			kind: "assessment",
+			assessmentType: "choice",
+			attemptCount: 1,
+			checked: true,
+			correct: true,
+			completed: true,
+			interacted: true,
+			answer: ["a"],
+			contentSignature,
+		};
+		const response = original.response as ChoiceResponse;
+		const changed = {
+			...original,
+			response: { ...response, options: [...response.options, { id: "c", label: "Wait" }] },
+		};
+		const changedFacts = facts(changed);
+		const admitted = admitChoiceStateFacts({
+			choiceStateQuestions: { question: changedFacts.question },
+			choiceStateSignatures: { question: changedFacts.signature },
+		});
+		const set = vi.fn();
+		const evidence = createChoiceDependencyView(admitted, {
+			rows: [{ id: "question", contentSignature, correct: true }],
+			readState: () => saved,
+		});
+		window.__praxityBlockState = { get: () => saved, set, getChoiceDependencyView: () => evidence };
+		render(
+			<MantineProvider>
+				<LocaleContext.Provider value={locale}>
+					<PreviewAssessmentBlock
+						blockId="question"
+						data={changed}
+						compiledChoiceFacts={changedFacts}
+					/>
+				</LocaleContext.Provider>
+			</MantineProvider>,
+		);
+		expect(choiceDependencyStatus("question", evidence)).toBe("history");
+		expect(
+			screen.getByRole("button", { name: locale === "en" ? "New attempt" : "Nouvelle tentative" }),
+		).toBeVisible();
+		expect(screen.getByRole("radiogroup")).toHaveAccessibleDescription(
+			locale === "en"
+				? /This question changed after you answered it/
+				: /Cette question a été modifiée/,
+		);
+		for (const input of screen.getAllByRole("radio")) expect(input).toBeDisabled();
+		expect(set).not.toHaveBeenCalled();
+	},
+);

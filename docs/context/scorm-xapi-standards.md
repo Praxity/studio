@@ -101,6 +101,15 @@ waiting gate must cover that exception as well as `CourseTracker.outcome()`.
 
 ## Readable interaction reports
 
+SCORM 1.2 stores submitted choices with explicitly versioned 96-bit signatures
+and no option proof. An added distractor therefore requires a new answer.
+SCORM 2004 and xAPI keep full signatures, option proofs and compatible re-signing.
+
+The SCORM 1.2 compact container is used from the first changed-format write.
+Older builds hold it as unreadable, restore no credit and preserve the original
+bytes without replacing suspend data, outcomes, scores or objectives. Current
+readers retain support for older unsigned and full-signed saves.
+
 Assessment response events carry the authored stem as decoded plain text. Empty
 stems use the assessment group's title, then the page title. SCORM 2004 writes
 that text to `cmi.interactions.n.description`, collapses whitespace and limits it

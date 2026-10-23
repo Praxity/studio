@@ -6,6 +6,7 @@
 import { isChoiceContentSignature } from "@praxity/shared-blocks/choice-state-facts";
 import type { LearnerBlockSaveResult } from "@praxity/shared-blocks/learner-block-state";
 import type { LearnerStateValue } from "@praxity/shared-blocks/learner-state";
+import { isScorm12ChoiceSignature } from "@praxity/shared-blocks/learner-state";
 
 export interface RuntimeDestinations {
 	readonly reporting: "device" | "lms";
@@ -16,6 +17,9 @@ export const LMS_DESTINATIONS: RuntimeDestinations = { reporting: "lms", state: 
 export const DEVICE_DESTINATIONS: RuntimeDestinations = { reporting: "device", state: "device" };
 
 export interface SCORMRuntime {
+	/** Session policy carries no LMS result and may cancel a result queued before history appeared. */
+	configureOutcome?(policy: { waiting?: boolean; passMark?: boolean }): void;
+	readonly choiceEvidenceFormat?: "scorm12";
 	/** The outcome owner can close a result-reporting transport without sending a result. */
 	suppressTerminationResult?(): void;
 	/** The active adapter owns its reporting capability and state storage destination. */
@@ -102,13 +106,15 @@ export function assessmentAttemptMetadata(input?: unknown): AssessmentAttemptMet
 		input as AssessmentAttemptMetadata;
 	const limit = maxAttempts === Infinity ? 0 : maxAttempts;
 	const validMembers = Array.isArray(memberIds) && Array.from(memberIds).every(isNonemptyString);
+	const validSignature =
+		isChoiceContentSignature(contentSignature) || isScorm12ChoiceSignature(contentSignature);
 	return {
 		...(choiceEvidenceInvalid === true ||
-		(contentSignature !== undefined && !isChoiceContentSignature(contentSignature)) ||
+		(contentSignature !== undefined && !validSignature) ||
 		(memberIds !== undefined && !validMembers)
 			? { choiceEvidenceInvalid: true as const }
 			: {}),
-		...(isChoiceContentSignature(contentSignature) ? { contentSignature } : {}),
+		...(validSignature ? { contentSignature } : {}),
 		attemptsUsed: isPositiveInteger(attemptsUsed) ? attemptsUsed : undefined,
 		maxAttempts: limit === 0 || isPositiveInteger(limit) ? limit : undefined,
 		memberIds: validMembers ? memberIds : undefined,

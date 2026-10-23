@@ -57,8 +57,10 @@ When a published choice's material changes, its previous submitted answer stays
 in history and no longer counts toward this version. The English/French notice
 offers **New attempt**. Selecting it enables and focuses the first answer; the
 previous saved record remains intact until the learner makes a new selection.
-The new submission retains the earlier selection, verdict and material proof.
-Adding only a distractor can keep a compatible answer current. Feedback-only,
+The new submission retains the earlier selection, verdict and saved evidence.
+On SCORM 1.2, adding an option to a published question asks learners who already
+answered it to answer again. SCORM 2004 and xAPI can keep an answer current when
+only a compatible distractor is added. Feedback-only,
 formatting and ancillary-content edits follow the material-signature rules.
 
 If history affects the course's required or scored dependencies, LMS outcomes

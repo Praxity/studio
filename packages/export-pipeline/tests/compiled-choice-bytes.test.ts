@@ -52,7 +52,7 @@ it("records exact per-document additions against main", () => {
 		);
 		const after = stripChoiceRecoveryStrings(published);
 		if (published.includes('id="praxity-config"'))
-			expect(Buffer.byteLength(published) - Buffer.byteLength(after)).toBe(186);
+			expect(Buffer.byteLength(published) - Buffer.byteLength(after)).toBe(182);
 		const stripped = stripChoiceStateFacts(after);
 		expect(createHash("sha256").update(stripped).digest("hex")).toBe(baseHash);
 		expect(Buffer.byteLength(stripped)).toBe(baseBytes);

@@ -2,7 +2,10 @@ import type {
 	LearnerBlockSaveResult,
 	LearnerBlockStateRuntime,
 } from "@praxity/shared-blocks/learner-block-state";
-import type { LearnerStateValue } from "@praxity/shared-blocks/learner-state";
+import {
+	choiceStateForDestination,
+	type LearnerStateValue,
+} from "@praxity/shared-blocks/learner-state";
 import type { SCORMRuntime } from "../../../src/scorm/types";
 import { isRecord, parseJsonRecord } from "./host-json";
 
@@ -57,6 +60,7 @@ export function createBlockStateRuntime(runtime: SCORMRuntime): LearnerBlockStat
 				runtime.setUnsavedBlockState?.(blockId, value);
 				return;
 			}
+			value = choiceStateForDestination(value, runtime.choiceEvidenceFormat);
 			try {
 				if (runtime.setBlockState) {
 					const saved = runtime.setBlockState(blockId, value);

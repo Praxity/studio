@@ -127,7 +127,8 @@ test("Node and the browser agree on a signed rich-content answer", async ({ page
 		correct: true,
 		completed: true,
 	});
-	expect(result.score).toEqual({ raw: 100, min: 0, max: 100 });
+	// Completion-only standalone courses retain main's unrecorded course score.
+	expect(result.score).toBeNull();
 });
 
 for (const locale of ["en", "fr"] as const) {
@@ -155,11 +156,7 @@ for (const locale of ["en", "fr"] as const) {
 				(window.__praxityRuntime as unknown as { getCompletion(): string }).getCompletion(),
 			),
 		).toBe("completed");
-		expect(await page.evaluate(() => window.__praxityTracker?.getCurrentScore?.())).toEqual({
-			raw: 100,
-			min: 0,
-			max: 100,
-		});
+		expect(await page.evaluate(() => window.__praxityTracker?.getCurrentScore?.())).toBeNull();
 		await page.goto(base + entries[`${locale}-after`]);
 		await expect(activity).toHaveAttribute("data-hydrated", "");
 		const card = activity.locator(".praxity-block-assessment");
@@ -177,8 +174,8 @@ for (const locale of ["en", "fr"] as const) {
 		});
 		await expect(action).toHaveAccessibleDescription(
 			locale === "en"
-				? "Your previous answer is kept in history and does not count toward this version of the question. Start a new attempt to continue."
-				: "Votre réponse précédente est conservée dans l’historique et ne compte pas pour cette version de la question. Commencez une nouvelle tentative pour continuer.",
+				? "This question changed after you answered it, so your earlier answer no longer counts. Select New attempt to answer it again."
+				: "Cette question a été modifiée après votre réponse. Votre réponse précédente ne compte donc plus. Sélectionnez Nouvelle tentative pour y répondre de nouveau.",
 		);
 		for (
 			let n = 0;
@@ -272,6 +269,15 @@ for (const locale of ["en", "fr"] as const) {
 		await expect(first).toBeFocused();
 		await page.keyboard.press("ArrowDown");
 		await expect(activity.getByRole("radio", { name: /Continue/ })).toBeChecked();
+		await page.reload();
+		await expect(activity).toHaveAttribute("data-hydrated", "");
+		await expect(action).toHaveCount(0);
+		await expect(activity.getByRole("radio", { name: /Continue/ })).toBeChecked();
+		await expect(activity.getByRole("radio", { name: /Continue/ })).toBeEnabled();
+		expect(await page.evaluate(() => window.__praxityBlockState?.getCourseOutcome?.().kind)).toBe(
+			"waiting",
+		);
+		expect(await page.evaluate(() => window.__praxityTracker?.getCurrentScore?.())).toBeNull();
 		await activity.locator("[data-assessment-submit]").press("Enter");
 		expect(
 			await page.evaluate((id) => window.__praxityBlockState?.get(id), questionId),
@@ -293,11 +299,7 @@ for (const locale of ["en", "fr"] as const) {
 				(window.__praxityRuntime as unknown as { getCompletion(): string }).getCompletion(),
 			),
 		).toBe("completed");
-		expect(await page.evaluate(() => window.__praxityTracker?.getCurrentScore?.())).toEqual({
-			raw: 100,
-			min: 0,
-			max: 100,
-		});
+		expect(await page.evaluate(() => window.__praxityTracker?.getCurrentScore?.())).toBeNull();
 		await page.reload();
 		await expect(activity).toHaveAttribute("data-hydrated", "");
 		await expect(

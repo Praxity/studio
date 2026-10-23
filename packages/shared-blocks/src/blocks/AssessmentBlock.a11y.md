@@ -5,7 +5,10 @@ by the history notice, so reaching it supplies the reason for the action without
 another live announcement. Activation uses the existing retry focus path to reach
 the first enabled answer control. History has no current result, score or completion.
 The previous record remains saved until a deliberate new answer retains it in history.
-The notice does not display historical answer details.
+The notice does not display historical answer details. It also describes the
+radiogroup while its answers are disabled. A saved recovery draft restores its
+selection without showing New attempt again; its old submission still counts as
+history until the learner submits the new answer.
 
 EN/FR browser checks cover the accessible description, keyboard route, focus and
 retention in Chromium, WebKit and Firefox. They do not establish spoken delivery

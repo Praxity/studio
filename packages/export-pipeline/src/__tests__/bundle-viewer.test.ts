@@ -102,8 +102,8 @@ const HOST_GZIP_BUDGETS: Record<ViewerHostName, number> = {
 	standalone: 14848,
 	// Size caps don't block working features (owner rule): choice admission measured 16,919 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
 	electronPreview: 18176,
-	// Size caps don't block working features (owner rule): choice admission measured 20,065 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
-	scorm12: 21248,
+	// Size caps don't block working features (owner rule): compact choice evidence measured 22,367 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
+	scorm12: 23552,
 	// Size caps don't block working features (owner rule): choice admission measured 14,198 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
 	scorm2004: 15360,
 	// Size caps don't block working features (owner rule): choice admission measured 15,743 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
@@ -115,8 +115,8 @@ const PRIVATE_HOST_GZIP_BUDGETS: Record<ViewerHostName, number> = {
 	standalone: 13824,
 	// Size caps don't block working features (owner rule): choice admission measured 16,081 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
 	electronPreview: 17152,
-	// Size caps don't block working features (owner rule): choice admission measured 19,491 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
-	scorm12: 20736,
+	// Size caps don't block working features (owner rule): compact choice evidence measured 21,734 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
+	scorm12: 22784,
 	// Size caps don't block working features (owner rule): choice admission measured 13,546 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
 	scorm2004: 14592,
 	// Size caps don't block working features (owner rule): choice admission measured 15,157 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
@@ -129,8 +129,8 @@ const COLD_HOST_GZIP_BUDGETS: Record<ViewerHostName, number> = {
 	standalone: 14848,
 	// Size caps don't block working features (owner rule): choice admission measured 16,919 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
 	electronPreview: 18176,
-	// Size caps don't block working features (owner rule): choice admission measured 20,065 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
-	scorm12: 21248,
+	// Size caps don't block working features (owner rule): compact choice evidence measured 22,367 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
+	scorm12: 23552,
 	// Size caps don't block working features (owner rule): choice admission measured 14,198 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
 	scorm2004: 15360,
 	// Size caps don't block working features (owner rule): choice admission measured 15,743 B gzip; add 1 KiB rounded up to 256 B; tighten during final size work.
@@ -1269,10 +1269,10 @@ describe("computeViewerSourceHash", () => {
 
 		it("budgets the entire highlight initial JS closure with default navigation", async () => {
 			// Size caps don't block working features (owner rule): choice history admission in the host bundle; tighten during final size work.
-			// Measured full enhancer maxima after choice admission: page 50,971 B gzip; deck 151,064 B gzip.
+			// Measured full enhancer maxima after compact choice evidence: page 53,814 B gzip; deck 154,136 B gzip.
 			// Add 1 KiB rounded up to 256 B. Owner C5 previously measured
 			// 39,577 / 131,639 B; HL04 caps were 36,864 / 129,024 B.
-			const caps = { page: 52224, deck: 152320 };
+			const caps = { page: 55040, deck: 155392 };
 			const page = {
 				id: "highlight-page",
 				title: "Highlight",

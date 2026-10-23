@@ -17,6 +17,16 @@ restoration, preparation and `choiceDependencyStatus`. A changed submitted answe
 becomes history. The EN/FR notice and New attempt action let the learner answer
 again without overwriting the retained answer on page load.
 
+SCORM 1.2 writes a versioned 96-bit choice signature without an option proof to
+preserve answer capacity. Any material-signature mismatch, including an added
+distractor, makes the answer history and requires New attempt. SCORM 2004 and
+xAPI retain full 256-bit signatures, option proofs and compatible re-signing.
+
+Changed-format SCORM 1.2 saves always use the versioned compact container, even
+when JSON would fit. Older builds hold these unreadable bytes, restore no credit
+and refuse suspend-data, outcome, score and objective replacements. Current
+builds still read existing unsigned JSON and full-signed saves.
+
 The host constructs one evidence view from admitted whole-course question and
 group facts, reporting rows and the destination-aware state provider. Invalid
 IDs refuse current credit without affecting unrelated IDs. Invalid whole maps
@@ -33,13 +43,16 @@ Same-material retries keep the existing member-before-aggregate pending policy.
 
 `CourseTracker.outcome()` waits while a course dependency is history. With a pass
 mark, dependencies are scored IDs plus required IDs. Quiz mode uses required IDs
-and compiled graded choice IDs with submitted evidence; removed IDs cannot keep
+and compiled graded choice IDs and scored group aggregates with submitted evidence; removed IDs cannot keep
 the course waiting. Completion-only mode uses required IDs. A deck gate uses its
 own ID, for both live and restored releases. During waiting, the sole outcome
 writer writes no completion, success, score or objective. End and Finish call
 `terminate(false)`; xAPI emits no result statement for that call. Decided outcomes
 retain the ordinary formulas and write order. In-course score and result displays
-use current rows while the LMS keeps its previously reported values.
+use current rows while history is present and the LMS keeps its previously
+reported values. Without history, display retains the recorded LMS score and
+standalone result inputs. Current group objectives submitted while waiting are
+written once through the outcome writer when the dependencies become decided.
 
 ### Group submission refusal
 

@@ -1,6 +1,7 @@
 import { filterPrivateSuspendData } from "@praxity/shared-blocks/block-state-policy";
 import type { LearnerBlockSaveResult } from "@praxity/shared-blocks/learner-block-state";
 import {
+	choiceEvidenceSignature,
 	LEARNER_STATE_MAX_BYTES,
 	type LearnerStateValue,
 } from "@praxity/shared-blocks/learner-state";
@@ -25,6 +26,7 @@ import {
 } from "../types.ts";
 import { deviceAttemptId } from "./device-attempt";
 import {
+	configureSessionOutcome,
 	getSessionState,
 	readSessionState,
 	type ScormSessionState,
@@ -69,6 +71,10 @@ export interface Scorm12Runtime {
 
 // biome-ignore lint/suspicious/noUnsafeDeclarationMerging: The static capability block installs these methods; interface declarations erase without emitting fields that shadow the prototype.
 export class Scorm12Runtime implements SCORMRuntime {
+	configureOutcome(policy: { waiting?: boolean; passMark?: boolean }): void {
+		configureSessionOutcome(this.session, policy);
+	}
+	readonly choiceEvidenceFormat = "scorm12";
 	readonly destinations = LMS_DESTINATIONS;
 	static {
 		if (globalThis.__praxityPrivateState !== false) {
@@ -269,12 +275,15 @@ export class Scorm12Runtime implements SCORMRuntime {
 		}
 		const storedResponse =
 			options?.assessmentType === "choice" ? response : truncateInteractionResponse(response, 250);
+		const evidence = assessmentAttemptMetadata(options);
+		if (options?.assessmentType === "choice" && evidence.contentSignature)
+			evidence.contentSignature = choiceEvidenceSignature(evidence.contentSignature, "scorm12");
 		data.interactions.push({
 			id,
 			response: storedResponse,
 			correct,
 			score,
-			...assessmentAttemptMetadata(options),
+			...evidence,
 			timestamp: Date.now(),
 		});
 		this.reportingSubmission = true;
@@ -496,9 +505,9 @@ export class Scorm12Runtime implements SCORMRuntime {
 	private prepareExit(terminating = false): boolean {
 		// Persist the attempt across a window close; page navigation only commits. A failed
 		// attempt stays suspended so the learner can resume it and retry toward the pass mark.
-		const terminal = ["completed", "passed"].includes(
-			this.lmsGetValue("cmi.core.lesson_status", terminating),
-		);
+		const terminal =
+			!this.session?.outcomeWaiting &&
+			["completed", "passed"].includes(this.lmsGetValue("cmi.core.lesson_status", terminating));
 		return this.lmsSetValue("cmi.core.exit", terminal ? "" : "suspend", terminating);
 	}
 

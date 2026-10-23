@@ -7,11 +7,24 @@ export interface ScormSessionState {
 	terminationSucceeded: boolean;
 	startedAt?: number;
 	successTracked?: boolean;
+	passMarkActive?: boolean;
+	outcomeWaiting?: boolean;
 	/** CourseTracker's failure status that explicit Finish must preserve. */
 	courseFailure?: boolean;
 	pendingCompletion?: "incomplete" | "completed" | "passed" | "failed";
 	terminationInProgress?: boolean;
 	attemptId?: string;
+}
+
+/** Both SCORM versions cancel stale queued credit before committing a waiting launch. */
+export function configureSessionOutcome(
+	state: ScormSessionState | null,
+	policy: { waiting?: boolean; passMark?: boolean },
+): void {
+	if (!state || !sessionAllowsCalls(state)) return;
+	if (policy.passMark !== undefined) state.passMarkActive = policy.passMark;
+	if (policy.waiting !== undefined) state.outcomeWaiting = policy.waiting;
+	if (state.outcomeWaiting) delete state.pendingCompletion;
 }
 
 interface SessionApi {
@@ -110,8 +123,10 @@ export function writeSessionState(
 	};
 	// Index marks the previous launch uninitialized. Initialize owns the next
 	// session's clock and completion state; navigation into an active session keeps both.
-	if (initialized && !state.initialized)
+	if (initialized && !state.initialized) {
 		state.startedAt = state.pendingCompletion = state.courseFailure = undefined;
+		state.outcomeWaiting = state.passMarkActive = undefined;
+	}
 	state.initialized = initialized && !state.closed;
 	storeSessionState(api, state, win);
 	// A document-local record cannot close adapters retained from older pages.
