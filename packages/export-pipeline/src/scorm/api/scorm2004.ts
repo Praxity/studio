@@ -21,6 +21,7 @@ import { truncateInteractionResponse } from "../interaction-response";
 import {
 	assessmentAttemptMetadata,
 	assessmentRowsEvidence,
+	type InteractionEvidence,
 	type InteractionRecord,
 	interactionDescription,
 	LMS_DESTINATIONS,
@@ -37,6 +38,17 @@ import {
 	writeSessionState,
 } from "./session.ts";
 import { sessionTime } from "./session-time.ts";
+
+/** Dormant export so ordinary adapter instances do not retain evidence code in bundles. */
+export function readScorm2004InteractionEvidence(raw: string): InteractionEvidence[] | null {
+	try {
+		const value = JSON.parse(raw) as { interactions?: unknown } | null;
+		if (!Array.isArray(value?.interactions)) return null;
+		return assessmentRowsEvidence(value.interactions);
+	} catch {
+		return null;
+	}
+}
 
 export const SCORM2004_RESPONSE_LIMIT = 3900;
 
@@ -386,25 +398,13 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	}
 
 	getInteractions(): InteractionRecord[] {
-		return this.readReportableInteractions().map((record) => ({
-			...record,
-			...assessmentAttemptMetadata(record),
-		}));
-	}
-
-	/** Dormant evidence read; production restoration keeps getInteractions until activation. */
-	getInteractionEvidence() {
-		return assessmentRowsEvidence(this.readReportableInteractions());
-	}
-
-	private readReportableInteractions(): InteractionRecord[] {
 		const data = this.loadSuspendDataObject();
 		const interactions = (data.interactions as InteractionRecord[]) ?? [];
 		const reportable =
 			globalThis.__praxityPrivateState !== false
 				? interactions.filter((record) => this.blockStatePolicy[record.id] !== "device")
 				: interactions;
-		return reportable;
+		return reportable.map((record) => ({ ...record, ...assessmentAttemptMetadata(record) }));
 	}
 
 	setCourseFailure(failed: boolean): void {

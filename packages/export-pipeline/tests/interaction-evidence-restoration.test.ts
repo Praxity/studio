@@ -3,8 +3,8 @@ import { JSDOM } from "jsdom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ChoiceDependencyView } from "../../shared-blocks/src/choice-learner-state";
 import { choiceDependencyStatus } from "../../shared-blocks/src/choice-learner-state";
-import { Scorm12Runtime } from "../src/scorm/api/scorm12";
-import { Scorm2004Runtime } from "../src/scorm/api/scorm2004";
+import * as scorm12 from "../src/scorm/api/scorm12";
+import * as scorm2004 from "../src/scorm/api/scorm2004";
 import * as xapi from "../src/scorm/api/xapi";
 import { LocalStorageRuntime } from "../src/scorm/local-storage-runtime";
 import * as evidence from "../src/scorm/types";
@@ -97,7 +97,8 @@ function scorm(format: string, raw: string) {
 	};
 	win.parent = win;
 	vi.stubGlobal("window", win);
-	const adapter = format === "scorm12" ? new Scorm12Runtime() : new Scorm2004Runtime();
+	const adapter =
+		format === "scorm12" ? new scorm12.Scorm12Runtime() : new scorm2004.Scorm2004Runtime();
 	expect(adapter.initialize()).toBe(true);
 	return adapter;
 }
@@ -259,9 +260,11 @@ describe("dormant signed restoration", () => {
 				const latest = { ...current, [field]: null };
 				const raw = JSON.stringify({ visitedPages: [], interactions: [current, latest] });
 				const adapter = format === "xapi" ? undefined : scorm(format, raw);
-				const rows = adapter
-					? (adapter.getInteractionEvidence?.() ?? adapter.getInteractions())
-					: read(raw);
+				const reader =
+					format === "scorm12"
+						? scorm12.readScorm12InteractionEvidence
+						: scorm2004.readScorm2004InteractionEvidence;
+				const rows = adapter ? (reader ? reader(raw) : adapter.getInteractions()) : read(raw);
 				expect(rows).toEqual([current, { ...latest, ...marker }]);
 				expect(choiceDependencyStatus("a", { ...view, rows: rows ?? [] })).toBe("history");
 			},
@@ -278,6 +281,8 @@ describe("dormant signed restoration", () => {
 
 	it.each(["null", "{}", "{", '{"interactions":null}'])("refuses invalid transport %s", (raw) => {
 		expect(xapi.readXapiInteractionEvidence?.(raw) ?? null).toBeNull();
+		expect(scorm12.readScorm12InteractionEvidence?.(raw) ?? null).toBeNull();
+		expect(scorm2004.readScorm2004InteractionEvidence?.(raw) ?? null).toBeNull();
 	});
 
 	it("normalizes rejected identity at the shared owner for other transports", () => {

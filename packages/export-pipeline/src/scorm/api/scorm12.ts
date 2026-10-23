@@ -19,6 +19,7 @@ import {
 import {
 	assessmentAttemptMetadata,
 	assessmentRowsEvidence,
+	type InteractionEvidence,
 	type InteractionRecord,
 	LMS_DESTINATIONS,
 	prepareRuntimeCommit,
@@ -34,6 +35,12 @@ import {
 	writeSessionState,
 } from "./session.ts";
 import { sessionTime } from "./session-time.ts";
+
+/** Dormant export so ordinary adapter instances do not retain evidence code in bundles. */
+export function readScorm12InteractionEvidence(raw: string): InteractionEvidence[] | null {
+	const data = parseScorm12SuspendData(raw);
+	return data ? assessmentRowsEvidence(data.interactions) : null;
+}
 
 // See docs/context/scorm-xapi-standards.md for spec references
 
@@ -347,23 +354,11 @@ export class Scorm12Runtime implements SCORMRuntime {
 	}
 
 	getInteractions(): InteractionRecord[] {
-		return this.readReportableInteractions().map((record) => ({
-			...record,
-			...assessmentAttemptMetadata(record),
-		}));
-	}
-
-	/** Dormant evidence read; production restoration keeps getInteractions until activation. */
-	getInteractionEvidence() {
-		return assessmentRowsEvidence(this.readReportableInteractions());
-	}
-
-	private readReportableInteractions(): InteractionRecord[] {
 		this.ensureInitialized();
 		let interactions = this.loadSuspendPayload().interactions;
 		if (globalThis.__praxityPrivateState !== false)
 			interactions = interactions.filter((record) => this.blockStatePolicy[record.id] !== "device");
-		return interactions;
+		return interactions.map((record) => ({ ...record, ...assessmentAttemptMetadata(record) }));
 	}
 
 	setCourseFailure(failed: boolean): void {

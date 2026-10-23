@@ -1267,6 +1267,19 @@ describe("computeViewerSourceHash", () => {
 				expect(await readFile(path.join(outDir, file), "utf8")).not.toContain("data-practice-mode");
 		});
 
+		it("keeps dormant interaction evidence out of ordinary host bundles", async () => {
+			const files = new Set([
+				...Object.values(result.manifest.hosts),
+				...Object.values(result.manifest.hostDependencies ?? {}).flat(),
+				...(result.manifest.privacy?.files ?? []),
+			]);
+			for (const file of files) {
+				const code = await readFile(path.join(outDir, file), "utf8");
+				expect(code, file).not.toContain("Unidentifiable interaction evidence");
+				expect(code, file).not.toContain("choiceEvidenceInvalid");
+			}
+		});
+
 		it("budgets the entire highlight initial JS closure with default navigation", async () => {
 			// Size caps don't block working features (owner rule): SHA-256 pair verification in the host bundle; tighten during final size work.
 			// Measured full enhancer maxima: page 43,137 B gzip; deck 135,602 B gzip.
