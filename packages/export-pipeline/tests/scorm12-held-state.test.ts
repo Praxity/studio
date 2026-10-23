@@ -3,12 +3,13 @@ import { afterEach, expect, it, vi } from "vitest";
 import { Scorm12Runtime } from "../src/scorm/api/scorm12";
 import { CourseTracker } from "../src/scorm/tracking";
 import { createBlockStateRuntime } from "../template/src/hosts/block-state-runtime";
+import compactVectors from "./fixtures/scorm12-compact-vectors";
 
 const unreadable =
 	'{"visitedPages":["p1"],"interactions":[{"id":"q","response":"Stop","correct":true,"score":100,"timestamp":1800000000000}],"custom":{}}';
-function fixture(status = "passed") {
+function fixture(status = "passed", original = unreadable) {
 	const values: Record<string, string> = {
-		"cmi.suspend_data": unreadable,
+		"cmi.suspend_data": original,
 		"cmi.core.lesson_status": status,
 		"cmi.core.score.raw": "100",
 		"cmi.core.student_id": "learner",
@@ -33,6 +34,46 @@ function fixture(status = "passed") {
 	return { values, writes, dom };
 }
 afterEach(() => vi.unstubAllGlobals());
+it.each(compactVectors)(
+	"holds the dormant $name compact vector without replacement writes",
+	({ wire }) => {
+		const { values, writes, dom } = fixture("passed", wire);
+		try {
+			const runtime = new Scorm12Runtime("course");
+			expect(runtime.initialize()).toBe(true);
+			expect(runtime.getInteractions()).toEqual([]);
+			expect(runtime.getSuspendData()).toBeNull();
+			const provider = createBlockStateRuntime(runtime);
+			expect(provider.get("q")).toBeUndefined();
+			provider.set("q", { answer: "draft", checked: false });
+			expect(provider.getSaveResult?.("q")).toEqual({
+				status: "not-saved",
+				code: "unreadable-state",
+			});
+			expect(runtime.setSuspendData('{"replacement":true}')).toBe(false);
+			runtime.setCompletion("completed");
+			runtime.setCompletion("failed");
+			runtime.setScore(0, 0, 100);
+			runtime.trackObjective("q", 0, false);
+			expect(runtime.commit()).toBe(true);
+			expect(runtime.terminate(true)).toBe(true);
+			expect(
+				writes.filter(
+					(key) =>
+						key === "cmi.suspend_data" ||
+						key === "cmi.core.lesson_status" ||
+						key.startsWith("cmi.core.score.") ||
+						key.startsWith("cmi.objectives."),
+				),
+			).toEqual([]);
+			expect(values["cmi.suspend_data"]).toBe(wire);
+			expect(values["cmi.core.lesson_status"]).toBe("passed");
+			expect(values["cmi.core.score.raw"]).toBe("100");
+		} finally {
+			dom.window.close();
+		}
+	},
+);
 it.each(["passed", "failed", ""])(
 	"reports no completion, success or score over unreadable data with prior status %j",
 	(status) => {
