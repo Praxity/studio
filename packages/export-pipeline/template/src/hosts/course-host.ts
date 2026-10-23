@@ -432,7 +432,11 @@ export function initializeCourseHost(
 					correct: typeof detail.correct === "boolean" ? detail.correct : undefined,
 					memberIds: assessmentReportingOptions(detail, page.pageTitle).memberIds,
 				}) ?? undefined;
-			if (!submissionView) return;
+			if (!submissionView) {
+				runtime?.abortSubmission?.(groupId);
+				event.preventDefault();
+				return;
+			}
 		}
 		// Keep the event's existing adapter and ticket; tracker writes have their own lifetime.
 		if (hasScore && runtime)

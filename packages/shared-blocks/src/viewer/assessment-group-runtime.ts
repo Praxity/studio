@@ -298,6 +298,7 @@ function focusRequiredMember(memberEl: HTMLElement, messageId: string) {
 	};
 }
 
+/** null distinguishes a refused save from incomplete member progress. */
 function showResults(
 	group: AssessmentGroupMeta,
 	members: Array<{ id: string; el: HTMLElement }>,
@@ -307,7 +308,7 @@ function showResults(
 	requiredIds = new Set(members.map((member) => member.id)),
 	scoreRequiredIds = requiredIds,
 	current = selfCheckEpochTicket(root.ownerDocument),
-): boolean {
+): boolean | null {
 	if (!current()) return false;
 	let totalScore = 0;
 	let gradedCount = 0;
@@ -421,21 +422,18 @@ function showResults(
 			restorePicker();
 			return false;
 		}
-		const staged = submission && provider?.stageSubmission;
-		if (
-			staged &&
-			!staged(
-				group.id,
-				() =>
-					writeAssessmentGroupState(group, selectedMemberId, completed, current, submission) &&
-					provider?.getSaveResult?.(group.id)?.status !== "not-saved",
-			)
-		) {
+		const refuse = () => {
+			const status = container.querySelector<HTMLElement>("[data-assessment-group-status]");
+			if (status) {
+				status.classList.remove("praxity-sr-only");
+				status.textContent = labels.assessmentStorageNotice;
+			}
 			restorePicker();
-			return false;
-		}
-		dispatchSelfCheckEvent(
-			new CustomEvent("praxity:assessment-group-complete", {
+			return null;
+		};
+		const staged = submission && provider?.stageSubmission;
+		const report = () => {
+			const event = new CustomEvent("praxity:assessment-group-complete", {
 				detail: {
 					groupId: group.id,
 					groupName:
@@ -455,18 +453,31 @@ function showResults(
 					memberCount: members.length,
 				},
 				bubbles: true,
-			}),
-			current,
-			root.ownerDocument,
-		);
+				cancelable: !!submission,
+			});
+			const dispatched = dispatchSelfCheckEvent(event, current, root.ownerDocument);
+			const result = submission ? provider?.getSaveResult?.(group.id) : undefined;
+			return (
+				dispatched &&
+				!event.defaultPrevented &&
+				result?.status !== "not-saved" &&
+				(!staged || result?.status !== "pending")
+			);
+		};
+		// Keep reporting inside the stage so an unhandled report rolls its state back too.
+		const accepted = staged
+			? staged(
+					group.id,
+					() =>
+						writeAssessmentGroupState(group, selectedMemberId, completed, current, submission) &&
+						provider?.getSaveResult?.(group.id)?.status !== "not-saved" &&
+						report(),
+				)
+			: report();
+		if (submission && !accepted) return refuse();
 		if (submission && !staged)
 			writeAssessmentGroupState(group, selectedMemberId, completed, current, submission);
-		if (submission && provider?.getSaveResult?.(group.id)?.status === "not-saved") {
-			const status = container.querySelector<HTMLElement>("[data-assessment-group-status]");
-			if (status) status.textContent = labels.assessmentStorageNotice;
-			restorePicker();
-			return false;
-		}
+		if (submission && provider?.getSaveResult?.(group.id)?.status === "not-saved") return refuse();
 	}
 
 	if (!current()) return false;
@@ -982,6 +993,7 @@ function initAssessmentGroupLifetime(
 					if (!selectedId) return;
 					const member = members.find((candidate) => candidate.id === selectedId);
 					if (!member) return;
+					status.textContent = "";
 					picker.querySelectorAll<HTMLInputElement>("input").forEach((input) => {
 						input.disabled = true;
 					});
@@ -1073,20 +1085,20 @@ function initAssessmentGroupLifetime(
 					() => {
 						if (!current()) return;
 						if (!root.isConnected || members.some((member) => !root.contains(member.el))) return;
-						if (
-							showResults(
-								group,
-								members,
-								root,
-								labels,
-								true,
-								requiredIds,
-								scoreRequiredIds,
-								current,
-							)
-						) {
+						const completed = showResults(
+							group,
+							members,
+							root,
+							labels,
+							true,
+							requiredIds,
+							scoreRequiredIds,
+							current,
+						);
+						if (completed) {
 							writeAssessmentGroupState(group, null, true, current);
 						} else if (
+							completed !== null &&
 							current() &&
 							!group.isGraded &&
 							members.some(

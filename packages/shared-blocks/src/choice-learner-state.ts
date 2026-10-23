@@ -297,6 +297,8 @@ export interface ChoiceDependencyView {
 /** Readers receive the status owner with the evidence, without importing admission code. */
 export interface ChoiceDependencyEvidence extends ChoiceDependencyView {
 	status(id: string, candidate?: ChoiceDependencyView): ReturnType<typeof choiceDependencyStatus>;
+	/** Status-only readers may omit this; question finality requires the admitted host state. */
+	admitQuestionState?(id: string, state: unknown): SavedAssessmentState | null;
 	/** Group consumers use the owner without loading dormant admission into ordinary bundles. */
 	prepareGroupSubmission?(
 		id: string,
@@ -319,6 +321,14 @@ export function bindChoiceDependencyView(view: ChoiceDependencyView): ChoiceDepe
 	const bound: ChoiceDependencyEvidence = {
 		...view,
 		status: (id, candidate = bound) => choiceDependencyStatus(id, candidate),
+		admitQuestionState: (id, state) =>
+			Object.hasOwn(bound.questions, id)
+				? admitChoiceAssessmentState(
+						state,
+						{ question: bound.questions[id], signature: bound.signatures[id] },
+						bound.buildProof?.(id),
+					)
+				: null,
 		prepareGroupSubmission: prepareChoiceGroupSubmission,
 		prepareGroupState: prepareChoiceGroupState,
 		verifyGroupSubmission: (id, input, row) => {

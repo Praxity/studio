@@ -16,6 +16,7 @@ import { withChoiceDependencyStatus } from "./fixtures/choice-facts";
 const documents: JSDOM[] = [];
 afterEach(() => {
 	for (const dom of documents.splice(0)) dom.window.close();
+	vi.useRealTimers();
 	vi.unstubAllGlobals();
 	vi.restoreAllMocks();
 });
@@ -40,7 +41,13 @@ const groupState = {
 	completed: true,
 } as const;
 
-function launch(format: "scorm12" | "scorm2004", evidence: boolean) {
+function launch(
+	format: "scorm12" | "scorm2004",
+	evidence: boolean,
+	groups: ChoiceDependencyEvidence["groups"] = {
+		g: { mode: "all", memberIds: ["a"], requiredIds: ["a"] },
+	},
+) {
 	const dom = new JSDOM("", { url: "https://course.example/practice.html" });
 	documents.push(dom);
 	vi.stubGlobal("window", dom.window);
@@ -100,7 +107,7 @@ function launch(format: "scorm12" | "scorm2004", evidence: boolean) {
 		withChoiceDependencyStatus({
 			questions: {},
 			signatures: {},
-			groups: { g: { mode: "all", memberIds: ["a"], requiredIds: ["a"] } },
+			groups,
 			invalidIds: invalid ? ["a"] : [],
 			rows: runtime.getInteractions(),
 			readState: (id) => provider.get(id),
@@ -148,8 +155,11 @@ function launch(format: "scorm12" | "scorm2004", evidence: boolean) {
 	};
 }
 
-function submit(contentSignature = submitted.contentSignature) {
-	document.dispatchEvent(
+function submit(
+	contentSignature = submitted.contentSignature,
+	detail: Record<string, unknown> = {},
+) {
+	return document.dispatchEvent(
 		new window.CustomEvent("praxity:assessment-group-complete", {
 			detail: {
 				groupId: "g",
@@ -160,12 +170,50 @@ function submit(contentSignature = submitted.contentSignature) {
 				memberIds: ["a"],
 				selectedMemberId: null,
 				contentSignature,
+				...detail,
 			},
+			cancelable: true,
 		}),
 	);
 }
 
 for (const format of ["scorm12", "scorm2004"] as const) {
+	it(`${format} verifies a oneOf candidate selecting the second member`, () => {
+		const { provider, runtime, order } = launch(format, true, {
+			g: { mode: "oneOf", memberIds: ["a", "b"], requiredIds: ["a", "b"] },
+		});
+		const captured = {
+			payload: { mode: "oneOf", selectedMemberId: "b", dependencies: [["b", null]] },
+			contentSignature: "sha256:8164bb73b03e3cb4d0470f8abb770779e2670d38eefc5c0aecfb04cc76bb4f05",
+		};
+		if (provider.stageSubmission)
+			expect(
+				provider.stageSubmission("g", () => {
+					provider.set("g", {
+						...groupState,
+						mode: "oneOf",
+						selectedMemberId: "b",
+						submitted: captured,
+					});
+					return true;
+				}),
+			).toBe(true);
+		submit(captured.contentSignature, { selectedMemberId: "b", memberIds: ["b"] });
+		expect(order.slice(0, 3)).toEqual(["objective", "interaction", "save"]);
+		expect(runtime.trackObjective).toHaveBeenCalledExactlyOnceWith("g", 100, true);
+		expect(runtime.getInteractions().at(-1)).toMatchObject({ id: "g", score: 100 });
+	});
+	it(`${format} keeps the ordinary write log for a group absent from the view`, () => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+		const ordinary = launch(format, false);
+		submit();
+		const unlisted = launch(format, true, {});
+		submit();
+		expect(unlisted.order).toEqual(ordinary.order);
+		expect(unlisted.order.slice(0, 3)).toEqual(["objective", "interaction", "save"]);
+		expect(unlisted.writes).toEqual(ordinary.writes);
+	});
 	it(`${format} without a view preserves objective, interaction, save order and receipt capability`, () => {
 		const { provider, order, writes } = launch(format, false);
 		submit();
@@ -219,6 +267,43 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 		});
 	}
 }
+
+it("a rejected staged group releases the SCORM 1.2 runtime for later saves", () => {
+	const { provider, runtime, writes, values, errors } = launch("scorm12", true);
+	const previous = provider.get("g");
+	expect(
+		provider.stageSubmission?.("g", () => {
+			provider.set("g", { ...groupState, submitted });
+			return true;
+		}),
+	).toBe(true);
+	const accepted = submit(`sha256:${"f".repeat(64)}`);
+	expect(provider.getSaveResult?.("g")).toEqual({
+		status: "not-saved",
+		code: "runtime-write-failed",
+	});
+	expect(provider.get("g")).toEqual(previous);
+	expect(accepted).toBe(false);
+	expect(writes).toEqual([]);
+	runtime.trackPageVisit("next");
+	expect(writes.some(([key]) => key === "cmi.suspend_data")).toBe(true);
+	expect(values.get("cmi.suspend_data")).toContain('"next"');
+	expect(() => runtime.trackInteraction("q2", "answer")).not.toThrow();
+	expect(() => provider.stageSubmission?.("g", () => false)).not.toThrow();
+	expect(errors).toEqual([]);
+});
+
+it("rejecting a different group leaves the active SCORM 1.2 submission intact", () => {
+	const { provider, runtime } = launch("scorm12", true);
+	expect(provider.stageSubmission?.("q2", () => {
+		provider.set("q2", { answer: "kept" });
+		return true;
+	})).toBe(true);
+	submit(`sha256:${"f".repeat(64)}`);
+	expect(provider.getSaveResult?.("q2")).toEqual({ status: "pending" });
+	expect(() => runtime.trackInteraction("q2", "answer")).not.toThrow();
+	expect(provider.getSaveResult?.("q2")).toMatchObject({ status: "saved" });
+});
 
 it("SCORM 1.2 refused staged submission retains main's objective gap and rolls back answer and row", () => {
 	const { provider, runtime, makeRuntime, values, order, refuse, errors } = launch("scorm12", true);

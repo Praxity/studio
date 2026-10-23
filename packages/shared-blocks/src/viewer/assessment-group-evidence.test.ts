@@ -14,7 +14,13 @@ afterEach(() => {
 	delete window.__praxityBlockState;
 });
 
-function mount(mode: "all" | "oneOf", evidence = true, locale = "en", summary = true) {
+function mount(
+	mode: "all" | "oneOf",
+	evidence = true,
+	locale = "en",
+	summary = true,
+	listed = true,
+) {
 	const values = new Map<string, LearnerStateValue>();
 	const rows: ChoiceDependencyView["rows"][number][] = [];
 	const events: string[] = [];
@@ -25,7 +31,7 @@ function mount(mode: "all" | "oneOf", evidence = true, locale = "en", summary = 
 			questions,
 			signatures,
 			rows,
-			groups: { g: { mode, memberIds: ["a", "b"], requiredIds: ["a", "b"] } },
+			groups: listed ? { g: { mode, memberIds: ["a", "b"], requiredIds: ["a", "b"] } } : {},
 			readState: (id) => values.get(id),
 		};
 		// Base replay injects only the owner API already present on that revision.
@@ -80,7 +86,7 @@ function mount(mode: "all" | "oneOf", evidence = true, locale = "en", summary = 
 	};
 	document.addEventListener("praxity:assessment-group-complete", complete);
 	disposals.push(() => document.removeEventListener("praxity:assessment-group-complete", complete));
-	return { values, rows, events, view, render, questions, signatures };
+	return { values, rows, events, view, render, questions, signatures, blocks };
 }
 
 it("without a view keeps the ordinary event-before-save log and unsigned envelope", async () => {
@@ -106,6 +112,41 @@ it("without a view keeps the ordinary event-before-save log and unsigned envelop
 	);
 	expect(events).toEqual(["interaction", "save"]);
 	expect(window.__praxityBlockState?.getSaveResult).toBeUndefined();
+});
+
+it("a group absent from the view keeps the ordinary event-before-save log and envelope", async () => {
+	const { values, events, render } = mount("all", true, "en", true, false);
+	await render();
+	document.querySelector<HTMLButtonElement>(".praxity-ag-submit-btn")?.click();
+	await vi.waitFor(() =>
+		expect(values.get("g")).toEqual({
+			version: 1,
+			kind: "assessmentGroup",
+			mode: "all",
+			selectedMemberId: null,
+			completed: true,
+		}),
+	);
+	expect(events).toEqual(["interaction", "save"]);
+});
+
+it("reports the second oneOf member and its captured digest", async () => {
+	const { render } = mount("oneOf");
+	const details: unknown[] = [];
+	const observe = (event: Event) => details.push((event as CustomEvent).detail);
+	document.addEventListener("praxity:assessment-group-complete", observe);
+	disposals.push(() => document.removeEventListener("praxity:assessment-group-complete", observe));
+	await render();
+	document.querySelector<HTMLInputElement>('.praxity-ag-radio[value="b"]')?.click();
+	document.querySelector<HTMLButtonElement>(".praxity-ag-submit-btn")?.click();
+	await vi.waitFor(() =>
+		expect(details).toEqual([
+			expect.objectContaining({
+				selectedMemberId: "b",
+				contentSignature: "sha256:8164bb73b03e3cb4d0470f8abb770779e2670d38eefc5c0aecfb04cc76bb4f05",
+			}),
+		]),
+	);
 });
 
 it("captures the full dependency set, including the unscored required member", async () => {
@@ -251,6 +292,9 @@ for (const refusal of [
 	"member-history",
 	"stage-refused",
 	"report-refused",
+	"report-pending",
+	"report-rejected",
+	"unstaged-report-rejected",
 	"preparation-unavailable",
 ] as const) {
 	for (const locale of ["en", "fr"]) {
@@ -267,29 +311,102 @@ for (const refusal of [
 				stageSubmission:
 					refusal === "stage-refused"
 						? () => false
-						: (_id: string, write: () => boolean) => write(),
+						: refusal === "unstaged-report-rejected"
+							? undefined
+							: (_id: string, write: () => boolean) => write(),
 				getSaveResult: () =>
-					events.includes("interaction")
+					events.includes("interaction") && refusal !== "report-pending"
 						? { status: "not-saved", code: "runtime-write-failed" }
 						: { status: "pending" },
 			});
+			if (refusal === "report-rejected" || refusal === "unstaged-report-rejected") {
+				const reject = (event: Event) => event.preventDefault();
+				document.addEventListener("praxity:assessment-group-complete", reject);
+				disposals.push(() =>
+					document.removeEventListener("praxity:assessment-group-complete", reject),
+				);
+				Object.assign(provider as object, { getSaveResult: () => undefined });
+			}
 			await render();
 			document.querySelector<HTMLButtonElement>(".praxity-ag-submit-btn")?.click();
 			await new Promise((resolve) => setTimeout(resolve, 150));
 			expect(document.querySelector<HTMLInputElement>(".praxity-ag-radio")).not.toBeDisabled();
 			expect(document.querySelector(".praxity-ag-submit-btn")).not.toBeNull();
 			expect(document.querySelector(".praxity-ag-results-score")).toBeNull();
-			if (refusal === "report-refused") {
-				expect(events).toEqual(["save", "interaction"]);
+			if (
+				[
+					"report-refused",
+					"report-pending",
+					"report-rejected",
+					"unstaged-report-rejected",
+					"stage-refused",
+				].includes(refusal)
+			) {
+				expect(events).toEqual(
+					refusal === "stage-refused"
+						? []
+						: refusal === "unstaged-report-rejected"
+							? ["interaction"]
+							: ["save", "interaction"],
+				);
 				expect(document.querySelector("[data-assessment-group-status]")?.textContent).toBe(
 					locale === "fr"
 						? "Cette réponse n’a pas pu être enregistrée. Votre progression enregistrée précédemment est conservée."
 						: "This answer could not be saved. Your previously saved progress is kept.",
 				);
+				expect(document.querySelector("[data-assessment-group-status]")).not.toHaveClass(
+					"praxity-sr-only",
+				);
 			} else expect(events).toEqual([]);
 		});
 	}
 }
+
+for (const locale of ["en", "fr"]) {
+	it(`${locale} an ungraded all-group refusal cannot become a partial-save success`, async () => {
+		const { blocks, events, render } = mount("all", true, locale);
+		blocks[1].data.gradingMode = "none";
+		Object.assign(window.__praxityBlockState as object, {
+			stageSubmission: (_id: string, write: () => boolean) => write(),
+		});
+		const reject = (event: Event) => event.preventDefault();
+		document.addEventListener("praxity:assessment-group-complete", reject);
+		disposals.push(() => document.removeEventListener("praxity:assessment-group-complete", reject));
+		await render();
+		document.querySelector<HTMLButtonElement>(".praxity-ag-submit-btn")?.click();
+		await vi.waitFor(() =>
+			expect(document.querySelector("[data-assessment-group-status]")?.textContent).toBe(
+				locale === "fr"
+					? "Cette réponse n’a pas pu être enregistrée. Votre progression enregistrée précédemment est conservée."
+					: "This answer could not be saved. Your previously saved progress is kept.",
+			),
+		);
+		expect(events).toEqual(["save", "interaction"]);
+		expect(document.querySelector("[data-assessment-group-results]")?.textContent).toBe("");
+		expect(document.querySelector(".praxity-ag-submit-btn")).not.toBeNull();
+	});
+}
+
+it("clears the visible oneOf refusal when the learner retries successfully", async () => {
+	const { render } = mount("oneOf");
+	let rejected = true;
+	const reject = (event: Event) => {
+		if (rejected) event.preventDefault();
+	};
+	document.addEventListener("praxity:assessment-group-complete", reject);
+	disposals.push(() => document.removeEventListener("praxity:assessment-group-complete", reject));
+	await render();
+	document.querySelector<HTMLButtonElement>(".praxity-ag-submit-btn")?.click();
+	await vi.waitFor(() =>
+		expect(document.querySelector("[data-assessment-group-status]")?.textContent).toBe(
+			"This answer could not be saved. Your previously saved progress is kept.",
+		),
+	);
+	rejected = false;
+	document.querySelector<HTMLButtonElement>(".praxity-ag-submit-btn")?.click();
+	await vi.waitFor(() => expect(document.querySelector(".praxity-ag-results-score")).not.toBeNull());
+	expect(document.querySelector("[data-assessment-group-status]")?.textContent).toBe("");
+});
 
 for (const evidence of [false, true]) {
 	it(`${evidence ? "with" : "without"} a view preserves its submit-removal event order`, async () => {
