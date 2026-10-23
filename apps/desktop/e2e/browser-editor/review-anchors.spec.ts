@@ -88,10 +88,9 @@ for (const locale of ["en", "fr"]) {
 		const fixture = await servedReview(locale);
 		const codeStep = () => {
 			const target = document.querySelector('[data-node-id="quote"]') as HTMLElement;
+			// The step sits inside the node, so the quote passes decide, not the hidden-node check.
 			const step = document.createElement("section");
 			step.className = "praxity-player-step";
-			target.before(step);
-			step.append(target);
 			const code = document.createElement("code");
 			["const a = 1;", "const b = 2;"].forEach((text, index) => {
 				const line = document.createElement("span");
@@ -110,7 +109,8 @@ for (const locale of ["en", "fr"]) {
 			});
 			const pre = document.createElement("pre");
 			pre.append(code);
-			target.replaceChildren(pre);
+			step.append(pre);
+			target.replaceChildren(step);
 		};
 		const highlights = () => page.evaluate(() => CSS.highlights.get("prx-review-quote")?.size ?? 0);
 		try {

@@ -298,7 +298,7 @@ it.each(
 			reveal === "details"
 				? `<details id="reveal" open><summary>Open</summary>${child}</details>`
 				: reveal === "tab"
-					? `<div id="reveal" role="tabpanel">${child}</div>`
+					? `<button role="tab" aria-controls="reveal">Tab</button><div id="reveal" role="tabpanel">${child}</div>`
 					: reveal === "accordion"
 						? `<button aria-expanded="true" aria-controls="reveal">Open</button><div id="reveal">${child}</div>`
 						: child;
@@ -325,8 +325,11 @@ it.each(
 		const marker = doc.querySelector<HTMLElement>(".prx-review-marker")!;
 		expect(marker.hidden).toBe(false);
 		const panel = doc.querySelector<HTMLElement>("#reveal") ?? target;
+		// Each container closes the way its learner control would, so Show on page can reopen it.
+		const accordion = doc.querySelector("[aria-expanded]");
 		if (reveal === "details") (panel as HTMLDetailsElement).open = false;
 		else panel.hidden = true;
+		accordion?.setAttribute("aria-expanded", "false");
 		await Promise.resolve();
 		clock.flush();
 		expect(marker.hidden).toBe(true);
@@ -343,6 +346,7 @@ it.each(
 		if (reveal === "player") expect(api.resolve(captured!).target).toBe(target);
 		if (reveal === "details") (panel as HTMLDetailsElement).open = true;
 		else panel.hidden = false;
+		accordion?.setAttribute("aria-expanded", "true");
 		await Promise.resolve();
 		clock.flush();
 		expect(marker.hidden).toBe(false);
@@ -555,7 +559,8 @@ describe("visible-first matching and the concealed label", () => {
 		const line = (n: number, code: string) =>
 			`<span class="praxity-code-line" style="display:flex"><span class="praxity-code-line-number" aria-hidden="true">${n}</span><span data-code-line>${code}</span></span>`;
 		const page = await captured(
-			`<section class="praxity-player-step" id="step"><div data-node-id="node"><pre><code id="code">${line(1, "const a = 1;")}\n${line(2, "const b = 2;")}</code></pre></div></section>`,
+			// The step sits inside the node, so the quote passes decide, not the hidden-node check.
+			`<div data-node-id="node"><section class="praxity-player-step" id="step"><pre><code id="code">${line(1, "const a = 1;")}\n${line(2, "const b = 2;")}</code></pre></section><p>Other visible content</p></div>`,
 			locale,
 			(doc, api) => api.fromSelection(selectContents(doc, byId(doc, "code"))),
 		);
@@ -595,7 +600,8 @@ describe("visible-first matching and the concealed label", () => {
 			await page.render();
 			expect(page.markerShown()).toBe(false);
 			expect(page.highlighted()).toBe(0);
-			expect(page.chip()).toBe(chips.notVisible[locale]);
+			// Still rendered, but no learner control opens it.
+			expect(page.chip()).toBe(chips.notOnPage[locale]);
 			for (const span of spans) span.removeAttribute(conceal === "visibility" ? "style" : conceal);
 			await page.render();
 			expect(page.markerShown()).toBe(true);
@@ -714,8 +720,9 @@ describe("visible-first matching and the concealed label", () => {
 			await page.render();
 			expect(page.markerShown()).toBe(false);
 			expect(page.highlighted()).toBe(0);
-			expect(page.chip()).toBe(chips.notVisible[locale]);
-			expect(page.show()).toBe(chips.notVisible[locale].slice(2));
+			// The open reveal path conceals nothing, so it can't make the label "Not visible here".
+			expect(page.chip()).toBe(chips.notOnPage[locale]);
+			expect(page.show()).toBe(chips.notOnPage[locale].slice(2));
 		},
 	);
 
@@ -732,7 +739,7 @@ describe("visible-first matching and the concealed label", () => {
 			await page.render();
 			expect(page.markerShown()).toBe(false);
 			expect(page.highlighted()).toBe(0);
-			expect(page.chip()).toBe(chips.notVisible[locale]);
+			expect(page.chip()).toBe(chips.notOnPage[locale]);
 		},
 	);
 
@@ -752,6 +759,287 @@ describe("visible-first matching and the concealed label", () => {
 			expect(page.chip()).toBe("");
 		},
 	);
+
+	it.each(locales)("keeps a pin behind two concealing elements markerless (%s)", async (locale) => {
+		const page = await captured(
+			'<div data-node-id="node"><section id="step"><div id="inner"><span id="target">Target</span></div></section><p>Other visible content</p></div>',
+			locale,
+			(doc, api) => api.fromPin(byId(doc, "target"), 130, 120),
+		);
+		expect(page.anchor.context.targetLabel).toBe("Target");
+		byId(page.doc, "step").hidden = true;
+		await page.render();
+		expect(page.markerShown()).toBe(false);
+		byId(page.doc, "inner").hidden = true;
+		await page.render();
+		expect(page.markerShown()).toBe(false);
+		expect(page.chip()).toBe(chips.notOnPage[locale]);
+		expect(page.api.resolve(page.anchor)).toMatchObject({
+			state: "notOnPage",
+			target: byId(page.doc, "target"),
+		});
+		expect(page.show()).toBe(chips.notOnPage[locale].slice(2));
+		byId(page.doc, "step").hidden = false;
+		byId(page.doc, "inner").hidden = false;
+		await page.render();
+		expect(page.markerShown()).toBe(true);
+		expect(page.chip()).toBe("");
+		expect(page.api.resolve(page.anchor)).toMatchObject({
+			state: "placed",
+			target: byId(page.doc, "target"),
+		});
+	});
+
+	it.each(locales)(
+		"opens a pinned explanation in a details closed inside a hidden step (%s)",
+		async (locale) => {
+			const page = await captured(
+				'<div data-node-id="node"><section id="step"><p>Main text</p><details open><summary>Details</summary><p id="explain">Explanation</p></details></section><p>Other visible content</p></div>',
+				locale,
+				(doc, api) => api.fromPin(byId(doc, "explain"), 130, 120),
+			);
+			const details = page.doc.querySelector("details")!;
+			byId(page.doc, "step").hidden = true;
+			details.open = false;
+			await page.render();
+			expect(page.markerShown()).toBe(false);
+			expect(page.chip()).toBe(chips.notOnPage[locale]);
+			expect(page.api.resolve(page.anchor).state).toBe("notOnPage");
+			byId(page.doc, "step").hidden = false;
+			await page.render();
+			expect(page.markerShown()).toBe(false);
+			expect(page.chip()).toBe(chips.notVisible[locale]);
+			expect(page.show()).toBe("");
+			expect(details.open).toBe(true);
+			expect(page.doc.activeElement).toBe(byId(page.doc, "explain"));
+			await page.render();
+			expect(page.markerShown()).toBe(true);
+			expect(page.chip()).toBe("");
+		},
+	);
+
+	it.each(locales)(
+		"keeps a pinned hidden section with a newly closed details markerless (%s)",
+		async (locale) => {
+			const page = await captured(
+				'<div data-node-id="node"><section id="step"><p>Main text</p><details open><summary>Details</summary><p>Explanation</p></details></section><p>Other visible content</p></div>',
+				locale,
+				(doc, api) => api.fromPin(byId(doc, "step"), 130, 120),
+			);
+			byId(page.doc, "step").hidden = true;
+			page.doc.querySelector("details")!.open = false;
+			await page.render();
+			expect(page.markerShown()).toBe(false);
+			expect(page.chip()).toBe(chips.notOnPage[locale]);
+		},
+	);
+
+	it.each(
+		locales.flatMap((locale) =>
+			["quote", "pin"].flatMap((kind) =>
+				["width", "height"].map((axis) => ({ locale, kind, axis })),
+			),
+		),
+	)("labels a $kind whose box has zero $axis ($locale)", async ({ locale, kind, axis }) => {
+		const page = await captured(
+			'<div data-node-id="node"><span id="target">Target</span><p>Other visible content</p></div>',
+			locale,
+			(doc, api) =>
+				kind === "quote"
+					? api.fromSelection(selectContents(doc, byId(doc, "target")))
+					: api.fromPin(byId(doc, "target"), 130, 120),
+		);
+		expect(page.markerShown()).toBe(true);
+		const zero = axis === "width" ? box(80, 100, 0, 40) : box(80, 100, 200, 0);
+		const target = byId(page.doc, "target");
+		target.getBoundingClientRect = () => zero;
+		target.getClientRects = () => [zero] as unknown as DOMRectList;
+		page.dom.window.Range.prototype.getClientRects = () => [zero] as unknown as DOMRectList;
+		page.dom.window.dispatchEvent(new page.dom.window.Event("scroll"));
+		await page.render();
+		expect(page.markerShown()).toBe(false);
+		expect(page.highlighted()).toBe(0);
+		expect(page.chip()).toBe(chips.notOnPage[locale]);
+		expect(page.show()).toBe(chips.notOnPage[locale].slice(2));
+	});
+
+	it("reads a no-box quote's geometry once per frame", async () => {
+		const page = await captured(
+			'<div data-node-id="node"><span id="target">Target</span></div>',
+			"en",
+			(doc, api) => api.fromSelection(selectContents(doc, byId(doc, "target"))),
+		);
+		let reads = 0;
+		page.dom.window.Range.prototype.getClientRects = () => {
+			reads++;
+			return [] as unknown as DOMRectList;
+		};
+		for (const frame of [1, 2]) {
+			page.dom.window.dispatchEvent(new page.dom.window.Event("scroll"));
+			await page.render();
+			expect(reads).toBe(frame);
+		}
+		expect(page.chip()).toBe(chips.notOnPage.en);
+	});
+
+	it.each(
+		locales.flatMap((locale) =>
+			[
+				[
+					"selected tab panel",
+					'<section id="step"><div data-node-id="node"><button role="tab" id="tab" aria-controls="panel" aria-selected="true">Tab</button><div id="panel" role="tabpanel" aria-labelledby="tab"><p id="t">Target text</p></div></div></section><p>Other visible content</p>',
+				],
+				[
+					"open recorded details",
+					'<div data-node-id="node"><section id="step"><details id="d" open><summary>Open</summary><p id="t">Target text</p></details></section><p>Other visible content</p></div>',
+				],
+			].map(([container, markup]) => ({ locale, container, markup })),
+		),
+	)(
+		"labels a quote in a $container inside a hidden step ($locale)",
+		async ({ locale, container, markup }) => {
+			const page = await captured(markup, locale, (doc, api) =>
+				api.fromSelection(selectContents(doc, byId(doc, "t"))),
+			);
+			expect(page.anchor.tab ?? page.anchor.revealPath[0]).toBe(
+				container === "selected tab panel" ? "panel" : "d",
+			);
+			byId(page.doc, "step").hidden = true;
+			await page.render();
+			expect(page.markerShown()).toBe(false);
+			expect(page.chip()).toBe(chips.notOnPage[locale]);
+			expect(page.show()).toBe(chips.notOnPage[locale].slice(2));
+		},
+	);
+
+	it.each(locales)("opens a details closed after capture that has no id (%s)", async (locale) => {
+		const page = await captured(
+			'<div data-node-id="node"><details open><summary>Open</summary><p id="t">Target text</p></details><p>Other visible content</p></div>',
+			locale,
+			(doc, api) => api.fromSelection(selectContents(doc, byId(doc, "t"))),
+		);
+		const details = page.doc.querySelector("details")!;
+		expect(page.anchor.revealPath).toEqual([]);
+		details.open = false;
+		await page.render();
+		expect(page.markerShown()).toBe(false);
+		expect(page.chip()).toBe(chips.notVisible[locale]);
+		expect(page.api.resolve(page.anchor).target).toBe(details);
+		expect(page.show()).toBe("");
+		expect(details.open).toBe(true);
+		expect(page.doc.activeElement).toBe(page.doc.querySelector("[data-node-id]"));
+		await page.render();
+		expect(page.markerShown()).toBe(true);
+		expect(page.highlighted()).toBe(1);
+	});
+
+	it.each(locales)(
+		"finds a quote behind two new concealers, then opens it once one remains (%s)",
+		async (locale) => {
+			const page = await captured(
+				'<div data-node-id="node"><section id="step"><details open><summary>Open</summary><p id="t">Target text</p></details></section><p>Other visible content</p></div>',
+				locale,
+				(doc, api) => api.fromSelection(selectContents(doc, byId(doc, "t"))),
+			);
+			const details = page.doc.querySelector("details")!;
+			details.open = false;
+			byId(page.doc, "step").hidden = true;
+			await page.render();
+			expect(page.markerShown()).toBe(false);
+			expect(page.chip()).toBe(chips.notOnPage[locale]);
+			expect(page.api.resolve(page.anchor)).toMatchObject({ state: "notOnPage", target: details });
+			byId(page.doc, "step").hidden = false;
+			await page.render();
+			expect(page.chip()).toBe(chips.notVisible[locale]);
+			expect(page.show()).toBe("");
+			await page.render();
+			expect(page.markerShown()).toBe(true);
+			expect(page.highlighted()).toBe(1);
+			expect(page.chip()).toBe("");
+		},
+	);
+
+	it.each(locales)(
+		"falls back to the owner for decorated code under two new concealers (%s)",
+		async (locale) => {
+			const line = (n: number, code: string) =>
+				`<span class="praxity-code-line" style="display:flex"><span class="praxity-code-line-number" aria-hidden="true">${n}</span><span data-code-line>${code}</span></span>`;
+			const page = await captured(
+				`<div data-node-id="node"><section id="step"><details open><summary>Open</summary><pre><code id="code">${line(1, "const a = 1;")}\n${line(2, "const b = 2;")}</code></pre></details></section><p>Other visible content</p></div>`,
+				locale,
+				(doc, api) => api.fromSelection(selectContents(doc, byId(doc, "code"))),
+			);
+			page.doc.querySelector("details")!.open = false;
+			byId(page.doc, "step").hidden = true;
+			await page.render();
+			// The documented limit: a marker on the visible owner block, never on hidden text.
+			expect(page.chip()).toBe(chips.textChanged[locale]);
+			expect(page.markerShown()).toBe(true);
+			expect(page.api.resolve(page.anchor).target).toBe(page.doc.querySelector("[data-node-id]"));
+		},
+	);
+
+	it.each(locales)(
+		"labels an edited hidden pin as concealed, then as moved once shown (%s)",
+		async (locale) => {
+			const page = await captured(
+				'<div data-node-id="node"><section id="step"><ol><li id="pinned">Wash hands</li></ol></section><p>Other visible content</p></div>',
+				locale,
+				(doc, api) => api.fromPin(byId(doc, "pinned"), 130, 120),
+			);
+			byId(page.doc, "step").hidden = true;
+			byId(page.doc, "pinned").textContent = "Dry hands";
+			await page.render();
+			expect(page.markerShown()).toBe(false);
+			expect(page.chip()).toBe(chips.notOnPage[locale]);
+			byId(page.doc, "step").hidden = false;
+			await page.render();
+			expect(page.markerShown()).toBe(true);
+			expect(page.chip()).toBe(chips.pinMoved[locale]);
+		},
+	);
+
+	it("measures no geometry for filtered or resolved threads", async () => {
+		let clock!: ReturnType<typeof manualFrames>;
+		const quote = (exact: string) => ({
+			...pageAnchor,
+			nodeId: exact === "Open text" ? "open" : "done",
+			quote: { type: "TextQuoteSelector" as const, exact, prefix: "", suffix: "" },
+		});
+		const { doc, dom } = await open(
+			'<p data-node-id="open">Open text</p><p data-node-id="done">Done text</p>',
+			vi.fn().mockResolvedValue(
+				response({
+					ok: true,
+					threads: [
+						thread(quote("Open text"), "open"),
+						{ ...thread(quote("Done text"), "done"), status: "resolved" },
+					],
+					nextCursor: null,
+				}),
+			),
+			settings,
+			(dom) => {
+				clock = manualFrames(dom);
+			},
+		);
+		await vi.waitFor(() => expect(doc.querySelectorAll(".prx-review-comment")).toHaveLength(2));
+		clock.flush();
+		let reads = 0;
+		dom.window.Range.prototype.getClientRects = () => {
+			reads++;
+			return [box()] as unknown as DOMRectList;
+		};
+		dom.window.dispatchEvent(new dom.window.Event("scroll"));
+		clock.flush();
+		// Only the open, listed thread is measured.
+		expect(reads).toBe(1);
+		doc.querySelector<HTMLInputElement>('[data-review-filter="resolved"]')!.click();
+		reads = 0;
+		dom.window.dispatchEvent(new dom.window.Event("scroll"));
+		clock.flush();
+		expect(reads).toBe(0);
+	});
 });
 
 describe("review anchor capture and immutable resolution", () => {
@@ -874,9 +1162,10 @@ describe("review anchor capture and immutable resolution", () => {
 		expect(anchor.revealPath).toEqual(["reveal"]);
 		target.remove();
 		(doc.querySelector("#panel") as HTMLElement).hidden = true;
-		expect(resolveStored(api, anchor).state).toBe("notVisible");
+		// No learner control opens the recorded panel, so the label is "Not on this page".
+		expect(resolveStored(api, anchor).state).toBe("notOnPage");
 		expect(resolveStored(api, { ...anchor, pin: { path: "", x: 0.5, y: 0.5 } }).state).toBe(
-			"notVisible",
+			"notOnPage",
 		);
 	});
 	it("refuses css evidence outside the bounded child-step grammar", async () => {
@@ -909,7 +1198,7 @@ describe("review anchor capture and immutable resolution", () => {
 		expect(anchor.revealPath).toEqual(["outer", "inner"]);
 		expect(resolveStored(api, anchor).target).toBe(target);
 		doc.querySelector("#tab")?.setAttribute("hidden", "");
-		expect(resolveStored(api, anchor).state).toBe("notVisible");
+		expect(resolveStored(api, anchor).state).toBe("notOnPage");
 	});
 	it("keeps changed, moved and deleted anchors immutable", async () => {
 		const { doc, api } = await open('<p data-node-id="node">Original wording</p>');
@@ -956,13 +1245,13 @@ describe("review anchor capture and immutable resolution", () => {
 		const pin = api.fromPin(p, 50, 50) as ReviewAnchor;
 		doc.querySelector("#panel")?.setAttribute("hidden", "");
 		expect(resolveStored(api, anchor)).toMatchObject({
-			state: "notVisible",
+			state: "notOnPage",
 			target: doc.querySelector("#panel"),
 		});
-		expect(resolveStored(api, pin).state).toBe("notVisible");
+		expect(resolveStored(api, pin).state).toBe("notOnPage");
 	});
 	it.each(["tab", "disclosure"])(
-		"keeps a cross-block quote in its recorded closed %s",
+		"keeps a cross-block quote in its recorded closed %s until a visible copy appears",
 		async (kind) => {
 			const content = '<p data-node-id="a">First</p><p data-node-id="b">second</p>';
 			const { doc, api } = await open(
@@ -983,10 +1272,16 @@ describe("review anchor capture and immutable resolution", () => {
 			const container = doc.querySelector(kind === "tab" ? "#panel" : "#disclosure") as HTMLElement;
 			if (kind === "tab") container.hidden = true;
 			else (container as HTMLDetailsElement).open = false;
+			// Only the disclosure has a learner control that Show on page can open.
+			expect(resolveStored(api, anchor)).toMatchObject({
+				state: kind === "tab" ? "notOnPage" : "notVisible",
+				target: container,
+			});
 			const copy = doc.createElement("p");
 			copy.textContent = "First second";
 			doc.querySelector("main")?.append(copy);
-			expect(resolveStored(api, anchor)).toMatchObject({ state: "notVisible", target: container });
+			// The visible copy keeps its full stored context, so it places.
+			expect(resolveStored(api, anchor)).toMatchObject({ state: "placed", target: copy });
 		},
 	);
 	it("places a node-less quote when only one repeated match has complete stored context", async () => {
@@ -1001,7 +1296,7 @@ describe("review anchor capture and immutable resolution", () => {
 		expect(spot.range?.startContainer).toBe(title.firstChild);
 	});
 	it.each([1, 2])(
-		"checks a recorded closed tab before %i visible quote duplicates",
+		"matches %i visible quote duplicates before a recorded closed tab",
 		async (copies) => {
 			const { doc, api } = await open(
 				'<div id="panel" role="tabpanel"><p data-node-id="node">Same text</p></div>',
@@ -1018,7 +1313,7 @@ describe("review anchor capture and immutable resolution", () => {
 				duplicate.textContent = "Same text";
 				doc.querySelector("main")?.append(duplicate);
 			}
-			expect(resolveStored(api, anchor)).toMatchObject({ state: "notVisible", target: panel });
+			expect(resolveStored(api, anchor).state).toBe(copies === 1 ? "moved" : "ambiguous");
 		},
 	);
 	it("never transfers an identified block after a positional sibling insert", async () => {

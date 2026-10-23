@@ -620,15 +620,16 @@
 		for (var el = element; el; el = el.parentElement) if (selfHidden(el, element)) return true;
 		return false;
 	}
-	// The one element concealing `element`: null when it is visible, false when two or more do.
-	function concealer(element) {
-		var found = null;
-		for (var el = element; el; el = el.parentElement) {
-			if (!selfHidden(el, element)) continue;
-			if (found) return false;
-			found = el;
-		}
+	// Elements concealing `element`, innermost first, optionally only those inside `root`.
+	function concealers(element, root) {
+		var found = [];
+		for (var el = element; el && (!root || root.contains(el)); el = el.parentElement)
+			if (selfHidden(el, element)) found.push(el);
 		return found;
+	}
+	// The one rendered rule: a rect counts only with positive width and height.
+	function rendered(rect) {
+		return rect.width > 0 && rect.height > 0;
 	}
 	function measureSpot(target, range) {
 		var quote = Boolean(range);
@@ -636,29 +637,47 @@
 			range = document.createRange();
 			range.selectNodeContents(target);
 		}
-		var rects = Array.from((range || target).getClientRects()).filter(
-			(rect) => rect.width || rect.height,
-		);
-		return {
-			box: !rects.length
-				? null
-				: quote
-					? rects[rects.length - 1]
-					: (range || target).getBoundingClientRect(),
-		};
+		var rects = Array.from((range || target).getClientRects()).filter(rendered);
+		var box = !rects.length
+			? null
+			: quote
+				? rects[rects.length - 1]
+				: (range || target).getBoundingClientRect();
+		return { box: box && rendered(box) ? box : null };
 	}
-	// The one label for a markerless anchor: revealable or still rendered reads as not visible.
-	function concealedState(root, anchor, target, range) {
-		var revealable = anchor.tab || anchor.revealPath.length;
-		for (var el = target; el && root.contains(el) && !revealable; el = el.parentElement) {
-			revealable =
-				el.matches("details:not([open])") ||
-				(el.id &&
-					Array.from(root.querySelectorAll("button[aria-controls]")).some((control) =>
-						control.getAttribute("aria-controls").split(/\s+/).includes(el.id),
-					));
+	// The learner control Show on page activates to open `el`, or null when it can't open it.
+	function revealControl(root, el) {
+		if (el.matches("details:not([open])")) {
+			var summary = el.querySelector(":scope > summary");
+			if (summary && !hidden(summary)) return summary;
 		}
-		return revealable || measureSpot(target, range).box ? "notVisible" : "notOnPage";
+		if (
+			!el.id ||
+			!(
+				el.hidden ||
+				el.getAttribute("aria-hidden") === "true" ||
+				getComputedStyle(el).display === "none"
+			)
+		)
+			return null;
+		var controls = Array.from(root.querySelectorAll("button[aria-controls]")).filter(
+			(control) =>
+				control.getAttribute("aria-controls").split(/\s+/).includes(el.id) &&
+				!control.disabled &&
+				!hidden(control) &&
+				control.getBoundingClientRect().width > 0 &&
+				(control.getAttribute("role") === "tab" ||
+					control.getAttribute("aria-expanded") === "false"),
+		);
+		return controls.length === 1 ? controls[0] : null;
+	}
+	// The one label for anything without a marker. It reads only the live concealers on the
+	// target's chain, never the target's geometry or capture-time tab and reveal-path data.
+	function concealedState(root, target) {
+		var found = concealers(target, root);
+		return found.length && found.every((el) => revealControl(root, el))
+			? "notVisible"
+			: "notOnPage";
 	}
 
 	function createAnchors(pageRoot, pageId) {
@@ -675,12 +694,16 @@
 		function asElement(node) {
 			return node?.nodeType === 1 ? node : node?.parentElement;
 		}
-		// "visible" text has no concealer. "revealed" text may have one, recorded on its points.
-		function shown(el, mode) {
-			return mode === "revealed" ? concealer(el) !== false : !hidden(el);
+		// Text modes: "visible" (the default) has no concealer, "revealed" at most one, "any" any
+		// number. Returns undefined for text the mode leaves out, else its innermost concealer or null.
+		function concealedBy(el, mode) {
+			if (!el || !pageRoot().contains(el) || el.closest(excluded)) return;
+			if (mode !== "revealed" && mode !== "any") return hidden(el) ? undefined : null;
+			var found = concealers(el);
+			return mode === "revealed" && found.length > 1 ? undefined : found[0] || null;
 		}
-		function usable(el, mode) {
-			return el && pageRoot().contains(el) && !el.closest(excluded) && shown(el, mode);
+		function usable(el) {
+			return concealedBy(el) === null;
 		}
 		function stream(root, mode) {
 			var text = "",
@@ -695,8 +718,8 @@
 			}
 			var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
 			for (var node = walker.nextNode(); node; node = walker.nextNode()) {
-				if (!usable(node.parentElement, mode)) continue;
-				var hiddenBy = mode === "revealed" ? concealer(node.parentElement) : null;
+				var hiddenBy = concealedBy(node.parentElement, mode);
+				if (hiddenBy === undefined) continue;
 				var block = blockOwner(node.parentElement);
 				if (
 					text &&
@@ -734,8 +757,8 @@
 			if (end < text.length && /[\uD800-\uDBFF]/.test(text[end - 1])) end--;
 			return text.slice(0, end);
 		}
-		function label(el, mode) {
-			return bounded(stream(el, mode).text.trim(), limits.title) || null;
+		function label(el) {
+			return bounded(stream(el).text.trim(), limits.title) || null;
 		}
 		function pathFrom(root, target, max, depth) {
 			var steps = [];
@@ -760,11 +783,12 @@
 				return null;
 			var target = root.querySelector(`:scope > ${path}`);
 			// The whole-course revision guards positional paths across re-exports.
-			// A concealed element is compared with what its text reads once revealed.
-			return target &&
-				targetLabel(target, hidden(target) ? "revealed" : "visible") === anchor.context.targetLabel
-				? target
-				: null;
+			// A concealed candidate stays markerless with no label check; only visible ones verify.
+			// ponytail: a hidden pin whose label really changed reads concealed until revealed, then
+			// pinMoved. A runtime sibling insert can point the path at another hidden element; that
+			// costs the label word only, never a marker or focus on the wrong element.
+			if (target && hidden(target)) return target;
+			return target && targetLabel(target) === anchor.context.targetLabel ? target : null;
 		}
 		function base(target, node, block) {
 			var root = pageRoot();
@@ -826,30 +850,29 @@
 				? wrapper
 				: node;
 		}
-		function identityLabel(target, mode) {
+		function identityLabel(target) {
 			var label = target.matches(".praxity-order-item")
 				? target.querySelector(".praxity-order-label")
 				: target.matches("summary,[data-disclosure-label],.praxity-disclosure-title")
 					? target
 					: target.querySelector(".praxity-disclosure-title,[data-disclosure-label]");
-			if (!label || !shown(label, mode)) return "";
+			if (!label || hidden(label)) return "";
 			var text = "",
 				walker = document.createTreeWalker(label, NodeFilter.SHOW_TEXT);
 			for (var node = walker.nextNode(); node; node = walker.nextNode()) {
-				// `shown` excludes aria-hidden text: as a concealer of its own in revealed mode.
 				if (
 					!node.parentElement.closest(
-						"input,textarea,select,output,script,style,[aria-live],.praxity-order-position,.praxity-order-controls",
+						"input,textarea,select,output,script,style,[aria-live],[aria-hidden='true'],.praxity-order-position,.praxity-order-controls",
 					) &&
-					shown(node.parentElement, mode)
+					!hidden(node.parentElement)
 				)
 					text += node.data;
 			}
 			return Array.from(text.replace(/\s+/gu, " ").trim()).slice(0, 60).join("");
 		}
-		function targetLabel(target, mode) {
+		function targetLabel(target) {
 			var identity = target.closest(identitySelector);
-			return identity ? identityLabel(identity, mode) || null : label(target, mode);
+			return identity ? identityLabel(identity) || null : label(target);
 		}
 		function fromBlock(target) {
 			// Identity can name controls and graphics; their text stays outside the quote stream.
@@ -961,8 +984,8 @@
 				var concealed = flat.points
 					.slice(i, i + quote.exact.length)
 					.find((point) => point.hiddenBy);
-				// A revealed hit with no concealed point is visible text, the visible pass's to find.
-				if (mode === "revealed" && !concealed) continue;
+				// A concealed-pass hit with no concealed point is visible text, the visible pass's to find.
+				if ((mode === "revealed" || mode === "any") && !concealed) continue;
 				var range = document.createRange();
 				range.setStart(first.node, first.start);
 				range.setEnd(last.endNode, last.end);
@@ -981,16 +1004,17 @@
 		function resolve(anchor) {
 			var root = pageRoot();
 			function concealedSpot(target, extra = {}) {
-				return { ...extra, target, state: concealedState(root, anchor, target, extra.range) };
+				return { ...extra, target, state: concealedState(root, target) };
 			}
+			// A recorded tab or reveal-path element that is now hidden, as the last resort.
 			function concealedWithin(scope) {
-				return [scope, ...scope.querySelectorAll("[id]")].find(
+				var el = [scope, ...scope.querySelectorAll("[id]")].find(
 					(el) => (el.id === anchor.tab || anchor.revealPath.includes(el.id)) && hidden(el),
 				);
+				return el && concealedSpot(el);
 			}
 			function missing() {
-				var concealed = concealedWithin(root);
-				return concealed ? { state: "notVisible", target: concealed } : { state: "deleted" };
+				return concealedWithin(root) || { state: "deleted" };
 			}
 			var candidates = anchor.nodeId
 				? Array.from(root.querySelectorAll("[data-node-id]")).filter(
@@ -1036,42 +1060,37 @@
 				if (ranked.length !== 1) return { state: "ambiguous" };
 				target = ranked[0].node;
 			}
-			if (target) {
-				var concealed = concealedWithin(target);
-				if (concealed) return { state: "notVisible", target: concealed };
-			}
-			// Quotes match visible text first, exactly as captured. Text behind one concealer is
-			// consulted only when nothing visible matched, so it never displaces a visible match.
+			// Quotes match visible text first, exactly as captured. Each later pass runs only when the
+			// one before found nothing: text behind at most one concealer, so capture-time decorations
+			// stay out of a newly hidden step, then text behind any number of concealers.
 			// ponytail: a quote partly in concealed text gets the concealed label and no marker. A
-			// copy already behind one concealer at capture can win after the visible text is edited,
-			// reading as concealed rather than textChanged. Nested concealers (details closed inside
-			// a hidden step) fall back to textChanged; counting `tab`/`revealPath` elements as
-			// transparent in `concealer` would lift that.
+			// copy already behind a concealer at capture can win after the visible text is edited,
+			// reading as concealed rather than textChanged. Decorated text under two or more new
+			// concealers, and a decoration whose inherited visibility matches its newly hidden step,
+			// fall back to textChanged on the owner block.
+			var passes = ["visible", "revealed", "any"];
 			if (target && anchor.quote) {
-				var found = best(matches(target, anchor.quote, "visible"));
-				if (!found.length) {
-					var revealed = best(matches(target, anchor.quote, "revealed"));
-					if (revealed.length === 1)
-						return concealedSpot(revealed[0].target, { range: revealed[0].range });
-					if (revealed.length > 1) return { state: "ambiguous", target };
+				var found = [],
+					pass;
+				for (pass of passes) {
+					found = best(matches(target, anchor.quote, pass));
+					if (found.length) break;
 				}
-				if (!found.length) return { state: "textChanged", target };
 				if (found.length > 1) return { state: "ambiguous", target };
+				if (found.length && pass !== "visible")
+					return concealedSpot(found[0].target, { range: found[0].range });
+				if (!found.length) return concealedWithin(target) || { state: "textChanged", target };
 				match = found[0];
 			}
-			if (!target) {
-				var closed = concealedWithin(root);
-				if (closed) return { state: "notVisible", target: closed };
-			}
 			if (!target && anchor.quote) {
-				for (var mode of ["visible", "revealed"]) {
+				for (var mode of passes) {
 					var elsewhere = matches(root, anchor.quote, mode);
 					var full = elsewhere.filter(
 						(hit) => hit.score === anchor.quote.prefix.length + anchor.quote.suffix.length,
 					);
 					var placed = !anchor.nodeId && full.length === 1;
 					var hit = placed ? full[0] : elsewhere.length === 1 ? elsewhere[0] : null;
-					if (hit && mode === "revealed") return concealedSpot(hit.target, { range: hit.range });
+					if (hit && mode !== "visible") return concealedSpot(hit.target, { range: hit.range });
 					if (hit) return { ...hit, state: placed ? "placed" : "moved" };
 					if (elsewhere.length > 1) return { state: "ambiguous" };
 				}
@@ -1091,7 +1110,8 @@
 			if (hidden(target)) return concealedSpot(target);
 			if (anchor.pin) {
 				var pinned = anchor.pin.path ? verifiedPath(target, anchor.pin.path, anchor) : target;
-				if (!pinned) return { state: "pinMoved", target, pin: { x: 1, y: 0 } };
+				if (!pinned)
+					return concealedWithin(target) || { state: "pinMoved", target, pin: { x: 1, y: 0 } };
 				return hidden(pinned)
 					? concealedSpot(pinned, { pin: anchor.pin })
 					: { state: "placed", target: pinned, pin: anchor.pin };
@@ -1338,9 +1358,9 @@
 				entry.spot = anchors.resolve(entry.thread.anchor);
 				entry.resolutionVersion = resolutionVersion;
 			}
-			return renderedSpot(entry.spot, entry.thread.anchor);
+			return entry.spot;
 		}
-		function renderedSpot(spot, anchor) {
+		function renderedSpot(spot) {
 			// Recheck boxes each frame: cached identity can outlive a player's rendered step.
 			if (
 				!spot.target ||
@@ -1351,10 +1371,7 @@
 				return spot;
 			var measured = measureSpot(spot.target, spot.range);
 			if (!measured.box && ["placed", "moved", "pinMoved"].includes(spot.state))
-				return {
-					state: concealedState(pageRoot(), anchor, spot.target, spot.range),
-					target: spot.target,
-				};
+				return { state: concealedState(pageRoot(), spot.target), target: spot.target };
 			return { ...spot, ...measured };
 		}
 		function scheduleMarkers() {
@@ -1377,10 +1394,11 @@
 			}
 			// Finish every DOM/style/geometry read before changing any marker or status.
 			var placements = entries.map((entry) => {
-				var spot = resolveEntry(entry);
+				// Filtered and resolved threads never show a marker, so skip their geometry.
+				if (entry.item.hidden || entry.thread.status !== "open")
+					return { entry, spot: resolveEntry(entry), hidden: true };
+				var spot = renderedSpot(resolveEntry(entry));
 				if (
-					entry.item.hidden ||
-					entry.thread.status !== "open" ||
 					spot.state === "notVisible" ||
 					spot.state === "notOnPage" ||
 					!spot.target ||
@@ -1438,14 +1456,7 @@
 						);
 					})
 					.some(Boolean);
-				var hidden =
-					blocked ||
-					!box.width ||
-					!box.height ||
-					x < 12 ||
-					x > viewportRight - 12 ||
-					y < 24 ||
-					y > viewportBottom;
+				var hidden = blocked || x < 12 || x > viewportRight - 12 || y < 24 || y > viewportBottom;
 				return { entry, spot, hidden, x, y, block };
 			});
 			// Selection UI shares this frame, after the marker geometry has been measured.
@@ -1551,30 +1562,9 @@
 			var ancestors = [];
 			for (var el = target; el && pageRoot().contains(el); el = el.parentElement)
 				ancestors.unshift(el);
-			ancestors.forEach((el) => {
-				if (el.matches("details:not([open])")) {
-					var summary = el.querySelector(":scope > summary");
-					if (summary && !hidden(summary)) summary.click();
-				}
-				if (
-					el.id &&
-					(el.hidden ||
-						el.getAttribute("aria-hidden") === "true" ||
-						getComputedStyle(el).display === "none")
-				) {
-					var controls = Array.from(pageRoot().querySelectorAll("button[aria-controls]")).filter(
-						(control) =>
-							control.getAttribute("aria-controls").split(/\s+/).includes(el.id) &&
-							!control.disabled &&
-							!hidden(control) &&
-							control.getBoundingClientRect().width > 0 &&
-							(control.getAttribute("role") === "tab" ||
-								control.getAttribute("aria-expanded") === "false"),
-					);
-					if (controls.length === 1) controls[0].click();
-				}
-			});
-			spot = renderedSpot(anchors.resolve(entry.thread.anchor), entry.thread.anchor);
+			// Outermost first, so an inner control is checked only once its container is open.
+			ancestors.forEach((el) => revealControl(pageRoot(), el)?.click());
+			spot = renderedSpot(anchors.resolve(entry.thread.anchor));
 			if (spot.state === "notVisible" || spot.state === "notOnPage" || !spot.target) {
 				status.textContent = strings[spot.state] || strings.notVisible;
 				scheduleMarkers();

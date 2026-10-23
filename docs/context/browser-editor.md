@@ -151,7 +151,11 @@ canvas graphics, order items and disclosure/tab titles admit
 identity capture while their text stays outside quotes. Nested identity targets
 carry only their authored labels in context. A node-identified capture always
 has `cssPath: null`; order-item positions never enter stored anchors. Tab/panel
-projection chooses the stored panel even while hidden, returning Not visible here.
+projection chooses the stored panel even while hidden.
+Quotes match visible text first; text inside concealing elements is searched
+only when nothing visible matches. A target gets no marker unless it has a box
+with positive width and height: it reads "Not visible here" when Show on page
+can open every concealing element, and "Not on this page" otherwise.
 Text-line
 pin tips end at cap height; graphic pins keep their captured point. The
 frozen `window.PraxityReview` interface exposes only read-only DOM capture and
