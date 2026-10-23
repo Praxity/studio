@@ -2453,6 +2453,11 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	flex-shrink: 0;
 }
 
+/* Ordering arrows never enter Mantine's animated loading state. */
+.praxity-block-assessment .praxity-order-controls .mantine-ActionIcon-icon {
+	transition: none;
+}
+
 .praxity-order-baseline .praxity-order-controls {
 	display: flex;
 	gap: calc(var(--space-1) * var(--mantine-scale, 1));
@@ -6285,4 +6290,18 @@ html:not(.praxity-js) [data-card-root] .praxity-slides-item {
 
 [data-praxity-root] .praxity-required-marker {
 	border-radius: var(--radius-mark);
+}
+
+/* A localized action must grow with its text at narrow widths and text zoom. */
+.praxity-assessment-new-attempt {
+	height: auto;
+	min-height: var(--target-size);
+	padding-block: var(--space-2);
+	white-space: normal;
+}
+.praxity-assessment-new-attempt .mantine-Button-label {
+	height: auto;
+	line-height: var(--leading-body);
+	white-space: normal;
+	overflow-wrap: anywhere;
 }

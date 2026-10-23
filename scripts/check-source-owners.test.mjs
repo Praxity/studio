@@ -46,7 +46,7 @@ test("learner-state syntax keeps imports type-only so hashing cannot enter adapt
 	);
 });
 
-test("choice admission stays dormant in production consumers, including aliases and whole-module access", () => {
+test("choice imports stay confined to their declared consumers, including aliases and whole-module access", () => {
 	for (const name of [
 		"restoreChoiceAssessmentState",
 		"prepareChoiceAssessmentState",
@@ -65,7 +65,6 @@ test("choice admission stays dormant in production consumers, including aliases 
 		]) {
 			for (const path of [
 				"packages/export-pipeline/template/src/hosts/course-host.ts",
-				"packages/shared-blocks/src/blocks/AssessmentBlock.tsx",
 				"packages/shared-blocks/src/viewer/assessment-group-runtime.ts",
 			]) {
 				assert.match(checkDormantChoiceImports(path, source).join("\n"), new RegExp(name));
@@ -89,6 +88,36 @@ test("choice admission stays dormant in production consumers, including aliases 
 			checkDormantChoiceImports("packages/shared-blocks/src/viewer/planted.ts", source).join("\n"),
 			/dormant/,
 		);
+});
+
+test("the recovery UI imports only its two state owners by name", () => {
+	const path = "packages/shared-blocks/src/blocks/AssessmentBlock.tsx";
+	for (const name of ["restoreChoiceAssessmentState", "prepareChoiceAssessmentState"])
+		assert.deepEqual(
+			checkDormantChoiceImports(
+				path,
+				`import { ${name} as recover } from "../choice-learner-state"; recover(input);`,
+			),
+			[],
+		);
+	for (const source of [
+		'import { choiceDependencyStatus } from "../choice-learner-state";',
+		'import { createChoiceDependencyView } from "../choice-learner-state";',
+		'import { prepareChoiceGroupSubmission } from "../choice-learner-state";',
+		'import { retainLegacyChoiceBuild } from "../choice-learner-state";',
+		'import { choiceGroupDependencyIds, choiceGroupSignature } from "../choice-learner-state";',
+		'import { futureExport } from "../choice-learner-state";',
+		'import { prepareChoiceAssessmentState, futureExport } from "../choice-learner-state";',
+		'import states, { prepareChoiceAssessmentState } from "../choice-learner-state";',
+		'import "../choice-learner-state";',
+		'import {} from "../choice-learner-state";',
+		'import * as states from "../choice-learner-state";',
+		'const states = await import("../choice-learner-state");',
+		'const states = require("../choice-learner-state");',
+		'export { prepareChoiceAssessmentState } from "../choice-learner-state";',
+		'export * from "../choice-learner-state";',
+	])
+		assert.notDeepEqual(checkDormantChoiceImports(path, source), []);
 });
 
 test("dormant admission permits the existing envelope API, shared types and the canonical barrel", () => {
