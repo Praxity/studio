@@ -41,13 +41,8 @@ function isObject(value: JsonValue): value is { [key: string]: JsonValue } {
 	return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function decodeEvidence(envelope: unknown[], rawLength: number): string {
-	if (
-		envelope.length !== 7 ||
-		envelope[0] !== EVIDENCE_FORMAT ||
-		rawLength > SCORM12_SUSPEND_DATA_LIMIT
-	)
-		throw new Error("Evidence format");
+function decodeEvidence(envelope: unknown[]): string {
+	if (envelope.length !== 7 || envelope[0] !== EVIDENCE_FORMAT) throw new Error("Evidence format");
 	const [, size, typedSize, counts, crc, bodyCrc, text] = envelope;
 	if (
 		!Number.isSafeInteger(size) ||
@@ -231,7 +226,7 @@ export function parseScorm12CompactSuspendData(raw: string): Scorm12SuspendData 
 		const envelope: unknown = JSON.parse(raw);
 		if (!Array.isArray(envelope)) return null;
 		// Reuse ordinary payload validation; compact input stays held by that parser.
-		return parseScorm12SuspendData(decodeEvidence(envelope, raw.length));
+		return parseScorm12SuspendData(decodeEvidence(envelope));
 	} catch {
 		return null;
 	}

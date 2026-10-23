@@ -195,13 +195,73 @@ it("rejects malformed shape and key counts, duplicate keys and non-string keys",
 });
 
 it("checks the custom flag and expanded root", () => {
-	expect(read(frame(typedCustom(text("kept"), 2), { ...empty, custom: "kept" }))).toBeNull();
+	expect(read(frame(typedCustom(text("kept"), 2), { ...empty, custom: '"kept"' }))).toBeNull();
 	expect(read(frame([1, 0, 0], null))).toBeNull();
 	expect(read(frame(typedCustom([], 1, rootKeys.slice(0, 2))))).toBeNull();
 	expect(read(frame(typedCustom([0], 1), { ...empty, custom: "null" }))).toEqual({
 		...empty,
 		custom: "null",
 	});
+});
+
+it("rejects invalid UTF-8 even when replacement text has matching decoded checks", () => {
+	expect(read(frame(typedCustom([5, 1, 255]), { ...empty, custom: "\ufffd" }))).toBeNull();
+	expect(
+		read(frame(typedCustom([5, 3, 237, 160, 128]), { ...empty, custom: "\ufffd\ufffd\ufffd" })),
+	).toBeNull();
+});
+
+it("rejects duplicate keys even when last-key-wins output has matching checks", () => {
+	const typed = typedCustom([...text("lost"), ...text("kept")], 0, [...rootKeys, "custom"]);
+	expect(read(frame(typed, { ...empty, custom: "kept" }))).toBeNull();
+});
+
+it("rejects non-string keys even when coerced property names would match decoded checks", () => {
+	const typed = [
+		0,
+		1,
+		4,
+		...rootKeys.flatMap(text),
+		0,
+		8,
+		0,
+		7,
+		0,
+		7,
+		0,
+		...text("kept"),
+		...text("extra"),
+	];
+	expect(read(frame(typed, { ...empty, custom: "kept", null: "extra" }))).toBeNull();
+});
+
+it("rejects nonfinite numbers even when JSON null has matching decoded checks", () => {
+	expect(
+		read(
+			frame(typedCustom([4, 127, 240, 0, 0, 0, 0, 0, 0], 1), {
+				...empty,
+				custom: "null",
+			}),
+		),
+	).toBeNull();
+});
+
+it("rejects an unknown tag even when interpreting it as null would match decoded checks", () => {
+	expect(read(frame(typedCustom([99], 1), { ...empty, custom: "null" }))).toBeNull();
+});
+
+it("rejects unsafe and overlong integers even when decoded checks would match", () => {
+	expect(
+		read(
+			frame(typedCustom([3, ...uint(9007199254740992)], 1), {
+				...empty,
+				custom: "9007199254740992",
+			}),
+		),
+	).toBeNull();
+	expect(
+		read(frame(typedCustom([3, ...Array(8).fill(128), 0], 1), { ...empty, custom: "0" })),
+	).toBeNull();
 });
 
 it("rejects excessive nesting even when the declared size and checksums match", () => {
@@ -217,6 +277,15 @@ it("rejects excessive nesting even when the declared size and checksums match", 
 	).toBeNull();
 });
 
+it("admits the last permitted nested value", () => {
+	let nested: unknown = null;
+	for (let depth = 0; depth < 63; depth++) nested = [nested];
+	const expected = { ...empty, custom: JSON.stringify(nested) };
+	expect(read(frame(typedCustom([...Array(63).fill([7, 1]).flat(), 0], 1), expected))).toEqual(
+		expected,
+	);
+});
+
 it("bounds inflated bytes before interpreting the typed stream", () => {
 	const wire = frame(typedCustom(text("x".repeat(10000))), { ...empty, custom: "x".repeat(10000) });
 	expect(read(envelopeChange(wire, 2, 8))).toBeNull();
@@ -226,6 +295,14 @@ it("bounds dictionary expansion independently of the small typed stream", () => 
 	const dictionary = Buffer.alloc(32, 171);
 	const value = [7, ...uint(4000), ...Array(4000).fill([6, 0]).flat()];
 	const wire = frame(typedCustom(value, 1), empty, dictionary, [0, 1, 0]);
+	expect(wire.length).toBeLessThan(4096);
+	expect(read(wire)).toBeNull();
+});
+
+it("charges shape keys again when expanded into an object", () => {
+	const key = "x".repeat(140000);
+	const expected = { ...empty, custom: "kept", [key]: null };
+	const wire = frame(typedCustom([...text("kept"), 0], 0, [...rootKeys, key]), expected);
 	expect(wire.length).toBeLessThan(4096);
 	expect(read(wire)).toBeNull();
 });
