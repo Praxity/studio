@@ -2558,5 +2558,13 @@
 		"added": "2026-10-20",
 		"run": "39449974372",
 		"backlog": "Merge candidate run 39449974372: editor-core GC test slow-test follow-up, expire 2026-11-03"
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/cli-permission.test.ts",
+		"name": "exports under permissions with assessment configuration and unchanged course identity",
+		"reason": "Linux shared-host runs at e844d74 with 21 to 23% CPU steal: 2599 ms in shard and 2018 ms alone, then 2191 ms in shard and 2098 ms alone, against the 2000 ms budget. Unrelated PR blocked twice; remove when it meets the budget.",
+		"added": "2026-10-23",
+		"backlog": "Studio backlog: cli-permission export test over the slow-test budget on shared hosts (2026-10-23, expires 2026-11-06)",
+		"run": "39884426064"
 	}
 ]
