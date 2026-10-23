@@ -426,36 +426,13 @@ export function initializeCourseHost(
 		let submissionView: ChoiceDependencyEvidence | undefined;
 		const view = hostWindow.__praxityBlockState?.getChoiceDependencyView?.();
 		if (view?.groups && Object.hasOwn(view.groups, groupId)) {
-			const group = view.groups[groupId];
-			const state = {
-				version: 1,
-				kind: "assessmentGroup",
-				mode: group.mode,
-				selectedMemberId: group.mode === "oneOf" ? detail.selectedMemberId : null,
-				completed: detail.completed === true,
-			};
-			const selectedView = {
-				...view,
-				readState: (id: string) => (id === groupId ? state : view.readState(id)),
-			};
-			const submitted = view.prepareGroupSubmission?.(groupId, selectedView);
-			if (!submitted || submitted.contentSignature !== detail.contentSignature) return;
 			// The candidate precedes its write, preserving the existing objective-first order.
-			const candidateView: ChoiceDependencyEvidence = {
-				...selectedView,
-				status: (id) => view.status(id, candidateView),
-				rows: [
-					...view.rows,
-					{
-						id: groupId,
-						contentSignature: submitted.contentSignature,
-						correct: typeof detail.correct === "boolean" ? detail.correct : undefined,
-						memberIds: assessmentReportingOptions(detail, page.pageTitle).memberIds,
-					},
-				],
-				readState: (id) => (id === groupId ? { ...state, submitted } : view.readState(id)),
-			};
-			submissionView = candidateView;
+			submissionView =
+				view.verifyGroupSubmission?.(groupId, detail, {
+					correct: typeof detail.correct === "boolean" ? detail.correct : undefined,
+					memberIds: assessmentReportingOptions(detail, page.pageTitle).memberIds,
+				}) ?? undefined;
+			if (!submissionView) return;
 		}
 		// Keep the event's existing adapter and ticket; tracker writes have their own lifetime.
 		if (hasScore && runtime)

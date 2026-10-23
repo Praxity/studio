@@ -1,10 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest";
-import {
-	type ChoiceDependencyEvidence,
-	type ChoiceDependencyView,
-	choiceDependencyStatus,
-	prepareChoiceGroupSubmission,
-} from "../choice-learner-state";
+import type { ChoiceDependencyEvidence, ChoiceDependencyView } from "../choice-learner-state";
+import * as choiceOwner from "../choice-learner-state";
 import type { ChoiceStateQuestion } from "../choice-state-facts";
 import { getStrings } from "../i18n/strings";
 import type { LearnerStateValue } from "../learner-state";
@@ -32,11 +28,14 @@ function mount(mode: "all" | "oneOf", evidence = true, locale = "en", summary = 
 			groups: { g: { mode, memberIds: ["a", "b"], requiredIds: ["a", "b"] } },
 			readState: (id) => values.get(id),
 		};
-		return {
-			...input,
-			status: (id, candidate = input) => choiceDependencyStatus(id, candidate),
-			prepareGroupSubmission: prepareChoiceGroupSubmission,
-		};
+		// Base replay injects only the owner API already present on that revision.
+		return Object.hasOwn(choiceOwner, "bindChoiceDependencyView")
+			? choiceOwner.bindChoiceDependencyView(input)
+			: {
+					...input,
+					status: (id, candidate = input) => choiceOwner.choiceDependencyStatus(id, candidate),
+					prepareGroupSubmission: choiceOwner.prepareChoiceGroupSubmission,
+				};
 	};
 	window.__praxityBlockState = {
 		get: (id) => values.get(id),

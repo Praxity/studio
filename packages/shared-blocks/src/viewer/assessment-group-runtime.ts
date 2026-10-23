@@ -173,34 +173,18 @@ function writeAssessmentGroupState(
 	current: () => boolean,
 	submitted?: ChoiceGroupSubmission,
 ) {
-	const provider = window.__praxityBlockState;
-	const previous = provider?.getChoiceDependencyView?.()
-		? readLearnerBlockState(group.id)
-		: undefined;
-	const retained =
-		previous && typeof previous === "object" && !Array.isArray(previous)
-			? previous.submitted
-			: undefined;
-	const snapshot = submitted
-		? {
-				payload: {
-					mode: submitted.payload.mode,
-					selectedMemberId: submitted.payload.selectedMemberId,
-					dependencies: submitted.payload.dependencies,
-				},
-				contentSignature: submitted.contentSignature,
-			}
-		: retained;
 	const next = {
 		version: 1,
 		kind: "assessmentGroup",
 		mode: group.mode,
 		selectedMemberId,
 		completed,
-		...(snapshot !== undefined ? { submitted: snapshot } : {}),
 	};
-	if (snapshot !== undefined && JSON.stringify(previous) === JSON.stringify(next)) return current();
-	return writeLearnerBlockState(group.id, next, current);
+	const view = window.__praxityBlockState?.getChoiceDependencyView?.();
+	const prepared = view?.prepareGroupState?.(readLearnerBlockState(group.id), next, submitted);
+	return prepared === null
+		? current()
+		: writeLearnerBlockState(group.id, prepared ?? next, current);
 }
 
 function isLayoutMode(value: unknown): value is BlockLayoutMode {

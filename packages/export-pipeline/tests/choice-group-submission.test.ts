@@ -212,7 +212,7 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 			if (violation === "member") invalidate();
 			if (violation === "capability")
 				Object.assign(provider, {
-					getChoiceDependencyView: () => ({ ...view(), prepareGroupSubmission: undefined }),
+					getChoiceDependencyView: () => ({ ...view(), verifyGroupSubmission: undefined }),
 				});
 			submit(violation === "digest" ? `sha256:${"f".repeat(64)}` : submitted.contentSignature);
 			expect(writes).toEqual([]);
