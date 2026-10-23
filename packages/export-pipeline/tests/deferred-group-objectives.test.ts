@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type { LearnerBlockStateRuntime } from "@praxity/shared-blocks/learner-block-state";
 import {
 	withLearnerStateAuthority,
@@ -23,6 +24,130 @@ afterEach(() => {
 	for (const dom of documents.splice(0)) dom.window.close();
 	vi.restoreAllMocks();
 	vi.unstubAllGlobals();
+});
+
+const uuid = (seed: string) => {
+	const hex = createHash("sha256").update(seed).digest("hex");
+	return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-8${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+};
+
+describe("deferred objective storage boundary", () => {
+	it("with no history, saves 42 UUID originals without an obligation and reloads every answer and row", () => {
+		const host = launch("scorm12");
+		Object.assign(host.dom.window, { __praxityBlockState: host.provider });
+		const now = vi.spyOn(Date, "now");
+		const originals = Array.from({ length: 42 }, (_, index) => {
+			const id = uuid(`question-${index}`);
+			const selected = uuid(`option-${index}-0`);
+			return {
+				id,
+				state: {
+					version: 1,
+					kind: "assessment",
+					assessmentType: "choice",
+					attemptCount: 1,
+					answer: [selected],
+					checked: true,
+					correct: true,
+					completed: true,
+					interacted: true,
+				},
+				row: {
+					id,
+					response: selected,
+					correct: true,
+					score: 100,
+					attemptsUsed: 1,
+					maxAttempts: 2,
+					timestamp: 1760000000000 + index,
+				},
+			};
+		});
+		for (const [index, original] of originals.entries()) {
+			now.mockReturnValue(original.row.timestamp);
+			expect(host.tracker.outcome().kind).toBe("decided");
+			expect(
+				host.provider.stageSubmission?.(original.id, () => {
+					writeLearnerBlockState(original.id, original.state, () => true, host.dom.window.document);
+					return host.provider.getSaveResult?.(original.id)?.status !== "not-saved";
+				}),
+			).toBe(true);
+			host.tracker.trackInteraction(original.id, original.row.response, true, 100, {
+				assessmentType: "choice",
+				attemptsUsed: 1,
+				maxAttempts: 2,
+			});
+			expect(host.provider.getSaveResult?.(original.id)?.status).not.toBe("not-saved");
+			const reload = new Scorm12Runtime();
+			expect(reload.initialize()).toBe(true);
+			const restored = createBlockStateRuntime(reload);
+			expect(reload.getInteractions()).toEqual(
+				originals.slice(0, index + 1).map((item) => item.row),
+			);
+			for (const item of originals.slice(0, index + 1))
+				expect(restored.get(item.id)).toEqual(item.state);
+			expect(host.values.get("cmi.suspend_data")?.length).toBeLessThanOrEqual(4096);
+			expect(reload.getSuspendData()).not.toContain("deferredObjective");
+			expect(reload.getSuspendData()).not.toContain("objectiveSequence");
+		}
+		expect(host.runtime.getInteractions()).toHaveLength(42);
+		const before = host.values.get("cmi.suspend_data");
+		host.tracker.trackGroupObjective("g", 100, true, host.runtime, groupSignature);
+		expect(host.values.get("cmi.suspend_data")).toBe(before);
+	});
+
+	it.each(["q", "g"])(
+		"an oversized %s save with a pending objective preserves bytes, receipt, answer and obligation",
+		(id) => {
+			const host = launch("scorm12");
+			host.seed();
+			host.submit();
+			Object.assign(host.dom.window, { __praxityBlockState: host.provider });
+			const previousAnswer = host.provider.get("q");
+			const previousGroup = host.stored();
+			expect(previousGroup.submitted.deferredObjective).toEqual({
+				id: "1",
+				score: 100,
+				passed: true,
+			});
+			const before = host.values.get("cmi.suspend_data");
+			const notes = Array.from({ length: 512 }, (_, index) =>
+				createHash("sha256").update(`retained-note-${index}`).digest("hex"),
+			).join("");
+			const proposed = id === "q" ? { ...answer(), notes } : { ...groupState(), notes };
+			expect(
+				host.provider.stageSubmission?.(id, () => {
+					writeLearnerBlockState(id, proposed, () => true, host.dom.window.document);
+					return host.provider.getSaveResult?.(id)?.status !== "not-saved";
+				}),
+			).toBe(true);
+			expect(() => host.tracker.trackInteraction(id, "a", true, 100)).toThrow(/ESCORM12STORAGE/);
+			expect(host.values.get("cmi.suspend_data")).toBe(before);
+			expect(host.provider.getSaveResult?.(id)).toEqual({
+				status: "not-saved",
+				code: "runtime-write-failed",
+			});
+			expect(host.runtime.commit()).toBe(true);
+			expect(host.provider.getSaveResult?.(id)).toEqual({
+				status: "not-saved",
+				code: "runtime-write-failed",
+			});
+			expect(host.provider.get("q")).toEqual(previousAnswer);
+			expect(host.stored()).toEqual(previousGroup);
+			expect(host.objectives()).toEqual([]);
+			expect(
+				host.writes
+					.filter(([key]) => key === "cmi.suspend_data")
+					.every(([, value]) => value.length <= 4096),
+			).toBe(true);
+			host.replace(true);
+			expect(host.provider.get("q")).toEqual(previousAnswer);
+			expect(host.stored()).toEqual(previousGroup);
+			host.repair();
+			host.tracker.checkCompletion();
+			expect(host.objectives().map(([, value]) => value)).toEqual(["g", "100", "passed"]);
+		},
+	);
 });
 
 describe.each(["scorm2004", "xapi"] as const)("%s objective-first submission", (format) => {
