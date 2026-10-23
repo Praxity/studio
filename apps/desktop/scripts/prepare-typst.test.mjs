@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import {
+	downloadWithRetry,
 	prepareTypst,
 	selectTypstRelease,
 	stageThemeFonts,
@@ -13,6 +14,208 @@ import {
 	verifyBinary,
 	woffToSfnt,
 } from "./prepare-typst.mjs";
+
+for (const [label, url] of [
+	["Typst", "https://github.com/example/archive.tar.xz"],
+	["MiTeX", "https://packages.typst.org/preview/example.tar.gz"],
+]) {
+	test(`${label} download retries a network error and reads the successful response once`, async (t) => {
+		const warning = t.mock.method(console, "warn", () => {});
+		const timeout = t.mock.method(AbortSignal, "timeout");
+		const response = new Response("archive bytes");
+		const read = t.mock.method(response, "arrayBuffer");
+		const fetch = t.mock.fn(async () => {
+			if (fetch.mock.callCount() === 0)
+				throw new TypeError("fetch failed", { cause: { code: "ETIMEDOUT" } });
+			return response;
+		});
+		const sleep = t.mock.fn(async () => {});
+		assert.deepEqual(
+			await downloadWithRetry(url, label, { fetch, sleep }),
+			Buffer.from("archive bytes"),
+		);
+		assert.equal(fetch.mock.callCount(), 2);
+		assert.equal(read.mock.callCount(), 1);
+		assert.deepEqual(
+			sleep.mock.calls.map(({ arguments: args }) => args),
+			[[2_000]],
+		);
+		assert.deepEqual(
+			timeout.mock.calls.map(({ arguments: args }) => args),
+			[[120_000], [120_000]],
+		);
+		for (const {
+			arguments: [requestedUrl, options],
+		} of fetch.mock.calls) {
+			assert.equal(requestedUrl, url);
+			assert.ok(options.signal instanceof AbortSignal);
+		}
+		assert.notEqual(
+			fetch.mock.calls[0].arguments[1].signal,
+			fetch.mock.calls[1].arguments[1].signal,
+		);
+		assert.equal(warning.mock.callCount(), 1);
+		assert.match(
+			warning.mock.calls[0].arguments[0],
+			new RegExp(`${new URL(url).host}.*2/3.*ETIMEDOUT`),
+		);
+	});
+}
+
+test("download stops after three network errors and throws the last error", async (t) => {
+	const warning = t.mock.method(console, "warn", () => {});
+	const errors = ["ETIMEDOUT", "ECONNRESET", "ENETUNREACH"].map((code) =>
+		Object.assign(new Error(code), { code }),
+	);
+	const fetch = t.mock.fn(async () => {
+		throw errors[Math.min(fetch.mock.callCount(), 2)];
+	});
+	const delays = [];
+	const sleep = async (ms) => {
+		delays.push(ms);
+		assert.ok(delays.length <= 2, "download must stop after three attempts");
+	};
+	await assert.rejects(
+		downloadWithRetry("https://github.com/example", "Typst", { fetch, sleep }),
+		(error) => error === errors[2],
+	);
+	assert.equal(fetch.mock.callCount(), 3);
+	assert.deepEqual(delays, [2_000, 8_000]);
+	assert.deepEqual(
+		warning.mock.calls.map(({ arguments: [message] }) => message),
+		[
+			"Retrying github.com download: attempt 2/3 after ETIMEDOUT",
+			"Retrying github.com download: attempt 3/3 after ECONNRESET",
+		],
+	);
+});
+
+for (const status of [400, 403, 404, 408, 499, 600]) {
+	test(`download fails on HTTP ${status} without retrying`, async (t) => {
+		const warning = t.mock.method(console, "warn", () => {});
+		const fetch = t.mock.fn(async () => ({ ok: false, status }));
+		const sleep = t.mock.fn(async () => {
+			assert.fail(`HTTP ${status} must not retry`);
+		});
+		await assert.rejects(
+			downloadWithRetry("https://github.com/example", "Typst", { fetch, sleep }),
+			{ message: `Typst download failed: ${status}` },
+		);
+		assert.equal(fetch.mock.callCount(), 1);
+		assert.equal(sleep.mock.callCount(), 0);
+		assert.equal(warning.mock.callCount(), 0);
+	});
+}
+
+for (const status of [429, 500, 503, 599]) {
+	test(`download retries HTTP ${status} and then succeeds`, async (t) => {
+		const warning = t.mock.method(console, "warn", () => {});
+		const fetch = t.mock.fn(async () =>
+			fetch.mock.callCount() === 0 ? { ok: false, status } : new Response("archive bytes"),
+		);
+		const sleep = t.mock.fn(async () => {});
+		assert.deepEqual(
+			await downloadWithRetry("https://packages.typst.org/example", "MiTeX", { fetch, sleep }),
+			Buffer.from("archive bytes"),
+		);
+		assert.equal(fetch.mock.callCount(), 2);
+		assert.deepEqual(
+			sleep.mock.calls.map(({ arguments: args }) => args),
+			[[2_000]],
+		);
+		assert.equal(warning.mock.callCount(), 1);
+		assert.match(
+			warning.mock.calls[0].arguments[0],
+			new RegExp(`packages\\.typst\\.org.*2/3.*HTTP_${status}`),
+		);
+	});
+}
+
+test("download caps repeated HTTP 503 failures at three attempts", async (t) => {
+	t.mock.method(console, "warn", () => {});
+	const fetch = t.mock.fn(async () => ({ ok: false, status: 503 }));
+	const delays = [];
+	const sleep = async (ms) => {
+		delays.push(ms);
+		assert.ok(delays.length <= 2, "download must stop after three attempts");
+	};
+	await assert.rejects(downloadWithRetry("https://github.com/example", "Typst", { fetch, sleep }), {
+		message: "Typst download failed: 503",
+	});
+	assert.equal(fetch.mock.callCount(), 3);
+	assert.deepEqual(delays, [2_000, 8_000]);
+});
+
+test("download retries the per-attempt timeout", async (t) => {
+	const warning = t.mock.method(console, "warn", () => {});
+	const fetch = t.mock.fn(async () => {
+		if (fetch.mock.callCount() === 0) throw new DOMException("Request timed out", "TimeoutError");
+		return new Response("archive bytes");
+	});
+	const sleep = t.mock.fn(async () => {});
+	assert.deepEqual(
+		await downloadWithRetry("https://github.com/example", "Typst", { fetch, sleep }),
+		Buffer.from("archive bytes"),
+	);
+	assert.equal(fetch.mock.callCount(), 2);
+	assert.equal(sleep.mock.callCount(), 1);
+	assert.match(warning.mock.calls[0].arguments[0], /github\.com.*2\/3.*23/);
+});
+
+test("download retries a network reset while reading the response body", async (t) => {
+	t.mock.method(console, "warn", () => {});
+	const fetch = t.mock.fn(async () =>
+		fetch.mock.callCount() === 0
+			? {
+					ok: true,
+					arrayBuffer: async () => {
+						throw Object.assign(new Error("reset"), { code: "ECONNRESET" });
+					},
+				}
+			: new Response("archive bytes"),
+	);
+	const sleep = t.mock.fn(async () => {});
+	assert.deepEqual(
+		await downloadWithRetry("https://github.com/example", "Typst", { fetch, sleep }),
+		Buffer.from("archive bytes"),
+	);
+	assert.equal(fetch.mock.callCount(), 2);
+	assert.deepEqual(
+		sleep.mock.calls.map(({ arguments: args }) => args),
+		[[2_000]],
+	);
+});
+
+test("downloaded checksum mismatch fails without another attempt", async (t) => {
+	t.mock.method(console, "warn", () => {});
+	const fetch = t.mock.fn(async () => new Response("tampered archive"));
+	const sleep = t.mock.fn(async () => {});
+	await assert.rejects(async () => {
+		const bytes = await downloadWithRetry("https://github.com/example", "Typst", { fetch, sleep });
+		verifyArchive(bytes, "arm64");
+	}, /checksum mismatch/);
+	assert.equal(fetch.mock.callCount(), 1);
+	assert.equal(sleep.mock.callCount(), 0);
+});
+
+test("downloaded checksum failure preserves the installation and never caches unverified bytes", async (t) => {
+	const fetch = t.mock.method(globalThis, "fetch", async () => new Response("tampered archive"));
+	const directory = await mkdtemp(path.join(tmpdir(), "typst-download-checksum-"));
+	try {
+		const output = path.join(directory, "installed");
+		const cache = path.join(directory, "cache");
+		await writeFile(output, "previous bytes");
+		await assert.rejects(
+			prepareTypst({ output, cache, platform: "darwin", arch: "arm64" }),
+			/checksum mismatch/,
+		);
+		assert.equal(fetch.mock.callCount(), 1);
+		assert.equal(await readFile(output, "utf8"), "previous bytes");
+		await assert.rejects(readdir(cache), { code: "ENOENT" });
+	} finally {
+		await rm(directory, { recursive: true, force: true });
+	}
+});
 
 test("selects pinned Windows x64 and preserves Darwin targets", () => {
 	const windows = selectTypstRelease("win32", "x64");
