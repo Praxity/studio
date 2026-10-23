@@ -9,7 +9,7 @@ import {
 } from "../focus-assertions";
 import { test } from "../muted-test";
 import { choiceBaselines } from "./choice-baselines";
-import { readTestEnv } from "./helpers";
+import { readTestEnv, waitForSettledStyles } from "./helpers";
 
 async function token(target: Locator, property: string, name: string) {
 	return target.evaluate(
@@ -60,8 +60,36 @@ for (const mode of ["light", "dark"] as const) {
 						await expect(key).toHaveCSS("height", "26px");
 						await expect(key).toHaveCSS("border-radius", "6px");
 					} else await expect(first.locator("input")).toHaveCSS("width", "22px");
-					const label = first.locator(".praxity-choice-label");
-					const before = await label.boundingBox();
+					await first.scrollIntoViewIfNeeded();
+					await expect(first).toBeInViewport({ ratio: 1 });
+					const geometry = () =>
+						first.evaluate((row) => {
+							const label = row.querySelector(".praxity-choice-label");
+							if (!label) throw new Error("Missing choice label");
+							const r = row.getBoundingClientRect();
+							const l = label.getBoundingClientRect();
+							const scroll = [];
+							for (let node: Element | null = row.parentElement; node; node = node.parentElement)
+								scroll.push({ left: node.scrollLeft, top: node.scrollTop });
+							return {
+								label: { x: l.x - r.x, y: l.y - r.y, width: l.width, height: l.height },
+								row: { x: r.x, y: r.y, width: r.width, height: r.height },
+								documentPosition: {
+									x: r.x + scroll.reduce((sum, offset) => sum + offset.left, 0),
+									y: r.y + scroll.reduce((sum, offset) => sum + offset.top, 0),
+								},
+								scroll,
+							};
+						});
+					await waitForSettledStyles(page);
+					await expect
+						.poll(async () => {
+							const sample = await geometry();
+							await page.evaluate(() => new Promise(requestAnimationFrame));
+							return JSON.stringify(await geometry()) === JSON.stringify(sample);
+						})
+						.toBe(true);
+					const before = await geometry();
 					await first.hover();
 					await expect(first).toHaveCSS(
 						"background-color",
@@ -79,10 +107,16 @@ for (const mode of ["light", "dark"] as const) {
 						await token(first, "background-color", "--accent-soft"),
 					);
 					await expect(first).toHaveCSS("box-shadow", "none");
-					const after = await label.boundingBox();
-					if (!before || !after) throw new Error("Missing choice label geometry");
-					expect(Math.abs(after.x - before.x)).toBeLessThanOrEqual(0.5);
-					expect(Math.abs(after.y - before.y)).toBeLessThanOrEqual(0.5);
+					const after = await geometry();
+					for (const axis of ["x", "y", "width", "height"] as const)
+						expect(Math.abs(after.label[axis] - before.label[axis])).toBeLessThanOrEqual(0.5);
+					for (const axis of ["width", "height"] as const)
+						expect(Math.abs(after.row[axis] - before.row[axis])).toBeLessThanOrEqual(0.5);
+					for (const axis of ["x", "y"] as const)
+						expect(
+							Math.abs(after.documentPosition[axis] - before.documentPosition[axis]),
+							`${id} row document ${axis}`,
+						).toBeLessThanOrEqual(0.5);
 					const measured = await choiceBaselines(rows);
 					for (const result of measured) {
 						expect(result.delta, `${id} first-line baseline`).toBeLessThanOrEqual(1);
@@ -90,7 +124,7 @@ for (const mode of ["light", "dark"] as const) {
 					}
 					expect(measured[0].lines).toBe(1);
 					if (width === 390) expect(measured[1].lines).toBeGreaterThan(1);
-					measurements.push({ id, measured });
+					measurements.push({ id, before, after, measured });
 					await first.locator("input").focus();
 					await page.keyboard.press("Shift+Tab");
 					await page.keyboard.press("Tab");
