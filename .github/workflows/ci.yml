@@ -34,13 +34,15 @@ env:
   # Compare PRs with their base; nightly and manual runs compare a commit with itself.
   SLOW_TESTS_BASE: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
 
-# Fork PRs run on free GitHub-hosted runners; Ubicloud serves branches pushed here. A fork can
-# still edit this file, so fork-run approval in repository settings is the real spending gate.
+# Free hosted runners by default. Set STUDIO_BROWSER_RUNNER for the three browser families
+# if surviving PR gates have p90 added wait >5 min or p99 >15 min over a rolling day
+# of at least 50 gates, or a dispatched run waits 30 min for its first runner.
+# Fork PRs always use free runners; fork-run approval still guards workflow edits.
 jobs:
   # ── Detect if only docs/config changed (no code) ──────────────
   changes:
     if: github.repository == (vars.STUDIO_SOURCE_REPO || github.repository)
-    runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-24.04' || 'ubicloud-standard-2' }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 2
     outputs:
       vitest: ${{ steps.vitest.outputs.vitest || 'full' }}
@@ -213,7 +215,7 @@ jobs:
   fast-checks:
     needs: changes
     if: ${{ github.repository == (vars.STUDIO_SOURCE_REPO || github.repository) && (!cancelled() && needs.changes.result == 'success' && needs.changes.outputs.code == 'true') }}
-    runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-24.04' || 'ubicloud-standard-2' }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -288,7 +290,7 @@ jobs:
   node-checks:
     needs: changes
     if: ${{ github.repository == (vars.STUDIO_SOURCE_REPO || github.repository) && (!cancelled() && needs.changes.result == 'success' && needs.changes.outputs.code == 'true') }}
-    runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-24.04' || 'ubicloud-standard-2' }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -329,7 +331,7 @@ jobs:
   affected-test:
     needs: changes
     if: ${{ github.repository == (vars.STUDIO_SOURCE_REPO || github.repository) && (!cancelled() && github.event_name == 'pull_request' && needs.changes.result == 'success' && needs.changes.outputs.code == 'true' && needs.changes.outputs.vitest == 'affected') }}
-    runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-24.04' || 'ubicloud-standard-2' }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       SLOW_TESTS_PENDING_FILE: ${{ github.workspace }}/.slow-tests-pending.json
@@ -362,7 +364,7 @@ jobs:
     name: Test ${{ matrix.shard }}/4
     needs: changes
     if: ${{ github.repository == (vars.STUDIO_SOURCE_REPO || github.repository) && (!cancelled() && (github.event_name != 'pull_request' || needs.changes.outputs.vitest == 'full') && needs.changes.result == 'success' && needs.changes.outputs.code == 'true') }}
-    runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-24.04' || 'ubicloud-standard-2' }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       SLOW_TESTS_PENDING_FILE: ${{ github.workspace }}/.slow-tests-pending.json
@@ -406,17 +408,20 @@ jobs:
         uses: ./.github/actions/install-poppler
         timeout-minutes: 5
         if: needs.changes.outputs.code == 'true'
-      # Cap temp data at 1 GiB; the smallest runner has 8 GB.
+      # Cap temp data at 1 GiB of the public hosted runner's 16 GB.
       # An executable mount is needed for test-generated CLI and writer binaries.
       - name: Prepare Test tmpfs
         id: test-tmpfs
         if: needs.changes.outputs.code == 'true'
         run: |
-          directory=$(mktemp -d /dev/shm/vitest.XXXXXX)
-          printf 'path=%s\n' "$directory" >> "$GITHUB_OUTPUT"
-          sudo mount -t tmpfs -o "size=1G,exec,mode=700,uid=$(id -u),gid=$(id -g)" tmpfs "$directory"
-          printf 'TMPDIR=%s\n' "$directory" >> "$GITHUB_ENV"
-          df -h "$directory"
+          if directory=$(mktemp -d /dev/shm/vitest.XXXXXX) && sudo mount -t tmpfs -o "size=1G,exec,mode=700,uid=$(id -u),gid=$(id -g)" tmpfs "$directory"; then
+            printf 'path=%s\n' "$directory" >> "$GITHUB_OUTPUT"
+            printf 'TMPDIR=%s\n' "$directory" >> "$GITHUB_ENV"
+          else
+            echo '::warning::Test tmpfs unavailable; using runner temp on disk.'
+            printf 'TMPDIR=%s\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          fi
+          df -h "${directory:-$RUNNER_TEMP}"
           free -m
       - run: bash scripts/run-vitest-isolated.sh pnpm exec vitest run --config vitest.workspace.ts --shard=${{ matrix.shard }}/4
         if: needs.changes.outputs.code == 'true'
@@ -432,7 +437,7 @@ jobs:
   published-output-a11y:
     needs: changes
     if: ${{ github.repository == (vars.STUDIO_SOURCE_REPO || github.repository) && (!cancelled() && needs.changes.result == 'success' && needs.changes.outputs.browser == 'true' && github.event_name != 'pull_request') }}
-    runs-on: ubicloud-standard-4
+    runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-24.04' || vars.STUDIO_BROWSER_RUNNER || 'ubuntu-24.04' }}
     # File-level scheduling keeps each learner journey together. Chromium uses
     # three shards; each job gets its own checkout and fixture setup.
     timeout-minutes: 30
@@ -525,7 +530,7 @@ jobs:
   published-output-deck:
     needs: changes
     if: ${{ github.repository == (vars.STUDIO_SOURCE_REPO || github.repository) && (!cancelled() && needs.changes.result == 'success' && needs.changes.outputs.browser == 'true' && github.event_name != 'pull_request') }}
-    runs-on: ubicloud-standard-4
+    runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-24.04' || vars.STUDIO_BROWSER_RUNNER || 'ubuntu-24.04' }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -621,7 +626,7 @@ jobs:
   browser-editor:
     needs: changes
     if: ${{ github.repository == (vars.STUDIO_SOURCE_REPO || github.repository) && (!cancelled() && needs.changes.result == 'success' && needs.changes.outputs.browser == 'true' && github.event_name != 'pull_request') }}
-    runs-on: ubicloud-standard-4
+    runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-24.04' || vars.STUDIO_BROWSER_RUNNER || 'ubuntu-24.04' }}
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -675,7 +680,7 @@ jobs:
   format-contracts:
     needs: changes
     if: github.repository == (vars.STUDIO_SOURCE_REPO || github.repository) && (needs.changes.outputs.format == 'true' && needs.changes.outputs.code != 'true')
-    runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-24.04' || 'ubicloud-standard-2' }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     env:
       SLOW_TESTS_PENDING_FILE: ${{ github.workspace }}/.slow-tests-pending.json
@@ -701,7 +706,7 @@ jobs:
   merge-gate:
     needs: [changes, fast-checks, node-checks, test, affected-test, published-output-a11y, published-output-deck, browser-editor, format-contracts]
     if: ${{ github.repository == (vars.STUDIO_SOURCE_REPO || github.repository) && (!cancelled()) }}
-    runs-on: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && 'ubuntu-24.04' || 'ubicloud-standard-2' }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
       - name: Report merge acceptance

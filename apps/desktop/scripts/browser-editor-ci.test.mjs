@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import picomatch from "picomatch";
 import { parse } from "yaml";
+import { browserRunner } from "./ci-test-support.mjs";
 
 const ci = parse(
 	await readFile(new URL("../../../.github/workflows/ci.yml", import.meta.url), "utf8"),
@@ -58,7 +59,7 @@ test("browser editor CI gates the selected engines in Linux shards with prepared
 		job.if,
 		"${{ github.repository == (vars.STUDIO_SOURCE_REPO || github.repository) && (!cancelled() && needs.changes.result == 'success' && needs.changes.outputs.browser == 'true' && github.event_name != 'pull_request') }}",
 	);
-	assert.equal(job["runs-on"], "ubicloud-standard-4");
+	assert.equal(job["runs-on"], browserRunner);
 	assert.equal(job.strategy["fail-fast"], false);
 	assert.equal(
 		job.strategy.matrix.browser,
