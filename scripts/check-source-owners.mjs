@@ -1466,8 +1466,6 @@ export function checkDisplayIdImports(path, source, program) {
 /** History must not activate before the reporting wait and learner recovery ship together. */
 export function checkDormantChoiceImports(path, source, program) {
 	const owner = "packages/shared-blocks/src/choice-learner-state.ts";
-	const host = "packages/export-pipeline/template/src/hosts/course-host.ts";
-	const group = "packages/shared-blocks/src/viewer/assessment-group-runtime.ts";
 	return checkOwnedImports(
 		path,
 		source,
@@ -1482,14 +1480,7 @@ export function checkDormantChoiceImports(path, source, program) {
 				"choiceGroupSignature",
 				"prepareChoiceGroupSubmission",
 				"createChoiceDependencyView",
-			].map((name) => [
-				name,
-				name === "prepareChoiceGroupSubmission"
-					? [owner, host, group]
-					: name === "choiceDependencyStatus"
-						? [owner, host]
-						: [owner],
-			]),
+			].map((name) => [name, [owner]]),
 		),
 		{
 			definition: owner,
@@ -1497,7 +1488,6 @@ export function checkDormantChoiceImports(path, source, program) {
 				/(?:^@praxity\/shared-blocks\/choice-learner-state$|(?:^|\/)choice-learner-state(?:\.[cm]?[jt]s)?$)/u,
 			barrels: [],
 			forbidModuleLoads: true,
-			allowNamedOwnerLoads: true,
 			message:
 				"choice admission is dormant until reporting waits and learner recovery is available",
 		},
@@ -1551,18 +1541,6 @@ function checkOwnedImports(path, source, program, ownership, options) {
 		const declaration =
 			options.forbidModuleLoads &&
 			!typeOnlyBindings &&
-			!(
-				options.allowNamedOwnerLoads &&
-				bindings &&
-				(ts.isNamedImports(bindings) || ts.isNamedExports(bindings)) &&
-				bindings.elements.length > 0 &&
-				(!ts.isImportDeclaration(node) || !node.importClause?.name) &&
-				bindings.elements.every(
-					(binding) =>
-						binding.isTypeOnly ||
-						ownership[(binding.propertyName ?? binding.name).text]?.includes(path),
-				)
-			) &&
 			((ts.isImportDeclaration(node) && !node.importClause?.isTypeOnly) ||
 				(ts.isExportDeclaration(node) && !node.isTypeOnly));
 		const namespace =

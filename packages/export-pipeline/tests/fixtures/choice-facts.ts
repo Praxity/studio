@@ -2,11 +2,16 @@ import {
 	type ChoiceDependencyEvidence,
 	type ChoiceDependencyView,
 	choiceDependencyStatus,
+	prepareChoiceGroupSubmission,
 } from "../../../shared-blocks/src/choice-learner-state";
 
 /** Inject the same status owner into deliberately malformed and ordinary test views. */
 export function withChoiceDependencyStatus(view: ChoiceDependencyView): ChoiceDependencyEvidence {
-	return { ...view, status: (id) => choiceDependencyStatus(id, view) };
+	return {
+		...view,
+		status: (id, candidate = view) => choiceDependencyStatus(id, candidate),
+		prepareGroupSubmission: prepareChoiceGroupSubmission,
+	};
 }
 
 /** Normalize only the three authorized inert fields for frozen document comparisons. */

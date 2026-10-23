@@ -3,6 +3,7 @@ import {
 	type ChoiceDependencyEvidence,
 	type ChoiceDependencyView,
 	choiceDependencyStatus,
+	prepareChoiceGroupSubmission,
 } from "../choice-learner-state";
 import type { ChoiceStateQuestion } from "../choice-state-facts";
 import { getStrings } from "../i18n/strings";
@@ -31,7 +32,11 @@ function mount(mode: "all" | "oneOf", evidence = true, locale = "en", summary = 
 			groups: { g: { mode, memberIds: ["a", "b"], requiredIds: ["a", "b"] } },
 			readState: (id) => values.get(id),
 		};
-		return { ...input, status: (id) => choiceDependencyStatus(id, input) };
+		return {
+			...input,
+			status: (id, candidate = input) => choiceDependencyStatus(id, candidate),
+			prepareGroupSubmission: prepareChoiceGroupSubmission,
+		};
 	};
 	window.__praxityBlockState = {
 		get: (id) => values.get(id),
@@ -243,14 +248,23 @@ it("stages its captured answer before reporting and avoids a duplicate save", as
 	expect(events).toEqual(["save", "interaction"]);
 });
 
-for (const refusal of ["member-history", "stage-refused", "report-refused"] as const) {
+for (const refusal of [
+	"member-history",
+	"stage-refused",
+	"report-refused",
+	"preparation-unavailable",
+] as const) {
 	for (const locale of ["en", "fr"]) {
 		it(`${locale} ${refusal} keeps the picker and submit action available`, async () => {
 			const { render, view, events } = mount("oneOf", true, locale);
 			const provider = window.__praxityBlockState;
 			Object.assign(provider as object, {
 				getChoiceDependencyView:
-					refusal === "member-history" ? () => ({ ...view(), invalidIds: ["a"] }) : view,
+					refusal === "member-history"
+						? () => ({ ...view(), invalidIds: ["a"] })
+						: refusal === "preparation-unavailable"
+							? () => ({ ...view(), prepareGroupSubmission: undefined })
+							: view,
 				stageSubmission:
 					refusal === "stage-refused"
 						? () => false

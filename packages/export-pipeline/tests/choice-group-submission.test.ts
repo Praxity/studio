@@ -206,10 +206,14 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 		);
 		expect(runtime.getInteractions().at(-1)).toMatchObject({ id: "g", score: 100 });
 	});
-	for (const violation of ["digest", "member"] as const) {
+	for (const violation of ["digest", "member", "capability"] as const) {
 		it(`${format} refuses a candidate with an invalid ${violation} before any write`, () => {
-			const { writes, invalidate } = launch(format, true);
+			const { writes, invalidate, provider, view } = launch(format, true);
 			if (violation === "member") invalidate();
+			if (violation === "capability")
+				Object.assign(provider, {
+					getChoiceDependencyView: () => ({ ...view(), prepareGroupSubmission: undefined }),
+				});
 			submit(violation === "digest" ? `sha256:${"f".repeat(64)}` : submitted.contentSignature);
 			expect(writes).toEqual([]);
 		});

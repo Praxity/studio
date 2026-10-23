@@ -296,7 +296,12 @@ export interface ChoiceDependencyView {
 
 /** Readers receive the status owner with the evidence, without importing admission code. */
 export interface ChoiceDependencyEvidence extends ChoiceDependencyView {
-	status(id: string): ReturnType<typeof choiceDependencyStatus>;
+	status(id: string, candidate?: ChoiceDependencyView): ReturnType<typeof choiceDependencyStatus>;
+	/** Group consumers use the owner without loading dormant admission into ordinary bundles. */
+	prepareGroupSubmission?(
+		id: string,
+		candidate: ChoiceDependencyView,
+	): ChoiceGroupSubmission | null;
 }
 
 /** One context for future readers; construction never admits, signs or writes an answer. */
@@ -314,7 +319,8 @@ export function createChoiceDependencyView(
 	if (facts.choiceStateInvalidIds.includes("*")) throw new Error("Invalid choice facts");
 	const preview = evidence.preview;
 	const view: ChoiceDependencyEvidence = {
-		status: (id) => choiceDependencyStatus(id, view),
+		status: (id, candidate = view) => choiceDependencyStatus(id, candidate),
+		prepareGroupSubmission: prepareChoiceGroupSubmission,
 		invalidIds: facts.choiceStateInvalidIds,
 		rows: evidence.rows,
 		questions: facts.choiceStateQuestions,

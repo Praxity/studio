@@ -1,8 +1,4 @@
-import {
-	type ChoiceDependencyEvidence,
-	choiceDependencyStatus,
-	prepareChoiceGroupSubmission,
-} from "@praxity/shared-blocks/choice-learner-state";
+import type { ChoiceDependencyEvidence } from "@praxity/shared-blocks/choice-learner-state";
 import type { AdmittedChoiceStateFacts } from "@praxity/shared-blocks/choice-state-facts";
 import { isSmallPreviewDocument } from "@praxity/shared-blocks/course-preview-protocol";
 import type { LearnerBlockResponseTruncated } from "@praxity/shared-blocks/learner-block-response";
@@ -442,12 +438,12 @@ export function initializeCourseHost(
 				...view,
 				readState: (id: string) => (id === groupId ? state : view.readState(id)),
 			};
-			const submitted = prepareChoiceGroupSubmission(groupId, selectedView);
+			const submitted = view.prepareGroupSubmission?.(groupId, selectedView);
 			if (!submitted || submitted.contentSignature !== detail.contentSignature) return;
 			// The candidate precedes its write, preserving the existing objective-first order.
 			const candidateView: ChoiceDependencyEvidence = {
 				...selectedView,
-				status: (id) => choiceDependencyStatus(id, candidateView),
+				status: (id) => view.status(id, candidateView),
 				rows: [
 					...view.rows,
 					{

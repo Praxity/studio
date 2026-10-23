@@ -1,5 +1,5 @@
 import { assessmentGroupRequirements } from "@praxity/content-model";
-import { type ChoiceGroupSubmission, prepareChoiceGroupSubmission } from "../choice-learner-state";
+import type { ChoiceGroupSubmission } from "../choice-learner-state";
 import { journalDownloadLabels } from "../i18n/journal-download-labels";
 import {
 	learnerRuntime,
@@ -420,10 +420,10 @@ function showResults(
 		};
 		const submission =
 			view?.groups && Object.hasOwn(view.groups, group.id)
-				? prepareChoiceGroupSubmission(group.id, {
+				? (view.prepareGroupSubmission?.(group.id, {
 						...view,
 						readState: (id) => (id === group.id ? selectedState : view.readState(id)),
-					})
+					}) ?? null)
 				: undefined;
 		const restorePicker = () =>
 			root

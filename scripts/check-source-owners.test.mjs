@@ -68,15 +68,7 @@ test("choice admission stays dormant in production consumers, including aliases 
 				"packages/shared-blocks/src/blocks/AssessmentBlock.tsx",
 				"packages/shared-blocks/src/viewer/assessment-group-runtime.ts",
 			]) {
-				const groupOwner =
-					name === "prepareChoiceGroupSubmission" &&
-					path !== "packages/shared-blocks/src/blocks/AssessmentBlock.tsx";
-				const statusOwner =
-					name === "choiceDependencyStatus" &&
-					path === "packages/export-pipeline/template/src/hosts/course-host.ts";
-				if (groupOwner || statusOwner)
-					assert.deepEqual(checkDormantChoiceImports(path, source), []);
-				else assert.match(checkDormantChoiceImports(path, source).join("\n"), new RegExp(name));
+				assert.match(checkDormantChoiceImports(path, source).join("\n"), new RegExp(name));
 			}
 			assert.deepEqual(
 				checkDormantChoiceImports(
@@ -128,24 +120,6 @@ test("dormant admission permits the existing envelope API, shared types and the 
 		),
 		[],
 	);
-});
-
-test("group preparation owners still refuse whole-module and unapproved admission loads", () => {
-	for (const path of [
-		"packages/export-pipeline/template/src/hosts/course-host.ts",
-		"packages/shared-blocks/src/viewer/assessment-group-runtime.ts",
-	]) {
-		for (const source of [
-			'import "@praxity/shared-blocks/choice-learner-state";',
-			'import {} from "@praxity/shared-blocks/choice-learner-state";',
-			'import { futureExport } from "@praxity/shared-blocks/choice-learner-state";',
-			'import states, { prepareChoiceGroupSubmission } from "@praxity/shared-blocks/choice-learner-state";',
-			'import * as states from "@praxity/shared-blocks/choice-learner-state";',
-			'const states = await import("@praxity/shared-blocks/choice-learner-state");',
-			'export * from "@praxity/shared-blocks/choice-learner-state";',
-		])
-			assert.notDeepEqual(checkDormantChoiceImports(path, source), []);
-	}
 });
 
 test("the dormant tracker imports evidence types without admission or hashing code", () => {
