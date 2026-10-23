@@ -13,6 +13,7 @@ import { admitChoiceStateFacts, type ChoiceAssessmentFacts } from "./choice-stat
 import type { LearnerStateValue, SavedAssessmentState } from "./learner-state";
 import * as learnerState from "./learner-state";
 
+// Namespace fallbacks make the base fail on assertions, not missing exports.
 // Independent Node crypto/Buffer vectors, including the full and compact group payloads.
 const full = "sha256:e4df374aeafe8ae449c0321eca27fe0d42f77d070f28050db87e4957bc86e30d";
 const short = "s96:5N83Sur-iuRJwDIe";
@@ -106,12 +107,23 @@ it("projects only choice evidence at the SCORM 1.2 destination without rewriting
 		{ ...signed, kind: "assessmentGroup" },
 		{ ...signed, assessmentType: "freeResponse" },
 		{ ...signed, contentSignature: "broken" },
-	])
+	]) {
+		expect(() => project(value as LearnerStateValue, "scorm12")).not.toThrow();
 		expect(project(value as LearnerStateValue, "scorm12")).toBe(value);
+	}
 	expect(project(compact as unknown as LearnerStateValue, "scorm12")).toEqual(compact);
 	expect(learnerState.choiceEvidenceSignature?.(full, "scorm12")).toBe(short);
+	expect(() => learnerState.choiceEvidenceSignature?.(short, "scorm12")).not.toThrow();
 	expect(learnerState.choiceEvidenceSignature?.(short, "scorm12")).toBe(short);
 	expect(learnerState.choiceEvidenceSignature?.(full)).toBe(full);
+});
+
+it.each([
+	[`sha256:${"ff".repeat(32)}`, "s96:________________"],
+	[`sha256:000102030405060708090aff${"00".repeat(20)}`, "s96:AAECAwQFBgcICQr_"],
+])("encodes URL-safe underscore evidence for %s", (signature, expected) => {
+	expect(learnerState.choiceEvidenceSignature?.(signature, "scorm12")).toBe(expected);
+	expect(learnerState.isScorm12ChoiceSignature?.(expected)).toBe(true);
 });
 
 it("admits the exact compact digest but treats changed options and added distractors as history", () => {
@@ -130,6 +142,8 @@ it("admits the exact compact digest but treats changed options and added distrac
 it.each([
 	null,
 	"",
+	"xs96:5N83Sur-iuRJwDIe",
+	" s96:5N83Sur-iuRJwDIe",
 	"s96:5N83Sur-iuRJwDI",
 	"s96:5N83Sur-iuRJwDIe=",
 	"s96:5N83Sur+iuRJwDIe",
@@ -261,6 +275,7 @@ describe.each([
 			payload: { ...payload, dependencies: [["a", short]] as [string, string][] },
 			contentSignature: compactDigest,
 		};
+		expect(() => choiceGroupSignature(submitted.payload)).not.toThrow();
 		const input = groupView(signed, [
 			{ id: "g", contentSignature: compactDigest, memberIds: ["a"] },
 		]);
@@ -339,6 +354,39 @@ it("retains per-ID corruption while refusing an unidentifiable whole map", () =>
 	}
 });
 
+it("an explicitly invalid group never receives legacy aggregate credit", () => {
+	expect(
+		choiceDependencyStatus("g", {
+			invalidIds: ["g"],
+			questions: {},
+			signatures: {},
+			rows: [{ id: "g" }],
+			groups: { g: { mode: "all", memberIds: ["a"], requiredIds: ["a"] } },
+			readState: () => undefined,
+		}),
+	).toBe("history");
+});
+
+it("a rejected question signature cannot grant credit to an admitted group with the same ID", () => {
+	const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+	try {
+		const admitted = admitChoiceStateFacts({
+			choiceStateQuestions: {},
+			choiceStateSignatures: { g: full },
+			choiceStateGroups: { g: { mode: "all", memberIds: ["a"], requiredIds: ["a"] } },
+		});
+		const input = createChoiceDependencyView(admitted, {
+			rows: [{ id: "g" }],
+			readState: () => undefined,
+		});
+		expect(input.invalidIds).toEqual(["g"]);
+		expect(input.groups?.g).toEqual({ mode: "all", memberIds: ["a"], requiredIds: ["a"] });
+		expect(choiceDependencyStatus("g", input)).toBe("history");
+	} finally {
+		warn.mockRestore();
+	}
+});
+
 it.each(["a", "g"])(
 	"retains a rejected latest %s row rather than reviving previous evidence",
 	(id) => {
@@ -376,6 +424,10 @@ it.each([
 	["invalid members", { memberIds: ["a", 7] }],
 	["sparse members", { memberIds: new Array(1) }],
 	["retained rejection", { choiceEvidenceInvalid: true }],
+	["false marker", { choiceEvidenceInvalid: false }],
+	["string marker", { choiceEvidenceInvalid: "true" }],
+	["numeric marker", { choiceEvidenceInvalid: 1 }],
+	["null marker", { choiceEvidenceInvalid: null }],
 ])("dormant metadata retains %s without unsigned fallback", (_name, input) => {
 	const normalize = reporting.assessmentEvidenceMetadata ?? reporting.assessmentAttemptMetadata;
 	expect(normalize(input).choiceEvidenceInvalid).toBe(true);
@@ -404,6 +456,8 @@ it("keeps ordinary metadata unchanged and admits both evidence forms only throug
 	expect(normalize(ordinary)).toEqual(reporting.assessmentAttemptMetadata(ordinary));
 	expect(normalize({ memberIds: [] }).memberIds).toEqual([]);
 	expect(reporting.assessmentAttemptMetadata({ memberIds: [] }).memberIds).toBeUndefined();
-	for (const input of [undefined, null, 0, "row"])
+	for (const input of [undefined, null, 0, "row"]) {
+		expect(() => normalize(input)).not.toThrow();
 		expect(normalize(input)).toEqual(reporting.assessmentAttemptMetadata(input));
+	}
 });

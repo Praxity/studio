@@ -116,10 +116,11 @@ export function assessmentEvidenceMetadata(input?: unknown): AssessmentAttemptMe
 	const { contentSignature, choiceEvidenceInvalid, memberIds } = input as AssessmentAttemptMetadata;
 	const validSignature =
 		isChoiceContentSignature(contentSignature) || isScorm12ChoiceSignature(contentSignature);
+	// Keep ordinary member normalization unchanged until activation unifies the readers.
 	const validMembers = Array.isArray(memberIds) && Array.from(memberIds).every(isNonemptyString);
 	return {
 		...metadata,
-		...(choiceEvidenceInvalid === true ||
+		...(choiceEvidenceInvalid !== undefined ||
 		(contentSignature !== undefined && !validSignature) ||
 		(memberIds !== undefined && !validMembers)
 			? { choiceEvidenceInvalid: true as const }

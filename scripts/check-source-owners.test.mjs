@@ -4,6 +4,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { test } from "node:test";
+import ts from "typescript";
 import {
 	checkDisplayIdImports,
 	checkDormantChoiceImports,
@@ -15,6 +16,35 @@ import {
 	selfCheckAuthorOwners,
 	sourceOwnerAllowlist,
 } from "./check-source-owners.mjs";
+
+test("learner-state syntax keeps imports type-only so hashing cannot enter adapter bundles", () => {
+	const path = "packages/shared-blocks/src/learner-state.ts";
+	const file = ts.createSourceFile(
+		path,
+		readFileSync(new URL(`../${path}`, import.meta.url), "utf8"),
+		ts.ScriptTarget.Latest,
+		true,
+	);
+	const runtimeImports = [];
+	function visit(node) {
+		if (
+			(ts.isImportDeclaration(node) && !node.importClause?.isTypeOnly) ||
+			(ts.isExportDeclaration(node) && node.moduleSpecifier && !node.isTypeOnly) ||
+			(ts.isImportEqualsDeclaration(node) && !node.isTypeOnly) ||
+			(ts.isCallExpression(node) &&
+				(node.expression.kind === ts.SyntaxKind.ImportKeyword ||
+					(ts.isIdentifier(node.expression) && node.expression.text === "require")))
+		)
+			runtimeImports.push(node.getText(file));
+		ts.forEachChild(node, visit);
+	}
+	visit(file);
+	assert.deepEqual(
+		runtimeImports,
+		[],
+		"learner-state syntax must not load runtime hashing, directly or through another module",
+	);
+});
 
 test("choice admission stays dormant in production consumers, including aliases and whole-module access", () => {
 	for (const name of [
