@@ -111,9 +111,9 @@ it("projects only choice evidence at the SCORM 1.2 destination without rewriting
 		expect(() => project(value as LearnerStateValue, "scorm12")).not.toThrow();
 		expect(project(value as LearnerStateValue, "scorm12")).toBe(value);
 	}
+	expect(() => learnerState.choiceEvidenceSignature?.(short, "scorm12")).not.toThrow();
 	expect(project(compact as unknown as LearnerStateValue, "scorm12")).toEqual(compact);
 	expect(learnerState.choiceEvidenceSignature?.(full, "scorm12")).toBe(short);
-	expect(() => learnerState.choiceEvidenceSignature?.(short, "scorm12")).not.toThrow();
 	expect(learnerState.choiceEvidenceSignature?.(short, "scorm12")).toBe(short);
 	expect(learnerState.choiceEvidenceSignature?.(full)).toBe(full);
 });
