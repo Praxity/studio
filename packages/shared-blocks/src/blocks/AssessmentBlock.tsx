@@ -53,15 +53,21 @@ import {
 import {
 	assessmentShuffle,
 	choiceAnswerResult,
+	choiceContentSignature,
 	choiceInteractionReport,
+	choiceStateQuestion,
 	DONT_KNOW,
 } from "../assessment-choice";
+import {
+	prepareChoiceAssessmentState,
+	restoreChoiceAssessmentState,
+} from "../choice-learner-state";
 import type { ChoiceAssessmentFacts } from "../choice-state-facts";
 import { RequiredIndicator } from "../components";
 import { hotspotGeometry } from "../hotspot-geometry";
 import { assessmentAttemptsLabel, assessmentPointsLabel } from "../i18n/assessment-labels";
 import { useLocale } from "../i18n/locale-context";
-import { interpolate } from "../i18n/strings";
+import { getChoiceRecoveryStrings, interpolate } from "../i18n/strings";
 import { useStrings } from "../i18n/use-strings";
 import { inlineMarkdown } from "../inline-markdown";
 import { isJournal, journalSavedDate, readJournalSavedAt } from "../journal";
@@ -1847,7 +1853,7 @@ export function PreviewAssessmentBlock({
 	reportTitle?: string;
 	/** Total reporting budget for runtimes with a bounded serialized choice response. */
 	choiceResponseLimit?: number;
-	/** Published facts are computed once; editor previews retain their existing local policy. Signatures stay dormant. */
+	/** Published facts are computed once; recovery requires the optional evidence capability. */
 	compiledChoiceFacts?: ChoiceAssessmentFacts;
 	passGate?: boolean;
 }) {
@@ -1856,6 +1862,7 @@ export function PreviewAssessmentBlock({
 	const locale = useLocale();
 	const s = useStrings(locale);
 	const assessmentType = data.assessmentType ?? "choice";
+	const recoveryStrings = getChoiceRecoveryStrings(locale);
 	const response = data.response;
 	const dontKnow =
 		compiledChoiceFacts?.question.dontKnow ??
@@ -1925,24 +1932,61 @@ export function PreviewAssessmentBlock({
 		const rawItems = (response as SequenceResponse).items ?? [];
 		return rawItems.length > 0 ? shuffleArray(rawItems) : rawItems;
 	}, [assessmentType, (response as SequenceResponse)?.items?.length]);
-	const restoredCandidate = useMemo(
-		() => restoreAssessmentState(blockId, assessmentType, response, dontKnow),
-		[assessmentType, blockId, response, dontKnow],
+	const choiceStateProvider =
+		typeof window === "undefined" ? undefined : window.__praxityBlockState;
+	const choiceFacts = useMemo(
+		() =>
+			data.response?.type === "choice" && choiceStateProvider?.getChoiceDependencyView?.()
+				? (compiledChoiceFacts ?? {
+						question: choiceStateQuestion(data, dontKnow),
+						signature: choiceContentSignature(data, dontKnow),
+					})
+				: undefined,
+		[compiledChoiceFacts, choiceStateProvider, data, dontKnow],
 	);
-	const restoredCorrect =
-		Boolean(restoredCandidate?.checked) &&
-		canAutoScore &&
-		response !== undefined &&
-		isSavedAnswerCorrect(assessmentType, response, restoredCandidate?.answer ?? null);
+	const choiceRestore = useMemo(() => {
+		if (!choiceFacts) return null;
+		const view =
+			typeof window === "undefined"
+				? undefined
+				: window.__praxityBlockState?.getChoiceDependencyView?.();
+		const restored = restoreChoiceAssessmentState(
+			readLearnerBlockState(blockId),
+			choiceFacts,
+			view?.buildProof?.(blockId),
+		);
+		const recovering =
+			restored.current?.checked === false &&
+			restored.history.some((entry) => isRecord(entry) && entry.checked === true);
+		return view && view.status(blockId) === "history" && !recovering
+			? { ...restored, status: "review" as const, current: null }
+			: restored;
+	}, [blockId, choiceFacts]);
+	const restoredCandidate = useMemo(
+		() =>
+			choiceRestore
+				? choiceRestore.current
+				: restoreAssessmentState(blockId, assessmentType, response, dontKnow),
+		[assessmentType, blockId, response, dontKnow, choiceRestore],
+	);
+	const [newChoiceAttempt, setNewChoiceAttempt] = useState(false);
+	const choiceReviewPending = choiceRestore?.status === "review" && !newChoiceAttempt;
+	const restoredCorrect = choiceRestore
+		? (choiceRestore.current?.correct ?? false)
+		: Boolean(restoredCandidate?.checked) &&
+			canAutoScore &&
+			response !== undefined &&
+			isSavedAnswerCorrect(assessmentType, response, restoredCandidate?.answer ?? null);
 	const restoredCompleted = Boolean(
 		restoredCandidate?.checked &&
 			(!canAutoScore || restoredCorrect || restoredCandidate.attemptCount >= maxAttempts),
 	);
-	const restored =
-		restoredCandidate?.correct === restoredCorrect &&
-		restoredCandidate.completed === restoredCompleted &&
-		(!restoredCandidate.checked || restoredCandidate.attemptCount > 0) &&
-		(maxAttempts === Number.POSITIVE_INFINITY || restoredCandidate.attemptCount <= maxAttempts)
+	const restored = choiceRestore
+		? choiceRestore.current
+		: restoredCandidate?.correct === restoredCorrect &&
+				restoredCandidate.completed === restoredCompleted &&
+				(!restoredCandidate.checked || restoredCandidate.attemptCount > 0) &&
+				(maxAttempts === Number.POSITIVE_INFINITY || restoredCandidate.attemptCount <= maxAttempts)
 			? restoredCandidate
 			: null;
 	const restoredAnswer = restored?.answer;
@@ -2231,7 +2275,17 @@ export function PreviewAssessmentBlock({
 	const lastPersistedState = useRef({ blockId, serialized: serializedBlockState });
 	const [saveResult, setSaveResult] = useState(() => readLearnerBlockSaveResult(blockId));
 	function persistAssessmentState(next: SavedAssessmentState, current: () => boolean) {
-		const written = writeLearnerBlockState(blockId, next as unknown as LearnerStateValue, current);
+		const prepared = choiceFacts
+			? prepareChoiceAssessmentState(readLearnerBlockState(blockId), next, choiceFacts, {
+					writtenAt: Date.now(),
+					proof: window.__praxityBlockState?.getChoiceDependencyView?.()?.buildProof?.(blockId),
+				})
+			: next;
+		const written = writeLearnerBlockState(
+			blockId,
+			prepared as unknown as LearnerStateValue,
+			current,
+		);
 		if (!current()) return false;
 		const result = readLearnerBlockSaveResult(blockId);
 		setSaveResult(result);
@@ -2397,7 +2451,7 @@ export function PreviewAssessmentBlock({
 		}
 
 		const responseText = currentResponseText();
-		if (atomicSubmission) {
+		if (atomicSubmission || choiceRestore) {
 			const next = {
 				...JSON.parse(serializedBlockState),
 				attemptCount: nextAttempt,
@@ -2413,10 +2467,7 @@ export function PreviewAssessmentBlock({
 					? provider.stageSubmission(blockId, write)
 					: write();
 			if (written) lastPersistedState.current.serialized = JSON.stringify(next);
-			else if (
-				data.private !== true &&
-				readLearnerBlockSaveResult(blockId)?.status === "not-saved"
-			) {
+			else if (atomicSubmission && readLearnerBlockSaveResult(blockId)?.status === "not-saved") {
 				refuseSubmission();
 				return;
 			}
@@ -2437,6 +2488,7 @@ export function PreviewAssessmentBlock({
 						.trim(),
 					language: locale,
 					assessmentType,
+					...(choiceFacts ? { contentSignature: choiceFacts.signature } : {}),
 					choiceDefinition: choiceReport()?.choiceDefinition,
 					correct: submittedCorrect,
 					...(unknownAnswer ? { result: "neutral" } : {}),
@@ -2486,7 +2538,7 @@ export function PreviewAssessmentBlock({
 						shuffle={shuffle}
 						selectedValue={selectedOption}
 						selectedValues={choiceSelectedIds}
-						disabled={isChecked}
+						disabled={isChecked || choiceReviewPending}
 						revealAnswers={Boolean(
 							isChecked &&
 								!isCorrectAnswer &&
@@ -2500,7 +2552,10 @@ export function PreviewAssessmentBlock({
 						}
 						showAuthoredFeedback={authoredFeedbackEnabled}
 						stemText={stemPlainText}
-						describedBy={describedBy}
+						describedBy={joinIds(
+							describedBy,
+							choiceReviewPending ? `${blockId}-choice-history-notice` : undefined,
+						)}
 						required={effectiveRequired}
 						feedbackDescribedBy={
 							isChecked && (revealAnswers || (data.feedbackEnabled ?? isGraded))
@@ -2975,6 +3030,26 @@ export function PreviewAssessmentBlock({
 						</Text>
 					)}
 
+				{(choiceReviewPending || (newChoiceAttempt && retryFocusPending)) && (
+					<Stack gap="xs">
+						<Text id={`${blockId}-choice-history-notice`} size="sm" c="dimmed">
+							{recoveryStrings.choiceHistoryNotice}
+						</Text>
+						<Button
+							className="praxity-assessment-new-attempt"
+							variant="outline"
+							size="md"
+							aria-describedby={`${blockId}-choice-history-notice`}
+							onClick={() => {
+								writeCurrent.current = selfCheckEpochTicket();
+								setNewChoiceAttempt(true);
+								setRetryFocusPending(true);
+							}}
+						>
+							{recoveryStrings.choiceNewAttempt}
+						</Button>
+					</Stack>
+				)}
 				<div ref={responseRef}>{renderResponse()}</div>
 
 				<div

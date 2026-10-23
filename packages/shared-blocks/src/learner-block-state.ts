@@ -34,7 +34,7 @@ export interface LearnerBlockStateRuntime {
 		writeObjectives: GroupObjectiveWriter;
 	};
 	/** Absent until the host admits evidence-aware consumers together. */
-	getChoiceDependencyView?(): ChoiceDependencyEvidence;
+	getChoiceDependencyView?(): ChoiceDependencyEvidence | undefined;
 	get(blockId: string): LearnerStateValue | undefined;
 	/** Read-only saved envelope revision; null cannot establish preview build evidence. */
 	getSavedBuildRevision?(blockId: string): string | null;

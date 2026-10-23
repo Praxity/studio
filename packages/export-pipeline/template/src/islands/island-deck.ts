@@ -239,7 +239,7 @@ export function initDeck(): (() => void) | undefined {
 			gateSatisfied(
 				gate.rule,
 				response.correct,
-				window.__praxityBlockState?.getChoiceDependencyView
+				window.__praxityBlockState?.getChoiceDependencyView?.()
 					? learnerTracker(mount)?.isAssessmentFinal?.(gate.id)
 					: false,
 			)

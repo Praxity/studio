@@ -252,12 +252,14 @@ export class CourseTracker {
 		correct?: boolean,
 		score?: number,
 		options?: TrackInteractionOptions,
+		view?: ChoiceDependencyEvidence,
 	): void {
 		this.runtime.trackInteraction(id, response, correct, score, options);
 
-		if (score !== undefined) this.writeOutcome("score");
+		if (score !== undefined) this.writeOutcome("score", this.runtime, view);
 
-		this.checkCompletion();
+
+		this.checkCompletion(view);
 	}
 
 	/**
@@ -312,17 +314,19 @@ export class CourseTracker {
 		score: number,
 		passed: boolean,
 		runtime = this.runtime,
+		view?: ChoiceDependencyEvidence,
 		contentSignature?: unknown,
 	): boolean {
-		return this.writeOutcome({ id, score, passed, contentSignature }, runtime);
+		return this.writeOutcome({ id, score, passed, contentSignature }, runtime, view);
+
 	}
 
 	finish(explicitFinish = false, runtime = this.runtime): boolean {
 		return this.writeOutcome(explicitFinish ? "finish" : "end", runtime);
 	}
 
-	private writeOutcome(intent: OutcomeIntent = "check", runtime = this.runtime): boolean {
-		const view = this.config.getChoiceDependencyView?.();
+	private writeOutcome(intent: OutcomeIntent = "check", runtime = this.runtime, candidate?: ChoiceDependencyEvidence): boolean {
+		const view = candidate ?? this.config.getChoiceDependencyView?.();
 		const outcome = this.outcome(intent, view);
 		return (
 			this.config.writeObjectives?.(runtime, outcome, view, intent) ??
@@ -369,8 +373,9 @@ export class CourseTracker {
 	 * Evaluate whether the course should be marked as completed, passed, or
 	 * failed based on the configured completion method.
 	 */
-	checkCompletion(): void {
-		this.writeOutcome();
+	checkCompletion(view?: ChoiceDependencyEvidence): void {
+		this.writeOutcome("check", this.runtime, view);
+
 	}
 
 	/** A decided commit preserves the adapter's existing write log. */

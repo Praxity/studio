@@ -75,6 +75,8 @@ export interface SCORMRuntime {
 	getUnsavedBlockState?(blockId: string): LearnerStateValue | undefined;
 	setUnsavedBlockState?(blockId: string, value: LearnerStateValue): boolean;
 	stageSubmission?(blockId: string, write: () => boolean): boolean;
+	/** Discard only the matching provisional submission when its host refuses reporting. */
+	abortSubmission?(blockId: string): void;
 	getBlockSaveResult?(blockId: string): LearnerBlockSaveResult | undefined;
 	/** Only host-provided identities may select a durable private learner store. */
 	getLearnerIdentity?(): { learnerId: string; attemptId?: string; newAttempt?: boolean } | null;

@@ -1277,12 +1277,15 @@ describe("computeViewerSourceHash", () => {
 			}
 		});
 
-		it("keeps dormant admission and hashing out of SCORM support", () => {
-			expect(buildInputs).not.toContain(
+		it("keeps dormant recovery admission in the assessment UI and out of SCORM support", async () => {
+			expect(buildInputs).toContain(
 				path.resolve(import.meta.dirname, "../../../shared-blocks/src/choice-learner-state.ts"),
 			);
 			const support = result.manifest.hostDependencies?.scorm12?.[0];
 			if (!support) throw new Error("Missing SCORM support");
+			const source = await readFile(path.join(outDir, support), "utf8");
+			expect(source).not.toContain("Invalid compiled choice facts");
+			expect(source).not.toContain("choiceEvidenceInvalid");
 			expect(result.manifest.thirdPartyNotices?.outputs[support] ?? []).not.toEqual(
 				expect.arrayContaining([expect.stringMatching(/^@noble\/hashes@/)]),
 			);
@@ -1307,10 +1310,9 @@ describe("computeViewerSourceHash", () => {
 			// Earlier full enhancer maxima: page 43,137 B gzip; deck 135,602 B gzip.
 			// Owner C5 previously measured
 			// 39,577 / 131,639 B; HL04 caps were 36,864 / 129,024 B.
-			// Size caps don't block working features (owner rule): waiting and exit mechanics measure 136,755 B gzip for the deck, plus 1 KiB rounded up to 256 B; tighten during final size work.
-			// Size caps don't block working features (owner rule): dormant gate/display support measures 44,302 B gzip for the page; round up to 256 B.
-			// Keep this tighter page cap during prerequisites; measure the usual 1 KiB headroom with activation.
-			const caps = { page: 44_544, deck: 137_984 };
+			// Recovery measures at most 138,176 B gzip for the deck; add 1 KiB rounded up to 256 B.
+			// Size caps don't block working features (owner rule): group refusal/rollback runtime measures 44,590 B gzip for the page; add 1 KiB rounded up to 256 B, tighten during final size work.
+			const caps = { page: 45_824, deck: 139_264 };
 			const page = {
 				id: "highlight-page",
 				title: "Highlight",
@@ -1353,10 +1355,13 @@ describe("computeViewerSourceHash", () => {
 								),
 							)
 						).reduce((sum, bytes) => sum + bytes, 0);
-						expect(
-							gzip,
-							`highlight ${host} ${deck ? "deck" : "page"} ${classic ? "classic" : "ESM"} full initial JS gzip`,
-						).toBeLessThanOrEqual(deck ? caps.deck : caps.page);
+						// Report every exceeded format in one run.
+						expect
+							.soft(
+								gzip,
+								`highlight ${host} ${deck ? "deck" : "page"} ${classic ? "classic" : "ESM"} full initial JS gzip`,
+							)
+							.toBeLessThanOrEqual(deck ? caps.deck : caps.page);
 					}
 				}
 		});
@@ -1776,12 +1781,14 @@ describe("computeViewerSourceHash", () => {
 					// Owner C5: focus restoration adds 2,541 B across the two adapters.
 					// Measured 27,750 B + 1 KiB, rounded up to 256 B. Full page/deck caps stay unchanged.
 					expect(bytes, `${island} initial raw bytes`).toBeLessThanOrEqual(28_928);
-				} else
+				}
+				// Size caps don't block working features (owner rule): group refusal/retry runtime measures 24,850 B raw; add 1 KiB rounded up to 256 B, tighten during final size work.
+				else
 					expect(bytes, `${island} initial raw bytes`).toBeLessThan(
 						island === "island-self-check"
 							? SELF_CHECK_INITIAL_RAW_CEILING
 							: (island === "island-assessment-group"
-									? 24.25
+									? 25.5
 									: island === "island-rating"
 										? 18
 										: 16) * 1024,
@@ -1837,7 +1844,8 @@ describe("computeViewerSourceHash", () => {
 					),
 				)
 			).reduce((total, bytes) => total + bytes, 0);
-			expect(narrationGzipBytes).toBeLessThan(80 * 1024);
+			// Recovery's shared closure measures 82,156 B gzip; add 1 KiB rounded up to 256 B.
+			expect(narrationGzipBytes).toBeLessThan(83_200);
 			for (const file of narrationFiles) {
 				expect(await readFile(path.join(islandsDir, file), "utf-8")).not.toContain("mantine");
 			}
@@ -1850,8 +1858,8 @@ describe("computeViewerSourceHash", () => {
 				)
 			).reduce((total, bytes) => total + bytes, 0);
 			// owner 2026-10-11: raise size limits when they block working features; size optimisation at the end.
-			// 248 KiB for the standalone pass mark's finality and outcome reads (246,259 bytes).
-			expect(assessmentGzipBytes).toBeLessThan(248 * 1024);
+			// Recovery measures 256,599 B gzip; add 1 KiB rounded up to 256 B.
+			expect(assessmentGzipBytes).toBeLessThan(257_792);
 			expect(navFiles.length).toBeLessThan(result.manifest.islandFiles.length);
 			for (const file of navFiles) {
 				expect(await readFile(path.join(islandsDir, file), "utf-8")).not.toBe("");

@@ -1,3 +1,4 @@
+import type { ChoiceDependencyEvidence } from "@praxity/shared-blocks/choice-learner-state";
 import type { AdmittedChoiceStateFacts } from "@praxity/shared-blocks/choice-state-facts";
 import { isSmallPreviewDocument } from "@praxity/shared-blocks/course-preview-protocol";
 import type { LearnerBlockResponseTruncated } from "@praxity/shared-blocks/learner-block-response";
@@ -427,22 +428,44 @@ export function initializeCourseHost(
 		const hasScore = Number.isFinite(score);
 		const passed = detail.passed === true;
 		const groupId = String(detail.groupId ?? "");
+		let submissionView: ChoiceDependencyEvidence | undefined;
+		const view = hostWindow.__praxityBlockState?.getChoiceDependencyView?.();
+		if (view?.groups && Object.hasOwn(view.groups, groupId)) {
+			// The candidate precedes its write, preserving the existing objective-first order.
+			submissionView =
+				view.verifyGroupSubmission?.(groupId, detail, {
+					correct: typeof detail.correct === "boolean" ? detail.correct : undefined,
+					memberIds: assessmentReportingOptions(detail, page.pageTitle).memberIds,
+				}) ?? undefined;
+			if (!submissionView) {
+				runtime?.abortSubmission?.(groupId);
+				event.preventDefault();
+				return;
+			}
+		}
 		// Keep the event's existing adapter and ticket; tracker writes have their own lifetime.
 		if (
 			hasScore &&
 			runtime &&
-			tracker.trackGroupObjective(groupId, score, passed, runtime, detail.contentSignature) ===
+			tracker.trackGroupObjective(groupId, score, passed, runtime, submissionView, detail.contentSignature) ===
 				false
 		)
 			event.preventDefault();
+
 		if (!owned()) return;
-		tracker.trackInteraction(
-			groupId,
-			hasScore ? `${score}%` : "",
-			typeof detail.correct === "boolean" ? detail.correct : hasScore ? passed : undefined,
-			hasScore ? score : undefined,
-			assessmentReportingOptions(detail, page.pageTitle),
-		);
+		try {
+			tracker.trackInteraction(
+				groupId,
+				hasScore ? `${score}%` : "",
+				typeof detail.correct === "boolean" ? detail.correct : hasScore ? passed : undefined,
+				hasScore ? score : undefined,
+				assessmentReportingOptions(detail, page.pageTitle),
+				submissionView,
+			);
+		} catch (error) {
+			if (submissionView && runtime?.getBlockSaveResult?.(groupId)?.status === "not-saved") return;
+			throw error;
+		}
 		if (owned() && hostWindow.__praxityRuntime === runtime) runtime?.commit();
 	});
 
