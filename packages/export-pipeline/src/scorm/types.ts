@@ -19,8 +19,8 @@ export interface RuntimeCommitPreparation {
 }
 
 /** Preparation may read or adjust queued state, but cannot recursively commit it. */
-export function prepareRuntimeCommit(state: RuntimeCommitPreparation | null): boolean {
-	if (!state || state.commitPreparationInProgress) return false;
+export function prepareRuntimeCommit(state: RuntimeCommitPreparation): boolean {
+	if (state.commitPreparationInProgress) return false;
 	state.commitPreparationInProgress = true;
 	try {
 		state.prepareCommit?.();

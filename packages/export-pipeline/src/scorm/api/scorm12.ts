@@ -461,7 +461,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 	commit(): boolean {
 		this.ensureInitialized();
 		this.loadSuspendPayload();
-		if (!prepareRuntimeCommit(this.session)) return false;
+		if (!prepareRuntimeCommit(this.session as ScormSessionState)) return false;
 		return this.commitToLms();
 	}
 

@@ -216,7 +216,7 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	private commitToLms(terminating = false): boolean {
 		if (
 			!this.canCallLms(terminating) ||
-			(!terminating && !prepareRuntimeCommit(this.session)) ||
+			(!terminating && !prepareRuntimeCommit(this.session as ScormSessionState)) ||
 			!this.flushCompletion(terminating) ||
 			!this.prepareExit(terminating) ||
 			!this.canCallLms(terminating)

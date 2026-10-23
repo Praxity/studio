@@ -5,10 +5,9 @@ import { initAssessmentGroups } from "../../shared-blocks/src/viewer/assessment-
 import { Scorm12Runtime } from "../src/scorm/api/scorm12";
 import { Scorm2004Runtime } from "../src/scorm/api/scorm2004";
 import { resetSessionState } from "../src/scorm/api/session";
-import { XapiRuntime } from "../src/scorm/api/xapi";
+import { XapiRuntime, type XapiStatement } from "../src/scorm/api/xapi";
 import { LocalStorageRuntime } from "../src/scorm/local-storage-runtime";
 import type { SCORMRuntime } from "../src/scorm/types";
-import * as runtimeTypes from "../src/scorm/types";
 import { initializeScormCourseHost } from "../template/src/hosts/course-host";
 import { initDeck } from "../template/src/islands/island-deck";
 import { selfCheckDocument } from "../template/src/self-check-document";
@@ -435,10 +434,41 @@ describe.each(["scorm12", "scorm2004"] as const)("%s commit preparation", (forma
 	});
 });
 
-it("refuses preparation without an admitted runtime record", () => {
-	const prepare = () => runtimeTypes.prepareRuntimeCommit?.(null);
-	expect(prepare).not.toThrow();
-	expect(prepare()).toBe(false);
+it("xAPI prepares before building and sending the termination result", () => {
+	const dom = new JSDOM("", { url: "https://course.example/" });
+	cleanups.push(() => dom.window.close());
+	vi.stubGlobal("window", dom.window);
+	const writes: unknown[] = [];
+	vi.stubGlobal(
+		"fetch",
+		vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) => {
+			const statement = JSON.parse(String(init?.body)) as XapiStatement;
+			writes.push({ verb: statement.verb.id, result: statement.result });
+			return new Response(null, { status: 200 });
+		}),
+	);
+	const runtime = new XapiRuntime(
+		{
+			endpoint: "https://lrs.example/xapi/statements",
+			auth: "",
+			actorMode: "manual",
+			actor: { name: "Learner", mbox: "mailto:learner@example.com" },
+		},
+		"course",
+		dom.window.localStorage,
+	);
+	expect(runtime.initialize()).toBe(true);
+	runtime.setCompletion("completed");
+	runtime.setCommitPreparation?.(() => {
+		writes.push("prepare");
+		runtime.setCompletion("incomplete");
+	});
+	writes.length = 0;
+	expect(runtime.terminate()).toBe(true);
+	expect(writes).toEqual([
+		"prepare",
+		{ verb: "http://adlnet.gov/expapi/verbs/completed", result: { completion: false } },
+	]);
 });
 
 it.each(["local", "xapi"] as const)(
