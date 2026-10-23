@@ -1199,6 +1199,62 @@ describe("marker placement and learner controls", () => {
 		clock.flush();
 		expect(doc.querySelector(".prx-review-anchor-status")?.textContent).toBe("⚠ Not visible here");
 	});
+	it.each(["en", "fr"])(
+		"reserves a positive toolbar length for the C14 header and collapsed band (%s)",
+		async (locale) => {
+			let clock!: ReturnType<typeof manualFrames>;
+			let resize!: (target: Element) => void;
+			const { doc } = await open("", undefined, { ...settings, locale }, (dom) => {
+				clock = manualFrames(dom);
+				const observed = new Set<Element>();
+				Object.assign(dom.window, {
+					ResizeObserver: class {
+						constructor(callback: () => void) {
+							resize = (target) => {
+								if (observed.has(target)) callback();
+							};
+						}
+						observe(target: Element) {
+							observed.add(target);
+						}
+						disconnect() {
+							observed.clear();
+						}
+					},
+				});
+			});
+			await vi.waitFor(() => expect(doc.querySelector(".prx-review-pin")).not.toBeNull());
+			const header = doc.querySelector<HTMLElement>(".prx-review-header")!;
+			const sidebar = doc.querySelector<HTMLElement>(".prx-review-sidebar")!;
+			const toggle = doc.querySelector<HTMLButtonElement>(".prx-review-toggle")!;
+			let headerHeight = 56;
+			let bandHeight = 120;
+			header.getBoundingClientRect = () => box(0, 0, 320, headerHeight);
+			sidebar.getBoundingClientRect = () => box(0, 0, 320, bandHeight);
+			const space = () => doc.documentElement.style.getPropertyValue("--prx-review-toolbar-space");
+			clock.flush();
+			resize(doc.querySelector("main")!);
+			expect(space()).toBe("120px");
+			toggle.click();
+			expect(toggle.previousElementSibling?.className).toBe("prx-review-title");
+			expect(toggle.textContent).toBe(
+				locale === "fr" ? "Fermer les commentaires" : "Close comments",
+			);
+			expect(toggle.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
+			headerHeight = 72;
+			bandHeight = 800;
+			resize(header);
+			expect(space()).toBe("104px");
+			toggle.click();
+			headerHeight = 96;
+			bandHeight = 160;
+			resize(sidebar);
+			expect(space()).toBe("160px");
+			headerHeight = 144;
+			resize(header);
+			expect(space()).toBe("176px");
+		},
+	);
 	it("follows page-root layout shifts without invalidating cached resolution", async () => {
 		let clock!: ReturnType<typeof manualFrames>;
 		let resize!: () => void;
