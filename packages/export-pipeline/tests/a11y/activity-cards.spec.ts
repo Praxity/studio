@@ -69,11 +69,15 @@ for (const mode of ["light", "dark"] as const) {
 							const r = row.getBoundingClientRect();
 							const l = label.getBoundingClientRect();
 							const scroll = [];
-							for (let node: Element | null = row; node; node = node.parentElement)
+							for (let node: Element | null = row.parentElement; node; node = node.parentElement)
 								scroll.push({ left: node.scrollLeft, top: node.scrollTop });
 							return {
 								label: { x: l.x - r.x, y: l.y - r.y, width: l.width, height: l.height },
 								row: { x: r.x, y: r.y, width: r.width, height: r.height },
+								documentPosition: {
+									x: r.x + scroll.reduce((sum, offset) => sum + offset.left, 0),
+									y: r.y + scroll.reduce((sum, offset) => sum + offset.top, 0),
+								},
 								scroll,
 							};
 						});
@@ -108,6 +112,11 @@ for (const mode of ["light", "dark"] as const) {
 						expect(Math.abs(after.label[axis] - before.label[axis])).toBeLessThanOrEqual(0.5);
 					for (const axis of ["width", "height"] as const)
 						expect(Math.abs(after.row[axis] - before.row[axis])).toBeLessThanOrEqual(0.5);
+					for (const axis of ["x", "y"] as const)
+						expect(
+							Math.abs(after.documentPosition[axis] - before.documentPosition[axis]),
+							`${id} row document ${axis}`,
+						).toBeLessThanOrEqual(0.5);
 					const measured = await choiceBaselines(rows);
 					for (const result of measured) {
 						expect(result.delta, `${id} first-line baseline`).toBeLessThanOrEqual(1);
