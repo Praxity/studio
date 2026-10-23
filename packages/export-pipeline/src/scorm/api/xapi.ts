@@ -23,6 +23,8 @@ import { declaredCourseActivityId, isAbsoluteIri } from "../activity-id.ts";
 import {
 	DEVICE_DESTINATIONS,
 	type InteractionRecord,
+	prepareRuntimeCommit,
+	type RuntimeCommitPreparation,
 	type RuntimeDestinations,
 	type SCORMRuntime,
 	type TrackInteractionOptions,
@@ -164,6 +166,7 @@ export class XapiRuntime implements SCORMRuntime {
 	private actor: XapiActor | null;
 	private sendEnabled: boolean;
 	private initialized = false;
+	private commitPreparation: RuntimeCommitPreparation = {};
 	private completionStatus = "incomplete";
 	private successStatus: "passed" | "failed" | "unknown" = "unknown";
 	private score: { raw: number; min: number; max: number } | null = null;
@@ -379,6 +382,7 @@ export class XapiRuntime implements SCORMRuntime {
 		if (!this.initialized) {
 			return false;
 		}
+		if (!prepareRuntimeCommit(this.commitPreparation)) return false;
 
 		if (this.sendEnabled) {
 			const verb = this.completionVerbKey();
@@ -582,7 +586,12 @@ export class XapiRuntime implements SCORMRuntime {
 		return this.suspendData;
 	}
 
+	setCommitPreparation(prepare: () => void): void {
+		this.commitPreparation.prepareCommit = prepare;
+	}
+
 	commit(): boolean {
+		if (!prepareRuntimeCommit(this.commitPreparation)) return false;
 		// All statements are sent eagerly via sendStatement(), so commit is a
 		// no-op that clears the pending queue and returns true.
 		this.pendingStatements = [];
