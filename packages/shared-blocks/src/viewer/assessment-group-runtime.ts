@@ -5,6 +5,7 @@ import {
 	readLearnerBlockState,
 	writeLearnerBlockState,
 } from "../learner-block-state";
+import type { LearnerStateValue } from "../learner-state";
 import {
 	dispatchSelfCheckEvent,
 	observeSelfCheckLifetime,
@@ -165,6 +166,7 @@ function writeAssessmentGroupState(
 	completed: boolean,
 	current: () => boolean,
 ) {
+	const previous = readAssessmentGroupState(group);
 	return writeLearnerBlockState(
 		group.id,
 		{
@@ -173,6 +175,9 @@ function writeAssessmentGroupState(
 			mode: group.mode,
 			selectedMemberId,
 			completed,
+			...(previous && "submitted" in previous
+				? { submitted: previous.submitted as LearnerStateValue }
+				: {}),
 		},
 		current,
 	);

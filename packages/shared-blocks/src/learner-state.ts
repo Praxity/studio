@@ -70,6 +70,51 @@ export interface SavedAssessmentState {
 	history?: LearnerStateValue[];
 }
 
+export interface DeferredGroupObjective {
+	id: string;
+	score: number;
+	passed: boolean;
+}
+
+/** Syntax only. Material admission remains with the choice status owner. */
+export function readSubmittedAssessmentGroup(value: unknown):
+	| {
+			state: Record<string, LearnerStateValue>;
+			submitted: Record<string, LearnerStateValue>;
+			objective?: DeferredGroupObjective;
+	  }
+	| undefined {
+	if (
+		!isRecord(value) ||
+		value.version !== 1 ||
+		value.kind !== "assessmentGroup" ||
+		(value.mode !== "all" && value.mode !== "oneOf") ||
+		typeof value.completed !== "boolean" ||
+		(value.mode === "all"
+			? value.selectedMemberId !== null
+			: !isNonemptyString(value.selectedMemberId)) ||
+		!isRecord(value.submitted) ||
+		!isChoiceContentSignature(value.submitted.contentSignature)
+	)
+		return undefined;
+	const objective = value.submitted.deferredObjective;
+	if (
+		objective !== undefined &&
+		(!isRecord(objective) ||
+			!isNonemptyString(objective.id) ||
+			!isFiniteNumber(objective.score) ||
+			typeof objective.passed !== "boolean")
+	)
+		return undefined;
+	return {
+		state: value as Record<string, LearnerStateValue>,
+		submitted: value.submitted as Record<string, LearnerStateValue>,
+		...(objective === undefined
+			? {}
+			: { objective: objective as unknown as DeferredGroupObjective }),
+	};
+}
+
 export interface LearnerStateInteraction {
 	id: string;
 	response: string;

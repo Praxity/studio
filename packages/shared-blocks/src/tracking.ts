@@ -21,7 +21,7 @@ interface OutcomeRuntime {
 	setCompletion?(status: "incomplete" | "completed" | "passed" | "failed"): void;
 	getCompletion?(): string;
 	setCourseFailure?(failed: boolean): void;
-	trackObjective?(id: string, score: number, passed: boolean): void;
+	trackObjective?(id: string, score: number, passed: boolean): unknown;
 	terminate?(explicitFinish?: boolean): boolean;
 	suppressTerminationResult?(): void;
 	commit?(): unknown;
@@ -40,7 +40,7 @@ export function writeCourseOutcome(
 	}
 	if (outcome.objective) {
 		const { id, score, passed } = outcome.objective;
-		runtime.trackObjective?.(id, score, passed);
+		if (runtime.trackObjective?.(id, score, passed) === false) return false;
 	}
 	if (outcome.score !== undefined) runtime.setScore?.(outcome.score, 0, 100);
 	if (outcome.courseFailure !== undefined) runtime.setCourseFailure?.(outcome.courseFailure);

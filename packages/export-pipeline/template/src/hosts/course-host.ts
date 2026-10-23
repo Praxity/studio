@@ -146,8 +146,14 @@ export function initializeCourseHost(
 		runtime.setCommitPreparation?.(() => {
 			if (current() && hostWindow.__praxityRuntime === runtime) tracker.prepareCommit();
 		});
-	const createTracker = (runtime: SCORMRuntime, current: () => boolean) =>
+	const createTracker = (
+		runtime: SCORMRuntime,
+		current: () => boolean,
+		provider: LearnerBlockStateRuntime,
+	) =>
 		new CourseTracker(withLearnerStateAuthority(runtime, current), {
+			groupObjectiveState: withLearnerStateAuthority(provider, current),
+			getChoiceDependencyView: () => provider.getChoiceDependencyView?.(),
 			totalPages: page.totalPages,
 			completionMethod: page.completionMethod,
 			completionThreshold: page.completionThreshold,
@@ -177,7 +183,7 @@ export function initializeCourseHost(
 		if (provider && runtime && hostWindow.__praxityTracker && trackerLifetime !== lifetime) {
 			const current = () =>
 				(!authority || lifetime?.current() === true) && hostWindow.__praxityBlockState === provider;
-			const tracker = createTracker(runtime, current);
+			const tracker = createTracker(runtime, current, provider);
 			hostWindow.__praxityTracker = tracker;
 			bindCommitPreparation(runtime, tracker, current);
 			trackerLifetime = lifetime;
@@ -253,7 +259,7 @@ export function initializeCourseHost(
 				hostWindow.__praxityBlockState === provider;
 			preparing = false;
 			if (!provider || !owned()) return;
-			const tracker = createTracker(runtime, owned);
+			const tracker = createTracker(runtime, owned, provider);
 			bindCommitPreparation(runtime, tracker, owned);
 			const scormSession = adapter.installLifecycle?.(runtime, page, environment) === true;
 			if (!scormSession) {
