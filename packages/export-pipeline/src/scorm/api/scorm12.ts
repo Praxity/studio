@@ -12,12 +12,16 @@ import { appendPrivateScorm12Interaction } from "../private-scorm12-policy";
 import {
 	fitScorm12SuspendData,
 	parseScorm12SuspendData,
+	preflightScorm12SuspendData,
 	SCORM12_SUSPEND_DATA_LIMIT,
 	type Scorm12SuspendData,
+	type Scorm12SuspendDataCodec,
 	serializeScorm12SuspendData,
 } from "../scorm12-suspend-data";
 import {
 	assessmentAttemptMetadata,
+	assessmentRowsEvidence,
+	type InteractionEvidence,
 	type InteractionRecord,
 	LMS_DESTINATIONS,
 	prepareRuntimeCommit,
@@ -26,6 +30,7 @@ import {
 } from "../types.ts";
 import { deviceAttemptId } from "./device-attempt";
 import {
+	configureSessionOutcome,
 	getSessionState,
 	readSessionState,
 	type ScormSessionState,
@@ -33,6 +38,12 @@ import {
 	writeSessionState,
 } from "./session.ts";
 import { sessionTime } from "./session-time.ts";
+
+/** Dormant export so ordinary adapter instances do not retain evidence code in bundles. */
+export function readScorm12InteractionEvidence(raw: string): InteractionEvidence[] | null {
+	const data = parseScorm12SuspendData(raw);
+	return data ? assessmentRowsEvidence(data.interactions) : null;
+}
 
 // See docs/context/scorm-xapi-standards.md for spec references
 
@@ -70,6 +81,9 @@ export interface Scorm12Runtime {
 
 // biome-ignore lint/suspicious/noUnsafeDeclarationMerging: The static capability block installs these methods; interface declarations erase without emitting fields that shadow the prototype.
 export class Scorm12Runtime implements SCORMRuntime {
+	configureOutcome(policy: { waiting: boolean }): void {
+		configureSessionOutcome(this.session, policy);
+	}
 	readonly destinations = LMS_DESTINATIONS;
 	static {
 		if (globalThis.__praxityPrivateState !== false) {
@@ -104,7 +118,10 @@ export class Scorm12Runtime implements SCORMRuntime {
 	private unreadableSuspendData = false;
 	private heldDrafts?: LocalStorageRuntime;
 	private heldMemory = new Map<string, LearnerStateValue>();
-	constructor(private readonly courseId?: string) {}
+	constructor(
+		private readonly courseId?: string,
+		private readonly suspendDataCodec?: Scorm12SuspendDataCodec,
+	) {}
 	getUnsavedBlockState(blockId: string) {
 		return this.heldMemory.has(blockId)
 			? this.heldMemory.get(blockId)
@@ -214,6 +231,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 			if (!this.flushCompletion(true)) return false;
 			if (
 				explicitFinish &&
+				!session.outcomeWaiting &&
 				!this.unreadableSuspendData &&
 				!session.courseFailure &&
 				!["failed", "passed"].includes(this.lmsGetValue("cmi.core.lesson_status", true)) &&
@@ -503,9 +521,9 @@ export class Scorm12Runtime implements SCORMRuntime {
 	private prepareExit(terminating = false): boolean {
 		// Persist the attempt across a window close; page navigation only commits. A failed
 		// attempt stays suspended so the learner can resume it and retry toward the pass mark.
-		const terminal = ["completed", "passed"].includes(
-			this.lmsGetValue("cmi.core.lesson_status", terminating),
-		);
+		const terminal =
+			!this.session?.outcomeWaiting &&
+			["completed", "passed"].includes(this.lmsGetValue("cmi.core.lesson_status", terminating));
 		return this.lmsSetValue("cmi.core.exit", terminal ? "" : "suspend", terminating);
 	}
 
@@ -568,7 +586,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 		if (this.unreadableSuspendData) return { visitedPages: [], interactions: [] };
 		const raw = this.canCallLms() ? this.api?.LMSGetValue("cmi.suspend_data") : "";
 		if (raw) {
-			const data = parseScorm12SuspendData(raw);
+			const data = (this.suspendDataCodec?.parse ?? parseScorm12SuspendData)(raw);
 			if (data) return data;
 			// Keep the original LMS bytes until recovery, rather than certify an empty attempt.
 			this.unreadableSuspendData = true;
@@ -602,7 +620,13 @@ export class Scorm12Runtime implements SCORMRuntime {
 		// Filter before compression; compressed bytes must never hide private fields from policy.
 		if (globalThis.__praxityPrivateState !== false)
 			data = JSON.parse(filterPrivateSuspendData(JSON.stringify(data), this.blockStatePolicy));
-		const serialized = fitScorm12SuspendData(data);
+		const serialized = this.suspendDataCodec
+			? preflightScorm12SuspendData(
+					data,
+					this.suspendDataCodec.serialize(data),
+					this.suspendDataCodec.parse,
+				)
+			: fitScorm12SuspendData(data);
 		return this.lmsSetValue("cmi.suspend_data", serialized);
 	}
 }

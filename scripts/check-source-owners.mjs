@@ -1587,7 +1587,13 @@ function checkOwnedImports(path, source, program, ownership, options) {
 function checkOutcomeOwners(path, file) {
 	const owner = "packages/shared-blocks/src/tracking.ts";
 	if (path === owner || exemptTestPath(path)) return [];
-	const writes = new Set(["setCompletion", "setSuccess", "setScore", "trackObjective"]);
+	const writes = new Set([
+		"setCompletion",
+		"setSuccess",
+		"setScore",
+		"trackObjective",
+		"suppressTerminationResult",
+	]);
 	const constants = new Map();
 	const writerNames = new Set(["writeCourseOutcome"]);
 	function collect(node) {

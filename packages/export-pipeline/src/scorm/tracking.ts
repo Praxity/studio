@@ -5,6 +5,7 @@
  * detection based on configurable criteria (all pages, percentage, or quiz).
  */
 
+import type { ChoiceDependencyEvidence } from "@praxity/shared-blocks/choice-learner-state";
 import { DEFAULT_COMPLETION_THRESHOLD } from "@praxity/shared-blocks/constants";
 import { type CourseOutcome, writeCourseOutcome } from "@praxity/shared-blocks/learner-block-state";
 import type { InteractionRecord, SCORMRuntime, TrackInteractionOptions } from "./types.ts";
@@ -51,6 +52,8 @@ export interface TrackingConfig {
 	isAssessmentFinal?: (id: string) => boolean;
 	/** Hosts supply saved answers; the tracker owns their finality decision. */
 	getAssessmentState?: (id: string) => unknown;
+	/** Absent until the host admits evidence-aware reporting. */
+	getChoiceDependencyView?: () => ChoiceDependencyEvidence | undefined;
 }
 
 interface CourseResult {
@@ -59,9 +62,7 @@ interface CourseResult {
 	retryable: boolean;
 }
 
-interface TrackerOutcome extends CourseOutcome {
-	result?: CourseResult | null;
-}
+type TrackerOutcome = CourseOutcome & { result?: CourseResult | null };
 
 // ---------------------------------------------------------------------------
 // CourseTracker
@@ -118,14 +119,36 @@ export class CourseTracker {
 	}
 
 	isAssessmentFinal(id: string): boolean {
+		const view = this.config.getChoiceDependencyView?.();
+		if (view && view.status(id) !== "current") return false;
 		if (this.config.isAssessmentFinal) return this.config.isAssessmentFinal(id);
-		const state = this.config.getAssessmentState?.(id);
+		const saved = this.config.getAssessmentState?.(id) ?? view?.readState(id);
+		const state =
+			view && Object.hasOwn(view.questions, id) ? view.admitQuestionState?.(id, saved) : saved;
 		return (
 			typeof state === "object" &&
 			state !== null &&
 			!Array.isArray(state) &&
 			(state as Record<string, unknown>).completed === true
 		);
+	}
+
+	/** History changes in-course display only; ordinary launches retain the recorded score. */
+	getCurrentScore(): { raw: number; min: number; max: number } | null {
+		const view = this.config.getChoiceDependencyView?.();
+		if (
+			!view ||
+			![
+				...Object.keys(view.questions),
+				...Object.keys(view.groups ?? {}),
+				...(view.invalidIds ?? []),
+			].some((id) => view.status(id) === "history")
+		)
+			return this.runtime.getScore();
+		const rows = [...this.latestScored().values()].filter(
+			(row) => view.status(row.id) === "current",
+		);
+		return rows.length ? { raw: this.average(rows), min: 0, max: 100 } : null;
 	}
 
 	trackGroupObjective(id: string, score: number, passed: boolean, runtime = this.runtime): void {
@@ -152,6 +175,23 @@ export class CourseTracker {
 			}
 		}
 		return latest;
+	}
+
+	private historyIsWaiting(view: ChoiceDependencyEvidence | undefined): boolean {
+		if (!view) return false;
+		const ids = new Set(this.config.requiredAssessmentIds ?? []);
+		const hasPassMark = this.hasPassMark();
+		if (hasPassMark) for (const id of this.config.scoredAssessmentIds ?? []) ids.add(id);
+		// One set covers every intent, including standalone's legacy quiz completion.
+		if (
+			this.config.completionMethod === "quiz" &&
+			(!hasPassMark || this.config.reportOutcome === false)
+		) {
+			for (const [id, question] of Object.entries(view.questions)) if (question.graded) ids.add(id);
+			const rows = this.runtime.getInteractions();
+			for (const row of rows) if (row.id !== "*" && Number.isFinite(row.score)) ids.add(row.id);
+		}
+		return [...ids].some((id) => view.status(id) === "history");
 	}
 
 	/**
@@ -231,7 +271,7 @@ export class CourseTracker {
 	 * would end the attempt before a result exists, so it stays "incomplete" until
 	 * the course has a final failure, or passes with the page rule met.
 	 */
-	private outcome(
+	outcome(
 		intent:
 			| "check"
 			| "score"
@@ -239,8 +279,18 @@ export class CourseTracker {
 			| "prepareCommit"
 			| "end"
 			| "finish"
-			| NonNullable<CourseOutcome["objective"]> = "check",
+			| { id: string; score: number; passed: boolean } = "check",
+		view = this.config.getChoiceDependencyView?.(),
 	): TrackerOutcome {
+		if (this.historyIsWaiting(view))
+			return {
+				kind: "waiting",
+				...(intent === "end"
+					? { finish: "complete" as const }
+					: intent === "finish"
+						? { finish: "terminate" as const }
+						: {}),
+			};
 		if (intent === "prepareCommit") return { kind: "decided" };
 		if (typeof intent === "object") return { kind: "decided", objective: intent };
 		if (intent === "finish") return { kind: "decided", finish: "terminate" };

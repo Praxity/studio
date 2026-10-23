@@ -21,8 +21,11 @@ import { applyXapiPrivatePolicy } from "../private-xapi-policy";
 import { filterPrivateSuspendData } from "@praxity/shared-blocks/block-state-policy";
 import { declaredCourseActivityId, isAbsoluteIri } from "../activity-id.ts";
 import {
+	assessmentRowsEvidence,
 	DEVICE_DESTINATIONS,
+	type InteractionEvidence,
 	type InteractionRecord,
+	isInteractionRecord,
 	prepareRuntimeCommit,
 	type RuntimeCommitPreparation,
 	type RuntimeDestinations,
@@ -48,6 +51,17 @@ const VERBS = {
 } as const;
 
 type VerbKey = keyof typeof VERBS;
+
+/** Dormant reader. Handle absent storage before calling; null means refused evidence. */
+export function readXapiInteractionEvidence(raw: string): InteractionEvidence[] | null {
+	try {
+		const value = JSON.parse(raw) as { interactions?: unknown } | null;
+		if (!Array.isArray(value?.interactions)) return null;
+		return assessmentRowsEvidence(value.interactions);
+	} catch {
+		return null;
+	}
+}
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -166,6 +180,7 @@ export class XapiRuntime implements SCORMRuntime {
 	private actor: XapiActor | null;
 	private sendEnabled: boolean;
 	private initialized = false;
+	private terminationResult = true;
 	private commitPreparation: RuntimeCommitPreparation = {};
 	private completionStatus = "incomplete";
 	private successStatus: "passed" | "failed" | "unknown" = "unknown";
@@ -242,17 +257,7 @@ export class XapiRuntime implements SCORMRuntime {
 			if (Array.isArray(value.visitedPages))
 				this.visitedPages = value.visitedPages.filter(isString);
 			if (Array.isArray(value.interactions))
-				this.interactions = value.interactions.flatMap((item) => {
-					const record = item as Record<string, unknown>;
-					return record &&
-						isString(record.id) &&
-						isString(record.response) &&
-						isNumber(record.timestamp) &&
-						(record.correct === undefined || typeof record.correct === "boolean") &&
-						(record.score === undefined || isNumber(record.score))
-						? [record as unknown as InteractionRecord]
-						: [];
-				});
+				this.interactions = value.interactions.filter(isInteractionRecord);
 			if (["incomplete", "completed", "passed", "failed"].includes(String(value.completionStatus)))
 				this.completionStatus = value.completionStatus as string;
 			if (value.successStatus === "passed" || value.successStatus === "failed")
@@ -378,13 +383,19 @@ export class XapiRuntime implements SCORMRuntime {
 		return true;
 	}
 
+	suppressTerminationResult(): void {
+		this.terminationResult = false;
+	}
+
 	terminate(): boolean {
+		const reportResult = this.terminationResult;
+		this.terminationResult = true;
 		if (!this.initialized) {
 			return false;
 		}
 		if (!prepareRuntimeCommit(this.commitPreparation)) return false;
 
-		if (this.sendEnabled) {
+		if (this.sendEnabled && reportResult) {
 			const verb = this.completionVerbKey();
 			const result = this.buildCompletionResult();
 			const statement = this.buildStatement(verb, this.courseObject(), result);

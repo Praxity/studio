@@ -1267,12 +1267,49 @@ describe("computeViewerSourceHash", () => {
 				expect(await readFile(path.join(outDir, file), "utf8")).not.toContain("data-practice-mode");
 		});
 
+		it("keeps the dormant compact codec out of SCORM 1.2 host bundles", async () => {
+			for (const file of [result.manifest.hosts.scorm12, result.manifest.privateHosts?.scorm12]) {
+				if (!file) throw new Error("Missing SCORM 1.2 host");
+				const code = await readFile(path.join(outDir, file), "utf8");
+				expect(code, file).not.toContain("praxity-evidence-1");
+				expect(code, file).not.toContain("Evidence depth/value");
+				expect(code, file).not.toContain("evidence exceeds the typed limit");
+			}
+		});
+
+		it("keeps dormant admission and hashing out of SCORM support", () => {
+			expect(buildInputs).not.toContain(
+				path.resolve(import.meta.dirname, "../../../shared-blocks/src/choice-learner-state.ts"),
+			);
+			const support = result.manifest.hostDependencies?.scorm12?.[0];
+			if (!support) throw new Error("Missing SCORM support");
+			expect(result.manifest.thirdPartyNotices?.outputs[support] ?? []).not.toEqual(
+				expect.arrayContaining([expect.stringMatching(/^@noble\/hashes@/)]),
+			);
+		});
+
+		it("keeps dormant interaction evidence out of ordinary host bundles", async () => {
+			const files = new Set([
+				...Object.values(result.manifest.hosts),
+				...Object.values(result.manifest.hostDependencies ?? {}).flat(),
+				...(result.manifest.privacy?.files ?? []),
+			]);
+			for (const file of files) {
+				const code = await readFile(path.join(outDir, file), "utf8");
+				expect(code, file).not.toContain("Unidentifiable interaction evidence");
+				expect(code, file).not.toContain("choiceEvidenceInvalid");
+			}
+		});
+
 		it("budgets the entire highlight initial JS closure with default navigation", async () => {
 			// Size caps don't block working features (owner rule): SHA-256 pair verification in the host bundle; tighten during final size work.
-			// Measured full enhancer maxima: page 43,137 B gzip; deck 135,602 B gzip.
-			// Add 1 KiB rounded up to 256 B. Owner C5 previously measured
+			// Earlier full enhancer maxima: page 43,137 B gzip; deck 135,602 B gzip.
+			// Owner C5 previously measured
 			// 39,577 / 131,639 B; HL04 caps were 36,864 / 129,024 B.
-			const caps = { page: 44_288, deck: 136_704 };
+			// Size caps don't block working features (owner rule): waiting and exit mechanics measure 136,755 B gzip for the deck, plus 1 KiB rounded up to 256 B; tighten during final size work.
+			// Size caps don't block working features (owner rule): dormant gate/display support measures 44,302 B gzip for the page; round up to 256 B.
+			// Keep this tighter page cap during prerequisites; measure the usual 1 KiB headroom with activation.
+			const caps = { page: 44_544, deck: 137_984 };
 			const page = {
 				id: "highlight-page",
 				title: "Highlight",
