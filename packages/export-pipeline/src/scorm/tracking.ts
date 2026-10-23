@@ -155,25 +155,19 @@ export class CourseTracker {
 		return latest;
 	}
 
-	private currentInteractions(view: ChoiceDependencyEvidence | undefined): InteractionRecord[] {
-		return this.runtime
-			.getInteractions()
-			.filter((row) => !view || view.status(row.id) === "current");
-	}
-
 	private historyIsWaiting(view: ChoiceDependencyEvidence | undefined): boolean {
 		if (!view) return false;
 		const ids = new Set(this.config.requiredAssessmentIds ?? []);
-		if (this.hasPassMark()) for (const id of this.config.scoredAssessmentIds ?? []) ids.add(id);
-		else if (this.config.completionMethod === "quiz") {
+		const hasPassMark = this.hasPassMark();
+		if (hasPassMark) for (const id of this.config.scoredAssessmentIds ?? []) ids.add(id);
+		// One set covers every intent, including standalone's legacy quiz completion.
+		if (
+			this.config.completionMethod === "quiz" &&
+			(!hasPassMark || this.config.reportOutcome === false)
+		) {
 			for (const [id, question] of Object.entries(view.questions)) if (question.graded) ids.add(id);
-			// Only compiled groups and identifiable invalid facts can wait on scored rows.
-			for (const id of [...Object.keys(view.groups ?? {}), ...(view.invalidIds ?? [])])
-				if (
-					id !== "*" &&
-					this.runtime.getInteractions().some((row) => row.id === id && Number.isFinite(row.score))
-				)
-					ids.add(id);
+			const rows = this.runtime.getInteractions();
+			for (const row of rows) if (row.id !== "*" && Number.isFinite(row.score)) ids.add(row.id);
 		}
 		return [...ids].some((id) => view.status(id) === "history");
 	}
@@ -295,7 +289,7 @@ export class CourseTracker {
 			]);
 			if (![...required].every((id) => this.isAssessmentFinal(id))) return { kind: "decided" };
 		}
-		const interactions = this.currentInteractions(view);
+		const interactions = this.runtime.getInteractions();
 		const latest = this.latestScored(interactions);
 		const authored = hasPassMark && (intent !== "check" || this.config.reportOutcome !== false);
 		const legacyQuiz = !authored && this.config.completionMethod === "quiz";

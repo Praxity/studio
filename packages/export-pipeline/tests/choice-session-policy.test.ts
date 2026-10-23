@@ -40,6 +40,7 @@ it("a fresh launch clears waiting and the preceding queued completion", () => {
 	expect(state).not.toBeNull();
 	if (!state) throw new Error("Missing session");
 	configureSessionOutcome(state, { waiting: true });
+	state.pendingCompletion = "completed";
 	writeSessionState(api, false);
 	const next = writeSessionState(api, true);
 	expect(next?.outcomeWaiting).toBeUndefined();
