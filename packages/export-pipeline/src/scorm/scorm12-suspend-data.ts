@@ -34,6 +34,19 @@ function crc32(bytes: Uint8Array): number {
 	return (crc ^ 0xffffffff) >>> 0;
 }
 
+function hasAdler32(bytes: Uint8Array, compressed: Uint8Array): boolean {
+	let a = 1;
+	let b = 0;
+	for (const byte of bytes) {
+		a = (a + byte) % 65521;
+		b = (b + a) % 65521;
+	}
+	return (
+		((b << 16) | a) >>> 0 ===
+		new DataView(compressed.buffer, compressed.byteOffset).getUint32(compressed.length - 4)
+	);
+}
+
 const EVIDENCE_FORMAT = "praxity-evidence-1";
 const TOKEN_WIDTHS = [16, 32, 12];
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
@@ -45,7 +58,10 @@ function base64(bytes: Uint8Array): string {
 function fromBase64(text: string): Uint8Array {
 	const binary = atob(text);
 	if (btoa(binary) !== text) throw new Error("Noncanonical base64");
-	return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+	// Indexed copying keeps checksum rejection fast for damaged saves.
+	const bytes = new Uint8Array(binary.length);
+	for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index);
+	return bytes;
 }
 
 function isObject(value: JsonValue): value is { [key: string]: JsonValue } {
@@ -105,17 +121,7 @@ function decodeEvidence(envelope: unknown[]): JsonValue {
 		// Removing the last DEFLATE byte normally makes the stream incomplete.
 	}
 	if (completeWithoutLastByte) throw new Error("Evidence trailing compressed byte");
-	let a = 1,
-		b = 0;
-	for (const byte of typed) {
-		a = (a + byte) % 65521;
-		b = (b + a) % 65521;
-	}
-	if (
-		((b << 16) | a) >>> 0 !==
-		new DataView(compressed.buffer, compressed.byteOffset).getUint32(compressed.length - 4)
-	)
-		throw new Error("Evidence Adler");
+	if (!hasAdler32(typed, compressed)) throw new Error("Evidence Adler");
 	let at = 0,
 		budget = 0;
 	const shapes: string[][] = [];
@@ -277,7 +283,7 @@ export function serializeScorm12SuspendData(
 		crc32: crc32(bytes),
 		// Cover unused DEFLATE padding bits as well as changes in decoded data.
 		compressedCrc32: crc32(compressed),
-		data: btoa(Array.from(compressed, (byte) => String.fromCharCode(byte)).join("")),
+		data: base64(compressed),
 	});
 	return encoded.length < raw.length ? encoded : raw;
 }
@@ -295,28 +301,14 @@ export function parseScorm12SuspendData(raw: string): Scorm12SuspendData | null 
 				raw.length > SCORM12_SUSPEND_DATA_LIMIT
 			)
 				return null;
-			const binary = atob(data.data);
-			if (btoa(binary) !== data.data) return null;
-			// Indexed copying keeps checksum rejection fast for damaged saves.
-			const compressed = new Uint8Array(binary.length);
-			for (let index = 0; index < binary.length; index++)
-				compressed[index] = binary.charCodeAt(index);
+			const compressed = fromBase64(data.data);
 			if (crc32(compressed) !== data.compressedCrc32) return null;
 			// One extra byte detects output beyond the declared length without unbounded allocation.
 			// fflate does not verify the zlib trailer's Adler-32.
 			const bytes = unzlibSync(compressed, { out: new Uint8Array(data.size + 1) });
 			if (bytes.length !== data.size || crc32(bytes) !== data.crc32 || compressed.length < 6)
 				return null;
-			let a = 1;
-			let b = 0;
-			for (const byte of bytes) {
-				a = (a + byte) % 65521;
-				b = (b + a) % 65521;
-			}
-			const checksum = new DataView(compressed.buffer, compressed.byteOffset).getUint32(
-				compressed.length - 4,
-			);
-			if (((b << 16) | a) >>> 0 !== checksum) return null;
+			if (!hasAdler32(bytes, compressed)) return null;
 			data = JSON.parse(strFromU8(bytes));
 		}
 		return suspendDataPayload(data);

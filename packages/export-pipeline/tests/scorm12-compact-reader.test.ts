@@ -3,7 +3,7 @@ import { beforeEach, expect, it } from "vitest";
 import * as codec from "../src/scorm/scorm12-suspend-data";
 import vectors from "./fixtures/scorm12-compact-vectors";
 
-// The fallback exercises base's existing reader, so capability literals fail by assertion.
+// Assertion failures, rather than missing exports, identify runtimes without compact admission.
 const read =
 	(
 		codec as Partial<typeof codec> & {
@@ -29,6 +29,15 @@ function uint(input: number): number[] {
 function text(input: string): number[] {
 	const bytes = Buffer.from(input);
 	return [5, ...uint(bytes.length), ...bytes];
+}
+
+function utf16(input: string): number[] {
+	const bytes = [9, ...uint(input.length)];
+	for (let index = 0; index < input.length; index++) {
+		const unit = input.charCodeAt(index);
+		bytes.push(unit >>> 8, unit & 255);
+	}
+	return bytes;
 }
 
 const empty = { visitedPages: [], interactions: [] };
@@ -264,12 +273,12 @@ it("rejects unsafe and overlong integers even when decoded checks would match", 
 	).toBeNull();
 });
 
-it("rejects excessive nesting even when the declared size and checksums match", () => {
+it("rejects the first excessive nesting depth with matching size and checksums", () => {
 	let nested: unknown = null;
-	for (let depth = 0; depth < 65; depth++) nested = [nested];
+	for (let depth = 0; depth < 64; depth++) nested = [nested];
 	expect(
 		read(
-			frame(typedCustom([...Array(65).fill([7, 1]).flat(), 0], 1), {
+			frame(typedCustom([...Array(64).fill([7, 1]).flat(), 0], 1), {
 				...empty,
 				custom: JSON.stringify(nested),
 			}),
@@ -291,10 +300,66 @@ it("bounds inflated bytes before interpreting the typed stream", () => {
 	expect(read(envelopeChange(wire, 2, 8))).toBeNull();
 });
 
-it("bounds dictionary expansion independently of the small typed stream", () => {
-	const dictionary = Buffer.alloc(32, 171);
-	const value = [7, ...uint(4000), ...Array(4000).fill([6, 0]).flat()];
-	const wire = frame(typedCustom(value, 1), empty, dictionary, [0, 1, 0]);
+function unusedShapeWire(count: number): string {
+	const typed = [
+		0,
+		...uint(count + 1),
+		2,
+		...["visitedPages", "interactions"].flatMap(text),
+		...Array(count).fill([1, 6, 0]).flat(),
+		8,
+		0,
+		7,
+		0,
+		7,
+		0,
+	];
+	return frame(typed, empty, Buffer.alloc(32, 171), [0, 1, 0]);
+}
+
+it.each([
+	["dictionary-reference", 3700],
+	["per-tag", 3660],
+])("bounds %s work in unused shapes with truthful decoded checks", (_name, count) => {
+	const wire = unusedShapeWire(count as number);
+	expect(wire.length).toBeLessThan(4096);
+	expect(read(wire)).toBeNull();
+});
+
+it("bounds decoded JSON after escaping with truthful size and checksums", () => {
+	const custom = "\u0001".repeat(50000);
+	const typed = typedCustom(text(custom));
+	const wire = frame(typed, { ...empty, custom });
+	expect(typed.length).toBeLessThan(262144);
+	expect(JSON.parse(wire)[1]).toBeGreaterThan(262144);
+	expect(wire.length).toBeLessThan(4096);
+	expect(read(wire)).toBeNull();
+});
+
+it("bounds typed allocation when decoded work and JSON stay below their caps", () => {
+	const count = 40000;
+	const zero = [3, 128, 128, 128, 128, 128, 128, 128, 0];
+	const typed = typedCustom([7, ...uint(count), ...Array(count).fill(zero).flat()], 1);
+	const wire = frame(typed, { ...empty, custom: JSON.stringify(Array(count).fill(0)) });
+	expect(typed.length).toBeGreaterThan(262144);
+	expect(JSON.parse(wire)[1]).toBeLessThan(262144);
+	expect(wire.length).toBeLessThan(4096);
+	expect(read(wire)).toBeNull();
+});
+
+it("charges UTF-16 code units with truthful decoded checks below the size cap", () => {
+	const signature = `sha256:${"ab".repeat(32)}`;
+	const custom = JSON.stringify(["a".repeat(100000), ...Array(1000).fill(signature)]);
+	const value = [
+		7,
+		...uint(1001),
+		...utf16("a".repeat(100000)),
+		...Array(1000).fill([6, 0]).flat(),
+	];
+	const typed = typedCustom(value, 1);
+	const wire = frame(typed, { ...empty, custom }, Buffer.alloc(32, 171), [0, 1, 0]);
+	expect(typed.length).toBeLessThan(262144);
+	expect(JSON.parse(wire)[1]).toBeLessThan(262144);
 	expect(wire.length).toBeLessThan(4096);
 	expect(read(wire)).toBeNull();
 });
