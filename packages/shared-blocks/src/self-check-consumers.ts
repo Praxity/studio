@@ -99,8 +99,8 @@ export function dispatchSelfCheckEvent(
 	owner?.captureEvent?.(event, current);
 	const dispatched = selfCheckEpochTicket(doc, event);
 	if ((!current() || !dispatched()) && !cancelling()) return false;
-	target.dispatchEvent(event);
-	return current() && dispatched();
+	const accepted = target.dispatchEvent(event);
+	return current() && dispatched() && accepted;
 }
 
 /** Scheduling captures authority once; callback delivery cannot borrow a later lifetime. */
