@@ -375,6 +375,9 @@ it("a rejected question signature cannot grant credit to an admitted group with 
 			choiceStateSignatures: { g: full },
 			choiceStateGroups: { g: { mode: "all", memberIds: ["a"], requiredIds: ["a"] } },
 		});
+		expect(() =>
+			createChoiceDependencyView(admitted, { rows: [{ id: "g" }], readState: () => undefined }),
+		).not.toThrow();
 		const input = createChoiceDependencyView(admitted, {
 			rows: [{ id: "g" }],
 			readState: () => undefined,
