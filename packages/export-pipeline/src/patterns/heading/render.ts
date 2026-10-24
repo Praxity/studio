@@ -5,15 +5,27 @@ import {
 	unwrapHeadingParagraph,
 } from "@praxity/shared-blocks/heading-styles";
 import type { PraxityBlock } from "@praxity/shared-blocks/types";
-import { renderInlineField, sanitizeInline } from "../../published-markup.ts";
+import { fullyDecodeEntities } from "../../html-entities.ts";
+import { escapeHtml, renderInlineField, sanitizeInline } from "../../published-markup.ts";
 
-export function renderHeading(block: PraxityBlock): string {
+export interface LessonHeading {
+	kicker?: string;
+	time?: string;
+}
+
+export function renderHeading(block: PraxityBlock, lesson?: LessonHeading): string {
 	const data = block.data as Record<string, unknown>;
 	const baseLevel = normalizeHeadingLevel(data.level);
 	const rawOffset = Number(data.headingOffset ?? 0);
 	const offset = Number.isFinite(rawOffset) ? Math.max(0, Math.trunc(rawOffset)) : 0;
 	const level = normalizeHeadingLevel(baseLevel + offset, baseLevel);
-	const kicker = sentenceCaseKicker(renderInlineField(data, "kicker"));
+	// The lesson group owns the first page label; a block kicker is the fallback.
+	const kicker = lesson?.kicker?.trim()
+		? escapeHtml(fullyDecodeEntities(lesson.kicker.trim()))
+		: sentenceCaseKicker(renderInlineField(data, "kicker"));
+	const time = lesson?.time?.trim()
+		? `<p class="praxity-lesson-time">${escapeHtml(fullyDecodeEntities(lesson.time.trim()))}</p>`
+		: "";
 	const content = unwrapHeadingParagraph(sanitizeInline(data.content));
 	const display = typeof data.display === "string" ? data.display : "standard";
 	const baseStyle = HEADING_STYLES_PUBLISHED[baseLevel];
@@ -28,12 +40,12 @@ export function renderHeading(block: PraxityBlock): string {
 	const headingHtml = `<h${level} style="${style}">${content}</h${level}>`;
 
 	if (display === "chapter") {
-		return `<div class="praxity-heading-chapter">${headingHtml}<div class="praxity-heading-chapter-divider" aria-hidden="true"></div></div>`;
+		return `<div class="praxity-heading-chapter">${lesson && kicker ? `<p class="praxity-kicker">${kicker}</p>` : ""}${headingHtml}${time}<div class="praxity-heading-chapter-divider" aria-hidden="true"></div></div>`;
 	}
 
 	if (kicker) {
-		return `<div class="praxity-heading-with-kicker"><p class="praxity-kicker">${kicker}</p>${headingHtml}</div>`;
+		return `<div class="praxity-heading-with-kicker"><p class="praxity-kicker">${kicker}</p>${headingHtml}${time}</div>`;
 	}
 
-	return headingHtml;
+	return headingHtml + time;
 }

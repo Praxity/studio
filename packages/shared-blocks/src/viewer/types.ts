@@ -22,6 +22,7 @@ export interface PageInfo {
 	index: number;
 	lessonTitle?: string;
 	lessonKicker?: string;
+	lessonTime?: string;
 	lessonSlug?: string;
 	isFirstPageOfLesson?: boolean;
 	narrationEnabled?: boolean;
@@ -79,6 +80,7 @@ export interface ViewerConfig {
 	sourceLocale: string;
 	lessonTitle: string;
 	lessonKicker?: string;
+	lessonTime?: string;
 	isFirstPageOfLesson: boolean;
 	showCourseNameInNav: boolean;
 	showLessonNameInNav: boolean;

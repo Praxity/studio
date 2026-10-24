@@ -72,7 +72,7 @@ import { strings as selfCheckPatternStrings } from "learning-patterns/patterns/s
 import { codeTokenCss, highlightCode } from "./code-highlighting.ts";
 import { escapeJsonForHtml } from "./escape-json-for-html.ts";
 import { renderChoice } from "./patterns/choice/render.ts";
-import { renderHeading } from "./patterns/heading/render.ts";
+import { type LessonHeading, renderHeading } from "./patterns/heading/render.ts";
 import { renderHighlight } from "./patterns/highlight/render.ts";
 import { renderNote } from "./patterns/note/render.ts";
 import { renderQuote } from "./patterns/quote/render.ts";
@@ -319,6 +319,7 @@ const IMAGE_WIDTH_MAP: Record<string, string> = {
 };
 
 export interface RenderBlockHtmlOptions {
+	lessonHeading?: LessonHeading;
 	selfCheckContextPending?: boolean;
 	sourceLocale?: string;
 	classNames?: string[];
@@ -1923,6 +1924,7 @@ function renderSemanticContent(
 	sourceLocale?: string,
 	blockIndex = 0,
 	selfCheckContextPending = false,
+	lessonHeading?: LessonHeading,
 ): string {
 	switch (block.type) {
 		case "writeDistractors": {
@@ -1962,7 +1964,7 @@ function renderSemanticContent(
 				selfCheckContextPending,
 			);
 		case "heading":
-			return renderHeading(block);
+			return renderHeading(block, lessonHeading);
 		case "text":
 			return renderText(block);
 		case "image":
@@ -2102,6 +2104,7 @@ export function renderBlockHtml(block: PraxityBlock, options: RenderBlockHtmlOpt
 		sourceLocale,
 		options.blockIndex,
 		options.selfCheckContextPending,
+		options.lessonHeading,
 	);
 
 	const classes =

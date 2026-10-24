@@ -235,6 +235,7 @@ function pageSource(page: PraxityPage) {
 					"lessonTitle",
 					"lessonTitleIsFallback",
 					"lessonKicker",
+					"lessonTime",
 					"lessonLocale",
 					"isFirstPageOfLesson",
 				].includes(key),
@@ -242,6 +243,8 @@ function pageSource(page: PraxityPage) {
 	);
 	return {
 		blocks: withoutCast(page.blocks),
+		lessonKicker: page.isFirstPageOfLesson ? page.lessonKicker : undefined,
+		lessonTime: page.isFirstPageOfLesson ? page.lessonTime : undefined,
 		data: metadata,
 		locale: page.locale,
 		description: page.description,
@@ -536,6 +539,7 @@ async function makeContext(
 			lessonTitle: page.lessonTitle,
 			lessonTitleIsFallback: page.lessonTitleIsFallback,
 			lessonKicker: page.lessonKicker,
+			lessonTime: page.lessonTime,
 			isFirstPageOfLesson: page.isFirstPageOfLesson,
 			readingTimeMinutes: readingTimes.pageMinutes[index],
 			courseReadingTimeMinutes: readingTimes.courseMinutes,

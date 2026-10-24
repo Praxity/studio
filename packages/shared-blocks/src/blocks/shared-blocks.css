@@ -3941,14 +3941,25 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	gap: var(--space-1);
 }
 
-.praxity-kicker {
+.praxity-kicker,
+.praxity-lesson-time {
 	margin: 0;
 	font-size: var(--type-small);
 	line-height: var(--leading-body);
+	overflow-wrap: anywhere;
+	color: var(--praxity-color-text-light);
+}
+
+.praxity-kicker {
 	font-weight: var(--weight-strong);
 	text-transform: none;
 	letter-spacing: 0.08em;
-	color: var(--praxity-color-text-light);
+}
+
+.praxity-lesson-time {
+	margin-block-start: var(--space-1);
+	font-weight: var(--weight-body);
+	font-style: normal;
 }
 
 /* --- Assessment affordance --- */

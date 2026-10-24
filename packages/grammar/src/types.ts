@@ -16,8 +16,10 @@ export interface GrammarFrontmatter {
 	theme?: string;
 	lang?: string;
 	title?: string;
-	/** Optional sidebar label above the lesson title. */
+	/** Group label above the lesson's first page heading. */
 	kicker?: string;
+	/** Authored duration below the lesson's first page heading. */
+	time?: string;
 	narrationEnabled?: boolean;
 	narrationLanguage?: string;
 	narrationVoice?: string;

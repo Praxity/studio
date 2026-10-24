@@ -16,6 +16,7 @@ export interface PageData {
 	lessonTitle?: string;
 	lessonTitleIsFallback?: boolean;
 	lessonKicker?: string;
+	lessonTime?: string;
 	lessonId?: string;
 	locale?: string;
 	isFirstPageOfLesson?: boolean;
@@ -71,6 +72,7 @@ export function splitBlocksIntoPages(
 	let currentLessonTitle: string | undefined;
 	let currentLessonTitleIsFallback: boolean | undefined;
 	let currentLessonKicker: string | undefined;
+	let currentLessonTime: string | undefined;
 	let currentLessonId: string | undefined;
 	let currentLocale: string | undefined;
 	let currentNarrationEnabled: boolean | undefined;
@@ -102,6 +104,12 @@ export function splitBlocksIntoPages(
 		if (typeof metadata._narrationEnabled === "boolean") {
 			currentNarrationEnabled = metadata._narrationEnabled;
 		}
+		if (isFirstPageOfLesson || Object.hasOwn(metadata, "lessonTime")) {
+			currentLessonTime =
+				typeof metadata.lessonTime === "string"
+					? metadata.lessonTime.trim() || undefined
+					: undefined;
+		}
 		if (
 			metadata._narrationDefaults &&
 			typeof metadata._narrationDefaults === "object" &&
@@ -123,6 +131,7 @@ export function splitBlocksIntoPages(
 			lessonTitle: currentLessonTitle,
 			...(currentLessonTitleIsFallback ? { lessonTitleIsFallback: true } : {}),
 			lessonKicker: currentLessonKicker,
+			lessonTime: currentLessonTime,
 			lessonId: currentLessonId,
 			...(currentLocale ? { locale: currentLocale } : {}),
 			isFirstPageOfLesson,
@@ -138,6 +147,7 @@ export function splitBlocksIntoPages(
 				"lessonTitle",
 				"lessonTitleIsFallback",
 				"lessonKicker",
+				"lessonTime",
 				"lessonId",
 				"lessonLocale",
 				"isFirstPageOfLesson",

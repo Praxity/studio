@@ -4,7 +4,7 @@ export default defineConfig({
 	test: {
 		name: "shared-blocks",
 		environment: "jsdom",
-		css: { include: [/shared-blocks\.css\?raw$/] },
+		css: { include: [/(?:shared-blocks|viewer-shell)\.css\?raw$/] },
 		setupFiles: ["./tests/setup.ts"],
 	},
 });

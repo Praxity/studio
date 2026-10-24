@@ -206,6 +206,7 @@ export interface PraxityPage {
 	/** The lesson label is generated because there is no authored title. */
 	lessonTitleIsFallback?: boolean;
 	lessonKicker?: string;
+	lessonTime?: string;
 	isFirstPageOfLesson?: boolean;
 	narrationEnabled?: boolean;
 	narrationDefaults?: Record<string, unknown>;

@@ -622,6 +622,32 @@ Nested body.
 	}, 10_000);
 
 	it.each(["course", "lesson"] as const)(
+		"carries lesson heading text into %s input",
+		async (scope) => {
+			await writeFile(
+				path.join(projectDir, "course.yaml"),
+				"title: Course\nlessons: [lesson-1.prax]\n",
+			);
+			await writeFile(
+				path.join(projectDir, "lesson-1.prax"),
+				"---\ntitle: Lesson\nkicker: Module 1\ntime: About 12 minutes\n---\n# First\nBody\n",
+			);
+			const input = await buildCourseExportInput({
+				manifestPolicy: "write" as const,
+				projectDir,
+				viewerVersionPath,
+				scope,
+				completionThreshold: 0.8,
+			});
+			expect(input.blocks.find((block) => block.type === "pageBreak")?.data).toMatchObject({
+				lessonKicker: "Module 1",
+				lessonTime: "About 12 minutes",
+				isFirstPageOfLesson: true,
+			});
+		},
+	);
+
+	it.each(["course", "lesson"] as const)(
 		"marks an untitled worst-case.prax filename as a fallback in %s input",
 		async (scope) => {
 			await writeFile(
@@ -1044,7 +1070,7 @@ Nested body.
 		);
 		await writeFile(
 			path.join(projectDir, "lesson-b.prax"),
-			"---\ntitle: Lesson B\nkicker: Module 1\ndesign:\n  navArchetype: slides\n---\n\n# Untitled {hideTitle}\n\nB content\n",
+			"---\ntitle: Lesson B\nkicker: Module 1\ntime: About 12 minutes\ndesign:\n  navArchetype: slides\n---\n\n# Untitled {hideTitle}\n\nB content\n",
 			"utf-8",
 		);
 
@@ -1066,6 +1092,7 @@ Nested body.
 		expect(result.blocks.find((block) => block.type === "pageBreak")?.data).toMatchObject({
 			lessonTitle: "Lesson B",
 			lessonKicker: "Module 1",
+			lessonTime: "About 12 minutes",
 			isFirstPageOfLesson: true,
 			lessonId: expect.stringMatching(/^[0-9a-f-]{36}$/),
 			id: expect.stringMatching(/^[0-9a-f-]{36}$/),

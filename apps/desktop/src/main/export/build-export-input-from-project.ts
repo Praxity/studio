@@ -384,16 +384,10 @@ function toLessonTitle(frontmatter: GrammarFrontmatter, lessonNumber: number, lo
 	};
 }
 
-function toLessonKicker(frontmatter: GrammarFrontmatter): string | undefined {
-	return typeof frontmatter.kicker === "string"
-		? frontmatter.kicker.trim() || undefined
-		: undefined;
-}
-
 function withLessonIdentity(
 	data: Record<string, unknown>,
 	lesson: ReturnType<typeof toLessonTitle>,
-	lessonKicker: string | undefined,
+	frontmatter: GrammarFrontmatter,
 	lessonId: string,
 ): Record<string, unknown> {
 	return {
@@ -401,7 +395,12 @@ function withLessonIdentity(
 		lessonTitle: lesson.title,
 		...(lesson.isFallback ? { lessonTitleIsFallback: true } : {}),
 		lessonId,
-		...(lessonKicker !== undefined ? { lessonKicker } : {}),
+		...(typeof frontmatter.kicker === "string" && frontmatter.kicker.trim()
+			? { lessonKicker: frontmatter.kicker.trim() }
+			: {}),
+		...(typeof frontmatter.time === "string" && frontmatter.time.trim()
+			? { lessonTime: frontmatter.time.trim() }
+			: {}),
 		isFirstPageOfLesson: true,
 	};
 }
@@ -554,7 +553,6 @@ async function buildLessonInputFromProject(
 		resolved.locale,
 	);
 	const lessonTitle = lesson.title;
-	const lessonKicker = toLessonKicker(narration.frontmatter);
 	const lessonId = parsedLesson.lessonId;
 	if (!lessonId) throw new Error(`Lesson has no durable ID: ${targetLesson}`);
 	const narrationRuntime = narrationRuntimeData(manifest.narrationEnabled, narration.frontmatter);
@@ -576,7 +574,7 @@ async function buildLessonInputFromProject(
 			...deckPresentationData(manifest.moduleDeck, resolved.design),
 		},
 		lesson,
-		lessonKicker,
+		narration.frontmatter,
 		lessonId,
 	);
 	const firstBoundary = narration.blocks.find((block) => block.type === "pageBreak");
@@ -709,7 +707,6 @@ async function prepareCourseLesson({
 	);
 	const lesson = toLessonTitle(narration.frontmatter, lessonNumber, resolved.locale);
 	const lessonTitle = lesson.title;
-	const lessonKicker = toLessonKicker(narration.frontmatter);
 	const lessonId = parsedLesson.lessonId;
 	if (!lessonId) throw new Error(`Lesson has no durable ID: ${filename}`);
 	const narrationRuntime = narrationRuntimeData(manifest.narrationEnabled, narration.frontmatter);
@@ -767,7 +764,7 @@ async function prepareCourseLesson({
 				...leadingBoundary.data,
 			},
 			lesson,
-			lessonKicker,
+			narration.frontmatter,
 			lessonId,
 		);
 	}
