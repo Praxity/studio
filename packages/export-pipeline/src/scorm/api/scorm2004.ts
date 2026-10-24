@@ -26,6 +26,7 @@ import {
 	interactionDescription,
 	LMS_DESTINATIONS,
 	prepareRuntimeCommit,
+	recordInteraction,
 	type SCORMRuntime,
 	type TrackInteractionOptions,
 } from "../types.ts";
@@ -356,7 +357,7 @@ export class Scorm2004Runtime implements SCORMRuntime {
 
 		// Mirror in suspend_data for offline retrieval
 		const data = this.loadSuspendDataObject();
-		((data.interactions ??= []) as InteractionRecord[]).push({
+		data.interactions = recordInteraction((data.interactions as InteractionRecord[]) ?? [], {
 			id,
 			response: storedResponse,
 			correct,

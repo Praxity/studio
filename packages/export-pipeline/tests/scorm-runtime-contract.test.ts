@@ -62,6 +62,13 @@ class StrictScorm12Api {
 		if (!this.initialized || this.finished) return this.fail("301");
 		if (!this.isValidSetValue(element, value)) return this.fail("405");
 		this.data.set(element, value);
+		if (/^cmi\.interactions\.\d+\.id$/.test(element))
+			this.data.set(
+				"cmi.interactions._count",
+				String(
+					[...this.data.keys()].filter((key) => /^cmi\.interactions\.\d+\.id$/.test(key)).length,
+				),
+			);
 		return this.ok();
 	}
 

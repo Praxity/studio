@@ -24,8 +24,7 @@ const BLOCK_STATE_ALLOWANCE = 512;
 
 /**
  * Each submission stores the learner's response text, up to 250 characters.
- * The estimate assumes one short answer per question; open answers and retries
- * can use more.
+ * The estimate assumes one short answer per question; open answers can use more.
  */
 const ESTIMATED_RESPONSE_LENGTH = 32;
 /** A 13-digit `Date.now()` value, the length the adapter writes for years to come. */
@@ -41,8 +40,8 @@ export interface Scorm12StorageEstimate {
 
 /**
  * Estimate whether SCORM 1.2 suspend_data can hold a full attempt at this
- * course. The adapter stores every visited page ID and every assessment
- * submission there. Lossless compression shares repeated metadata; varied open
+ * course. The adapter stores every visited page ID and the latest assessment
+ * rows there. Lossless compression shares repeated metadata; varied open
  * answers and UUIDs can still exceed SCORM 1.2's 4,096-character limit.
  */
 export function estimateScorm12Storage(course: { blocks: PraxityBlock[] }): Scorm12StorageEstimate {

@@ -156,6 +156,19 @@ export interface RejectedInteractionEvidence {
 
 export type InteractionEvidence = InteractionRecord | RejectedInteractionEvidence;
 
+/** Keep the latest row and scored row per ID; retries follow older aggregates. */
+export function recordInteraction<T extends InteractionEvidence>(rows: T[], record: T): T[] {
+	const lastScored =
+		typeof record.score === "number"
+			? undefined
+			: [...rows].reverse().find((row) => row.id === record.id && typeof row.score === "number");
+	return [
+		...rows.filter((row) => row.id !== record.id),
+		...(lastScored ? [lastScored] : []),
+		record,
+	];
+}
+
 /** Row shape shared by scoring and evidence admission. */
 export function isInteractionRecord(input: unknown): input is InteractionRecord {
 	const record = input as Record<string, unknown> | null;

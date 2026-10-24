@@ -26,6 +26,7 @@ import {
 	type InteractionRecord,
 	LMS_DESTINATIONS,
 	prepareRuntimeCommit,
+	recordInteraction,
 	type SCORMRuntime,
 	type TrackInteractionOptions,
 } from "../types.ts";
@@ -294,7 +295,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 		}
 		const storedResponse =
 			options?.assessmentType === "choice" ? response : truncateInteractionResponse(response, 250);
-		data.interactions.push({
+		data.interactions = recordInteraction(data.interactions, {
 			id,
 			response: storedResponse,
 			correct,

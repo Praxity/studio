@@ -752,12 +752,9 @@ describe.each(["choice", "write-distractors"] as const)(
 							);
 							expect(events).toHaveLength(1);
 							expect(events[0]).toContain("ordinary-answer");
-							expect(runtime.getInteractions()).toMatchObject(
-								Array.from(
-									{ length: format === "standalone" && attempt === "attempt-2" ? 2 : 1 },
-									() => ({ id: "public-choice", response: "ordinary-answer" }),
-								),
-							);
+							expect(runtime.getInteractions()).toMatchObject([
+								{ id: "public-choice", response: "ordinary-answer" },
+							]);
 							expect(JSON.stringify(runtime.getInteractions())).not.toContain("PRIVATE-");
 							if (format !== "standalone")
 								expect(runtime.getSuspendData() ?? "").not.toContain("PRIVATE-");

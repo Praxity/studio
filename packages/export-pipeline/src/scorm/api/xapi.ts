@@ -30,6 +30,7 @@ import {
 	prepareRuntimeCommit,
 	type RuntimeCommitPreparation,
 	type RuntimeDestinations,
+	recordInteraction,
 	type SCORMRuntime,
 	type TrackInteractionOptions,
 } from "../types.ts";
@@ -458,16 +459,7 @@ export class XapiRuntime implements SCORMRuntime {
 			...assessmentEvidenceMetadata(options),
 			timestamp: Date.now(),
 		};
-		// Keep the latest attempt per question, plus its latest scored one, so saved state stays bounded.
-		const isScored = (item: InteractionEvidence) => typeof item.score === "number";
-		const lastScored = isScored(record)
-			? undefined
-			: [...this.interactions].reverse().find((item) => item.id === id && isScored(item));
-		this.interactions = [
-			...this.interactions.filter((item) => item.id !== id),
-			...(lastScored ? [lastScored] : []),
-			record,
-		];
+		this.interactions = recordInteraction(this.interactions, record);
 		this.persist();
 
 		const language =

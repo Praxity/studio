@@ -64,6 +64,10 @@ function launch(format: Format, mode: Mode) {
 	};
 	const set = (key: string, value: string) => {
 		values[key] = value;
+		if (/^cmi\.interactions\.\d+\.id$/.test(key))
+			values["cmi.interactions._count"] = String(
+				Object.keys(values).filter((key) => /^cmi\.interactions\.\d+\.id$/.test(key)).length,
+			);
 		return call("set", key, value);
 	};
 	const api =
