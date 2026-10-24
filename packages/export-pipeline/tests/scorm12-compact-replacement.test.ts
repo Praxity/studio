@@ -13,14 +13,7 @@ type WireCodec = {
 	serialize(data: codec.Scorm12SuspendData): string;
 	parse(raw: string): codec.Scorm12SuspendData | null;
 };
-const compact: WireCodec = (
-	codec as Partial<typeof codec> & {
-		scorm12CompactSuspendDataCodec?: WireCodec;
-	}
-).scorm12CompactSuspendDataCodec ?? {
-	serialize: codec.fitScorm12SuspendData,
-	parse: codec.parseScorm12SuspendData,
-};
+const compact: WireCodec = codec.scorm12CompactSuspendDataCodec;
 const Runtime = Scorm12Runtime as new (courseId?: string, wireCodec?: WireCodec) => Scorm12Runtime;
 const choice = {
 	version: 1,
@@ -81,7 +74,9 @@ it("reloads the exact lone-surrogate text draft after a choice and its row", () 
 		};
 		provider.set("text", text);
 		expect(provider.getSaveResult?.("text")).toEqual({ status: "saved", destination: "lms" });
-		expect(JSON.parse(values.get("cmi.suspend_data") ?? "")[0]).toBe("praxity-evidence-1");
+		expect(values.get("cmi.suspend_data")).toBe(
+			JSON.stringify(compact.parse(values.get("cmi.suspend_data") ?? "")),
+		);
 		const loaded = new Runtime(undefined, compact);
 		loaded.initialize();
 		expect(createBlockStateRuntime(loaded).get("text")).toEqual(text);
@@ -94,13 +89,18 @@ it("reloads the exact lone-surrogate text draft after a choice and its row", () 
 	}
 });
 
-it.each(["unreadable", "different-answer", "different-custom", "over-cap"])(
-	"refuses %s candidates before any replacement or reporting write",
-	(fault) => {
+const replacementCases = ["unreadable", "different-answer", "different-custom", "over-cap"].flatMap(
+	(fault) => ["raw", "compact"].map((form) => [fault, form]),
+);
+it.each(replacementCases)(
+	"refuses %s candidates before any replacement or reporting write, %s payload",
+	(fault, form) => {
 		const { values, writes, dom } = lms();
 		try {
-			const original = new Scorm12Runtime();
+			const original = new Runtime(undefined, compact);
 			original.initialize();
+			if (form === "compact")
+				expect(original.setSuspendData(JSON.stringify({ padding: "p".repeat(4096) }))).toBe(true);
 			createBlockStateRuntime(original).set("choice", choice);
 			original.trackInteraction("choice", "a", true, 100, {
 				assessmentType: "choice",
@@ -108,6 +108,7 @@ it.each(["unreadable", "different-answer", "different-custom", "over-cap"])(
 				maxAttempts: 2,
 			});
 			const before = values.get("cmi.suspend_data");
+			expect(Array.isArray(JSON.parse(before ?? ""))).toBe(form === "compact");
 			const bad: WireCodec = {
 				...compact,
 				serialize: (data) => {
@@ -162,7 +163,7 @@ it("checks the privacy-filtered payload and preserves opaque custom text", () =>
 		expect(runtime.setSuspendData(custom)).toBe(true);
 		expect(JSON.parse(runtime.getSuspendData() ?? "").blockState).toEqual({ public: choice });
 		expect(runtime.setSuspendData(' { "opaque": "\\ud800" } ')).toBe(true);
-		expect(codec.parseScorm12CompactSuspendData(values.get("cmi.suspend_data") ?? "")?.custom).toBe(
+		expect(compact.parse(values.get("cmi.suspend_data") ?? "")?.custom).toBe(
 			' { "opaque": "\\ud800" } ',
 		);
 	} finally {
@@ -170,7 +171,7 @@ it("checks the privacy-filtered payload and preserves opaque custom text", () =>
 	}
 });
 
-it("keeps the ordinary writer and compact hold selected without the capability", () => {
+it("keeps the ordinary writer selected before activation", () => {
 	const { values, writes, dom } = lms();
 	try {
 		const runtime = new Scorm12Runtime();
@@ -181,7 +182,7 @@ it("keeps the ordinary writer and compact hold selected without the capability",
 		);
 		values.set(
 			"cmi.suspend_data",
-			compact.serialize({ visitedPages: [], interactions: [], custom: "held" }),
+			compact.serialize({ visitedPages: [], interactions: [], custom: "held".repeat(1024) }),
 		);
 		const loaded = new Scorm12Runtime();
 		loaded.initialize();
