@@ -1,4 +1,7 @@
-import type { ChoiceDependencyEvidence } from "@praxity/shared-blocks/choice-learner-state";
+import {
+	type ChoiceDependencyEvidence,
+	createChoiceDependencyView,
+} from "@praxity/shared-blocks/choice-learner-state";
 import type { AdmittedChoiceStateFacts } from "@praxity/shared-blocks/choice-state-facts";
 import { isSmallPreviewDocument } from "@praxity/shared-blocks/course-preview-protocol";
 import type { LearnerBlockResponseTruncated } from "@praxity/shared-blocks/learner-block-response";
@@ -130,6 +133,27 @@ export function initializeCourseHost(
 
 	const hostView = environment.win as Window & typeof globalThis;
 	const hostWindow = hostView as CourseHostWindow;
+	const facts = page as CourseHostConfig & AdmittedChoiceStateFacts;
+	const bindChoiceEvidence = (provider: LearnerBlockStateRuntime, runtime: SCORMRuntime) => {
+		provider.getChoiceDependencyView = () => {
+			const rows = runtime.getInteractionEvidence
+				? runtime.getInteractionEvidence()
+				: runtime.getInteractions();
+			return createChoiceDependencyView(
+				rows === null
+					? {
+							...facts,
+							choiceStateInvalidIds: [
+								...facts.choiceStateInvalidIds,
+								...Object.keys(facts.choiceStateQuestions),
+								...Object.keys(facts.choiceStateGroups ?? {}),
+							],
+						}
+					: facts,
+				{ rows: rows ?? [], readState: (id) => provider.get(id) },
+			);
+		};
+	};
 	if (hostWindow.__praxityHostStarted) return false;
 	hostWindow.__praxityHostStarted = adapter.format;
 
@@ -176,6 +200,7 @@ export function initializeCourseHost(
 		const provider = hostWindow.__praxityBlockState;
 		const runtime = hostWindow.__praxityRuntime;
 		if (provider && runtime && hostWindow.__praxityTracker && trackerLifetime !== lifetime) {
+			bindChoiceEvidence(provider, runtime);
 			const current = () =>
 				(!authority || lifetime?.current() === true) && hostWindow.__praxityBlockState === provider;
 			const tracker = createTracker(runtime, current);
@@ -254,6 +279,7 @@ export function initializeCourseHost(
 				hostWindow.__praxityBlockState === provider;
 			preparing = false;
 			if (!provider || !owned()) return;
+			bindChoiceEvidence(provider, runtime);
 			const tracker = createTracker(runtime, owned);
 			bindCommitPreparation(runtime, tracker, owned);
 			const scormSession = adapter.installLifecycle?.(runtime, page, environment) === true;
@@ -378,7 +404,7 @@ export function initializeCourseHost(
 			true,
 		);
 
-	environment.doc.addEventListener("praxity:assessment-response", (event) => {
+	const reportAssessmentResponse = (event: Event) => {
 		const owned = selfCheckEpochTicket(environment.doc, event);
 		const tracker = hostWindow.__praxityTracker;
 		const runtime = hostWindow.__praxityRuntime;
@@ -407,13 +433,18 @@ export function initializeCourseHost(
 				options,
 			);
 		} catch (error) {
-			if (runtime?.getBlockSaveResult?.(blockId)?.status === "not-saved") return;
+			const result = runtime?.getBlockSaveResult?.(blockId);
+			if (result?.status === "not-saved") {
+				if (detail.assessmentType === "choice" || result.code === "unreadable-state")
+					event.preventDefault();
+				return;
+			}
 			throw error;
 		}
 		if (owned() && hostWindow.__praxityRuntime === runtime) runtime?.commit();
-	});
+	};
 
-	environment.doc.addEventListener("praxity:assessment-group-complete", (event) => {
+	const reportAssessmentGroup = (event: Event) => {
 		const owned = selfCheckEpochTicket(environment.doc, event);
 		const tracker = hostWindow.__praxityTracker;
 		const runtime = hostWindow.__praxityRuntime;
@@ -450,11 +481,16 @@ export function initializeCourseHost(
 				assessmentReportingOptions(detail, page.pageTitle),
 			);
 		} catch (error) {
-			if (submissionView && runtime?.getBlockSaveResult?.(groupId)?.status === "not-saved") return;
+			if (submissionView && runtime?.getBlockSaveResult?.(groupId)?.status === "not-saved") {
+				event.preventDefault();
+				return;
+			}
 			throw error;
 		}
 		if (owned() && hostWindow.__praxityRuntime === runtime) runtime?.commit();
-	});
+	};
+	environment.doc.addEventListener("praxity:assessment-response", reportAssessmentResponse);
+	environment.doc.addEventListener("praxity:assessment-group-complete", reportAssessmentGroup);
 
 	return true;
 }

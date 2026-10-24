@@ -14,14 +14,18 @@ definitions, compiler footnotes, glossary entries, attributes and element bounda
 do not count. Invalid pairs are omitted
 together, retain an explicit invalid status and diagnostic ID, and leave unrelated
 reporting operational. The assessment island selects its block's admitted pair;
-editor mounts without compiled facts keep their local policy. These signatures
-remain dormant: saved-answer admission, history and LMS outcomes do not use them.
+editor mounts without compiled facts keep their local policy. Each admitted host
+binds a fresh evidence view before restoration. Signed answers with unchanged
+material restore exactly. Unsigned submissions and changed material offer New
+attempt in English and French. The previous verdict remains in ordinary course
+outcomes while the learner edits a recovery draft; resubmission replaces it and
+can lower the result. History adds no waiting gate or exit policy.
 
 Studio's nonblocking `choice-raw-html-footnote` advice checks option label source
 with content-model's HTML classifier and footnote recognizer. It deliberately
 does not predict material signatures or parse or sanitize HTML. Labels containing
 both forms may display footnote syntax as plain text, and editing the note later
-may make learners answer again once answer history uses signatures. Authors can use
+may offer learners a new attempt. Authors can use
 Markdown formatting or move the note to the question. This source check leaves
 learner output, block data and signature derivation unchanged, and imports no
 signature or DOM runtime at checker or CLI startup.
@@ -38,12 +42,15 @@ conflicting facts refuse with a named duplicate-ID diagnostic because a single
 course-wide pair cannot represent both questions.
 
 SCORM 1.2's suspend-data codec owns the wire representation and the 4,096-character
-limit. Small and existing saves use JSON; choice envelopes may use a bounded zlib
-envelope when JSON would exceed the available room. The export estimate uses that
+limit. Courses with choices use lossless JSON when it fits and a bounded,
+versioned compact envelope otherwise. Every destination saves the same short
+signature without an option proof. The export estimate uses that
 same encoding decision with its allowance reserved first. Privacy filtering runs
 before compression. Compressed saves require canonical Base64 and must match their
-declared decoded length and zlib checksum plus CRC-32 for decoded and compressed
-bytes. Unreadable saves remain untouched and restore no current credit. Every LMS-bound assessment stays
+declared decoded length and checksums. Every replacement passes exact-payload
+preflight. The row reader uses the admitted payload without decoding it again.
+Courses without choices retain their ordinary codec. Unreadable saves remain
+untouched and restore no current credit. Every LMS-bound assessment stays
 editable and shows the storage notice. Draft recovery uses tab storage scoped to
 the course, LMS learner ID and exact damaged bytes. It never becomes LMS credit.
 Self-check drafts use the same recovery while comparison admission and submission

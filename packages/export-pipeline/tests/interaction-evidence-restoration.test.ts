@@ -7,9 +7,25 @@ import * as scorm12 from "../src/scorm/api/scorm12";
 import * as scorm2004 from "../src/scorm/api/scorm2004";
 import * as xapi from "../src/scorm/api/xapi";
 import { LocalStorageRuntime } from "../src/scorm/local-storage-runtime";
+import { scorm12CompactSuspendDataCodec } from "../src/scorm/scorm12-suspend-data";
 import * as evidence from "../src/scorm/types";
 
 const signature = "s96:3w14l18FIDxpK_Py";
+
+it("admits compact rows with one decode and reuses an already admitted payload", () => {
+	const payload = { visitedPages: [], interactions: [current], custom: "x".repeat(4096) };
+	const wire = scorm12CompactSuspendDataCodec.serialize(payload);
+	const parse = vi.spyOn(JSON, "parse");
+	try {
+		expect(scorm12.readScorm12InteractionEvidence(wire)).toEqual([current]);
+		expect(parse.mock.calls.filter(([input]) => input === wire)).toHaveLength(1);
+		parse.mockClear();
+		expect(scorm12.readScorm12InteractionEvidence(payload)).toEqual([current]);
+		expect(parse).not.toHaveBeenCalled();
+	} finally {
+		parse.mockRestore();
+	}
+});
 const current = {
 	id: "a",
 	response: "a",
@@ -105,7 +121,7 @@ function scorm(format: string, raw: string) {
 }
 
 describe("ordinary restoration characterization", () => {
-	it("keeps xAPI acceptance, raw fields, order and persisted writes unchanged", () => {
+	it("keeps xAPI scoring acceptance and retains signed rejected rows in persisted order", () => {
 		const store = storage();
 		const rawRows = [
 			{ ...current, customField: "opaque", attemptsUsed: "malformed" },
@@ -125,7 +141,15 @@ describe("ordinary restoration characterization", () => {
 		expect(store.getItem(key)).toBe(
 			JSON.stringify({
 				visitedPages: [],
-				interactions: [rawRows[0], rawRows[1], rawRows[8]],
+				interactions: [
+					rawRows[0],
+					rawRows[1],
+					...[2, 3, 4, 7].map((index) => ({
+						...(rawRows[index] as object),
+						choiceEvidenceInvalid: true,
+					})),
+					rawRows[8],
+				],
 				completionStatus: "incomplete",
 				successStatus: "unknown",
 				score: null,
@@ -140,7 +164,10 @@ describe("ordinary restoration characterization", () => {
 	it.each(["scorm12", "scorm2004"])("%s retains rejected raw rows in order", (format) => {
 		const raw = JSON.stringify({ visitedPages: [], interactions: [current, rejected] });
 		const adapter = scorm(format, raw);
-		expect(JSON.parse(JSON.stringify(adapter.getInteractions()))).toEqual([current, rejected]);
+		expect(JSON.parse(JSON.stringify(adapter.getInteractions()))).toEqual([
+			current,
+			{ ...rejected, ...marker },
+		]);
 	});
 
 	it("local state refuses a malformed envelope without reviving any row or replacing bytes", () => {
@@ -154,7 +181,7 @@ describe("ordinary restoration characterization", () => {
 	});
 });
 
-describe("dormant signed restoration", () => {
+describe("signed restoration", () => {
 	it("rejects unsigned numeric IDs through the ordinary and dormant readers", () => {
 		const raw = JSON.stringify({ interactions: [current, { id: 0, response: "a", timestamp: 2 }] });
 		expect(ordinaryRead(raw)).toEqual([current]);
@@ -248,7 +275,7 @@ describe("dormant signed restoration", () => {
 			opaque: "keep",
 		};
 		const raw = JSON.stringify({ interactions: [legacy, invalid] });
-		expect(ordinaryRead(raw)).toEqual([legacy, invalid]);
+		expect(ordinaryRead(raw)).toEqual([legacy, { ...invalid, ...marker }]);
 		const rows = read(raw);
 		expect(rows).toEqual([legacy, { ...invalid, ...marker }]);
 		expect(read(JSON.stringify({ interactions: rows }))).toEqual(rows);

@@ -16,10 +16,11 @@ import {
 	SCORM12_SUSPEND_DATA_LIMIT,
 	type Scorm12SuspendData,
 	type Scorm12SuspendDataCodec,
+	scorm12CompactSuspendDataCodec,
 	serializeScorm12SuspendData,
 } from "../scorm12-suspend-data";
 import {
-	assessmentAttemptMetadata,
+	assessmentEvidenceMetadata,
 	assessmentRowsEvidence,
 	type InteractionEvidence,
 	type InteractionRecord,
@@ -39,9 +40,11 @@ import {
 } from "./session.ts";
 import { sessionTime } from "./session-time.ts";
 
-/** Dormant export so ordinary adapter instances do not retain evidence code in bundles. */
-export function readScorm12InteractionEvidence(raw: string): InteractionEvidence[] | null {
-	const data = parseScorm12SuspendData(raw);
+/** The wire reader and adapter share admission of raw and compact rows. */
+export function readScorm12InteractionEvidence(
+	input: string | Scorm12SuspendData,
+): InteractionEvidence[] | null {
+	const data = typeof input === "string" ? scorm12CompactSuspendDataCodec.parse(input) : input;
 	return data ? assessmentRowsEvidence(data.interactions) : null;
 }
 
@@ -296,7 +299,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 			response: storedResponse,
 			correct,
 			score,
-			...assessmentAttemptMetadata(options),
+			...assessmentEvidenceMetadata(options),
 			timestamp: Date.now(),
 		});
 		this.reportingSubmission = true;
@@ -376,7 +379,11 @@ export class Scorm12Runtime implements SCORMRuntime {
 		let interactions = this.loadSuspendPayload().interactions;
 		if (globalThis.__praxityPrivateState !== false)
 			interactions = interactions.filter((record) => this.blockStatePolicy[record.id] !== "device");
-		return interactions.map((record) => ({ ...record, ...assessmentAttemptMetadata(record) }));
+		return interactions.map((record) => ({ ...record, ...assessmentEvidenceMetadata(record) }));
+	}
+
+	getInteractionEvidence(): InteractionEvidence[] | null {
+		return readScorm12InteractionEvidence(this.loadSuspendPayload());
 	}
 
 	setCourseFailure(failed: boolean): void {

@@ -66,7 +66,15 @@ test("choice imports stay confined to their declared consumers, including aliase
 				"packages/export-pipeline/template/src/hosts/course-host.ts",
 				"packages/shared-blocks/src/viewer/assessment-group-runtime.ts",
 			]) {
-				assert.match(checkDormantChoiceImports(path, source).join("\n"), new RegExp(name));
+				if (
+					path.endsWith("course-host.ts") &&
+					name === "createChoiceDependencyView" &&
+					!source.startsWith("export")
+				) {
+					assert.deepEqual(checkDormantChoiceImports(path, source), []);
+					continue;
+				}
+				assert.notDeepEqual(checkDormantChoiceImports(path, source), []);
 			}
 			assert.deepEqual(
 				checkDormantChoiceImports(
@@ -85,7 +93,7 @@ test("choice imports stay confined to their declared consumers, including aliase
 	])
 		assert.match(
 			checkDormantChoiceImports("packages/shared-blocks/src/viewer/planted.ts", source).join("\n"),
-			/dormant/,
+			/declared/,
 		);
 });
 
@@ -118,7 +126,7 @@ test("the recovery UI imports only its two state owners by name", () => {
 		assert.notDeepEqual(checkDormantChoiceImports(path, source), []);
 });
 
-test("dormant admission permits the existing envelope API, shared types and the canonical barrel", () => {
+test("admission permits the existing envelope API, shared types and the canonical barrel", () => {
 	assert.deepEqual(
 		checkDormantChoiceImports(
 			"packages/shared-blocks/src/blocks/AssessmentBlock.tsx",
@@ -149,7 +157,7 @@ test("dormant admission permits the existing envelope API, shared types and the 
 	);
 });
 
-test("the dormant tracker imports evidence types without admission or hashing code", () => {
+test("the tracker imports evidence types without admission or hashing code", () => {
 	const path = "packages/export-pipeline/src/scorm/tracking.ts";
 	assert.deepEqual(
 		checkDormantChoiceImports(
@@ -168,7 +176,7 @@ test("the dormant tracker imports evidence types without admission or hashing co
 		assert.notDeepEqual(checkDormantChoiceImports(path, source), []);
 });
 
-test("the dormant choice owner is unreachable from the production import graph", () => {
+test("choice admission refuses undeclared production imports", () => {
 	for (const source of [
 		'import "./choice-learner-state";',
 		'import {} from "./choice-learner-state";',
@@ -181,7 +189,7 @@ test("the dormant choice owner is unreachable from the production import graph",
 			"packages/shared-blocks/src/index.ts",
 			"apps/desktop/src/inspection-frame.ts",
 		])
-			assert.match(checkDormantChoiceImports(path, source).join("\n"), /dormant/);
+			assert.match(checkDormantChoiceImports(path, source).join("\n"), /declared/);
 	}
 	assert.deepEqual(
 		checkDormantChoiceImports(

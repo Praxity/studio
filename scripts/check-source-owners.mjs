@@ -1463,11 +1463,12 @@ export function checkDisplayIdImports(path, source, program) {
 	});
 }
 
-/** Choice admission stays dormant until its reporting and recovery consumers ship together. */
+/** Choice admission is confined to the state owner, host binding and recovery UI. */
 export function checkDormantChoiceImports(path, source, program) {
 	const owner = "packages/shared-blocks/src/choice-learner-state.ts";
 	const recoveryConsumer = "packages/shared-blocks/src/blocks/AssessmentBlock.tsx";
 	const recoveryImports = new Set(["restoreChoiceAssessmentState", "prepareChoiceAssessmentState"]);
+	const host = "packages/export-pipeline/template/src/hosts/course-host.ts";
 	return checkOwnedImports(
 		path,
 		source,
@@ -1481,7 +1482,14 @@ export function checkDormantChoiceImports(path, source, program) {
 				"choiceGroupSignature",
 				"prepareChoiceGroupSubmission",
 				"createChoiceDependencyView",
-			].map((name) => [name, recoveryImports.has(name) ? [owner, recoveryConsumer] : [owner]]),
+			].map((name) => [
+				name,
+				recoveryImports.has(name)
+					? [owner, recoveryConsumer]
+					: name === "createChoiceDependencyView"
+						? [owner, host]
+						: [owner],
+			]),
 		),
 		{
 			definition: owner,
@@ -1490,8 +1498,7 @@ export function checkDormantChoiceImports(path, source, program) {
 			barrels: [],
 			forbidModuleLoads: true,
 			allowOwnedNamedImports: true,
-			message:
-				"choice admission is dormant until its reporting and recovery consumers are available",
+			message: "choice admission belongs to its declared host and recovery consumers",
 		},
 	);
 }

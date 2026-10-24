@@ -67,6 +67,11 @@ guard. `scripts/check-source-owners.mjs` rejects outcome writes outside this wri
 and calls to `writeCourseOutcome` outside CourseTracker and the writer module.
 `finishRuntimeCourse` owns the runtime-only End exception in that module.
 
+Choice history preserves the last submitted verdict in these ordinary rules.
+New attempt and draft edits retain it; a new submission replaces it, including
+pass-to-fail changes. History does not suppress reporting, objectives or Finish.
+Saved member and group evidence uses the same short signature in every format.
+
 ## CMI Data Model Elements Used
 
 ### SCORM 1.2

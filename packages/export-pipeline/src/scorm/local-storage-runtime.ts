@@ -12,6 +12,7 @@ import {
 	serializeLearnerState,
 } from "@praxity/shared-blocks/learner-state";
 import {
+	assessmentEvidenceMetadata,
 	DEVICE_DESTINATIONS,
 	type InteractionRecord,
 	prepareRuntimeCommit,
@@ -100,11 +101,18 @@ export class LocalStorageRuntime implements SCORMRuntime {
 		response: string,
 		correct?: boolean,
 		score?: number,
-		_options?: TrackInteractionOptions,
+		options?: TrackInteractionOptions,
 	): void {
 		if (
 			this.updateState((state) => {
-				state.interactions.push({ id, response, correct, score, timestamp: Date.now() });
+				state.interactions.push({
+					id,
+					response,
+					correct,
+					score,
+					...(options?.contentSignature !== undefined ? assessmentEvidenceMetadata(options) : {}),
+					timestamp: Date.now(),
+				});
 			})
 		) {
 			return;
@@ -115,6 +123,7 @@ export class LocalStorageRuntime implements SCORMRuntime {
 			response,
 			correct,
 			score,
+			...(options?.contentSignature !== undefined ? assessmentEvidenceMetadata(options) : {}),
 			timestamp: Date.now(),
 		};
 		interactions.push(record);

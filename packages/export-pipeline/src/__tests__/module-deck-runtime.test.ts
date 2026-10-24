@@ -6,7 +6,9 @@ import { splitBlocksIntoPages } from "@praxity/shared-blocks/viewer/split-pages"
 import { createElement, useState } from "react";
 import { flushSync } from "react-dom";
 import { afterEach, assert, beforeEach, expect, it, vi } from "vitest";
+import { reportLearnerBlockResponse } from "../../../shared-blocks/src/learner-block-response";
 import { bindDeckControls } from "../../template/src/components/deck-control-activation";
+import { initializeScormCourseHost } from "../../template/src/hosts/course-host";
 import { mountDeckNarration } from "../../template/src/islands/deck-narration";
 import { initDeck } from "../../template/src/islands/island-deck";
 import { renderIsland } from "../../template/src/islands/utils";
@@ -19,10 +21,15 @@ import {
 import { moduleDeckFixture } from "../../tests/fixtures/module-deck";
 import { type DeckPage, deckPageData } from "../module-deck";
 import { enhanceHighlight } from "../patterns/highlight/enhance";
+import { Scorm12Runtime } from "../scorm/api/scorm12";
 import { LocalStorageRuntime } from "../scorm/local-storage-runtime";
 import { CourseTracker } from "../scorm/tracking";
 
 vi.mock("../../template/src/islands/deck-narration", () => ({ mountDeckNarration: vi.fn() }));
+vi.mock("@praxity/shared-blocks/self-check-consumers", async (original) => ({
+	...(await original<typeof import("@praxity/shared-blocks/self-check-consumers")>()),
+	shouldAttachIslandAutomatically: () => false,
+}));
 
 let cleanup: (() => void) | undefined;
 let drawerMedia: EventTarget & { matches: boolean };
@@ -858,6 +865,340 @@ it.each(["attempt", "pass"] as const)(
 		expect(
 			document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled"),
 		).toBe("false");
+	},
+);
+
+it.each(["assessment", "assessmentGroup"])(
+	"a refused new %s submission keeps its deck gate locked",
+	(type) => {
+		setup(false);
+		const config = document.getElementById("praxity-config")!;
+		const data = JSON.parse(config.textContent!);
+		data.deckPages[0].gates = [{ id: "refused", rule: "pass" }];
+		config.textContent = JSON.stringify(data);
+		window.__praxityBlockState = {
+			get: () => undefined,
+			set: () => undefined,
+			getSaveResult: () => ({ status: "not-saved", code: "runtime-write-failed" }),
+		};
+		const cancel = (event: Event) => event.preventDefault();
+		const eventName =
+			type === "assessment" ? "praxity:assessment-response" : "praxity:assessment-group-complete";
+		document.addEventListener(eventName, cancel);
+		try {
+			cleanup = initDeck();
+			document.dispatchEvent(
+				new CustomEvent(
+					type === "assessment"
+						? "praxity:assessment-response"
+						: "praxity:assessment-group-complete",
+					{
+						cancelable: true,
+						detail: {
+							blockId: "refused",
+							groupId: "refused",
+							correct: true,
+							passed: true,
+							completed: true,
+						},
+					},
+				),
+			);
+			expect(
+				document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled"),
+			).toBe("true");
+		} finally {
+			document.removeEventListener(eventName, cancel);
+		}
+	},
+);
+
+it.each([false, true])(
+	"a non-choice refusal releases the accepted attempt unless the save is unreadable (%s)",
+	(unreadable) => {
+		setup();
+		const config = document.getElementById("praxity-config")!;
+		const deck = JSON.parse(config.textContent!);
+		deck.deckPages[0].gates = [{ id: "check", rule: "attempt" }];
+		config.textContent = JSON.stringify(deck);
+		for (const [id, value] of [
+			[
+				"praxity-host-config",
+				{
+					version: 1,
+					courseId: "text-refusal",
+					pageId: "slide-1",
+					pageTitle: "Practice",
+					currentPage: 1,
+					totalPages: 3,
+					currentSlug: "practice",
+					availableSlugs: ["practice"],
+					pageIdMap: { "slide-1": "practice" },
+					completionMethod: "allPages",
+					pageRole: "content",
+					deck: true,
+					strings: {},
+				},
+			],
+			["praxity-deployment-config", { format: "scorm12" }],
+		] as const) {
+			const script = document.createElement("script");
+			script.id = id;
+			script.type = "application/json";
+			script.textContent = JSON.stringify(value);
+			document.body.append(script);
+		}
+		const original = unreadable
+			? "damaged saved bytes"
+			: JSON.stringify({
+					visitedPages: [],
+					interactions: [],
+					custom: JSON.stringify({
+						blockState: {
+							essay: {
+								version: 1,
+								kind: "assessment",
+								assessmentType: "textResponse",
+								answer: "x".repeat(3650),
+								checked: true,
+								completed: true,
+								interacted: true,
+								attemptCount: 1,
+							},
+						},
+					}),
+				});
+		const values = new Map([["cmi.suspend_data", original]]);
+		Object.assign(window, {
+			API: {
+				LMSInitialize: () => "true",
+				LMSFinish: () => "true",
+				LMSCommit: () => "true",
+				LMSGetLastError: () => "0",
+				LMSGetErrorString: () => "",
+				LMSGetDiagnostic: () => "",
+				LMSGetValue: (key: string) => values.get(key) ?? "",
+				LMSSetValue: (key: string, value: string) => {
+					values.set(key, value);
+					return "true";
+				},
+			},
+		});
+		const disposals: Array<() => void> = [];
+		const docAdd = document.addEventListener.bind(document);
+		const winAdd = window.addEventListener.bind(window);
+		const docSpy = vi.spyOn(document, "addEventListener").mockImplementation((...args) => {
+			docAdd(...args);
+			disposals.push(() => document.removeEventListener(...args));
+		});
+		const winSpy = vi.spyOn(window, "addEventListener").mockImplementation((...args) => {
+			winAdd(...args);
+			disposals.push(() => window.removeEventListener(...args));
+		});
+		try {
+			expect(
+				initializeScormCourseHost({
+					format: "scorm12",
+					readEntry: () => null,
+					createRuntime: () => new Scorm12Runtime(),
+				}),
+			).toBe(true);
+			docSpy.mockRestore();
+			winSpy.mockRestore();
+			cleanup = initDeck();
+			const locked = () =>
+				document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled");
+			expect(locked()).toBe("true");
+			const pause = vi.mocked(mountDeckNarration).mock.results.at(-1)?.value.pause;
+			pause.mockClear();
+			reportLearnerBlockResponse({
+				blockId: "check",
+				assessmentType: "textResponse",
+				submitted: true,
+				attemptsUsed: 1,
+				maxAttempts: 1,
+				responseText: "My answer ".repeat(30),
+			});
+			expect(window.__praxityBlockState?.getSaveResult?.("check")).toEqual({
+				status: "not-saved",
+				code: unreadable ? "unreadable-state" : "runtime-write-failed",
+			});
+			expect(locked()).toBe(unreadable ? "true" : "false");
+			expect(pause).toHaveBeenCalledOnce();
+			if (unreadable) expect(values.get("cmi.suspend_data")).toBe(original);
+		} finally {
+			docSpy.mockRestore();
+			winSpy.mockRestore();
+			for (const dispose of disposals) dispose();
+			delete (window as unknown as Record<string, unknown>).__praxityHostStarted;
+			delete window.__praxityFinishCourse;
+			delete (window as unknown as Record<string, unknown>).API;
+		}
+	},
+);
+
+it.each(["assessment", "assessmentGroup"])(
+	"a real host's refused new %s keeps the deck locked",
+	(type) => {
+		setup();
+		const config = document.getElementById("praxity-config")!;
+		const deck = JSON.parse(config.textContent!);
+		const gateId = type === "assessment" ? "check" : "group";
+		deck.deckPages[0].gates = [{ id: gateId, rule: "pass" }];
+		config.textContent = JSON.stringify(deck);
+		const page = {
+			version: 1,
+			courseId: "refused-group",
+			pageId: "slide-1",
+			pageTitle: "Practice",
+			currentPage: 1,
+			totalPages: 3,
+			currentSlug: "practice",
+			availableSlugs: ["practice"],
+			pageIdMap: { "slide-1": "practice" },
+			completionMethod: "allPages",
+			pageRole: "content",
+			deck: true,
+			strings: {},
+			choiceStateQuestions: { check: gateQuestion },
+			choiceStateSignatures: { check: gateSignature },
+			choiceStateGroups: { group: { mode: "all", memberIds: ["check"], requiredIds: ["check"] } },
+		};
+		for (const [id, value] of [
+			["praxity-host-config", page],
+			["praxity-deployment-config", { format: "scorm12" }],
+		] as const) {
+			const script = document.createElement("script");
+			script.id = id;
+			script.type = "application/json";
+			script.textContent = JSON.stringify(value);
+			document.body.append(script);
+		}
+		const values = new Map<string, string>();
+		let refused = false;
+		Object.assign(window, {
+			API: {
+				LMSInitialize: () => "true",
+				LMSFinish: () => "true",
+				LMSCommit: () => "true",
+				LMSGetLastError: () => "0",
+				LMSGetErrorString: () => "",
+				LMSGetDiagnostic: () => "",
+				LMSGetValue: (key: string) => values.get(key) ?? "",
+				LMSSetValue: (key: string, value: string) => {
+					if (refused && key === "cmi.suspend_data") return "false";
+					values.set(key, value);
+					return "true";
+				},
+			},
+		});
+		const runtime = new Scorm12Runtime();
+		const disposals: Array<() => void> = [];
+		const docAdd = document.addEventListener.bind(document);
+		const winAdd = window.addEventListener.bind(window);
+		const docSpy = vi.spyOn(document, "addEventListener").mockImplementation((...args) => {
+			docAdd(...args);
+			disposals.push(() => document.removeEventListener(...args));
+		});
+		const winSpy = vi.spyOn(window, "addEventListener").mockImplementation((...args) => {
+			winAdd(...args);
+			disposals.push(() => window.removeEventListener(...args));
+		});
+		try {
+			expect(
+				initializeScormCourseHost({
+					format: "scorm12",
+					readEntry: () => null,
+					createRuntime: () => runtime,
+				}),
+			).toBe(true);
+			docSpy.mockRestore();
+			winSpy.mockRestore();
+			// Published head host precedes the body-end island loader.
+			cleanup = initDeck();
+			const pause = vi.mocked(mountDeckNarration).mock.results.at(-1)?.value.pause;
+			pause.mockClear();
+			const provider = window.__praxityBlockState!;
+			if (type === "assessmentGroup") {
+				provider.set("check", { ...exhaustedGateState, contentSignature: gateSignature });
+				runtime.trackInteraction("check", "wrong", false, 0, { contentSignature: gateSignature });
+			}
+			const view = provider.getChoiceDependencyView?.();
+			assert(view);
+			const state = {
+				version: 1,
+				kind: "assessmentGroup",
+				mode: "all",
+				selectedMemberId: null,
+				completed: true,
+			};
+			const submitted =
+				type === "assessmentGroup"
+					? view.prepareGroupSubmission?.("group", {
+							...view,
+							readState: (id) => (id === "group" ? state : view.readState(id)),
+						})
+					: { contentSignature: gateSignature };
+			assert(submitted);
+			expect(
+				provider.stageSubmission?.(gateId, () => {
+					provider.set(
+						gateId,
+						type === "assessmentGroup"
+							? ({ ...state, submitted } as never)
+							: { ...exhaustedGateState, contentSignature: gateSignature },
+					);
+					return true;
+				}),
+			).toBe(true);
+			const bytes = values.get("cmi.suspend_data");
+			refused = true;
+			const detail = {
+				groupId: "group",
+				blockId: "check",
+				assessmentType: "choice",
+				submitted: true,
+				attemptsUsed: 2,
+				maxAttempts: 2,
+				correct: false,
+				passed: false,
+				completed: true,
+				score: 0,
+				memberIds: ["check"],
+				contentSignature: type === "assessmentGroup" ? submitted.contentSignature : gateSignature,
+			};
+			if (type === "assessment") {
+				let canceled: boolean | undefined;
+				document.addEventListener(
+					"praxity:assessment-response",
+					(event) => {
+						canceled = event.defaultPrevented;
+					},
+					{ once: true },
+				);
+				reportLearnerBlockResponse(detail);
+				expect(canceled).toBe(true);
+			} else {
+				expect(
+					document.dispatchEvent(
+						new CustomEvent("praxity:assessment-group-complete", { cancelable: true, detail }),
+					),
+				).toBe(false);
+			}
+			expect(pause).toHaveBeenCalledOnce();
+			expect(values.get("cmi.suspend_data")).toBe(bytes);
+			expect(provider.get(gateId)).toBeUndefined();
+			expect(
+				document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled"),
+			).toBe("true");
+		} finally {
+			docSpy.mockRestore();
+			winSpy.mockRestore();
+			for (const dispose of disposals) dispose();
+			delete (window as unknown as Record<string, unknown>).__praxityHostStarted;
+			delete window.__praxityFinishCourse;
+			delete (window as unknown as Record<string, unknown>).API;
+		}
 	},
 );
 

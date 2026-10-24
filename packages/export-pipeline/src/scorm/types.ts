@@ -47,6 +47,8 @@ export interface SCORMRuntime {
 		options?: TrackInteractionOptions,
 	): void;
 	getInteractions(): InteractionRecord[];
+	/** Raw admitted rows retain rejected signed evidence in its original order. */
+	getInteractionEvidence?(): InteractionEvidence[] | null;
 	setCompletion(status: "incomplete" | "completed" | "passed" | "failed"): void;
 	getCompletion(): string;
 	/**
@@ -125,13 +127,13 @@ export function assessmentAttemptMetadata(input?: unknown): AssessmentAttemptMet
 	};
 }
 
-/** Dormant signed admission; ordinary adapter metadata remains selected until activation. */
+/** Shared signed metadata for reporting events and stored rows. */
 export function assessmentEvidenceMetadata(input?: unknown): AssessmentAttemptMetadata {
 	const metadata = assessmentAttemptMetadata(input);
 	if (!input || typeof input !== "object") return metadata;
 	const { contentSignature, choiceEvidenceInvalid, memberIds } = input as AssessmentAttemptMetadata;
 	const validSignature = isChoiceContentSignature(contentSignature);
-	// Keep ordinary member normalization unchanged until activation unifies the readers.
+	// Empty witnesses are valid for groups with no scored members.
 	const validMembers = Array.isArray(memberIds) && Array.from(memberIds).every(isNonemptyString);
 	return {
 		...metadata,
@@ -154,7 +156,7 @@ export interface RejectedInteractionEvidence {
 
 export type InteractionEvidence = InteractionRecord | RejectedInteractionEvidence;
 
-/** Row shape shared by ordinary xAPI acceptance and dormant evidence admission. */
+/** Row shape shared by scoring and evidence admission. */
 export function isInteractionRecord(input: unknown): input is InteractionRecord {
 	const record = input as Record<string, unknown> | null;
 	const isNumber = (value: unknown) => typeof value === "number" && Number.isFinite(value);
@@ -168,7 +170,7 @@ export function isInteractionRecord(input: unknown): input is InteractionRecord 
 	);
 }
 
-/** Dormant admission: malformed signed evidence is history in every transport. */
+/** Malformed signed evidence is history in every transport. */
 export function assessmentRowEvidence(input: unknown): InteractionEvidence | null {
 	if (!input || typeof input !== "object") return null;
 	const record = input as Record<string, unknown>;
@@ -215,7 +217,7 @@ export function assessmentReportingOptions(
 	fallbackTitle: string,
 ): TrackInteractionOptions {
 	return {
-		...assessmentAttemptMetadata(input),
+		...assessmentEvidenceMetadata(input),
 		result: input.result === "neutral" ? "neutral" : undefined,
 		choiceDefinition: input.choiceDefinition as TrackInteractionOptions["choiceDefinition"],
 		assessmentType: input.assessmentType as string | undefined,

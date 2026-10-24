@@ -304,7 +304,6 @@ function restoreAssessmentState(
 	blockId: string,
 	assessmentType: string,
 	response: AssessmentBlockData["response"],
-	dontKnow: boolean,
 ): SavedAssessmentState | null {
 	const value = readLearnerBlockState(blockId);
 	if (
@@ -324,23 +323,6 @@ function restoreAssessmentState(
 
 	const answer = value.answer;
 	switch (assessmentType) {
-		case "choice": {
-			const choice = response as ChoiceResponse | undefined;
-			const validIds = new Set(choice?.options?.map(({ id }) => id));
-			if (dontKnow) validIds.add(DONT_KNOW);
-			if (
-				(value.reviewedChoiceIds !== undefined &&
-					(!Array.isArray(value.reviewedChoiceIds) ||
-						!value.reviewedChoiceIds.every((id) => typeof id === "string" && validIds.has(id)))) ||
-				!Array.isArray(answer) ||
-				!answer.every((id) => typeof id === "string" && validIds.has(id)) ||
-				new Set(answer).size !== answer.length ||
-				(choice?.selectionMode !== "multiple" && answer.length > 1)
-			) {
-				return null;
-			}
-			break;
-		}
 		case "hotspot": {
 			const hotspotResponse = response as HotspotResponse | undefined;
 			const validIds = new Set(
@@ -1953,7 +1935,8 @@ export function PreviewAssessmentBlock({
 		const restored = restoreChoiceAssessmentState(readLearnerBlockState(blockId), choiceFacts);
 		const recovering =
 			restored.current?.checked === false &&
-			restored.history.some((entry) => isRecord(entry) && entry.checked === true);
+			(restored.current.attemptCount > 0 ||
+				restored.history.some((entry) => isRecord(entry) && entry.checked === true));
 		return view && view.status(blockId) === "history" && !recovering
 			? { ...restored, status: "review" as const, current: null }
 			: restored;
@@ -1962,8 +1945,8 @@ export function PreviewAssessmentBlock({
 		() =>
 			choiceRestore
 				? choiceRestore.current
-				: restoreAssessmentState(blockId, assessmentType, response, dontKnow),
-		[assessmentType, blockId, response, dontKnow, choiceRestore],
+				: restoreAssessmentState(blockId, assessmentType, response),
+		[assessmentType, blockId, response, choiceRestore],
 	);
 	const [newChoiceAttempt, setNewChoiceAttempt] = useState(false);
 	const choiceReviewPending = choiceRestore?.status === "review" && !newChoiceAttempt;

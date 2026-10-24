@@ -104,7 +104,7 @@ function launch(
 	const seed = createBlockStateRuntime(runtime);
 	seed.set("g", { ...groupState, submitted: old });
 	runtime.trackInteraction("g", "0%", false, 0, { memberIds: ["a"] });
-	let provider: LearnerBlockStateRuntime;
+	let provider!: LearnerBlockStateRuntime;
 	let invalid = false;
 	const view = (): ChoiceDependencyEvidence =>
 		withChoiceDependencyStatus({
@@ -126,6 +126,7 @@ function launch(
 	document.body.innerHTML = `<main></main><script id="praxity-host-config" type="application/json">${JSON.stringify({ version: 1, courseId: "course", pageId: "page", pageTitle: "Practice", currentPage: 1, totalPages: 1, currentSlug: "practice", availableSlugs: ["practice"], pageIdMap: { page: "practice" }, completionMethod: "allPages", pageRole: "content", strings: {}, passMark: 80, scoredAssessmentIds: ["g"], requiredAssessmentIds: ["g"] })}</script><script id="praxity-deployment-config" type="application/json">${JSON.stringify({ format })}</script>`;
 	Object.defineProperty(document, "readyState", { configurable: true, value: "complete" });
 	expect(initializeCourseHost({ format, createRuntime: () => runtime })).toBe(true);
+	if (evidence) provider.getChoiceDependencyView = view;
 	const objective = runtime.trackObjective.bind(runtime);
 	vi.spyOn(runtime, "trackObjective").mockImplementation((...args) => {
 		order.push("objective");
@@ -221,7 +222,7 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 		const { provider, order, writes } = launch(format, false);
 		submit();
 		expect(order.slice(0, 3)).toEqual(["objective", "interaction", "save"]);
-		expect(provider.getChoiceDependencyView).toBeUndefined();
+		expect(provider.getChoiceDependencyView?.()?.groups).toBeUndefined();
 		expect(writes.slice(0, 3)).toEqual([
 			["cmi.objectives.0.id", "g"],
 			["cmi.objectives.0.score.raw", "100"],

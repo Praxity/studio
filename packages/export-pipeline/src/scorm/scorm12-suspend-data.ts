@@ -378,13 +378,13 @@ function decodeEvidence(envelope: unknown[]): JsonValue {
 	return data;
 }
 
-/** Dormant compact reader for replacement preflight and later restoration admission. */
+/** Bounded compact reader for replacement preflight and restoration. */
 export function parseScorm12CompactSuspendData(raw: string): Scorm12SuspendData | null {
 	try {
 		if (raw.length > SCORM12_SUSPEND_DATA_LIMIT) return null;
 		const envelope: unknown = JSON.parse(raw);
 		if (!Array.isArray(envelope)) return null;
-		// Reuse ordinary payload validation; compact input stays held by that parser.
+		// Both envelopes use the same payload validation.
 		return suspendDataPayload(decodeEvidence(envelope));
 	} catch {
 		return null;
@@ -396,19 +396,21 @@ export interface Scorm12SuspendDataCodec {
 	parse(raw: string): Scorm12SuspendData | null;
 }
 
-/** Dormant writer; hosts select this codec only when compact evidence is admitted. */
-export function serializeScorm12CompactSuspendData(data: Scorm12SuspendData): string {
+/** Hosts with choices select this lossless raw-first codec. */
+export function serializeScorm12CompactSuspendData(
+	data: Scorm12SuspendData,
+	reservedCharacters = 0,
+): string {
 	const raw = JSON.stringify(data);
-	return preflightScorm12SuspendData(
-		data,
-		raw.length <= SCORM12_SUSPEND_DATA_LIMIT ? raw : encodeEvidence(raw),
-		scorm12CompactSuspendDataCodec.parse,
+	// The adapter preflights every injected codec before replacing LMS bytes.
+	return fitScorm12Candidate(
+		raw.length + reservedCharacters <= SCORM12_SUSPEND_DATA_LIMIT ? raw : encodeEvidence(raw),
 	);
 }
 
 export const scorm12CompactSuspendDataCodec: Scorm12SuspendDataCodec = {
 	serialize: serializeScorm12CompactSuspendData,
-	parse: (raw) => parseScorm12CompactSuspendData(raw) ?? parseScorm12SuspendData(raw),
+	parse: parseScorm12SuspendData,
 };
 
 /** Verify the exact filtered payload before replacing readable LMS bytes. */
@@ -417,11 +419,18 @@ export function preflightScorm12SuspendData(
 	candidate: string,
 	read: Scorm12SuspendDataCodec["parse"],
 ): string {
-	if (candidate.length > SCORM12_SUSPEND_DATA_LIMIT)
-		throw new Error("ESCORM12STORAGE: replacement exceeds the character limit");
+	fitScorm12Candidate(candidate);
 	const decoded = read(candidate);
 	if (JSON.stringify(decoded) !== JSON.stringify(data))
 		throw new Error("ESCORM12STORAGE: replacement does not preserve the payload");
+	return candidate;
+}
+
+function fitScorm12Candidate(candidate: string): string {
+	if (candidate.length > SCORM12_SUSPEND_DATA_LIMIT)
+		throw new Error(
+			`ESCORM12STORAGE: replacement exceeds the character limit: ${candidate.length}`,
+		);
 	return candidate;
 }
 
@@ -465,6 +474,7 @@ export function serializeScorm12SuspendData(
 }
 
 export function parseScorm12SuspendData(raw: string): Scorm12SuspendData | null {
+	if (raw.trimStart().startsWith("[")) return parseScorm12CompactSuspendData(raw);
 	try {
 		if (raw.length > LEARNER_STATE_MAX_BYTES) return null;
 		let data = JSON.parse(raw);

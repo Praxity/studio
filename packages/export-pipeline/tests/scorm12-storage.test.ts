@@ -43,6 +43,7 @@ describe("estimateScorm12Storage", () => {
 						correct: true,
 						score: 100,
 						timestamp: 1800000000000,
+						contentSignature: "s96:AAAAAAAAAAAAAAAA",
 						attemptsUsed: 1,
 						maxAttempts: 2,
 					},
@@ -53,6 +54,8 @@ describe("estimateScorm12Storage", () => {
 							version: 1,
 							kind: "assessment",
 							assessmentType: "choice",
+							contentSignature: "s96:AAAAAAAAAAAAAAAA",
+							writtenAt: 1800000000000,
 							attemptCount: 1,
 							checked: true,
 							correct: true,
@@ -201,4 +204,25 @@ it("keeps the open-text warning in a mixed course", () => {
 	);
 	expect(estimateScorm12Storage({ blocks: open }).atRisk).toBe(true);
 	expect(estimateScorm12Storage({ blocks: [question, ...open] }).atRisk).toBe(true);
+});
+
+it("warns when a signed full choice attempt exceeds the compact codec limit", () => {
+	const blocks = Array.from({ length: 120 }, (_, n) =>
+		choice(createHash("sha256").update(`q-${n}`).digest("hex"), {
+			response: {
+				type: "choice",
+				selectionMode: "single",
+				options: [
+					{
+						id: createHash("sha256").update(`a-${n}`).digest("hex"),
+						label: `Action ${n}`,
+						isCorrect: true,
+					},
+					{ id: createHash("sha256").update(`b-${n}`).digest("hex"), label: `Alternative ${n}` },
+				],
+			},
+		}),
+	);
+	expect(() => estimateScorm12Storage({ blocks })).not.toThrow();
+	expect(estimateScorm12Storage({ blocks })).toMatchObject({ atRisk: true, limit: 4096 });
 });

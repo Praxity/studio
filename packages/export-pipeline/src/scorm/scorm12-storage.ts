@@ -1,3 +1,4 @@
+import { choiceContentSignature } from "@praxity/shared-blocks/assessment-choice";
 import { compileBlockStatePolicy } from "@praxity/shared-blocks/block-state-policy";
 import { flattenLogicBlocks } from "@praxity/shared-blocks/logic/flatten-blocks";
 import type {
@@ -12,6 +13,7 @@ import {
 	serializeScorm12SuspendData,
 } from "./api/scorm12.ts";
 import { SCORM2004_RESPONSE_LIMIT } from "./api/scorm2004.ts";
+import { serializeScorm12CompactSuspendData } from "./scorm12-suspend-data";
 
 /**
  * Room left for block state, variables and deck progress, which share the
@@ -57,6 +59,15 @@ export function estimateScorm12Storage(course: { blocks: PraxityBlock[] }): Scor
 		(block) => block.type === "selfCheck" && policy[block.id] === "lms",
 	);
 	const selfCheckIds = new Set(checks.map((block) => block.id));
+	const signatures = new Map(
+		choices.map((block) => [
+			block.id,
+			choiceContentSignature(
+				block.data as unknown as AssessmentBlockData,
+				block.data._dontKnow === true,
+			),
+		]),
+	);
 	const interactionIds = pages.flatMap((page) =>
 		flattenLogicBlocks(page.blocks).flatMap((block) =>
 			// Course hosts record each submitted question and each completed group.
@@ -74,7 +85,9 @@ export function estimateScorm12Storage(course: { blocks: PraxityBlock[] }): Scor
 			response: "x".repeat(ESTIMATED_RESPONSE_LENGTH),
 			...(selfCheckIds.has(id) ? {} : { correct: true, score: 100 }),
 			timestamp: ESTIMATED_TIMESTAMP,
-			...(choices.some((block) => block.id === id) ? { attemptsUsed: 1, maxAttempts: 2 } : {}),
+			...(signatures.has(id)
+				? { attemptsUsed: 1, maxAttempts: 2, contentSignature: signatures.get(id) }
+				: {}),
 		})),
 	};
 	if (checks.length || choices.length) {
@@ -116,6 +129,8 @@ export function estimateScorm12Storage(course: { blocks: PraxityBlock[] }): Scor
 							version: 1,
 							kind: "assessment",
 							assessmentType: "choice",
+							contentSignature: signatures.get(block.id),
+							writtenAt: ESTIMATED_TIMESTAMP,
 							attemptCount: 1,
 							checked: true,
 							correct: correct.length > 0,
@@ -131,8 +146,17 @@ export function estimateScorm12Storage(course: { blocks: PraxityBlock[] }): Scor
 	}
 	// Reserve room before choosing the codec, so the allowance cannot trigger a
 	// false overflow immediately below the runtime's compression threshold.
-	let estimatedLength =
-		serializeScorm12SuspendData(fullAttempt, BLOCK_STATE_ALLOWANCE).length + BLOCK_STATE_ALLOWANCE;
+	let estimatedLength: number;
+	try {
+		estimatedLength =
+			(choices.length ? serializeScorm12CompactSuspendData : serializeScorm12SuspendData)(
+				fullAttempt,
+				BLOCK_STATE_ALLOWANCE,
+			).length + BLOCK_STATE_ALLOWANCE;
+	} catch (error) {
+		if (!(error instanceof Error) || !error.message.includes("ESCORM12STORAGE")) throw error;
+		estimatedLength = SCORM12_SUSPEND_DATA_LIMIT + 1;
+	}
 	// Repeated placeholder text compresses far more than a learner's open answer.
 	// Keep the existing non-choice warning budget when choices enable compression.
 	if (choices.length && interactionIds.some((id) => !choices.some((block) => block.id === id))) {

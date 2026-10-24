@@ -1,10 +1,10 @@
 import { filterPrivateSuspendData } from "@praxity/shared-blocks/block-state-policy";
 import type { XapiStatement } from "./api/xapi";
-import type { InteractionRecord } from "./types";
+import type { InteractionEvidence } from "./types";
 
 export function applyXapiPrivatePolicy(
 	policy: Readonly<Record<string, "device" | "lms">>,
-	interactions: InteractionRecord[],
+	interactions: InteractionEvidence[],
 	suspendData: string | null,
 	outbox: XapiStatement[],
 ) {

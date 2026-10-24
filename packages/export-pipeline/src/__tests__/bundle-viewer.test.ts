@@ -98,43 +98,43 @@ const TEST_ISLAND_FILES = Object.fromEntries(
 ) as Record<IslandManifestEntryName, string>;
 // Size caps don't block working features (owner rule): SHA-256 pair verification in the host bundle; tighten during final size work.
 const HOST_GZIP_BUDGETS: Record<ViewerHostName, number> = {
-	// Measured 10,573 B gzip; add 1 KiB rounded up to 256 B.
-	standalone: 11776,
-	// Measured 13,824 B gzip; add 1 KiB rounded up to 256 B.
-	electronPreview: 14848,
-	// Measured 17,484 B gzip; add 1 KiB rounded up to 256 B.
-	scorm12: 18688,
-	// Measured 11,656 B gzip; add 1 KiB rounded up to 256 B.
-	scorm2004: 12800,
-	// Measured 12,650 B gzip; add 1 KiB rounded up to 256 B.
-	xapi: 13824,
+	// Owner rule: activation measured 13,274 B gzip; add 1 KiB rounded up to 256 B.
+	standalone: 14336,
+	// Owner rule: activation measured 16,572 B gzip; add 1 KiB rounded up to 256 B.
+	electronPreview: 17664,
+	// Owner rule: activation measured 15,643 B gzip; add 1 KiB rounded up to 256 B.
+	xapi: 16896,
+	// Owner rule: activation measured 22,755 B gzip; add 1 KiB rounded up to 256 B.
+	scorm12: 23808,
+	// Owner rule: activation measured 14,713 B gzip; add 1 KiB rounded up to 256 B.
+	scorm2004: 15872,
 };
 
 const PRIVATE_HOST_GZIP_BUDGETS: Record<ViewerHostName, number> = {
-	// Size caps don't block working features (owner rule): lossless suspend storage and outcome ownership measured 6,932 B gzip; add 1 KiB rounded up to 256 B, tighten during final size work.
-	standalone: 8192,
-	// Size caps don't block working features (owner rule): lossless suspend storage and outcome ownership measured 10,123 B gzip; add 1 KiB rounded up to 256 B, tighten during final size work.
-	electronPreview: 11264,
-	// Size caps don't block working features (owner rule): lossless suspend storage and outcome ownership measured 14,237 B gzip; add 1 KiB rounded up to 256 B, tighten during final size work.
-	scorm12: 15360,
-	// Size caps don't block working features (owner rule): lossless suspend storage and outcome ownership measured 8,223 B gzip; add 1 KiB rounded up to 256 B, tighten during final size work.
-	scorm2004: 9472,
-	// Size caps don't block working features (owner rule): lossless suspend storage and outcome ownership measured 9,258 B gzip; add 1 KiB rounded up to 256 B, tighten during final size work.
-	xapi: 10496,
+	// Owner rule: activation measured 12,354 B gzip; add 1 KiB rounded up to 256 B.
+	standalone: 13568,
+	// Owner rule: activation measured 15,635 B gzip; add 1 KiB rounded up to 256 B.
+	electronPreview: 16896,
+	// Owner rule: activation measured 15,015 B gzip; add 1 KiB rounded up to 256 B.
+	xapi: 16128,
+	// Owner rule: activation measured 22,176 B gzip; add 1 KiB rounded up to 256 B.
+	scorm12: 23296,
+	// Owner rule: activation measured 13,956 B gzip; add 1 KiB rounded up to 256 B.
+	scorm2004: 15104,
 };
 
 // Size caps don't block working features (owner rule): SHA-256 pair verification in the host bundle; tighten during final size work.
 const COLD_HOST_GZIP_BUDGETS: Record<ViewerHostName, number> = {
-	// Measured 10,573 B gzip; add 1 KiB rounded up to 256 B.
-	standalone: 11776,
-	// Measured 13,824 B gzip; add 1 KiB rounded up to 256 B.
-	electronPreview: 14848,
-	// Measured 17,484 B gzip; add 1 KiB rounded up to 256 B.
-	scorm12: 18688,
-	// Measured 11,656 B gzip; add 1 KiB rounded up to 256 B.
-	scorm2004: 12800,
-	// Measured 12,650 B gzip; add 1 KiB rounded up to 256 B.
-	xapi: 13824,
+	// Owner rule: activation measured 13,274 B gzip; add 1 KiB rounded up to 256 B.
+	standalone: 14336,
+	// Owner rule: activation measured 16,572 B gzip; add 1 KiB rounded up to 256 B.
+	electronPreview: 17664,
+	// Owner rule: activation measured 15,643 B gzip; add 1 KiB rounded up to 256 B.
+	xapi: 16896,
+	// Owner rule: activation measured 22,755 B gzip; add 1 KiB rounded up to 256 B.
+	scorm12: 23808,
+	// Owner rule: activation measured 14,713 B gzip; add 1 KiB rounded up to 256 B.
+	scorm2004: 15872,
 };
 
 // owner 2026-10-11: raised for S9b; size optimisation at the end
@@ -1267,17 +1267,17 @@ describe("computeViewerSourceHash", () => {
 				expect(await readFile(path.join(outDir, file), "utf8")).not.toContain("data-practice-mode");
 		});
 
-		it("keeps the dormant compact codec out of SCORM 1.2 host bundles", async () => {
+		it("includes the compact codec in both SCORM 1.2 host bundles", async () => {
 			for (const file of [result.manifest.hosts.scorm12, result.manifest.privateHosts?.scorm12]) {
 				if (!file) throw new Error("Missing SCORM 1.2 host");
 				const code = await readFile(path.join(outDir, file), "utf8");
-				expect(code, file).not.toContain("praxity-evidence-1");
-				expect(code, file).not.toContain("Evidence depth/value");
-				expect(code, file).not.toContain("evidence exceeds the typed limit");
+				expect(code, file).toContain("praxity-evidence-1");
+				expect(code, file).toContain("Evidence depth/value");
+				expect(code, file).toContain("evidence exceeds the typed limit");
 			}
 		});
 
-		it("keeps dormant recovery admission in the assessment UI and out of SCORM support", async () => {
+		it("keeps recovery admission in the UI and hosts, outside SCORM support", async () => {
 			expect(buildInputs).toContain(
 				path.resolve(import.meta.dirname, "../../../shared-blocks/src/choice-learner-state.ts"),
 			);
@@ -1291,7 +1291,7 @@ describe("computeViewerSourceHash", () => {
 			);
 		});
 
-		it("keeps dormant interaction evidence out of ordinary host bundles", async () => {
+		it("includes interaction evidence in hosts while leaving removed waiting machinery absent", async () => {
 			const files = new Set([
 				...Object.values(result.manifest.hosts),
 				...Object.values(result.manifest.privateHosts ?? {}),
@@ -1300,10 +1300,13 @@ describe("computeViewerSourceHash", () => {
 			]);
 			for (const file of files) {
 				const code = await readFile(path.join(outDir, file), "utf8");
-				expect(code, file).not.toContain("Unidentifiable interaction evidence");
 				expect(code, file).not.toContain("deferredObjective");
 				expect(code, file).not.toContain("rejectedObjectives");
-				expect(code, file).not.toContain("choiceEvidenceInvalid");
+			}
+			for (const host of ["scorm12", "scorm2004", "xapi"] as const) {
+				const code = await readFile(path.join(outDir, result.manifest.hosts[host]), "utf8");
+				expect(code).toContain("Unidentifiable interaction evidence");
+				expect(code).toContain("choiceEvidenceInvalid");
 			}
 		});
 
@@ -1314,7 +1317,8 @@ describe("computeViewerSourceHash", () => {
 			// 39,577 / 131,639 B; HL04 caps were 36,864 / 129,024 B.
 			// Recovery measures at most 138,176 B gzip for the deck; add 1 KiB rounded up to 256 B.
 			// Size caps don't block working features (owner rule): group refusal/rollback runtime measures 44,590 B gzip for the page; add 1 KiB rounded up to 256 B, tighten during final size work.
-			const caps = { page: 45_824, deck: 139_264 };
+			// Owner rule: activation measured page 48,487 and deck 141,555 B gzip; add 1 KiB rounded up to 256 B.
+			const caps = { page: 49_664, deck: 142_592 };
 			const page = {
 				id: "highlight-page",
 				title: "Highlight",

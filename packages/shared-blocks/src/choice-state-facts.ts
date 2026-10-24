@@ -7,7 +7,7 @@ export interface ChoiceMaterialContent {
 	icons: readonly string[];
 }
 
-/** Published effective facts. Saved-answer admission remains dormant. */
+/** Published effective facts used by controls and saved-answer admission. */
 export interface ChoiceStateQuestion {
 	selectionMode: "single" | "multiple";
 	dontKnow: boolean;

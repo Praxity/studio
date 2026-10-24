@@ -1,14 +1,16 @@
 # Revised choice attempt route, 2026-10-23
 
-This route requires the provider's optional evidence capability. Ordinary hosts
-retain their existing choice restoration until that capability is installed.
+Published and preview hosts bind saved-choice evidence before restoring answers.
+An unchanged answer restores its verdict, selection and attempt count. Changed
+material offers New attempt while preserving the previous submission.
 
 Reuse the outline action and secondary text. The new-attempt button is described
 by the history notice, so reaching it supplies the reason for the action without
 another live announcement. Activation uses the existing retry focus path to reach
 the first enabled radio or checkbox. The action remains mounted until focus moves.
-History has no current result, score or completion.
-The previous record remains saved until a deliberate new answer retains it in history.
+History keeps its saved verdict, score and completion until resubmission. Opening
+New attempt and editing a draft preserve that result. A new submission replaces it,
+including a lower score or a failed result. Unchanged retries add no history.
 The notice does not display historical answer details. It also describes the
 answer fieldset while its answers are disabled. A saved recovery draft restores its
 selection without showing New attempt again; its old submission still counts as
@@ -17,8 +19,8 @@ history until the learner submits the new answer.
 EN/FR component and browser checks cover single and multiple answers, Don't know,
 draft reload, the accessible description and keyboard focus. The injected pages
 and deck journeys cover light/dark appearance, 320px and 200% reflow (a 640×800
-viewport's effective 320×400 CSS pixels), and a waiting
-pass gate released by a new correct submission in Chromium, WebKit and Firefox.
+viewport's effective 320×400 CSS pixels), and ordinary attempt/pass gates in
+Chromium, WebKit and Firefox. History introduces no waiting gate.
 These checks do not establish spoken delivery with a screen reader.
 
 # Choice storage refusal, 2026-10-19

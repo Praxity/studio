@@ -109,7 +109,7 @@ it.each(["scorm2004", "xapi"] as const)(
 		expect(runtime.getInteractions()).toEqual([]);
 		expect(window.__praxityTracker?.getOutcome?.()).toBeUndefined();
 		expect(learner.learnerRuntime(() => true)?.getScore?.()).toEqual({ raw: 75, min: 0, max: 100 });
-		expect(window.__praxityBlockState).not.toHaveProperty("getChoiceDependencyView");
+		expect(window.__praxityBlockState?.getChoiceDependencyView?.()?.rows).toEqual([]);
 	},
 );
 

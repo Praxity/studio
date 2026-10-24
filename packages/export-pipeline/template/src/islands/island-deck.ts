@@ -1227,6 +1227,8 @@ export function initDeck(): (() => void) | undefined {
 		if (!owned()) return;
 		if (inspection) return;
 		const detail = (event as CustomEvent).detail;
+		player?.pause(); // Feedback remains until explicit continuation, including refusal.
+		if (event.defaultPrevented) return;
 		const gate = pages[current].gates.find((item) => item.id === detail?.blockId);
 		const exhausted =
 			detail?.submitted === true &&
@@ -1239,20 +1241,20 @@ export function initDeck(): (() => void) | undefined {
 			save(owned);
 			refresh();
 		}
-		player?.pause(); // Feedback remains until explicit continuation.
 	});
 	on(document, "praxity:assessment-group-complete", (event) => {
 		const owned = selfCheckEpochTicket(document, event);
 		if (!owned()) return;
 		if (inspection) return;
 		const detail = (event as CustomEvent).detail;
+		player?.pause();
+		if (event.defaultPrevented) return;
 		const gate = pages[current].gates.find((item) => item.id === detail?.groupId);
 		if (gate && gateSatisfied(gate.rule, detail.passed, detail?.completed === true)) {
 			released.add(gate.id);
 			save(owned);
 			refresh();
 		}
-		player?.pause();
 	});
 	root.dataset.ready = "true";
 	scheduleStage();
