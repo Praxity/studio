@@ -75,7 +75,6 @@ Object.defineProperty(window, '__praxityTracker', {
         tracker = value && new CourseTracker(window.__praxityRuntime, {
             ...config, reportOutcome: false,
             getAssessmentState: id => provider.get(id),
-            getChoiceDependencyView: () => provider.getChoiceDependencyView(),
         });
     },
 });`,

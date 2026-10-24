@@ -5,7 +5,6 @@
  * detection based on configurable criteria (all pages, percentage, or quiz).
  */
 
-import type { ChoiceDependencyEvidence } from "@praxity/shared-blocks/choice-learner-state";
 import { DEFAULT_COMPLETION_THRESHOLD } from "@praxity/shared-blocks/constants";
 import { type CourseOutcome, writeCourseOutcome } from "@praxity/shared-blocks/learner-block-state";
 import type { InteractionRecord, SCORMRuntime, TrackInteractionOptions } from "./types.ts";
@@ -52,8 +51,6 @@ export interface TrackingConfig {
 	isAssessmentFinal?: (id: string) => boolean;
 	/** Hosts supply saved answers; the tracker owns their finality decision. */
 	getAssessmentState?: (id: string) => unknown;
-	/** Optional evidence for score display and assessment finality. */
-	getChoiceDependencyView?: () => ChoiceDependencyEvidence | undefined;
 }
 
 interface CourseResult {
@@ -119,36 +116,14 @@ export class CourseTracker {
 	}
 
 	isAssessmentFinal(id: string): boolean {
-		const view = this.config.getChoiceDependencyView?.();
-		if (view && view.status(id) !== "current") return false;
 		if (this.config.isAssessmentFinal) return this.config.isAssessmentFinal(id);
-		const saved = this.config.getAssessmentState?.(id) ?? view?.readState(id);
-		const state =
-			view && Object.hasOwn(view.questions, id) ? view.admitQuestionState?.(id, saved) : saved;
+		const state = this.config.getAssessmentState?.(id);
 		return (
 			typeof state === "object" &&
 			state !== null &&
 			!Array.isArray(state) &&
 			(state as Record<string, unknown>).completed === true
 		);
-	}
-
-	/** History changes in-course display only; ordinary launches retain the recorded score. */
-	getCurrentScore(): { raw: number; min: number; max: number } | null {
-		const view = this.config.getChoiceDependencyView?.();
-		if (
-			!view ||
-			![
-				...Object.keys(view.questions),
-				...Object.keys(view.groups ?? {}),
-				...(view.invalidIds ?? []),
-			].some((id) => view.status(id) === "history")
-		)
-			return this.runtime.getScore();
-		const rows = [...this.latestScored().values()].filter(
-			(row) => view.status(row.id) === "current",
-		);
-		return rows.length ? { raw: this.average(rows), min: 0, max: 100 } : null;
 	}
 
 	trackGroupObjective(id: string, score: number, passed: boolean, runtime = this.runtime): void {

@@ -42,8 +42,6 @@ declare global {
 		__praxityTracker?: {
 			trackPageVisit?: (pageId: string, bookmark?: string) => void;
 			getOutcome?: () => { score: number; passed: boolean } | undefined;
-			getCurrentScore?: () => { raw: number; min: number; max: number } | null;
-			isAssessmentFinal?: (id: string) => boolean;
 		};
 		__praxityRuntime?: {
 			trackNavigation?: (fromPageId: string, toPageId: string, trigger: string) => void;
@@ -73,15 +71,6 @@ export function learnerTracker(
 ) {
 	const tracker = doc?.defaultView?.__praxityTracker;
 	return tracker && withLearnerStateAuthority(tracker, current);
-}
-
-/** The tracker preserves recorded display inputs unless admitted evidence has history. */
-export function learnerScore(
-	current: () => boolean,
-	doc: Document | undefined = globalThis.document,
-) {
-	const score = learnerTracker(current, doc)?.getCurrentScore?.();
-	return score === undefined ? learnerRuntime(current, doc)?.getScore?.() : score;
 }
 
 export function finishLearnerCourse(

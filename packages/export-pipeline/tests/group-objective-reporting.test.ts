@@ -189,12 +189,11 @@ function launch(format: Format, evidence = false, history = false) {
 		provider.set("q", answer(history ? changed : signature));
 		runtime.trackInteraction("q", "a", true, 100);
 		runtime.trackInteraction("a", "answer", true, 100);
-		// Production still has no evidence binding. Inject the existing tracker capability.
+		// Retain ordinary outcome reporting alongside the injected provider evidence.
 		win.__praxityTracker = new CourseTracker(runtime, {
 			totalPages: 2,
 			completionMethod: "allPages",
 			requiredAssessmentIds: ["q"],
-			getChoiceDependencyView: view,
 		});
 		expect(view().status("q")).toBe(history ? "history" : "current");
 	}
