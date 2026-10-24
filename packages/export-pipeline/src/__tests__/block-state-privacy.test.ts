@@ -235,6 +235,48 @@ describe("compiled block state privacy policy", () => {
 		first.dom.window.close();
 	});
 
+	it.each([
+		{ mode: "empty", policy: {}, id: "ordinary", expected: undefined },
+		{
+			mode: "reporting",
+			policy: { ordinary: "lms" },
+			id: "ordinary",
+			expected: { status: "not-saved", code: "runtime-write-failed" },
+		},
+		{
+			mode: "private",
+			policy: { private: "device" },
+			id: "private",
+			expected: { status: "not-saved", code: "storage-unavailable" },
+		},
+		{
+			mode: "mixed",
+			policy: { private: "device" },
+			id: "ordinary",
+			expected: { status: "not-saved", code: "runtime-write-failed" },
+		},
+	])("preserves failed-read receipts for a $mode policy", ({ policy, id, expected }) => {
+		const runtime = {
+			destinations: { reporting: "lms", state: "lms" },
+			getSuspendData() {
+				throw new Error("LMS read refused");
+			},
+		} as unknown as SCORMRuntime;
+		const device = {
+			getBlockState() {
+				throw new Error("Device read refused");
+			},
+		} as unknown as SCORMRuntime;
+		const provider = createPrivateBlockStateRuntime(
+			runtime,
+			{ courseId: "course", strings: {}, blockStatePolicy: policy } as CourseHostConfig,
+			{} as Window,
+			device,
+		);
+		expect(provider.get(id)).toBeUndefined();
+		expect(provider.getSaveResult?.(id)).toEqual(expected);
+	});
+
 	it("keeps the activity usable when the localStorage accessor itself is denied", () => {
 		const { dom, state } = host({ learner: "learner", denyStorage: true });
 		expect(state.getSaveResult?.("check")).toEqual({
@@ -906,7 +948,7 @@ it("preview reset uses its supplied device owner and never writes a transport re
 
 it("filters response publication while DOM initialization and privacy readiness are held", async () => {
 	// Match the compiler's private host define while calling its source owner directly.
-	vi.stubGlobal("__praxityPrivateState", true);
+
 	const { dom: source } = host({ policy: { one: "device", two: "device" } });
 	const dom = new JSDOM(source.serialize(), { url: "https://course.example/page.html" });
 	const runtime = new LocalStorageRuntime(dom.window.localStorage, "held-init");

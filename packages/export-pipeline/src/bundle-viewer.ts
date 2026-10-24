@@ -11,7 +11,7 @@ import { existsSync } from "node:fs";
 import { access, lstat, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { type BuildOptions, build, type Metafile, type Plugin } from "esbuild";
+import { type BuildOptions, build, type Metafile } from "esbuild";
 
 import {
 	assertLearningPatternsBundleInputs,
@@ -162,7 +162,6 @@ export interface ViewerBundleManifest {
 	selfCheckLifetime?: string;
 	privacy?: { bootstrap: string; support: string; files: string[] };
 	privateChoice?: string;
-	privateHosts?: Record<ViewerHostName, string>;
 	thirdPartyNotices?: RuntimeNotices;
 	courseRuntimeLicense?: string;
 	css: string;
@@ -197,7 +196,6 @@ export function viewerManifestAssetPaths(manifest: ViewerBundleManifest): string
 			...(manifest.privacy?.files ?? []),
 			...(manifest.privateChoice ? [manifest.privateChoice] : []),
 			...Object.values(manifest.hosts),
-			...Object.values(manifest.privateHosts ?? {}),
 			...Object.values(manifest.hostDependencies ?? {}).flat(),
 			...manifest.islandFiles.map((file) => `islands/${file}`),
 		]),
@@ -406,11 +404,6 @@ export async function readViewerManifest(outDir: string): Promise<ViewerBundleMa
 					!manifest.privacy.files.includes(classicIslandFilename(manifest.privacy.support)) ||
 					manifest.privacy.files.some((file) => !isSafeRelativeAssetPath(file)))) ||
 			!manifest.hosts ||
-			(manifest.privateHosts !== undefined &&
-				(Object.keys(manifest.privateHosts).length !== Object.keys(HOST_ENTRY_POINTS).length ||
-					Object.keys(HOST_ENTRY_POINTS).some(
-						(name) => !isSafeRelativeAssetPath(manifest.privateHosts?.[name as ViewerHostName]),
-					))) ||
 			Object.keys(manifest.hosts).length !== Object.keys(HOST_ENTRY_POINTS).length ||
 			(Object.keys(HOST_ENTRY_POINTS) as ViewerHostName[]).some(
 				(hostName) => !isSafeRelativeAssetPath(manifest.hosts[hostName]),
@@ -1109,58 +1102,6 @@ export async function bundleViewer(
 		drop: ["debugger"],
 		legalComments: "none",
 	};
-	// Match the existing SCORM support boundary: hosts retain guards while the
-	// private persistence and attempt owners live in a separately selected asset.
-	const privacyProxy: Plugin = {
-		name: "private-state-support",
-		setup(builder) {
-			builder.onResolve(
-				{
-					filter:
-						/(?:^@praxity\/shared-blocks\/block-state-policy$|private-(?:xapi|scorm12)-policy(?:\.ts)?$)/,
-				},
-				(args) => {
-					if (
-						args.importer.includes(`${path.sep}scorm${path.sep}api${path.sep}`) ||
-						args.importer.replaceAll("\\", "/").includes("/scorm/api/")
-					)
-						return {
-							path: args.path.includes("private-scorm12-policy")
-								? "device-attempt.ts"
-								: args.path.includes("private-xapi-policy")
-									? "xapi-guard"
-									: "suspend-guard",
-							namespace: "praxity-privacy",
-						};
-				},
-			);
-			builder.onResolve({ filter: /(?:private-block-state|device-attempt)(?:\.ts)?$/ }, (args) => {
-				const source = path.resolve(args.resolveDir, `${args.path.replace(/\.ts$/, "")}.ts`);
-				if (
-					source === path.join(HOSTS_DIR, "private-block-state.ts") ||
-					source === path.join(SCORM_SRC, "api/device-attempt.ts")
-				)
-					return { path: path.basename(source), namespace: "praxity-privacy" };
-			});
-			if (builder.initialOptions.define?.["globalThis.__praxityPrivateState"] === "true") {
-				builder.onResolve({ filter: /course-config(?:\.ts)?$/ }, () => ({
-					path: "config-reader",
-					namespace: "praxity-privacy",
-				}));
-			}
-			builder.onLoad({ filter: /.*/, namespace: "praxity-privacy" }, (args) => ({
-				contents:
-					args.path === "config-reader"
-						? 'export function readCourseHostConfig(doc) { const guard = window.__praxityPrivacyGuard; if (!guard) throw new Error("EPRIVACYLOAD"); return guard.readCourseHostConfig(doc); }'
-						: args.path === "suspend-guard" || args.path === "xapi-guard"
-							? `export function ${args.path === "suspend-guard" ? "filterPrivateSuspendData" : "applyXapiPrivatePolicy"}(...args) { const guard = window.__praxityPrivacyGuard; if (!guard) throw new Error("EPRIVACYLOAD"); return guard.${args.path === "suspend-guard" ? "filterPrivateSuspendData" : "applyXapiPrivatePolicy"}(...args); }`
-							: args.path === "private-block-state.ts"
-								? 'export function createPrivateBlockStateRuntime(...args) { const create = args[2].__praxityPrivacyBootstrap; if (!create) throw new Error("EPRIVACYLOAD"); return create(...args); }'
-								: 'function support() { if (!window.__praxityPrivacySupport) throw new Error("EPRIVACYLOAD"); return window.__praxityPrivacySupport; } export function deviceAttemptId(...args) { return support().deviceAttemptId(...args); } export function resolveLaunchAttempt(...args) { return support().resolveLaunchAttempt(...args); } export function appendPrivateScorm12Interaction(session, get, set, id, index) { const loaded = window.__praxityPrivacySupport; return loaded ? loaded.appendPrivateScorm12Interaction(session, get, set, id, index) : set(`cmi.interactions.${index}.id`, id) ? index : undefined; }',
-				loader: "js",
-			}));
-		},
-	};
 	const privacyBootstrapResult = await build({
 		...rootRuntimeOptions,
 		entryPoints: { "privacy-bootstrap": PRIVACY_BOOTSTRAP_ENTRY },
@@ -1197,11 +1138,6 @@ export async function bundleViewer(
 		outfile: path.join(outDir, privacyClassicFilename),
 		metafile: true,
 	});
-	rootRuntimeOptions.plugins = [privacyProxy];
-	rootRuntimeOptions.define = {
-		...rootRuntimeOptions.define,
-		"globalThis.__praxityPrivateState": "false",
-	};
 	const rootRuntimeResult = await build({ ...rootRuntimeOptions, metafile: true });
 	// Only SCORM hosts import the shared classic asset. Other hosts and the shell
 	// retain normal imports, so their output has no SCORM dependency or guard.
@@ -1213,7 +1149,6 @@ export async function bundleViewer(
 			"host-scorm2004": HOST_ENTRY_POINTS.scorm2004.entryPoint,
 		},
 		plugins: [
-			privacyProxy,
 			{
 				name: "shared-scorm-support",
 				setup(builder) {
@@ -1243,38 +1178,13 @@ export const { getSessionState, readSessionState, writeSessionState, sessionAllo
 		],
 	};
 	const scormHostResult = await build({ ...scormHostOptions, metafile: true });
-	const privateHostResult = await build({
-		...rootRuntimeOptions,
-		define: { ...rootRuntimeOptions.define, "globalThis.__praxityPrivateState": "true" },
-		entryPoints: Object.fromEntries(
-			Object.entries(HOST_ENTRY_POINTS)
-				.filter(([name]) => name !== "scorm12" && name !== "scorm2004")
-				.map(([, { entryPoint, outputName }]) => [`${outputName}-private`, entryPoint]),
-		),
-		metafile: true,
-	});
-	const privateScormResult = await build({
-		...scormHostOptions,
-		define: { ...rootRuntimeOptions.define, "globalThis.__praxityPrivateState": "true" },
-		entryPoints: Object.fromEntries(
-			["scorm12", "scorm2004"].map((name) => {
-				const host = HOST_ENTRY_POINTS[name as "scorm12" | "scorm2004"];
-				return [`${host.outputName}-private`, host.entryPoint];
-			}),
-		),
-		metafile: true,
-	});
 	rootRuntimeResult.metafile.inputs = {
 		...rootRuntimeResult.metafile.inputs,
 		...scormHostResult.metafile.inputs,
-		...privateHostResult.metafile.inputs,
-		...privateScormResult.metafile.inputs,
 	};
 	rootRuntimeResult.metafile.outputs = {
 		...rootRuntimeResult.metafile.outputs,
 		...scormHostResult.metafile.outputs,
-		...privateHostResult.metafile.outputs,
-		...privateScormResult.metafile.outputs,
 	};
 
 	const entryByPath = new Map<string, IslandEntryName>(
@@ -1371,7 +1281,6 @@ export const { getSessionState, readSessionState, writeSessionState, sessionAllo
 		]),
 	);
 	const hostFilenames = {} as Record<ViewerHostName, string>;
-	const privateHostFilenames = {} as Record<ViewerHostName, string>;
 	let shellFilename: string | null = null;
 	let resumeFilename: string | null = null;
 	let scormSessionFilename: string | null = null;
@@ -1392,11 +1301,7 @@ export const { getSessionState, readSessionState, writeSessionState, sessionAllo
 			continue;
 		}
 		const hostName = hostByEntryPoint.get(path.resolve(outputMeta.entryPoint));
-		if (hostName) {
-			if (path.basename(outputPath).includes("-private-"))
-				privateHostFilenames[hostName] = path.basename(outputPath);
-			else hostFilenames[hostName] = path.basename(outputPath);
-		}
+		if (hostName) hostFilenames[hostName] = path.basename(outputPath);
 	}
 	if (!shellFilename) throw new Error("bundleViewer: missing course shell output");
 	if (!resumeFilename) throw new Error("bundleViewer: missing course resume output");
@@ -1483,7 +1388,6 @@ export const { getSessionState, readSessionState, writeSessionState, sessionAllo
 			],
 		},
 		hosts: hostFilenames,
-		privateHosts: privateHostFilenames,
 		hostDependencies: { scorm12: [scormSessionFilename], scorm2004: [scormSessionFilename] },
 		islands: {
 			...islandFileMap,

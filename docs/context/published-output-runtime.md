@@ -676,21 +676,16 @@ exposes the existing session, API discovery and CourseTracker owners to the host
 while the shared records remain keyed by LMS API identity. Validate and copy the
 complete dependency list in source and desktop builds. HTML, xAPI and Electron
 hosts load no SCORM support dependency.
-A nonempty course-wide self-check policy selects the manifest's `privateHosts`
-variant and `privacy` assets. Empty policies keep the ordinary host and copy no
-privacy assets. The privacy bootstrap is a deferred classic script before the
-host: it owns config validation, suspend/outbox filtering and the four EN/FR
-mode/save strings synchronously, using the existing `resolveLocale`. It adds
-those strings only to policy courses, even if loading support fails. It then
-loads persistence and attempt identity as an ES module
-on HTTP or a classic fallback on `file://` (including Electron). No island owns
-this policy. Private writes return `runtime-loading` and stay in memory until
-the provider loads; buffered writes then pass through the existing storage
-owner. Ordinary and reporting-mode IDs always use the existing block-state
-runtime while support is loading or failed, including LMS reads and writes.
-Failed loading returns `runtime-write-failed` for private IDs and keeps their
-memory copy.
-A missing synchronous guard closes host initialization with `EPRIVACYLOAD`.
+Every format ships one host bundle and uses the same block-state provider, including
+courses with an empty policy. A nonempty course-wide self-check policy still selects
+`privacy` assets. The deferred classic privacy bootstrap supplies the EN/FR
+mode/save strings and loads support as an ES module on HTTP or a classic fallback
+on `file://`. Private writes return `runtime-loading` and stay in memory until
+support loads; buffered writes then pass through the same storage owner. Ordinary
+and reporting-mode IDs use that provider with an empty policy while support is
+loading or failed, retaining LMS reads and writes. Failed loading returns
+`runtime-write-failed` for private IDs and keeps their memory copy. Hosts import
+configuration validation and suspend/outbox filtering directly.
 Self-check publication remains refused until its output capability is enabled.
 
 The shell retains its direct session-reset implementation for launch redirects.
@@ -1227,11 +1222,12 @@ Use two layers of evidence:
 Starting constraints:
 
 - Shared course shell: at most 4.75 KiB gzip and no React or Mantine closure. Clearing the SCORM session marker at launch brought it to 4,093 bytes in September 2026, so the budget rose from 4 KiB to keep headroom. On 2026-10-09, restoring BODY focus after a new-tab glossary return measured 4,570 bytes. The shared focus-return owner and DOM-ready outline activation binding exceed 4.25 KiB by 218 bytes; the smallest 0.25 KiB step leaves 38 bytes of headroom. On 2026-10-10, Ariel Harlap's Firefox return fix measured 14,046 raw / 4,695 gzip bytes. Coalescing return events and rechecking BODY after the browser settles exceeds 4.5 KiB by 87 bytes; the smallest 0.25 KiB increase leaves 169 bytes of headroom.
-- Target host adapters: at most 6 KiB gzip for standalone, 6.75 KiB for SCORM 1.2, 7 KiB for SCORM 2004, 7.75 KiB for xAPI, and 8.75 KiB for Electron preview. The September 2026 required-check completion and latest-attempt scoring changes measured 6202 bytes for SCORM 2004 and 6252 bytes for xAPI. The course pass mark then measured 8545 bytes for Electron preview, 6503 for SCORM 1.2 and 6657 for SCORM 2004, about 350 bytes each; xAPI, which also started persisting course state across page loads, measured 7111 bytes. Declaring one course activity ID for tincan.xml and statements, with the launch `activity_id` carried across pages, brought xAPI to 7648 bytes. Neutral uncertainty reporting raised SCORM 1.2 from 6639 to 6668 bytes, SCORM 2004 from 6911 to 6940, and Electron preview from 8675 to 8708; each ceiling increased by 0.25 KiB to carry the neutral result and island-built choice definition through the reporting options. Standalone measured 5575 to 5611 bytes and xAPI 7683 to 7719, within their existing ceilings. Choice labels and identifier allocation remain in the assessment island. Hosts still exclude React and Mantine.
+- Earlier target host adapter ceilings were 6 KiB gzip for standalone, 6.75 KiB for SCORM 1.2, 7 KiB for SCORM 2004, 7.75 KiB for xAPI, and 8.75 KiB for Electron preview. The September 2026 required-check completion and latest-attempt scoring changes measured 6202 bytes for SCORM 2004 and 6252 bytes for xAPI. The course pass mark then measured 8545 bytes for Electron preview, 6503 for SCORM 1.2 and 6657 for SCORM 2004, about 350 bytes each; xAPI, which also started persisting course state across page loads, measured 7111 bytes. Declaring one course activity ID for tincan.xml and statements, with the launch `activity_id` carried across pages, brought xAPI to 7648 bytes. Neutral uncertainty reporting raised SCORM 1.2 from 6639 to 6668 bytes, SCORM 2004 from 6911 to 6940, and Electron preview from 8675 to 8708; each ceiling increased by 0.25 KiB to carry the neutral result and island-built choice definition through the reporting options. Standalone measured 5575 to 5611 bytes and xAPI 7683 to 7719, within their existing ceilings. Choice labels and identifier allocation remain in the assessment island. Hosts still exclude React and Mantine.
+- The one-host-per-format PR measured gzip bytes as standalone 14,067, Electron preview 17,358, xAPI 16,888, SCORM 1.2 24,118 and SCORM 2004 15,965. The current host caps are 14,336, 17,664, 16,896, 26,368 and 18,176 bytes respectively. The owner size-limits rule of 2026-10-24 raises an exceeded cap to `ceil((measured + 2048) / 256) * 256`; size work comes last. The highlight full deck closure measured 142,659 bytes and uses the same rule for its 144,896-byte cap. Its page closure measured 49,635 bytes and keeps its 49,664-byte cap.
 - Static page: no initial JavaScript beyond the shared course shell and target host adapters with their declared dependencies. The shared SCORM support asset is capped at 3.5 KiB gzip. On 2026-10-19, the outcome owner refactor measured 2,480 bytes; the owner set the cap to that measurement plus 1 KiB, rounded up to 256 bytes. Size caps do not block working features; tighten during final size work. Report its bytes and the combined host payload. Only confirmed LMS Pages resume requests the packaged classic cue script.
 - Lightweight island page: keep initial gzip JavaScript at or below 10 KiB unless a measured feature requires more.
 - Rating's selected asset closure is capped at 18 KiB raw. Measured 2026-10-18: the document owner adds 4,217 bytes to the previous 12,419, measuring 16,636 total, with 1,796 bytes of margin. Owner, 2026-10-17: allow the startup feature with margin and defer size optimisation.
-- Cold SCORM 2004 hosts allow 8,448 bytes gzip. Rating early-input admission measures 8,127 bytes, leaving 321 bytes of margin. Owner rule, 2026-10-17: size caps never block working features; size optimisation comes at the end.
+- The earlier cold SCORM 2004 ceiling was 8,448 bytes gzip. Rating early-input admission measured 8,127 bytes, leaving 321 bytes of margin. Owner rule, 2026-10-17: size caps never block working features; size optimisation comes at the end.
 - On 2026-10-19, the outcome owner refactor measured 7,047 bytes for the standalone cold host, 10,247 for Electron preview, 7,937 for SCORM 1.2 and 9,211 for the larger private xAPI variant. Applying the owner rule, the exceeded ceilings rose to 8,192, 11,520, 9,216 and 10,240 bytes respectively. Each new ceiling adds about 1 KiB to the measurement, rounded up to 256 bytes. Other ceilings remain unchanged; final size work will tighten them.
 - Heavy assessment and narration pages: separate budgets based on their current transitive closures. Do not hide them inside the lightweight allowance. Resolving the inherited uncertainty default in the shared content model measured narration at 243419 raw / 79781 gzip bytes, up from 241562 / 79124; assessment at 781501 / 242788, up from 779548 / 242082. Removing the group exhaustion exception measured its island at 32112 / 12929, down from 32127 / 12934.
 - Assessment-group initial code, excluding its deferred download chunk: at most 22.25 KiB raw. On 2026-10-09 the named summary focus wrapper measured 20,571 bytes. N11 result descriptions, visible-action selection, focus delegation and retaining review across partial saves now measure 21,441 bytes, 705 above the former 20.25 KiB ceiling. The smallest 0.25 KiB steps that fit leave 63 bytes of headroom. Merged with main's self-check learner-state changes (#1465 to #1468) on 2026-10-10, it measured 21,542 bytes, 38 above 21 KiB, so the ceiling rose one 0.25 KiB step, leaving 218 bytes of headroom. Owner: Ariel Harlap, 2026-10-09 and 2026-10-10. On 2026-10-12, lifetime enforcement and dispatch authority raised this cap by 1 KiB under the owner's 2026-10-11 decision to optimise size at the end.

@@ -2,8 +2,8 @@ import { MantineProvider } from "@mantine/core";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, it } from "vitest";
 import { LocalStorageRuntime } from "../../../export-pipeline/src/scorm/local-storage-runtime";
-import type {} from "../../../export-pipeline/src/scorm/privacy-capability";
-import { createBlockStateRuntime } from "../../../export-pipeline/template/src/hosts/block-state-runtime";
+import type { CourseHostConfig } from "../../../export-pipeline/template/src/hosts/course-host";
+import { createPrivateBlockStateRuntime } from "../../../export-pipeline/template/src/hosts/private-block-state";
 import { readBlockFixture } from "../../../grammar/__tests__/helpers/lesson-fixture.ts";
 import type { LearnerStateValue } from "../learner-state";
 import type { AssessmentBlockData } from "../types";
@@ -28,8 +28,10 @@ function fixture(style: "typed" | "dropdown" | "word-bank", source: string, dist
 	const blankId = data.response.blanks[0].id;
 	const runtime = new LocalStorageRuntime(localStorage, "course", "attempt", "build-before");
 	const mount = () => {
-		window.__praxityBlockState = createBlockStateRuntime(
+		window.__praxityBlockState = createPrivateBlockStateRuntime(
 			new LocalStorageRuntime(localStorage, "course", "attempt", "build-after"),
+			{ courseId: "course", strings: {} } as CourseHostConfig,
+			window,
 		);
 		return render(
 			<MantineProvider>

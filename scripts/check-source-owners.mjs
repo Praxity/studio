@@ -1463,46 +1463,6 @@ export function checkDisplayIdImports(path, source, program) {
 	});
 }
 
-/** Choice admission is confined to the state owner, host binding and recovery UI. */
-export function checkDormantChoiceImports(path, source, program) {
-	const owner = "packages/shared-blocks/src/choice-learner-state.ts";
-	const recoveryConsumer = "packages/shared-blocks/src/blocks/AssessmentBlock.tsx";
-	const recoveryImports = new Set(["restoreChoiceAssessmentState", "prepareChoiceAssessmentState"]);
-	const host = "packages/export-pipeline/template/src/hosts/course-host.ts";
-	return checkOwnedImports(
-		path,
-		source,
-		program,
-		Object.fromEntries(
-			[
-				"restoreChoiceAssessmentState",
-				"prepareChoiceAssessmentState",
-				"choiceDependencyStatus",
-				"choiceGroupDependencyIds",
-				"choiceGroupSignature",
-				"prepareChoiceGroupSubmission",
-				"createChoiceDependencyView",
-			].map((name) => [
-				name,
-				recoveryImports.has(name)
-					? [owner, recoveryConsumer]
-					: name === "createChoiceDependencyView"
-						? [owner, host]
-						: [owner],
-			]),
-		),
-		{
-			definition: owner,
-			module:
-				/(?:^@praxity\/shared-blocks\/choice-learner-state$|(?:^|\/)choice-learner-state(?:\.[cm]?[jt]s)?$)/u,
-			barrels: [],
-			forbidModuleLoads: true,
-			allowOwnedNamedImports: true,
-			message: "choice admission belongs to its declared host and recovery consumers",
-		},
-	);
-}
-
 function checkOwnedImports(path, source, program, ownership, options) {
 	path = path.replaceAll("\\", "/");
 	if (exemptTestPath(path) || path === options.definition) return [];
@@ -1901,7 +1861,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
 		return [
 			...checkWorkspaceSourceImports(path, source),
 			...checkDisplayIdImports(path, source, program),
-			...checkDormantChoiceImports(path, source, program),
 			...checkIdentityWriterImports(path, source, program),
 			...checkSourceOwners(path, source),
 			...checkSelfCheckOwners(path, source, program),

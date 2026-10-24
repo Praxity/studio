@@ -6,7 +6,8 @@ import {
 	parseScorm12SuspendData,
 	serializeScorm12SuspendData,
 } from "../src/scorm/scorm12-suspend-data";
-import { createBlockStateRuntime } from "../template/src/hosts/block-state-runtime";
+import type { CourseHostConfig } from "../template/src/hosts/course-host";
+import { createPrivateBlockStateRuntime } from "../template/src/hosts/private-block-state";
 
 const saved = {
 	version: 1,
@@ -121,7 +122,11 @@ it("refuses an LMS write at exactly 4096 without losing prior draft or row and r
 	try {
 		const runtime = new Scorm12Runtime();
 		runtime.initialize();
-		const provider = createBlockStateRuntime(runtime);
+		const provider = createPrivateBlockStateRuntime(
+			runtime,
+			{ courseId: "course", strings: {} } as CourseHostConfig,
+			{} as Window,
+		);
 		const draft = {
 			...saved,
 			checked: false,
@@ -151,7 +156,13 @@ it("refuses an LMS write at exactly 4096 without losing prior draft or row and r
 		expect(values["cmi.suspend_data"]).toBe(before);
 		const reload = new Scorm12Runtime();
 		reload.initialize();
-		expect(createBlockStateRuntime(reload).get("q")).toEqual(draft);
+		expect(
+			createPrivateBlockStateRuntime(
+				reload,
+				{ courseId: "course", strings: {} } as CourseHostConfig,
+				{} as Window,
+			).get("q"),
+		).toEqual(draft);
 		expect(reload.getInteractions()).toEqual([]);
 		refuse = false;
 		provider.stageSubmission?.("q", () => {
@@ -160,7 +171,13 @@ it("refuses an LMS write at exactly 4096 without losing prior draft or row and r
 		});
 		runtime.trackInteraction("q", "Stop", true, 100, { assessmentType: "choice" });
 		expect(values["cmi.suspend_data"].length).toBe(4096);
-		expect(createBlockStateRuntime(reload).get("q")).toEqual(saved);
+		expect(
+			createPrivateBlockStateRuntime(
+				reload,
+				{ courseId: "course", strings: {} } as CourseHostConfig,
+				{} as Window,
+			).get("q"),
+		).toEqual(saved);
 		expect(reload.getInteractions()).toHaveLength(1);
 	} finally {
 		vi.restoreAllMocks();

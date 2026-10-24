@@ -1,5 +1,15 @@
 import { createHash } from "node:crypto";
-import { cp, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
+import {
+	cp,
+	mkdir,
+	mkdtemp,
+	readdir,
+	readFile,
+	realpath,
+	rm,
+	symlink,
+	writeFile,
+} from "node:fs/promises";
 import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
@@ -104,37 +114,10 @@ const HOST_GZIP_BUDGETS: Record<ViewerHostName, number> = {
 	electronPreview: 17664,
 	// Owner rule: activation measured 15,643 B gzip; add 1 KiB rounded up to 256 B.
 	xapi: 16896,
-	// Owner rule: activation measured 22,755 B gzip; add 1 KiB rounded up to 256 B.
-	scorm12: 23808,
-	// Owner rule: activation measured 14,713 B gzip; add 1 KiB rounded up to 256 B.
-	scorm2004: 15872,
-};
-
-const PRIVATE_HOST_GZIP_BUDGETS: Record<ViewerHostName, number> = {
-	// Owner rule: activation measured 12,354 B gzip; add 1 KiB rounded up to 256 B.
-	standalone: 13568,
-	// Owner rule: activation measured 15,635 B gzip; add 1 KiB rounded up to 256 B.
-	electronPreview: 16896,
-	// Owner rule: activation measured 15,015 B gzip; add 1 KiB rounded up to 256 B.
-	xapi: 16128,
-	// Owner rule: activation measured 22,176 B gzip; add 1 KiB rounded up to 256 B.
-	scorm12: 23296,
-	// Owner rule: activation measured 13,956 B gzip; add 1 KiB rounded up to 256 B.
-	scorm2004: 15104,
-};
-
-// Size caps don't block working features (owner rule): SHA-256 pair verification in the host bundle; tighten during final size work.
-const COLD_HOST_GZIP_BUDGETS: Record<ViewerHostName, number> = {
-	// Owner rule: activation measured 13,274 B gzip; add 1 KiB rounded up to 256 B.
-	standalone: 14336,
-	// Owner rule: activation measured 16,572 B gzip; add 1 KiB rounded up to 256 B.
-	electronPreview: 17664,
-	// Owner rule: activation measured 15,643 B gzip; add 1 KiB rounded up to 256 B.
-	xapi: 16896,
-	// Owner rule: activation measured 22,755 B gzip; add 1 KiB rounded up to 256 B.
-	scorm12: 23808,
-	// Owner rule: activation measured 14,713 B gzip; add 1 KiB rounded up to 256 B.
-	scorm2004: 15872,
+	// Owner size-limits rule 2026-10-24, one-host-per-format PR: 24,118 B + 2 KiB, rounded up to 256 B.
+	scorm12: 26368,
+	// Owner size-limits rule 2026-10-24, one-host-per-format PR: 15,965 B + 2 KiB, rounded up to 256 B.
+	scorm2004: 18176,
 };
 
 // owner 2026-10-11: raised for S9b; size optimisation at the end
@@ -154,7 +137,7 @@ async function assertBufferedPrivateHost(
 	failedLocale?: "en" | "fr-CA",
 ) {
 	const privacy = manifest.privacy;
-	const hostFile = manifest.privateHosts?.[hostName];
+	const hostFile = manifest.hosts[hostName];
 	if (!privacy || !hostFile) throw new Error("Missing private-state assets");
 	const storageDom = new JSDOM("", { url: "https://course.example" });
 	const deployment = {
@@ -1247,6 +1230,13 @@ describe("computeViewerSourceHash", () => {
 					),
 					"// stale",
 				);
+				await writeFile(
+					path.join(
+						outDir,
+						`host-${hostName === "electronPreview" ? "electron-preview" : hostName}-private-AAAAAAAA.js`,
+					),
+					"// retired split",
+				);
 			}
 
 			buildInputs = [];
@@ -1258,6 +1248,67 @@ describe("computeViewerSourceHash", () => {
 			if (outDir) await rm(outDir, { recursive: true, force: true });
 		});
 
+		it("ships one host per format for every block-state policy", async () => {
+			expect(result.manifest).not.toHaveProperty("privateHosts");
+			const files = await readdir(outDir);
+			for (const file of Object.values(result.manifest.hosts)) expect(files).toContain(file);
+			expect(files.filter((file) => /^host-.*-private-/.test(file))).toEqual([]);
+		});
+
+		it("preserves xAPI text-response statements with an empty block-state policy", async () => {
+			const config = {
+				version: 1,
+				courseId: "course",
+				pageId: "page",
+				pageTitle: "Practice",
+				currentPage: 1,
+				totalPages: 1,
+				currentSlug: "page",
+				availableSlugs: ["page"],
+				pageIdMap: { page: "page" },
+				completionMethod: "allPages",
+				pageRole: "content",
+				strings: {},
+			};
+			const deployment = {
+				format: "xapi",
+				xapiConfig: {
+					endpoint: "https://lrs.example/statements",
+					auth: "Basic example",
+					actorMode: "manual",
+					actor: { name: "Learner", mbox: "mailto:learner@example.com" },
+				},
+			};
+			const dom = new JSDOM(
+				`<script id="praxity-host-config" type="application/json">${JSON.stringify(config)}</script><script id="praxity-deployment-config" type="application/json">${JSON.stringify(deployment)}</script>`,
+				{ url: "https://course.example/page.html", runScripts: "outside-only" },
+			);
+			try {
+				Object.defineProperty(dom.window.document, "readyState", { value: "complete" });
+				const fetch = vi.fn().mockResolvedValue({ ok: true });
+				Object.assign(dom.window, { fetch });
+				dom.window.eval(await readFile(result.hostPaths.xapi, "utf8"));
+				const runtime = (
+					dom.window as unknown as {
+						__praxityRuntime: import("../scorm/types").SCORMRuntime;
+					}
+				).__praxityRuntime;
+				runtime.trackInteraction("q", "A response", undefined, undefined, {
+					assessmentType: "textResponse",
+					description: "Expliquez.",
+					language: "fr",
+				});
+				const statement = JSON.parse(fetch.mock.calls.at(-1)?.[1].body ?? "null");
+				expect(statement.object.definition).toEqual({
+					name: { "en-US": "Interaction q" },
+					description: { fr: "Expliquez." },
+					type: "http://adlnet.gov/expapi/activities/cmi.interaction",
+				});
+			} finally {
+				dom.window.close();
+			}
+		});
+
 		it("keeps private choice presentation out of every existing privacy asset", async () => {
 			const notice = result.manifest.privateChoice;
 			if (!notice || !result.manifest.privacy) throw new Error("Missing private choice entry");
@@ -1267,8 +1318,8 @@ describe("computeViewerSourceHash", () => {
 				expect(await readFile(path.join(outDir, file), "utf8")).not.toContain("data-practice-mode");
 		});
 
-		it("includes the compact codec in both SCORM 1.2 host bundles", async () => {
-			for (const file of [result.manifest.hosts.scorm12, result.manifest.privateHosts?.scorm12]) {
+		it("includes the compact codec in the SCORM 1.2 host bundle", async () => {
+			for (const file of [result.manifest.hosts.scorm12]) {
 				if (!file) throw new Error("Missing SCORM 1.2 host");
 				const code = await readFile(path.join(outDir, file), "utf8");
 				expect(code, file).toContain("praxity-evidence-1");
@@ -1294,7 +1345,6 @@ describe("computeViewerSourceHash", () => {
 		it("includes interaction evidence in hosts while leaving removed waiting machinery absent", async () => {
 			const files = new Set([
 				...Object.values(result.manifest.hosts),
-				...Object.values(result.manifest.privateHosts ?? {}),
 				...Object.values(result.manifest.hostDependencies ?? {}).flat(),
 				...(result.manifest.privacy?.files ?? []),
 			]);
@@ -1318,7 +1368,8 @@ describe("computeViewerSourceHash", () => {
 			// Recovery measures at most 138,176 B gzip for the deck; add 1 KiB rounded up to 256 B.
 			// Size caps don't block working features (owner rule): group refusal/rollback runtime measures 44,590 B gzip for the page; add 1 KiB rounded up to 256 B, tighten during final size work.
 			// Owner rule: activation measured page 48,487 and deck 141,555 B gzip; add 1 KiB rounded up to 256 B.
-			const caps = { page: 49_664, deck: 142_592 };
+			// Owner size-limits rule 2026-10-24, one-host-per-format PR: deck 142,659 B + 2 KiB, rounded up to 256 B.
+			const caps = { page: 49_664, deck: 144_896 };
 			const page = {
 				id: "highlight-page",
 				title: "Highlight",
@@ -1681,26 +1732,12 @@ describe("computeViewerSourceHash", () => {
 				} else {
 					expect(source).not.toContain("__praxityScormSupport");
 				}
-				expect(source).not.toContain("appendPrivateScorm12Interaction");
-				expect(source).not.toContain("interactionNextIndex");
 				expect(source).not.toMatch(/\bimport\b/u);
 				expect(source).not.toMatch(/\breact(?:-dom)?\b/iu);
 				expect(source).not.toMatch(/\bmantine\b/iu);
 				expect(gzipSync(host).byteLength, `${hostName} host gzip bytes`).toBeLessThanOrEqual(
 					HOST_GZIP_BUDGETS[hostName],
 				);
-				// Cold host ceilings have their own owning constants above.
-				expect(gzipSync(host).byteLength, `${hostName} no-self-check growth`).toBeLessThanOrEqual(
-					COLD_HOST_GZIP_BUDGETS[hostName],
-				);
-			}
-			for (const hostName of Object.keys(HOST_GZIP_BUDGETS) as ViewerHostName[]) {
-				const privateFile = result.manifest.privateHosts?.[hostName];
-				if (!privateFile) throw new Error("Missing private host");
-				expect(
-					gzipSync(await readFile(path.join(outDir, privateFile))).byteLength,
-					`${hostName} private host gzip bytes`,
-				).toBeLessThanOrEqual(PRIVATE_HOST_GZIP_BUDGETS[hostName]);
 			}
 			const navFiles = islandFilesForEntries(result.manifest, ["island-loader", "island-nav"]);
 			const ratingFiles = islandFilesForEntries(result.manifest, ["island-rating"]);

@@ -8,11 +8,17 @@ import {
 	removeOtherLocalAttempts,
 } from "../../../src/scorm/local-storage-runtime";
 import type { SCORMRuntime } from "../../../src/scorm/types";
-import { blockReportingDestination } from "./block-state-runtime";
 import type { CourseHostConfig, CourseHostFormat } from "./course-host";
 import { isRecord, parseJsonRecord } from "./host-json";
 
 const BLOCK_STATE_KEY = "blockState";
+export function blockReportingDestination(
+	runtime: SCORMRuntime,
+	policy: "device" | "lms",
+): "device" | "lms" {
+	return policy === "device" ? "device" : runtime.destinations.reporting;
+}
+
 export function createPrivateBlockStateRuntime(
 	runtime: SCORMRuntime,
 	page: CourseHostConfig,
@@ -22,6 +28,7 @@ export function createPrivateBlockStateRuntime(
 ): LearnerBlockStateRuntime {
 	const memory = new Map<string, LearnerStateValue>();
 	const blockStatePolicy = { ...page.blockStatePolicy };
+	const hasPolicy = Object.keys(blockStatePolicy).length > 0;
 	const results = new Map<string, LearnerBlockSaveResult>();
 	let device = deviceStateRuntime;
 	const reportDestination = runtime.destinations.state;
@@ -57,22 +64,28 @@ export function createPrivateBlockStateRuntime(
 		getReportingDestination(blockId) {
 			return blockReportingDestination(runtime, policy(blockId));
 		},
-		getSaveResult(blockId) {
-			const held = policy(blockId) === "lms" ? runtime.getBlockSaveResult?.(blockId) : undefined;
-			if (held?.status === "not-saved" && held.code === "unreadable-state") return held;
-			const local = results.get(blockId);
-			const result =
-				local?.status === "not-saved"
-					? local
-					: ((policy(blockId) === "lms" ? runtime.getBlockSaveResult?.(blockId) : undefined) ??
-						local);
-			return (
-				result ??
-				(policy(blockId) === "device" && (!device || device.hasPersistentStorage?.() === false)
-					? unavailable
-					: undefined)
-			);
-		},
+		getSaveResult:
+			runtime.stageSubmission || hasPolicy
+				? (blockId) => {
+						const held =
+							policy(blockId) === "lms" ? runtime.getBlockSaveResult?.(blockId) : undefined;
+						if (held?.status === "not-saved" && held.code === "unreadable-state") return held;
+						const local = results.get(blockId);
+						const result =
+							local?.status === "not-saved"
+								? local
+								: ((policy(blockId) === "lms"
+										? runtime.getBlockSaveResult?.(blockId)
+										: undefined) ?? local);
+						return (
+							result ??
+							(policy(blockId) === "device" &&
+							(!device || device.hasPersistentStorage?.() === false)
+								? unavailable
+								: undefined)
+						);
+					}
+				: undefined,
 		get(blockId) {
 			if (!blockId) return undefined;
 			const held = policy(blockId) === "lms" ? runtime.getBlockSaveResult?.(blockId) : undefined;
@@ -89,10 +102,12 @@ export function createPrivateBlockStateRuntime(
 					? (blockState[blockId] as LearnerStateValue)
 					: undefined;
 			} catch {
-				results.set(blockId, {
-					status: "not-saved",
-					code: policy(blockId) === "device" ? "storage-unavailable" : "runtime-write-failed",
-				});
+				// Empty-policy courses retain the ordinary host's read receipts.
+				if (hasPolicy)
+					results.set(blockId, {
+						status: "not-saved",
+						code: policy(blockId) === "device" ? "storage-unavailable" : "runtime-write-failed",
+					});
 				return undefined;
 			}
 		},

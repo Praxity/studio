@@ -1,4 +1,3 @@
-import type {} from "../privacy-capability";
 /**
  * SCORM 2004 (4th Edition) runtime wrapper.
  *
@@ -79,34 +78,19 @@ export interface SCORM2004API {
  */
 export type { WindowLike } from "../api-discovery.ts";
 
-export interface Scorm2004Runtime {
-	setBlockStatePolicy(policy: Readonly<Record<string, "device" | "lms">>): void;
-	getLearnerIdentity(): { learnerId: string; attemptId: string; newAttempt: boolean } | null;
-}
-
-// biome-ignore lint/suspicious/noUnsafeDeclarationMerging: The static capability block installs these methods; interface declarations erase without emitting fields that shadow the prototype.
 export class Scorm2004Runtime implements SCORMRuntime {
 	readonly destinations = LMS_DESTINATIONS;
-	static {
-		if (globalThis.__praxityPrivateState !== false) {
-			Scorm2004Runtime.prototype.setBlockStatePolicy = function (
-				this: Scorm2004Runtime,
-				policy: Readonly<Record<string, "device" | "lms">>,
-			): void {
-				this.blockStatePolicy = { ...policy };
-			};
-			Scorm2004Runtime.prototype.getLearnerIdentity = function (
-				this: Scorm2004Runtime,
-			): { learnerId: string; attemptId: string; newAttempt: boolean } | null {
-				const learnerId = this.getValue("cmi.learner_id").trim();
-				return learnerId
-					? {
-							learnerId,
-							...deviceAttemptId(this, this.session, this.getValue("cmi.entry")),
-						}
-					: null;
-			};
-		}
+	setBlockStatePolicy(policy: Readonly<Record<string, "device" | "lms">>): void {
+		this.blockStatePolicy = { ...policy };
+	}
+	getLearnerIdentity(): { learnerId: string; attemptId: string; newAttempt: boolean } | null {
+		const learnerId = this.getValue("cmi.learner_id").trim();
+		return learnerId
+			? {
+					learnerId,
+					...deviceAttemptId(this, this.session, this.getValue("cmi.entry")),
+				}
+			: null;
 	}
 
 	private api: SCORM2004API | null = null;
@@ -205,8 +189,7 @@ export class Scorm2004Runtime implements SCORMRuntime {
 
 	setValue(element: string, value: string): boolean {
 		if (element === "cmi.suspend_data")
-			if (globalThis.__praxityPrivateState !== false)
-				value = filterPrivateSuspendData(value, this.blockStatePolicy);
+			value = filterPrivateSuspendData(value, this.blockStatePolicy);
 		return this.initialized && this.canCallLms() && this.setLmsValue(element, value);
 	}
 
@@ -315,8 +298,7 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		score?: number,
 		options?: TrackInteractionOptions,
 	): void {
-		if (globalThis.__praxityPrivateState !== false && this.blockStatePolicy[id] === "device")
-			return;
+		if (this.blockStatePolicy[id] === "device") return;
 		const n = this.interactionCount;
 		const storedResponse =
 			options?.assessmentType === "choice"
@@ -379,10 +361,9 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	getInteractions(): InteractionRecord[] {
 		const data = this.loadSuspendDataObject();
 		const interactions = (data.interactions as InteractionRecord[]) ?? [];
-		const reportable =
-			globalThis.__praxityPrivateState !== false
-				? interactions.filter((record) => this.blockStatePolicy[record.id] !== "device")
-				: interactions;
+		const reportable = interactions.filter(
+			(record) => this.blockStatePolicy[record.id] !== "device",
+		);
 		return reportable.map((record) => ({ ...record, ...assessmentEvidenceMetadata(record) }));
 	}
 
@@ -399,8 +380,7 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	// -------------------------------------------------------------------
 
 	trackObjective(id: string, score: number, passed: boolean): void {
-		if (globalThis.__praxityPrivateState !== false && this.blockStatePolicy[id] === "device")
-			return;
+		if (this.blockStatePolicy[id] === "device") return;
 		try {
 			const n = writeObjectiveId(
 				id,

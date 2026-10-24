@@ -14,7 +14,6 @@ import { isAbsoluteIri } from "../../../src/scorm/activity-id";
 import { getSessionState, readSessionState } from "../../../src/scorm/api/session";
 import type { XapiConfig } from "../../../src/scorm/api/xapi";
 import { findScormApi } from "../../../src/scorm/api-discovery";
-import type {} from "../../../src/scorm/privacy-capability";
 import { CourseTracker } from "../../../src/scorm/tracking";
 import {
 	assessmentReportingOptions,
@@ -22,7 +21,6 @@ import {
 	isString,
 	type SCORMRuntime,
 } from "../../../src/scorm/types";
-import { createBlockStateRuntime } from "./block-state-runtime";
 import { readCourseHostConfig } from "./course-config";
 
 export { readCourseHostConfig } from "./course-config";
@@ -127,8 +125,7 @@ export function initializeCourseHost(
 	if (!deployment || deployment.format !== adapter.format) return false;
 	const page = readCourseHostConfig(environment.doc);
 	if (!page) return false;
-	const blockStatePolicy =
-		globalThis.__praxityPrivateState !== false ? { ...page.blockStatePolicy } : {};
+	const blockStatePolicy = { ...page.blockStatePolicy };
 	if (page.pageRole === "glossary" && !adapter.canStartGlossary?.(environment)) return false;
 
 	const hostView = environment.win as Window & typeof globalThis;
@@ -241,8 +238,7 @@ export function initializeCourseHost(
 		try {
 			const resume =
 				owner?.lifetime()?.reason === "return" ? undefined : adapter.prepareResume?.(environment);
-			if (globalThis.__praxityPrivateState !== false)
-				runtime.setBlockStatePolicy?.(blockStatePolicy);
+			runtime.setBlockStatePolicy?.(blockStatePolicy);
 			// Let the shell restore readable content if the host cannot initialize.
 			if (!runtime.initialize()) throw new Error();
 			if (!discovered()) {
@@ -250,19 +246,9 @@ export function initializeCourseHost(
 				return;
 			}
 			hostWindow.__praxityRuntime = runtime;
-			const requestedProvider =
-				globalThis.__praxityPrivateState === true ||
-				(globalThis.__praxityPrivateState !== false &&
-					page.blockStatePolicy &&
-					Object.keys(page.blockStatePolicy).length)
-					? createPrivateBlockStateRuntime(
-							runtime,
-							page,
-							hostView,
-							adapter.deviceStateRuntime,
-							adapter.format,
-						)
-					: createBlockStateRuntime(runtime);
+			const requestedProvider = (
+				hostView.__praxityPrivacyBootstrap ?? createPrivateBlockStateRuntime
+			)(runtime, page, hostView, adapter.deviceStateRuntime, adapter.format);
 			if (!discovered()) {
 				preparing = false;
 				return;
@@ -307,9 +293,7 @@ export function initializeCourseHost(
 						adapter.isFallback?.(runtime) === true
 							? page.pageId
 							: `index.html?praxity-page=${encodeURIComponent(page.pageId)}`;
-					// Every self-check policy, including LMS reporting, selects the enriched host.
-					if (globalThis.__praxityPrivateState === false || !page.deferVisits)
-						tracker.trackPageVisit(page.pageId, bookmark);
+					if (!page.deferVisits) tracker.trackPageVisit(page.pageId, bookmark);
 					else {
 						provider.finalizeLearner = (pass) => {
 							if (owned() && pass.current()) tracker.trackPageVisit(page.pageId, bookmark);
@@ -322,18 +306,15 @@ export function initializeCourseHost(
 			// Re-admission joins the shared support result under a fresh captured lifetime.
 			if (owner) announce();
 			else {
-				let provider: LearnerBlockStateRuntime | null | undefined =
-					globalThis.__praxityPrivateState === true ? hostWindow.__praxityBlockState : undefined;
+				let provider: LearnerBlockStateRuntime | null | undefined = hostWindow.__praxityBlockState;
 				const publishReady = () =>
-					(globalThis.__praxityPrivateState !== true ||
-						(provider && hostWindow.__praxityBlockState === provider)) &&
+					provider &&
+					hostWindow.__praxityBlockState === provider &&
 					hostView.dispatchEvent(
 						new hostView.CustomEvent("praxity:runtime-ready", { detail: page }),
 					);
-				if (globalThis.__praxityPrivateState === true) {
-					hostView.addEventListener("pagehide", () => (provider = null));
-					void (hostView.__praxityPrivacyReady?.then(publishReady) ?? publishReady());
-				} else publishReady();
+				hostView.addEventListener("pagehide", () => (provider = null));
+				void (hostView.__praxityPrivacyReady?.then(publishReady) ?? publishReady());
 			}
 		} finally {
 			preparing = false;
@@ -392,17 +373,16 @@ export function initializeCourseHost(
 	} else start();
 
 	// Capture before any response consumer, including listeners installed before this host.
-	if (globalThis.__praxityPrivateState !== false)
-		hostView.addEventListener(
-			"praxity:assessment-response",
-			(event) => {
-				const current = selfCheckEpochTicket(environment.doc, event);
-				const detail = (event as CustomEvent<Record<string, unknown>>).detail;
-				if (!current() || (detail && blockStatePolicy[String(detail.blockId)] === "device"))
-					event.stopImmediatePropagation();
-			},
-			true,
-		);
+	hostView.addEventListener(
+		"praxity:assessment-response",
+		(event) => {
+			const current = selfCheckEpochTicket(environment.doc, event);
+			const detail = (event as CustomEvent<Record<string, unknown>>).detail;
+			if (!current() || (detail && blockStatePolicy[String(detail.blockId)] === "device"))
+				event.stopImmediatePropagation();
+		},
+		true,
+	);
 
 	const reportAssessmentResponse = (event: Event) => {
 		const owned = selfCheckEpochTicket(environment.doc, event);
@@ -412,7 +392,7 @@ export function initializeCourseHost(
 		const detail = (event as CustomEvent<Record<string, unknown>>).detail ?? {};
 		const blockId = String(detail.blockId ?? "");
 		const options = assessmentReportingOptions(detail, page.pageTitle);
-		if (globalThis.__praxityPrivateState !== false && blockStatePolicy[blockId] === "lms")
+		if (blockStatePolicy[blockId] === "lms")
 			options.onResponseTruncated = (responseLimit) =>
 				owned() &&
 				environment.doc.dispatchEvent(

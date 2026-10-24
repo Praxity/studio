@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from "vitest";
-import { createBlockStateRuntime } from "../../template/src/hosts/block-state-runtime";
+import type { CourseHostConfig } from "../../template/src/hosts/course-host";
+import { createPrivateBlockStateRuntime } from "../../template/src/hosts/private-block-state";
 import { disposeSelfCheckDocument, selfCheckRuntime } from "../../template/src/self-check-runtime";
 import { Scorm12Runtime } from "../scorm/api/scorm12";
 
@@ -36,7 +37,11 @@ it.each(["en", "fr"])(
 		});
 		const runtime = new Scorm12Runtime();
 		runtime.initialize();
-		window.__praxityBlockState = createBlockStateRuntime(runtime);
+		window.__praxityBlockState = createPrivateBlockStateRuntime(
+			runtime,
+			{ courseId: "course", strings: {} } as CourseHostConfig,
+			{} as Window,
+		);
 		document.documentElement.lang = locale;
 		document.documentElement.dataset.selfCheckDependencies = "check";
 		document.body.innerHTML =
@@ -92,7 +97,11 @@ it.each(["en", "fr"])(
 			});
 			const runtime = new Scorm12Runtime(courseId);
 			runtime.initialize();
-			window.__praxityBlockState = createBlockStateRuntime(runtime);
+			window.__praxityBlockState = createPrivateBlockStateRuntime(
+				runtime,
+				{ courseId: "course", strings: {} } as CourseHostConfig,
+				{} as Window,
+			);
 			document.documentElement.lang = locale;
 			document.documentElement.dataset.selfCheckDependencies = "check";
 			document.body.innerHTML =

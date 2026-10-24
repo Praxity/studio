@@ -12,12 +12,13 @@ import { XapiRuntime } from "../src/scorm/api/xapi";
 import { LocalStorageRuntime } from "../src/scorm/local-storage-runtime";
 import { CourseTracker } from "../src/scorm/tracking";
 import type { SCORMRuntime } from "../src/scorm/types";
-import { createBlockStateRuntime } from "../template/src/hosts/block-state-runtime";
+import type { CourseHostConfig } from "../template/src/hosts/course-host";
 import {
 	initializeCourseHost,
 	initializeScormCourseHost,
 	readCourseDeploymentConfig,
 } from "../template/src/hosts/course-host";
+import { createPrivateBlockStateRuntime } from "../template/src/hosts/private-block-state";
 import { withChoiceDependencyStatus } from "./fixtures/choice-facts";
 
 const documents: JSDOM[] = [];
@@ -305,7 +306,13 @@ describe.each(["xapi", "standalone"] as const)("%s without an objective sink", (
 				const reopened = host.open();
 				expect(reopened.initialize()).toBe(true);
 				expect(reopened.getCompletion()).toBe("completed");
-				expect(createBlockStateRuntime(reopened).get("g")).toEqual(groupState);
+				expect(
+					createPrivateBlockStateRuntime(
+						reopened,
+						{ courseId: "course", strings: {} } as CourseHostConfig,
+						{} as Window,
+					).get("g"),
+				).toEqual(groupState);
 			});
 });
 
@@ -331,7 +338,11 @@ it("refused xAPI storage retains page memory without an objective obligation in 
 	const reopened = host.open();
 	expect(reopened.initialize()).toBe(true);
 	expect("trackObjective" in reopened).toBe(false);
-	const provider = createBlockStateRuntime(reopened);
+	const provider = createPrivateBlockStateRuntime(
+		reopened,
+		{ courseId: "course", strings: {} } as CourseHostConfig,
+		{} as Window,
+	);
 	expect(Reflect.get(provider, "prepareGroupState")).toBeUndefined();
 	expect(provider.get("g")).toBeUndefined();
 	expect(reopened.getSuspendData()).not.toContain("deferredObjective");

@@ -1,4 +1,3 @@
-import type {} from "../privacy-capability";
 import { applyXapiPrivatePolicy } from "../private-xapi-policy";
 
 /**
@@ -145,38 +144,23 @@ function browserStorage(name: "localStorage" | "sessionStorage"): Storage | null
 	}
 }
 
-export interface XapiRuntime {
-	setBlockStatePolicy(policy: Readonly<Record<string, "device" | "lms">>): void;
-	getLearnerIdentity(): { learnerId: string; attemptId?: string } | null;
-}
-
-// biome-ignore lint/suspicious/noUnsafeDeclarationMerging: The static capability block installs these methods; interface declarations erase without emitting fields that shadow the prototype.
 export class XapiRuntime implements SCORMRuntime {
 	get destinations(): RuntimeDestinations {
 		return this.sendEnabled ? { reporting: "lms", state: "device" } : DEVICE_DESTINATIONS;
 	}
-	static {
-		if (globalThis.__praxityPrivateState !== false) {
-			XapiRuntime.prototype.setBlockStatePolicy = function (
-				this: XapiRuntime,
-				policy: Readonly<Record<string, "device" | "lms">>,
-			): void {
-				this.blockStatePolicy = { ...policy };
-				Object.assign(
-					this,
-					applyXapiPrivatePolicy(policy, this.interactions, this.suspendData, this.outbox),
-				);
-			};
-			XapiRuntime.prototype.getLearnerIdentity = function (
-				this: XapiRuntime,
-			): { learnerId: string; attemptId?: string } | null {
-				if (this.config.actorMode !== "lms" || !this.actor) return null;
-				const attemptId = this.courseId
-					? resolveLaunchAttempt(this.courseId, this.actor.mbox)
-					: undefined;
-				return { learnerId: this.actor.mbox, ...(attemptId ? { attemptId } : {}) };
-			};
-		}
+	setBlockStatePolicy(policy: Readonly<Record<string, "device" | "lms">>): void {
+		this.blockStatePolicy = { ...policy };
+		Object.assign(
+			this,
+			applyXapiPrivatePolicy(policy, this.interactions, this.suspendData, this.outbox),
+		);
+	}
+	getLearnerIdentity(): { learnerId: string; attemptId?: string } | null {
+		if (this.config.actorMode !== "lms" || !this.actor) return null;
+		const attemptId = this.courseId
+			? resolveLaunchAttempt(this.courseId, this.actor.mbox)
+			: undefined;
+		return { learnerId: this.actor.mbox, ...(attemptId ? { attemptId } : {}) };
 	}
 
 	private config: XapiConfig;
@@ -207,7 +191,7 @@ export class XapiRuntime implements SCORMRuntime {
 		declaredActivityId?: string,
 	) {
 		this.config = config;
-		if (globalThis.__praxityPrivateState !== false) this.courseId = courseId;
+		this.courseId = courseId;
 		this.courseActivityId =
 			this.resolveLaunchActivityId(courseId) ??
 			(declaredActivityId && isAbsoluteIri(declaredActivityId) ? declaredActivityId : undefined) ??
@@ -448,8 +432,7 @@ export class XapiRuntime implements SCORMRuntime {
 		score?: number,
 		options?: TrackInteractionOptions,
 	): void {
-		if (globalThis.__praxityPrivateState !== false && this.blockStatePolicy[id] === "device")
-			return;
+		if (this.blockStatePolicy[id] === "device") return;
 		const record: InteractionRecord = {
 			id,
 			response,
@@ -464,19 +447,19 @@ export class XapiRuntime implements SCORMRuntime {
 		const language =
 			typeof options?.language === "string" && options.language ? options.language : "en-US";
 		const description = (options?.description ?? `Interaction ${id}`).replace(/\s+/gu, " ").trim();
+		// Keep ordinary-course statements unchanged when the unified host enables privacy support.
+		const reportingTextResponse =
+			Object.keys(this.blockStatePolicy).length > 0 && options?.assessmentType === "textResponse";
 		const object: XapiObject = {
 			id: this.activityId(`interaction/${id}`),
 			definition: {
-				name:
-					globalThis.__praxityPrivateState !== false && options?.assessmentType === "textResponse"
-						? { [language]: description }
-						: { "en-US": `Interaction ${id}` },
+				name: reportingTextResponse
+					? { [language]: description }
+					: { "en-US": `Interaction ${id}` },
 				description: { [language]: description },
 				type: "http://adlnet.gov/expapi/activities/cmi.interaction",
 				...options?.choiceDefinition,
-				...(globalThis.__praxityPrivateState !== false && options?.assessmentType === "textResponse"
-					? { interactionType: "long-fill-in" as const }
-					: {}),
+				...(reportingTextResponse ? { interactionType: "long-fill-in" as const } : {}),
 			},
 		};
 
@@ -586,10 +569,7 @@ export class XapiRuntime implements SCORMRuntime {
 	}
 
 	setSuspendData(data: string): boolean {
-		this.suspendData =
-			globalThis.__praxityPrivateState !== false
-				? filterPrivateSuspendData(data, this.blockStatePolicy)
-				: data;
+		this.suspendData = filterPrivateSuspendData(data, this.blockStatePolicy);
 		// Existing logic callers keep their page memory; the host reports failed durability.
 		return this.persist();
 	}

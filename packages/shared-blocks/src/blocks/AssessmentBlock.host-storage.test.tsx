@@ -6,7 +6,6 @@ import { Scorm2004Runtime } from "../../../export-pipeline/src/scorm/api/scorm20
 import { XapiRuntime } from "../../../export-pipeline/src/scorm/api/xapi";
 import { LocalStorageRuntime } from "../../../export-pipeline/src/scorm/local-storage-runtime";
 import type { SCORMRuntime } from "../../../export-pipeline/src/scorm/types";
-import { createBlockStateRuntime } from "../../../export-pipeline/template/src/hosts/block-state-runtime";
 import type { CourseHostConfig } from "../../../export-pipeline/template/src/hosts/course-host";
 import type {} from "../../../export-pipeline/template/src/hosts/privacy-bootstrap";
 import { createPrivateBlockStateRuntime } from "../../../export-pipeline/template/src/hosts/private-block-state";
@@ -116,7 +115,11 @@ it.each(
 					} satisfies CourseHostConfig,
 					window,
 				)
-			: createBlockStateRuntime(rt as SCORMRuntime);
+			: createPrivateBlockStateRuntime(
+					rt as SCORMRuntime,
+					{ courseId: "course", strings: {} } as CourseHostConfig,
+					window,
+				);
 		const reported: unknown[] = [];
 		const report = (event: Event) => {
 			const d = (event as CustomEvent).detail;
@@ -180,7 +183,11 @@ it.each(["en", "fr"])(
 		const runtime = new Scorm12Runtime();
 		runtime.initialize();
 		runtime.trackPageVisit("page-a");
-		window.__praxityBlockState = createBlockStateRuntime(runtime);
+		window.__praxityBlockState = createPrivateBlockStateRuntime(
+			runtime,
+			{ courseId: "course", strings: {} } as CourseHostConfig,
+			window,
+		);
 		try {
 			render(
 				<MantineProvider>
@@ -279,7 +286,11 @@ it.each(
 						},
 						window,
 					)
-				: createBlockStateRuntime(rt);
+				: createPrivateBlockStateRuntime(
+						rt,
+						{ courseId: "course", strings: {} } as CourseHostConfig,
+						window,
+					);
 		window.__praxityBlockState = provider(runtime);
 		const reported = vi.fn();
 		document.addEventListener("praxity:assessment-response", reported);

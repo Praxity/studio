@@ -1,13 +1,11 @@
-import { filterPrivateSuspendData } from "@praxity/shared-blocks/block-state-policy";
 import { getSelfCheckHostStrings } from "@praxity/shared-blocks/i18n/self-check-host-strings";
 import type { LearnerBlockStateRuntime } from "@praxity/shared-blocks/learner-block-state";
 import type { LearnerStateValue } from "@praxity/shared-blocks/learner-state";
-import { applyXapiPrivatePolicy } from "../../../src/scorm/private-xapi-policy";
 import { loadBrowserModule } from "../island-loader";
-import { blockReportingDestination, createBlockStateRuntime } from "./block-state-runtime";
 import { readCourseHostConfig } from "./course-config";
 import { readJsonElement } from "./host-json";
 import type { privacySupport } from "./privacy-support";
+import { blockReportingDestination, createPrivateBlockStateRuntime } from "./private-block-state";
 
 /** Install a closed provider synchronously. Persistence can arrive after islands start. */
 export function bufferPrivateBlockState(
@@ -15,7 +13,11 @@ export function bufferPrivateBlockState(
 	loaded: Promise<typeof privacySupport>,
 ): LearnerBlockStateRuntime {
 	Object.assign(args[1].strings, getSelfCheckHostStrings(args[2].document.documentElement.lang));
-	const ordinary = createBlockStateRuntime(args[0]);
+	const ordinary = createPrivateBlockStateRuntime(
+		args[0],
+		{ ...args[1], blockStatePolicy: undefined },
+		args[2],
+	);
 	const isPrivate = (id: string) => args[1].blockStatePolicy?.[id] === "device";
 	const pending = new Map<string, LearnerStateValue>();
 	let provider: LearnerBlockStateRuntime | undefined;
@@ -105,11 +107,6 @@ const script =
 if (script) {
 	const config = readCourseHostConfig(document);
 	if (config?.blockStatePolicy && Object.keys(config.blockStatePolicy).length) {
-		window.__praxityPrivacyGuard = {
-			filterPrivateSuspendData,
-			applyXapiPrivatePolicy,
-			readCourseHostConfig,
-		};
 		const url = new URL(script.dataset.privacySupport as string, script.src).href;
 		const loaded = loadBrowserModule(url, location.protocol === "file:").then((module) => {
 			const support =
@@ -142,11 +139,6 @@ if (script) {
 declare global {
 	interface Window {
 		__praxityPrivacyReady?: Promise<void>;
-		__praxityPrivacyGuard?: {
-			filterPrivateSuspendData: typeof filterPrivateSuspendData;
-			applyXapiPrivatePolicy: typeof applyXapiPrivatePolicy;
-			readCourseHostConfig: typeof readCourseHostConfig;
-		};
 		__praxityPrivacyBootstrap?: typeof privacySupport.createPrivateBlockStateRuntime;
 	}
 }

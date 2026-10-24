@@ -4,7 +4,8 @@ import { JSDOM } from "jsdom";
 import { afterEach, expect, it, vi } from "vitest";
 import { Scorm12Runtime } from "../src/scorm/api/scorm12";
 import * as codec from "../src/scorm/scorm12-suspend-data";
-import { createBlockStateRuntime } from "../template/src/hosts/block-state-runtime";
+import type { CourseHostConfig } from "../template/src/hosts/course-host";
+import { createPrivateBlockStateRuntime } from "../template/src/hosts/private-block-state";
 
 type WireCodec = {
 	serialize(data: codec.Scorm12SuspendData): string;
@@ -69,7 +70,11 @@ it("reloads the exact lone-surrogate text draft after a choice and its row", () 
 	try {
 		const runtime = new Runtime(undefined, compact);
 		runtime.initialize();
-		const provider = createBlockStateRuntime(runtime);
+		const provider = createPrivateBlockStateRuntime(
+			runtime,
+			{ courseId: "course", strings: {} } as CourseHostConfig,
+			{} as Window,
+		);
 		provider.set("choice", choice);
 		runtime.trackInteraction("choice", "a", true, 100, {
 			assessmentType: "choice",
@@ -91,8 +96,20 @@ it("reloads the exact lone-surrogate text draft after a choice and its row", () 
 		);
 		const loaded = new Runtime(undefined, compact);
 		loaded.initialize();
-		expect(createBlockStateRuntime(loaded).get("text")).toEqual(text);
-		expect(createBlockStateRuntime(loaded).get("choice")).toEqual(choice);
+		expect(
+			createPrivateBlockStateRuntime(
+				loaded,
+				{ courseId: "course", strings: {} } as CourseHostConfig,
+				{} as Window,
+			).get("text"),
+		).toEqual(text);
+		expect(
+			createPrivateBlockStateRuntime(
+				loaded,
+				{ courseId: "course", strings: {} } as CourseHostConfig,
+				{} as Window,
+			).get("choice"),
+		).toEqual(choice);
 		expect(loaded.getInteractions()).toMatchObject([
 			{ id: "choice", response: "a", attemptsUsed: 1 },
 		]);
@@ -113,7 +130,11 @@ it.each(replacementCases)(
 			original.initialize();
 			if (form === "compact")
 				expect(original.setSuspendData(JSON.stringify({ padding: "p".repeat(4096) }))).toBe(true);
-			createBlockStateRuntime(original).set("choice", choice);
+			createPrivateBlockStateRuntime(
+				original,
+				{ courseId: "course", strings: {} } as CourseHostConfig,
+				{} as Window,
+			).set("choice", choice);
 			original.trackInteraction("choice", "a", true, 100, {
 				assessmentType: "choice",
 				attemptsUsed: 1,
@@ -138,7 +159,11 @@ it.each(replacementCases)(
 			};
 			const runtime = new Runtime(undefined, bad);
 			runtime.initialize();
-			const provider = createBlockStateRuntime(runtime);
+			const provider = createPrivateBlockStateRuntime(
+				runtime,
+				{ courseId: "course", strings: {} } as CourseHostConfig,
+				{} as Window,
+			);
 			const priorRows = runtime.getInteractions();
 			writes.length = 0;
 			expect(
@@ -219,7 +244,11 @@ it("retains at least 42 original UUID answers and rows before an atomic capacity
 	try {
 		const runtime = new Runtime(undefined, compact);
 		runtime.initialize();
-		const provider = createBlockStateRuntime(runtime);
+		const provider = createPrivateBlockStateRuntime(
+			runtime,
+			{ courseId: "course", strings: {} } as CourseHostConfig,
+			{} as Window,
+		);
 		const saved = new Map();
 		let refused = false;
 		for (let index = 0; index < 100; index++) {
@@ -262,7 +291,11 @@ it("retains at least 42 original UUID answers and rows before an atomic capacity
 		expect(saved.size).toBeGreaterThanOrEqual(42);
 		const loaded = new Runtime(undefined, compact);
 		loaded.initialize();
-		const restored = createBlockStateRuntime(loaded);
+		const restored = createPrivateBlockStateRuntime(
+			loaded,
+			{ courseId: "course", strings: {} } as CourseHostConfig,
+			{} as Window,
+		);
 		for (const [id, state] of saved) expect(restored.get(id)).toEqual(state);
 		expect(loaded.getInteractions()).toHaveLength(saved.size);
 	} finally {
