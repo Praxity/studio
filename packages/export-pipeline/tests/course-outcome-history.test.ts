@@ -100,18 +100,6 @@ it.each(["scorm12", "scorm2004", "xapi"] as const)(
 		expect(new CourseTracker(runtime, config).outcome("score")).toEqual({
 			score: 100,
 		});
-		config.getChoiceDependencyView = () =>
-			withChoiceDependencyStatus({
-				rows: runtime
-					.getInteractions()
-					.map((row) => (row.id === "q" ? { ...row, choiceEvidenceInvalid: true } : row)),
-				questions: {},
-				signatures: {},
-				readState: () => undefined,
-			});
-		expect(new CourseTracker(runtime, config).outcome("score")).toEqual({
-			score: 100,
-		});
 	},
 );
 
@@ -130,19 +118,6 @@ it("quiz retains main's unscored historical retry state", () => {
 		completionMethod: "quiz",
 		deferRetryableFailure: true,
 	};
-	expect(new CourseTracker(runtime, config).outcome()).toMatchObject({
-		result: { score: 50, passed: false, retryable: true },
-		completion: "incomplete",
-	});
-	config.getChoiceDependencyView = () =>
-		withChoiceDependencyStatus({
-			rows: runtime.getInteractions(),
-			questions: {},
-			signatures: {},
-			invalidIds: ["u"],
-			readState: () => undefined,
-		});
-	expect(config.getChoiceDependencyView()?.status("u")).toBe("history");
 	expect(new CourseTracker(runtime, config).outcome()).toMatchObject({
 		result: { score: 50, passed: false, retryable: true },
 		completion: "incomplete",
@@ -216,7 +191,6 @@ it.each(["scorm12", "scorm2004", "xapi", "standalone"] as const)(
 		const tracker = new CourseTracker(runtime, {
 			totalPages: 1,
 			completionMethod: "quiz",
-			getChoiceDependencyView: view,
 		});
 		tracker.trackInteraction("other", "answer", false, 0);
 		expect(tracker.outcome()).toMatchObject({

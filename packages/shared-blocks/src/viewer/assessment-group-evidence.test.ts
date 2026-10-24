@@ -218,7 +218,7 @@ it("retains the latest capture through A/B/A picker changes and retry remounts",
 	expect(view().status("g")).toBe("current");
 });
 
-it("keeps an old aggregate in history after member repair until deliberate submission", async () => {
+it("keeps saved aggregate completion and capture when repaired members leave it in history", async () => {
 	const { values, rows, view, render, questions, signatures } = mount("all");
 	questions.a = {
 		selectionMode: "single",
@@ -272,10 +272,12 @@ it("keeps an old aggregate in history after member repair until deliberate submi
 	expect(view().status("a")).toBe("current");
 	expect(view().status("g")).toBe("history");
 	await render();
-	expect(document.querySelector(".praxity-ag-results-score")).toBeNull();
-	expect(values.get("g")).toHaveProperty("submitted", old);
-	document.querySelector<HTMLButtonElement>(".praxity-ag-submit-btn")?.click();
-	await vi.waitFor(() => expect(view().status("g")).toBe("current"));
+	expect(document.querySelector(".praxity-ag-results-score")?.textContent).toBe(
+		"1 of 1 correct \u00b7 Score: 100% - Passed",
+	);
+	expect(values.get("g")).toMatchObject({ completed: true, submitted: old });
+	expect(view().status("g")).toBe("history");
+	expect(document.querySelector(".praxity-ag-submit-btn")).toBeNull();
 });
 
 it("stages its captured answer before reporting and avoids a duplicate save", async () => {

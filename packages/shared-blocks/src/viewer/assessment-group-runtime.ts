@@ -160,10 +160,7 @@ function readAssessmentGroupState(group: AssessmentGroupMeta): SavedAssessmentGr
 	) {
 		return null;
 	}
-	const view = window.__praxityBlockState?.getChoiceDependencyView?.();
-	return view && view.status(group.id) !== "current"
-		? ({ ...value, completed: false } as unknown as SavedAssessmentGroupState)
-		: (value as unknown as SavedAssessmentGroupState);
+	return value as unknown as SavedAssessmentGroupState;
 }
 
 function writeAssessmentGroupState(

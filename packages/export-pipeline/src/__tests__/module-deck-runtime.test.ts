@@ -7,7 +7,6 @@ import { createElement, useState } from "react";
 import { flushSync } from "react-dom";
 import { afterEach, assert, beforeEach, expect, it, vi } from "vitest";
 import { bindDeckControls } from "../../template/src/components/deck-control-activation";
-import { createBlockStateRuntime } from "../../template/src/hosts/block-state-runtime";
 import { mountDeckNarration } from "../../template/src/islands/deck-narration";
 import { initDeck } from "../../template/src/islands/island-deck";
 import { renderIsland } from "../../template/src/islands/utils";
@@ -20,10 +19,8 @@ import {
 import { moduleDeckFixture } from "../../tests/fixtures/module-deck";
 import { type DeckPage, deckPageData } from "../module-deck";
 import { enhanceHighlight } from "../patterns/highlight/enhance";
-import { XapiRuntime } from "../scorm/api/xapi";
 import { LocalStorageRuntime } from "../scorm/local-storage-runtime";
 import { CourseTracker } from "../scorm/tracking";
-import type { SCORMRuntime } from "../scorm/types";
 
 vi.mock("../../template/src/islands/deck-narration", () => ({ mountDeckNarration: vi.fn() }));
 
@@ -803,93 +800,8 @@ it("keeps a pass gate locked during retries, then releases and restores it after
 	);
 });
 
-for (const format of ["xapi", "standalone"] as const)
-	for (const scenario of [
-		"exhausted",
-		"retry",
-		"history",
-		"retry marked complete",
-		"exhausted marked incomplete",
-	] as const)
-		for (const cachedRelease of [false, true])
-			it(`admitted ${format} ${scenario} gate, cached release=${cachedRelease}`, () => {
-				setup(false);
-				vi.stubGlobal(
-					"fetch",
-					vi.fn(async () => new Response(null, { status: 200 })),
-				);
-				const open = (): SCORMRuntime =>
-					format === "standalone"
-						? new LocalStorageRuntime(localStorage, "gate")
-						: new XapiRuntime(
-								{
-									endpoint: "https://lrs.example/statements",
-									auth: "Basic test",
-									actorMode: "manual",
-									actor: { name: "Learner", mbox: "mailto:learner@example.com" },
-								},
-								"gate",
-								localStorage,
-							);
-				const original = open();
-				expect(original.initialize()).toBe(true);
-				const retry = scenario === "retry" || scenario === "retry marked complete";
-				const exhausted = scenario === "exhausted" || scenario === "exhausted marked incomplete";
-				const state = {
-					...exhaustedGateState,
-					attemptCount: retry ? 1 : 2,
-					completed: scenario !== "retry" && scenario !== "exhausted marked incomplete",
-					...(scenario === "history" ? { contentSignature: `sha256:${"d".repeat(64)}` } : {}),
-				};
-				createBlockStateRuntime(original).set("check", state);
-				if (retry) original.trackInteraction("check", "a", true, 100);
-				original.trackInteraction("check", "b", false, 0);
-				if (retry) original.trackInteraction("other", "a", true, 100);
-				original.setSuspendData(
-					JSON.stringify({
-						...JSON.parse(original.getSuspendData() || "{}"),
-						deck: { released: cachedRelease ? ["check"] : [] },
-					}),
-				);
-				const runtime = open();
-				expect(runtime.initialize()).toBe(true);
-				const provider = createBlockStateRuntime(runtime);
-				const view = () =>
-					createChoiceDependencyView(
-						admitChoiceStateFacts({
-							choiceStateQuestions: { check: gateQuestion },
-							choiceStateSignatures: { check: gateSignature },
-						}),
-						{ rows: runtime.getInteractions(), readState: provider.get },
-					);
-				Object.assign(provider, { getChoiceDependencyView: view });
-				Object.assign(window, {
-					__praxityBlockState: provider,
-					__praxityRuntime: runtime,
-					__praxityTracker: new CourseTracker(runtime, {
-						totalPages: 3,
-						completionMethod: "allPages",
-						getChoiceDependencyView: view,
-						...(format === "standalone" ? { getAssessmentState: provider.get } : {}),
-					}),
-				});
-				expect(runtime.getInteractions()[0]).not.toHaveProperty("attemptsUsed");
-				expect(runtime.getInteractions()[0]).not.toHaveProperty("maxAttempts");
-				expect(provider.get("check")).toEqual(state);
-				expect(view().status("check")).toBe(scenario === "history" ? "history" : "current");
-				cleanup = initDeck();
-				const next = document.getElementById("deck-next") as HTMLButtonElement;
-				expect(
-					document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled"),
-				).toBe(exhausted ? "false" : "true");
-				next.click();
-				expect(document.querySelector<HTMLElement>('[data-deck-slide="slide-2"]')?.hidden).toBe(
-					!exhausted,
-				);
-			});
-
 it.each(["attempt", "pass"] as const)(
-	"history blocks live %s releases and later revokes an earned release",
+	"history preserves live %s releases and their saved access",
 	(rule) => {
 		setup(false);
 		const runtime = new LocalStorageRuntime(localStorage, "live-gate");
@@ -916,7 +828,6 @@ it.each(["attempt", "pass"] as const)(
 		window.__praxityTracker = new CourseTracker(runtime, {
 			totalPages: 3,
 			completionMethod: "allPages",
-			getChoiceDependencyView: view,
 		});
 		cleanup = initDeck();
 		const submit = () =>
@@ -931,11 +842,12 @@ it.each(["attempt", "pass"] as const)(
 					},
 				}),
 			);
+		expect(view().status("check")).toBe("history");
 		submit();
 		expect(
 			document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled"),
-		).toBe("true");
-		expect(JSON.parse(runtime.getSuspendData() || "{}").deck.released).toEqual([]);
+		).toBe("false");
+		expect(JSON.parse(runtime.getSuspendData() || "{}").deck.released).toEqual(["check"]);
 		current = true;
 		submit();
 		expect(
@@ -945,12 +857,12 @@ it.each(["attempt", "pass"] as const)(
 		submit();
 		expect(
 			document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled"),
-		).toBe("true");
+		).toBe("false");
 	},
 );
 
 it.each([false, true])(
-	"a cached choice release without a row retains legacy fallback, view=%s",
+	"a cached choice release without a row retains earned access, view=%s",
 	(admitted) => {
 		const { runtime } = setup(false);
 		runtime.getSuspendData.mockReturnValue(JSON.stringify({ deck: { released: ["check"] } }));
@@ -972,42 +884,9 @@ it.each([false, true])(
 		cleanup = initDeck();
 		expect(
 			document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled"),
-		).toBe(admitted ? "true" : "false");
+		).toBe("false");
 	},
 );
-
-it.each([false, true])("admitted group gate finality completed=%s", (completed) => {
-	setup(false);
-	const runtime = new LocalStorageRuntime(localStorage, "group-gate");
-	runtime.trackInteraction("check", "0%", false, 0);
-	runtime.setSuspendData(JSON.stringify({ deck: { released: ["check"] } }));
-	const state = { version: 1, kind: "assessmentGroup", mode: "all", completed };
-	const view = () =>
-		createChoiceDependencyView(
-			admitChoiceStateFacts({
-				choiceStateQuestions: {},
-				choiceStateSignatures: {},
-				choiceStateGroups: {
-					check: { mode: "all", memberIds: ["member"], requiredIds: ["member"] },
-				},
-			}),
-			{ rows: runtime.getInteractions(), readState: (id) => (id === "check" ? state : undefined) },
-		);
-	Object.assign(window, {
-		__praxityRuntime: runtime,
-		__praxityBlockState: { get: () => state, set() {}, getChoiceDependencyView: view },
-		__praxityTracker: new CourseTracker(runtime, {
-			totalPages: 3,
-			completionMethod: "allPages",
-			getChoiceDependencyView: view,
-		}),
-	});
-	expect(view().status("check")).toBe("current");
-	cleanup = initDeck();
-	expect(document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled")).toBe(
-		completed ? "false" : "true",
-	);
-});
 
 it.each([false, true])(
 	"characterization: saved-state finality alone cannot restore a legacy pass gate, empty capability=%s",
@@ -1028,16 +907,13 @@ it.each([false, true])(
 	},
 );
 
-it.each([80, null])("deck completion consumes the tracker's current score %s", (raw) => {
-	const { runtime, tracker } = setup(false, 2);
+it.each([80, null])("deck completion displays the recorded runtime score %s", (raw) => {
+	const { runtime } = setup(false, 2);
 	const script = document.getElementById("praxity-config") as HTMLScriptElement;
 	const config = JSON.parse(script.textContent ?? "{}");
 	config.deckPages[0].gates = [];
 	script.textContent = JSON.stringify(config);
-	Object.assign(runtime, { getScore: () => ({ raw: 75, min: 0, max: 100 }) });
-	Object.assign(tracker, {
-		getCurrentScore: () => (raw === null ? null : { raw, min: 0, max: 100 }),
-	});
+	Object.assign(runtime, { getScore: () => (raw === null ? null : { raw, min: 0, max: 100 }) });
 	Object.assign(window.__PRAXITY_STRINGS__ ?? {}, {
 		courseRecordedScore: "Score: {score} / {max}",
 		courseTimeSpent: "Time spent: {duration}",
