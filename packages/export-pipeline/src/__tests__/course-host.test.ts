@@ -582,7 +582,13 @@ describe("course host", () => {
 			}
 			if (arrival === "continuing")
 				Object.assign(dom.window, {
-					API: { __praxityScormInitialized: true },
+					API: {
+						__praxityScormSession: {
+							initialized: true,
+							closed: false,
+							terminationSucceeded: false,
+						},
+					},
 				});
 			const runtime = recordingRuntime({
 				bookmark: arrival === "unknown-bookmark" ? "removed-page" : "page-summary",
@@ -619,7 +625,9 @@ describe("course host", () => {
 			environment.location.href = dom.window.location.href;
 			environment.location.search = dom.window.location.search;
 			Object.assign(dom.window, {
-				[format === "scorm12" ? "API" : "API_1484_11"]: { __praxityScormInitialized: true },
+				[format === "scorm12" ? "API" : "API_1484_11"]: {
+					__praxityScormSession: { initialized: true, closed: false, terminationSucceeded: false },
+				},
 			});
 			initializeCourseHost(
 				withScormResume({

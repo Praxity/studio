@@ -1,11 +1,8 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`scorm12 commit preparation > characterization preserves duplicate lifecycle commits and failed/reentrant Finish 1`] = `
+exports[`scorm12 commit preparation > characterization preserves duplicate lifecycle commits and failed Finish 1`] = `
 {
   "finished": true,
-  "nested": [
-    false,
-  ],
   "refused": false,
   "writes": [
     [
@@ -109,12 +106,9 @@ exports[`scorm12 commit preparation > characterization preserves duplicate lifec
 }
 `;
 
-exports[`scorm2004 commit preparation > characterization preserves duplicate lifecycle commits and failed/reentrant Finish 1`] = `
+exports[`scorm2004 commit preparation > characterization preserves duplicate lifecycle commits and failed Finish 1`] = `
 {
   "finished": true,
-  "nested": [
-    false,
-  ],
   "refused": false,
   "writes": [
     [

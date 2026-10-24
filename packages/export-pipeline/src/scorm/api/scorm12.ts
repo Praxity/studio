@@ -25,7 +25,6 @@ import {
 	type InteractionEvidence,
 	type InteractionRecord,
 	LMS_DESTINATIONS,
-	prepareRuntimeCommit,
 	recordInteraction,
 	type SCORMRuntime,
 	type TrackInteractionOptions,
@@ -161,6 +160,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 	}
 
 	getBlockSaveResult(blockId: string) {
+		this.ensureInitialized();
 		this.loadSuspendPayload();
 		return this.unreadableSuspendData
 			? { status: "not-saved" as const, code: "unreadable-state" as const }
@@ -177,7 +177,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 	 * The API marker survives internal page navigation without a duplicate LMSInitialize.
 	 */
 	initialize(): boolean {
-		if (this.session?.closed || this.session?.terminationInProgress) return false;
+		if (this.session?.closed) return false;
 		if (this.initialized) return true;
 
 		this.api =
@@ -185,23 +185,20 @@ export class Scorm12Runtime implements SCORMRuntime {
 		if (!this.api) return false;
 		this.session ??=
 			getSessionState(this.api) ?? writeSessionState(this.api, readSessionState(this.api));
-		if (!this.session || !this.canCallLms()) return false;
+		if (!this.session || this.session.closed) return false;
 
 		const startedAt = Date.now();
 		if (!readSessionState(this.api) && this.api.LMSInitialize("") !== "true") {
 			// SCORM 1.2's 101 is a general exception, not proof of an active session.
-			if (!this.canCallLms()) return false;
 			const code = String(this.api.LMSGetLastError());
-			if (!this.canCallLms()) return false;
 			if (code !== "101") {
 				this.throwIfError("LMSInitialize");
 				return false;
 			}
 			this.lmsGetValue("cmi.core.lesson_status");
 		}
-		if (!this.canCallLms()) return false;
 		this.session = writeSessionState(this.api, true);
-		if (!this.session || !this.canCallLms()) return false;
+		if (!this.session) return false;
 		this.session.startedAt ??= startedAt;
 
 		// Set initial status to "incomplete" if the LMS hasn't already set
@@ -215,7 +212,6 @@ export class Scorm12Runtime implements SCORMRuntime {
 		) {
 			if (!this.lmsSetValue("cmi.core.lesson_status", "incomplete")) return false;
 		}
-		if (!this.canCallLms()) return false;
 		this.initialized = true;
 		return true;
 	}
@@ -225,36 +221,27 @@ export class Scorm12Runtime implements SCORMRuntime {
 	 */
 	terminate(explicitFinish = false): boolean {
 		if (this.session?.closed) return this.session.terminationSucceeded;
-		if (this.session?.terminationInProgress) return false;
 		this.ensureInitialized();
 		this.loadSuspendPayload();
 		const session = this.session;
 		if (!session) return false;
-		if (!prepareRuntimeCommit(session)) return false;
-		// LMS callbacks can synchronously reach any retained adapter. Only this
-		// invocation may prepare and commit the final state while the guard is held.
-		session.terminationInProgress = true;
-		try {
-			if (!this.flushCompletion(true)) return false;
-			if (
-				explicitFinish &&
-				!this.unreadableSuspendData &&
-				!session.courseFailure &&
-				!["failed", "passed"].includes(this.lmsGetValue("cmi.core.lesson_status", true)) &&
-				!this.lmsSetValue("cmi.core.lesson_status", "completed", true)
-			)
-				return false;
-			if (!this.commitToLms(true) || !this.canCallLms(true)) return false;
-			// A failed or thrown Finish leaves LMS state uncertain. Close before calling it.
-			session.closed = true;
-			session.initialized = false;
-			this.initialized = false;
-			session.terminationSucceeded = this.api?.LMSFinish("") === "true";
-			return session.terminationSucceeded;
-		} finally {
-			// Failed exit preparation or commit remains retryable.
-			session.terminationInProgress = false;
-		}
+		session.prepareCommit?.();
+		if (!this.flushCompletion()) return false;
+		if (
+			explicitFinish &&
+			!this.unreadableSuspendData &&
+			!session.courseFailure &&
+			!["failed", "passed"].includes(this.lmsGetValue("cmi.core.lesson_status")) &&
+			!this.lmsSetValue("cmi.core.lesson_status", "completed")
+		)
+			return false;
+		if (!this.commitToLms()) return false;
+		// A failed or thrown Finish leaves LMS state uncertain. Close before calling it.
+		session.closed = true;
+		session.initialized = false;
+		this.initialized = false;
+		session.terminationSucceeded = this.api?.LMSFinish("") === "true";
+		return session.terminationSucceeded;
 	}
 
 	// ---- page visit tracking -----------------------------------------------
@@ -384,6 +371,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 	}
 
 	getInteractionEvidence(): InteractionEvidence[] | null {
+		this.ensureInitialized();
 		return readScorm12InteractionEvidence(this.loadSuspendPayload());
 	}
 
@@ -395,16 +383,16 @@ export class Scorm12Runtime implements SCORMRuntime {
 	// ---- objectives --------------------------------------------------------
 
 	trackObjective(id: string, score: number, passed: boolean): void {
+		this.ensureInitialized();
 		this.loadSuspendPayload();
 		if (this.unreadableSuspendData) return;
 		if (globalThis.__praxityPrivateState !== false && this.blockStatePolicy[id] === "device")
 			return;
-		this.ensureInitialized();
 		try {
 			const n = writeObjectiveId(
 				id,
 				(element) => this.lmsGetValue(element),
-				(element, value) => this.canCallLms() && this.api?.LMSSetValue(element, value) === "true",
+				(element, value) => this.api?.LMSSetValue(element, value) === "true",
 			);
 			if (n === undefined) return;
 			this.optionalSetValue(`cmi.objectives.${n}.score.raw`, String(score));
@@ -496,26 +484,20 @@ export class Scorm12Runtime implements SCORMRuntime {
 	commit(): boolean {
 		this.ensureInitialized();
 		this.loadSuspendPayload();
-		if (!prepareRuntimeCommit(this.session as ScormSessionState)) return false;
+		this.session?.prepareCommit?.();
 		return this.commitToLms();
 	}
 
-	private commitToLms(terminating = false): boolean {
-		if (
-			!this.flushCompletion(terminating) ||
-			!this.prepareExit(terminating) ||
-			!this.canCallLms(terminating)
-		)
-			return false;
+	private commitToLms(): boolean {
+		if (!this.flushCompletion() || !this.prepareExit()) return false;
 		if (
 			!this.session ||
-			!this.lmsSetValue("cmi.core.session_time", sessionTime(this.session, "1.2"), terminating)
+			!this.lmsSetValue("cmi.core.session_time", sessionTime(this.session, "1.2"))
 		)
 			return false;
 		const result = this.api?.LMSCommit("");
-		if (!this.canCallLms(terminating)) return false;
 		if (result !== "true") {
-			this.throwIfError("LMSCommit", terminating);
+			this.throwIfError("LMSCommit");
 			return false;
 		}
 		return true;
@@ -523,29 +505,26 @@ export class Scorm12Runtime implements SCORMRuntime {
 
 	// ---- internal helpers ---------------------------------------------------
 
-	private flushCompletion(terminating = false): boolean {
-		if (!this.canCallLms(terminating)) return false;
+	private flushCompletion(): boolean {
 		if (this.unreadableSuspendData) return true;
 		const pending = this.session?.pendingCompletion;
 		if (pending === undefined) return true;
 		// A page can complete before an assessment submits in the same save. Transfer
 		// status after its score; Cornerstone locks transcript score at completion.
-		if (!this.lmsSetValue("cmi.core.lesson_status", pending, terminating)) return false;
+		if (!this.lmsSetValue("cmi.core.lesson_status", pending)) return false;
 		if (this.session?.pendingCompletion === pending) delete this.session.pendingCompletion;
 		return true;
 	}
 
-	private prepareExit(terminating = false): boolean {
+	private prepareExit(): boolean {
 		// Persist the attempt across a window close; page navigation only commits. A failed
 		// attempt stays suspended so the learner can resume it and retry toward the pass mark.
-		const terminal = ["completed", "passed"].includes(
-			this.lmsGetValue("cmi.core.lesson_status", terminating),
-		);
-		return this.lmsSetValue("cmi.core.exit", terminal ? "" : "suspend", terminating);
+		const terminal = ["completed", "passed"].includes(this.lmsGetValue("cmi.core.lesson_status"));
+		return this.lmsSetValue("cmi.core.exit", terminal ? "" : "suspend");
 	}
 
-	private canCallLms(terminating = false): boolean {
-		return !!this.api && sessionAllowsCalls(this.session, terminating);
+	private canCallLms(): boolean {
+		return !!this.api && sessionAllowsCalls(this.session);
 	}
 
 	private ensureInitialized(): void {
@@ -554,42 +533,34 @@ export class Scorm12Runtime implements SCORMRuntime {
 		}
 	}
 
-	private lmsGetValue(element: string, terminating = false): string {
-		if (!this.canCallLms(terminating)) return "";
+	private lmsGetValue(element: string): string {
 		const value = this.api?.LMSGetValue(element) ?? "";
-		if (!this.canCallLms(terminating)) return "";
-		this.throwIfError(`LMSGetValue("${element}")`, terminating);
+		this.throwIfError(`LMSGetValue("${element}")`);
 		return value;
 	}
 
-	private lmsSetValue(element: string, value: string, terminating = false): boolean {
-		if (!this.canCallLms(terminating)) return false;
+	private lmsSetValue(element: string, value: string): boolean {
 		const result = this.api?.LMSSetValue(element, value);
-		if (!this.canCallLms(terminating)) return false;
 		if (result !== "true") {
-			this.throwIfError(`LMSSetValue("${element}", "${value}")`, terminating);
+			this.throwIfError(`LMSSetValue("${element}", "${value}")`);
 		}
 		return result === "true";
 	}
 
 	private optionalSetValue(element: string, value: string): void {
-		if (this.canCallLms()) this.api?.LMSSetValue(element, value);
+		this.api?.LMSSetValue(element, value);
 	}
 
 	/**
 	 * Check LMSGetLastError and throw a descriptive Error when the error code
 	 * is non-zero.
 	 */
-	private throwIfError(context: string, terminating = false): void {
-		if (!this.canCallLms(terminating)) return;
+	private throwIfError(context: string): void {
 		// String() guards against LMS implementations that return numbers.
 		const code = String(this.api?.LMSGetLastError() ?? "0");
-		if (!this.canCallLms(terminating)) return;
 		if (code !== "0") {
 			const message = String(this.api?.LMSGetErrorString(code) ?? "Unknown error");
-			if (!this.canCallLms(terminating)) return;
 			const diagnostic = String(this.api?.LMSGetDiagnostic(code) ?? "");
-			if (!this.canCallLms(terminating)) return;
 			throw new Error(
 				`SCORM 1.2 error in ${context}: [${code}] ${message}${diagnostic ? ` (${diagnostic})` : ""}`,
 			);
@@ -601,7 +572,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 	private loadSuspendPayload(): Scorm12SuspendData {
 		if (this.submission) return JSON.parse(JSON.stringify(this.submission.data));
 		if (this.unreadableSuspendData) return { visitedPages: [], interactions: [] };
-		const raw = this.canCallLms() ? this.api?.LMSGetValue("cmi.suspend_data") : "";
+		const raw = this.api?.LMSGetValue("cmi.suspend_data");
 		if (raw) {
 			const data = (this.suspendDataCodec?.parse ?? parseScorm12SuspendData)(raw);
 			if (data) return data;

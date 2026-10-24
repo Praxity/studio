@@ -16,19 +16,6 @@ export const DEVICE_DESTINATIONS: RuntimeDestinations = { reporting: "device", s
 
 export interface RuntimeCommitPreparation {
 	prepareCommit?: () => void;
-	commitPreparationInProgress?: boolean;
-}
-
-/** Preparation may read or adjust queued state, but cannot recursively commit it. */
-export function prepareRuntimeCommit(state: RuntimeCommitPreparation): boolean {
-	if (state.commitPreparationInProgress) return false;
-	state.commitPreparationInProgress = true;
-	try {
-		state.prepareCommit?.();
-		return true;
-	} finally {
-		state.commitPreparationInProgress = false;
-	}
 }
 
 export interface SCORMRuntime {

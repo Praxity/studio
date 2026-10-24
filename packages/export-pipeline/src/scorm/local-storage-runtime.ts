@@ -15,7 +15,6 @@ import {
 	assessmentEvidenceMetadata,
 	DEVICE_DESTINATIONS,
 	type InteractionRecord,
-	prepareRuntimeCommit,
 	type RuntimeCommitPreparation,
 	recordInteraction,
 	type SCORMRuntime,
@@ -68,7 +67,8 @@ export class LocalStorageRuntime implements SCORMRuntime {
 	}
 
 	terminate(): boolean {
-		return prepareRuntimeCommit(this.commitPreparation);
+		this.commitPreparation.prepareCommit?.();
+		return true;
 	}
 
 	trackPageVisit(pageId: string): void {
@@ -218,7 +218,8 @@ export class LocalStorageRuntime implements SCORMRuntime {
 	}
 
 	commit(): boolean {
-		return prepareRuntimeCommit(this.commitPreparation);
+		this.commitPreparation.prepareCommit?.();
+		return true;
 	}
 
 	private readState(): LearnerStateV1 {

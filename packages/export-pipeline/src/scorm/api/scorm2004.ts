@@ -25,7 +25,6 @@ import {
 	type InteractionRecord,
 	interactionDescription,
 	LMS_DESTINATIONS,
-	prepareRuntimeCommit,
 	recordInteraction,
 	type SCORMRuntime,
 	type TrackInteractionOptions,
@@ -149,7 +148,7 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	// -------------------------------------------------------------------
 
 	initialize(): boolean {
-		if (this.session?.closed || this.session?.terminationInProgress) return false;
+		if (this.session?.closed) return false;
 		if (this.initialized) return true;
 		if (!this.api && !this.findAPI()) {
 			return false;
@@ -157,18 +156,17 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		this.session ??=
 			getSessionState(this.api, this.win) ??
 			writeSessionState(this.api, readSessionState(this.api, this.win), this.win);
-		if (!this.session || !this.canCallLms()) return false;
+		if (!this.session || this.session.closed) return false;
 		const startedAt = Date.now();
 		if (!readSessionState(this.api, this.win)) {
 			const result = this.api?.Initialize("");
-			if (!this.canCallLms()) return false;
 			if (result !== "true") {
 				const code = String(this.api?.GetLastError() ?? "0");
-				if (!this.canCallLms() || code !== "103") return false;
+				if (code !== "103") return false;
 			}
 		}
 		this.session = writeSessionState(this.api, true, this.win);
-		if (!this.session || !this.canCallLms()) return false;
+		if (!this.session) return false;
 		this.session.startedAt ??= startedAt;
 		const completion = this.getLmsValue("cmi.completion_status") || "unknown";
 		if (["unknown", "not attempted"].includes(completion)) {
@@ -176,7 +174,6 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		}
 		this.interactionCount =
 			Number.parseInt(this.getLmsValue("cmi.interactions._count") || "0", 10) || 0;
-		if (!this.canCallLms()) return false;
 		this.initialized = true;
 		return true;
 	}
@@ -185,39 +182,32 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		if (this.session?.closed) return this.session.terminationSucceeded;
 		if (!this.initialized || !this.canCallLms() || !this.session) return false;
 		const session = this.session;
-		if (!prepareRuntimeCommit(session)) return false;
-		// Block every retained adapter before the first final-state LMS callback.
-		session.terminationInProgress = true;
-		try {
-			if (!this.flushCompletion(true)) return false;
-			if (
-				explicitFinish &&
-				!session.courseFailure &&
-				!this.setLmsValue("cmi.completion_status", "completed", true)
-			)
-				return false;
-			if (!this.commitToLms(true) || !this.canCallLms(true)) return false;
-			// Terminate failure leaves LMS state uncertain, so no caller may retry.
-			session.closed = true;
-			session.initialized = false;
-			this.initialized = false;
-			session.terminationSucceeded = this.api?.Terminate("") === "true";
-			return session.terminationSucceeded;
-		} finally {
-			// Exit or commit failures keep the shared launch open for a later retry.
-			session.terminationInProgress = false;
-		}
+		session.prepareCommit?.();
+		if (!this.flushCompletion()) return false;
+		if (
+			explicitFinish &&
+			!session.courseFailure &&
+			!this.setLmsValue("cmi.completion_status", "completed")
+		)
+			return false;
+		if (!this.commitToLms()) return false;
+		// Terminate failure leaves LMS state uncertain, so no caller may retry.
+		session.closed = true;
+		session.initialized = false;
+		this.initialized = false;
+		session.terminationSucceeded = this.api?.Terminate("") === "true";
+		return session.terminationSucceeded;
 	}
 
 	getValue(element: string): string {
-		return this.initialized ? this.getLmsValue(element) : "";
+		return this.initialized && this.canCallLms() ? this.getLmsValue(element) : "";
 	}
 
 	setValue(element: string, value: string): boolean {
 		if (element === "cmi.suspend_data")
 			if (globalThis.__praxityPrivateState !== false)
 				value = filterPrivateSuspendData(value, this.blockStatePolicy);
-		return this.initialized && this.setLmsValue(element, value);
+		return this.initialized && this.canCallLms() && this.setLmsValue(element, value);
 	}
 
 	setCommitPreparation(prepare: () => void): void {
@@ -225,65 +215,51 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	}
 
 	commit(): boolean {
-		return this.initialized && this.commitToLms();
+		if (!this.initialized || !this.canCallLms()) return false;
+		this.session?.prepareCommit?.();
+		return this.commitToLms();
 	}
 
-	private commitToLms(terminating = false): boolean {
-		if (
-			!this.canCallLms(terminating) ||
-			(!terminating && !prepareRuntimeCommit(this.session as ScormSessionState)) ||
-			!this.flushCompletion(terminating) ||
-			!this.prepareExit(terminating) ||
-			!this.canCallLms(terminating)
-		)
-			return false;
-		if (
-			!this.session ||
-			!this.setLmsValue("cmi.session_time", sessionTime(this.session, "2004"), terminating)
-		)
+	private commitToLms(): boolean {
+		if (!this.flushCompletion() || !this.prepareExit()) return false;
+		if (!this.session || !this.setLmsValue("cmi.session_time", sessionTime(this.session, "2004")))
 			return false;
 		const result = this.api?.Commit("");
-		return this.canCallLms(terminating) && result === "true";
+		return result === "true";
 	}
 
-	private flushCompletion(terminating = false): boolean {
-		if (!this.canCallLms(terminating)) return false;
+	private flushCompletion(): boolean {
 		const pending = this.session?.pendingCompletion;
 		if (pending === undefined) return true;
 		// Keep immediate course decisions, but send status after the save's score and
 		// success values. Cornerstone locks transcript score when completion arrives.
-		if (!this.setLmsValue("cmi.completion_status", pending, terminating)) return false;
+		if (!this.setLmsValue("cmi.completion_status", pending)) return false;
 		if (this.session?.pendingCompletion === pending) delete this.session.pendingCompletion;
 		return true;
 	}
 
-	private prepareExit(terminating = false): boolean {
+	private prepareExit(): boolean {
 		// ADL RTE: suspended exit preserves the attempt and yields entry=resume. With a pass
 		// mark, keep the attempt open until it is passed so the learner can finish or retry.
 		const finished =
-			this.getLmsValue("cmi.completion_status", terminating) === "completed" &&
-			(!this.session?.successTracked ||
-				this.getLmsValue("cmi.success_status", terminating) === "passed");
-		return this.setLmsValue("cmi.exit", finished ? "normal" : "suspend", terminating);
+			this.getLmsValue("cmi.completion_status") === "completed" &&
+			(!this.session?.successTracked || this.getLmsValue("cmi.success_status") === "passed");
+		return this.setLmsValue("cmi.exit", finished ? "normal" : "suspend");
 	}
 
-	private canCallLms(terminating = false): boolean {
-		return !!this.api && sessionAllowsCalls(this.session, terminating);
+	private canCallLms(): boolean {
+		return !!this.api && sessionAllowsCalls(this.session);
 	}
 
-	private getLmsValue(element: string, terminating = false): string {
-		if (!this.canCallLms(terminating)) return "";
+	private getLmsValue(element: string): string {
 		const value = this.api?.GetValue(element) ?? "";
-		if (!this.canCallLms(terminating)) return "";
-		this.checkError(terminating, element);
+		this.checkError(element);
 		return value;
 	}
 
-	private setLmsValue(element: string, value: string, terminating = false): boolean {
-		if (!this.canCallLms(terminating)) return false;
+	private setLmsValue(element: string, value: string): boolean {
 		const result = this.api?.SetValue(element, value);
-		if (!this.canCallLms(terminating)) return false;
-		this.checkError(terminating, element);
+		this.checkError(element);
 		return result === "true";
 	}
 
@@ -298,15 +274,11 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		return this.api?.GetLastError() ?? "0";
 	}
 
-	private checkError(terminating: boolean, element: string): void {
-		if (!this.canCallLms(terminating)) return;
+	private checkError(element: string): void {
 		const code = this.api?.GetLastError() ?? "0";
-		if (!this.canCallLms(terminating)) return;
 		if (code !== "0") {
 			const message = this.api?.GetErrorString(code);
-			if (!this.canCallLms(terminating)) return;
 			const diagnostic = this.api?.GetDiagnostic(code);
-			if (!this.canCallLms(terminating)) return;
 			console.warn(
 				`[SCORM 2004] ${element} Error ${code}: ${message}${diagnostic ? ` (${diagnostic})` : ""}`,
 			);
@@ -456,7 +428,7 @@ export class Scorm2004Runtime implements SCORMRuntime {
 			this.session.pendingCompletion = status;
 		} else if (status === "passed" || status === "failed") {
 			this.setSuccess(status);
-			if (this.canCallLms()) this.session.pendingCompletion = "completed";
+			this.session.pendingCompletion = "completed";
 		}
 	}
 

@@ -3,8 +3,6 @@ import { JSDOM } from "jsdom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { initializeScorm12Host } from "../../template/src/hosts/scorm12";
 import { initializeScorm2004Host } from "../../template/src/hosts/scorm2004";
-import { Scorm12Runtime } from "../scorm/api/scorm12";
-import { Scorm2004Runtime } from "../scorm/api/scorm2004";
 import type { SCORMRuntime } from "../scorm/types";
 
 type Format = "scorm12" | "scorm2004";
@@ -18,7 +16,6 @@ function launch(format: Format) {
 	const calls: string[][] = [];
 	const values: Record<string, string> = {};
 	let commitSucceeds = true;
-	let onCompletionWrite: (() => void) | undefined;
 	const record = (name: string, ...args: string[]) => {
 		calls.push([name, ...args]);
 		return "true";
@@ -30,8 +27,6 @@ function launch(format: Format) {
 	const set = (key: string, value: string) => {
 		record("set", key, value);
 		values[key] = value;
-		if (key === (format === "scorm12" ? "cmi.core.lesson_status" : "cmi.completion_status"))
-			onCompletionWrite?.();
 		return "true";
 	};
 	const commit = () => {
@@ -94,9 +89,6 @@ function launch(format: Format) {
 		calls,
 		values,
 		page,
-		onCompletionWrite: (callback: () => void) => {
-			onCompletionWrite = callback;
-		},
 		failCommit: () => {
 			commitSucceeds = false;
 		},
@@ -114,22 +106,10 @@ const actionConfig = {
 };
 
 describe.each(["scorm12", "scorm2004"] as const)("%s explicit finish host", (format) => {
-	it("guards completion preparation against a second host adapter", () => {
+	it("commits completion before terminating through authored End", () => {
 		const launchState = launch(format);
-		const { dom } = launchState.page();
-		let reentries = 0;
-		launchState.onCompletionWrite(() => {
-			reentries++;
-			const calls = launchState.calls.length;
-			const nested = format === "scorm12" ? new Scorm12Runtime() : new Scorm2004Runtime(dom.window);
-			expect(nested.initialize()).toBe(false);
-			if (format === "scorm12") expect(() => nested.commit()).toThrow(/not initialized/);
-			else expect(nested.commit()).toBe(false);
-			expect(nested.terminate()).toBe(false);
-			expect(launchState.calls).toHaveLength(calls);
-		});
+		launchState.page();
 		expect(navigatePageAction("__end_lesson__", actionConfig)).toBe(true);
-		expect(reentries).toBe(1);
 		expect(launchState.calls.slice(-2).map(([name]) => name)).toEqual(["commit", "terminate"]);
 		expect(launchState.values[format === "scorm12" ? "cmi.core.exit" : "cmi.exit"]).toBe(
 			format === "scorm12" ? "" : "normal",

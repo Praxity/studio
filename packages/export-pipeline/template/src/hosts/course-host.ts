@@ -544,7 +544,7 @@ function installScormLifecycle(
 	environment.win.__praxityFinishCourse = () => {
 		if (finished || session?.closed) return finished || session?.terminationSucceeded === true;
 		try {
-			// The adapter owns completion preparation inside the shared reentry guard.
+			// The adapter prepares completion before its final commit.
 			finished = finishTracker.finish(true);
 			return finished;
 		} finally {

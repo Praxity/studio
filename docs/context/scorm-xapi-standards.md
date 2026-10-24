@@ -62,8 +62,8 @@ An xAPI package declares `https://praxity.io/courses/<course id>` in `tincan.xml
 The host supplies saved answers for the tracker's finality check and delegates
 group objectives and Finish to the tracker. The shared writer also serves End
 when only a runtime is installed. It preserves score, success and completion write
-order; SCORM adapters still prepare explicit completion inside their termination
-guard. `scripts/check-source-owners.mjs` rejects outcome writes outside this writer,
+order; SCORM adapters still prepare explicit completion before their final
+commit. `scripts/check-source-owners.mjs` rejects outcome writes outside this writer,
 and calls to `writeCourseOutcome` outside CourseTracker and the writer module.
 `finishRuntimeCourse` owns the runtime-only End exception in that module.
 
@@ -200,17 +200,15 @@ must not send per-document deltas.
 
 One exported course is one SCO, including its HTML pages and module decks. Initialize
 once per communication session. The adapters share the launch record by API identity
-and keep `__praxityScormInitialized` for older document bundles. Later documents
-sharing that record skip Initialize. A bare `index.html` launch redirect resets
+on the API object. Later documents sharing that record skip Initialize. A bare `index.html` launch redirect resets
 existing bookkeeping, so an LMS that resets and reuses its API object starts a fresh
 session. An index route with a mapped `praxity-page` target retains the session,
 including native GET forms. Internal navigation, bookmark resolution and page or
 slide alias redirects also retain it.
 
 The record is content-owned bookkeeping, not an LMS requirement. An API-identity
-WeakMap on an accessible LMS parent or opener also records session state, covering
-APIs that reject custom properties. A store on the shared Initialize callable covers
-restricted API and window properties. Document-local windows cannot own this store.
+WeakMap on an accessible LMS parent or opener supplies the fallback when the API
+object rejects the record property. Document-local windows cannot own this store.
 If every shared store rejects bookkeeping, initialization fails before an LMS call.
 The shared record carries closure and the course success policy across documents,
 including utility pages that carry no pass-mark configuration. A glossary can join
@@ -233,8 +231,7 @@ Finish preserves recorded pass/fail, including retryable failures reported as
 `incomplete` in 1.2 and `incomplete` plus `failed` in 2004 when passing is required,
 writes the exit value, commits, then calls exactly one `LMSFinish` or
 `Terminate`. A false or thrown final commit prevents
-termination and permits retry. A shared in-progress guard covers synchronous LMS
-callbacks, including completion preparation before the final commit. Once
+termination and permits retry. Completion preparation runs before the final commit. Once
 termination is attempted, all adapters in that launch stop LMS
 calls and cannot initialize again, even when the LMS rejects termination. Retained
 adapters keep their closed record when index starts another launch.
@@ -285,8 +282,8 @@ it on commit, after that save's score and success writes. This covers page compl
 at host startup followed by an assessment submission before the first commit. A
 retained utility adapter can flush the same value. A rejected completion transfer
 prevents commit or termination and keeps the pending value for retry; a new launch
-discards it. Explicit finish flushes pending completion inside the existing shared
-guard before preparing its final status, preserving SCORM 1.2 pass/fail.
+discards it. Explicit finish flushes pending completion before preparing its final
+status, preserving SCORM 1.2 pass/fail.
 
 This order follows Cornerstone's documented transcript score locking when completion
 is sent. It does not delay the course's completion rule until every future assessment
