@@ -206,6 +206,7 @@ export interface PraxityPage {
 	/** The lesson label is generated because there is no authored title. */
 	lessonTitleIsFallback?: boolean;
 	lessonKicker?: string;
+	lessonTime?: string;
 	isFirstPageOfLesson?: boolean;
 	narrationEnabled?: boolean;
 	narrationDefaults?: Record<string, unknown>;
@@ -965,6 +966,8 @@ export type AssessmentGroupMode = "all" | "oneOf";
 
 export interface AssessmentGroupBlockData {
 	groupName: string;
+	/** Internal projection flag: this group replaces its page's standalone heading. */
+	_foldedPageTitle?: boolean;
 	/** Authored heading level; older blocks default to H2. */
 	_headingLevel?: number;
 	mode: AssessmentGroupMode;

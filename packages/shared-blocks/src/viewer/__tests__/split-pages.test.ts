@@ -139,6 +139,7 @@ describe("splitBlocksIntoPages", () => {
 		const pages = splitBlocksIntoPages(blocks, "Course", {
 			lessonTitle: "First lesson",
 			lessonKicker: "Module 1",
+			lessonTime: "About 12 minutes",
 			isFirstPageOfLesson: true,
 		});
 
@@ -152,6 +153,11 @@ describe("splitBlocksIntoPages", () => {
 			{ lessonTitle: "First lesson", lessonKicker: "Module 1", isFirstPageOfLesson: true },
 			{ lessonTitle: "First lesson", lessonKicker: "Module 1", isFirstPageOfLesson: false },
 			{ lessonTitle: "Second lesson", lessonKicker: undefined, isFirstPageOfLesson: true },
+		]);
+		expect(pages.map((page) => page.lessonTime)).toEqual([
+			"About 12 minutes",
+			"About 12 minutes",
+			undefined,
 		]);
 	});
 

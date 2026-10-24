@@ -3527,12 +3527,17 @@ body.praxity-layout-slides:has(.praxity-slide[data-slide-chrome="minimal"])
 .praxity-page-content .praxity-block[data-heading-level="2"] + .praxity-block {
 	margin-block-start: var(--section-after);
 }
-.praxity-kicker {
+.praxity-kicker,
+.praxity-lesson-time {
 	font-family: var(--praxity-font-family);
 	font-size: var(--type-small);
-	color: var(--ink-2);
+	color: var(--praxity-color-text-light);
 	letter-spacing: normal;
 	text-transform: none;
+}
+
+.praxity-slide :is(.praxity-kicker, .praxity-lesson-time) {
+	color: var(--slide-muted, var(--praxity-color-text-light));
 }
 
 .praxity-slide-nav__arrow {

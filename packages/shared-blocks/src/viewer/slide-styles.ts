@@ -4,6 +4,7 @@ export type { SlideStyleDef } from "@praxity/content-model/types";
 
 export interface ResolvedSlideStyle {
 	cornerImage?: string;
+	mutedColor: string;
 	variables: Record<string, string>;
 	chrome: NonNullable<SlideStyleDef["chrome"]>;
 }
@@ -39,18 +40,22 @@ const BACKGROUND_VARIABLES = {
 	paper: {
 		"--slide-bg": "var(--praxity-color-background)",
 		"--slide-fg": "var(--praxity-color-text)",
+		"--slide-muted": "var(--praxity-color-text-light)",
 	},
 	surface: {
 		"--slide-bg": "var(--praxity-color-background-alt)",
 		"--slide-fg": "var(--praxity-color-text)",
+		"--slide-muted": "var(--praxity-color-text-light)",
 	},
 	accent: {
 		"--slide-bg": "var(--praxity-color-accent)",
-		"--slide-fg": "var(--praxity-color-background)",
+		"--slide-fg": "var(--praxity-color-accent-foreground)",
+		"--slide-muted": "var(--praxity-color-accent-foreground)",
 	},
 	ink: {
 		"--slide-bg": "var(--praxity-color-text)",
 		"--slide-fg": "var(--praxity-color-background)",
+		"--slide-muted": "var(--praxity-color-background)",
 	},
 } satisfies Record<NonNullable<SlideStyleDef["background"]>, Record<string, string>>;
 
@@ -125,10 +130,16 @@ export function resolveSlideStyle(
 	};
 
 	const cornerImage = cornerImageUrl(definition.cornerImage);
+	// Preserve the prior inherited colours when persisted background data is invalid.
+	const {
+		"--slide-muted": mutedColor = "var(--praxity-color-text-light)",
+		...backgroundVariables
+	} = BACKGROUND_VARIABLES[definition.background] ?? {};
 	return {
 		...(cornerImage ? { cornerImage } : {}),
+		mutedColor,
 		variables: {
-			...BACKGROUND_VARIABLES[definition.background],
+			...backgroundVariables,
 			...(cornerImage ? { "--slide-corner-image": `url("${cornerImage}")` } : {}),
 			"--slide-measure": MEASURE_VARIABLES[definition.measure],
 			"--slide-heading-scale": HEADING_SCALE_VARIABLES[definition.scale],

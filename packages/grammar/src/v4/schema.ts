@@ -1871,6 +1871,9 @@ export function readTreeFrontmatter(tree: AnalyzedLessonTree): {
 		if (parsed !== null && (typeof parsed !== "object" || Array.isArray(parsed)))
 			throw new Error("Frontmatter must be a mapping");
 		data = (parsed ?? {}) as Record<string, unknown>;
+		for (const key of ["kicker", "time"])
+			if (Object.hasOwn(data, key) && typeof data[key] !== "string")
+				throw new Error(`${key} must be a string`);
 		for (const key of ["variables", "pageStyles"])
 			if (
 				data[key] !== undefined &&

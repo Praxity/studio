@@ -82,6 +82,7 @@ import {
 import { resolveDesignTokens } from "@praxity/shared-blocks/themes/resolve-design-tokens";
 import type { AssessmentBlockData, PraxityBlock, PraxityPage } from "@praxity/shared-blocks/types";
 import { privateChoicePrintCss } from "./patterns/choice/render";
+import type { LessonHeading } from "./patterns/heading/render";
 import { WRITE_DISTRACTORS_STYLESHEET } from "./patterns/write-distractors/assets";
 import {
 	assertHighlightData,
@@ -538,6 +539,7 @@ function renderBlockHtml(
 	sourceLocale?: string,
 	strings?: RenderBlockHtmlStrings,
 	options?: {
+		lessonHeading?: LessonHeading;
 		selfCheckContextPending?: boolean;
 		siblingBlocks?: readonly PraxityBlock[];
 		extraAttributes?: string[];
@@ -593,6 +595,7 @@ function renderBlockHtml(
 	}
 	extraAttrs.push(...(options?.extraAttributes ?? []));
 	return renderSemanticBlockHtml(sanitizedBlock, {
+		lessonHeading: options?.lessonHeading,
 		sourceLocale,
 		classNames: classes,
 		extraAttributes: extraAttrs,
@@ -1112,7 +1115,12 @@ export function courseVariables(config: CourseConfig) {
 function slideFrame(config: CourseConfig, page: PraxityPage): { open: string; close: string } {
 	const style = resolvePageSlideStyle(page, config.slideStyles);
 	const name = style.name;
-	const variables = Object.entries(style.variables)
+	const variables = Object.entries({
+		...style.variables,
+		...(page.isFirstPageOfLesson && (page.lessonKicker?.trim() || page.lessonTime?.trim())
+			? { "--slide-muted": style.mutedColor }
+			: {}),
+	})
 		.map(([key, value]) => `${key}:${sanitizeCssValue(value)}`)
 		.join(";");
 	const attributes = `${name ? ` data-slide-style="${escapeHtml(name)}"` : ""}${style.chrome === "minimal" ? ' data-slide-chrome="minimal"' : ""} style="${escapeHtml(variables)}"`;
@@ -1170,6 +1178,13 @@ export function renderPageFragments(
 		),
 	};
 	const sectionBlocks = page.blocks;
+	const pageTitleBlock =
+		sectionBlocks.find(
+			(block) =>
+				block.type === "assessmentGroup" &&
+				block.data._headingLevel === 1 &&
+				block.data._foldedPageTitle === true,
+		) ?? sectionBlocks.find((block) => block.type === "heading" && block.data.level === 1);
 	const sectionRhythm = "uniform";
 	const sections: SectionGroup[] = groupBlocksIntoSections(sectionBlocks, sectionRhythm);
 	const hiddenBlockIds = initiallyHiddenBlockIds(sectionBlocks);
@@ -1292,6 +1307,10 @@ export function renderPageFragments(
 				}
 			: block;
 		const renderedBlock = renderBlockHtml(renderedNode, config.sourceLocale, localeStrings, {
+			lessonHeading:
+				page.isFirstPageOfLesson && page.data?.hideTitle !== true && block === pageTitleBlock
+					? { kicker: page.lessonKicker, time: page.lessonTime }
+					: undefined,
 			...blockContext,
 			selfCheckContextPending,
 			extraAttributes,
@@ -1525,6 +1544,8 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 			lessonTitle: p?.lessonTitle ? fullyDecodeEntities(p.lessonTitle) : p?.lessonTitle,
 			lessonKicker:
 				typeof p?.lessonKicker === "string" ? fullyDecodeEntities(p.lessonKicker) : p?.lessonKicker,
+			lessonTime:
+				typeof p?.lessonTime === "string" ? fullyDecodeEntities(p.lessonTime) : p?.lessonTime,
 			isFirstPageOfLesson: p?.isFirstPageOfLesson,
 			narrationEnabled: p?.narrationEnabled,
 			narrationDefaults: p?.narrationDefaults,
@@ -1534,6 +1555,7 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 
 	const localeStrings = getStrings(config.sourceLocale ?? "en");
 	const lessons = pagesList.filter((entry) => entry.lessonId && entry.isFirstPageOfLesson);
+	const lessonCount = pagesList.filter((entry) => entry.isFirstPageOfLesson).length || 1;
 	const moduleNavigation = lessons.length > 1;
 	const localPages = moduleNavigation
 		? pagesList.filter((entry) => entry.lessonId === page.lessonId)
@@ -1627,6 +1649,9 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 	const courseEstimatedMinutes = publishedReadingTimes(config.pages).courseMinutes;
 	const estimatedDuration =
 		config.estimatedDuration?.trim() ||
+		(new Set(pagesList.map((entry) => entry.lessonId)).size === 1
+			? pagesList.find((entry) => entry.lessonTime?.trim())?.lessonTime?.trim()
+			: "") ||
 		interpolate(localeStrings.narrativeReadTime, { minutes: courseEstimatedMinutes });
 
 	const pageDurationOverride =
@@ -1707,6 +1732,8 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 		basePath: basePath ?? "",
 		lessonTitle: decodedLessonTitle ?? "",
 		lessonKicker: decodedLessonKicker,
+		lessonTime:
+			typeof page.lessonTime === "string" ? fullyDecodeEntities(page.lessonTime) : page.lessonTime,
 		isFirstPageOfLesson: page.isFirstPageOfLesson ?? false,
 		showCourseNameInNav: config.showCourseNameInNav ?? true,
 		showLessonNameInNav: config.showLessonNameInNav ?? true,
@@ -1998,7 +2025,6 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 			: `<div id="praxity-a11y-preferences">${pageNavToggles.showA11yPill !== false ? nativeA11yControls(localeStrings, nativeNav) : ""}${hasNarration ? '<div data-island="narration"></div>' : ""}</div>`;
 	const showCourseTitle = pageNavToggles.navCourseTitle ?? config.showCourseNameInNav !== false;
 	const showLessonTitle = pageNavToggles.navLessonTitles ?? config.showLessonNameInNav !== false;
-	const lessonCount = pagesList.filter((entry) => entry.isFirstPageOfLesson).length || 1;
 	const logo = config.brandLogo;
 	const logoPlacement = logo?.placement === "sidebar" ? "sidebar" : "header";
 	const logoHtml =

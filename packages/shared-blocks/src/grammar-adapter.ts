@@ -131,6 +131,8 @@ function withComponentDefaults(block: PraxityBlock, defaults?: ComponentDefaults
 		normalized.comparisonStyle = normalized.style;
 		delete normalized.style;
 	}
+	// Page-title folding is compiler-owned, never an authored component default.
+	delete normalized._foldedPageTitle;
 	const data = { ...normalized, ...block.data };
 	if (
 		Array.isArray(data.stem) &&

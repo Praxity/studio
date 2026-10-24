@@ -7,6 +7,25 @@ import { BLOCK_SCHEMA } from "../src/v4/schema";
 import { createTransientIdAllocator } from "../src/v4/to-blocks";
 
 describe("grammar 4 reader", () => {
+	it("admits authored lesson time and group labels as text", () => {
+		const read = readLesson(
+			"---\nkicker: Module 1\ntime: About 12 minutes, including the lab\n---\n# First\nBody\n",
+		);
+		expect(read.hasErrors).toBe(false);
+		expect(read.frontmatter).toMatchObject({
+			kicker: "Module 1",
+			time: "About 12 minutes, including the lab",
+		});
+	});
+	it.each(["time", "kicker"])("refuses non-string %s at admission", (key) => {
+		for (const value of ["12", "false", "null", "[ten, minutes]", "{minutes: 12}"]) {
+			const read = readLesson(`---\n${key}: ${value}\n---\n# First\nBody\n`);
+			expect(read.hasErrors, `${key}: ${value}`).toBe(true);
+			expect(read.diagnostics).toContainEqual(
+				expect.objectContaining({ code: "invalid-course-metadata" }),
+			);
+		}
+	});
 	it.each([
 		"# P\nBody\n",
 		"\uFEFF---\r\ntitle: Example\r\n---\r\n# P\rBody\nLast",
