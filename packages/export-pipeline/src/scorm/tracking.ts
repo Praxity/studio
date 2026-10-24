@@ -96,13 +96,12 @@ export class CourseTracker {
 		correct?: boolean,
 		score?: number,
 		options?: TrackInteractionOptions,
-		view?: ChoiceDependencyEvidence,
 	): void {
 		this.runtime.trackInteraction(id, response, correct, score, options);
 
-		if (score !== undefined) writeCourseOutcome(this.runtime, this.outcome("score", view));
+		if (score !== undefined) writeCourseOutcome(this.runtime, this.outcome("score"));
 
-		this.checkCompletion(view);
+		this.checkCompletion();
 	}
 
 	/**
@@ -152,14 +151,8 @@ export class CourseTracker {
 		return rows.length ? { raw: this.average(rows), min: 0, max: 100 } : null;
 	}
 
-	trackGroupObjective(
-		id: string,
-		score: number,
-		passed: boolean,
-		runtime = this.runtime,
-		view?: ChoiceDependencyEvidence,
-	): void {
-		writeCourseOutcome(runtime, this.outcome({ id, score, passed }, view));
+	trackGroupObjective(id: string, score: number, passed: boolean, runtime = this.runtime): void {
+		writeCourseOutcome(runtime, this.outcome({ id, score, passed }));
 	}
 
 	finish(explicitFinish = false, runtime = this.runtime): boolean {
@@ -184,29 +177,12 @@ export class CourseTracker {
 		return latest;
 	}
 
-	private historyIsWaiting(view: ChoiceDependencyEvidence | undefined): boolean {
-		if (!view) return false;
-		const ids = new Set(this.config.requiredAssessmentIds ?? []);
-		const hasPassMark = this.hasPassMark();
-		if (hasPassMark) for (const id of this.config.scoredAssessmentIds ?? []) ids.add(id);
-		// One set covers every intent, including standalone's legacy quiz completion.
-		if (
-			this.config.completionMethod === "quiz" &&
-			(!hasPassMark || this.config.reportOutcome === false)
-		) {
-			for (const [id, question] of Object.entries(view.questions)) if (question.graded) ids.add(id);
-			const rows = this.runtime.getInteractions();
-			for (const row of rows) if (row.id !== "*" && Number.isFinite(row.score)) ids.add(row.id);
-		}
-		return [...ids].some((id) => view.status(id) === "history");
-	}
-
 	/**
 	 * Evaluate whether the course should be marked as completed, passed, or
 	 * failed based on the configured completion method.
 	 */
-	checkCompletion(view?: ChoiceDependencyEvidence): void {
-		writeCourseOutcome(this.runtime, this.outcome("check", view));
+	checkCompletion(): void {
+		writeCourseOutcome(this.runtime, this.outcome("check"));
 	}
 
 	/** A decided commit preserves the adapter's existing write log. */
@@ -287,17 +263,7 @@ export class CourseTracker {
 			| "end"
 			| "finish"
 			| { id: string; score: number; passed: boolean } = "check",
-		view = this.config.getChoiceDependencyView?.(),
 	): TrackerOutcome {
-		if (this.historyIsWaiting(view))
-			return {
-				kind: "waiting",
-				...(intent === "end"
-					? { finish: "complete" as const }
-					: intent === "finish"
-						? { finish: "terminate" as const }
-						: {}),
-			};
 		if (intent === "prepareCommit") return { kind: "decided" };
 		if (typeof intent === "object") return { kind: "decided", objective: intent };
 		if (intent === "finish") return { kind: "decided", finish: "terminate" };

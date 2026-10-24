@@ -1,5 +1,4 @@
 import {
-	configureSessionOutcome,
 	getSessionState,
 	readSessionState,
 	sessionAllowsCalls,
@@ -10,7 +9,6 @@ import { CourseTracker } from "../../src/scorm/tracking";
 
 // The shell imports launch-reset helpers itself. Export only what the host proxy consumes.
 const support = {
-	configureSessionOutcome,
 	getSessionState,
 	readSessionState,
 	sessionAllowsCalls,

@@ -271,8 +271,6 @@ test("course outcome writes belong to the injected tracking writer", () => {
 		'runtime["setScore"](100, 0, 100);',
 		'const method = "trackObjective"; runtime[method]("group", 100, true);',
 		"runtime.terminate(true);",
-		"runtime.suppressTerminationResult();",
-		"const suppress = runtime.suppressTerminationResult; suppress();",
 		"runtime.terminate(explicitFinish);",
 		"const write = runtime.setScore; write(100, 0, 100);",
 		"runtime.setScore.call(runtime, 100, 0, 100);",

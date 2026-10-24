@@ -240,7 +240,7 @@ for (const { locale, variant, presentation, theme, key } of cases) {
 			(window.__praxityRuntime as unknown as { getInteractions(): unknown[] }).getInteractions(),
 		);
 		expect(await saved()).toEqual(previous[key]);
-		expect(await outcome()).toBe("waiting");
+		expect(await outcome()).toBe("decided");
 		await expect(action).toHaveAccessibleDescription(notice);
 		await expect(
 			activity.getByRole(variant === "multiple" ? "group" : "radiogroup"),
@@ -273,7 +273,7 @@ for (const { locale, variant, presentation, theme, key } of cases) {
 		});
 		await expect(action).toBeFocused();
 		await expectFocusRing(action, 2);
-		await testInfo.attach("waiting-1280", {
+		await testInfo.attach("history-1280", {
 			body: await page.screenshot(),
 			contentType: "image/png",
 		});
@@ -337,7 +337,7 @@ for (const { locale, variant, presentation, theme, key } of cases) {
 					}),
 					contentType: "application/json",
 				});
-				await testInfo.attach(`waiting-${width}-${zoom}`, {
+				await testInfo.attach(`history-${width}-${zoom}`, {
 					body: await page.screenshot(),
 					contentType: "image/png",
 				});
@@ -386,7 +386,7 @@ for (const { locale, variant, presentation, theme, key } of cases) {
 			),
 		).toEqual(draftIds);
 		for (const control of await controls.all()) await expect(control).toBeEnabled();
-		expect(await outcome()).toBe("waiting");
+		expect(await outcome()).toBe("decided");
 		expect(
 			await page.evaluate(
 				(id) => window.__praxityBlockState?.getChoiceDependencyView?.()?.status(id),
@@ -464,7 +464,7 @@ for (const locale of ["en", "fr"] as const) {
 				await expect(notice).toBeInViewport({ ratio: 1 });
 				await expect(action).toBeInViewport({ ratio: 1 });
 				for (const control of await controls.all()) await expect(control).toBeDisabled();
-				const waiting = {
+				const history = {
 					accessibility: await activity.ariaSnapshot(),
 					paint: await activity.evaluate((element) =>
 						[
@@ -485,7 +485,7 @@ for (const locale of ["en", "fr"] as const) {
 					),
 				};
 				const evidenceName = paletteActive ? "forced-colours" : "unsupported-forced-colours";
-				await testInfo.attach(`${evidenceName}-waiting`, {
+				await testInfo.attach(`${evidenceName}-history`, {
 					body: await page.screenshot({ fullPage: true }),
 					contentType: "image/png",
 				});
@@ -505,7 +505,7 @@ for (const locale of ["en", "fr"] as const) {
 						presentation,
 						width,
 						paletteActive,
-						waiting,
+						history,
 						newAttempt: await activity.ariaSnapshot(),
 					}),
 					contentType: "application/json",

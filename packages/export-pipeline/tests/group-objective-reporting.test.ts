@@ -69,7 +69,7 @@ const question = {
 
 type Format = "scorm12" | "scorm2004" | "xapi" | "standalone";
 
-function launch(format: Format, evidence = false, waiting = false) {
+function launch(format: Format, evidence = false, history = false) {
 	const dom = new JSDOM("", { url: "https://course.example/one.html" });
 	documents.push(dom);
 	const win = dom.window as unknown as Window & typeof globalThis;
@@ -183,7 +183,7 @@ function launch(format: Format, evidence = false, waiting = false) {
 	const provider = win.__praxityBlockState;
 	if (!provider) throw new Error("Missing provider installation");
 	if (evidence) {
-		provider.set("q", answer(waiting ? changed : signature));
+		provider.set("q", answer(history ? changed : signature));
 		runtime.trackInteraction("q", "a", true, 100);
 		runtime.trackInteraction("a", "answer", true, 100);
 		// Production still has no evidence binding. Inject the existing tracker capability.
@@ -193,7 +193,7 @@ function launch(format: Format, evidence = false, waiting = false) {
 			requiredAssessmentIds: ["q"],
 			getChoiceDependencyView: view,
 		});
-		expect(view().status("q")).toBe(waiting ? "history" : "current");
+		expect(view().status("q")).toBe(history ? "history" : "current");
 	}
 	writes.length = 0;
 	return {
@@ -269,10 +269,10 @@ describe.each(["xapi", "standalone"] as const)("%s without an objective sink", (
 		).toBe(true);
 	});
 
-	for (const waiting of [true, false])
+	for (const history of [true, false])
 		for (const score of [100, undefined])
-			it(`accepts a ${waiting ? "waiting" : "decided"} ${score === undefined ? "ungraded" : "graded"} signed capture; refuses a forged candidate`, () => {
-				const host = launch(format, true, waiting);
+			it(`accepts a ${history ? "historical" : "current"} ${score === undefined ? "ungraded" : "graded"} signed capture; refuses a forged candidate`, () => {
+				const host = launch(format, true, history);
 				expect("trackObjective" in host.runtime).toBe(false);
 				expect(host.provider.getSaveResult).toBeUndefined();
 				expect(Reflect.get(host.provider, "prepareGroupState")).toBeUndefined();

@@ -8,22 +8,11 @@ export interface ScormSessionState extends RuntimeCommitPreparation {
 	terminationSucceeded: boolean;
 	startedAt?: number;
 	successTracked?: boolean;
-	outcomeWaiting?: boolean;
 	/** CourseTracker's failure status that explicit Finish must preserve. */
 	courseFailure?: boolean;
 	pendingCompletion?: "incomplete" | "completed" | "passed" | "failed";
 	terminationInProgress?: boolean;
 	attemptId?: string;
-}
-
-/** Queue cancellation is shared by both SCORM versions, before their first flush. */
-export function configureSessionOutcome(
-	state: ScormSessionState | null,
-	policy: { waiting: boolean },
-): void {
-	if (!state || !sessionAllowsCalls(state)) return;
-	state.outcomeWaiting = policy.waiting;
-	if (state.outcomeWaiting) delete state.pendingCompletion;
 }
 
 interface SessionApi {
@@ -124,7 +113,6 @@ export function writeSessionState(
 	// session's clock and completion state; navigation into an active session keeps both.
 	if (initialized && !state.initialized) {
 		state.startedAt = state.pendingCompletion = state.courseFailure = undefined;
-		state.outcomeWaiting = undefined;
 	}
 	state.initialized = initialized && !state.closed;
 	storeSessionState(api, state, win);

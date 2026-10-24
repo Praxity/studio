@@ -29,3 +29,14 @@ describe("SCORM communication session", () => {
 		expect(readSessionState(Object.freeze({}), { opener: lms })).toBe(false);
 	});
 });
+
+it("a fresh launch clears the preceding queued completion", () => {
+	const api = { Initialize: () => "true" };
+	const state = writeSessionState(api, true);
+	expect(state).not.toBeNull();
+	if (!state) throw new Error("Missing session");
+	state.pendingCompletion = "completed";
+	writeSessionState(api, false);
+	const next = writeSessionState(api, true);
+	expect(next?.pendingCompletion).toBeUndefined();
+});

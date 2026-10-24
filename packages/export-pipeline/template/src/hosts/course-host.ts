@@ -439,8 +439,7 @@ export function initializeCourseHost(
 			}
 		}
 		// Keep the event's existing adapter and ticket; tracker writes have their own lifetime.
-		if (hasScore && runtime)
-			tracker.trackGroupObjective(groupId, score, passed, runtime, submissionView);
+		if (hasScore && runtime) tracker.trackGroupObjective(groupId, score, passed, runtime);
 		if (!owned()) return;
 		try {
 			tracker.trackInteraction(
@@ -449,7 +448,6 @@ export function initializeCourseHost(
 				typeof detail.correct === "boolean" ? detail.correct : hasScore ? passed : undefined,
 				hasScore ? score : undefined,
 				assessmentReportingOptions(detail, page.pageTitle),
-				submissionView,
 			);
 		} catch (error) {
 			if (submissionView && runtime?.getBlockSaveResult?.(groupId)?.status === "not-saved") return;

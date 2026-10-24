@@ -1,6 +1,5 @@
 import { JSDOM } from "jsdom";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { choiceDependencyStatus } from "../../shared-blocks/src/choice-learner-state";
 import { VariableStore } from "../../shared-blocks/src/logic/variable-store";
 import { initAssessmentGroups } from "../../shared-blocks/src/viewer/assessment-group-runtime";
 import { Scorm12Runtime } from "../src/scorm/api/scorm12";
@@ -13,7 +12,6 @@ import type { SCORMRuntime } from "../src/scorm/types";
 import { initializeScormCourseHost } from "../template/src/hosts/course-host";
 import { initDeck } from "../template/src/islands/island-deck";
 import { selfCheckDocument } from "../template/src/self-check-document";
-import { withChoiceDependencyStatus } from "./fixtures/choice-facts";
 
 type Format = "scorm12" | "scorm2004";
 const cleanups: (() => void)[] = [];
@@ -302,7 +300,7 @@ describe.each(["scorm12", "scorm2004"] as const)("%s commit preparation", (forma
 		picker.click();
 		expect(win.__praxityBlockState?.get("g")).toMatchObject({ selectedMemberId: "b" });
 		lms.writes.length = 0;
-		// The installed tracker is the injection boundary, without activating evidence or waiting.
+		// The installed tracker is the injection boundary, without activating evidence.
 		Object.assign(win.__praxityTracker!, {
 			prepareCommit: () => {
 				lms.writes.push(["prepare"]);
@@ -315,100 +313,6 @@ describe.each(["scorm12", "scorm2004"] as const)("%s commit preparation", (forma
 		expect(flushed).toBeGreaterThan(prepared);
 		expect(lms.writes.filter(([key]) => key === "prepare")).toEqual([["prepare"]]);
 	});
-
-	it.each([...triggers, "native deck"] as const)(
-		"injected evidence cancels queued completion after oneOf reselection on %s",
-		async (name) => {
-			const lms = launch(format);
-			const { win, runtime } = lms.page();
-			const provider = win.__praxityBlockState!;
-			provider.set("g", {
-				version: 1,
-				kind: "assessmentGroup",
-				mode: "oneOf",
-				selectedMemberId: "a",
-				completed: false,
-			});
-			runtime.trackInteraction("g", "100%", true, 100, { memberIds: ["a"] });
-			const view = () => ({
-				rows: runtime.getInteractions(),
-				questions: {},
-				signatures: {},
-				groups: { g: { mode: "oneOf" as const, memberIds: ["a", "b"], requiredIds: ["a", "b"] } },
-				readState: (id: string) => provider.get(id),
-			});
-			const tracker = new CourseTracker(runtime, {
-				totalPages: 1,
-				completionMethod: "allPages",
-				requiredAssessmentIds: ["g"],
-				getChoiceDependencyView: () => withChoiceDependencyStatus(view()),
-			});
-			// Exercise the installed preparation boundary without installing a production evidence view.
-			Object.assign(win.__praxityTracker!, { prepareCommit: () => tracker.prepareCommit() });
-			expect(choiceDependencyStatus("g", view())).toBe("current");
-			tracker.trackPageVisit("one");
-			expect(runtime.getCompletion()).toBe("completed");
-			win.document.querySelector("main")!.innerHTML = ["a", "b"]
-				.map(
-					(id) =>
-						`<div class="praxity-block praxity-block-assessment" data-block-id="${id}" data-assessment-display="standard"><p class="praxity-assessment-stem">Question ${id}</p><input type="radio" aria-label="Answer ${id}"><button data-assessment-submit="true">Submit</button></div>`,
-				)
-				.join("");
-			const dispose = initAssessmentGroups({
-				root: win.document.body,
-				blocks: [
-					{
-						id: "g",
-						type: "assessmentGroup",
-						data: {
-							mode: "oneOf",
-							memberBlockIds: ["a", "b"],
-							requireAll: true,
-							showResultsSummary: true,
-						},
-					},
-					...["a", "b"].map((id) => ({
-						id,
-						type: "assessment" as const,
-						data: { gradingMode: "exact" as const },
-					})),
-				],
-			});
-			cleanups.push(dispose);
-			await vi.waitFor(() =>
-				expect(win.document.querySelector('input[name="ag-g"][value="b"]')).not.toBeNull(),
-			);
-			const picker = win.document.querySelector<HTMLInputElement>('input[name="ag-g"][value="b"]')!;
-			expect(picker.disabled).toBe(false);
-			picker.click();
-			expect(choiceDependencyStatus("g", view())).toBe("history");
-			lms.writes.length = 0;
-			if (name === "native deck") {
-				mountDeck(win);
-				// Mounting can save. Keep the queue present at the native navigation boundary too.
-				runtime.setCompletion("completed");
-				lms.writes.length = 0;
-				win.document.getElementById("deck-next")!.click();
-				expect(runtime.getBookmark()).toContain("two");
-			} else if (name === "deck save") {
-				runtime.setSuspendData(
-					JSON.stringify({
-						...JSON.parse(runtime.getSuspendData() ?? "{}"),
-						deck: { released: ["gate"] },
-					}),
-				);
-				runtime.commit();
-			} else trigger(name, win, runtime);
-			expect(
-				lms.writes.filter(([key]) =>
-					/^(?:cmi\.(?:objectives|score|success_status|completion_status)|cmi\.core\.(?:score|lesson_status))/.test(
-						key,
-					),
-				),
-			).toEqual([]);
-			expect(lms.values.get(format === "scorm12" ? "cmi.core.exit" : "cmi.exit")).toBe("suspend");
-		},
-	);
 
 	it("retained adapters use the next admitted owner and skip a revoked provider", () => {
 		const lms = launch(format);
