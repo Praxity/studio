@@ -879,6 +879,7 @@ it.each([false, true])(
 			set() {},
 			...(admitted ? { getChoiceDependencyView: view } : {}),
 		};
+		// The deck ignores a tracker finality claim when restoring gates.
 		Object.assign(window.__praxityTracker ?? {}, { isAssessmentFinal: () => true });
 		expect(view().status("check")).toBe("current");
 		cleanup = initDeck();
@@ -888,24 +889,16 @@ it.each([false, true])(
 	},
 );
 
-it.each([false, true])(
-	"characterization: saved-state finality alone cannot restore a legacy pass gate, empty capability=%s",
-	(emptyCapability) => {
-		const { runtime } = setup(false);
-		runtime.getInteractions.mockReturnValue([{ id: "check", correct: false }]);
-		if (emptyCapability)
-			window.__praxityBlockState = {
-				get: () => undefined,
-				set() {},
-				getChoiceDependencyView: () => undefined,
-			};
-		Object.assign(window.__praxityTracker ?? {}, { isAssessmentFinal: () => true });
-		cleanup = initDeck();
-		expect(
-			document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled"),
-		).toBe("true");
-	},
-);
+it("characterization: saved-state finality alone cannot release a restored pass gate", () => {
+	const { runtime } = setup(false);
+	runtime.getInteractions.mockReturnValue([{ id: "check", correct: false }]);
+	// The deck ignores a tracker finality claim when restoring gates.
+	Object.assign(window.__praxityTracker ?? {}, { isAssessmentFinal: () => true });
+	cleanup = initDeck();
+	expect(document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled")).toBe(
+		"true",
+	);
+});
 
 it.each([80, null])("deck completion displays the recorded runtime score %s", (raw) => {
 	const { runtime } = setup(false, 2);

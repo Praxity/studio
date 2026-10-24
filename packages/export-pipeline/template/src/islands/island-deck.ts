@@ -227,7 +227,7 @@ export function initDeck(): (() => void) | undefined {
 	for (const response of (learnerRuntime(mount) as SCORMRuntime | undefined)?.getInteractions() ??
 		[]) {
 		const gate = pages.flatMap((page) => page.gates).find((item) => item.id === response.id);
-		if (gate && canPersistGate(gate.id) && gateSatisfied(gate.rule, response.correct, false))
+		if (gate && canPersistGate(gate.id) && gateSatisfied(gate.rule, response.correct))
 			released.add(gate.id);
 	}
 	// The self-check asset can restore before this chunk installs its listener.

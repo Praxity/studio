@@ -18,7 +18,6 @@ export function blockReportingDestination(
 export function createBlockStateRuntime(runtime: SCORMRuntime): LearnerBlockStateRuntime {
 	const results = new Map<string, LearnerBlockSaveResult>();
 	return {
-		getSavedBuildRevision: () => runtime.getSavedBuildRevision?.() ?? null,
 		stageSubmission: runtime.stageSubmission
 			? (blockId, write) => {
 					results.delete(blockId);

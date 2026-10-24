@@ -22,8 +22,6 @@ export interface LearnerBlockStateRuntime {
 	/** Absent until the host admits evidence-aware consumers together. */
 	getChoiceDependencyView?(): ChoiceDependencyEvidence | undefined;
 	get(blockId: string): LearnerStateValue | undefined;
-	/** Read-only saved envelope revision; null cannot establish preview build evidence. */
-	getSavedBuildRevision?(blockId: string): string | null;
 	set(blockId: string, value: LearnerStateValue): void;
 	/** Accept state provisionally; a bounded host commits it with the following interaction. */
 	stageSubmission?(blockId: string, write: () => boolean): boolean;

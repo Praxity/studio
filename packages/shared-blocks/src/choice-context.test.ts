@@ -311,7 +311,7 @@ describe("dormant evidence view", () => {
 		});
 		expect(readState).not.toHaveBeenCalled();
 	});
-	it("keeps rows and state reads intact without inventing published build proof", () => {
+	it("keeps rows and state reads intact", () => {
 		const rows = [
 			{ id: "a", correct: true },
 			{ id: "a", correct: false },
@@ -325,37 +325,9 @@ describe("dormant evidence view", () => {
 		expect(view.questions).toEqual({});
 		expect(view.signatures).toEqual({});
 		expect(view.groups).toBeUndefined();
-		expect(view.buildProof).toBeUndefined();
 		expect(readState).not.toHaveBeenCalled();
 		expect(view.readState("a")).toEqual({ answer: ["draft"], checked: false });
 		expect(readState).toHaveBeenCalledExactlyOnceWith("a");
-	});
-
-	it("constructs preview proof lazily from the requested source and current revision", () => {
-		const readSavedRevision = vi.fn((id: string) => (id === "a" ? "saved-build" : null));
-		const view = createChoiceDependencyView(admitChoiceStateFacts({}), {
-			rows: [],
-			readState: () => undefined,
-			preview: { currentRevision: "current-build", readSavedRevision },
-		});
-		expect(readSavedRevision).not.toHaveBeenCalled();
-		expect(view.buildProof?.("a")).toEqual({
-			savedRevision: "saved-build",
-			currentRevision: "current-build",
-		});
-		expect(view.buildProof?.("b")).toEqual({
-			savedRevision: null,
-			currentRevision: "current-build",
-		});
-	});
-
-	it("keeps a missing current preview revision missing", () => {
-		const view = createChoiceDependencyView(admitChoiceStateFacts({}), {
-			rows: [],
-			readState: () => undefined,
-			preview: { currentRevision: null, readSavedRevision: () => "saved-build" },
-		});
-		expect(view.buildProof?.("a")).toEqual({ savedRevision: "saved-build", currentRevision: null });
 	});
 
 	it("refuses cleaned invalid metadata instead of treating it as legacy facts", () => {

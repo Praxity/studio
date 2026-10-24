@@ -1950,11 +1950,7 @@ export function PreviewAssessmentBlock({
 			typeof window === "undefined"
 				? undefined
 				: window.__praxityBlockState?.getChoiceDependencyView?.();
-		const restored = restoreChoiceAssessmentState(
-			readLearnerBlockState(blockId),
-			choiceFacts,
-			view?.buildProof?.(blockId),
-		);
+		const restored = restoreChoiceAssessmentState(readLearnerBlockState(blockId), choiceFacts);
 		const recovering =
 			restored.current?.checked === false &&
 			restored.history.some((entry) => isRecord(entry) && entry.checked === true);
@@ -2278,7 +2274,6 @@ export function PreviewAssessmentBlock({
 		const prepared = choiceFacts
 			? prepareChoiceAssessmentState(readLearnerBlockState(blockId), next, choiceFacts, {
 					writtenAt: Date.now(),
-					proof: window.__praxityBlockState?.getChoiceDependencyView?.()?.buildProof?.(blockId),
 				})
 			: next;
 		const written = writeLearnerBlockState(

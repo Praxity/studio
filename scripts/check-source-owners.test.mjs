@@ -50,7 +50,6 @@ test("choice imports stay confined to their declared consumers, including aliase
 	for (const name of [
 		"restoreChoiceAssessmentState",
 		"prepareChoiceAssessmentState",
-		"retainLegacyChoiceBuild",
 		"choiceDependencyStatus",
 		"choiceGroupDependencyIds",
 		"choiceGroupSignature",
@@ -104,7 +103,6 @@ test("the recovery UI imports only its two state owners by name", () => {
 		'import { choiceDependencyStatus } from "../choice-learner-state";',
 		'import { createChoiceDependencyView } from "../choice-learner-state";',
 		'import { prepareChoiceGroupSubmission } from "../choice-learner-state";',
-		'import { retainLegacyChoiceBuild } from "../choice-learner-state";',
 		'import { choiceGroupDependencyIds, choiceGroupSignature } from "../choice-learner-state";',
 		'import { futureExport } from "../choice-learner-state";',
 		'import { prepareChoiceAssessmentState, futureExport } from "../choice-learner-state";',

@@ -70,13 +70,11 @@ const signed: SavedAssessmentState = {
 	contentSignature: full,
 	materialProof: { optionIds: ["a", "b"] },
 	writtenAt: 10,
-	legacyBuildRevision: "original-build",
 };
 const compact: SavedAssessmentState = {
 	...legacy,
 	contentSignature: short,
 	writtenAt: 10,
-	legacyBuildRevision: "original-build",
 };
 
 function view(
@@ -93,7 +91,7 @@ function view(
 }
 
 it("projects only choice evidence at the SCORM 1.2 destination without rewriting history", () => {
-	const archived = { ...signed, writtenAt: 5, legacyBuildRevision: "archived-build" };
+	const archived = { ...signed, writtenAt: 5 };
 	const state = { ...signed, history: [archived] } as unknown as LearnerStateValue;
 	const project = learnerState.choiceStateForDestination ?? ((value) => value);
 	expect(project(state, "scorm12")).toEqual({ ...compact, history: [archived] });
@@ -200,7 +198,6 @@ it("same-material full-to-short writes avoid invented history and preserve archi
 		...legacy,
 		contentSignature: short,
 		writtenAt: 10,
-		legacyBuildRevision: "original-build",
 	});
 	const retry = {
 		...legacy,
@@ -219,7 +216,6 @@ it("same-material full-to-short writes avoid invented history and preserve archi
 		...retry,
 		contentSignature: short,
 		writtenAt: 20,
-		legacyBuildRevision: "original-build",
 		history: [signed],
 	});
 });

@@ -80,8 +80,6 @@ export interface SCORMRuntime {
 	/** Local and preview state owners expose whether their device store is available. */
 	hasPersistentStorage?(): boolean;
 	getBlockState?(blockId: string): LearnerStateValue | undefined;
-	/** Read saved build evidence without migration or persistence. */
-	getSavedBuildRevision?(): string | null;
 	setBlockState?(blockId: string, value: LearnerStateValue): boolean;
 	/** Host admission supplies the current outcome owner before any commit or termination. */
 	setCommitPreparation?(prepare: () => void): void;
