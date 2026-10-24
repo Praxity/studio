@@ -2842,7 +2842,7 @@ describe("SCORM 1.2 privacy append high water", () => {
 			expect(runtime.getInteractions()).toMatchObject([{ id: "public", response: "ordinary" }]);
 		},
 	);
-	it.each(["", "invalid"])(
+	it.each(["", "invalid", "-1", "2.5", "1e3", "9007199254740992"])(
 		"retains history-index fallback without device members (%s)",
 		(count) => {
 			const { api, runtime } = setup(count, {});
