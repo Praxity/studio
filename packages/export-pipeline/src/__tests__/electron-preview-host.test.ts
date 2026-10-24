@@ -1,3 +1,4 @@
+import { restoreChoiceAssessmentState } from "@praxity/shared-blocks/choice-learner-state";
 import { renderLogicAnnotations } from "@praxity/shared-blocks/course-preview-frame";
 import {
 	COURSE_PREVIEW_PROTOCOL_VERSION,
@@ -17,6 +18,7 @@ import { JSDOM } from "jsdom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { initializeElectronPreviewHost } from "../../template/src/hosts/electron-preview";
 import { attachIsland as attachHighlightIsland } from "../../template/src/islands/island-highlight";
+import { gateQuestion, gateSignature } from "../../tests/fixtures/choice-gate";
 import {
 	exerciseHighlightPrivacy,
 	highlightPrivacyPreview,
@@ -321,6 +323,69 @@ describe("Electron preview course host", () => {
 		expect(unusedLocalStorage.getItem).not.toHaveBeenCalled();
 		expect(runtime(dom).getBlockState("existing")).toEqual({ value: 1 });
 	});
+
+	it.each([false, true])(
+		"restores a signed choice before consumers start, inspection=%s",
+		async (inspect) => {
+			const dom = previewDocument(inspect);
+			const script = dom.window.document.getElementById("praxity-host-config")!;
+			script.textContent = JSON.stringify({
+				...JSON.parse(script.textContent!),
+				choiceStateQuestions: { choice: gateQuestion },
+				choiceStateSignatures: { choice: gateSignature },
+			});
+			const saved = {
+				version: 1,
+				kind: "assessment",
+				assessmentType: "choice",
+				attemptCount: 1,
+				checked: true,
+				correct: true,
+				completed: true,
+				interacted: true,
+				answer: ["a"],
+				reviewedChoiceIds: ["a"],
+				contentSignature: gateSignature,
+			};
+			const state = createLearnerState({
+				courseId: identity.courseId,
+				attemptId: "studio-preview",
+				revision: identity.revision,
+			});
+			state.blockState.choice = saved;
+			const restored = vi.fn();
+			dom.window.addEventListener("praxity:runtime-ready", () => {
+				const view = (
+					dom.window as unknown as Window
+				).__praxityBlockState?.getChoiceDependencyView?.();
+				expect(view?.status("choice")).toBe("current");
+				restored(
+					restoreChoiceAssessmentState(view?.readState("choice"), {
+						question: gateQuestion,
+						signature: gateSignature,
+					}),
+				);
+			});
+			const parent = installHost(dom);
+			const channel = new MessageChannel();
+			try {
+				const events = listen(channel.port1);
+				sendWindowMessage(dom, parent, connectMessage(), parentOrigin, [channel.port2]);
+				await waitForEvent(events, "connected");
+				channel.port1.postMessage(restoreMessage(serializeLearnerState(state), !inspect));
+				await waitForEvent(events, "ready");
+				expect(restored).toHaveBeenCalledExactlyOnceWith({
+					status: "current",
+					current: saved,
+					history: [],
+				});
+				expect(runtime(dom).getBlockState("choice")).toEqual(saved);
+			} finally {
+				channel.port1.close();
+				channel.port2.close();
+			}
+		},
+	);
 
 	it("waits for planned islands before announcing the artifact is ready", async () => {
 		const dom = previewDocument();

@@ -8,14 +8,19 @@ import {
 	DONT_KNOW,
 } from "@praxity/shared-blocks/assessment-choice";
 import { prepareChoiceAssessmentState } from "@praxity/shared-blocks/choice-learner-state";
+import { choiceQuestionSignature } from "@praxity/shared-blocks/choice-state-facts";
 import type { LearnerBlockStateRuntime } from "@praxity/shared-blocks/learner-block-state";
 import type { LearnerStateValue } from "@praxity/shared-blocks/learner-state";
 import type { AssessmentBlockData, ChoiceResponse } from "@praxity/shared-blocks/types";
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, assert, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, assert, beforeAll, beforeEach, expect, it, vi } from "vitest";
 import { PreviewAssessmentBlock } from "../../shared-blocks/src/blocks/AssessmentBlock";
 import { LocaleContext } from "../../shared-blocks/src/i18n/locale-context";
+import {
+	scorm12CompactSuspendDataCodec as compact,
+	type Scorm12SuspendData,
+} from "../src/scorm/scorm12-suspend-data";
 import type { CourseTracker } from "../src/scorm/tracking";
 import type { SCORMRuntime } from "../src/scorm/types";
 import { initializeScorm12Host } from "../template/src/hosts/scorm12";
@@ -476,24 +481,70 @@ it("unidentifiable signed evidence refuses the complete view through the real xA
 	expect(next.provider.getChoiceDependencyView?.()?.status("q")).toBe("history");
 });
 
-it.each([false, true].flatMap((history) => [false, true].map((frozen) => ({ history, frozen }))))(
-	"actual host codec retains originals and refuses atomically, history $history frozen $frozen",
-	({ history, frozen }) => {
-		if (frozen) {
-			vi.useFakeTimers({ toFake: ["Date"] });
-			vi.setSystemTime(new Date("2026-10-24T12:00:00.000Z"));
-		}
-		const uuid = (seed: string) => {
-			const hex = createHash("sha256").update(seed).digest("hex").slice(0, 32);
-			return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+let capacityQuestions: Array<{
+	id: string;
+	selected: string;
+	pair: ReturnType<typeof facts>;
+	historySignature: string;
+}>;
+beforeAll(() => {
+	const uuid = (seed: string) => {
+		const hex = createHash("sha256").update(seed).digest("hex").slice(0, 32);
+		return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+	};
+	capacityQuestions = Array.from({ length: 100 }, (_, index) => {
+		const value = structuredClone(data);
+		value.stem = [{ id: "stem", type: "text", data: { content: `material-${index}` } }];
+		(value.response as ChoiceResponse).options.forEach((option, i) => {
+			option.id = uuid(`option-${index}-${i}`);
+		});
+		const pair = facts(value);
+		return {
+			id: uuid(`question-${index}`),
+			selected: (value.response as ChoiceResponse).options[0].id,
+			pair,
+			historySignature: choiceQuestionSignature({ ...pair.question, points: 20 }),
 		};
-		const questions = Array.from({ length: 100 }, (_, index) => {
-			const value = structuredClone(data);
-			value.stem = [{ id: "stem", type: "text", data: { content: `material-${index}` } }];
-			(value.response as ChoiceResponse).options.forEach((option, i) => {
-				option.id = uuid(`option-${index}-${i}`);
-			});
-			return { id: uuid(`question-${index}`), value, pair: facts(value), index };
+	});
+});
+
+function exerciseCapacity({
+	history,
+	frozen,
+	full = false,
+}: {
+	history: boolean;
+	frozen: boolean;
+	full?: boolean;
+}) {
+	if (frozen) {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(new Date("2026-10-24T12:00:00.000Z"));
+	}
+	try {
+		const questions = capacityQuestions.map(({ id, selected, pair, historySignature }, index) => {
+			const answer = prepareChoiceAssessmentState(
+				undefined,
+				{
+					version: 1,
+					kind: "assessment",
+					assessmentType: "choice",
+					attemptCount: 1,
+					checked: true,
+					correct: true,
+					completed: true,
+					interacted: true,
+					answer: [selected],
+					reviewedChoiceIds: [selected],
+				},
+				pair,
+				{ writtenAt: index + 1 },
+			);
+			const state = {
+				...answer,
+				...(history ? { history: [{ ...answer, contentSignature: historySignature }] } : {}),
+			};
+			return { id, pair, state };
 		});
 		const config = {
 			deferVisits: true,
@@ -504,79 +555,107 @@ it.each([false, true].flatMap((history) => [false, true].map((frozen) => ({ hist
 				questions.map(({ id, pair }) => [id, pair.signature]),
 			),
 		};
-		let host = launch("scorm12", data, new Map(), false, [], config);
-		const saved = new Map<string, unknown>();
-		let at42 = 0,
-			refusedLength = 0;
-		try {
-			for (const { id, value, pair, index } of questions) {
-				const selected = (value.response as ChoiceResponse).options[0].id;
-				const state = { ...submitted(value, [selected]), writtenAt: index + 1 };
-				const next = {
-					...state,
-					...(history
-						? {
-								history: [
-									{ ...state, contentSignature: facts({ ...value, points: 20 }).signature },
-								],
-							}
-						: {}),
-				};
-				const bytes = host.values.get("cmi.suspend_data");
-				host.writes.length = 0;
-				expect(
-					host.provider.stageSubmission?.(id, () => {
-						host.provider.set(id, next as unknown as LearnerStateValue);
-						return true;
-					}),
-				).toBe(true);
-				try {
-					host.runtime.trackInteraction(id, "action-0", true, 100, {
-						assessmentType: "choice",
-						contentSignature: pair.signature,
-						attemptsUsed: 1,
-						maxAttempts: 2,
-					});
-				} catch (error) {
-					expect(String(error)).toContain("ESCORM12STORAGE");
-					refusedLength = Number(String(error).match(/limit: (\d+)/)?.[1]);
-					expect(host.values.get("cmi.suspend_data")).toBe(bytes);
-					expect(host.writes).toEqual([]);
-					expect(host.provider.get(id)).toBeUndefined();
-					expect(host.provider.getSaveResult?.(id)?.status).toBe("not-saved");
-					break;
-				}
-				saved.set(id, next);
-				if (saved.size === 42) {
-					at42 = host.values.get("cmi.suspend_data")!.length;
-					host = launch("scorm12", data, host.values, false, [], config);
-					for (const [key, expected] of saved) {
-						expect(host.provider.get(key)).toEqual(expected);
-						expect(host.provider.getChoiceDependencyView?.()?.status(key)).toBe("current");
-					}
-				}
+		const timestamp = Date.now();
+		const payloadAt = (count: number): Scorm12SuspendData => ({
+			visitedPages: [],
+			interactions: questions.slice(0, count).map(({ id, pair }) => ({
+				id,
+				response: "action-0",
+				correct: true,
+				score: 100,
+				attemptsUsed: 1,
+				maxAttempts: 2,
+				contentSignature: pair.signature,
+				timestamp,
+			})),
+			custom: JSON.stringify({
+				blockState: Object.fromEntries(
+					questions.slice(0, count).map(({ id, state }) => [id, state]),
+				),
+			}),
+		});
+		// Locate a near-full fixture in the codec, then cross the boundary through the production host.
+		let low = 0,
+			high = questions.length;
+		while (!full && low < high) {
+			const mid = Math.ceil((low + high) / 2);
+			try {
+				compact.serialize(payloadAt(mid));
+				low = mid;
+			} catch (error) {
+				if (!(error instanceof Error) || !error.message.includes("ESCORM12STORAGE")) throw error;
+				high = mid - 1;
 			}
-			expect(refusedLength).toBeGreaterThan(4096);
-			if (!history) expect(saved.size).toBeGreaterThanOrEqual(42);
-			const wire = host.values.get("cmi.suspend_data")!;
-			expect(wire.length).toBeLessThanOrEqual(4096);
-			expect(wire[0]).toBe("[");
-			host = launch("scorm12", data, host.values, false, [], config);
-			for (const [id, expected] of saved) {
-				expect(host.provider.get(id)).toEqual(expected);
-				expect(host.provider.getChoiceDependencyView?.()?.status(id)).toBe("current");
-			}
-			expect(host.runtime.getInteractions()).toHaveLength(saved.size);
-			if (process.env.PRAXITY_CAPACITY_REPORT)
-				appendFileSync(
-					process.env.PRAXITY_CAPACITY_REPORT,
-					`${JSON.stringify({ history, frozen, accepted: saved.size, firstRefused: saved.size + 1, lastWire: wire.length, at42, spareAt42: at42 ? 4096 - at42 : null, refusedLength })}\n`,
-				);
-		} finally {
-			vi.useRealTimers();
 		}
-	},
+		const seedCount = full ? 0 : Math.max(0, low - 2);
+		const values = new Map<string, string>();
+		if (seedCount) values.set("cmi.suspend_data", compact.serialize(payloadAt(seedCount)));
+		let host = launch("scorm12", data, values, false, [], config);
+		const saved = new Map(questions.slice(0, seedCount).map(({ id, state }) => [id, state]));
+		let refusedLength = 0;
+		for (const { id, pair, state } of questions.slice(seedCount)) {
+			const before = values.get("cmi.suspend_data");
+			host.writes.length = 0;
+			expect(
+				host.provider.stageSubmission?.(id, () => {
+					host.provider.set(id, state as unknown as LearnerStateValue);
+					return true;
+				}),
+			).toBe(true);
+			try {
+				host.runtime.trackInteraction(id, "action-0", true, 100, {
+					assessmentType: "choice",
+					contentSignature: pair.signature,
+					attemptsUsed: 1,
+					maxAttempts: 2,
+				});
+			} catch (error) {
+				expect(String(error)).toContain("ESCORM12STORAGE");
+				refusedLength = Number(String(error).match(/limit: (\d+)/)?.[1]);
+				expect(values.get("cmi.suspend_data")).toBe(before);
+				expect(host.writes).toEqual([]);
+				expect(host.provider.get(id)).toBeUndefined();
+				expect(host.provider.getSaveResult?.(id)?.status).toBe("not-saved");
+				break;
+			}
+			saved.set(id, state);
+		}
+		expect(saved.size).toBeGreaterThan(seedCount);
+		expect(refusedLength).toBeGreaterThan(4096);
+		if (!history) expect(saved.size).toBeGreaterThanOrEqual(42);
+		const wire = values.get("cmi.suspend_data")!;
+		expect(wire.length).toBeLessThanOrEqual(4096);
+		expect(wire[0]).toBe("[");
+		const rows = host.runtime.getInteractions();
+		expect(rows.map(({ id }) => id)).toEqual([...saved.keys()]);
+		expect(rows).toHaveLength(saved.size);
+		host = launch("scorm12", data, values, false, [], config);
+		// One admitted payload checks every answer/attempt; sample the provider and shared status interface.
+		expect(JSON.parse(host.runtime.getSuspendData()!).blockState).toEqual(
+			Object.fromEntries(saved),
+		);
+		expect(host.runtime.getInteractions()).toEqual(rows);
+		for (const index of new Set([0, Math.min(41, saved.size - 1), saved.size - 1])) {
+			const { id } = questions[index];
+			expect(host.provider.get(id)).toEqual(saved.get(id));
+			expect(host.provider.getChoiceDependencyView?.()?.status(id)).toBe("current");
+		}
+		if (process.env.PRAXITY_CAPACITY_REPORT)
+			appendFileSync(
+				process.env.PRAXITY_CAPACITY_REPORT,
+				`${JSON.stringify({ history, frozen, full, seedCount, accepted: saved.size, firstRefused: saved.size + 1, lastWire: wire.length, refusedLength })}\n`,
+			);
+	} finally {
+		vi.useRealTimers();
+	}
+}
+
+it.each([false, true].flatMap((history) => [false, true].map((frozen) => ({ history, frozen }))))(
+	"actual host codec retains originals and refuses atomically, history $history frozen $frozen",
+	exerciseCapacity,
 );
+it("actual host codec saves originals one by one through the same boundary", () =>
+	exerciseCapacity({ history: false, frozen: true, full: true }));
 
 it.each(["all", "oneOf"] as const)(
 	"production %s group capture keeps history until deliberate resubmission and rejects forgery",

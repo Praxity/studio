@@ -3,6 +3,7 @@ import { assessmentOffersDontKnow, validFillBlankSelections } from "@praxity/con
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { installChoiceCourseHost } from "../../../export-pipeline/tests/fixtures/choice-course-host";
 import { readBlockFixture as readBlockSource } from "../../../grammar/__tests__/helpers/lesson-fixture.ts";
 import { choiceContentSignature, choiceStateQuestion } from "../assessment-choice";
 import { adaptGrammarPreviewBlocks } from "../grammar-adapter";
@@ -454,12 +455,12 @@ describe("I don't know", () => {
 		expect(assessmentOffersDontKnow({ ...makeChoiceData(), ...settings })).toBe(offered);
 	});
 	it("renders an unkeyed last radio and submits unknown as answered, incorrect, and retryable", () => {
-		const state = installLearnerBlockState();
 		const report = vi.fn();
 		document.addEventListener("praxity:assessment-response", report);
 		const data = makeChoiceData({
 			feedback: { incorrect: [{ id: "fi", type: "text", data: { content: "Here is why." } }] },
 		});
+		const state = installChoiceCourseHost("unknown", data);
 		const mount = () =>
 			render(<PreviewAssessmentBlock data={data} blockId="unknown" />, { wrapper: Wrapper });
 		const view = mount();
@@ -596,8 +597,8 @@ describe("assessment review states", () => {
 		},
 	);
 	it("restores the wrong mark while retrying without inventing a selected answer", () => {
-		installLearnerBlockState();
 		const data = makeChoiceData({ attempts: 2 });
+		installChoiceCourseHost("saved-retry", data);
 		const first = render(
 			<Wrapper>
 				<PreviewAssessmentBlock data={data} blockId="saved-retry" />
@@ -978,7 +979,6 @@ describe("PreviewAssessmentBlock — choice", () => {
 	it.each(["single", "multiple"] as const)(
 		"reveals %s answers after one attempt and restores the locked result",
 		(selectionMode) => {
-			const { values } = installLearnerBlockState();
 			const data = makeChoiceData({
 				feedbackMode: "reveal",
 				gradingMode: "exact",
@@ -996,6 +996,7 @@ describe("PreviewAssessmentBlock — choice", () => {
 						: []),
 				],
 			};
+			const { values } = installChoiceCourseHost("reveal", data);
 			const first = render(
 				<Wrapper>
 					<PreviewAssessmentBlock data={data} blockId="reveal" />
@@ -1140,8 +1141,8 @@ describe("PreviewAssessmentBlock — choice", () => {
 	});
 
 	it("restores a submitted attempt without another event, attempt, or focus change", () => {
-		const { values, write } = installLearnerBlockState();
 		const data = makeChoiceData({ gradingMode: "exact", attempts: 2 });
+		const { values, write } = installChoiceCourseHost("durable-choice", data);
 		const onResponse = vi.fn();
 		const onInteraction = vi.fn();
 		document.addEventListener("praxity:assessment-response", onResponse);
