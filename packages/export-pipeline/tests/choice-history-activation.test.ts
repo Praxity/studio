@@ -79,7 +79,6 @@ let listeners: Array<Parameters<Document["addEventListener"]>> = [];
 
 beforeEach(() => {
 	vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
-
 	vi.stubGlobal(
 		"fetch",
 		vi.fn(async () => new Response("", { status: 200 })),

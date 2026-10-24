@@ -7,6 +7,7 @@ import { test } from "node:test";
 import ts from "typescript";
 import {
 	checkDisplayIdImports,
+	checkDormantChoiceImports,
 	checkIdentityWriterImports,
 	checkLifetimeOwners,
 	checkSelfCheckOwners,
@@ -42,6 +43,160 @@ test("learner-state syntax keeps imports type-only so hashing cannot enter adapt
 		runtimeImports,
 		[],
 		"learner-state syntax must not load runtime hashing, directly or through another module",
+	);
+});
+
+test("choice imports stay confined to their declared consumers, including aliases and whole-module access", () => {
+	for (const name of [
+		"restoreChoiceAssessmentState",
+		"prepareChoiceAssessmentState",
+		"choiceDependencyStatus",
+		"choiceGroupDependencyIds",
+		"choiceGroupSignature",
+		"prepareChoiceGroupSubmission",
+		"createChoiceDependencyView",
+	]) {
+		for (const source of [
+			`import { ${name} as activate } from "@praxity/shared-blocks/choice-learner-state"; activate(input);`,
+			`export { ${name} as activate } from "./choice-learner-state";`,
+			`const { ${name}: activate } = states; activate(input);`,
+			`states["${name}"](input);`,
+		]) {
+			for (const path of [
+				"packages/export-pipeline/template/src/hosts/course-host.ts",
+				"packages/shared-blocks/src/viewer/assessment-group-runtime.ts",
+			]) {
+				if (
+					path.endsWith("course-host.ts") &&
+					name === "createChoiceDependencyView" &&
+					!source.startsWith("export")
+				) {
+					assert.deepEqual(checkDormantChoiceImports(path, source), []);
+					continue;
+				}
+				assert.notDeepEqual(checkDormantChoiceImports(path, source), []);
+			}
+			assert.deepEqual(
+				checkDormantChoiceImports(
+					"packages/shared-blocks/src/choice-dependency-state.test.ts",
+					source,
+				),
+				[],
+			);
+		}
+	}
+	for (const source of [
+		'import * as state from "@praxity/shared-blocks/choice-learner-state";',
+		'const state = await import("./choice-learner-state");',
+		'const state = require("@praxity/shared-blocks/choice-learner-state");',
+		'export * from "@praxity/shared-blocks/choice-learner-state";',
+	])
+		assert.match(
+			checkDormantChoiceImports("packages/shared-blocks/src/viewer/planted.ts", source).join("\n"),
+			/declared/,
+		);
+});
+
+test("the recovery UI imports only its two state owners by name", () => {
+	const path = "packages/shared-blocks/src/blocks/AssessmentBlock.tsx";
+	for (const name of ["restoreChoiceAssessmentState", "prepareChoiceAssessmentState"])
+		assert.deepEqual(
+			checkDormantChoiceImports(
+				path,
+				`import { ${name} as recover } from "../choice-learner-state"; recover(input);`,
+			),
+			[],
+		);
+	for (const source of [
+		'import { choiceDependencyStatus } from "../choice-learner-state";',
+		'import { createChoiceDependencyView } from "../choice-learner-state";',
+		'import { prepareChoiceGroupSubmission } from "../choice-learner-state";',
+		'import { choiceGroupDependencyIds, choiceGroupSignature } from "../choice-learner-state";',
+		'import { futureExport } from "../choice-learner-state";',
+		'import { prepareChoiceAssessmentState, futureExport } from "../choice-learner-state";',
+		'import states, { prepareChoiceAssessmentState } from "../choice-learner-state";',
+		'import "../choice-learner-state";',
+		'import {} from "../choice-learner-state";',
+		'import * as states from "../choice-learner-state";',
+		'const states = await import("../choice-learner-state");',
+		'const states = require("../choice-learner-state");',
+		'export { prepareChoiceAssessmentState } from "../choice-learner-state";',
+		'export * from "../choice-learner-state";',
+	])
+		assert.notDeepEqual(checkDormantChoiceImports(path, source), []);
+});
+
+test("admission permits the existing envelope API, shared types and the canonical barrel", () => {
+	assert.deepEqual(
+		checkDormantChoiceImports(
+			"packages/shared-blocks/src/blocks/AssessmentBlock.tsx",
+			'import type { SavedAssessmentState } from "../learner-state";',
+		),
+		[],
+	);
+	assert.deepEqual(
+		checkDormantChoiceImports(
+			"packages/export-pipeline/src/scorm/local-storage-runtime.ts",
+			'import { createLearnerState, parseLearnerState, serializeLearnerState } from "@praxity/shared-blocks/learner-state";',
+		),
+		[],
+	);
+	assert.deepEqual(
+		checkDormantChoiceImports(
+			"packages/shared-blocks/src/index.ts",
+			'export * from "./learner-state";',
+		),
+		[],
+	);
+	assert.deepEqual(
+		checkDormantChoiceImports(
+			"packages/shared-blocks/src/choice-learner-state.ts",
+			"choiceDependencyStatus(id, view);",
+		),
+		[],
+	);
+});
+
+test("the tracker imports evidence types without admission or hashing code", () => {
+	const path = "packages/export-pipeline/src/scorm/tracking.ts";
+	assert.deepEqual(
+		checkDormantChoiceImports(
+			path,
+			'import type { ChoiceDependencyEvidence } from "@praxity/shared-blocks/choice-learner-state";',
+		),
+		[],
+	);
+	for (const source of [
+		'import { choiceDependencyStatus as status } from "@praxity/shared-blocks/choice-learner-state"; status(id, view);',
+		'import { prepareChoiceAssessmentState } from "@praxity/shared-blocks/choice-learner-state";',
+		'import { createChoiceDependencyView as install } from "@praxity/shared-blocks/choice-learner-state";',
+		'import * as states from "@praxity/shared-blocks/choice-learner-state";',
+		'const states = await import("@praxity/shared-blocks/choice-learner-state");',
+	])
+		assert.notDeepEqual(checkDormantChoiceImports(path, source), []);
+});
+
+test("choice admission refuses undeclared production imports", () => {
+	for (const source of [
+		'import "./choice-learner-state";',
+		'import {} from "./choice-learner-state";',
+		'import { futureExport } from "./choice-learner-state";',
+		'export * from "./choice-learner-state";',
+		'export { futureExport } from "./choice-learner-state";',
+	]) {
+		for (const path of [
+			"packages/shared-blocks/src/learner-state.ts",
+			"packages/shared-blocks/src/index.ts",
+			"apps/desktop/src/inspection-frame.ts",
+		])
+			assert.match(checkDormantChoiceImports(path, source).join("\n"), /declared/);
+	}
+	assert.deepEqual(
+		checkDormantChoiceImports(
+			"packages/shared-blocks/src/viewer/planted.ts",
+			'import type { ChoiceDependencyView } from "./choice-learner-state";',
+		),
+		[],
 	);
 });
 

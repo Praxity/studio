@@ -115,12 +115,12 @@ export function createPrivateBlockStateRuntime(
 			const destination = policy(blockId);
 			const held = destination === "lms" ? runtime.getBlockSaveResult?.(blockId) : undefined;
 			if (held?.status === "not-saved" && held.code === "unreadable-state") {
-				memory.set(blockId, value);
+				if (hasPolicy) memory.set(blockId, value);
 				runtime.setUnsavedBlockState?.(blockId, value);
 				return held;
 			}
 			let result: LearnerBlockSaveResult;
-			memory.set(blockId, value);
+			if (hasPolicy) memory.set(blockId, value);
 			try {
 				if (!blockId) throw new Error("EBLOCKID");
 				if (destination === "device") {

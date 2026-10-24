@@ -258,6 +258,7 @@ describe("compiled block state privacy policy", () => {
 	])("preserves failed-read receipts for a $mode policy", ({ policy, id, expected }) => {
 		const runtime = {
 			destinations: { reporting: "lms", state: "lms" },
+			stageSubmission: (_blockId: string, write: () => boolean) => write(),
 			getSuspendData() {
 				throw new Error("LMS read refused");
 			},
@@ -947,8 +948,6 @@ it("preview reset uses its supplied device owner and never writes a transport re
 });
 
 it("filters response publication while DOM initialization and privacy readiness are held", async () => {
-	// Match the compiler's private host define while calling its source owner directly.
-
 	const { dom: source } = host({ policy: { one: "device", two: "device" } });
 	const dom = new JSDOM(source.serialize(), { url: "https://course.example/page.html" });
 	const runtime = new LocalStorageRuntime(dom.window.localStorage, "held-init");

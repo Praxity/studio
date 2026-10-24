@@ -133,7 +133,6 @@ describe("course host", () => {
 		"%s revokes a held privacy-ready continuation",
 		async (boundary) => {
 			const { dom, environment } = createEnvironment();
-
 			try {
 				let release!: () => void;
 				const ready = vi.fn();
