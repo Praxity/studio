@@ -32,8 +32,8 @@ design:
 |---|---|
 | title | Lesson title. Set it for navigation. The reader accepts files without frontmatter. |
 | lang | Lesson language, such as en or fr. Overrides course locale, then workspace defaultLocale; the fallback is en. |
-| kicker | Group label, such as Module 1. Renders above the lesson's first page heading. Omit for no label. |
-| time | Free text describing how long the lesson takes, such as About 12 minutes, including the lab. Renders below the lesson's first page heading. Omit for no time line. |
+| kicker | Group label, such as Module 1. Renders above the lesson's first page heading. `{hideTitle}` on that page also hides this line from the page content. Omit for no label. |
+| time | Free text describing how long the lesson takes. Renders below the lesson's first page heading. `{hideTitle}` on that page also hides this line from the page content. Omit for no time line. |
 | design | Presentation overrides. See [frontmatter design](frontmatter-design.md). |
 | pageStyles | Named page treatments. Select one with a page's style setting. |
 | variables | Map of variable names to scalar starting values. See [logic](logic.md). |
@@ -42,9 +42,11 @@ Narration scripts and attachments live in narration.yaml. Course cast belongs in
 
 Write `kicker` and `time` as YAML strings in the lesson's language. Numbers, booleans, nulls, lists and mappings are invalid. Blank strings show no line. Both fields render as plain text outside the H1, on the first page only, in single- and multi-lesson courses. The time line is small, regular, non-italic text. Neither field changes the heading's accessible name or description. They accompany the visible page heading; `{hideTitle}` omits them along with that heading.
 
+Write time as a phrase that makes sense read aloud, such as "About 12 minutes, including the lab" or "Environ 12 minutes". Avoid abbreviations and symbols such as `~`; screen readers read them literally.
+
 Both lines use the theme's muted text colour. Accent and ink slide backgrounds use a contrasting foreground instead. Text wraps within the page; neither line uses opacity to reduce contrast.
 
-When the first page heading has its own `kicker`, the lesson frontmatter `kicker` takes precedence, so only one label appears above that H1. Without a lesson kicker, the heading keeps its own. Other headings retain their kickers. The single-lesson sidebar also keeps the lesson kicker above its lesson title as a navigation label.
+The single-lesson sidebar also keeps the lesson kicker above its lesson title as a navigation label. It uses the authored `time` instead of a computed duration unless an explicit course duration is supplied.
 
 ## Pages and navigation
 

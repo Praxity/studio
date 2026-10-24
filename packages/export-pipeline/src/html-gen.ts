@@ -1178,6 +1178,14 @@ export function renderPageFragments(
 		),
 	};
 	const sectionBlocks = page.blocks;
+	const pageTitleBlock = sectionBlocks.find(
+		(block, index) =>
+			(block.type === "heading" && index === 0 && block.data.level === 1) ||
+			(block.type === "assessmentGroup" &&
+				block.data._headingLevel === 1 &&
+				plainTextFromHtml(getInlineField(block.data, "groupName", false)) ===
+					plainTextFromHtml(String(page.data?.title ?? page.title))),
+	);
 	const sectionRhythm = "uniform";
 	const sections: SectionGroup[] = groupBlocksIntoSections(sectionBlocks, sectionRhythm);
 	const hiddenBlockIds = initiallyHiddenBlockIds(sectionBlocks);
@@ -1301,11 +1309,7 @@ export function renderPageFragments(
 			: block;
 		const renderedBlock = renderBlockHtml(renderedNode, config.sourceLocale, localeStrings, {
 			lessonHeading:
-				page.isFirstPageOfLesson &&
-				page.data?.hideTitle !== true &&
-				block === sectionBlocks[0] &&
-				block.type === "heading" &&
-				block.data.level === 1
+				page.isFirstPageOfLesson && page.data?.hideTitle !== true && block === pageTitleBlock
 					? { kicker: page.lessonKicker, time: page.lessonTime }
 					: undefined,
 			...blockContext,
@@ -1552,6 +1556,7 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 
 	const localeStrings = getStrings(config.sourceLocale ?? "en");
 	const lessons = pagesList.filter((entry) => entry.lessonId && entry.isFirstPageOfLesson);
+	const lessonCount = pagesList.filter((entry) => entry.isFirstPageOfLesson).length || 1;
 	const moduleNavigation = lessons.length > 1;
 	const localPages = moduleNavigation
 		? pagesList.filter((entry) => entry.lessonId === page.lessonId)
@@ -1645,6 +1650,9 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 	const courseEstimatedMinutes = publishedReadingTimes(config.pages).courseMinutes;
 	const estimatedDuration =
 		config.estimatedDuration?.trim() ||
+		(lessonCount === 1
+			? pagesList.find((entry) => entry.lessonTime?.trim())?.lessonTime?.trim()
+			: "") ||
 		interpolate(localeStrings.narrativeReadTime, { minutes: courseEstimatedMinutes });
 
 	const pageDurationOverride =
@@ -2018,7 +2026,6 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 			: `<div id="praxity-a11y-preferences">${pageNavToggles.showA11yPill !== false ? nativeA11yControls(localeStrings, nativeNav) : ""}${hasNarration ? '<div data-island="narration"></div>' : ""}</div>`;
 	const showCourseTitle = pageNavToggles.navCourseTitle ?? config.showCourseNameInNav !== false;
 	const showLessonTitle = pageNavToggles.navLessonTitles ?? config.showLessonNameInNav !== false;
-	const lessonCount = pagesList.filter((entry) => entry.isFirstPageOfLesson).length || 1;
 	const logo = config.brandLogo;
 	const logoPlacement = logo?.placement === "sidebar" ? "sidebar" : "header";
 	const logoHtml =

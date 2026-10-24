@@ -3,13 +3,19 @@ import type { PraxityPage } from "@praxity/shared-blocks";
 import { JSDOM } from "jsdom";
 import { assert, describe, expect, it } from "vitest";
 import { type CourseConfig, generateHtmlPage } from "../src/html-gen";
-import { compilePage } from "../src/preview/compile-page";
+import { compileDocument, compilePage } from "../src/preview/compile-page";
 import { createCourseContextFromHtml, refreshCourseContext } from "../src/preview/course-context";
 
 const output = {
 	islandAssets: {
 		loaderFilename: "island-loader.js",
-		islandFilenames: { nav: "island-nav.js", logic: "island-logic.js" },
+		islandFilenames: {
+			nav: "island-nav.js",
+			logic: "island-logic.js",
+			deck: "deck.js",
+			assessment: "assessment.js",
+			assessmentGroup: "assessment-group.js",
+		},
 	},
 };
 
@@ -52,6 +58,80 @@ function document(pages: PraxityPage[], index: number, overrides: Partial<Course
 }
 
 describe("lesson heading metadata", () => {
+	it.each(["Pages", "deck"])(
+		"decorates a folded assessment-group title in %s output without changing its accessible label",
+		async (presentation) => {
+			const read = readLesson(
+				`---\nkicker: Module 1\ntime: About 12 minutes\n${presentation === "Pages" ? "variables:\n  ready: false\n" : ""}---\n# Quiz\n::: group Quiz {level=1}\n::: choice Answer {scored}\n(x) Yes\n( ) No\n:::\n:::\n`,
+			);
+			expect(read.hasErrors).toBe(false);
+			const group = read.pages[0].blocks.find((block) => block.type === "assessmentGroup");
+			assert(group);
+			group.id = "quiz-group";
+			const page = {
+				...read.pages[0],
+				id: "quiz-page",
+				lessonId: "lesson-1",
+				lessonTitle: "Quiz",
+				isFirstPageOfLesson: true,
+				lessonKicker: read.frontmatter.kicker,
+				lessonTime: read.frontmatter.time,
+			};
+			const context = await createCourseContextFromHtml(
+				{ ...config([page]), ...(presentation === "deck" ? { moduleDeck: {} } : {}) },
+				output,
+			);
+			const doc = new JSDOM(compileDocument(context, context.documents[0].slug).html).window
+				.document;
+			const heading = doc.querySelector("#assessment-group-title-quiz-group");
+			assert(heading);
+			expect(heading.tagName).toBe("H1");
+			expect(heading.textContent).toBe("Quiz");
+			expect(heading.previousElementSibling?.outerHTML).toBe(
+				'<p class="praxity-kicker">Module 1</p>',
+			);
+			expect(heading.nextElementSibling?.outerHTML).toBe(
+				'<p class="praxity-lesson-time">About 12 minutes</p>',
+			);
+			expect(
+				doc
+					.querySelector('[data-assessment-group-header="quiz-group"]')
+					?.getAttribute("aria-labelledby"),
+			).toBe("assessment-group-title-quiz-group assessment-group-progress-quiz-group");
+			expect(doc.querySelector("#assessment-group-progress-quiz-group")?.textContent).toBe(
+				"Questions completed: 0 of 1",
+			);
+		},
+	);
+	it.each([0, 1])("shows authored single-lesson time in the sidebar on page %s", (index) => {
+		const pages = lessonPages({ lessonTime: "About 12 minutes, including the lab" });
+		expect(document(pages, index).querySelector(".praxity-native-sidebar-meta")?.textContent).toBe(
+			"2 pages · About 12 minutes, including the lab",
+		);
+	});
+	it("keeps an explicit course duration ahead of authored lesson time", () => {
+		expect(
+			document(lessonPages({ lessonTime: "About 12 minutes" }), 0, {
+				estimatedDuration: "About 20 minutes",
+			}).querySelector(".praxity-native-sidebar-meta")?.textContent,
+		).toBe("2 pages · About 20 minutes");
+	});
+	it("keeps computed duration without authored time or across multiple lessons", () => {
+		expect(
+			document(lessonPages(), 0).querySelector(".praxity-native-sidebar-meta")?.textContent,
+		).toBe("2 pages · ~1 min");
+		const pages = lessonPages({ lessonTime: "About 12 minutes" });
+		pages[1] = { ...pages[1], lessonId: "lesson-2", isFirstPageOfLesson: true };
+		expect(document(pages, 0).querySelector(".praxity-native-sidebar-meta")?.textContent).toBe(
+			"2 pages · ~1 min",
+		);
+	});
+	it("uses the shared spacing wrapper when time is the only lesson line", () => {
+		expect(
+			document(lessonPages({ lessonTime: "About 12 minutes" }), 0).querySelector("#main-content h1")
+				?.parentElement?.className,
+		).toBe("praxity-heading-with-kicker");
+	});
 	it.each(["single", "multi"])("renders first-page lines in a %s-lesson course", (kind) => {
 		const pages = lessonPages({
 			lessonKicker: "Module 1",
@@ -94,13 +174,16 @@ describe("lesson heading metadata", () => {
 	});
 	it("escapes author text without interpreting markup or changing casing", () => {
 		const text = 'MODULE <img src=x onerror="alert(1)"> & "time"';
-		const main = document(lessonPages({ lessonKicker: text, lessonTime: text }), 0).querySelector(
-			"#main-content",
-		);
+		const doc = document(lessonPages({ lessonKicker: text, lessonTime: text }), 0);
+		const main = doc.querySelector("#main-content");
 		assert(main);
 		expect(main.querySelector(".praxity-kicker")?.textContent).toBe(text);
 		expect(main.querySelector(".praxity-lesson-time")?.textContent).toBe(text);
 		expect(main.querySelector("img")).toBeNull();
+		expect(doc.querySelector(".praxity-native-sidebar-meta")?.textContent).toBe(
+			'2 pages · MODULE <img src=x onerror="alert(1)"> & "time"',
+		);
+		expect(doc.querySelector(".praxity-native-sidebar-meta img")).toBeNull();
 	});
 	it.each([
 		["paper", "var(--praxity-color-text-light)"],
@@ -152,7 +235,8 @@ describe("lesson heading metadata", () => {
 		pages[0].blocks[0].data.kicker = "Heading group";
 		expect(
 			document(pages, 0).querySelector("#main-content h1")?.previousElementSibling?.textContent,
-		).toBe("Heading group");
+		).toBeUndefined();
+		expect(document(pages, 0).querySelector("#main-content .praxity-kicker")).toBeNull();
 	});
 	it("decorates only the page title when another heading uses level one", () => {
 		const pages = lessonPages({ lessonKicker: "Module 1", lessonTime: "About 12 minutes" });

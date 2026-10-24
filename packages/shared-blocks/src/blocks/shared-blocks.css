@@ -3957,7 +3957,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 }
 
 .praxity-lesson-time {
-	margin-block-start: var(--space-1);
 	font-weight: var(--weight-body);
 	font-style: normal;
 }

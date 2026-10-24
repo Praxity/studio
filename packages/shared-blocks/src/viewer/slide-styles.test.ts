@@ -1,3 +1,4 @@
+import { readLesson } from "@praxity/grammar";
 import { describe, expect, it, vi } from "vitest";
 import {
 	BUILT_IN_SLIDE_STYLES,
@@ -19,6 +20,31 @@ const COMPLETE_VARIABLE_KEYS = [
 ] as const;
 
 describe("resolveSlideStyle", () => {
+	it.each(["null", "unknown", "constructor"])(
+		"keeps the prior variable fallback for persisted background %s",
+		(background) => {
+			const read = readLesson(
+				`---\npageStyles:\n  custom:\n    background: ${background}\n---\n# First {style=custom}\nBody\n`,
+			);
+			expect(read.hasErrors).toBe(false);
+			const style = resolveSlideStyle("custom", read.frontmatter.pageStyles);
+			expect(style.variables).toEqual({
+				"--slide-measure": "var(--praxity-max-width, 720px)",
+				"--slide-heading-scale": "1",
+				"--slide-align": "center",
+				"--slide-grid-columns": "minmax(0, 1fr)",
+				"--slide-text-column": "1",
+				"--slide-media-column": "1",
+				"--slide-accent-rule-width": "0px",
+			});
+			expect(style.mutedColor).toBe("var(--praxity-color-text-light)");
+		},
+	);
+	it("uses the same readable foreground for accent headings and lesson labels", () => {
+		const style = resolveSlideStyle("custom", { custom: { background: "accent" } });
+		expect(style.variables["--slide-fg"]).toBe("var(--praxity-color-accent-foreground)");
+		expect(style.mutedColor).toBe("var(--praxity-color-accent-foreground)");
+	});
 	it("ships the five base style definitions", () => {
 		expect(BUILT_IN_SLIDE_STYLES).toEqual({
 			title: {
@@ -42,7 +68,7 @@ describe("resolveSlideStyle", () => {
 		const tokenPairs = {
 			paper: ["var(--praxity-color-background)", "var(--praxity-color-text)"],
 			surface: ["var(--praxity-color-background-alt)", "var(--praxity-color-text)"],
-			accent: ["var(--praxity-color-accent)", "var(--praxity-color-background)"],
+			accent: ["var(--praxity-color-accent)", "var(--praxity-color-accent-foreground)"],
 			ink: ["var(--praxity-color-text)", "var(--praxity-color-background)"],
 		} as const;
 

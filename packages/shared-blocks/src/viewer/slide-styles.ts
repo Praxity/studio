@@ -49,7 +49,7 @@ const BACKGROUND_VARIABLES = {
 	},
 	accent: {
 		"--slide-bg": "var(--praxity-color-accent)",
-		"--slide-fg": "var(--praxity-color-background)",
+		"--slide-fg": "var(--praxity-color-accent-foreground)",
 		"--slide-muted": "var(--praxity-color-accent-foreground)",
 	},
 	ink: {
@@ -130,8 +130,11 @@ export function resolveSlideStyle(
 	};
 
 	const cornerImage = cornerImageUrl(definition.cornerImage);
-	const { "--slide-muted": mutedColor, ...backgroundVariables } =
-		BACKGROUND_VARIABLES[definition.background];
+	// Preserve the prior inherited colours when persisted background data is invalid.
+	const {
+		"--slide-muted": mutedColor = "var(--praxity-color-text-light)",
+		...backgroundVariables
+	} = BACKGROUND_VARIABLES[definition.background] ?? {};
 	return {
 		...(cornerImage ? { cornerImage } : {}),
 		mutedColor,

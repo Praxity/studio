@@ -22,6 +22,9 @@ describe("muted text", () => {
 		expect(blocks).toMatch(
 			/\.praxity-kicker,\s*\.praxity-lesson-time\s*\{[^}]*overflow-wrap: anywhere;/,
 		);
+		const timeRule = blocks.match(/\}\s*\.praxity-lesson-time\s*\{([^}]+)\}/)?.[1];
+		expect(timeRule).toBeDefined();
+		expect(timeRule).not.toContain("margin-block-start");
 	});
 	it("keeps lesson labels at 4.5:1 on every slide background in light and dark palettes", () => {
 		for (const palette of Object.keys(READING_PALETTES)) {

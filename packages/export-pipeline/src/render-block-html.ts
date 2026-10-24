@@ -72,7 +72,11 @@ import { strings as selfCheckPatternStrings } from "learning-patterns/patterns/s
 import { codeTokenCss, highlightCode } from "./code-highlighting.ts";
 import { escapeJsonForHtml } from "./escape-json-for-html.ts";
 import { renderChoice } from "./patterns/choice/render.ts";
-import { type LessonHeading, renderHeading } from "./patterns/heading/render.ts";
+import {
+	type LessonHeading,
+	renderHeading,
+	renderHeadingLabels,
+} from "./patterns/heading/render.ts";
 import { renderHighlight } from "./patterns/highlight/render.ts";
 import { renderNote } from "./patterns/note/render.ts";
 import { renderQuote } from "./patterns/quote/render.ts";
@@ -1568,6 +1572,7 @@ function renderAssessmentGroup(
 	strings: RenderBlockHtmlStrings,
 	members?: PraxityBlock[],
 	sourceLocale = "en",
+	lessonHeading?: LessonHeading,
 ): string {
 	const data =
 		block.data && typeof block.data === "object"
@@ -1621,7 +1626,11 @@ function renderAssessmentGroup(
 					.join("")}</div></fieldset>`
 			: "";
 
-	return `<div class="praxity-assessment-group-card" role="group" aria-labelledby="${escapeHtml(labelledBy)}" data-assessment-group-header="${escapeHtml(block.id)}"><div class="praxity-assessment-group-header-content"><h${headingLevel} id="${escapeHtml(titleId)}" class="praxity-assessment-group-title">${title}</h${headingLevel}><div class="praxity-assessment-group-metadata">${showProgress ? `<span id="${escapeHtml(progressId)}" data-assessment-group-progress>${escapeHtml(progress)}</span>` : ""}${passingScore ? `<span id="${escapeHtml(passingScoreId)}">${escapeHtml(passingScore)}</span>` : ""}${points ? `<span id="${escapeHtml(pointsId)}">${escapeHtml(points)}</span>` : ""}</div></div>${picker}</div>`;
+	const heading = renderHeadingLabels(
+		`<h${headingLevel} id="${escapeHtml(titleId)}" class="praxity-assessment-group-title">${title}</h${headingLevel}>`,
+		lessonHeading,
+	);
+	return `<div class="praxity-assessment-group-card" role="group" aria-labelledby="${escapeHtml(labelledBy)}" data-assessment-group-header="${escapeHtml(block.id)}"><div class="praxity-assessment-group-header-content">${heading}<div class="praxity-assessment-group-metadata">${showProgress ? `<span id="${escapeHtml(progressId)}" data-assessment-group-progress>${escapeHtml(progress)}</span>` : ""}${passingScore ? `<span id="${escapeHtml(passingScoreId)}">${escapeHtml(passingScore)}</span>` : ""}${points ? `<span id="${escapeHtml(pointsId)}">${escapeHtml(points)}</span>` : ""}</div></div>${picker}</div>`;
 }
 
 function renderChecklist(block: PraxityBlock, strings: RenderBlockHtmlStrings): string {
@@ -2043,7 +2052,13 @@ function renderSemanticContent(
 		case "assessment":
 			return renderAssessment(block, strings, sourceLocale);
 		case "assessmentGroup":
-			return renderAssessmentGroup(block, strings, assessmentGroupMembers, sourceLocale);
+			return renderAssessmentGroup(
+				block,
+				strings,
+				assessmentGroupMembers,
+				sourceLocale,
+				lessonHeading,
+			);
 		case "checklist":
 			return renderChecklist(block, strings);
 		case "rating":
