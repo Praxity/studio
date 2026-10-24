@@ -59,7 +59,7 @@ export function readSessionState(
 	win: WindowLike | undefined = globalThis.window,
 ): boolean {
 	const state = getSessionState(api, win);
-	return !!state?.initialized;
+	return !!state?.initialized && sessionAllowsCalls(state);
 }
 
 export function writeSessionState(
