@@ -35,9 +35,29 @@ function fixture(status = "passed", original = unreadable) {
 }
 afterEach(() => vi.unstubAllGlobals());
 it.each(compactVectors)(
-	"holds the dormant $name compact vector without replacement writes",
-	({ wire }) => {
+	"restores the exact $name compact vector through the ordinary reader without rewriting it",
+	({ wire, expected }) => {
 		const { values, writes, dom } = fixture("passed", wire);
+		try {
+			const runtime = new Scorm12Runtime("course");
+			expect(runtime.initialize()).toBe(true);
+			expect(runtime.getVisitedPages()).toEqual(expected.visitedPages);
+			expect(runtime.getInteractions()).toEqual(expected.interactions);
+			expect(runtime.getSuspendData()).toBe(expected.custom);
+			expect(writes).toEqual([]);
+			expect(values["cmi.suspend_data"]).toBe(wire);
+		} finally {
+			dom.window.close();
+		}
+	},
+);
+it.each(compactVectors)(
+	"holds the damaged $name compact vector without replacement writes",
+	({ wire }) => {
+		const envelope = JSON.parse(wire);
+		envelope[4] = (envelope[4] + 1) >>> 0; // Damage the decoded CRC, retaining a valid envelope.
+		const damaged = JSON.stringify(envelope);
+		const { values, writes, dom } = fixture("passed", damaged);
 		try {
 			const runtime = new Scorm12Runtime("course");
 			expect(runtime.initialize()).toBe(true);
@@ -66,7 +86,7 @@ it.each(compactVectors)(
 						key.startsWith("cmi.objectives."),
 				),
 			).toEqual([]);
-			expect(values["cmi.suspend_data"]).toBe(wire);
+			expect(values["cmi.suspend_data"]).toBe(damaged);
 			expect(values["cmi.core.lesson_status"]).toBe("passed");
 			expect(values["cmi.core.score.raw"]).toBe("100");
 		} finally {

@@ -390,28 +390,32 @@ for (const locale of ["en", "fr"]) {
 	});
 }
 
-it("clears the visible oneOf refusal when the learner retries successfully", async () => {
-	const { render } = mount("oneOf");
-	let rejected = true;
-	const reject = (event: Event) => {
-		if (rejected) event.preventDefault();
-	};
-	document.addEventListener("praxity:assessment-group-complete", reject);
-	disposals.push(() => document.removeEventListener("praxity:assessment-group-complete", reject));
-	await render();
-	document.querySelector<HTMLButtonElement>(".praxity-ag-submit-btn")?.click();
-	await vi.waitFor(() =>
-		expect(document.querySelector("[data-assessment-group-status]")?.textContent).toBe(
-			"This answer could not be saved. Your previously saved progress is kept.",
-		),
-	);
-	rejected = false;
-	document.querySelector<HTMLButtonElement>(".praxity-ag-submit-btn")?.click();
-	await vi.waitFor(() =>
-		expect(document.querySelector(".praxity-ag-results-score")).not.toBeNull(),
-	);
-	expect(document.querySelector("[data-assessment-group-status]")?.textContent).toBe("");
-});
+it.each(["all", "oneOf"] as const)(
+	"clears the visible %s refusal when the learner retries successfully",
+	async (mode) => {
+		const { render } = mount(mode);
+		let rejected = true;
+		const reject = (event: Event) => {
+			if (rejected) event.preventDefault();
+		};
+		document.addEventListener("praxity:assessment-group-complete", reject);
+		disposals.push(() => document.removeEventListener("praxity:assessment-group-complete", reject));
+		await render();
+		document.querySelector<HTMLButtonElement>(".praxity-ag-submit-btn")?.click();
+		await vi.waitFor(() =>
+			expect(document.querySelector("[data-assessment-group-status]")?.textContent).toBe(
+				"This answer could not be saved. Your previously saved progress is kept.",
+			),
+		);
+		rejected = false;
+		document.querySelector<HTMLButtonElement>(".praxity-ag-submit-btn")?.click();
+		await vi.waitFor(() =>
+			expect(document.querySelector(".praxity-ag-results-score")).not.toBeNull(),
+		);
+		expect(document.querySelector("[data-assessment-group-status]")?.textContent).toBe("");
+		expect(document.querySelector("[data-assessment-group-status]")).toHaveClass("praxity-sr-only");
+	},
+);
 
 for (const evidence of [false, true]) {
 	it(`${evidence ? "with" : "without"} a view preserves its submit-removal event order`, async () => {

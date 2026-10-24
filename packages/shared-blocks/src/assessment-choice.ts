@@ -114,7 +114,7 @@ export function choiceInteractionReport(
 	};
 }
 
-/** The same effective policy drives controls and the dormant signature. */
+/** The same effective policy drives controls and the saved-answer signature. */
 export function choiceStatePolicy(data: AssessmentBlockData) {
 	const response = data.response as ChoiceResponse;
 	const canAutoScore = response.options.some((option) => option.isCorrect === true);

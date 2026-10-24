@@ -14,6 +14,7 @@ import {
 	initNarrationIsland,
 	isNarrationEligible,
 } from "../../template/src/islands/island-narration";
+import { installChoiceCourseHost } from "../../tests/fixtures/choice-course-host";
 import { narrationPlaylistFromConfig } from "../narration-playlist";
 import { renderBlockHtml } from "../render-block-html";
 
@@ -747,7 +748,6 @@ describe("narration island", () => {
 			interacted: true,
 			answer: ["b"],
 		};
-		window.__praxityBlockState = { get: (id) => (id === "gate" ? saved : undefined), set: vi.fn() };
 		const rule = {
 			blockId: "rule",
 			conditions: {
@@ -797,6 +797,11 @@ describe("narration island", () => {
 			 <main id="main-content"><div class="praxity-block" data-block-id="gate"></div>
 			 <div class="praxity-block" data-block-id="branch" hidden>Hello.</div>
 			 <button id="focus-anchor">Anchor</button></main>`;
+		const host = installChoiceCourseHost("gate", choiceData);
+		host.provider.set("gate", { ...saved, contentSignature: host.facts.signature });
+		host.runtime.trackInteraction("gate", "b", true, 100, {
+			contentSignature: host.facts.signature,
+		});
 		const logic = initDomLogicRuntime(config);
 		const cleanupNarration = initNarrationIsland();
 		const anchor = document.getElementById("focus-anchor") as HTMLElement;

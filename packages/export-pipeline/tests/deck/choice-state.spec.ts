@@ -1,5 +1,4 @@
 import { createServer, type Server } from "node:http";
-import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
 import { readLesson } from "@praxity/grammar";
 import {
@@ -8,9 +7,9 @@ import {
 	DONT_KNOW,
 } from "@praxity/shared-blocks/assessment-choice";
 import { prepareChoiceAssessmentState } from "@praxity/shared-blocks/choice-learner-state";
+import { createLearnerState } from "@praxity/shared-blocks/learner-state";
 import type { AssessmentBlockData, ChoiceResponse } from "@praxity/shared-blocks/types";
 import AdmZip from "adm-zip";
-import { build } from "esbuild";
 import { compileCourse, deployCourse } from "../../src/build";
 import { extractDesktopDesignFromFrontmatter } from "../../src/desktop-design";
 import { expectFocusRing, expectForcedEmulationInert, forcedPalette } from "../focus-assertions";
@@ -39,51 +38,6 @@ const cases = (["en", "fr"] as const).flatMap((locale) =>
 );
 
 test.beforeAll(async () => {
-	// Bind the permanent evidence interface only in these fixtures. Production
-	// hosts still construct their ordinary provider and tracker without it.
-	const fixture = await build({
-		stdin: {
-			resolveDir: fileURLToPath(new URL("../../", import.meta.url)),
-			loader: "ts",
-			contents: `
-import { admitChoiceStateFacts } from '@praxity/shared-blocks/choice-state-facts';
-import { createChoiceDependencyView } from '@praxity/shared-blocks/choice-learner-state';
-import { CourseTracker } from './src/scorm/tracking';
-const seed = JSON.parse(document.getElementById('recovery-fixture').textContent);
-const config = JSON.parse(document.getElementById('praxity-host-config').textContent);
-const facts = admitChoiceStateFacts(config);
-let provider, tracker;
-Object.defineProperty(window, '__praxityBlockState', {
-    configurable: true, get: () => provider,
-    set(value) {
-        provider = value;
-        if (!provider) return;
-        if (!provider.get(seed.id)) {
-            provider.set(seed.id, seed.answer);
-            window.__praxityRuntime.trackInteraction(seed.id, 'stop', false, 0);
-        }
-        // Submitted saved answers are evidence in their own right. Transport row
-        // admission and signed reporting remain part of the later host activation.
-        provider.getChoiceDependencyView = () => createChoiceDependencyView(facts, {
-            rows: [], readState: provider.get,
-        });
-    },
-});
-Object.defineProperty(window, '__praxityTracker', {
-    configurable: true, get: () => tracker,
-    set(value) {
-        tracker = value && new CourseTracker(window.__praxityRuntime, {
-            ...config, reportOutcome: false,
-            getAssessmentState: id => provider.get(id),
-        });
-    },
-});`,
-		},
-		bundle: true,
-		write: false,
-		format: "iife",
-		platform: "browser",
-	});
 	for (const item of cases) {
 		const { locale, variant, presentation, theme, key } = item;
 		const lesson = readLesson(
@@ -162,16 +116,27 @@ Object.defineProperty(window, '__praxityTracker', {
 				let bytes = entry.getData();
 				const html = bytes.toString();
 				if (entry.entryName.endsWith(".html") && html.includes('id="praxity-host-config"')) {
-					const seed = JSON.stringify({ id: questionId, answer: previous[key] }).replace(
+					const courseId = `choice-recovery-${key}`;
+					const state = createLearnerState({ courseId, attemptId: "default" });
+					state.blockState[questionId] = previous[key] as never;
+					state.interactions.push({
+						id: questionId,
+						response: "stop",
+						correct: false,
+						score: 0,
+						timestamp: 1,
+						contentSignature: oldFacts.signature,
+					} as never);
+					const storageKey = `praxity:${encodeURIComponent(courseId)}:default:state`;
+					const seed = JSON.stringify({ key: storageKey, state: JSON.stringify(state) }).replace(
 						/</g,
 						"\\u003c",
 					);
-					// Config scripts precede the deferred host. The injected binding
-					// is ready before either the host or assessment island starts.
+					// Seed persisted bytes only; the production host supplies every capability.
 					bytes = Buffer.from(
 						html.replace(
 							"</body>",
-							`<script type="application/json" id="recovery-fixture">${seed}</script><script>${fixture.outputFiles[0].text}</script></body>`,
+							`<script>const seed=${seed};if(!localStorage.getItem(seed.key))localStorage.setItem(seed.key,seed.state);</script></body>`,
 						),
 					);
 					if (html.includes(`data-block-id="${questionId}"`))
@@ -227,8 +192,8 @@ for (const { locale, variant, presentation, theme, key } of cases) {
 		});
 		const notice =
 			locale === "en"
-				? "This question changed after you answered it, so your earlier answer no longer counts. Select New attempt to answer it again."
-				: "Cette question a été modifiée après votre réponse. Votre réponse précédente ne compte donc plus. Sélectionnez Nouvelle tentative pour y répondre de nouveau.";
+				? "This question changed after you answered it. Your previous answer stays until you submit a new answer. Select New attempt to answer it again."
+				: "Cette question a été modifiée après votre réponse. Votre réponse précédente est conservée jusqu'à ce que vous soumettiez une nouvelle réponse. Sélectionnez Nouvelle tentative pour y répondre de nouveau.";
 		const saved = () => page.evaluate((id) => window.__praxityBlockState?.get(id), questionId);
 		const outcome = () =>
 			page.evaluate(() => (window.__praxityTracker as unknown as { outcome(): unknown }).outcome());

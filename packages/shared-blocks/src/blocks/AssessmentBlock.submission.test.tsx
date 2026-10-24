@@ -3,10 +3,8 @@ import { sha256 } from "@noble/hashes/sha2.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
-import { Scorm12Runtime } from "../../../export-pipeline/src/scorm/api/scorm12";
-import { serializeScorm12SuspendData } from "../../../export-pipeline/src/scorm/scorm12-suspend-data";
-import type { TrackInteractionOptions } from "../../../export-pipeline/src/scorm/types";
-import { createBlockStateRuntime } from "../../../export-pipeline/template/src/hosts/block-state-runtime";
+import { scorm12CompactSuspendDataCodec } from "../../../export-pipeline/src/scorm/scorm12-suspend-data";
+import { installChoiceCourseHost } from "../../../export-pipeline/tests/fixtures/choice-course-host";
 import { LocaleContext } from "../i18n/locale-context";
 import type { LearnerStateValue } from "../learner-state";
 
@@ -52,30 +50,7 @@ it.each(["en", "fr"])(
 				LMSGetLastError: () => "0",
 			},
 		});
-		const runtime = new Scorm12Runtime();
-		runtime.initialize();
-		const provider = createBlockStateRuntime(runtime);
-		window.__praxityBlockState = provider;
-		const report = (event: Event) => {
-			const detail = (event as CustomEvent).detail as TrackInteractionOptions & {
-				blockId: string;
-				responseText: string;
-				correct: boolean;
-				score: number;
-			};
-			try {
-				runtime.trackInteraction(
-					detail.blockId,
-					detail.responseText,
-					detail.correct,
-					detail.score,
-					detail,
-				);
-			} catch (error) {
-				if (runtime.getBlockSaveResult(detail.blockId)?.status !== "not-saved") throw error;
-			}
-		};
-		document.addEventListener("praxity:assessment-response", report);
+		let { runtime, provider } = installChoiceCourseHost("q", data, "scorm12");
 		const mount = () =>
 			render(
 				<MantineProvider>
@@ -99,18 +74,31 @@ it.each(["en", "fr"])(
 			const noise = Array.from({ length: 200 }, (_, n) =>
 				bytesToHex(sha256(new TextEncoder().encode(`noise-${n}`))),
 			).join("");
-			let filler = "";
-			for (let n = 2000; n < noise.length; n += 8) {
-				const candidate = noise.slice(0, n);
-				const size = (q: SavedAssessmentState) =>
-					serializeScorm12SuspendData({
-						visitedPages: [],
-						interactions: [],
-						custom: JSON.stringify({ blockState: { q, reflection: { answer: candidate } } }),
-					}).length;
-				if (Math.max(size(draft), size(final)) > 4096) break;
-				filler = candidate;
+			const fits = (length: number) =>
+				[draft, final].every((q) => {
+					try {
+						scorm12CompactSuspendDataCodec.serialize({
+							visitedPages: runtime.getVisitedPages(),
+							interactions: [],
+							custom: JSON.stringify({
+								blockState: { q, reflection: { answer: noise.slice(0, length) } },
+							}),
+						});
+						return true;
+					} catch (error) {
+						if (!(error instanceof Error) || !error.message.includes("ESCORM12STORAGE"))
+							throw error;
+						return false;
+					}
+				});
+			let low = 0,
+				high = noise.length;
+			while (low < high) {
+				const mid = Math.ceil((low + high) / 2);
+				if (fits(mid)) low = mid;
+				else high = mid - 1;
 			}
+			const filler = noise.slice(0, low);
 			expect(
 				runtime.setSuspendData(
 					JSON.stringify({ blockState: { q: draft, reflection: { answer: filler } } }),
@@ -135,16 +123,14 @@ it.each(["en", "fr"])(
 			expect(runtime.getInteractions()).toEqual([]);
 			expect(document.querySelector('[data-completed="true"]')).toBeNull();
 			view.unmount();
-			const reload = new Scorm12Runtime();
-			reload.initialize();
-			window.__praxityBlockState = createBlockStateRuntime(reload);
+			({ runtime, provider } = installChoiceCourseHost("q", data, "scorm12"));
 			view = mount();
 			expect(screen.getByRole("radio", { name: /Stop/ })).toBeEnabled();
 			expect(
 				screen.getByRole("button", { name: locale === "en" ? "Submit" : "Soumettre" }),
 			).toBeEnabled();
 			view.unmount();
-			window.__praxityBlockState = provider;
+			({ runtime, provider } = installChoiceCourseHost("q", data, "scorm12"));
 			view = mount();
 			expect(
 				runtime.setSuspendData(
@@ -163,7 +149,7 @@ it.each(["en", "fr"])(
 			});
 			expect(screen.queryByRole("status")).toBeNull();
 			view.unmount();
-			window.__praxityBlockState = createBlockStateRuntime(reload);
+			({ runtime, provider } = installChoiceCourseHost("q", data, "scorm12"));
 			view = mount();
 			expect(screen.getByRole("radio", { name: /Stop/ })).toBeDisabled();
 			expect(
@@ -172,7 +158,6 @@ it.each(["en", "fr"])(
 			view.unmount();
 		} finally {
 			cleanup();
-			document.removeEventListener("praxity:assessment-response", report);
 			delete window.__praxityBlockState;
 			delete (window as Window & { API?: unknown }).API;
 			vi.restoreAllMocks();

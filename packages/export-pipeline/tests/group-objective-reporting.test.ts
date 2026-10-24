@@ -189,6 +189,7 @@ function launch(format: Format, evidence = false, history = false) {
 	const provider = win.__praxityBlockState;
 	if (!provider) throw new Error("Missing provider installation");
 	if (evidence) {
+		provider.getChoiceDependencyView = view;
 		provider.set("q", answer(history ? changed : signature));
 		runtime.trackInteraction("q", "a", true, 100);
 		runtime.trackInteraction("a", "answer", true, 100);
@@ -241,7 +242,7 @@ function submit(host: ReturnType<typeof launch>, detail: Record<string, unknown>
 describe.each(["scorm12", "scorm2004"] as const)("%s optional objective reporting", (format) => {
 	it("ordinary nonboolean pass flags retain the failed objective", () => {
 		const host = launch(format);
-		expect(host.provider.getChoiceDependencyView).toBeUndefined();
+		expect(host.provider.getChoiceDependencyView?.()?.groups).toBeUndefined();
 		expect(Reflect.get(host.provider, "getChoiceReporting")).toBeUndefined();
 		expect(submit(host, { passed: "false" }).accepted).toBe(true);
 		expect(
