@@ -3,6 +3,7 @@ import {
 	appendFileSync,
 	existsSync,
 	globSync,
+	mkdirSync,
 	mkdtempSync,
 	readFileSync,
 	realpathSync,
@@ -381,6 +382,11 @@ export function buildPlan(
 }
 
 export async function runPlan(steps, execute) {
+	// Tests mkdtemp inside tmpdir() and PRAXITY_TEST_ARTIFACTS. Workers often point both at folders
+	// that don't exist yet, and wrappers call runPlan without main(), so create them here.
+	mkdirSync(tmpdir(), { recursive: true });
+	if (process.env.PRAXITY_TEST_ARTIFACTS)
+		mkdirSync(process.env.PRAXITY_TEST_ARTIFACTS, { recursive: true });
 	const results = [];
 	for (const step of steps) {
 		try {
