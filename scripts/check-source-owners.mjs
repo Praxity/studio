@@ -1476,7 +1476,6 @@ export function checkDormantChoiceImports(path, source, program) {
 			[
 				"restoreChoiceAssessmentState",
 				"prepareChoiceAssessmentState",
-				"retainLegacyChoiceBuild",
 				"choiceDependencyStatus",
 				"choiceGroupDependencyIds",
 				"choiceGroupSignature",

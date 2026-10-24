@@ -861,51 +861,24 @@ it.each(["attempt", "pass"] as const)(
 	},
 );
 
-it.each([false, true])(
-	"a cached choice release without a row retains earned access, view=%s",
-	(admitted) => {
-		const { runtime } = setup(false);
-		runtime.getSuspendData.mockReturnValue(JSON.stringify({ deck: { released: ["check"] } }));
-		const view = () =>
-			createChoiceDependencyView(
-				admitChoiceStateFacts({
-					choiceStateQuestions: { check: gateQuestion },
-					choiceStateSignatures: { check: gateSignature },
-				}),
-				{ rows: [], readState: () => exhaustedGateState },
-			);
-		window.__praxityBlockState = {
-			get: () => exhaustedGateState,
-			set() {},
-			...(admitted ? { getChoiceDependencyView: view } : {}),
-		};
-		Object.assign(window.__praxityTracker ?? {}, { isAssessmentFinal: () => true });
-		expect(view().status("check")).toBe("current");
-		cleanup = initDeck();
-		expect(
-			document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled"),
-		).toBe("false");
-	},
-);
+it("a cached choice release without a row retains earned access", () => {
+	const { runtime } = setup(false);
+	runtime.getSuspendData.mockReturnValue(JSON.stringify({ deck: { released: ["check"] } }));
+	window.__praxityBlockState = { get: () => exhaustedGateState, set() {} };
+	cleanup = initDeck();
+	expect(document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled")).toBe(
+		"false",
+	);
+});
 
-it.each([false, true])(
-	"characterization: saved-state finality alone cannot restore a legacy pass gate, empty capability=%s",
-	(emptyCapability) => {
-		const { runtime } = setup(false);
-		runtime.getInteractions.mockReturnValue([{ id: "check", correct: false }]);
-		if (emptyCapability)
-			window.__praxityBlockState = {
-				get: () => undefined,
-				set() {},
-				getChoiceDependencyView: () => undefined,
-			};
-		Object.assign(window.__praxityTracker ?? {}, { isAssessmentFinal: () => true });
-		cleanup = initDeck();
-		expect(
-			document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled"),
-		).toBe("true");
-	},
-);
+it("characterization: saved-state finality alone cannot release a restored pass gate", () => {
+	const { runtime } = setup(false);
+	runtime.getInteractions.mockReturnValue([{ id: "check", correct: false }]);
+	cleanup = initDeck();
+	expect(document.querySelector('[data-deck-page="slide-2"]')?.getAttribute("aria-disabled")).toBe(
+		"true",
+	);
+});
 
 it.each([80, null])("deck completion displays the recorded runtime score %s", (raw) => {
 	const { runtime } = setup(false, 2);

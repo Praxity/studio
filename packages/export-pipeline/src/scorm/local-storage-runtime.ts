@@ -183,16 +183,6 @@ export class LocalStorageRuntime implements SCORMRuntime {
 		return Object.hasOwn(blocks, blockId) ? blocks[blockId] : undefined;
 	}
 
-	getSavedBuildRevision(): string | null {
-		if (!this.courseId || !this.persistent) return null;
-		// readState may migrate legacy keys. Evidence reads must leave every byte intact.
-		const raw = this.storage.getItem(this.prefix + "state");
-		return raw === null
-			? null
-			: (parseLearnerState(raw, { courseId: this.courseId, attemptId: this.attemptId })?.revision ??
-					null);
-	}
-
 	setBlockState(blockId: string, value: LearnerStateValue): boolean {
 		this.lastWriteSaved = false;
 		if (!blockId) return false;

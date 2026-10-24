@@ -44,8 +44,6 @@ export function createPrivateBlockStateRuntime(
 	}
 	const policy = (blockId: string) => (blockStatePolicy[blockId] === "device" ? "device" : "lms");
 	return {
-		getSavedBuildRevision: (blockId) =>
-			(policy(blockId) === "device" ? device : runtime)?.getSavedBuildRevision?.() ?? null,
 		stageSubmission: runtime.stageSubmission
 			? (blockId, write) => {
 					results.delete(blockId);

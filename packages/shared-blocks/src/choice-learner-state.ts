@@ -12,16 +12,10 @@ import {
 	isChoiceContentSignature,
 } from "./choice-state-facts";
 
-import type { LearnerStateV1, LearnerStateValue, SavedAssessmentState } from "./learner-state";
+import type { LearnerStateValue, SavedAssessmentState } from "./learner-state";
 import { choiceEvidenceSignature, isScorm12ChoiceSignature } from "./learner-state";
 
 export type { ChoiceStateGroup } from "./choice-state-facts";
-
-// Dormant until reporting waits on history and the recovery UI is available.
-export interface LearnerBuildProof {
-	savedRevision: string | null;
-	currentRevision: string | null;
-}
 
 function validChoiceIds(question: ChoiceStateQuestion, answer: unknown): answer is string[] {
 	const ids = new Set(question.options.map((option) => option.id));
@@ -36,18 +30,7 @@ function validChoiceIds(question: ChoiceStateQuestion, answer: unknown): answer 
 function legacyChoiceStateIsCurrent(
 	value: Record<string, unknown>,
 	question: ChoiceStateQuestion,
-	proof?: LearnerBuildProof,
 ): boolean {
-	if (proof) {
-		const build =
-			value.legacyBuildRevision === undefined ? proof.savedRevision : value.legacyBuildRevision;
-		return (
-			typeof build === "string" &&
-			build.length > 0 &&
-			build === proof.savedRevision &&
-			build === proof.currentRevision
-		);
-	}
 	return (
 		value.checked === true &&
 		validChoiceIds(question, value.answer) &&
@@ -61,10 +44,8 @@ function legacyChoiceStateIsCurrent(
 function choiceStateMatchesSignature(
 	value: Record<string, unknown>,
 	{ signature, question }: ChoiceAssessmentFacts,
-	proof?: LearnerBuildProof,
 ): boolean {
-	if (value.contentSignature === undefined)
-		return legacyChoiceStateIsCurrent(value, question, proof);
+	if (value.contentSignature === undefined) return legacyChoiceStateIsCurrent(value, question);
 	if (value.contentSignature === signature) return true;
 	if (isScorm12ChoiceSignature(value.contentSignature))
 		return (
@@ -113,7 +94,6 @@ function choiceStateMatchesSignature(
 function admitChoiceAssessmentState(
 	value: unknown,
 	facts: ChoiceAssessmentFacts,
-	proof?: LearnerBuildProof,
 ): SavedAssessmentState | null {
 	const { question } = facts;
 	if (
@@ -136,7 +116,7 @@ function admitChoiceAssessmentState(
 	if ((signed || !value.checked) && question.selectionMode === "single" && value.answer.length > 1)
 		return null;
 	// An unsigned draft has no submitted verdict to migrate or credit.
-	if ((signed || value.checked) && !choiceStateMatchesSignature(value, facts, proof)) return null;
+	if ((signed || value.checked) && !choiceStateMatchesSignature(value, facts)) return null;
 	if (value.checked && (!value.answer.length || value.attemptCount === 0)) return null;
 	const correct =
 		value.checked &&
@@ -157,7 +137,6 @@ function admitChoiceAssessmentState(
 export function restoreChoiceAssessmentState(
 	value: unknown,
 	facts: ChoiceAssessmentFacts,
-	proof?: LearnerBuildProof,
 ): {
 	status: "empty" | "current" | "review";
 	current: SavedAssessmentState | null;
@@ -166,7 +145,7 @@ export function restoreChoiceAssessmentState(
 	if (value === undefined) return { status: "empty", current: null, history: [] };
 	const history =
 		isRecord(value) && Array.isArray(value.history) ? (value.history as LearnerStateValue[]) : [];
-	const current = admitChoiceAssessmentState(value, facts, proof);
+	const current = admitChoiceAssessmentState(value, facts);
 	if (current) return { status: "current", current, history };
 	if (isRecord(value) && value.checked !== true) return { status: "empty", current: null, history };
 	const { history: _history, ...previous } = isRecord(value) ? value : {};
@@ -182,10 +161,10 @@ export function prepareChoiceAssessmentState(
 	previous: unknown,
 	next: SavedAssessmentState,
 	facts: ChoiceAssessmentFacts,
-	write: { writtenAt: number; proof?: LearnerBuildProof },
+	write: { writtenAt: number },
 ): SavedAssessmentState {
 	if (!isChoiceAssessmentFacts(facts)) throw new TypeError("Invalid compiled choice facts");
-	const restored = restoreChoiceAssessmentState(previous, facts, write.proof);
+	const restored = restoreChoiceAssessmentState(previous, facts);
 	const history = [...restored.history];
 	const prior = restored.current;
 	if (
@@ -199,20 +178,10 @@ export function prepareChoiceAssessmentState(
 		history.push(attempt as unknown as LearnerStateValue);
 	}
 	const proofs = new Set<string>();
-	const previousBuild = isRecord(previous) ? previous.legacyBuildRevision : undefined;
-	// A retry write cannot advance the origin of an unsigned submission or erased retry.
-	const draftBuild =
-		previousBuild !== undefined
-			? typeof previousBuild === "string"
-				? previousBuild
-				: null
-			: isRecord(previous) && previous.contentSignature === undefined
-				? (write.proof?.savedRevision ?? null)
-				: (write.proof?.currentRevision ?? null);
 	const materialProof = { optionIds: facts.question.options.map((option) => option.id).sort() };
 	if (
 		next.checked &&
-		admitLegacyRetry(previous, facts, undefined, write.proof) &&
+		admitLegacyRetry(previous, facts, undefined) &&
 		!history.some((entry) => isRecord(entry) && entry.checked === true)
 	) {
 		const { history: _history, ...pending } = previous as SavedAssessmentState;
@@ -221,7 +190,7 @@ export function prepareChoiceAssessmentState(
 			...pending,
 			legacyPending: true,
 			...(pending.contentSignature === undefined
-				? { contentSignature: facts.signature, materialProof, legacyBuildRevision: draftBuild }
+				? { contentSignature: facts.signature, materialProof }
 				: {}),
 		} as unknown as LearnerStateValue);
 	}
@@ -240,7 +209,6 @@ export function prepareChoiceAssessmentState(
 		contentSignature: erasedDraft ? erasedDraft.contentSignature : facts.signature,
 		materialProof: erasedDraft ? erasedDraft.materialProof : materialProof,
 		writtenAt: write.writtenAt,
-		legacyBuildRevision: draftBuild,
 		...(history.length
 			? {
 					history: history.map((entry) => {
@@ -264,20 +232,6 @@ export function prepareChoiceAssessmentState(
 	};
 }
 
-/** Retain the last-write build before unrelated writes advance a preview envelope. */
-export function retainLegacyChoiceBuild(state: LearnerStateV1): void {
-	for (const value of Object.values(state.blockState)) {
-		if (
-			isRecord(value) &&
-			value.kind === "assessment" &&
-			value.assessmentType === "choice" &&
-			value.contentSignature === undefined &&
-			value.legacyBuildRevision === undefined
-		)
-			value.legacyBuildRevision = state.revision;
-	}
-}
-
 export interface ChoiceDependencyView {
 	invalidIds?: readonly string[];
 	rows: readonly {
@@ -291,7 +245,6 @@ export interface ChoiceDependencyView {
 	signatures: Readonly<Record<string, string>>;
 	groups?: Readonly<Record<string, ChoiceStateGroup>>;
 	readState: (id: string) => unknown;
-	buildProof?: (id: string) => LearnerBuildProof | undefined;
 }
 
 /** Readers receive the status owner with the evidence, without importing admission code. */
@@ -375,14 +328,9 @@ export function createChoiceDependencyView(
 	evidence: {
 		rows: ChoiceDependencyView["rows"];
 		readState: ChoiceDependencyView["readState"];
-		preview?: {
-			currentRevision: string | null;
-			readSavedRevision: (id: string) => string | null;
-		};
 	},
 ): ChoiceDependencyEvidence {
 	if (facts.choiceStateInvalidIds.includes("*")) throw new Error("Invalid choice facts");
-	const preview = evidence.preview;
 	return bindChoiceDependencyView({
 		invalidIds: facts.choiceStateInvalidIds,
 		rows: evidence.rows,
@@ -390,14 +338,6 @@ export function createChoiceDependencyView(
 		signatures: facts.choiceStateSignatures,
 		...(facts.choiceStateGroups ? { groups: facts.choiceStateGroups } : {}),
 		readState: evidence.readState,
-		...(preview
-			? {
-					buildProof: (id: string) => ({
-						savedRevision: preview.readSavedRevision(id),
-						currentRevision: preview.currentRevision,
-					}),
-				}
-			: {}),
 	});
 }
 
@@ -469,16 +409,10 @@ function admitLegacyRetry(
 	value: unknown,
 	facts: ChoiceAssessmentFacts,
 	row: ChoiceDependencyView["rows"][number] | undefined,
-	proof?: LearnerBuildProof,
 ): SavedAssessmentState | null {
 	if (row?.contentSignature !== undefined || row?.correct === true) return null;
-	const draft = admitChoiceAssessmentState(value, facts, proof);
+	const draft = admitChoiceAssessmentState(value, facts);
 	if (!draft || draft.checked || draft.attemptCount === 0) return null;
-	if (
-		proof &&
-		!legacyChoiceStateIsCurrent(draft as unknown as Record<string, unknown>, facts.question, proof)
-	)
-		return null;
 	// Pre-signature retries cannot prove old material; preserve base pending behavior.
 	return draft;
 }
@@ -488,7 +422,6 @@ function resolveSubmittedChoice(
 	state: unknown,
 	facts: ChoiceAssessmentFacts,
 	row: ChoiceDependencyView["rows"][number] | undefined,
-	proof?: LearnerBuildProof,
 	reference?: { signature: string | null },
 ): SubmittedChoiceResolution {
 	if (!row && !hasSubmittedChoice(state)) return { status: "unanswered", evidence: null };
@@ -505,12 +438,12 @@ function resolveSubmittedChoice(
 	if (reference && !submitted) {
 		const pending = history.find((entry) => isRecord(entry) && entry.legacyPending === true);
 		return reference.signature === null &&
-			admitLegacyRetry(pending ?? (submissions.length ? undefined : state), facts, undefined, proof)
+			admitLegacyRetry(pending ?? (submissions.length ? undefined : state), facts, undefined)
 			? { status: "current", evidence: { kind: "legacy-pending" } }
 			: { status: "history", evidence: null };
 	}
 	if (!isRecord(submitted))
-		return admitLegacyRetry(state, facts, row, proof)
+		return admitLegacyRetry(state, facts, row)
 			? { status: "current", evidence: { kind: "legacy-pending" } }
 			: { status: "history", evidence: null };
 	if (submitted.materialProof === undefined && submitted.contentSignature !== undefined) {
@@ -522,14 +455,7 @@ function resolveSubmittedChoice(
 		);
 		if (isRecord(shared)) submitted = { ...submitted, materialProof: shared.materialProof };
 	}
-	if (
-		submitted.contentSignature === undefined &&
-		submitted.legacyBuildRevision === undefined &&
-		isRecord(state) &&
-		state.legacyBuildRevision !== undefined
-	)
-		submitted = { ...submitted, legacyBuildRevision: state.legacyBuildRevision };
-	const answer = admitChoiceAssessmentState(submitted, facts, proof);
+	const answer = admitChoiceAssessmentState(submitted, facts);
 	return answer?.checked &&
 		(!row ||
 			(sameSubmittedSignature(row.contentSignature, answer.contentSignature) &&
@@ -650,7 +576,6 @@ function resolveMember(
 		view.readState(id),
 		{ question: view.questions[id], signature: view.signatures[id] },
 		reference ? undefined : latestChoiceRow(id, view),
-		view.buildProof?.(id),
 		reference,
 	);
 }

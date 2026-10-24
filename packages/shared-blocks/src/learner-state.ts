@@ -66,7 +66,6 @@ export interface SavedAssessmentState {
 	contentSignature?: string;
 	materialProof?: ChoiceMaterialProof | { optionIds: string[] };
 	writtenAt?: number;
-	legacyBuildRevision?: string | null;
 	history?: LearnerStateValue[];
 }
 
