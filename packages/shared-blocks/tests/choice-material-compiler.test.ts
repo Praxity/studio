@@ -1,4 +1,4 @@
-import { inlineMaterial } from "@praxity/content-model/inline-tree";
+import { type InlineTree, inlineMaterial } from "@praxity/content-model/inline-tree";
 import { expect, it } from "vitest";
 import { choiceContentSignature, choiceStateQuestion } from "../src/assessment-choice";
 import { assessmentMaterialContent, assessmentMaterialOption } from "../src/assessment-content";
@@ -7,13 +7,11 @@ import { preparedIconQuestion } from "./fixtures/choice-material-icons";
 
 for (const producer of producers) {
 	for (const field of ["stem", "description", "option"] as const) {
-		it(`${producer.name} ${field} excludes compiler footnotes and glossary`, () => {
+		it(`${producer.name} ${field} excludes compiler footnotes`, () => {
 			for (const source of [
 				`Pick ${producer.note}`,
 				`${producer.note} Pick`,
 				`Pick ${producer.note} ${producer.note}`,
-				"Pick [term]{Definition}",
-				"Pick [edited]{Other}",
 			]) {
 				const data = fieldQuestion(source, field, producer);
 				const content =
@@ -24,7 +22,11 @@ for (const producer of producers) {
 						: assessmentMaterialContent(data);
 				expect(content.text).toBe(field === "description" ? "Pick Pick" : "Pick");
 				expect(choiceContentSignature(data, false)).toBe(
-					choiceContentSignature(fieldQuestion("Pick", field, producer), false),
+					field === "description"
+						? "s96:U056WhNj1y_B63Za"
+						: field === "option"
+							? "s96:8oqfLJgfuNUov_QX"
+							: "s96:3bsC6Tn5WgY9dA00",
 				);
 			}
 		});
@@ -84,7 +86,7 @@ for (const producer of producers) {
 		}
 	});
 }
-it("compiled glossary and footnotes drop by kind before page numbering", () => {
+it("compiled term labels count while definitions and footnotes drop by kind", () => {
 	expect(assessmentMaterialContent(compiled("Pick @source{Old}")).text).toBe("Pick");
 	expect(choiceContentSignature(compiled("Pick @source{Old}"), false)).toBe(
 		choiceContentSignature(
@@ -92,9 +94,83 @@ it("compiled glossary and footnotes drop by kind before page numbering", () => {
 			false,
 		),
 	);
-	expect(choiceContentSignature(compiled("Pick [term]{Old}"), false)).toBe(
-		choiceContentSignature(compiled("Pick [edited]{New}"), false),
-	);
+	for (const stem of ["Pick [term]{Old}", "Pick [term]{New}", "Pick term"])
+		expect(choiceContentSignature(compiled(stem), false)).toBe("s96:Jz6OeinvzYvnaDe7");
+});
+
+for (const producer of producers)
+	for (const [field, whole, changedWhole, partial, changedPartial] of [
+		[
+			"stem",
+			"s96:3Leq5l4bhE9WDFtC",
+			"s96:RUZ_vfmd2GSl99u3",
+			"s96:oPQho5JgWicvgq7V",
+			"s96:LU-O3oLffr0RTv-6",
+		],
+		[
+			"description",
+			"s96:-oQjVcx6TVqyu5A-",
+			"s96:PNBAezPDjjTUFGD9",
+			"s96:a3leoMBjY0vhIKHm",
+			"s96:t8n6-MeJvJVwj2z7",
+		],
+		[
+			"option",
+			"s96:R076OdZTDe1L3zKx",
+			"s96:-KpkLGYTWQuySfR8",
+			"s96:bE9kR8d0zEFZ1jWQ",
+			"s96:Q5zaAbil4q7i3MWp",
+		],
+	] as const)
+		it(`${producer.name} ${field} literal visible term, highlight and doodle vectors`, () => {
+			for (const [source, expected] of [
+				["gas", whole],
+				["liquid", changedWhole],
+				["the gas", partial],
+				["the liquid", changedPartial],
+				["[gas]{Old}", whole],
+				["[gas]{New}", whole],
+				["[liquid]{Old}", changedWhole],
+				["the [gas]{Old}", partial],
+				["the [gas]{New}", partial],
+				["the [liquid]{Old}", changedPartial],
+				["==gas==", whole],
+				["==liquid==", changedWhole],
+				["the ==gas==", partial],
+				["the ==liquid==", changedPartial],
+				["@circle{gas}", whole],
+				["@circle{liquid}", changedWhole],
+				["the @circle{gas}", partial],
+				["the @circle{liquid}", changedPartial],
+			] as const)
+				expect(choiceContentSignature(fieldQuestion(source, field, producer), false), source).toBe(
+					expected,
+				);
+		});
+
+it("separates paragraphs inside one compiler field before normalizing", () => {
+	for (const [description, expected] of [
+		["ab\n\nc", "s96:ZX1T6H2h3-bIcC47"],
+		["ab c", "s96:ZX1T6H2h3-bIcC47"],
+		["a\n\nbc", "s96:2rtrSo1n5xzdvFOL"],
+		["a bc", "s96:2rtrSo1n5xzdvFOL"],
+	] as const)
+		expect(choiceContentSignature(compiled("Pick", description), false)).toBe(expected);
+	for (const producer of producers) {
+		const data = fieldQuestion("ab", "description", producer);
+		const blocks = data.description as {
+			data: { content: string; _inlineTrees: { content: InlineTree[] } };
+		}[];
+		const tail = fieldQuestion("c", "description", producer).description as typeof blocks;
+		blocks[0].data.content += tail[0].data.content;
+		blocks[0].data._inlineTrees.content.push(...tail[0].data._inlineTrees.content);
+		expect(choiceContentSignature(data, false)).toBe("s96:ZX1T6H2h3-bIcC47");
+	}
+	for (const [description, expected] of [
+		["<p>ab</p><p>c</p>", "s96:ZX1T6H2h3-bIcC47"],
+		["<p>a</p><p>bc</p>", "s96:2rtrSo1n5xzdvFOL"],
+	] as const)
+		expect(choiceContentSignature({ ...question(), description }, false)).toBe(expected);
 });
 it("raw HTML label footnotes retain option (a), and attributes stay immaterial", () => {
 	const make = (note: string) => {

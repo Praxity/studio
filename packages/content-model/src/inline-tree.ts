@@ -77,7 +77,6 @@ export function inlineMaterial(tree: InlineTree): { text: string; icons: string[
 				switch (node.kind) {
 					case "source":
 					case "sources":
-					case "term":
 						return "";
 					case "icon":
 						icons.push(node.name.value);

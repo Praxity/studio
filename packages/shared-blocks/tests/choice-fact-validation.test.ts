@@ -22,7 +22,7 @@ it("admits the literal pair and preserves one short signature", () => {
 it.each([
 	["text type", { content: { ...original.content, text: 3 } }],
 	["image array", { content: { ...original.content, images: "a.png" } }],
-	["image entries", { content: { ...original.content, images: [""] } }],
+	["image entries", { content: { ...original.content, images: [17] } }],
 	["icon array", { content: { ...original.content, icons: "mail" } }],
 	["icon entries", { content: { ...original.content, icons: [null] } }],
 	["mode", { gradingMode: "unknown" }],
@@ -98,11 +98,19 @@ it("checks both selected cardinality and correct IDs through saved admission", (
 	).toBe("review");
 });
 
-it("retains an empty optional image value accepted by the content model", () => {
+it("retains empty image sources accepted by the content model", () => {
 	expect(
 		isChoiceStateQuestion({
 			...original,
-			options: [{ ...original.options[0], image: "" }, original.options[1]],
+			content: { ...original.content, images: [""] },
+			options: [
+				{
+					...original.options[0],
+					image: "",
+					content: { ...original.options[0].content, images: [""] },
+				},
+				original.options[1],
+			],
 		}),
 	).toBe(true);
 });

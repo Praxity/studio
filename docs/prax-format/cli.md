@@ -1027,8 +1027,10 @@ fallback, matching Studio's choice adapter.
 Inline node ranges, reference-spacing ownership and generated paragraph envelopes
 are compiler data. They do not change these inspection formats or add fields to
 learner block JSON. See [inline trees](reference/inline-formatting.md#inline-tree-for-tool-authors).
-The dormant choice material signature uses those nodes before field rendering;
-inspection output and saved-answer behaviour are unchanged.
+Exported choice signatures hash compiler facts and normalized visible text. Term
+labels and highlighted or doodled words count, including partial marks. Definitions,
+compiler footnotes, glossary entries, attributes and element boundaries do not.
+Inspection output and saved-answer behaviour are unchanged until activation.
 
 Choice content material counts each compiler icon by its name. Catalog paths,
 paint and resolved versus unresolved display do not count. All questions receive

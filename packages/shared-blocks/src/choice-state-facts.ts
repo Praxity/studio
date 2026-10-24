@@ -55,7 +55,7 @@ function isMaterialContent(value: unknown): value is ChoiceMaterialContent {
 		isRecord(value) &&
 		typeof value.text === "string" &&
 		Array.isArray(value.images) &&
-		Array.from(value.images).every(isNonemptyString) &&
+		Array.from(value.images).every((image) => typeof image === "string") &&
 		Array.isArray(value.icons) &&
 		Array.from(value.icons).every(isNonemptyString)
 	);

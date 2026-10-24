@@ -137,6 +137,7 @@ function fieldTrees(
 /** Raw HTML has no compiler exclusions. Its visible text and image sources still count. */
 function htmlMaterial(html: string): ChoiceMaterialContent {
 	const root = DOMPurify.sanitize(sanitizeHtml(html), { RETURN_DOM: true }) as Element;
+	for (const paragraph of root.querySelectorAll("p")) paragraph.append(" ");
 	return {
 		text: root.textContent ?? "",
 		images: Array.from(
@@ -151,7 +152,7 @@ function combineMaterial(parts: ChoiceMaterialContent[]): ChoiceMaterialContent 
 	return {
 		text: parts
 			.map((part) => part.text)
-			.join("")
+			.join(" ")
 			.replace(/\s+/gu, " ")
 			.trim(),
 		images: parts.flatMap((part) => part.images),
@@ -162,7 +163,7 @@ function combineMaterial(parts: ChoiceMaterialContent[]): ChoiceMaterialContent 
 function treeMaterial(trees: InlineTree[]): ChoiceMaterialContent {
 	const parts = trees.map(inlineMaterial);
 	return {
-		text: parts.map((part) => part.text).join(""),
+		text: parts.map((part) => part.text).join(" "),
 		images: [],
 		icons: parts.flatMap((part) => part.icons),
 	};
