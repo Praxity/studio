@@ -23,5 +23,9 @@ export function reportLearnerBlockResponse(
 		? owner.provider?.getPolicy?.(detail.blockId)
 		: readLearnerBlockPolicy(detail.blockId);
 	if (!current() || policy === "device") return;
-	dispatchSelfCheckEvent(new CustomEvent("praxity:assessment-response", { detail }), current, doc);
+	dispatchSelfCheckEvent(
+		new CustomEvent("praxity:assessment-response", { detail, cancelable: true }),
+		current,
+		doc,
+	);
 }

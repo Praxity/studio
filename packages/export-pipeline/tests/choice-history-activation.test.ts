@@ -19,6 +19,7 @@ import { PreviewAssessmentBlock } from "../../shared-blocks/src/blocks/Assessmen
 import { LocaleContext } from "../../shared-blocks/src/i18n/locale-context";
 import {
 	scorm12CompactSuspendDataCodec as compact,
+	parseScorm12SuspendData,
 	type Scorm12SuspendData,
 } from "../src/scorm/scorm12-suspend-data";
 import type { CourseTracker } from "../src/scorm/tracking";
@@ -276,6 +277,88 @@ it.each(formats)(
 	},
 );
 
+it("a course republished without choices restores the compact envelope through its ordinary host", () => {
+	const saved = submitted();
+	const blockState = Object.fromEntries(Array.from({ length: 40 }, (_, i) => [`q${i}`, saved]));
+	const payload = {
+		visitedPages: ["earlier"],
+		interactions: [],
+		custom: JSON.stringify({ blockState }),
+	};
+	const wire = compact.serialize(payload);
+	expect(wire[0]).toBe("[");
+	expect(parseScorm12SuspendData(`  ${wire}`)).toEqual(payload);
+	const host = launch("scorm12", data, new Map([["cmi.suspend_data", wire]]), false, [], {
+		choiceStateQuestions: {},
+		choiceStateSignatures: {},
+	});
+	expect(host.runtime.getVisitedPages()).toContain("earlier");
+	for (const id of Object.keys(blockState)) expect(host.provider.get(id)).toEqual(saved);
+	expect(host.provider.getSaveResult?.("q0")?.status).not.toBe("not-saved");
+	host.provider.set("reflection", "A new answer after republishing");
+	expect(host.provider.getSaveResult?.("reflection")).toEqual({
+		status: "saved",
+		destination: "lms",
+	});
+	const reload = launch("scorm12", data, host.values, false, [], {
+		choiceStateQuestions: {},
+		choiceStateSignatures: {},
+	});
+	expect(reload.provider.get("reflection")).toBe("A new answer after republishing");
+	for (const id of Object.keys(blockState)) expect(reload.provider.get(id)).toEqual(saved);
+});
+
+it.each(formats)(
+	"%s unchanged retries retain only the current draft and submission",
+	async (format) => {
+		vi.spyOn(Date, "now").mockReturnValue(1000);
+		const original = { ...data, attempts: 0 };
+		let host = launch(format, original);
+		await mount(original);
+		for (let attempt = 1; attempt <= 3; attempt++) {
+			await click(document.querySelectorAll<HTMLInputElement>('input[type="radio"]')[1]);
+			await click(button("Submit"));
+			expect(host.provider.get("q")).toMatchObject({
+				attemptCount: attempt,
+				checked: true,
+				answer: ["b"],
+			});
+			expect((host.provider.get("q") as Record<string, unknown>).history).toBeUndefined();
+			await click(button("Try again"));
+			const state = host.provider.get("q") as Record<string, unknown>;
+			expect(state.history).toBeUndefined();
+			// Main's draft literal, with only the activated signature/timestamp added.
+			expect(state).toEqual({
+				version: 1,
+				kind: "assessment",
+				assessmentType: "choice",
+				attemptCount: attempt,
+				checked: false,
+				correct: false,
+				completed: false,
+				interacted: false,
+				answer: [],
+				reviewedChoiceIds: ["b"],
+				contentSignature: "s96:ZffeCPHANxROeK7u",
+				writtenAt: 1000,
+			});
+			const { contentSignature: _signature, writtenAt: _time, ...ordinary } = state;
+			expect(JSON.stringify(ordinary).length).toBe(183);
+			await act(() => root?.unmount());
+			root = undefined;
+			host = launch(format, original, host.values);
+			await mount(original);
+			expect(host.provider.get("q")).toEqual(state);
+			expect(button("New attempt")).toBeUndefined();
+			expect(
+				[...document.querySelectorAll<HTMLInputElement>('input[type="radio"]')].every(
+					(node) => !node.disabled,
+				),
+			).toBe(true);
+		}
+	},
+);
+
 const edits: Array<[string, (copy: AssessmentBlockData) => void]> = [
 	[
 		"stem",
@@ -384,19 +467,21 @@ it.each(formats)(
 );
 
 it.each(
-	(["en", "fr"] as const).flatMap((locale) =>
-		["single", "multiple", "dontKnow"].map((variant) => ({ locale, variant })),
+	formats.flatMap((format) =>
+		(["en", "fr"] as const).flatMap((locale) =>
+			["single", "multiple", "dontKnow"].map((variant) => ({ format, locale, variant })),
+		),
 	),
 )(
-	"production $locale $variant recovery drafts reload and resubmission can lower a pass",
-	async ({ locale, variant }) => {
+	"production $format $locale $variant recovery drafts reload and resubmission can lower a pass",
+	async ({ format, locale, variant }) => {
 		const original = structuredClone(data);
 		original._dontKnow = variant === "dontKnow";
 		if (variant === "multiple") (original.response as ChoiceResponse).selectionMode = "multiple";
-		const first = launch("scorm12", original);
+		const first = launch(format, original);
 		const state = seed(first, original);
 		const changed = { ...original, points: 20 };
-		let next = launch("scorm12", changed, first.values);
+		let next = launch(format, changed, first.values);
 		await mount(changed, locale);
 		const bytes = first.values.get("cmi.suspend_data");
 		// Native disabled controls and absent Submit cover the pending-review triggers.
@@ -415,7 +500,7 @@ it.each(
 		expect(next.runtime.getInteractions()[0].score).toBe(100);
 		await act(() => root?.unmount());
 		root = undefined;
-		next = launch("scorm12", changed, first.values);
+		next = launch(format, changed, first.values);
 		await mount(changed, locale);
 		expect(next.provider.get("q")).toEqual(draft);
 		expect(
@@ -434,7 +519,8 @@ it.each(
 			score: 0,
 			contentSignature: facts(changed).signature,
 		});
-		expect(next.runtime.getScore()?.raw).toBe(0);
+		expect(next.runtime.getInteractions().at(-1)?.correct).toBe(false);
+		if (format !== "standalone") expect(next.runtime.getScore()?.raw).toBe(0);
 	},
 );
 
@@ -657,10 +743,10 @@ it.each([false, true].flatMap((history) => [false, true].map((frozen) => ({ hist
 it("actual host codec saves originals one by one through the same boundary", () =>
 	exerciseCapacity({ history: false, frozen: true, full: true }));
 
-it.each(["all", "oneOf"] as const)(
-	"production %s group capture keeps history until deliberate resubmission and rejects forgery",
-	(mode) => {
-		let host = launch("scorm12", data, new Map(), false, ["g"], {
+it.each(formats.flatMap((format) => (["all", "oneOf"] as const).map((mode) => ({ format, mode }))))(
+	"production $format $mode group capture keeps history until deliberate resubmission and rejects forgery",
+	({ format, mode }) => {
+		let host = launch(format, data, new Map(), false, ["g"], {
 			blockStatePolicy: { r: "device" },
 			choiceStateGroups: { g: { mode, memberIds: ["q", "r"], requiredIds: ["q", "r"] } },
 		});
@@ -691,15 +777,14 @@ it.each(["all", "oneOf"] as const)(
 				readState: (id) => (id === "g" ? state : view.readState(id)),
 			});
 			assert(candidate);
-			expect(
-				host.provider.stageSubmission?.("g", () => {
-					host.provider.set("g", {
-						...state,
-						submitted: candidate,
-					} as unknown as LearnerStateValue);
-					return true;
-				}),
-			).toBe(true);
+			const write = () => {
+				host.provider.set("g", {
+					...state,
+					submitted: candidate,
+				} as unknown as LearnerStateValue);
+				return true;
+			};
+			expect(host.provider.stageSubmission?.("g", write) ?? write()).toBe(true);
 			if (refused) host.refuseSaves();
 			const accepted = document.dispatchEvent(
 				new CustomEvent("praxity:assessment-group-complete", {
@@ -731,7 +816,7 @@ it.each(["all", "oneOf"] as const)(
 		expect(host.runtime.getInteractions()).toEqual(rows);
 		// Reopen with changed material, then repair only the member.
 		const changed = { ...data, points: 20 };
-		host = launch("scorm12", changed, host.values, false, ["g"], {
+		host = launch(format, changed, host.values, false, ["g"], {
 			blockStatePolicy: { r: "device" },
 			choiceStateGroups: { g: { mode, memberIds: ["q", "r"], requiredIds: ["q", "r"] } },
 		});
@@ -752,6 +837,7 @@ it.each(["all", "oneOf"] as const)(
 			capture("q");
 			expect(host.provider.getChoiceDependencyView?.()?.status("g")).toBe("current");
 		}
+		if (format !== "scorm12") return;
 		const bytes = host.values.get("cmi.suspend_data");
 		const previous = host.provider.get("g");
 		const previousRows = host.runtime.getInteractions();

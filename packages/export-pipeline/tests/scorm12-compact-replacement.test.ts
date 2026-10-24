@@ -183,7 +183,7 @@ it("checks the privacy-filtered payload and preserves opaque custom text", () =>
 	}
 });
 
-it("keeps the ordinary writer selected before activation", () => {
+it("keeps ordinary output while accepting compact saves from a prior publish", () => {
 	const { values, writes, dom } = lms();
 	try {
 		const runtime = new Scorm12Runtime();
@@ -199,9 +199,12 @@ it("keeps the ordinary writer selected before activation", () => {
 		const loaded = new Scorm12Runtime();
 		loaded.initialize();
 		writes.length = 0;
-		expect(loaded.getSuspendData()).toBeNull();
-		expect(loaded.setSuspendData("replacement")).toBe(false);
+		expect(loaded.getSuspendData()).toBe("held".repeat(1024));
 		expect(writes).toEqual([]);
+		expect(loaded.setSuspendData("replacement")).toBe(true);
+		expect(writes).toEqual([
+			["cmi.suspend_data", '{"visitedPages":[],"interactions":[],"custom":"replacement"}'],
+		]);
 	} finally {
 		dom.window.close();
 	}

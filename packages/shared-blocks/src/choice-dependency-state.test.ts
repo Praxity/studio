@@ -203,7 +203,7 @@ function groupView(
 	return { ...view(states, rows, facts), groups: { g: group } };
 }
 
-describe("dormant choice admission", () => {
+describe("choice admission", () => {
 	const memberCases = [
 		{ name: "no submission anywhere", state: undefined, facts: factsA, status: "unanswered" },
 		{
@@ -509,7 +509,7 @@ describe("dormant choice admission", () => {
 		expect(choiceDependencyStatus("a", view({ a: editedDraft }, [retryRow]))).toBe("history");
 		expect(choiceDependencyStatus("a", view({ a: legacyRetry }, []))).toBe("history");
 		expect(choiceDependencyStatus("a", view({ a: editedDraft }, []))).toBe("history");
-		expect(restoreChoiceAssessmentState(editedDraft, factsA).current).toBeNull();
+		expect(restoreChoiceAssessmentState(editedDraft, factsA).current).toEqual(editedDraft);
 		expect(JSON.stringify(legacyRetry)).toBe(bytes);
 		expect(choiceDependencyStatus("a", view({ a: { ...legacyRetry, attemptCount: 0 } }, []))).toBe(
 			"unanswered",
@@ -553,7 +553,7 @@ describe("dormant choice admission", () => {
 		expect(choiceDependencyStatus("a", view({ a: fresh }, [], { a: factsB }))).toBe("history");
 	});
 
-	it("archives a signed submission on direct resubmission without an intervening draft", () => {
+	it("archives a changed-material submission on direct resubmission", () => {
 		const first: SavedAssessmentState = {
 			version: 1,
 			kind: "assessment",
@@ -571,7 +571,7 @@ describe("dormant choice admission", () => {
 		const second = prepareChoiceAssessmentState(
 			first,
 			{ ...legacySubmitted, attemptCount: 2 },
-			factsA,
+			factsB,
 			{ writtenAt: 11 },
 		);
 		expect(second.history).toEqual([first]);
@@ -742,12 +742,12 @@ describe("dormant choice admission", () => {
 		expect(JSON.stringify(old)).toBe(bytes);
 	});
 
-	it("keeps both selections and verdicts through a same-content retry", () => {
+	it("keeps both selections and verdicts through successive material changes", () => {
 		const first = answer(false);
-		const retry = prepareChoiceAssessmentState(first, { ...draft(), attemptCount: 1 }, factsA, {
+		const retry = prepareChoiceAssessmentState(first, { ...draft(), attemptCount: 1 }, factsB, {
 			writtenAt: 10,
 		});
-		const second = prepareChoiceAssessmentState(retry, { ...answer(), attemptCount: 2 }, factsA, {
+		const second = prepareChoiceAssessmentState(retry, { ...answer(), attemptCount: 2 }, factsB, {
 			writtenAt: 11,
 		});
 		const third = prepareChoiceAssessmentState(second, { ...draft(), attemptCount: 2 }, factsA, {
@@ -757,6 +757,7 @@ describe("dormant choice admission", () => {
 			first,
 			{
 				...answer(),
+				contentSignature: signatureB,
 				attemptCount: 2,
 				writtenAt: 11,
 			},
@@ -773,11 +774,11 @@ describe("dormant choice admission", () => {
 				completed: true,
 				interacted: true,
 				answer: ["a"],
-				contentSignature: signatureA,
+				contentSignature: signatureB,
 				writtenAt: 11,
 			},
 		]);
-		const dependency = view({ a: third }, [row()]);
+		const dependency = view({ a: third }, [row("a", signatureB)], { a: factsB });
 		expect(choiceDependencyStatus("a", dependency)).toBe("current");
 		const added = {
 			question: {
@@ -823,7 +824,7 @@ describe("dormant choice admission", () => {
 	});
 });
 
-describe("dormant group material references", () => {
+describe("group material references", () => {
 	it("refuses a signed oneOf row witnessing another submitted member", () => {
 		const submitted = groupSubmission("oneOf", "signed");
 		for (const g of [
@@ -1232,8 +1233,14 @@ describe("dormant group material references", () => {
 		).toBe("history");
 	});
 
-	it("resolves old incorrect references in their own context and archives direct submissions", () => {
-		const original = { ...signedSubmitted, correct: false, completed: false, answer: ["b"] };
+	it("resolves references to archived material after direct submissions", () => {
+		const original = {
+			...signedSubmitted,
+			contentSignature: signatureB,
+			correct: false,
+			completed: false,
+			answer: ["b"],
+		};
 		const second = prepareChoiceAssessmentState(
 			original,
 			{ ...legacySubmitted, attemptCount: 2 },
@@ -1244,7 +1251,7 @@ describe("dormant group material references", () => {
 		const third = prepareChoiceAssessmentState(
 			second,
 			{ ...legacyRetry, attemptCount: 2 },
-			factsA,
+			factsB,
 			{ writtenAt: 52 },
 		);
 		const shared = JSON.parse(JSON.stringify(third));

@@ -1935,7 +1935,8 @@ export function PreviewAssessmentBlock({
 		const restored = restoreChoiceAssessmentState(readLearnerBlockState(blockId), choiceFacts);
 		const recovering =
 			restored.current?.checked === false &&
-			restored.history.some((entry) => isRecord(entry) && entry.checked === true);
+			(restored.current.attemptCount > 0 ||
+				restored.history.some((entry) => isRecord(entry) && entry.checked === true));
 		return view && view.status(blockId) === "history" && !recovering
 			? { ...restored, status: "review" as const, current: null }
 			: restored;

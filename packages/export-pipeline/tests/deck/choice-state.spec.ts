@@ -192,8 +192,8 @@ for (const { locale, variant, presentation, theme, key } of cases) {
 		});
 		const notice =
 			locale === "en"
-				? "This question changed after you answered it. Your earlier result stays until you submit a new answer. Select New attempt to answer it again."
-				: "Cette question a été modifiée après votre réponse. Votre résultat précédent est conservé jusqu'à l'envoi d'une nouvelle réponse. Sélectionnez Nouvelle tentative pour y répondre de nouveau.";
+				? "This question changed after you answered it. Your previous answer stays until you submit a new answer. Select New attempt to answer it again."
+				: "Cette question a été modifiée après votre réponse. Votre réponse précédente est conservée jusqu'à ce que vous soumettiez une nouvelle réponse. Sélectionnez Nouvelle tentative pour y répondre de nouveau.";
 		const saved = () => page.evaluate((id) => window.__praxityBlockState?.get(id), questionId);
 		const outcome = () =>
 			page.evaluate(() => (window.__praxityTracker as unknown as { outcome(): unknown }).outcome());

@@ -51,15 +51,6 @@ function admitChoiceAssessmentState(
 	// Only a never-submitted draft can omit material evidence.
 	if ((signed || hasSubmittedChoice(value)) && value.contentSignature !== facts.signature)
 		return null;
-	if (
-		!value.checked &&
-		value.attemptCount > 0 &&
-		!(
-			Array.isArray(value.history) &&
-			value.history.some((entry) => isRecord(entry) && entry.checked === true)
-		)
-	)
-		return null;
 	if (value.checked && (!value.answer.length || value.attemptCount === 0)) return null;
 	const correct =
 		value.checked &&
@@ -110,12 +101,6 @@ export function prepareChoiceAssessmentState(
 	if (!isChoiceAssessmentFacts(facts)) throw new TypeError("Invalid compiled choice facts");
 	const restored = restoreChoiceAssessmentState(previous, facts);
 	const history = [...restored.history];
-	const prior = restored.current;
-	if (prior?.checked && (!next.checked || next.attemptCount !== prior.attemptCount)) {
-		// Preserve the submitted answer and verdict before editing the next attempt.
-		const { history: _history, ...attempt } = previous as SavedAssessmentState;
-		history.push(attempt as unknown as LearnerStateValue);
-	}
 	return {
 		...next,
 		contentSignature: facts.signature,

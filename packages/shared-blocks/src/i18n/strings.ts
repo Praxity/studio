@@ -1009,12 +1009,12 @@ export function getStrings(locale: string): LearnerStrings {
 const choiceRecoveryCatalogs = {
 	en: {
 		choiceHistoryNotice:
-			"This question changed after you answered it. Your earlier result stays until you submit a new answer. Select New attempt to answer it again.",
+			"This question changed after you answered it. Your previous answer stays until you submit a new answer. Select New attempt to answer it again.",
 		choiceNewAttempt: "New attempt",
 	},
 	fr: {
 		choiceHistoryNotice:
-			"Cette question a été modifiée après votre réponse. Votre résultat précédent est conservé jusqu'à l'envoi d'une nouvelle réponse. Sélectionnez Nouvelle tentative pour y répondre de nouveau.",
+			"Cette question a été modifiée après votre réponse. Votre réponse précédente est conservée jusqu'à ce que vous soumettiez une nouvelle réponse. Sélectionnez Nouvelle tentative pour y répondre de nouveau.",
 		choiceNewAttempt: "Nouvelle tentative",
 	},
 };

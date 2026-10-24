@@ -433,7 +433,12 @@ export function initializeCourseHost(
 				options,
 			);
 		} catch (error) {
-			if (runtime?.getBlockSaveResult?.(blockId)?.status === "not-saved") return;
+			const result = runtime?.getBlockSaveResult?.(blockId);
+			if (result?.status === "not-saved") {
+				if (detail.assessmentType === "choice" || result.code === "unreadable-state")
+					event.preventDefault();
+				return;
+			}
 			throw error;
 		}
 		if (owned() && hostWindow.__praxityRuntime === runtime) runtime?.commit();
@@ -484,13 +489,8 @@ export function initializeCourseHost(
 		}
 		if (owned() && hostWindow.__praxityRuntime === runtime) runtime?.commit();
 	};
-	// Reporting settles before deck listeners read its receipt or cancellation.
-	environment.doc.addEventListener("praxity:assessment-response", reportAssessmentResponse, true);
-	environment.doc.addEventListener(
-		"praxity:assessment-group-complete",
-		reportAssessmentGroup,
-		true,
-	);
+	environment.doc.addEventListener("praxity:assessment-response", reportAssessmentResponse);
+	environment.doc.addEventListener("praxity:assessment-group-complete", reportAssessmentGroup);
 
 	return true;
 }

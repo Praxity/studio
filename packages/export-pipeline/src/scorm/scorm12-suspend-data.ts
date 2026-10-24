@@ -384,7 +384,7 @@ export function parseScorm12CompactSuspendData(raw: string): Scorm12SuspendData 
 		if (raw.length > SCORM12_SUSPEND_DATA_LIMIT) return null;
 		const envelope: unknown = JSON.parse(raw);
 		if (!Array.isArray(envelope)) return null;
-		// Reuse ordinary payload validation; compact input stays held by that parser.
+		// Both envelopes use the same payload validation.
 		return suspendDataPayload(decodeEvidence(envelope));
 	} catch {
 		return null;
@@ -410,10 +410,7 @@ export function serializeScorm12CompactSuspendData(
 
 export const scorm12CompactSuspendDataCodec: Scorm12SuspendDataCodec = {
 	serialize: serializeScorm12CompactSuspendData,
-	parse: (raw) =>
-		raw.trimStart().startsWith("[")
-			? parseScorm12CompactSuspendData(raw)
-			: parseScorm12SuspendData(raw),
+	parse: parseScorm12SuspendData,
 };
 
 /** Verify the exact filtered payload before replacing readable LMS bytes. */
@@ -477,6 +474,7 @@ export function serializeScorm12SuspendData(
 }
 
 export function parseScorm12SuspendData(raw: string): Scorm12SuspendData | null {
+	if (raw.trimStart().startsWith("[")) return parseScorm12CompactSuspendData(raw);
 	try {
 		if (raw.length > LEARNER_STATE_MAX_BYTES) return null;
 		let data = JSON.parse(raw);
