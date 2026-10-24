@@ -414,7 +414,7 @@ describe("dormant choice admission", () => {
 		}
 	}
 
-	it("refuses a signed incorrect row as evidence for an erased legacy retry", () => {
+	it("refuses a signed incorrect row as evidence for an erased unsigned retry", () => {
 		expect(
 			choiceDependencyStatus(
 				"a",
@@ -516,7 +516,7 @@ describe("dormant choice admission", () => {
 		);
 	});
 
-	it("keeps changed or contradictory retry evidence historical instead of taking the legacy path", () => {
+	it("keeps changed or contradictory retry evidence historical", () => {
 		const retryRow = { id: "a", correct: false };
 		const stale = { ...legacyRetry, contentSignature: signatureA };
 		expect(choiceDependencyStatus("a", view({ a: stale }, [retryRow], { a: factsB }))).toBe(
@@ -643,6 +643,7 @@ describe("dormant choice admission", () => {
 			{ ...answer(), answer: ["removed"] },
 			{ ...answer(), answer: ["a", "a"] },
 			{ ...answer(), answer: ["a", "b"] },
+			{ ...answer(false), answer: ["a", "b"] },
 			{ ...answer(), correct: false },
 			{ ...answer(), completed: false },
 			{ ...answer(), attemptCount: 0 },

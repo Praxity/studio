@@ -88,7 +88,7 @@ export interface SCORMRuntime {
 export interface AssessmentAttemptMetadata {
 	/** Submitted material evidence, never inferred from an editable answer. */
 	contentSignature?: string;
-	/** Rejected evidence must remain distinguishable from unsigned legacy rows. */
+	/** Rejected evidence must remain distinguishable from unsigned rows. */
 	choiceEvidenceInvalid?: true;
 	/** Resolved UI attempt count, including attempts restored from learner state. */
 	attemptsUsed?: number;

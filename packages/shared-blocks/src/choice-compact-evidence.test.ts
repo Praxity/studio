@@ -319,7 +319,7 @@ it.each([
 	["string marker", { choiceEvidenceInvalid: "true" }],
 	["numeric marker", { choiceEvidenceInvalid: 1 }],
 	["null marker", { choiceEvidenceInvalid: null }],
-])("dormant metadata retains %s without unsigned fallback", (_name, input) => {
+])("dormant metadata marks %s invalid", (_name, input) => {
 	const normalize = reporting.assessmentEvidenceMetadata;
 	expect(normalize(input).choiceEvidenceInvalid).toBe(true);
 	expect(normalize(JSON.parse(JSON.stringify(normalize(input)))).choiceEvidenceInvalid).toBe(true);

@@ -48,6 +48,12 @@ afterEach(() => {
 });
 
 const variants = ["single", "multiple", "dontKnow"] as const;
+// Independent short claims for the revised fixture, so a return to full saved or event evidence fails.
+const revisedClaims = {
+	single: "s96:1pMxtSyHaiBGDeJz",
+	multiple: "s96:xypI8UFntkvVyoxu",
+	dontKnow: "s96:5Y7NQf45Ggs3VL9n",
+} as const;
 it.each(
 	(["en", "fr"] as const).flatMap((locale) => variants.map((variant) => ({ locale, variant }))),
 )(
@@ -225,13 +231,13 @@ it.each(
 			expect(response.mock.results[0].value.detail).toMatchObject({
 				blockId: "question",
 				submitted: true,
-				contentSignature: choiceEvidenceSignature(facts(revisedData).signature),
+				contentSignature: revisedClaims[variant],
 			});
 			expect(runtime.getBlockState("question")).toMatchObject({
 				checked: true,
 				answer: selection,
 				correct: variant !== "dontKnow",
-				contentSignature: choiceEvidenceSignature(facts(revisedData).signature),
+				contentSignature: revisedClaims[variant],
 				history: [previous],
 			});
 		} finally {
