@@ -37,7 +37,7 @@ export function writeCourseOutcome(
 		(outcome.forceCompletion || runtime.getCompletion?.() !== outcome.completion)
 	)
 		runtime.setCompletion?.(outcome.completion);
-	// SCORM prepares completion inside its shared termination guard, after pending writes.
+	// SCORM prepares completion before its final commit, after pending writes.
 	if (outcome.finish === "terminate") return runtime.terminate?.(true) ?? false;
 	if (outcome.finish === "complete") runtime.commit?.();
 	return true;

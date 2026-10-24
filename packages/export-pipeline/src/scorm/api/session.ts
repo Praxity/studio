@@ -1,7 +1,7 @@
 import { findWindowProperty, type WindowLike } from "../api-discovery";
 import type { RuntimeCommitPreparation } from "../types";
 
-/** Shared by every runtime in one LMS launch, including cached older documents. */
+/** Shared by every runtime in one LMS launch, including cached documents. */
 export interface ScormSessionState extends RuntimeCommitPreparation {
 	initialized: boolean;
 	closed: boolean;
@@ -11,37 +11,23 @@ export interface ScormSessionState extends RuntimeCommitPreparation {
 	/** CourseTracker's failure status that explicit Finish must preserve. */
 	courseFailure?: boolean;
 	pendingCompletion?: "incomplete" | "completed" | "passed" | "failed";
-	terminationInProgress?: boolean;
 	attemptId?: string;
 }
 
 interface SessionApi {
-	__praxityScormInitialized?: boolean;
+	__praxityScormSession?: ScormSessionState;
 }
 
 const SESSION_STORE = "__praxityScormSessions";
-type SessionStore = WeakMap<object, ScormSessionState | boolean>;
+type SessionStore = WeakMap<object, ScormSessionState>;
 
-/** Only the final commit's owner may communicate while termination is in progress. */
-export function sessionAllowsCalls(state: ScormSessionState | null, terminating = false): boolean {
-	return !!state && !state.closed && (terminating || !state.terminationInProgress);
+/** Termination closes communication for every adapter in the launch. */
+export function sessionAllowsCalls(state: ScormSessionState | null): boolean {
+	return !!state && !state.closed;
 }
 
-// An API proxy can reject custom properties. Share records on its accessible
-// LMS window instead, including across separately bundled content documents.
 function sessionStore(win: WindowLike | undefined): SessionStore | null {
 	return win ? (findWindowProperty(win, SESSION_STORE) as SessionStore | null) : null;
-}
-
-function carrierStore(owner: object, method?: string): SessionStore | undefined {
-	try {
-		const target = method ? (owner as Record<string, unknown>)[method] : owner;
-		return (target as Record<string, unknown> | undefined)?.[SESSION_STORE] as
-			| SessionStore
-			| undefined;
-	} catch {
-		// A restricted API getter must not hide its window or callable carrier.
-	}
 }
 
 function createWindowStore(win: WindowLike | undefined): SessionStore | null {
@@ -65,37 +51,15 @@ export function getSessionState(
 	win: WindowLike | undefined = globalThis.window,
 ): ScormSessionState | null {
 	if (!api) return null;
-	for (const read of [
-		() => sessionStore(win)?.get(api),
-		() => carrierStore(api)?.get(api),
-		() => carrierStore(api, "Initialize")?.get(api),
-		() => carrierStore(api, "LMSInitialize")?.get(api),
-	]) {
-		try {
-			const state = read();
-			if (state && typeof state === "object") return state;
-		} catch {
-			// Each carrier is independent. A restricted getter must not hide a usable fallback.
-		}
-	}
-	return null;
+	return (api as SessionApi).__praxityScormSession ?? sessionStore(win)?.get(api) ?? null;
 }
 
 export function readSessionState(
 	api: object | null,
 	win: WindowLike | undefined = globalThis.window,
 ): boolean {
-	if (!api) return false;
 	const state = getSessionState(api, win);
-	if (state) return state.initialized && !state.closed && !state.terminationInProgress;
-	try {
-		const stored = sessionStore(win)?.get(api);
-		return typeof stored === "boolean"
-			? stored
-			: (api as SessionApi).__praxityScormInitialized === true;
-	} catch {
-		return false;
-	}
+	return !!state?.initialized && sessionAllowsCalls(state);
 }
 
 export function writeSessionState(
@@ -129,29 +93,15 @@ export function resetScormSessions(win: WindowLike): void {
 
 export function resetSessionState(api: object | null, win: WindowLike): void {
 	if (!api) return;
-	// Retained adapters keep the old closed object and cannot enter the next launch.
-	// Initialize publishes the next record. Index only resets existing carriers.
-	for (const store of [
-		findWindowProperty(win, SESSION_STORE) as SessionStore | null,
-		carrierStore(api),
-		carrierStore(api, "Initialize"),
-		carrierStore(api, "LMSInitialize"),
-	]) {
-		try {
-			const state = store?.get(api);
-			if (state && typeof state === "object" && !state.closed) {
-				state.initialized = false;
-				state.attemptId = undefined;
-				state.prepareCommit = undefined;
-			} else store?.delete(api);
-		} catch {
-			// Restricted carriers are independent; reset every accessible one.
-		}
-	}
-	try {
-		(api as SessionApi).__praxityScormInitialized = false;
-	} catch {
-		// The shared record covers APIs that reject the legacy marker.
+	const state = getSessionState(api, win);
+	// Retained adapters keep a closed record when index starts another launch.
+	if (state && !state.closed) {
+		state.initialized = false;
+		state.attemptId = undefined;
+		state.prepareCommit = undefined;
+	} else if (state) {
+		delete (api as SessionApi).__praxityScormSession;
+		sessionStore(win)?.delete(api);
 	}
 }
 
@@ -160,33 +110,10 @@ function storeSessionState(
 	state: ScormSessionState,
 	win: WindowLike | undefined,
 ): void {
-	// Frozen API facades still expose shared callables across document bundles.
-	// Key by API identity because LMS implementations can reuse prototype methods.
-	for (const name of ["Initialize", "LMSInitialize"] as const) {
-		try {
-			const method = (api as Record<string, unknown>)[name] as Record<string, unknown> | undefined;
-			if (!method) continue;
-			const store = (method[SESSION_STORE] ??= new WeakMap()) as SessionStore;
-			store.set(api, state);
-			if (store.get(api) === state) break;
-		} catch {
-			// The other callable may retain the record when this store cannot write or read it.
-		}
-	}
 	try {
+		(api as SessionApi).__praxityScormSession = state;
+	} catch {
+		// Non-extensible API objects share the record on the LMS window instead.
 		(sessionStore(win) ?? createWindowStore(win))?.set(api, state);
-	} catch {
-		// The API property can still share the record if the window store fails.
-	}
-	try {
-		const owner = api as Record<string, unknown>;
-		((owner[SESSION_STORE] ??= new WeakMap()) as SessionStore).set(api, state);
-	} catch {
-		// A locked API uses its shared window or callable store.
-	}
-	try {
-		(api as SessionApi).__praxityScormInitialized = state.initialized && !state.closed;
-	} catch {
-		// Older document bundles can still use this marker when the API accepts it.
 	}
 }

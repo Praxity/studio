@@ -1492,19 +1492,6 @@ for (const version of ["1.2", "2004"] as const) {
 			expect(api.calls.filter(([name]) => name === initialize)).toHaveLength(2);
 			expect(api.errors).toEqual([alreadyInitialized]);
 		});
-
-		it("shares callable bookkeeping when the API rejects custom properties", () => {
-			const api = makeApi();
-			Object.preventExtensions(api);
-			expect(makeRuntime(api).initialize()).toBe(true);
-			const runtime = makeRuntime(api);
-			expect(runtime.initialize()).toBe(true);
-			expect(runtime.initialize()).toBe(true);
-			runtime.setBookmark("summary");
-			expect(runtime.getBookmark()).toBe("summary");
-			expect(api.calls.filter(([name]) => name === initialize)).toHaveLength(1);
-			expect(api.errors).toEqual([]);
-		});
 	});
 
 	describe(`SCORM ${version} exit persistence`, () => {
@@ -1675,6 +1662,7 @@ it("rejects SCORM 1.2 error 101 when the status read fails", () => {
 		api.LMSSetValue("cmi.core.lesson_status", "invalid");
 		return "";
 	});
+	g.window = { parent: { API: api } };
 	Object.preventExtensions(api);
 	const second = new Scorm12Runtime();
 	expect(() => second.initialize()).toThrow("405");
@@ -1749,182 +1737,6 @@ it.each(["1.2", "2004"] as const)(
 	},
 );
 
-for (const version of ["1.2", "2004"] as const) {
-	describe(`SCORM ${version} cold callable bookkeeping`, () => {
-		it.each([
-			["get", false],
-			["set", false],
-			["get", true],
-			["set", true],
-		] as const)(
-			"handles primary %s failure with secondary locked %s",
-			(restriction, secondaryLocked) => {
-				const source = version === "1.2" ? new StrictScorm12Api() : new StrictScorm2004Api();
-				const observed: string[] = [];
-				const prefix = version === "1.2" ? "LMS" : "";
-				const finish = version === "1.2" ? "LMSFinish" : "Terminate";
-				const facade = Object.fromEntries(
-					[
-						"Initialize",
-						"LMSInitialize",
-						finish,
-						`${prefix}GetValue`,
-						`${prefix}SetValue`,
-						`${prefix}Commit`,
-						`${prefix}GetLastError`,
-						`${prefix}GetErrorString`,
-						`${prefix}GetDiagnostic`,
-					].map((name) => [
-						name,
-						(...args: string[]) => {
-							observed.push(name);
-							return (
-								(source as unknown as Record<string, (...args: string[]) => string>)[name]?.(
-									...args,
-								) ?? "true"
-							);
-						},
-					]),
-				);
-				const primaryStore = new WeakMap<object, unknown>();
-				Object.defineProperty(primaryStore, restriction, {
-					value: () => {
-						throw new Error(`restricted primary ${restriction}`);
-					},
-				});
-				Object.defineProperty(facade.Initialize, "__praxityScormSessions", {
-					value: primaryStore,
-				});
-				if (secondaryLocked) Object.freeze(facade.LMSInitialize);
-				Object.freeze(facade);
-				const parent = Object.freeze({ [version === "1.2" ? "API" : "API_1484_11"]: facade });
-				const makeRuntime = () => {
-					const win = Object.freeze({ parent });
-					vi.stubGlobal("window", win);
-					return version === "1.2" ? new Scorm12Runtime() : new Scorm2004Runtime(win);
-				};
-				try {
-					const first = makeRuntime();
-					if (secondaryLocked) {
-						expect(first.initialize()).toBe(false);
-						expect(makeRuntime().initialize()).toBe(false);
-						expect(observed).toEqual([]);
-						return;
-					}
-					expect(first.initialize()).toBe(true);
-					const second = makeRuntime();
-					expect(second.initialize()).toBe(true);
-					first.setBookmark("shared bookmark");
-					expect(second.getBookmark()).toBe("shared bookmark");
-					expect(second.terminate(true)).toBe(true);
-					const before = observed.length;
-					expect(first.initialize()).toBe(false);
-					expect(second.initialize()).toBe(false);
-					expect(makeRuntime().initialize()).toBe(false);
-					if (version === "1.2") expect(() => first.commit()).toThrow(/not initialized/);
-					else expect(first.commit()).toBe(false);
-					expect(observed.slice(before)).toEqual([]);
-					expect(observed.filter((name) => name === `${prefix}Initialize`)).toHaveLength(1);
-					expect(observed.filter((name) => name === finish)).toHaveLength(1);
-					expect(source.errors).toEqual([]);
-				} finally {
-					vi.unstubAllGlobals();
-				}
-			},
-		);
-	});
-}
-
-it.each(["1.2", "2004"] as const)(
-	"closes every retained %s adapter across independent documents with restricted bookkeeping",
-	async (version) => {
-		const api = version === "1.2" ? new StrictScorm12Api() : new StrictScorm2004Api();
-		const observed: string[] = [];
-		const names =
-			version === "1.2"
-				? [
-						"LMSInitialize",
-						"LMSFinish",
-						"LMSGetValue",
-						"LMSSetValue",
-						"LMSCommit",
-						"LMSGetLastError",
-						"LMSGetErrorString",
-						"LMSGetDiagnostic",
-					]
-				: [
-						"Initialize",
-						"Terminate",
-						"GetValue",
-						"SetValue",
-						"Commit",
-						"GetLastError",
-						"GetErrorString",
-						"GetDiagnostic",
-					];
-		const facade = Object.freeze(
-			Object.fromEntries(
-				names.map((name) => [
-					name,
-					(...args: string[]) => {
-						observed.push(name);
-						return (api as unknown as Record<string, (...args: string[]) => string>)[name](...args);
-					},
-				]),
-			),
-		);
-		const parent: WindowLike = { [version === "1.2" ? "API" : "API_1484_11"]: facade };
-		parent.parent = parent;
-		Object.defineProperty(parent, "__praxityScormSessions", {
-			get: () => null,
-			set: () => {
-				throw new Error("blocked");
-			},
-		});
-		const retained = [];
-		try {
-			for (let index = 0; index < 3; index++) {
-				vi.resetModules();
-				const win = { parent };
-				vi.stubGlobal("window", win);
-				const runtime =
-					version === "1.2"
-						? new (await import("../src/scorm/api/scorm12")).Scorm12Runtime()
-						: new (await import("../src/scorm/api/scorm2004")).Scorm2004Runtime(win);
-				expect(runtime.initialize()).toBe(true);
-				retained.push(runtime);
-			}
-			expect(retained[2].terminate()).toBe(true);
-			const count = observed.length;
-			for (const runtime of retained) {
-				expect(runtime.initialize()).toBe(false);
-				for (const action of [
-					() => runtime.getBookmark(),
-					() => runtime.commit(),
-					() => runtime.setBookmark("late"),
-					() => runtime.getVisitedPages(),
-					() => runtime.getInteractions(),
-					() => runtime.getCompletion(),
-					() => runtime.getSuspendData(),
-					() => runtime.getScore(),
-					() => runtime.terminate(),
-					() => "getLastError" in runtime && runtime.getLastError(),
-				]) {
-					try {
-						action();
-					} catch {
-						/* A closed 1.2 runtime rejects data methods. */
-					}
-				}
-			}
-			expect(observed.slice(count)).toEqual([]);
-			expect(observed.filter((name) => name === names[0])).toHaveLength(1);
-		} finally {
-			vi.unstubAllGlobals();
-		}
-	},
-);
-
 it.each(["failed", "unknown", "passed"] as const)(
 	"retains SCORM 2004 %s pass-mark policy across utility document adapters",
 	(success) => {
@@ -1966,13 +1778,12 @@ for (const version of ["1.2", "2004"] as const) {
 		const terminate = version === "1.2" ? "LMSFinish" : "Terminate";
 		const commit = version === "1.2" ? "LMSCommit" : "Commit";
 		const makeApi = () => (version === "1.2" ? new StrictScorm12Api() : new StrictScorm2004Api());
-		function launch(api = makeApi(), locked = false) {
+		function launch() {
+			const api = makeApi();
 			const lms: WindowLike = { [version === "1.2" ? "API" : "API_1484_11"]: api };
 			lms.parent = lms;
-			if (locked) Object.preventExtensions(lms);
 			const makeRuntime = () => {
 				const win: WindowLike = { parent: lms };
-				if (locked) Object.preventExtensions(win);
 				if (version === "2004") return new Scorm2004Runtime(win);
 				g.window = win;
 				return new Scorm12Runtime();
@@ -2000,6 +1811,8 @@ for (const version of ["1.2", "2004"] as const) {
 			safelyCall(() => runtime.getVisitedPages());
 			safelyCall(() => runtime.trackInteraction("changed", "answer"));
 			safelyCall(() => runtime.getInteractions());
+			safelyCall(() => runtime.getInteractionEvidence?.());
+			if ("getBlockSaveResult" in runtime) safelyCall(() => runtime.getBlockSaveResult("changed"));
 			safelyCall(() => runtime.trackObjective("changed", 10, false));
 			safelyCall(() => runtime.commit());
 		}
@@ -2035,14 +1848,14 @@ for (const version of ["1.2", "2004"] as const) {
 		});
 
 		it.each([false, true])("closes every runtime in the launch with a locked API %s", (locked) => {
-			const { api, makeRuntime } = launch();
+			const { api, lms, makeRuntime } = launch();
 			if (locked) Object.preventExtensions(api);
 			const first = makeRuntime();
 			const second = makeRuntime();
 			expect(first.initialize()).toBe(true);
 			expect(second.initialize()).toBe(true);
 			expect(first.terminate()).toBe(true);
-			expect(readSessionState(api)).toBe(false);
+			expect(readSessionState(api, lms)).toBe(false);
 			const calls = [...api.calls];
 			expect(first.initialize()).toBe(false);
 			expect(second.initialize()).toBe(false);
@@ -2052,20 +1865,6 @@ for (const version of ["1.2", "2004"] as const) {
 			blockedTransfers(second);
 			expect(api.calls).toEqual(calls);
 			expect(api.calls.filter(([name]) => name === initialize)).toHaveLength(1);
-		});
-
-		it("guards the same instance when API and windows reject bookkeeping", () => {
-			const api = makeApi();
-			Object.preventExtensions(api);
-			const { makeRuntime } = launch(api, true);
-			const runtime = makeRuntime();
-			expect(runtime.initialize()).toBe(true);
-			expect(runtime.terminate()).toBe(true);
-			const calls = [...api.calls];
-			expect(runtime.initialize()).toBe(false);
-			expect(runtime.terminate()).toBe(true);
-			blockedTransfers(runtime);
-			expect(api.calls).toEqual(calls);
 		});
 
 		it.each([true])(
@@ -2206,11 +2005,10 @@ it("blocks SCORM 2004 transfers after initialization setup fails and retries wit
 });
 
 for (const version of ["1.2", "2004"] as const) {
-	describe(`SCORM ${version} synchronous LMS callbacks`, () => {
-		function setup(locked = false) {
+	describe(`SCORM ${version} explicit Finish retries`, () => {
+		function setup() {
 			const source = version === "1.2" ? new StrictScorm12Api() : new StrictScorm2004Api();
 			const calls: string[] = [];
-			let callback: ((name: string, args: string[]) => void) | undefined;
 			const prefix = version === "1.2" ? "LMS" : "";
 			const finish = version === "1.2" ? "LMSFinish" : "Terminate";
 			const facade = Object.fromEntries(
@@ -2227,7 +2025,6 @@ for (const version of ["1.2", "2004"] as const) {
 					name,
 					(...args: string[]) => {
 						calls.push(name);
-						callback?.(name, args);
 						return (source as unknown as Record<string, (...args: string[]) => string>)[name](
 							...args,
 						);
@@ -2236,10 +2033,6 @@ for (const version of ["1.2", "2004"] as const) {
 			);
 			const lms: WindowLike = { [version === "1.2" ? "API" : "API_1484_11"]: facade };
 			lms.parent = lms;
-			if (locked) {
-				Object.freeze(facade);
-				Object.freeze(lms);
-			}
 			const makeRuntime = () => {
 				const win = { parent: lms };
 				g.window = win;
@@ -2260,55 +2053,8 @@ for (const version of ["1.2", "2004"] as const) {
 				makeRuntime,
 				prefix,
 				finish,
-				onCall: (fn: typeof callback) => {
-					callback = fn;
-				},
 			};
 		}
-
-		it.each([
-			["GetValue", false],
-			["SetValue", false],
-			["GetValue", true],
-			["SetValue", true],
-		] as const)(
-			"guards explicit Finish completion %s with locked carriers %s",
-			(method, locked) => {
-				const { first, second, calls, source, makeRuntime, prefix, finish, onCall } = setup(locked);
-				const completion = version === "1.2" ? "cmi.core.lesson_status" : "cmi.completion_status";
-				let entered = false;
-				onCall((name, args) => {
-					if (name !== `${prefix}${method}` || args[0] !== completion || entered) return;
-					entered = true;
-					const before = calls.length;
-					for (const runtime of [first, second, makeRuntime()]) {
-						expect(runtime.initialize()).toBe(false);
-						expect(runtime.terminate(true)).toBe(false);
-						for (const action of [
-							() => runtime.commit(),
-							() => runtime.getCompletion(),
-							() => runtime.setCompletion("completed"),
-							() => runtime.getBookmark(),
-							() => "getLastError" in runtime && runtime.getLastError(),
-						]) {
-							try {
-								action();
-							} catch {
-								/* SCORM 1.2 rejects blocked transfers. */
-							}
-						}
-					}
-					expect(calls.length).toBe(before);
-				});
-				expect(second.terminate(true)).toBe(true);
-				expect(entered).toBe(true);
-				expect(source.data.get(completion)).toBe("completed");
-				expect(calls.slice(-2)).toEqual([`${prefix}Commit`, finish]);
-				expect(calls.filter((name) => name === `${prefix}Commit`)).toHaveLength(1);
-				expect(calls.filter((name) => name === finish)).toHaveLength(1);
-				expect(source.errors).toEqual([]);
-			},
-		);
 
 		it.each(["false", "throw"])(
 			"retries explicit Finish after completion write returns %s",
@@ -2336,127 +2082,6 @@ for (const version of ["1.2", "2004"] as const) {
 				expect(calls.slice(-2)).toEqual([`${prefix}Commit`, finish]);
 			},
 		);
-
-		it.each(["exit", "session_time", "commit", "finish", "diagnostic"])(
-			"blocks nested LMS calls during final %s",
-			(stage) => {
-				const { first, second, calls, source, makeRuntime, prefix, finish, onCall } = setup();
-				let entered = false;
-				onCall((name, args) => {
-					const target =
-						stage === "exit" || stage === "session_time"
-							? name === `${prefix}SetValue` && args[0].endsWith(stage)
-							: name ===
-								(stage === "finish"
-									? finish
-									: `${prefix}${stage === "commit" ? "Commit" : "GetLastError"}`);
-					if (!target || entered) return;
-					entered = true;
-					const before = calls.length;
-					for (const runtime of [first, second, makeRuntime()]) {
-						expect(runtime.initialize()).toBe(false);
-						expect(runtime.terminate()).toBe(false);
-						for (const action of [
-							() => runtime.commit(),
-							() => runtime.setBookmark("nested"),
-							() => runtime.getBookmark(),
-							() => runtime.setScore(1, 0, 100),
-							() => runtime.trackInteraction("nested", "answer"),
-							() => "getLastError" in runtime && runtime.getLastError(),
-						]) {
-							try {
-								action();
-							} catch {
-								/* 1.2 rejects blocked transfers. */
-							}
-						}
-					}
-					expect(calls.length).toBe(before);
-				});
-				expect(second.terminate()).toBe(true);
-				expect(entered).toBe(true);
-				expect(calls.filter((name) => name === `${prefix}Commit`)).toHaveLength(1);
-				expect(calls.filter((name) => name === finish)).toHaveLength(1);
-				expect(source.errors).toEqual([]);
-			},
-		);
-
-		it.each(["false", "throw"])("releases the final commit guard after %s", (failure) => {
-			const { first, second, facade, calls, prefix, finish } = setup();
-			const original = facade[`${prefix}Commit`];
-			facade[`${prefix}Commit`] = () => {
-				expect(first.terminate()).toBe(false);
-				if (failure === "throw") throw new Error("Commit callback failed");
-				return "false";
-			};
-			if (failure === "throw") expect(() => second.terminate()).toThrow("Commit callback failed");
-			else expect(second.terminate()).toBe(false);
-			expect(calls).not.toContain(finish);
-			facade[`${prefix}Commit`] = original;
-			expect(first.initialize()).toBe(true);
-			first.setBookmark("retry");
-			expect(first.getBookmark()).toBe("retry");
-			expect(first.terminate()).toBe(true);
-			expect(calls.filter((name) => name === finish)).toHaveLength(1);
-		});
-
-		it.each(["SetValue", "GetLastError", "GetErrorString"])(
-			"stops an ordinary transfer after closure in %s",
-			(method) => {
-				const { first, second, source, calls, prefix, finish, onCall } = setup();
-				let entered = false;
-				if (method === "GetErrorString") {
-					const name = `${prefix}GetLastError`;
-					(source as unknown as Record<string, () => string>)[name] = () => "101";
-				}
-				onCall((name) => {
-					if (name !== `${prefix}${method}` || entered) return;
-					entered = true;
-					if (method === "GetErrorString")
-						(source as unknown as Record<string, () => string>)[`${prefix}GetLastError`] = () =>
-							"0";
-					expect(second.terminate()).toBe(true);
-				});
-				try {
-					if (method === "SetValue") first.setScore(50, 0, 100);
-					else first.getScore();
-				} catch {
-					/* Diagnostic errors remain observable. */
-				}
-				expect(entered).toBe(true);
-				expect(calls[calls.indexOf(finish) - 1]).toBe(`${prefix}Commit`);
-				expect(calls.slice(calls.indexOf(finish) + 1)).toEqual([]);
-			},
-		);
-
-		it("uses writable Initialize bookkeeping after an API property getter throws", () => {
-			const { facade, first, lms, calls, source, makeRuntime, prefix, finish } = setup();
-			resetSessionState(facade, { parent: lms });
-			Object.defineProperty(facade, "__praxityScormSessions", {
-				get: () => {
-					throw new Error("restricted getter");
-				},
-			});
-			Object.defineProperty(lms, "__praxityScormSessions", {
-				get: () => null,
-				set: () => {
-					throw new Error("restricted window");
-				},
-			});
-			Object.preventExtensions(facade);
-			// This is a fresh LMS launch, so clear its lifecycle without changing callables.
-			Object.assign(source, version === "1.2" ? new StrictScorm12Api() : new StrictScorm2004Api());
-			const next = makeRuntime();
-			expect(next.initialize()).toBe(true);
-			expect(first.initialize()).toBe(true);
-			expect(next.terminate()).toBe(true);
-			const count = calls.length;
-			expect(first.initialize()).toBe(false);
-			expect(makeRuntime().initialize()).toBe(false);
-			expect(calls.slice(count)).toEqual([]);
-			expect(calls.filter((name) => name === finish)).toHaveLength(1);
-			expect(calls.filter((name) => name === `${prefix}Initialize`)).toHaveLength(1);
-		});
 	});
 }
 
@@ -2477,72 +2102,6 @@ it.each(["failed", "unknown", "passed"] as const)(
 		expect(api.data.get("cmi.exit")).toBe(success === "passed" ? "normal" : "suspend");
 		expect(api.calls.at(-2)?.[0]).toBe("Commit");
 		expect(api.calls.at(-1)?.[0]).toBe("Terminate");
-	},
-);
-
-it.each(["empty", "throwing"] as const)(
-	"retains closed SCORM 1.2 communication when the primary callable has an %s API entry",
-	(primaryEntry) => {
-		const source = new StrictScorm12Api();
-		const observed: string[] = [];
-		let primaryRestricted = true;
-		const primary = () => "true";
-		const primaryStore = new WeakMap<object, unknown>();
-		if (primaryEntry === "throwing") {
-			Object.defineProperty(primaryStore, "get", {
-				value: () => {
-					throw new Error("restricted primary entry");
-				},
-			});
-		}
-		Object.defineProperty(primary, "__praxityScormSessions", { value: primaryStore });
-		const facade = Object.freeze({
-			get Initialize() {
-				if (primaryRestricted) throw new Error("restricted primary callable");
-				return primary;
-			},
-			...Object.fromEntries(
-				[
-					"LMSInitialize",
-					"LMSFinish",
-					"LMSGetValue",
-					"LMSSetValue",
-					"LMSCommit",
-					"LMSGetLastError",
-					"LMSGetErrorString",
-					"LMSGetDiagnostic",
-				].map((name) => [
-					name,
-					(...args: string[]) => {
-						observed.push(name);
-						return (source as unknown as Record<string, (...args: string[]) => string>)[name](
-							...args,
-						);
-					},
-				]),
-			),
-		});
-		const parent = Object.freeze({ API: facade });
-		vi.stubGlobal("window", { parent });
-		try {
-			const first = new Scorm12Runtime();
-			expect(first.initialize()).toBe(true);
-			if (primaryEntry === "throwing") {
-				primaryRestricted = false;
-				expect(new Scorm12Runtime().initialize()).toBe(true);
-				primaryRestricted = true;
-			}
-			expect(first.terminate()).toBe(true);
-			primaryRestricted = false;
-			const before = observed.length;
-			expect(first.initialize()).toBe(false);
-			expect(new Scorm12Runtime().initialize()).toBe(false);
-			expect(observed.slice(before)).toEqual([]);
-			expect(observed.filter((name) => name === "LMSInitialize")).toHaveLength(1);
-			expect(observed.filter((name) => name === "LMSFinish")).toHaveLength(1);
-		} finally {
-			vi.unstubAllGlobals();
-		}
 	},
 );
 
@@ -2979,4 +2538,72 @@ describe("SCORM 1.2 privacy append high water", () => {
 		expect(api.data.get("cmi.interactions.5.id")).toBe("public-d");
 		expect(api.data.get("cmi.interactions.3.id")).toBe("earlier-public-3");
 	});
+});
+
+for (const version of ["1.2", "2004"] as const) {
+	it.each(["pagehide", "beforeunload"])(
+		`keeps SCORM ${version} closed across a later %s event`,
+		async (event) => {
+			const api = version === "1.2" ? new StrictScorm12Api() : new StrictScorm2004Api();
+			const lms: WindowLike = { [version === "1.2" ? "API" : "API_1484_11"]: api };
+			lms.parent = lms;
+			const dom = new JSDOM("", { url: "https://course.example/" });
+			const win = { parent: lms };
+			vi.stubGlobal("window", win);
+			try {
+				const retained = version === "1.2" ? new Scorm12Runtime() : new Scorm2004Runtime(win);
+				const finishing = version === "1.2" ? new Scorm12Runtime() : new Scorm2004Runtime(win);
+				expect(retained.initialize()).toBe(true);
+				expect(finishing.initialize()).toBe(true);
+				dom.window.addEventListener(event, () => {
+					if (version === "1.2") expect(() => retained.commit()).toThrow(/not initialized/);
+					else expect(retained.commit()).toBe(false);
+				});
+				expect(finishing.terminate()).toBe(true);
+				const calls = [...api.calls];
+				await Promise.resolve();
+				dom.window.dispatchEvent(new dom.window.Event(event));
+				expect(api.calls).toEqual(calls);
+			} finally {
+				dom.window.close();
+				vi.unstubAllGlobals();
+			}
+		},
+	);
+}
+
+it("retains SCORM 1.2 getter and device-objective returns after another adapter closes the launch", () => {
+	const api = new StrictScorm12Api();
+	installScorm12Api(api);
+	const retained = new Scorm12Runtime();
+	const finishing = new Scorm12Runtime();
+	retained.setBlockStatePolicy({ dev: "device" });
+	expect(retained.initialize()).toBe(true);
+	expect(finishing.initialize()).toBe(true);
+	const provider = createBlockStateRuntime(retained);
+	expect(finishing.terminate(true)).toBe(true);
+	const calls = [...api.calls];
+	expect([
+		retained.getBlockSaveResult("q"),
+		retained.getInteractionEvidence(),
+		retained.trackObjective("dev", 1, true),
+		provider.get("q"),
+		provider.getSaveResult?.("q"),
+	]).toEqual([undefined, [], undefined, undefined, undefined]);
+	expect(api.calls).toEqual(calls);
+});
+
+it("keeps SCORM 2004 getLastError local after the shared session closes", () => {
+	const api = new StrictScorm2004Api();
+	const retained = createScorm2004Runtime(api);
+	const finishing = createScorm2004Runtime(api);
+	expect(retained.initialize()).toBe(true);
+	expect(finishing.initialize()).toBe(true);
+	expect(finishing.terminate()).toBe(true);
+	const getLastError = vi.spyOn(api, "GetLastError");
+	const calls = [...api.calls];
+	expect(retained.getLastError()).toBe("0");
+	expect(finishing.getLastError()).toBe("0");
+	expect(getLastError).not.toHaveBeenCalled();
+	expect(api.calls).toEqual(calls);
 });

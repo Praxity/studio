@@ -27,7 +27,6 @@ import {
 	type InteractionEvidence,
 	type InteractionRecord,
 	isInteractionRecord,
-	prepareRuntimeCommit,
 	type RuntimeCommitPreparation,
 	type RuntimeDestinations,
 	recordInteraction,
@@ -405,7 +404,7 @@ export class XapiRuntime implements SCORMRuntime {
 		if (!this.initialized) {
 			return false;
 		}
-		if (!prepareRuntimeCommit(this.commitPreparation)) return false;
+		this.commitPreparation.prepareCommit?.();
 
 		if (this.sendEnabled) {
 			const verb = this.completionVerbKey();
@@ -604,7 +603,7 @@ export class XapiRuntime implements SCORMRuntime {
 	}
 
 	commit(): boolean {
-		if (!prepareRuntimeCommit(this.commitPreparation)) return false;
+		this.commitPreparation.prepareCommit?.();
 		// All statements are sent eagerly via sendStatement().
 		return true;
 	}

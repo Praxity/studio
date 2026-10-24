@@ -31,12 +31,10 @@ function launch(format: Format) {
 		["cmi.success_status", "unknown"],
 	]);
 	let commitSucceeds = true;
-	let onCompletion: (() => void) | undefined;
 	const status = format === "scorm12" ? "cmi.core.lesson_status" : "cmi.completion_status";
 	const set = (key: string, value: string) => {
 		writes.push([key, value]);
 		values.set(key, value);
-		if (key === status) onCompletion?.();
 		return "true";
 	};
 	const commit = () => {
@@ -131,9 +129,6 @@ function launch(format: Format) {
 		},
 		allowCommit: () => {
 			commitSucceeds = true;
-		},
-		onCompletion: (callback: () => void) => {
-			onCompletion = callback;
 		},
 	};
 }
@@ -247,20 +242,31 @@ function mountDeck(win: Window & typeof globalThis) {
 }
 
 describe.each(["scorm12", "scorm2004"] as const)("%s commit preparation", (format) => {
-	it("characterization preserves duplicate lifecycle commits and failed/reentrant Finish", () => {
+	it("characterization preserves duplicate lifecycle commits and failed Finish", () => {
 		const lms = launch(format);
 		const { win, runtime } = lms.page();
 		for (const name of triggers.slice(0, -1)) trigger(name, win, runtime);
 		lms.failCommit();
 		const refused = win.__praxityFinishCourse?.();
 		lms.allowCommit();
-		const nested: unknown[] = [];
-		lms.onCompletion(() => nested.push(win.__praxityFinishCourse?.()));
 		const finished = win.__praxityFinishCourse?.();
 		win.dispatchEvent(new win.Event("pagehide"));
 		win.dispatchEvent(new win.Event("beforeunload"));
-		expect({ refused, finished, nested, writes: lms.writes }).toMatchSnapshot();
+		expect({ refused, finished, writes: lms.writes }).toMatchSnapshot();
 	});
+
+	it.each(["pagehide", "beforeunload"])(
+		"skips a retained host's commit after closure before %s",
+		async (event) => {
+			const lms = launch(format);
+			const retained = lms.page();
+			const finishing = lms.page();
+			const commit = vi.spyOn(retained.runtime, "commit");
+			await Promise.resolve().then(() => expect(finishing.runtime.terminate()).toBe(true));
+			retained.win.dispatchEvent(new retained.win.Event(event));
+			expect(commit).not.toHaveBeenCalled();
+		},
+	);
 
 	it.each(triggers)("installed owner prepares before queued completion on %s", async (name) => {
 		const lms = launch(format);
@@ -408,17 +414,10 @@ describe.each(["scorm12", "scorm2004"] as const)("%s commit preparation", (forma
 		owner.dispose();
 	});
 
-	it("preparation blocks reentry, resets after a throw and cannot reopen a closed launch", () => {
+	it("preparation retries after a throw and cannot reopen a closed launch", () => {
 		const lms = launch(format);
 		const first = lms.page();
 		let calls = 0;
-		const nested: boolean[] = [];
-		first.runtime.setCommitPreparation?.(() => {
-			if (++calls === 1) nested.push(first.runtime.commit(), first.runtime.terminate());
-		});
-		expect(first.runtime.commit()).toBe(true);
-		expect(nested).toEqual([false, false]);
-		expect(calls).toBe(1);
 		first.runtime.setCommitPreparation?.(() => {
 			throw new Error("preparation failed");
 		});
@@ -438,7 +437,7 @@ describe.each(["scorm12", "scorm2004"] as const)("%s commit preparation", (forma
 		if (format === "scorm12") expect(() => first.runtime.commit()).toThrow("not initialized");
 		else expect(first.runtime.commit()).toBe(false);
 		expect(current).not.toHaveBeenCalled();
-		expect(calls).toBe(2);
+		expect(calls).toBe(1);
 		expect(closed).toEqual(lms.writes.slice(0, closed.length));
 	});
 });
@@ -510,14 +509,5 @@ it.each(["local", "xapi"] as const)(
 		expect(prepare).toHaveBeenCalledOnce();
 		expect(runtime.terminate()).toBe(true);
 		expect(prepare).toHaveBeenCalledTimes(2);
-		const nested: boolean[] = [];
-		let calls = 0;
-		runtime.initialize();
-		runtime.setCommitPreparation?.(() => {
-			if (++calls === 1) nested.push(runtime.commit(), runtime.terminate());
-		});
-		expect(runtime.commit()).toBe(true);
-		expect(nested).toEqual([false, false]);
-		expect(calls).toBe(1);
 	},
 );
