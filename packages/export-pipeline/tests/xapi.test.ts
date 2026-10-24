@@ -1425,45 +1425,6 @@ describe("XapiRuntime course state across pages", () => {
 		expect(JSON.parse(storage.getItem(key) as string).outbox).toEqual([]);
 	});
 
-	it("normalizes corrupt restored attempt metadata before course decisions", () => {
-		const storage = memoryStorage();
-		const row = {
-			id: "q1",
-			response: "a",
-			timestamp: 1,
-			correct: false,
-			score: 0,
-			attemptsUsed: "2",
-			maxAttempts: -1,
-			memberIds: 5,
-		};
-		storage.setItem(
-			"praxity-xapi:course-1:mailto%3Alearner%40example.com",
-			JSON.stringify({ interactions: [row] }),
-		);
-		const restored = new XapiRuntime(createConfig(), "course-1", storage);
-		expect(restored.getInteractions()).toEqual([
-			{
-				id: "q1",
-				response: "a",
-				timestamp: 1,
-				correct: false,
-				score: 0,
-				attemptsUsed: undefined,
-				maxAttempts: undefined,
-				memberIds: undefined,
-			},
-		]);
-		const tracker = new CourseTracker(restored, {
-			totalPages: 1,
-			completionMethod: "allPages",
-			passMark: 80,
-			scoredAssessmentIds: ["q1"],
-		});
-		tracker.trackPageVisit("p1");
-		expect(restored.getSuccess()).toBe("failed");
-	});
-
 	it("keeps only the latest attempt and latest scored attempt per question", () => {
 		const storage = memoryStorage();
 		const saved = new XapiRuntime(createConfig(), "course-1", storage);

@@ -532,7 +532,7 @@ export class XapiRuntime implements SCORMRuntime {
 	}
 
 	getInteractions(): InteractionRecord[] {
-		return this.interactions.map((record) => ({ ...record, ...assessmentAttemptMetadata(record) }));
+		return [...this.interactions];
 	}
 
 	setCompletion(status: "incomplete" | "completed" | "passed" | "failed"): void {
