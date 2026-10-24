@@ -143,7 +143,7 @@ it("reports the second oneOf member and its captured digest", async () => {
 		expect(details).toEqual([
 			expect.objectContaining({
 				selectedMemberId: "b",
-				contentSignature: "sha256:8164bb73b03e3cb4d0470f8abb770779e2670d38eefc5c0aecfb04cc76bb4f05",
+				contentSignature: "s96:gWS7c7A-PLTQRw-K",
 			}),
 		]),
 	);
@@ -169,7 +169,7 @@ it("captures the full dependency set, including the unscored required member", a
 						["b", null],
 					],
 				},
-				contentSignature: "sha256:b04ac3b7c9dc17ef54252c39a0db600379e03f714f75d627ca1ee4805f25c74b",
+				contentSignature: "s96:sErDt8ncF-9UJSw5",
 			},
 		}),
 	);
@@ -180,11 +180,11 @@ it("retains the latest capture through A/B/A picker changes and retry remounts",
 	const { values, rows, view, render } = mount("oneOf");
 	const captureA = {
 		payload: { mode: "oneOf", selectedMemberId: "a", dependencies: [["a", null]] },
-		contentSignature: "sha256:0f7eea5ce8b8751eb709140d6e6f323b4f320870e2be78ba811e1ff2c16b11a8",
+		contentSignature: "s96:D37qXOi4dR63CRQN",
 	};
 	const captureB = {
 		payload: { mode: "oneOf", selectedMemberId: "b", dependencies: [["b", null]] },
-		contentSignature: "sha256:8164bb73b03e3cb4d0470f8abb770779e2670d38eefc5c0aecfb04cc76bb4f05",
+		contentSignature: "s96:gWS7c7A-PLTQRw-K",
 	};
 	rows.push(
 		{ id: "g", contentSignature: captureA.contentSignature },
@@ -245,20 +245,19 @@ it("keeps saved aggregate completion and capture when repaired members leave it 
 		interacted: true,
 		attemptCount: 1,
 		answer: ["a"],
-		contentSignature: signatures.a,
-		materialProof: { optionIds: ["a", "b"] },
+		contentSignature: "s96:sbdPqYwmkJdFli-m",
 	});
-	rows.push({ id: "a", correct: true, contentSignature: signatures.a });
+	rows.push({ id: "a", correct: true, contentSignature: "s96:sbdPqYwmkJdFli-m" });
 	const old = {
 		payload: {
 			mode: "all",
 			selectedMemberId: null,
 			dependencies: [
-				["a", `sha256:${"b".repeat(64)}`],
+				["a", "s96:u7u7u7u7u7u7u7u7"],
 				["b", null],
 			],
 		},
-		contentSignature: "sha256:20f16510fde514a91cae700e38f4ed7e83ef073d14b7a77ac02fb410498fad8a",
+		contentSignature: "s96:b1vAwr1Bcn89DosW",
 	};
 	values.set("g", {
 		version: 1,

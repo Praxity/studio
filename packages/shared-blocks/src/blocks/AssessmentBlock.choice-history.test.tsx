@@ -100,7 +100,13 @@ it.each(
 		});
 		provider.getChoiceDependencyView = () =>
 			createChoiceDependencyView(admitted, {
-				rows: [{ id: "question", contentSignature: facts(originalData).signature, correct: true }],
+				rows: [
+					{
+						id: "question",
+						contentSignature: choiceEvidenceSignature(facts(originalData).signature),
+						correct: true,
+					},
+				],
 				readState: provider.get,
 			});
 		render(
@@ -219,13 +225,13 @@ it.each(
 			expect(response.mock.results[0].value.detail).toMatchObject({
 				blockId: "question",
 				submitted: true,
-				contentSignature: facts(revisedData).signature,
+				contentSignature: choiceEvidenceSignature(facts(revisedData).signature),
 			});
 			expect(runtime.getBlockState("question")).toMatchObject({
 				checked: true,
 				answer: selection,
 				correct: variant !== "dontKnow",
-				contentSignature: facts(revisedData).signature,
+				contentSignature: choiceEvidenceSignature(facts(revisedData).signature),
 				history: [previous],
 			});
 		} finally {
@@ -246,7 +252,7 @@ it("a current draft cannot hide the history status of its submitted evidence", (
 			completed: false,
 			interacted: true,
 			answer: ["a"],
-			contentSignature: facts(revised).signature,
+			contentSignature: choiceEvidenceSignature(facts(revised).signature),
 		}),
 		set() {},
 		getChoiceDependencyView: () => ({
@@ -277,7 +283,7 @@ it.each(["en", "fr"] as const)(
 	"%s SCORM 1.2 added distractor shows New attempt without rewriting the answer",
 	(locale) => {
 		const signature = facts(original).signature;
-		const contentSignature = choiceEvidenceSignature(signature, "scorm12");
+		const contentSignature = choiceEvidenceSignature(signature);
 		const saved = {
 			version: 1,
 			kind: "assessment",

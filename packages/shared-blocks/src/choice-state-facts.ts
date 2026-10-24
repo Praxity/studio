@@ -1,7 +1,5 @@
 import { sha256 } from "@noble/hashes/sha2.js";
-import { isChoiceContentSignature } from "./learner-state";
-
-export { isChoiceContentSignature } from "./learner-state";
+import { isCompilerChoiceSignature } from "./learner-state";
 
 /** Published effective facts. Saved-answer admission remains dormant. */
 export interface ChoiceStateQuestion {
@@ -48,14 +46,14 @@ export function isChoiceStateQuestion(value: unknown): value is ChoiceStateQuest
 		typeof value.canAutoScore === "boolean" &&
 		typeof value.graded === "boolean" &&
 		isCounter(value.maxAttempts) &&
-		isChoiceContentSignature(value.correctAnswerSignature) &&
-		isChoiceContentSignature(value.materialSignature) &&
+		isCompilerChoiceSignature(value.correctAnswerSignature) &&
+		isCompilerChoiceSignature(value.materialSignature) &&
 		Array.isArray(value.options) &&
 		Array.from(value.options).every(
 			(option) =>
 				isRecord(option) &&
 				isNonemptyString(option.id) &&
-				isChoiceContentSignature(option.materialSignature),
+				isCompilerChoiceSignature(option.materialSignature),
 		) &&
 		new Set(value.options.map((option) => option.id)).size === value.options.length
 	);
@@ -110,7 +108,7 @@ export function isChoiceAssessmentFacts(value: unknown): value is ChoiceAssessme
 	return (
 		isRecord(value) &&
 		isChoiceStateQuestion(value.question) &&
-		isChoiceContentSignature(value.signature) &&
+		isCompilerChoiceSignature(value.signature) &&
 		value.signature === choiceProofSignature(choiceMaterialProof(value.question))
 	);
 }
@@ -122,7 +120,7 @@ export interface ChoiceStateFacts {
 }
 
 export interface AdmittedChoiceStateFacts extends ChoiceStateFacts {
-	/** Invalid metadata must never become legacy unsigned admission when history activates. */
+	/** Invalid metadata must remain history when saved admission activates. */
 	choiceStateFactsStatus: "absent" | "valid" | "invalid";
 	choiceStateInvalidIds: string[];
 }

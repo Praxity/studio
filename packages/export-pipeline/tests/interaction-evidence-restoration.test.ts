@@ -9,7 +9,8 @@ import * as xapi from "../src/scorm/api/xapi";
 import { LocalStorageRuntime } from "../src/scorm/local-storage-runtime";
 import * as evidence from "../src/scorm/types";
 
-const signature = "sha256:e4df374aeafe8ae449c0321eca27fe0d42f77d070f28050db87e4957bc86e30d";
+const compilerSignature = "sha256:e4df374aeafe8ae449c0321eca27fe0d42f77d070f28050db87e4957bc86e30d";
+const signature = "s96:5N83Sur-iuRJwDIe";
 const current = {
 	id: "a",
 	response: "a",
@@ -31,7 +32,6 @@ const state = {
 	interacted: true,
 	answer: ["a"],
 	contentSignature: signature,
-	materialProof: { optionIds: ["a", "b"] },
 };
 const view: Omit<ChoiceDependencyView, "rows"> = {
 	questions: {
@@ -50,7 +50,7 @@ const view: Omit<ChoiceDependencyView, "rows"> = {
 			],
 		},
 	},
-	signatures: { a: signature },
+	signatures: { a: compilerSignature },
 	readState: () => state,
 };
 

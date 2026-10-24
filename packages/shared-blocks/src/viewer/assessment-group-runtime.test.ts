@@ -64,7 +64,7 @@ it("picker writes retain the raw capture through the view's single preparation p
 	const values = installLearnerBlockState();
 	const submitted = {
 		payload: { mode: "oneOf", selectedMemberId: "q1", dependencies: [["q1", null]] },
-		contentSignature: `sha256:${"a".repeat(64)}`,
+		contentSignature: "s96:qqqqqqqqqqqqqqqq",
 	};
 	values.set("group", {
 		version: 1,

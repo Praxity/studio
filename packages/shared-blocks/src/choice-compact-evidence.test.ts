@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { expect, it, vi } from "vitest";
 import * as reporting from "../../export-pipeline/src/scorm/types";
 import {
 	type ChoiceDependencyView,
@@ -10,11 +10,10 @@ import {
 	restoreChoiceAssessmentState,
 } from "./choice-learner-state";
 import { admitChoiceStateFacts, type ChoiceAssessmentFacts } from "./choice-state-facts";
-import type { LearnerStateValue, SavedAssessmentState } from "./learner-state";
+import type { SavedAssessmentState } from "./learner-state";
 import * as learnerState from "./learner-state";
 
-// Namespace fallbacks make the base fail on assertions, not missing exports.
-// Independent Node crypto/Buffer vectors, including the full and compact group payloads.
+// Independent Node crypto/Buffer vectors for compiler digests and saved claims.
 const full = "sha256:e4df374aeafe8ae449c0321eca27fe0d42f77d070f28050db87e4957bc86e30d";
 const short = "s96:5N83Sur-iuRJwDIe";
 const facts: ChoiceAssessmentFacts = {
@@ -68,7 +67,6 @@ const legacy: SavedAssessmentState = {
 const signed: SavedAssessmentState = {
 	...legacy,
 	contentSignature: full,
-	materialProof: { optionIds: ["a", "b"] },
 	writtenAt: 10,
 };
 const compact: SavedAssessmentState = {
@@ -90,38 +88,13 @@ function view(
 	};
 }
 
-it("projects only choice evidence at the SCORM 1.2 destination without rewriting history", () => {
-	const archived = { ...signed, writtenAt: 5 };
-	const state = { ...signed, history: [archived] } as unknown as LearnerStateValue;
-	const project = learnerState.choiceStateForDestination ?? ((value) => value);
-	expect(project(state, "scorm12")).toEqual({ ...compact, history: [archived] });
-	expect(project(state)).toBe(state);
-	expect(state).toEqual({ ...signed, history: [archived] });
-	for (const value of [
-		null,
-		[],
-		"answer",
-		legacy,
-		{ ...signed, kind: "assessmentGroup" },
-		{ ...signed, assessmentType: "freeResponse" },
-		{ ...signed, contentSignature: "broken" },
-	]) {
-		expect(() => project(value as LearnerStateValue, "scorm12")).not.toThrow();
-		expect(project(value as LearnerStateValue, "scorm12")).toBe(value);
-	}
-	expect(() => learnerState.choiceEvidenceSignature?.(short, "scorm12")).not.toThrow();
-	expect(project(compact as unknown as LearnerStateValue, "scorm12")).toEqual(compact);
-	expect(learnerState.choiceEvidenceSignature?.(full, "scorm12")).toBe(short);
-	expect(learnerState.choiceEvidenceSignature?.(short, "scorm12")).toBe(short);
-	expect(learnerState.choiceEvidenceSignature?.(full)).toBe(full);
-});
-
 it.each([
 	[`sha256:${"ff".repeat(32)}`, "s96:________________"],
 	[`sha256:000102030405060708090aff${"00".repeat(20)}`, "s96:AAECAwQFBgcICQr_"],
 ])("encodes URL-safe underscore evidence for %s", (signature, expected) => {
-	expect(learnerState.choiceEvidenceSignature?.(signature, "scorm12")).toBe(expected);
-	expect(learnerState.isScorm12ChoiceSignature?.(expected)).toBe(true);
+	expect(learnerState.choiceEvidenceSignature(signature)).toBe(expected);
+	expect(learnerState.choiceEvidenceSignature(expected)).toBe(expected);
+	expect(learnerState.isChoiceContentSignature(expected)).toBe(true);
 });
 
 it("admits the exact compact digest but treats changed options and added distractors as history", () => {
@@ -131,10 +104,10 @@ it("admits the exact compact digest but treats changed options and added distrac
 		expect(restoreChoiceAssessmentState(compact, edited).status).toBe("review");
 		expect(choiceDependencyStatus("a", view(compact, undefined, edited))).toBe("history");
 	}
-	expect(restoreChoiceAssessmentState(signed, distractor).status).toBe("current");
+	expect(restoreChoiceAssessmentState(signed, facts).status).toBe("review");
 	expect(
 		choiceDependencyStatus("a", view(signed, [{ id: "a", contentSignature: full }], distractor)),
-	).toBe("current");
+	).toBe("history");
 });
 
 it.each([
@@ -147,31 +120,25 @@ it.each([
 	"s96:5N83Sur+iuRJwDIe",
 	"sha256:bad",
 ])("refuses malformed evidence %j without unsigned fallback", (contentSignature) => {
-	expect(learnerState.isScorm12ChoiceSignature?.(contentSignature) ?? false).toBe(false);
+	expect(learnerState.isChoiceContentSignature(contentSignature)).toBe(false);
 	expect(restoreChoiceAssessmentState({ ...legacy, contentSignature }, facts).status).toBe(
 		"review",
 	);
 });
 
-it("refuses compact claims carrying a proof and keeps malformed projection unchanged", () => {
-	expect(
-		restoreChoiceAssessmentState({ ...compact, materialProof: signed.materialProof }, facts).status,
-	).toBe("review");
-	expect(() => learnerState.choiceEvidenceSignature?.("sha256:bad", "scorm12")).toThrow(
-		"Invalid choice signature",
-	);
-});
-
 it.each([
-	[short, full],
-	[full, short],
-	[short, short],
-])("matches submitted state %s against reporting row %s", (stateSignature, rowSignature) => {
-	const state = stateSignature === short ? compact : signed;
-	expect(
-		choiceDependencyStatus("a", view(state, [{ id: "a", contentSignature: rowSignature }])),
-	).toBe("current");
-});
+	[short, full, "history"],
+	[full, short, "history"],
+	[short, short, "current"],
+])(
+	"matches submitted state %s against reporting row %s",
+	(stateSignature, rowSignature, status) => {
+		const state = stateSignature === short ? compact : signed;
+		expect(
+			choiceDependencyStatus("a", view(state, [{ id: "a", contentSignature: rowSignature }])),
+		).toBe(status);
+	},
+);
 
 it("refuses a mismatched compact row and contradictory verdict", () => {
 	expect(
@@ -183,12 +150,12 @@ it("refuses a mismatched compact row and contradictory verdict", () => {
 	expect(
 		choiceDependencyStatus(
 			"a",
-			view(compact, [{ id: "a", contentSignature: full, correct: false }]),
+			view(compact, [{ id: "a", contentSignature: short, correct: false }]),
 		),
 	).toBe("history");
 });
 
-it("same-material full-to-short writes avoid invented history and preserve archived origins", () => {
+it("writes short evidence and preserves archived submissions exactly", () => {
 	expect(
 		prepareChoiceAssessmentState(compact, legacy, facts, { writtenAt: 20 }).history,
 	).toBeUndefined();
@@ -208,100 +175,12 @@ it("same-material full-to-short writes avoid invented history and preserve archi
 		answer: [],
 	};
 	const prepared = prepareChoiceAssessmentState(signed, retry, facts, { writtenAt: 20 });
-	const projected = learnerState.choiceStateForDestination?.(
-		prepared as unknown as LearnerStateValue,
-		"scorm12",
-	);
-	expect(projected).toEqual({
+
+	expect(prepared).toEqual({
 		...retry,
 		contentSignature: short,
 		writtenAt: 20,
 		history: [signed],
-	});
-});
-
-describe.each([
-	[
-		"all",
-		"sha256:fda7918846cc4d25dcde21a4916d530393f2c0d4b6852e8cb257b80d8caa8ba1",
-		"sha256:41ff245906357f3af4e4ae767706fa59266a52caadf3f75a3751d4c42092f683",
-	],
-	[
-		"oneOf",
-		"sha256:5e7428cce3d013af78211f473ccb88441c8aef6e0978a40519945fa6970c8316",
-		"sha256:0228a3d56bfd72e9af1ee4ab044a50020a0287e91d78eb52d64e544dce42d469",
-	],
-] as const)("%s aggregate evidence", (mode, fullDigest, compactDigest) => {
-	const payload = {
-		mode,
-		selectedMemberId: mode === "oneOf" ? "a" : null,
-		dependencies: [["a", full]] as [string, string][],
-	};
-	const group = {
-		version: 1,
-		kind: "assessmentGroup",
-		mode,
-		completed: true,
-		selectedMemberId: mode === "oneOf" ? "a" : null,
-		submitted: { payload, contentSignature: fullDigest },
-	};
-	const groupView = (
-		member: unknown,
-		rows: ChoiceDependencyView["rows"],
-	): ChoiceDependencyView => ({
-		...view(member, rows),
-		groups: { g: { mode, memberIds: ["a"], requiredIds: ["a"] } },
-		readState: (id) => (id === "g" ? group : member),
-	});
-	it("keeps full aggregate witnesses after a member's compact write and reload", () => {
-		expect(choiceGroupSignature(payload)).toBe(fullDigest);
-		const rows = [
-			{ id: "g", contentSignature: fullDigest, memberIds: ["a"] },
-			{ id: "a", contentSignature: short },
-		];
-		const member = JSON.parse(JSON.stringify(compact));
-		expect(choiceDependencyStatus("g", groupView(member, rows))).toBe("current");
-		expect(prepareChoiceGroupSubmission("g", groupView(member, rows))).toEqual({
-			payload: { ...payload, dependencies: [["a", short]] },
-			contentSignature: compactDigest,
-		});
-	});
-	it("resolves a compact aggregate reference against an unchanged full member", () => {
-		const submitted = {
-			payload: { ...payload, dependencies: [["a", short]] as [string, string][] },
-			contentSignature: compactDigest,
-		};
-		expect(() => choiceGroupSignature(submitted.payload)).not.toThrow();
-		const input = groupView(signed, [
-			{ id: "g", contentSignature: compactDigest, memberIds: ["a"] },
-		]);
-		input.readState = (id) => (id === "g" ? { ...group, submitted } : signed);
-		expect(choiceDependencyStatus("g", input)).toBe("current");
-	});
-	it("keeps the exact old full proof through a compact retry and compatible resubmission", () => {
-		const retry = {
-			...legacy,
-			checked: false,
-			correct: false,
-			completed: false,
-			interacted: false,
-			answer: [],
-		};
-		const prepared = prepareChoiceAssessmentState(signed, retry, distractor, { writtenAt: 20 });
-		const resubmitted = prepareChoiceAssessmentState(prepared, legacy, distractor, {
-			writtenAt: 30,
-		});
-		expect(resubmitted.history?.[0]).toEqual(signed);
-		const project = learnerState.choiceStateForDestination ?? ((value) => value);
-		const member = JSON.parse(
-			JSON.stringify(project(resubmitted as unknown as LearnerStateValue, "scorm12")),
-		);
-		const input = {
-			...groupView(member, [{ id: "g", contentSignature: fullDigest, memberIds: ["a"] }]),
-			questions: { a: distractor.question },
-			signatures: { a: distractor.signature },
-		};
-		expect(choiceDependencyStatus("g", input)).toBe("current");
 	});
 });
 
@@ -326,9 +205,9 @@ it("retains per-ID corruption while refusing an unidentifiable whole map", () =>
 			choiceStateSignatures: { a: full, broken: "bad" },
 		});
 		expect(() =>
-			createChoiceDependencyView(admitted, { rows: [], readState: () => legacy }),
+			createChoiceDependencyView(admitted, { rows: [], readState: () => compact }),
 		).not.toThrow();
-		const input = createChoiceDependencyView(admitted, { rows: [], readState: () => legacy });
+		const input = createChoiceDependencyView(admitted, { rows: [], readState: () => compact });
 		expect(input.invalidIds).toEqual(["broken"]);
 		expect(choiceDependencyStatus("broken", input)).toBe("history");
 		expect(choiceDependencyStatus("a", input)).toBe("current");
@@ -350,7 +229,7 @@ it("retains per-ID corruption while refusing an unidentifiable whole map", () =>
 	}
 });
 
-it("an explicitly invalid group never receives legacy aggregate credit", () => {
+it("an explicitly invalid group remains history", () => {
 	expect(
 		choiceDependencyStatus("g", {
 			invalidIds: ["g"],
@@ -389,12 +268,24 @@ it("a rejected question signature cannot grant credit to an admitted group with 
 it.each(["a", "g"])(
 	"retains a rejected latest %s row rather than reviving previous evidence",
 	(id) => {
+		const group = {
+			version: 1,
+			kind: "assessmentGroup",
+			mode: "all",
+			completed: true,
+			submitted: {
+				payload: { mode: "all", selectedMemberId: null, dependencies: [["a", short]] },
+				contentSignature: "s96:Qf8kWQY1fzr05K52",
+			},
+		};
+		const contentSignature = id === "a" ? short : group.submitted.contentSignature;
 		const input = {
-			...view(legacy),
+			...view(compact),
+			readState: (member: string) => (member === "g" ? group : compact),
 			groups: { g: { mode: "all" as const, memberIds: ["a"], requiredIds: ["a"] } },
 			rows: [
-				{ id, correct: true },
-				{ id, choiceEvidenceInvalid: true as const },
+				{ id, correct: true, contentSignature },
+				{ id, correct: true, contentSignature, choiceEvidenceInvalid: true as const },
 			],
 		};
 		expect(choiceDependencyStatus(id, input)).toBe("history");
@@ -404,7 +295,7 @@ it.each(["a", "g"])(
 				...input,
 				rows: [
 					{ id, choiceEvidenceInvalid: true },
-					{ id, correct: true },
+					{ id, correct: true, contentSignature: id === "a" ? short : "s96:Qf8kWQY1fzr05K52" },
 				],
 			}),
 		).toBe("current");
@@ -419,6 +310,7 @@ it.each(["a", "g"])(
 
 it.each([
 	["invalid signature", { contentSignature: "sha256:broken" }],
+	["full compiler digest", { contentSignature: full }],
 	["null signature", { contentSignature: null }],
 	["invalid members", { memberIds: ["a", 7] }],
 	["sparse members", { memberIds: new Array(1) }],
@@ -428,18 +320,18 @@ it.each([
 	["numeric marker", { choiceEvidenceInvalid: 1 }],
 	["null marker", { choiceEvidenceInvalid: null }],
 ])("dormant metadata retains %s without unsigned fallback", (_name, input) => {
-	const normalize = reporting.assessmentEvidenceMetadata ?? reporting.assessmentAttemptMetadata;
+	const normalize = reporting.assessmentEvidenceMetadata;
 	expect(normalize(input).choiceEvidenceInvalid).toBe(true);
 	expect(normalize(JSON.parse(JSON.stringify(normalize(input)))).choiceEvidenceInvalid).toBe(true);
-	expect(choiceDependencyStatus("a", view(legacy, [{ id: "a", ...normalize(input) }]))).toBe(
+	expect(choiceDependencyStatus("a", view(compact, [{ id: "a", ...normalize(input) }]))).toBe(
 		"history",
 	);
 });
 
-it("keeps ordinary metadata unchanged and admits both evidence forms only through the dormant entry", () => {
+it("keeps ordinary metadata unchanged and admits short evidence through the dormant entry", () => {
 	const ordinary = { attemptsUsed: 2, maxAttempts: Infinity, memberIds: ["a"] };
-	const normalize = reporting.assessmentEvidenceMetadata ?? reporting.assessmentAttemptMetadata;
-	for (const contentSignature of [full, short]) {
+	const normalize = reporting.assessmentEvidenceMetadata;
+	for (const contentSignature of [short]) {
 		expect(normalize({ ...ordinary, contentSignature })).toEqual({
 			attemptsUsed: 2,
 			maxAttempts: 0,

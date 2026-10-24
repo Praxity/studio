@@ -13,13 +13,19 @@ it("evidence carries its status owner and observes later selection changes", () 
 			choiceStateGroups: { g: { mode: "oneOf", memberIds: ["a", "b"], requiredIds: ["a", "b"] } },
 		}),
 		{
-			rows: [{ id: "g", correct: true, memberIds: ["a"] }],
+			rows: [
+				{ id: "g", correct: true, memberIds: ["a"], contentSignature: "s96:D37qXOi4dR63CRQN" },
+			],
 			readState: () => ({
 				version: 1,
 				kind: "assessmentGroup",
 				mode: "oneOf",
 				selectedMemberId,
 				completed: false,
+				submitted: {
+					payload: { mode: "oneOf", selectedMemberId: "a", dependencies: [["a", null]] },
+					contentSignature: "s96:D37qXOi4dR63CRQN",
+				},
 			}),
 		},
 	);
@@ -108,6 +114,7 @@ describe("whole-course group facts", () => {
 			completed: true,
 			interacted: true,
 			answer: ["a"],
+			contentSignature: "s96:5N83Sur-iuRJwDIe",
 		};
 		const facts = admitChoiceStateFacts({
 			choiceStateQuestions: { a: question, b: question },
@@ -117,7 +124,7 @@ describe("whole-course group facts", () => {
 		expect(facts.choiceStateFactsStatus).toBe("valid");
 		const view = createChoiceDependencyView(facts, {
 			rows: [
-				{ id: "a", correct: true },
+				{ id: "a", correct: true, contentSignature: "s96:5N83Sur-iuRJwDIe" },
 				{ id: "g", correct: true },
 			],
 			readState: (id) => (id === "a" ? submitted : undefined),

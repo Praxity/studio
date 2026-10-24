@@ -17,11 +17,16 @@ import {
 	choiceMaterialProof,
 	choiceProofSignature,
 } from "./choice-state-facts";
-import type { SavedAssessmentState } from "./learner-state";
+import { choiceEvidenceSignature, type SavedAssessmentState } from "./learner-state";
 
 // Independent SHA-256 literals for version-3 question payloads.
-const signatureA = "sha256:e4df374aeafe8ae449c0321eca27fe0d42f77d070f28050db87e4957bc86e30d";
-const signatureB = "sha256:b1b74fa98c26909745962fa6d5f98b01897f03a1fa9bcbf35461c4213b407702";
+const compilerSignatureA =
+	"sha256:e4df374aeafe8ae449c0321eca27fe0d42f77d070f28050db87e4957bc86e30d";
+const signatureA = "s96:5N83Sur-iuRJwDIe";
+const compilerSignatureB =
+	"sha256:b1b74fa98c26909745962fa6d5f98b01897f03a1fa9bcbf35461c4213b407702";
+const signatureB = "s96:sbdPqYwmkJdFli-m";
+const repairedSignature = "s96:XCsSLLpfHrFcyr1u";
 const question: ChoiceStateQuestion = {
 	selectionMode: "single",
 	dontKnow: false,
@@ -35,10 +40,10 @@ const question: ChoiceStateQuestion = {
 		{ id: "b", materialSignature: `sha256:${"c".repeat(64)}` },
 	],
 };
-const factsA: ChoiceAssessmentFacts = { question, signature: signatureA };
+const factsA: ChoiceAssessmentFacts = { question, signature: compilerSignatureA };
 const factsB: ChoiceAssessmentFacts = {
 	question: { ...question, materialSignature: `sha256:${"d".repeat(64)}` },
-	signature: signatureB,
+	signature: compilerSignatureB,
 };
 const repairedFacts: ChoiceAssessmentFacts = {
 	question: {
@@ -75,13 +80,11 @@ const legacyRetry: SavedAssessmentState = {
 const signedSubmitted: SavedAssessmentState = {
 	...legacySubmitted,
 	contentSignature: signatureA,
-	materialProof: { optionIds: ["a", "b"] },
 	writtenAt: 10,
 };
 const retryDraft = {
 	...legacyRetry,
 	contentSignature: signatureB,
-	materialProof: { optionIds: ["a", "b"] },
 };
 const addedDistractor: ChoiceAssessmentFacts = {
 	question: {
@@ -106,7 +109,7 @@ function answer(correct = true, signed = true): SavedAssessmentState {
 		completed: correct,
 		interacted: true,
 		answer: [correct ? "a" : "b"],
-		...(signed ? { contentSignature: signatureA, materialProof: { optionIds: ["a", "b"] } } : {}),
+		...(signed ? { contentSignature: signatureA } : {}),
 	};
 }
 const draft = (): SavedAssessmentState => ({
@@ -141,16 +144,14 @@ function view(
 // Precomputed from the specified JSON tuples using Node crypto, independently of this owner.
 const groupDigests = {
 	all: {
-		signed: "sha256:fda7918846cc4d25dcde21a4916d530393f2c0d4b6852e8cb257b80d8caa8ba1",
-		legacy: "sha256:ff48f614173329077a69ba761d6e6ad76f6b39d24d5502419ea626dfacac7af2",
-		changed: "sha256:855046ca0ab3006f658988e444dc7e03da69af411410c1947d688ffe7dc8b3b8",
-		repaired: "sha256:bff77f1fc1e7627fffe5cc04f13fa3e614f878fdecb3e0894ae1d784170411f8",
+		signed: "s96:Qf8kWQY1fzr05K52",
+		changed: "s96:XZSbOEWg8lzt5vq1",
+		repaired: "s96:EZQKOs9Zy2eJmeAz",
 	},
 	oneOf: {
-		signed: "sha256:5e7428cce3d013af78211f473ccb88441c8aef6e0978a40519945fa6970c8316",
-		legacy: "sha256:0f7eea5ce8b8751eb709140d6e6f323b4f320870e2be78ba811e1ff2c16b11a8",
-		changed: "sha256:300052c69af6a4ec0df2a88eef7bba63e825877186cdca1fe4356f564cee5d11",
-		repaired: "sha256:75e1ac10da40ca1cc647b07a3c37914f1e0c4ec39c483a1b255b0d4d627b1837",
+		signed: "s96:Aiij1Wv9cumvHuSr",
+		changed: "s96:Xn2GsSQS9BEXKh0L",
+		repaired: "s96:xTAQgfssHMILdFMh",
 	},
 };
 
@@ -165,13 +166,11 @@ function groupSubmission(
 			dependencies: [
 				[
 					"a",
-					material === "legacy"
-						? null
-						: material === "changed"
-							? signatureB
-							: material === "repaired"
-								? repairedFacts.signature
-								: signatureA,
+					material === "changed"
+						? signatureB
+						: material === "repaired"
+							? repairedSignature
+							: signatureA,
 				],
 			],
 		},
@@ -214,21 +213,21 @@ describe("dormant choice admission", () => {
 			status: "unanswered",
 		},
 		{
-			name: "rule-B unsigned submission",
+			name: "unsigned submission",
 			state: legacySubmitted,
 			row: { id: "a", correct: true },
 			facts: factsA,
-			status: "current",
+			status: "history",
 		},
 		{
-			name: "signed submission with retained legacy origin",
+			name: "signed submission with retained unsigned history",
 			state: { ...signedSubmitted, history: [legacySubmitted] },
 			row: { id: "a", contentSignature: signatureA, correct: true },
 			facts: factsA,
 			status: "current",
 		},
 		{
-			name: "signed submission without legacy origin",
+			name: "signed submission without earlier history",
 			state: signedSubmitted,
 			row: { id: "a", contentSignature: signatureA, correct: true },
 			facts: factsA,
@@ -239,10 +238,10 @@ describe("dormant choice admission", () => {
 			state: { ...retryDraft, history: [legacySubmitted] },
 			row: { id: "a", correct: true },
 			facts: factsB,
-			status: "current",
+			status: "history",
 		},
 		{
-			name: "draft over signed and legacy history",
+			name: "draft over signed and unsigned history",
 			state: { ...retryDraft, history: [legacySubmitted, signedSubmitted] },
 			row: { id: "a", contentSignature: signatureA, correct: true },
 			facts: factsA,
@@ -260,7 +259,7 @@ describe("dormant choice admission", () => {
 			state: legacyRetry,
 			row: { id: "a", correct: false },
 			facts: factsA,
-			status: "current",
+			status: "history",
 		},
 		{
 			name: "latest submission rejected for changed material",
@@ -281,10 +280,10 @@ describe("dormant choice admission", () => {
 			state: {
 				...signedSubmitted,
 				answer: ["b"],
-				contentSignature: repairedFacts.signature,
+				contentSignature: repairedSignature,
 				history: [legacySubmitted],
 			},
-			row: { id: "a", contentSignature: repairedFacts.signature, correct: true },
+			row: { id: "a", contentSignature: repairedSignature, correct: true },
 			facts: repairedFacts,
 			status: "current",
 		},
@@ -306,74 +305,74 @@ describe("dormant choice admission", () => {
 		{
 			member: memberCases[0],
 			material: "signed",
-			statuses: ["unanswered", "history", "history", "history"],
+			statuses: ["unanswered", "history", "history"],
 		},
 		{
 			member: memberCases[1],
 			material: "signed",
-			statuses: ["unanswered", "history", "history", "history"],
+			statuses: ["unanswered", "history", "history"],
 		},
 		{
 			member: memberCases[2],
-			material: "legacy",
-			statuses: ["unanswered", "current", "current", "history"],
+			material: "signed",
+			statuses: ["unanswered", "history", "history"],
 		},
 		{
 			member: memberCases[3],
 			material: "signed",
-			statuses: ["unanswered", "current", "current", "history"],
+			statuses: ["unanswered", "current", "history"],
 		},
 		{
 			member: memberCases[4],
 			material: "signed",
-			statuses: ["unanswered", "history", "current", "history"],
+			statuses: ["unanswered", "current", "history"],
 		},
 		{
 			member: memberCases[5],
-			material: "legacy",
-			statuses: ["unanswered", "current", "current", "history"],
+			material: "signed",
+			statuses: ["unanswered", "history", "history"],
 		},
 		{
 			member: memberCases[6],
 			material: "signed",
-			statuses: ["unanswered", "current", "current", "history"],
+			statuses: ["unanswered", "current", "history"],
 		},
 		{
 			member: memberCases[7],
 			material: "signed",
-			statuses: ["unanswered", "history", "current", "history"],
+			statuses: ["unanswered", "current", "history"],
 		},
 		{
 			member: memberCases[8],
-			material: "legacy",
-			statuses: ["unanswered", "current", "current", "history"],
+			material: "signed",
+			statuses: ["unanswered", "history", "history"],
 		},
 		{
 			member: memberCases[9],
 			material: "signed",
-			statuses: ["unanswered", "history", "history", "history"],
+			statuses: ["unanswered", "history", "history"],
 		},
 		{
 			member: memberCases[10],
 			material: "signed",
-			statuses: ["unanswered", "history", "history", "history"],
+			statuses: ["unanswered", "history", "history"],
 		},
 		{
 			member: memberCases[11],
 			material: "repaired",
-			statuses: ["unanswered", "history", "current", "history"],
+			statuses: ["unanswered", "current", "history"],
 		},
 	] as const;
 	for (const mode of ["all", "oneOf"] as const) {
 		for (const { member, material, statuses } of groupTable) {
 			for (const [column, expected] of statuses.entries()) {
-				for (const staleReference of column === 3 ? [false, true] : [false]) {
+				for (const staleReference of column === 2 ? [false, true] : [false]) {
 					it(`group evidence table: ${mode}, ${member.name}, column ${column}${staleReference ? ", valid stale reference" : ""}`, () => {
 						const matching = groupSubmission(mode, material);
 						const submitted =
-							column < 2
+							column < 1
 								? undefined
-								: column === 2
+								: column === 1
 									? matching
 									: staleReference
 										? groupSubmission(mode, "changed")
@@ -424,51 +423,6 @@ describe("dormant choice admission", () => {
 		).toBe("history");
 	});
 
-	it("draft writes retain an erased retry's material evidence across a content change", () => {
-		const previous: SavedAssessmentState = {
-			...legacyRetry,
-			contentSignature: signatureA,
-			materialProof: { optionIds: ["a", "b"] },
-			writtenAt: 1,
-		};
-		const bytes = JSON.stringify(previous);
-		for (const rows of [[], [{ id: "a", correct: false }]]) {
-			expect(choiceDependencyStatus("a", view({ a: previous }, rows))).toBe("current");
-			for (const { facts, status } of [
-				{ facts: factsB, status: "history" },
-				{ facts: addedDistractor, status: "current" },
-			]) {
-				expect(choiceDependencyStatus("a", view({ a: previous }, rows, { a: facts }))).toBe(status);
-				const edited = prepareChoiceAssessmentState(
-					previous,
-					{ ...legacyRetry, answer: ["b"] },
-					facts,
-					{ writtenAt: 2 },
-				);
-				expect(choiceDependencyStatus("a", view({ a: edited }, rows, { a: facts }))).toBe(status);
-				expect(edited.contentSignature).toBe(signatureA);
-				expect(edited.materialProof).toEqual({ optionIds: ["a", "b"] });
-				const reloaded = JSON.parse(JSON.stringify(edited));
-				const repeated = prepareChoiceAssessmentState(reloaded, legacyRetry, facts, {
-					writtenAt: 3,
-				});
-				expect(choiceDependencyStatus("a", view({ a: repeated }, rows, { a: facts }))).toBe(status);
-			}
-		}
-		const submitted = prepareChoiceAssessmentState(previous, legacySubmitted, factsB, {
-			writtenAt: 4,
-		});
-		expect(
-			choiceDependencyStatus(
-				"a",
-				view({ a: submitted }, [{ id: "a", contentSignature: signatureB, correct: true }], {
-					a: factsB,
-				}),
-			),
-		).toBe("current");
-		expect(JSON.stringify(previous)).toBe(bytes);
-	});
-
 	it("refuses a zero-attempt erased retry paired with an unsigned reporting row", () => {
 		expect(
 			choiceDependencyStatus(
@@ -478,31 +432,10 @@ describe("dormant choice admission", () => {
 		).toBe("history");
 	});
 
-	it("classifies compatible same-attempt re-signing against its unchanged reporting row", () => {
-		const rows = [{ id: "a", contentSignature: signatureA, correct: true }];
-		expect(
-			choiceDependencyStatus("a", view({ a: signedSubmitted }, rows, { a: addedDistractor })),
-		).toBe("current");
-		const resigned = prepareChoiceAssessmentState(
-			signedSubmitted,
-			signedSubmitted,
-			addedDistractor,
-			{ writtenAt: 5 },
-		);
-		for (const saved of [resigned, JSON.parse(JSON.stringify(resigned))]) {
-			expect(choiceDependencyStatus("a", view({ a: saved }, rows, { a: addedDistractor }))).toBe(
-				"history",
-			);
-			expect(choiceDependencyStatus("a", view({ a: saved }, [], { a: addedDistractor }))).toBe(
-				"current",
-			);
-		}
-	});
-
-	it("does not fall back to legacy pending or an older current answer when the latest submission rejects", () => {
+	it("does not use an older current answer when the latest submission rejects", () => {
 		const state = {
 			...legacyRetry,
-			history: [legacySubmitted, { ...signedSubmitted, contentSignature: signatureB }],
+			history: [signedSubmitted, { ...signedSubmitted, contentSignature: signatureB }],
 		};
 		expect(choiceDependencyStatus("a", view({ a: state }, []))).toBe("history");
 	});
@@ -522,7 +455,7 @@ describe("dormant choice admission", () => {
 		).toBe("history");
 	});
 
-	it("preserves submitted origin through draft writes, reload and compatible re-signing", () => {
+	it("preserves submitted history through changed-material draft writes and reload", () => {
 		const original = JSON.stringify(signedSubmitted);
 		const retry = prepareChoiceAssessmentState(signedSubmitted, legacyRetry, addedDistractor, {
 			writtenAt: 20,
@@ -535,7 +468,7 @@ describe("dormant choice admission", () => {
 		const pending = view({ a: again }, [{ id: "a", contentSignature: signatureA, correct: true }], {
 			a: addedDistractor,
 		});
-		expect(choiceDependencyStatus("a", pending)).toBe("current");
+		expect(choiceDependencyStatus("a", pending)).toBe("history");
 		const resubmitted = prepareChoiceAssessmentState(
 			again,
 			{ ...legacySubmitted, attemptCount: 2 },
@@ -543,20 +476,20 @@ describe("dormant choice admission", () => {
 			{ writtenAt: 22 },
 		);
 		expect(resubmitted.history).toEqual([signedSubmitted]);
-		const resigned = prepareChoiceAssessmentState(
+		const submittedAfterEdit = prepareChoiceAssessmentState(
 			signedSubmitted,
 			signedSubmitted,
 			addedDistractor,
 			{ writtenAt: 23 },
 		);
-		expect(resigned.history).toEqual([signedSubmitted]);
+		expect(submittedAfterEdit.history).toEqual([signedSubmitted]);
 		expect(JSON.stringify(signedSubmitted)).toBe(original);
 	});
 
-	it("keeps real unsigned submissions and pre-signature Try again drafts current", () => {
+	it("keeps unsigned submissions and retries historical through draft writes", () => {
 		const submittedRow = { id: "a", response: "correct-option", correct: true, timestamp: 1 };
 		expect(choiceDependencyStatus("a", view({ a: legacySubmitted }, [submittedRow]))).toBe(
-			"current",
+			"history",
 		);
 		const retryRow = {
 			id: "a",
@@ -568,15 +501,15 @@ describe("dormant choice admission", () => {
 			maxAttempts: 2,
 		};
 		const bytes = JSON.stringify(legacyRetry);
-		expect(restoreChoiceAssessmentState(legacyRetry, factsA).status).toBe("current");
-		expect(choiceDependencyStatus("a", view({ a: legacyRetry }, [retryRow]))).toBe("current");
+		expect(restoreChoiceAssessmentState(legacyRetry, factsA).current).toBeNull();
+		expect(choiceDependencyStatus("a", view({ a: legacyRetry }, [retryRow]))).toBe("history");
 		const editedDraft = prepareChoiceAssessmentState(legacyRetry, legacyRetry, factsA, {
 			writtenAt: 7,
 		});
-		expect(choiceDependencyStatus("a", view({ a: editedDraft }, [retryRow]))).toBe("current");
-		expect(choiceDependencyStatus("a", view({ a: legacyRetry }, []))).toBe("current");
-		expect(choiceDependencyStatus("a", view({ a: editedDraft }, []))).toBe("current");
-		expect(editedDraft).not.toHaveProperty("history");
+		expect(choiceDependencyStatus("a", view({ a: editedDraft }, [retryRow]))).toBe("history");
+		expect(choiceDependencyStatus("a", view({ a: legacyRetry }, []))).toBe("history");
+		expect(choiceDependencyStatus("a", view({ a: editedDraft }, []))).toBe("history");
+		expect(restoreChoiceAssessmentState(editedDraft, factsA).current).toBeNull();
 		expect(JSON.stringify(legacyRetry)).toBe(bytes);
 		expect(choiceDependencyStatus("a", view({ a: { ...legacyRetry, attemptCount: 0 } }, []))).toBe(
 			"unanswered",
@@ -632,7 +565,6 @@ describe("dormant choice admission", () => {
 			interacted: true,
 			answer: ["b"],
 			contentSignature: signatureA,
-			materialProof: { optionIds: ["a", "b"] },
 			writtenAt: 10,
 		};
 		const bytes = JSON.stringify(first);
@@ -649,7 +581,7 @@ describe("dormant choice admission", () => {
 	});
 
 	it("uses the compiled version-3 signature without changing the saved answer", () => {
-		expect(choiceProofSignature(choiceMaterialProof(question))).toBe(signatureA);
+		expect(choiceProofSignature(choiceMaterialProof(question))).toBe(compilerSignatureA);
 		const saved = answer();
 		const bytes = JSON.stringify(saved);
 		expect(restoreChoiceAssessmentState(saved, factsA)).toEqual({
@@ -688,20 +620,20 @@ describe("dormant choice admission", () => {
 	});
 
 	it.each([true, false])(
-		"rule B admits the unchanged unsigned verdict %s without signing it",
+		"retains an unsigned verdict %s as history without signing it",
 		(correct) => {
 			const saved = answer(correct, false);
 			const bytes = JSON.stringify(saved);
-			expect(restoreChoiceAssessmentState(saved, factsB).status).toBe("current");
+			expect(restoreChoiceAssessmentState(saved, factsB).status).toBe("review");
 			expect(choiceDependencyStatus("a", view({ a: saved }, [{ id: "a", correct }]))).toBe(
-				"current",
+				"history",
 			);
 			expect(JSON.stringify(saved)).toBe(bytes);
 			expect(saved).not.toHaveProperty("contentSignature");
 		},
 	);
 
-	it("rule B rejects changed verdicts, removed selections and malformed submitted answers", () => {
+	it("rejects removed selections and malformed signed submissions", () => {
 		const changed = {
 			...factsA,
 			question: { ...question, correctAnswerSignature: `sha256:${"f".repeat(64)}` },
@@ -723,37 +655,51 @@ describe("dormant choice admission", () => {
 		}
 	});
 
-	it("normalizes legacy finality under today's policy but preserves the original stored verdict in history", () => {
-		const legacy = { ...answer(false, false), completed: true };
-		const restored = restoreChoiceAssessmentState(legacy, factsA);
-		expect(restored.current).toEqual({ ...legacy, completed: false });
-		const next = prepareChoiceAssessmentState(legacy, draft(), factsA, { writtenAt: 42 });
-		expect(next.history).toEqual([legacy]);
-		expect(legacy).not.toHaveProperty("history");
+	it("preserves an unsigned submitted verdict and finality in history", () => {
+		const saved = { ...answer(false, false), completed: true };
+		expect(restoreChoiceAssessmentState(saved, factsA)).toEqual({
+			status: "review",
+			current: null,
+			history: [saved],
+		});
+		const next = prepareChoiceAssessmentState(saved, draft(), factsA, { writtenAt: 42 });
+		expect(next.history).toEqual([saved]);
+		expect(saved).not.toHaveProperty("history");
 	});
 
 	it("handles unlimited attempts, unscored answers and offered uncertainty without inventing a verdict", () => {
-		const unlimited = { ...factsA, question: { ...question, maxAttempts: 0 } };
-		const saved = { ...answer(false, false), attemptCount: 80 };
+		const unlimited = factPair({ ...question, maxAttempts: 0 });
+		const saved = {
+			...answer(false),
+			attemptCount: 80,
+			contentSignature: choiceEvidenceSignature(unlimited.signature),
+		};
 		expect(restoreChoiceAssessmentState(saved, unlimited).current).toEqual(saved);
-		const survey = { ...factsA, question: { ...question, canAutoScore: false, graded: false } };
+		const survey = factPair({ ...question, canAutoScore: false, graded: false });
 		expect(
-			restoreChoiceAssessmentState({ ...answer(false, false), completed: true }, survey).status,
+			restoreChoiceAssessmentState(
+				{
+					...answer(false),
+					completed: true,
+					contentSignature: choiceEvidenceSignature(survey.signature),
+				},
+				survey,
+			).status,
 		).toBe("current");
-		const uncertain = { ...answer(false, false), answer: ["dont-know"] };
-		expect(
-			restoreChoiceAssessmentState(uncertain, {
-				...factsA,
-				question: { ...question, dontKnow: true },
-			}).status,
-		).toBe("current");
+		const uncertainFacts = factPair({ ...question, dontKnow: true });
+		const uncertain = {
+			...answer(false),
+			answer: ["dont-know"],
+			contentSignature: choiceEvidenceSignature(uncertainFacts.signature),
+		};
+		expect(restoreChoiceAssessmentState(uncertain, uncertainFacts).status).toBe("current");
 		expect(restoreChoiceAssessmentState(uncertain, factsA).status).toBe("review");
 	});
 
 	it("refuses invalid compiled question facts instead of falling back to unsigned admission", () => {
 		for (const invalid of [
 			{ ...factsA, signature: "invalid" },
-			{ ...factsA, signature: signatureB },
+			{ ...factsA, signature: compilerSignatureB },
 			{ ...factsA, question: { ...question, maxAttempts: -1 } },
 			{ ...factsA, question: { ...question, options: [question.options[0], question.options[0]] } },
 		]) {
@@ -770,78 +716,7 @@ describe("dormant choice admission", () => {
 		}
 	});
 
-	it("retains a legacy multiple selection after a single-selection policy edit when the verdict agrees", () => {
-		const legacy = { ...answer(false, false), answer: ["a", "b"] };
-		expect(restoreChoiceAssessmentState(legacy, factsA).status).toBe("current");
-		expect(
-			restoreChoiceAssessmentState({ ...legacy, contentSignature: signatureA }, factsA).status,
-		).toBe("review");
-	});
-
-	it("recovers added distractors through compact option-ID proof, but refuses changed or missing old options", () => {
-		const withDistractor: ChoiceAssessmentFacts = {
-			question: {
-				...question,
-				options: [...question.options, { id: "c", materialSignature: `sha256:${"d".repeat(64)}` }],
-			},
-			signature: "sha256:afa3e412c508c12e3e7492d67ae263b4a30df87893ba38fedd00e8e402963063",
-		};
-		expect(restoreChoiceAssessmentState(answer(), withDistractor).status).toBe("current");
-		expect(
-			restoreChoiceAssessmentState(
-				answer(),
-				factPair({
-					...withDistractor.question,
-					options: withDistractor.question.options.slice(1),
-				}),
-			).status,
-		).toBe("review");
-		expect(
-			restoreChoiceAssessmentState(
-				answer(),
-				factPair({
-					...withDistractor.question,
-					options: [
-						{ ...question.options[0], materialSignature: `sha256:${"e".repeat(64)}` },
-						...question.options.slice(1),
-					],
-				}),
-			).status,
-		).toBe("review");
-		for (const materialProof of [
-			{ optionIds: ["a", "a"] },
-			{ optionIds: ["a", "missing"] },
-			{ optionIds: ["a", "b"], question: question.materialSignature },
-			{ optionIds: [1, "b"] },
-		]) {
-			expect(
-				restoreChoiceAssessmentState({ ...answer(), materialProof }, withDistractor).status,
-			).toBe("review");
-		}
-	});
-
-	it("also verifies the archive's full proof before accepting a new distractor", () => {
-		const saved = { ...answer(), materialProof: choiceMaterialProof(question) };
-		const added = {
-			signature: "sha256:afa3e412c508c12e3e7492d67ae263b4a30df87893ba38fedd00e8e402963063",
-			question: {
-				...question,
-				options: [...question.options, { id: "c", materialSignature: `sha256:${"d".repeat(64)}` }],
-			},
-		};
-		expect(restoreChoiceAssessmentState(saved, added).status).toBe("current");
-		expect(
-			restoreChoiceAssessmentState(
-				{
-					...saved,
-					materialProof: { ...saved.materialProof, question: `sha256:${"f".repeat(64)}` },
-				},
-				added,
-			).status,
-		).toBe("review");
-	});
-
-	it("prepares a signed write with compact proof and archives stale content exactly once", () => {
+	it("prepares a short signed write and archives stale content exactly once", () => {
 		const old = answer();
 		const bytes = JSON.stringify(old);
 		const next = prepareChoiceAssessmentState(old, draft(), factsB, {
@@ -850,7 +725,6 @@ describe("dormant choice admission", () => {
 		expect(next).toEqual({
 			...draft(),
 			contentSignature: signatureB,
-			materialProof: { optionIds: ["a", "b"] },
 			writtenAt: 123,
 			history: [old],
 		});
@@ -861,7 +735,7 @@ describe("dormant choice admission", () => {
 		expect(JSON.stringify(old)).toBe(bytes);
 	});
 
-	it("keeps both selections and verdicts through a same-content retry and shares only repeated proofs", () => {
+	it("keeps both selections and verdicts through a same-content retry", () => {
 		const first = answer(false);
 		const retry = prepareChoiceAssessmentState(first, { ...draft(), attemptCount: 1 }, factsA, {
 			writtenAt: 10,
@@ -877,7 +751,6 @@ describe("dormant choice admission", () => {
 			{
 				...answer(),
 				attemptCount: 2,
-				materialProof: undefined,
 				writtenAt: 11,
 			},
 		]);
@@ -906,7 +779,7 @@ describe("dormant choice admission", () => {
 			},
 			signature: "sha256:afa3e412c508c12e3e7492d67ae263b4a30df87893ba38fedd00e8e402963063",
 		};
-		expect(choiceDependencyStatus("a", view({ a: third }, [row()], { a: added }))).toBe("current");
+		expect(choiceDependencyStatus("a", view({ a: third }, [row()], { a: added }))).toBe("history");
 	});
 
 	it("does not add a history entry for a write of the same signed submission", () => {
@@ -918,7 +791,6 @@ describe("dormant choice admission", () => {
 		);
 		expect(next).toEqual({
 			...answer(),
-			materialProof: { optionIds: ["a", "b"] },
 			writtenAt: 19,
 		});
 	});
@@ -980,7 +852,7 @@ describe("dormant group material references", () => {
 			).toBe("history");
 	});
 
-	it("all row witnesses remain scored subsets in signed and unsigned aggregates", () => {
+	it("all row witnesses remain scored subsets in signed captures", () => {
 		const submitted: ChoiceGroupSubmission = {
 			payload: {
 				mode: "all",
@@ -991,9 +863,9 @@ describe("dormant group material references", () => {
 					["reflection", null],
 				],
 			},
-			contentSignature: "sha256:1ee98b4b31ad7f0ef127314c1cf7717834f28643076415c816e27066c8a8dc06",
+			contentSignature: "s96:QqE3NaverzpuA6Hk",
 		};
-		for (const captured of [undefined, submitted]) {
+		for (const captured of [submitted]) {
 			for (const [memberIds, status] of [
 				[undefined, "current"],
 				[[], "current"],
@@ -1027,154 +899,24 @@ describe("dormant group material references", () => {
 		}
 	});
 
-	it.each(["signed", "unsigned"] as const)(
-		"refuses an all row scoring an optional member without evidence, %s aggregate",
-		(format) => {
-			const submitted = format === "signed" ? groupSubmission("all", "signed") : undefined;
-			const input = groupView(
-				{
-					a: submitted ? signedSubmitted : legacySubmitted,
-					b: undefined,
-					g: groupState("all", submitted),
-				},
-				[
-					{
-						id: "g",
-						...(submitted ? { contentSignature: submitted.contentSignature } : {}),
-						memberIds: ["a", "b"],
-					},
-				],
-				{ a: factsA, b: factsA },
-				{ mode: "all", memberIds: ["a", "b"], requiredIds: ["a"] },
-			);
-			expect(choiceDependencyStatus("g", input)).toBe("history");
-		},
-	);
-
-	it.each([false, true])(
-		"a new member answer cannot revive a changed legacy aggregate, viaDraft=%s",
-		(viaDraft) => {
-			let a: SavedAssessmentState = legacyRetry;
-			const status = (
-				saved: SavedAssessmentState,
-				facts: ChoiceAssessmentFacts,
-				contentSignature?: string,
-			) =>
-				choiceDependencyStatus(
-					"g",
-					groupView(
-						{ a: JSON.parse(JSON.stringify(saved)), g: groupState("all") },
-						[{ id: "a", contentSignature, correct: saved.checked }, { id: "g" }],
-						{ a: facts },
-					),
-				);
-			expect(status(a, factsA)).toBe("current");
-			if (viaDraft)
-				a = prepareChoiceAssessmentState(a, { ...legacyRetry, answer: ["a"] }, factsA, {
-					writtenAt: 1,
-				});
-			a = prepareChoiceAssessmentState(a, { ...legacySubmitted, attemptCount: 2 }, factsA, {
-				writtenAt: 2,
-			});
-			expect(status(a, factsA, signatureA)).toBe("current");
-			expect(status(a, factsB, signatureA)).toBe("history");
-			const repaired = prepareChoiceAssessmentState(
-				JSON.parse(JSON.stringify(a)),
-				{ ...legacySubmitted, attemptCount: 2 },
-				factsB,
-				{ writtenAt: 3 },
-			);
-			expect(
-				choiceDependencyStatus(
-					"a",
-					view({ a: repaired }, [{ id: "a", contentSignature: signatureB, correct: true }], {
-						a: factsB,
-					}),
-				),
-			).toBe("current");
-			expect(status(repaired, factsB, signatureB)).toBe("history");
-		},
-	);
-
-	it("direct legacy pending retains compact proof", () => {
-		const first = prepareChoiceAssessmentState(
-			legacyRetry,
-			{ ...legacySubmitted, attemptCount: 2 },
-			factsA,
-			{ writtenAt: 1 },
-		);
-		const compatible = prepareChoiceAssessmentState(
-			JSON.parse(JSON.stringify(first)),
-			{ ...legacySubmitted, attemptCount: 2 },
-			addedDistractor,
-			{ writtenAt: 2 },
-		);
+	it("refuses an all row scoring an optional member without evidence", () => {
+		const submitted = groupSubmission("all", "signed");
 		const input = groupView(
-			{ a: JSON.parse(JSON.stringify(compatible)), g: groupState("all") },
-			[{ id: "a", contentSignature: addedDistractor.signature, correct: true }, { id: "g" }],
-			{ a: addedDistractor },
+			{
+				a: submitted ? signedSubmitted : legacySubmitted,
+				b: undefined,
+				g: groupState("all", submitted),
+			},
+			[
+				{
+					id: "g",
+					...(submitted ? { contentSignature: submitted.contentSignature } : {}),
+					memberIds: ["a", "b"],
+				},
+			],
+			{ a: factsA, b: factsA },
+			{ mode: "all", memberIds: ["a", "b"], requiredIds: ["a"] },
 		);
-		expect(choiceDependencyStatus("g", input)).toBe("current");
-		expect(choiceDependencyStatus("a", input)).toBe("current");
-	});
-
-	it("keeps the signed pending claim when a replaced distractor is removed before resubmission", () => {
-		const factsE = factPair({
-			...question,
-			options: [...question.options, { id: "e", materialSignature: `sha256:${"e".repeat(64)}` }],
-		});
-		const status = (
-			saved: SavedAssessmentState,
-			facts: ChoiceAssessmentFacts,
-			contentSignature: string,
-		) =>
-			choiceDependencyStatus(
-				"g",
-				groupView(
-					{ a: JSON.parse(JSON.stringify(saved)), g: groupState("all") },
-					[{ id: "a", contentSignature, correct: saved.correct }, { id: "g" }],
-					{ a: facts },
-				),
-			);
-		const draftUnderA = prepareChoiceAssessmentState(
-			legacyRetry,
-			{ ...legacyRetry, answer: ["a"] },
-			factsA,
-			{ writtenAt: 1 },
-		);
-		const submittedWithC = prepareChoiceAssessmentState(
-			JSON.parse(JSON.stringify(draftUnderA)),
-			{ ...legacySubmitted, attemptCount: 2, correct: false, completed: true, answer: ["b"] },
-			addedDistractor,
-			{ writtenAt: 2 },
-		);
-		expect(status(submittedWithC, addedDistractor, addedDistractor.signature)).toBe("current");
-		expect(status(submittedWithC, factsE, addedDistractor.signature)).toBe("history");
-		const resubmittedWithE = prepareChoiceAssessmentState(
-			JSON.parse(JSON.stringify(submittedWithC)),
-			{ ...legacySubmitted, attemptCount: 2 },
-			factsE,
-			{ writtenAt: 3 },
-		);
-		expect(status(resubmittedWithE, factsE, factsE.signature)).toBe("current");
-	});
-
-	it("requires current latest evidence independently of a compatible legacy aggregate origin", () => {
-		const a = { ...signedSubmitted, contentSignature: signatureB, history: [legacySubmitted] };
-		expect(choiceDependencyStatus("g", groupView({ a, g: groupState("all") }, [{ id: "g" }]))).toBe(
-			"history",
-		);
-	});
-
-	it("a compatible signed retry draft cannot replace a missing unsigned aggregate origin", () => {
-		const a = {
-			...legacyRetry,
-			contentSignature: signatureA,
-			materialProof: { optionIds: ["a", "b"] },
-			history: [signedSubmitted],
-		};
-		const input = groupView({ a, g: groupState("all") }, [{ id: "g" }]);
-		expect(choiceDependencyStatus("a", input)).toBe("current");
 		expect(choiceDependencyStatus("g", input)).toBe("history");
 	});
 
@@ -1189,32 +931,6 @@ describe("dormant group material references", () => {
 			expect(choiceDependencyStatus("g", input)).toBe("history");
 		}
 	});
-	it.each(["all", "oneOf"] as const)(
-		"keeps legacy %s submissions but refuses fresh zero-attempt retries",
-		(mode) => {
-			for (const submitted of [undefined, groupSubmission(mode, "legacy")]) {
-				for (const a of [legacyRetry, legacySubmitted]) {
-					const input = groupView(
-						{ a, g: groupState(mode, submitted) },
-						[{ id: "g", ...(submitted ? { contentSignature: submitted.contentSignature } : {}) }],
-						{ a: factsA },
-						{ mode, memberIds: ["a"], requiredIds: ["a"] },
-					);
-					expect(choiceDependencyStatus("g", input)).toBe("current");
-				}
-				const input = groupView(
-					{ a: { ...legacyRetry, attemptCount: 0 }, g: groupState(mode, submitted) },
-					[
-						{ id: "a", correct: false },
-						{ id: "g", ...(submitted ? { contentSignature: submitted.contentSignature } : {}) },
-					],
-					{ a: factsA },
-					{ mode, memberIds: ["a"], requiredIds: ["a"] },
-				);
-				expect(choiceDependencyStatus("g", input)).toBe("history");
-			}
-		},
-	);
 
 	it.each([
 		{ version: 2 },
@@ -1235,16 +951,14 @@ describe("dormant group material references", () => {
 			{ mode: "oneOf", memberIds: ["a", "b"], requiredIds: ["a", "b"] },
 		);
 		expect(choiceGroupDependencyIds("g", input)).toEqual(["a"]);
-		if (invalid.mode === undefined) expect(choiceDependencyStatus("g", input)).toBe("current");
+		expect(choiceDependencyStatus("g", input)).toBe("history");
 	});
 	it.each(["all", "oneOf"] as const)(
 		"captures literal %s payloads from submissions, never outer drafts",
 		(mode) => {
 			for (const [state, material] of [
 				[signedSubmitted, "signed"],
-				[legacySubmitted, "legacy"],
 				[{ ...retryDraft, history: [signedSubmitted] }, "signed"],
-				[legacyRetry, "legacy"],
 			] as const) {
 				const input = groupView(
 					{ a: state },
@@ -1299,7 +1013,7 @@ describe("dormant group material references", () => {
 					["reflection", null],
 				],
 			},
-			contentSignature: "sha256:1ee98b4b31ad7f0ef127314c1cf7717834f28643076415c816e27066c8a8dc06",
+			contentSignature: "s96:QqE3NaverzpuA6Hk",
 		};
 		expect(prepareChoiceGroupSubmission("g", input)).toEqual(expected);
 		expect(choiceGroupSignature(expected.payload)).toBe(expected.contentSignature);
@@ -1338,156 +1052,6 @@ describe("dormant group material references", () => {
 	});
 
 	it.each(["all", "oneOf"] as const)(
-		"retains real unsigned %s aggregate origins through retry, repeated drafts, reload and a delayed group event",
-		(mode) => {
-			const original = { ...legacySubmitted, answer: ["b"], correct: false, completed: false };
-			const originalBytes = JSON.stringify(original);
-			const group = { mode, memberIds: ["a"], requiredIds: ["a"] };
-			let member: SavedAssessmentState = original;
-			let memberRow: ChoiceDependencyView["rows"][number] = { id: "a", correct: false };
-			const rows = () => [memberRow, { id: "g", memberIds: ["a"] }];
-			const assertCurrent = () =>
-				expect(
-					choiceDependencyStatus(
-						"g",
-						groupView({ a: member, g: groupState(mode) }, rows(), { a: factsA }, group),
-					),
-				).toBe("current");
-			assertCurrent();
-			member = prepareChoiceAssessmentState(member, legacyRetry, factsA, { writtenAt: 11 });
-			expect(member.history).toEqual([original]);
-			assertCurrent();
-			member = prepareChoiceAssessmentState(member, { ...legacyRetry, answer: ["a"] }, factsA, {
-				writtenAt: 12,
-			});
-			assertCurrent();
-			member = JSON.parse(JSON.stringify(member));
-			assertCurrent();
-			member = prepareChoiceAssessmentState(
-				member,
-				{ ...legacySubmitted, attemptCount: 2 },
-				factsA,
-				{ writtenAt: 13 },
-			);
-			memberRow = { id: "a", contentSignature: signatureA, correct: true };
-			assertCurrent();
-			expect(member.history?.[0]).toEqual(original);
-			expect(JSON.stringify(original)).toBe(originalBytes);
-			const changed = { ...member, history: [{ ...original, answer: ["removed"] }] };
-			expect(choiceDependencyStatus("a", groupView({ a: changed }, rows()))).toBe("current");
-			expect(
-				choiceDependencyStatus(
-					"g",
-					groupView({ a: changed, g: groupState(mode) }, rows(), { a: factsA }, group),
-				),
-			).toBe("history");
-		},
-	);
-
-	it.each(["signed", "legacy"] as const)(
-		"keeps a captured %s reference through added-distractor retry and compatible checked resubmission",
-		(material) => {
-			const submitted = groupSubmission("all", material);
-			const snapshotBytes = JSON.stringify(submitted);
-			let member = material === "legacy" ? legacySubmitted : signedSubmitted;
-			let memberRow: ChoiceDependencyView["rows"][number] = {
-				id: "a",
-				correct: true,
-				...(material === "signed" ? { contentSignature: signatureA } : {}),
-			};
-			const check = () =>
-				expect(
-					choiceDependencyStatus(
-						"g",
-						groupView(
-							{ a: member, g: groupState("all", submitted) },
-							[memberRow, { id: "g", contentSignature: submitted.contentSignature }],
-							{ a: addedDistractor },
-						),
-					),
-				).toBe("current");
-			check();
-			member = prepareChoiceAssessmentState(member, legacyRetry, addedDistractor, {
-				writtenAt: 20,
-			});
-			check();
-			member = prepareChoiceAssessmentState(
-				JSON.parse(JSON.stringify(member)),
-				legacyRetry,
-				addedDistractor,
-				{ writtenAt: 21 },
-			);
-			check();
-			member = prepareChoiceAssessmentState(
-				member,
-				{ ...legacySubmitted, attemptCount: 2 },
-				addedDistractor,
-				{ writtenAt: 22 },
-			);
-			memberRow = { id: "a", correct: true, contentSignature: addedDistractor.signature };
-			check();
-			expect(JSON.stringify(submitted)).toBe(snapshotBytes);
-			// The newer full option set cannot vouch for a missing original compact proof.
-			if (material === "signed") {
-				const missing = { ...member, history: [{ ...signedSubmitted, materialProof: undefined }] };
-				expect(
-					choiceDependencyStatus(
-						"a",
-						groupView({ a: missing }, [memberRow], { a: addedDistractor }),
-					),
-				).toBe("current");
-				expect(
-					choiceDependencyStatus(
-						"g",
-						groupView(
-							{ a: missing, g: groupState("all", submitted) },
-							[{ id: "g", contentSignature: submitted.contentSignature }, memberRow],
-							{ a: addedDistractor },
-						),
-					),
-				).toBe("history");
-			}
-		},
-	);
-
-	it("retains explicit erased legacy pending evidence when a checked resubmission replaces it", () => {
-		const snapshot = groupSubmission("all", "legacy");
-		const next = prepareChoiceAssessmentState(
-			legacyRetry,
-			{ ...legacySubmitted, attemptCount: 2 },
-			factsA,
-			{ writtenAt: 30 },
-		);
-		expect(next.history).toEqual([
-			{
-				...legacyRetry,
-				legacyPending: true,
-				contentSignature: signatureA,
-				materialProof: { optionIds: ["a", "b"] },
-			},
-		]);
-		for (const submitted of [undefined, snapshot]) {
-			const rows = [
-				{ id: "g", ...(submitted ? { contentSignature: submitted.contentSignature } : {}) },
-				row(),
-			];
-			expect(
-				choiceDependencyStatus(
-					"g",
-					groupView({ a: JSON.parse(JSON.stringify(next)), g: groupState("all", submitted) }, rows),
-				),
-			).toBe("current");
-			const missing = { ...next, history: [] };
-			expect(
-				choiceDependencyStatus(
-					"g",
-					groupView({ a: missing, g: groupState("all", submitted) }, rows),
-				),
-			).toBe("history");
-		}
-	});
-
-	it.each(["all", "oneOf"] as const)(
 		"requires deliberate %s group resubmission after real repair and never falls back A/B/A",
 		(mode) => {
 			const group = { mode, memberIds: ["a"], requiredIds: ["a"] };
@@ -1510,7 +1074,7 @@ describe("dormant group material references", () => {
 				repairedFacts,
 				{ writtenAt: 40 },
 			);
-			const memberRow = { id: "a", contentSignature: repairedFacts.signature, correct: true };
+			const memberRow = { id: "a", contentSignature: repairedSignature, correct: true };
 			const input = groupView(
 				{ a: repaired, g: groupState(mode, old) },
 				[memberRow, rows[1]],
@@ -1569,17 +1133,17 @@ describe("dormant group material references", () => {
 			{ ...groupState("oneOf", undefined, "b"), version: 2 },
 		]) {
 			const input = groupView(
-				{ a: legacySubmitted, b: { ...signedSubmitted, contentSignature: signatureB }, g },
+				{ a: signedSubmitted, b: { ...signedSubmitted, contentSignature: signatureB }, g },
 				[{ id: "g", memberIds: ["a"] }],
 				{ a: factsA, b: factsA },
 				group,
 			);
 			expect(choiceGroupDependencyIds("g", input)).toEqual(["a"]);
-			expect(choiceDependencyStatus("g", input)).toBe("current");
+			expect(choiceDependencyStatus("g", input)).toBe("history");
 		}
 		const bSnapshot: ChoiceGroupSubmission = {
 			payload: { mode: "oneOf", selectedMemberId: "b", dependencies: [["b", signatureA]] },
-			contentSignature: "sha256:da91b6029d6dc99307995b21dff3bdb3d72934a70bff2dccba4935653b81e612",
+			contentSignature: "s96:I6zefaf5Xwn0JmJP",
 		};
 		const selected = groupView(
 			{
@@ -1607,85 +1171,6 @@ describe("dormant group material references", () => {
 		).toBe("history");
 	});
 
-	it("honours a witnessed legacy oneOf selection even with completed false or absent state", () => {
-		const group: ChoiceStateGroup = {
-			mode: "oneOf",
-			memberIds: ["a", "b"],
-			requiredIds: ["a", "b"],
-		};
-		for (const g of [undefined, groupState("oneOf"), groupState("oneOf", undefined, "a", true)]) {
-			for (const [memberIds, expected] of [
-				[["a"], "current"],
-				[["b"], "history"],
-				[[], "history"],
-				[["a", "b"], "history"],
-				["a", "history"],
-			] as const) {
-				const rows = [{ id: "g", memberIds }] as unknown as ChoiceDependencyView["rows"];
-				expect(
-					choiceDependencyStatus(
-						"g",
-						groupView(
-							{ a: legacySubmitted, b: legacySubmitted, g },
-							rows,
-							{ a: factsA, b: factsA },
-							group,
-						),
-					),
-				).toBe(expected);
-			}
-		}
-	});
-
-	it("pins the byte-identical unwitnessed legacy oneOf retry/reselection exception for ungraded members", () => {
-		const group: ChoiceStateGroup = {
-			mode: "oneOf",
-			memberIds: ["a", "b"],
-			requiredIds: ["a", "b"],
-		};
-		const ungraded = { ...factsA, question: { ...question, graded: false } };
-		const retryBytes =
-			'{"version":1,"kind":"assessmentGroup","mode":"oneOf","selectedMemberId":"b","completed":false}';
-		const reselectionBytes =
-			'{"version":1,"kind":"assessmentGroup","mode":"oneOf","selectedMemberId":"b","completed":false}';
-		// assessment-group-runtime.ts onChange and onSubmit can persist these same legacy bytes.
-		for (const g of [
-			undefined,
-			groupState("oneOf"),
-			JSON.parse(retryBytes),
-			JSON.parse(reselectionBytes),
-		])
-			expect(
-				choiceDependencyStatus(
-					"g",
-					groupView(
-						{ a: legacySubmitted, b: legacySubmitted, g },
-						[{ id: "g" }],
-						{ a: ungraded, b: ungraded },
-						group,
-					),
-				),
-			).toBe("current");
-	});
-
-	it("all legacy scored memberIds never replace the full dependencies", () => {
-		const group: ChoiceStateGroup = { mode: "all", memberIds: ["a", "b"], requiredIds: ["a", "b"] };
-		const ungraded = { ...factsA, question: { ...question, graded: false } };
-		const states = {
-			a: legacySubmitted,
-			b: { ...legacySubmitted, answer: ["removed"] },
-			g: groupState("all"),
-		};
-		const input = groupView(
-			states,
-			[{ id: "g", memberIds: ["a"] }],
-			{ a: factsA, b: ungraded },
-			group,
-		);
-		expect(choiceGroupDependencyIds("g", input)).toEqual(["a", "b"]);
-		expect(choiceDependencyStatus("g", input)).toBe("history");
-	});
-
 	it("requires both the retained original reference and latest evidence, with no backwards search", () => {
 		const submitted = groupSubmission("all", "signed");
 		const badLatest = {
@@ -1703,19 +1188,29 @@ describe("dormant group material references", () => {
 		).toBe("history");
 		const newest = {
 			...signedSubmitted,
-			history: [legacySubmitted, { ...legacySubmitted, answer: ["removed"] }],
+			history: [signedSubmitted, { ...signedSubmitted, answer: ["removed"] }],
 		};
-		// The first original is the legacy aggregate's origin; later legacy history cannot replace it.
 		expect(
-			choiceDependencyStatus("g", groupView({ a: newest, g: groupState("all") }, [{ id: "g" }])),
+			choiceDependencyStatus(
+				"g",
+				groupView({ a: newest, g: groupState("all", submitted) }, [
+					{ id: "g", contentSignature: submitted.contentSignature },
+				]),
+			),
 		).toBe("current");
 		const badOrigin = {
 			...signedSubmitted,
-			history: [{ ...legacySubmitted, answer: ["removed"] }, legacySubmitted],
+			history: [{ ...signedSubmitted, answer: ["removed"] }, signedSubmitted],
 		};
 		expect(
-			choiceDependencyStatus("g", groupView({ a: badOrigin, g: groupState("all") }, [{ id: "g" }])),
+			choiceDependencyStatus(
+				"g",
+				groupView({ a: badOrigin, g: groupState("all", submitted) }, [
+					{ id: "g", contentSignature: submitted.contentSignature },
+				]),
+			),
 		).toBe("history");
+
 		// A draft with positive attempts does not supply a missing signed reference.
 		expect(
 			choiceDependencyStatus(
@@ -1727,7 +1222,7 @@ describe("dormant group material references", () => {
 		).toBe("history");
 	});
 
-	it("resolves old incorrect references in their own context, shares compact proof after JSON, and archives direct submissions", () => {
+	it("resolves old incorrect references in their own context and archives direct submissions", () => {
 		const original = { ...signedSubmitted, correct: false, completed: false, answer: ["b"] };
 		const second = prepareChoiceAssessmentState(
 			original,
@@ -1759,7 +1254,7 @@ describe("dormant group material references", () => {
 				groupView(
 					{ a: shared, g: groupState("all", snapshot) },
 					[row(), { id: "g", contentSignature: snapshot.contentSignature }],
-					{ a: addedDistractor },
+					{ a: factsA },
 				),
 			),
 		).toBe("current");
