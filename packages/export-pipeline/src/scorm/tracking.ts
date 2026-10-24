@@ -52,7 +52,7 @@ export interface TrackingConfig {
 	isAssessmentFinal?: (id: string) => boolean;
 	/** Hosts supply saved answers; the tracker owns their finality decision. */
 	getAssessmentState?: (id: string) => unknown;
-	/** Absent until the host admits evidence-aware reporting. */
+	/** Optional evidence for score display and assessment finality. */
 	getChoiceDependencyView?: () => ChoiceDependencyEvidence | undefined;
 }
 
@@ -96,13 +96,12 @@ export class CourseTracker {
 		correct?: boolean,
 		score?: number,
 		options?: TrackInteractionOptions,
-		view?: ChoiceDependencyEvidence,
 	): void {
 		this.runtime.trackInteraction(id, response, correct, score, options);
 
-		if (score !== undefined) writeCourseOutcome(this.runtime, this.outcome("score", view));
+		if (score !== undefined) writeCourseOutcome(this.runtime, this.outcome("score"));
 
-		this.checkCompletion(view);
+		this.checkCompletion();
 	}
 
 	/**
@@ -152,14 +151,8 @@ export class CourseTracker {
 		return rows.length ? { raw: this.average(rows), min: 0, max: 100 } : null;
 	}
 
-	trackGroupObjective(
-		id: string,
-		score: number,
-		passed: boolean,
-		runtime = this.runtime,
-		view?: ChoiceDependencyEvidence,
-	): void {
-		writeCourseOutcome(runtime, this.outcome({ id, score, passed }, view));
+	trackGroupObjective(id: string, score: number, passed: boolean, runtime = this.runtime): void {
+		writeCourseOutcome(runtime, this.outcome({ id, score, passed }));
 	}
 
 	finish(explicitFinish = false, runtime = this.runtime): boolean {
@@ -184,32 +177,15 @@ export class CourseTracker {
 		return latest;
 	}
 
-	private historyIsWaiting(view: ChoiceDependencyEvidence | undefined): boolean {
-		if (!view) return false;
-		const ids = new Set(this.config.requiredAssessmentIds ?? []);
-		const hasPassMark = this.hasPassMark();
-		if (hasPassMark) for (const id of this.config.scoredAssessmentIds ?? []) ids.add(id);
-		// One set covers every intent, including standalone's legacy quiz completion.
-		if (
-			this.config.completionMethod === "quiz" &&
-			(!hasPassMark || this.config.reportOutcome === false)
-		) {
-			for (const [id, question] of Object.entries(view.questions)) if (question.graded) ids.add(id);
-			const rows = this.runtime.getInteractions();
-			for (const row of rows) if (row.id !== "*" && Number.isFinite(row.score)) ids.add(row.id);
-		}
-		return [...ids].some((id) => view.status(id) === "history");
-	}
-
 	/**
 	 * Evaluate whether the course should be marked as completed, passed, or
 	 * failed based on the configured completion method.
 	 */
-	checkCompletion(view?: ChoiceDependencyEvidence): void {
-		writeCourseOutcome(this.runtime, this.outcome("check", view));
+	checkCompletion(): void {
+		writeCourseOutcome(this.runtime, this.outcome("check"));
 	}
 
-	/** A decided commit preserves the adapter's existing write log. */
+	/** Commit preparation preserves the adapter's existing write log. */
 	prepareCommit(): void {
 		writeCourseOutcome(this.runtime, this.outcome("prepareCommit"));
 	}
@@ -287,23 +263,12 @@ export class CourseTracker {
 			| "end"
 			| "finish"
 			| { id: string; score: number; passed: boolean } = "check",
-		view = this.config.getChoiceDependencyView?.(),
 	): TrackerOutcome {
-		if (this.historyIsWaiting(view))
-			return {
-				kind: "waiting",
-				...(intent === "end"
-					? { finish: "complete" as const }
-					: intent === "finish"
-						? { finish: "terminate" as const }
-						: {}),
-			};
-		if (intent === "prepareCommit") return { kind: "decided" };
-		if (typeof intent === "object") return { kind: "decided", objective: intent };
-		if (intent === "finish") return { kind: "decided", finish: "terminate" };
+		if (intent === "prepareCommit") return {};
+		if (typeof intent === "object") return { objective: intent };
+		if (intent === "finish") return { finish: "terminate" };
 		if (intent === "end")
 			return {
-				kind: "decided",
 				completion: "completed",
 				forceCompletion: true,
 				finish: "complete",
@@ -311,12 +276,12 @@ export class CourseTracker {
 		const hasPassMark = this.hasPassMark();
 		if (intent === "display") {
 			if (!hasPassMark || !(this.config.isAssessmentFinal || this.config.getAssessmentState))
-				return { kind: "decided" };
+				return {};
 			const required = new Set([
 				...(this.config.scoredAssessmentIds ?? []),
 				...(this.config.requiredAssessmentIds ?? []),
 			]);
-			if (![...required].every((id) => this.isAssessmentFinal(id))) return { kind: "decided" };
+			if (![...required].every((id) => this.isAssessmentFinal(id))) return {};
 		}
 		const interactions = this.runtime.getInteractions();
 		const latest = this.latestScored(interactions);
@@ -324,19 +289,16 @@ export class CourseTracker {
 		const legacyQuiz = !authored && this.config.completionMethod === "quiz";
 		if (intent === "score" && !hasPassMark)
 			return {
-				kind: "decided",
 				score: legacyQuiz ? this.average([...latest.values()]) : undefined,
 			};
 		const requiredMet = (this.config.requiredAssessmentIds ?? []).every(
 			(id) => latest.get(id)?.correct === true,
 		);
 		if (intent === "check" && !authored) {
-			if (!requiredMet) return { kind: "decided", completion: "incomplete", forceCompletion: true };
+			if (!requiredMet) return { completion: "incomplete", forceCompletion: true };
 			if (!legacyQuiz)
-				return this.pageRuleMet()
-					? { kind: "decided", completion: "completed", forceCompletion: true }
-					: { kind: "decided" };
-			if (!interactions.length) return { kind: "decided" };
+				return this.pageRuleMet() ? { completion: "completed", forceCompletion: true } : {};
+			if (!interactions.length) return {};
 		}
 		const ids = authored
 			? (this.config.scoredAssessmentIds ?? [])
@@ -359,10 +321,9 @@ export class CourseTracker {
 						interactions,
 					)
 				: undefined;
-		if (intent === "display") return { kind: "decided", result };
+		if (intent === "display") return { result };
 		if (intent === "score")
 			return {
-				kind: "decided",
 				// A partial authored score would let the LMS judge pass/fail early.
 				score: this.config.reportOutcome !== false ? result?.score : undefined,
 			};
@@ -394,7 +355,6 @@ export class CourseTracker {
 						: "incomplete";
 		}
 		return {
-			kind: "decided",
 			result,
 			courseFailure,
 			success: separateSuccess ? success : undefined,

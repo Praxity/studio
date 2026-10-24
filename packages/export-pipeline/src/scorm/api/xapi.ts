@@ -183,7 +183,6 @@ export class XapiRuntime implements SCORMRuntime {
 	private actor: XapiActor | null;
 	private sendEnabled: boolean;
 	private initialized = false;
-	private terminationResult = true;
 	private commitPreparation: RuntimeCommitPreparation = {};
 	private completionStatus = "incomplete";
 	private successStatus: "passed" | "failed" | "unknown" = "unknown";
@@ -398,19 +397,13 @@ export class XapiRuntime implements SCORMRuntime {
 		return true;
 	}
 
-	suppressTerminationResult(): void {
-		this.terminationResult = false;
-	}
-
 	terminate(): boolean {
-		const reportResult = this.terminationResult;
-		this.terminationResult = true;
 		if (!this.initialized) {
 			return false;
 		}
 		if (!prepareRuntimeCommit(this.commitPreparation)) return false;
 
-		if (this.sendEnabled && reportResult) {
+		if (this.sendEnabled) {
 			const verb = this.completionVerbKey();
 			const result = this.buildCompletionResult();
 			const statement = this.buildStatement(verb, this.courseObject(), result);

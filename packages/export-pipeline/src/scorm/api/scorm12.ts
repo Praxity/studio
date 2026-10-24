@@ -31,7 +31,6 @@ import {
 import { deviceAttemptId } from "./device-attempt";
 import { writeObjectiveId } from "./objective-slots";
 import {
-	configureSessionOutcome,
 	getSessionState,
 	readSessionState,
 	type ScormSessionState,
@@ -82,9 +81,6 @@ export interface Scorm12Runtime {
 
 // biome-ignore lint/suspicious/noUnsafeDeclarationMerging: The static capability block installs these methods; interface declarations erase without emitting fields that shadow the prototype.
 export class Scorm12Runtime implements SCORMRuntime {
-	configureOutcome(policy: { waiting: boolean }): void {
-		configureSessionOutcome(this.session, policy);
-	}
 	readonly destinations = LMS_DESTINATIONS;
 	static {
 		if (globalThis.__praxityPrivateState !== false) {
@@ -238,7 +234,6 @@ export class Scorm12Runtime implements SCORMRuntime {
 			if (!this.flushCompletion(true)) return false;
 			if (
 				explicitFinish &&
-				!session.outcomeWaiting &&
 				!this.unreadableSuspendData &&
 				!session.courseFailure &&
 				!["failed", "passed"].includes(this.lmsGetValue("cmi.core.lesson_status", true)) &&
@@ -535,9 +530,9 @@ export class Scorm12Runtime implements SCORMRuntime {
 	private prepareExit(terminating = false): boolean {
 		// Persist the attempt across a window close; page navigation only commits. A failed
 		// attempt stays suspended so the learner can resume it and retry toward the pass mark.
-		const terminal =
-			!this.session?.outcomeWaiting &&
-			["completed", "passed"].includes(this.lmsGetValue("cmi.core.lesson_status", terminating));
+		const terminal = ["completed", "passed"].includes(
+			this.lmsGetValue("cmi.core.lesson_status", terminating),
+		);
 		return this.lmsSetValue("cmi.core.exit", terminal ? "" : "suspend", terminating);
 	}
 

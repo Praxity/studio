@@ -65,8 +65,7 @@ when only a runtime is installed. It preserves score, success and completion wri
 order; SCORM adapters still prepare explicit completion inside their termination
 guard. `scripts/check-source-owners.mjs` rejects outcome writes outside this writer,
 and calls to `writeCourseOutcome` outside CourseTracker and the writer module.
-`finishRuntimeCourse` owns the runtime-only End exception in that module. Any future
-waiting gate must cover that exception as well as `CourseTracker.outcome()`.
+`finishRuntimeCourse` owns the runtime-only End exception in that module.
 
 ## CMI Data Model Elements Used
 

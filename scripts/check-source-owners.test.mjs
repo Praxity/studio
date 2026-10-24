@@ -271,8 +271,6 @@ test("course outcome writes belong to the injected tracking writer", () => {
 		'runtime["setScore"](100, 0, 100);',
 		'const method = "trackObjective"; runtime[method]("group", 100, true);',
 		"runtime.terminate(true);",
-		"runtime.suppressTerminationResult();",
-		"const suppress = runtime.suppressTerminationResult; suppress();",
 		"runtime.terminate(explicitFinish);",
 		"const write = runtime.setScore; write(100, 0, 100);",
 		"runtime.setScore.call(runtime, 100, 0, 100);",
@@ -310,7 +308,7 @@ test("course outcome writes belong to the injected tracking writer", () => {
 
 test("only outcome owners may invoke the course writer", () => {
 	for (const source of [
-		'writeCourseOutcome(runtime, { kind: "decided", completion: "completed" });',
+		'writeCourseOutcome(runtime, { completion: "completed" });',
 		"owner.writeCourseOutcome(runtime, outcome);",
 		'owner["writeCourseOutcome"](runtime, outcome);',
 		'import { writeCourseOutcome as write } from "./tracking"; write(runtime, outcome);',
@@ -333,7 +331,7 @@ test("only outcome owners may invoke the course writer", () => {
 	}
 	const result = runFixture({
 		path: "packages/shared-blocks/src/planted.ts",
-		source: 'writeCourseOutcome(runtime, { kind: "decided", completion: "completed" });',
+		source: 'writeCourseOutcome(runtime, { completion: "completed" });',
 	});
 	assert.equal(result.status, 1, result.stdout + result.stderr);
 	assert.match(result.stderr, /course outcome decisions belong/);

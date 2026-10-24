@@ -69,13 +69,16 @@ const question = {
 
 type Format = "scorm12" | "scorm2004" | "xapi" | "standalone";
 
-function launch(format: Format, evidence = false, waiting = false) {
+function launch(format: Format, evidence = false, history = false) {
 	const dom = new JSDOM("", { url: "https://course.example/one.html" });
 	documents.push(dom);
 	const win = dom.window as unknown as Window & typeof globalThis;
 	vi.stubGlobal("window", win);
 	vi.stubGlobal("document", win.document);
-	vi.stubGlobal("fetch", async () => new Response(null, { status: 200 }));
+	vi.stubGlobal(
+		"fetch",
+		vi.fn(async () => new Response(null, { status: 200 })),
+	);
 	const values = new Map<string, string>();
 	const writes: string[][] = [];
 	let refuseObjectives = false;
@@ -183,7 +186,7 @@ function launch(format: Format, evidence = false, waiting = false) {
 	const provider = win.__praxityBlockState;
 	if (!provider) throw new Error("Missing provider installation");
 	if (evidence) {
-		provider.set("q", answer(waiting ? changed : signature));
+		provider.set("q", answer(history ? changed : signature));
 		runtime.trackInteraction("q", "a", true, 100);
 		runtime.trackInteraction("a", "answer", true, 100);
 		// Production still has no evidence binding. Inject the existing tracker capability.
@@ -193,7 +196,7 @@ function launch(format: Format, evidence = false, waiting = false) {
 			requiredAssessmentIds: ["q"],
 			getChoiceDependencyView: view,
 		});
-		expect(view().status("q")).toBe(waiting ? "history" : "current");
+		expect(view().status("q")).toBe(history ? "history" : "current");
 	}
 	writes.length = 0;
 	return {
@@ -263,16 +266,17 @@ describe.each(["xapi", "standalone"] as const)("%s without an objective sink", (
 		expect("trackObjective" in host.runtime).toBe(false);
 		expect(
 			writeCourseOutcome(host.runtime, {
-				kind: "decided",
 				objective: { id: "g", score: 100, passed: true },
 			}),
 		).toBe(true);
 	});
 
-	for (const waiting of [true, false])
+	for (const history of [true, false])
 		for (const score of [100, undefined])
-			it(`accepts a ${waiting ? "waiting" : "decided"} ${score === undefined ? "ungraded" : "graded"} signed capture; refuses a forged candidate`, () => {
-				const host = launch(format, true, waiting);
+			it(`accepts a ${history ? "historical" : "current"} ${score === undefined ? "ungraded" : "graded"} signed capture; refuses a forged candidate`, () => {
+				const host = launch(format, true, history);
+				host.runtime.trackPageVisit("one");
+				host.runtime.trackPageVisit("two");
 				expect("trackObjective" in host.runtime).toBe(false);
 				expect(host.provider.getSaveResult).toBeUndefined();
 				expect(Reflect.get(host.provider, "prepareGroupState")).toBeUndefined();
@@ -284,6 +288,12 @@ describe.each(["xapi", "standalone"] as const)("%s without an objective sink", (
 				expect(host.provider.get("g")).toEqual(groupState);
 				expect(host.runtime.getInteractions().at(-1)?.id).toBe("g");
 				expect(host.runtime.getInteractions().at(-1)?.score).toBe(score);
+				expect(host.runtime.getCompletion()).toBe("completed");
+				if (format === "xapi")
+					expect(fetch).toHaveBeenCalledWith(
+						"https://lrs.example/statements",
+						expect.objectContaining({ body: expect.stringContaining('"completion":true') }),
+					);
 				const rows = host.runtime.getInteractions();
 				expect(submit(host, { contentSignature: changed }).accepted).toBe(false);
 				expect(host.provider.get("g")).toEqual(groupState);
@@ -291,6 +301,7 @@ describe.each(["xapi", "standalone"] as const)("%s without an objective sink", (
 				expect(commit).toHaveBeenCalledTimes(1);
 				const reopened = host.open();
 				expect(reopened.initialize()).toBe(true);
+				expect(reopened.getCompletion()).toBe("completed");
 				expect(createBlockStateRuntime(reopened).get("g")).toEqual(groupState);
 			});
 });
