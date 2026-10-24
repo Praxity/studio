@@ -127,6 +127,7 @@ function sanitizeForJsonValue(value: unknown, key?: string): unknown {
 		}
 		const result: Record<string, unknown> = {};
 		for (const [entryKey, entryValue] of Object.entries(value)) {
+			if (entryKey === "_foldedPageTitle") continue;
 			if (isInlineProjectionMetadataKey(entryKey, { keepDisplay: true })) continue;
 			result[entryKey] = sanitizeForJsonValue(entryValue, entryKey);
 		}

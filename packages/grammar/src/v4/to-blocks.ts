@@ -124,6 +124,7 @@ export function toBlocks(
 	const optionFeedback: TreeNode[] = [];
 	let keepInlineTrees = false;
 	const assigned = new Map<TreeNode, Map<string, string>>();
+	const foldedPageTitles = new Set<TreeNode>();
 	const id = (
 		node: TreeNode,
 		role?: string,
@@ -938,6 +939,7 @@ export function toBlocks(
 				return [
 					block(node, "assessmentGroup", {
 						groupName: title,
+						...(foldedPageTitles.has(node) ? { _foldedPageTitle: true } : {}),
 						...(title && node.headingLevel !== 2 ? { _headingLevel: node.headingLevel } : {}),
 						memberBlockIds: members
 							.filter((child) => child.type === "assessment")
@@ -1046,8 +1048,17 @@ export function toBlocks(
 	}
 	const pages = tree.root.children
 		.filter((node) => node.kind === "page")
-		.map(
-			(page): PraxityPage => ({
+		.map((page): PraxityPage => {
+			const foldedPageTitle = page.headingLevel
+				? page.children.find(
+						(child) =>
+							child.type === "group" &&
+							child.headingLevel === 1 &&
+							subject(child) === subject(page),
+					)
+				: undefined;
+			if (foldedPageTitle) foldedPageTitles.add(foldedPageTitle);
+			return {
 				id: id(page),
 				title: partText(page, "nav") ?? subject(page),
 				data: {
@@ -1056,13 +1067,7 @@ export function toBlocks(
 					title: subject(page),
 				},
 				blocks: [
-					...(page.headingLevel &&
-					!page.children.some(
-						(child) =>
-							child.type === "group" &&
-							child.headingLevel === 1 &&
-							subject(child) === subject(page),
-					)
+					...(page.headingLevel && !foldedPageTitle
 						? [
 								block(
 									page,
@@ -1074,8 +1079,8 @@ export function toBlocks(
 						: []),
 					...children(page),
 				],
-			}),
-		);
+			};
+		});
 	const frontmatter = tree.root.children.find((node) => node.kind === "frontmatter");
 	if (frontmatter && pages[0]) {
 		// Declarations have hidden runtime wrappers. Keep the authored page title

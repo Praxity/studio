@@ -148,6 +148,49 @@ it("does not duplicate a page's folded group introduction", () => {
 	expect(lesson.blocks[0].data).not.toHaveProperty("title");
 });
 
+it("marks only the direct group that replaces the page heading in both projections", () => {
+	const lesson = readLesson(
+		"# Lesson\nnav: Short\n::: group Other {level=1}\n::: choice Q\n(x) Yes\n( ) No\n:::\n:::\n::: group Lesson {level=1}\n::: choice Q\n(x) Yes\n( ) No\n:::\n:::\n",
+	);
+	expect(lesson.hasErrors).toBe(false);
+	for (const blocks of [lesson.pages[0].blocks, lesson.blocks]) {
+		expect(
+			blocks
+				.filter((block) => block.type === "assessmentGroup")
+				.map((block) => ({ name: block.data.groupName, folded: block.data._foldedPageTitle })),
+		).toEqual([
+			{ name: "Other", folded: undefined },
+			{ name: "Lesson", folded: true },
+		]);
+	}
+});
+
+it.each(["", " {hideTitle}"])(
+	"marks at most one matching group when the page setting is %j",
+	(setting) => {
+		const lesson = readLesson(
+			`# Lesson${setting}\n::: group Lesson {level=1}\n::: choice Q\n(x) Yes\n( ) No\n:::\n:::\n::: group Lesson {level=1}\n::: choice Q\n(x) Yes\n( ) No\n:::\n:::\n`,
+		);
+		expect(lesson.hasErrors).toBe(false);
+		expect(
+			lesson.pages[0].blocks
+				.filter((block) => block.type === "assessmentGroup")
+				.map((block) => block.data._foldedPageTitle),
+		).toEqual(setting ? [undefined, undefined] : [true, undefined]);
+	},
+);
+
+it("refuses an authored folded-page-title setting without projecting it", () => {
+	const lesson = readLesson(
+		"# Lesson\n::: group Other {level=1 _foldedPageTitle=true}\n::: choice Q\n(x) Yes\n( ) No\n:::\n:::\n",
+	);
+	expect(lesson.hasErrors).toBe(true);
+	expect(lesson.diagnostics.map((diagnostic) => diagnostic.code)).toContain("invalid-setting-key");
+	expect(
+		lesson.pages[0].blocks.find((block) => block.type === "assessmentGroup")?.data._foldedPageTitle,
+	).toBeUndefined();
+});
+
 it("uses the existing source placeholders, table defaults and required defaults", () => {
 	const [prose, table, signature] = content(
 		"@source{Reference} @sources\n\n| A | B |\n| --- | --- |\n| 1 | 2 |\n\n::: signature Confirm\n:::\n",

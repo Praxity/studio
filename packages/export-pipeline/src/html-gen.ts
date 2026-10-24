@@ -1178,11 +1178,13 @@ export function renderPageFragments(
 		),
 	};
 	const sectionBlocks = page.blocks;
-	const pageTitleBlock = sectionBlocks.find(
-		(block) =>
-			(block.type === "heading" && block.data.level === 1) ||
-			(block.type === "assessmentGroup" && block.data._headingLevel === 1),
-	);
+	const pageTitleBlock =
+		sectionBlocks.find(
+			(block) =>
+				block.type === "assessmentGroup" &&
+				block.data._headingLevel === 1 &&
+				block.data._foldedPageTitle === true,
+		) ?? sectionBlocks.find((block) => block.type === "heading" && block.data.level === 1);
 	const sectionRhythm = "uniform";
 	const sections: SectionGroup[] = groupBlocksIntoSections(sectionBlocks, sectionRhythm);
 	const hiddenBlockIds = initiallyHiddenBlockIds(sectionBlocks);

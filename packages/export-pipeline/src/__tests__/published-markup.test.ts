@@ -8,6 +8,18 @@ function block(type: PraxityBlock["type"], data: Record<string, unknown>): Praxi
 }
 
 describe("published markup characterisation", () => {
+	it("omits the internal folded-page-title mark from learner JSON", () => {
+		expect(
+			sanitizeBlockForJson(
+				block("assessmentGroup", {
+					groupName: "Lesson",
+					_headingLevel: 1,
+					_foldedPageTitle: true,
+					memberBlockIds: [],
+				}),
+			).data,
+		).toEqual({ groupName: "Lesson", _headingLevel: 1, memberBlockIds: [] });
+	});
 	it("escapes ampersand, angle brackets and double quotes, retaining apostrophes", () => {
 		expect(renderBlockHtml({ id: "&<>\"'", type: "divider", data: {} })).toBe(
 			'<div id="block-&amp;&lt;&gt;&quot;\'" class="praxity-block praxity-block-divider praxity-block-&amp;&lt;&gt;&quot;\'" data-block-id="&amp;&lt;&gt;&quot;\'" data-node-id="&amp;&lt;&gt;&quot;\'" data-block-type="divider" data-focus-row><hr class="praxity-divider praxity-divider-line" /></div>',

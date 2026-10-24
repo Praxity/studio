@@ -24,6 +24,9 @@ const output = {
 	},
 };
 
+const laterFoldedTitle =
+	"---\nkicker: Module 1\ntime: About 12 minutes\n---\n# Lesson\nnav: Lesson\n::: group Other {level=1}\n::: choice Answer {scored}\n(x) Yes\n( ) No\n:::\n:::\n::: group Lesson {level=1}\n::: choice Answer {scored}\n(x) Yes\n( ) No\n:::\n:::\n";
+
 function desktopInput(sources: string[], deck = false): DesktopExportInput {
 	const blocks = sources.flatMap((source, index) => {
 		const read = readLesson(source);
@@ -89,6 +92,88 @@ function document(pages: PraxityPage[], index: number, overrides: Partial<Course
 }
 
 describe("lesson heading metadata", () => {
+	it("prefers the marked page title over an earlier level-one body heading", async () => {
+		const input = desktopInput([
+			laterFoldedTitle.replace("::: group Other", "## Introduction {level=1}\n::: group Other"),
+		]);
+		const context = await createCourseContext({ ...input, htmlOutput: output });
+		const doc = new JSDOM(compileDocument(context, context.documents[0].slug).html).window.document;
+		expect(
+			doc.querySelector("#main-content .praxity-kicker")?.nextElementSibling?.textContent,
+		).toBe("Lesson");
+	});
+	it.each(["Pages", "deck"])(
+		"decorates the later folded group once in %s flat-input output",
+		async (presentation) => {
+			const input = desktopInput([laterFoldedTitle], presentation === "deck");
+			const groups = input.blocks.filter((block) => block.type === "assessmentGroup");
+			groups[0].id = "other-group";
+			groups[1].id = "lesson-group";
+			const context = await createCourseContext({ ...input, htmlOutput: output });
+			const html = compileDocument(context, context.documents[0].slug).html;
+			const main = new JSDOM(html).window.document.querySelector("#main-content");
+			assert(main);
+			const other = main.querySelector("#assessment-group-title-other-group");
+			const lesson = main.querySelector("#assessment-group-title-lesson-group");
+			assert(other);
+			assert(lesson);
+			expect(other.textContent).toBe("Other");
+			expect(
+				other.parentElement?.querySelector(".praxity-kicker, .praxity-lesson-time"),
+			).toBeNull();
+			expect(lesson.textContent).toBe("Lesson");
+			expect(lesson.previousElementSibling?.outerHTML).toBe(
+				'<p class="praxity-kicker">Module 1</p>',
+			);
+			expect(lesson.nextElementSibling?.outerHTML).toBe(
+				'<p class="praxity-lesson-time">About 12 minutes</p>',
+			);
+			expect(main.querySelectorAll(".praxity-kicker")).toHaveLength(1);
+			expect(main.querySelectorAll(".praxity-lesson-time")).toHaveLength(1);
+			expect(
+				main
+					.querySelector('[data-assessment-group-header="lesson-group"]')
+					?.getAttribute("aria-labelledby"),
+			).toBe("assessment-group-title-lesson-group assessment-group-progress-lesson-group");
+			expect(
+				context.pages[0].blocks
+					.filter((block) => block.type === "assessmentGroup")
+					.map((block) => block.data._foldedPageTitle),
+			).toEqual([undefined, true]);
+			expect(html).not.toContain("_foldedPageTitle");
+		},
+	);
+	it.each(["true", 1])(
+		"ignores a non-boolean folded-title mark %j in compiled input",
+		async (mark) => {
+			const input = desktopInput([laterFoldedTitle]);
+			const other = input.blocks.find((block) => block.type === "assessmentGroup");
+			assert(other);
+			other.data._foldedPageTitle = mark;
+			const context = await createCourseContext({ ...input, htmlOutput: output });
+			const doc = new JSDOM(compileDocument(context, context.documents[0].slug).html).window
+				.document;
+			expect(
+				doc.querySelector("#main-content .praxity-kicker")?.nextElementSibling?.textContent,
+			).toBe("Lesson");
+		},
+	);
+	it("keeps persisted component defaults from assigning the compiler's folded-title mark", async () => {
+		const input = desktopInput([laterFoldedTitle]);
+		input.frontmatter = readLesson(
+			"---\ntitle: Course\ndesign:\n  componentDefaults:\n    assessment-group:\n      _foldedPageTitle: true\n---\n# Settings\n",
+		).frontmatter;
+		const context = await createCourseContext({ ...input, htmlOutput: output });
+		expect(
+			context.pages[0].blocks
+				.filter((block) => block.type === "assessmentGroup")
+				.map((block) => block.data._foldedPageTitle),
+		).toEqual([undefined, true]);
+		const doc = new JSDOM(compileDocument(context, context.documents[0].slug).html).window.document;
+		expect(
+			doc.querySelector("#main-content .praxity-kicker")?.nextElementSibling?.textContent,
+		).toBe("Lesson");
+	});
 	it.each([
 		["Pages", "plain"],
 		["Pages", "nav"],
