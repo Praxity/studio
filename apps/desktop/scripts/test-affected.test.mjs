@@ -563,3 +563,28 @@ test("CI selection writes literal verdicts without setup; affected execution ref
 	assert.equal(invalid.status, 1);
 	assert.match(invalid.stderr, /Selection modes require --vitest-only/);
 });
+
+test("runPlan creates missing temp and PRAXITY_TEST_ARTIFACTS folders before any step", async (t) => {
+	const parent = mkdtempSync(join(tmpdir(), "praxity-affected-folders-"));
+	const saved = Object.fromEntries(
+		["PRAXITY_TEST_ARTIFACTS", "TMPDIR", "TMP", "TEMP"].map((key) => [key, process.env[key]]),
+	);
+	t.after(() => {
+		for (const [key, value] of Object.entries(saved)) {
+			if (value === undefined) delete process.env[key];
+			else process.env[key] = value;
+		}
+		rmSync(parent, { recursive: true, force: true });
+	});
+	const temp = join(parent, "temp", "not", "yet");
+	const artifacts = join(parent, "artifacts", "not", "yet");
+	for (const key of ["TMPDIR", "TMP", "TEMP"]) process.env[key] = temp;
+	process.env.PRAXITY_TEST_ARTIFACTS = artifacts;
+	const seen = [];
+	const results = await runPlan([{ id: "probe" }], () => {
+		seen.push([existsSync(temp), existsSync(artifacts)]);
+		return 0;
+	});
+	assert.deepEqual(results, [{ id: "probe", code: 0 }]);
+	assert.deepEqual(seen, [[true, true]]);
+});
