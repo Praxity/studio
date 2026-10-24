@@ -10,12 +10,9 @@ let page: Page;
 test.beforeAll(async ({ browser }) => {
 	const result = await build({
 		stdin: {
-			contents: `import { choiceMaterialContent, choiceMaterialSignature, choiceContentSignature } from '@praxity/shared-blocks/assessment-choice';
+			contents: `import {choiceContentSignature} from '@praxity/shared-blocks/assessment-choice';
 import vectors from '../shared-blocks/tests/fixtures/choice-signature-vectors.json';
-window.choiceVectors = {
- literals: vectors.vectors.map(({html}) => { const canonical = choiceMaterialContent(html); return {canonical, hash: choiceMaterialSignature(canonical)}; }),
- question: choiceContentSignature({...vectors.question.data, stem: 'Pick'}, false)
-};`,
+window.choiceVectors = vectors.vectors.map(({data}) => choiceContentSignature({...vectors.question.data, ...data}, false));`,
 			resolveDir: fileURLToPath(new URL("../../", import.meta.url)),
 			loader: "ts",
 		},
@@ -33,13 +30,10 @@ test.afterAll(async () => {
 	await page?.context().close();
 });
 
-test("browser canonical trees and SHA-256 match the shared Node literals", async () => {
+test("browser short signatures match the shared Node literals", async () => {
 	await page.addScriptTag({ content: script });
 	const actual = await page.evaluate(
 		() => (window as unknown as { choiceVectors: unknown }).choiceVectors,
 	);
-	expect(actual).toEqual({
-		literals: vectors.vectors.map(({ canonical, hash }) => ({ canonical, hash })),
-		question: vectors.question.hash,
-	});
+	expect(actual).toEqual(vectors.vectors.map(({ hash }) => hash));
 });

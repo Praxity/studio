@@ -1,7 +1,6 @@
 import {
 	type ChoiceStateQuestion,
-	choiceMaterialProof,
-	choiceProofSignature,
+	choiceQuestionSignature,
 } from "@praxity/shared-blocks/choice-state-facts";
 import { JSDOM } from "jsdom";
 import { describe, expect, it, vi } from "vitest";
@@ -72,9 +71,12 @@ describe("course host", () => {
 			canAutoScore: true,
 			graded: true,
 			maxAttempts: 1,
-			correctAnswerSignature: `sha256:${"a".repeat(64)}`,
-			materialSignature: `sha256:${"b".repeat(64)}`,
-			options: [{ id: "a", materialSignature: `sha256:${"c".repeat(64)}` }],
+			correctIds: ["a"],
+			gradingMode: "exact" as const,
+			points: 100,
+			required: true,
+			content: { text: "b", images: [], icons: [] },
+			options: [{ id: "a", content: { text: "c", images: [], icons: [] }, image: null }],
 		};
 		const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 		const run = (facts: boolean) => {
@@ -84,8 +86,8 @@ describe("course host", () => {
 					? {
 							choiceStateQuestions: { broken: { ...question, maxAttempts: 2.5 }, good: question },
 							choiceStateSignatures: {
-								broken: choiceProofSignature(choiceMaterialProof(question)),
-								good: choiceProofSignature(choiceMaterialProof(question)),
+								broken: choiceQuestionSignature(question),
+								good: choiceQuestionSignature(question),
 							},
 						}
 					: {}),

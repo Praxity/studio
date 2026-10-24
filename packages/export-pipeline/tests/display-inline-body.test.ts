@@ -11,6 +11,7 @@ import { expect, it } from "vitest";
 import { type CourseConfig, renderPageFragments } from "../src/html-gen";
 import { compileDocument } from "../src/preview/compile-page";
 import { createCourseContext } from "../src/preview/course-context";
+import { stripChoiceStateFacts } from "./fixtures/choice-facts";
 import { compilerIslandAssets } from "./fixtures/page-compiler";
 
 it("retains the base learner body and embedded block JSON with every inline construct", () => {
@@ -4821,496 +4822,225 @@ it.each(mainRenderCases)("preserves main rendering and embedded JSON: $name", (r
 		expect(extractNarrationSegments("", {}, page.blocks, {}, row.locale)).toEqual(row.narration);
 });
 
-// Restore only these literal signature leaves, then compare every byte with main.
+// Pinned from the base after removing only the compiled choice facts.
 const mainDocumentCases = [
 	{
 		name: "labelCodeHtml",
-		index: 0,
 		slug: "p",
-		beforeSha: "1824cf31bbaaffe330e0d73a3812ae27186b9a695c95392b4df947f0fe9c4924",
-		afterSha: "1824cf31bbaaffe330e0d73a3812ae27186b9a695c95392b4df947f0fe9c4924",
 		configs: 2,
-		deltas: [[], []],
 		source: "# P\n::: choice Word\n(x) Use `<em>` tag\n( ) No\n:::\n",
+		hash: "37b72b059266f33bcaec688bb96d691c213eedd012554ffc614cf00c64c7381b",
 	},
 	{
 		name: "labelEscHtml",
-		index: 0,
 		slug: "p",
-		beforeSha: "a1c724eb77663ee77bfa55ec26e90b5215683de0cdb7490253d2784c90737c92",
-		afterSha: "a1c724eb77663ee77bfa55ec26e90b5215683de0cdb7490253d2784c90737c92",
 		configs: 2,
-		deltas: [[], []],
 		source: "# P\n::: choice Word\n(x) a \\<em>b\n( ) No\n:::\n",
+		hash: "cc84e561b8c88de32fe530caf075aebf6dedd749f279d48522e9eb2d7a26d07d",
 	},
 	{
 		name: "labelRealHtml",
-		index: 0,
 		slug: "p",
-		beforeSha: "5eeb6dc517f9b17f865e8f97689bcb3202af7f0536b869c887c7cc017d28e11c",
-		afterSha: "5eeb6dc517f9b17f865e8f97689bcb3202af7f0536b869c887c7cc017d28e11c",
 		configs: 2,
-		deltas: [[], []],
 		source: "# P\n::: choice Word\n(x) a <em>b</em>\n( ) No\n:::\n",
+		hash: "ce521b5f44b34ad3a866b343854157d0ba0f8ec2d87634183249712c9a67def1",
 	},
 	{
 		name: "labelCodeSpan",
-		index: 0,
 		slug: "p",
-		beforeSha: "46e8917877239d92c1134f759c4cb169cefa271d5bff5be0b87bd7c8a8f1082f",
-		afterSha: "46e8917877239d92c1134f759c4cb169cefa271d5bff5be0b87bd7c8a8f1082f",
 		configs: 2,
-		deltas: [[], []],
 		source: "# P\n::: choice Word\n(x) The `<span>` tag\n( ) The `<div>` tag\n:::\n",
+		hash: "06b3c8084a6e82ea0d9f17722daee9c558676e7a4035e978a22e57dbe0ef590c",
 	},
 	{
 		name: "fbLinkTerm",
-		index: 0,
 		slug: "p",
-		beforeSha: "8cefb878290d5d7e4ceee44b3e9f0a25ed1efb6c918e529099dfa4157afda36e",
-		afterSha: "8cefb878290d5d7e4ceee44b3e9f0a25ed1efb6c918e529099dfa4157afda36e",
 		configs: 2,
-		deltas: [[], []],
 		source:
 			"# P\n::: choice Word\nincorrect: Try again\n(x) Yes\n( ) No\nfeedback: [Guide](https://example.com) [term]{Definition} and `code`\n:::\n",
+		hash: "d3e011eba8810d6e41800c8f08c9ee22713dcdd364b882625684e9c5413b4bda",
 	},
 	{
 		name: "fbLinkTerm",
-		index: 1,
 		slug: "glossary",
-		beforeSha: "089a962235be0a1f33386a43d8a63aae3f904180e415fbf53606a8a12c3ac2e2",
-		afterSha: "089a962235be0a1f33386a43d8a63aae3f904180e415fbf53606a8a12c3ac2e2",
 		configs: 1,
-		deltas: [[]],
 		source:
 			"# P\n::: choice Word\nincorrect: Try again\n(x) Yes\n( ) No\nfeedback: [Guide](https://example.com) [term]{Definition} and `code`\n:::\n",
+		hash: "d3c722f0b49cc9afbdb5c126e66acbef7b22c5e845111f15ecf03fdfd8c10253",
 	},
 	{
 		name: "fbHtml",
-		index: 0,
 		slug: "p",
-		beforeSha: "01046b9e12a6d991b9807933cf7c346d45e2986195e884d6cabfcebd27f39e66",
-		afterSha: "01046b9e12a6d991b9807933cf7c346d45e2986195e884d6cabfcebd27f39e66",
 		configs: 2,
-		deltas: [[], []],
 		source:
 			"# P\n::: choice Word\nincorrect: Try again\n(x) Yes\n( ) No\nfeedback: Use <em>this</em> one\n:::\n",
+		hash: "2e93313bfaba2d4285902398cd5fdc8169f3d643497e83f30e14e8a6f2fe6dc6",
 	},
 	{
 		name: "fbCodeHtml",
-		index: 0,
 		slug: "p",
-		beforeSha: "13a6975b7db351d8ab5d3b84d38a6eb821dbeb9247e22de3c763431cca8c0b18",
-		afterSha: "13a6975b7db351d8ab5d3b84d38a6eb821dbeb9247e22de3c763431cca8c0b18",
 		configs: 2,
-		deltas: [[], []],
 		source:
 			"# P\n::: choice Word\nincorrect: Try again\n(x) Yes\n( ) No\nfeedback: Use `<em>` here\n:::\n",
+		hash: "f24ed8f83275e0781b2d268e0962fbfbf55d1860047a958b1ad7c00ffdfc5590",
 	},
 	{
 		name: "fbMultiNoPromo",
-		index: 0,
 		slug: "p",
-		beforeSha: "6c81bba3f8f0b9a98cd11cf97a19b12724bb6562c6416b6b9ae2ce36d07ef7b4",
-		afterSha: "6c81bba3f8f0b9a98cd11cf97a19b12724bb6562c6416b6b9ae2ce36d07ef7b4",
 		configs: 2,
-		deltas: [[], []],
 		source:
 			"# P\n::: choice Word {multiple}\n(x) Yes\nfeedback: Good [Guide](https://example.com)\n(x) Also\nfeedback: Fine [term]{Def}\n( ) No\nfeedback: Bad [Guide](https://example.com)\n:::\n",
+		hash: "ff12efda1acd30547840aada32a2aa45432a498d0ccf0c50d62c959923909ba0",
 	},
 	{
 		name: "fbMultiNoPromo",
-		index: 1,
 		slug: "glossary",
-		beforeSha: "ede8234fd6818f820ea399cfda44f7249098e066ff594cf30e6bdf7cefc990c0",
-		afterSha: "ede8234fd6818f820ea399cfda44f7249098e066ff594cf30e6bdf7cefc990c0",
 		configs: 1,
-		deltas: [[]],
 		source:
 			"# P\n::: choice Word {multiple}\n(x) Yes\nfeedback: Good [Guide](https://example.com)\n(x) Also\nfeedback: Fine [term]{Def}\n( ) No\nfeedback: Bad [Guide](https://example.com)\n:::\n",
+		hash: "492b51d38f1936221e09146f0ef941ea41c93fe3f369ed948f0b5b533d11f868",
 	},
 	{
 		name: "labelFooterInsertMid",
-		index: 0,
 		slug: "p",
-		beforeSha: "5c9c9fdc64aea3c1bfb3fb11a50fc0458f8c2e4365683ea25050fbb571587d54",
-		afterSha: "5c9c9fdc64aea3c1bfb3fb11a50fc0458f8c2e4365683ea25050fbb571587d54",
 		configs: 2,
-		deltas: [[], []],
 		source: "# P\n::: choice Word\n(x) Yes @footer.insert now\n( ) No\n:::\n",
+		hash: "27013dd4fe29f90540fc74856c875a55d5172896d2351e37cf2a857259ef5daf",
 	},
 	{
 		name: "labelFooter",
-		index: 0,
 		slug: "p",
-		beforeSha: "8539857263ad4ee2c36b0de208046da01ac20bfe48c140dd30047a2eb7dec2e7",
-		afterSha: "8539857263ad4ee2c36b0de208046da01ac20bfe48c140dd30047a2eb7dec2e7",
 		configs: 2,
-		deltas: [[], []],
 		source: "# P\n::: choice Word\n(x) Yes @footer{N}\n( ) No\n:::\n",
+		hash: "a95860c568016ba0122137359487e5601308ce9db5714831556e894c1e52d4a9",
 	},
 	{
 		name: "labelSource",
-		index: 0,
 		slug: "p",
-		beforeSha: "9c9cafaef83be10b84247a1b2a0be337085d77b215d3e2cc7d53346f38c49b2d",
-		afterSha: "9c9cafaef83be10b84247a1b2a0be337085d77b215d3e2cc7d53346f38c49b2d",
 		configs: 2,
-		deltas: [[], []],
 		source: "# P\n::: choice Word\n(x) Yes @source{N}\n( ) No\n:::\n",
+		hash: "bba6c26a4717208a1aff3078623aa310c00492d26e5aa5376e36916b3b8cfa50",
 	},
 	{
 		name: "labelPlain",
-		index: 0,
 		slug: "p",
-		beforeSha: "261252bc1227ba46fda0f53797ef1f7775beac4eac199c9ac82c4456f073d6f6",
-		afterSha: "261252bc1227ba46fda0f53797ef1f7775beac4eac199c9ac82c4456f073d6f6",
 		configs: 2,
-		deltas: [[], []],
 		source: "# P\n::: choice Word\n(x) Yes\n( ) No\n:::\n",
+		hash: "3b998dbc8a141c4a9ee64e85b579d20a171b36b79c19ea542e5f3fe6c56a05b7",
 	},
 	{
 		name: "labelWavy",
-		index: 0,
 		slug: "p",
-		beforeSha: "58642149ec663fd03ce2cdcd11bb4506f8d0b94f8e3322302d7dcb7284692520",
-		afterSha: "58642149ec663fd03ce2cdcd11bb4506f8d0b94f8e3322302d7dcb7284692520",
 		configs: 2,
-		deltas: [[], []],
 		source: "# P\n::: choice Word\n(x) Yes @source.wavy{N}\n( ) No\n:::\n",
+		hash: "0ab15a820e5dedbfa01dcccdf542485111c7023034f223f5ea625ff373db2246",
 	},
 	{
 		name: "labelMaterialHtml",
-		index: 0,
 		slug: "p",
-		beforeSha: "7cd33adeba56dde3b300ff701a8e568cecaf1e328e9ffa1aae6e03ba9b5f40be",
-		afterSha: "7cd33adeba56dde3b300ff701a8e568cecaf1e328e9ffa1aae6e03ba9b5f40be",
 		configs: 2,
-		deltas: [[], []],
 		source: "# P\n::: choice Word\n\n(x) Yes @source{Use `<span>`}\n( ) No\n:::\n",
+		hash: "40dc6f4170ad84a95c5eeedd89c6107089d027b28db0eb0f732869e147155c73",
 	},
 	{
 		name: "labelMaterialAliasStem",
-		index: 0,
 		slug: "p",
-		beforeSha: "a80ab829c7e36f1ef1db9fb5cc177cd44a61b3c0433f2f05845d5b90f1b35bd3",
-		afterSha: "99f42d5038121a4bdfe63d88bc4e0d39cafc7f401380ae26eef5db9d42a1b5f1",
 		configs: 2,
-		deltas: [
-			[
-				{
-					path: ["choiceStateQuestions", "x5", "materialSignature"],
-					before: "sha256:c38ec44c45eb5f3923ce59f6d8d2e8e213d849c12be0815352b6df714946b53b",
-					after: "sha256:9094533e53185c173eff2ab6fb77b5201c092b71c2aa60cc73a3a09043f262ae",
-				},
-				{
-					path: ["choiceStateSignatures", "x5"],
-					before: "sha256:550149995e33deee1a07fd508c4ce94c5e163852574fbaeb56994a803015b1ad",
-					after: "sha256:18202c9f5b8f9792dcba30c15b3692235f7b051a6fd40e67c1fac450cb91158f",
-				},
-			],
-			[
-				{
-					path: ["choiceStateQuestions", "x5", "materialSignature"],
-					before: "sha256:c38ec44c45eb5f3923ce59f6d8d2e8e213d849c12be0815352b6df714946b53b",
-					after: "sha256:9094533e53185c173eff2ab6fb77b5201c092b71c2aa60cc73a3a09043f262ae",
-				},
-				{
-					path: ["choiceStateSignatures", "x5"],
-					before: "sha256:550149995e33deee1a07fd508c4ce94c5e163852574fbaeb56994a803015b1ad",
-					after: "sha256:18202c9f5b8f9792dcba30c15b3692235f7b051a6fd40e67c1fac450cb91158f",
-				},
-			],
-		],
 		source: "# P\n::: choice Word @footer{N}\n\n(x) Yes\n( ) No\n:::\n",
+		hash: "ea67362d4d46bb069a61f6196d4c8bb96488986b05940ea3ecb3041a22a5070c",
 	},
 	{
 		name: "labelMaterialAliasDescription",
-		index: 0,
 		slug: "p",
-		beforeSha: "c10ba59fbb2a6d7d8d8fe20b4f6cd43f137cd33fb64dc765c23b3ededc6bece3",
-		afterSha: "59551ea601826bc62bfa503df475b6dd04a1e2f8b103633e72d45cfc4c00d661",
 		configs: 2,
-		deltas: [
-			[
-				{
-					path: ["choiceStateQuestions", "x6", "materialSignature"],
-					before: "sha256:b042e26ce7810ecd284fe82d7eeecbae61af6e87299fe365497f0efa6b4d8f01",
-					after: "sha256:4ee34d8c36c43bff96297e22058208f99b28260d0577d9420a9403b1142ab7a2",
-				},
-				{
-					path: ["choiceStateSignatures", "x6"],
-					before: "sha256:97d3e1b00348aad14a24fdb6a2514cbd7d3ecfef8a4977d9972d572d8cbce5bc",
-					after: "sha256:2689fdfc00fd39e9c49947d41641e171e6e632461d2fdf6dd23a1cbccb11c237",
-				},
-			],
-			[
-				{
-					path: ["choiceStateQuestions", "x6", "materialSignature"],
-					before: "sha256:b042e26ce7810ecd284fe82d7eeecbae61af6e87299fe365497f0efa6b4d8f01",
-					after: "sha256:4ee34d8c36c43bff96297e22058208f99b28260d0577d9420a9403b1142ab7a2",
-				},
-				{
-					path: ["choiceStateSignatures", "x6"],
-					before: "sha256:97d3e1b00348aad14a24fdb6a2514cbd7d3ecfef8a4977d9972d572d8cbce5bc",
-					after: "sha256:2689fdfc00fd39e9c49947d41641e171e6e632461d2fdf6dd23a1cbccb11c237",
-				},
-			],
-		],
 		source: "# P\n::: choice Word\nDescription @footer{N}\n(x) Yes\n( ) No\n:::\n",
+		hash: "5418d83fc5f3337886806531515010b0bc81adeca11b4bca898d5b96c36ff71d",
 	},
 	{
 		name: "labelMaterialWhole",
-		index: 0,
 		slug: "p",
-		beforeSha: "98b32036ed79c6962bae4dc21368cc13e7c592cc04304c7ff00f80c9d874525b",
-		afterSha: "d73c60f28c8840673020a65f5b9e85a61e55d41963ca20aabe6047b28aea7a50",
 		configs: 2,
-		deltas: [
-			[
-				{
-					path: ["choiceStateQuestions", "x5", "options", "1", "materialSignature"],
-					before: "sha256:a30a8e1cd0e7fdeba28c36c19d8f29aff50d21bb86a52d9306b593bf3dbced0d",
-					after: "sha256:bb22abe0435dd5486cd6bee4b41c73e3ea7e757b98a1ee8ef47ec48f792f4048",
-				},
-				{
-					path: ["choiceStateSignatures", "x5"],
-					before: "sha256:4849377972acf932f44973b10e64ec942982531cf2b0993a70eff35ba42ef219",
-					after: "sha256:c9bf02c1fe66b27b16d48791aa0df23707b3e7e30fefbe16970f25cf2711c3ac",
-				},
-			],
-			[
-				{
-					path: ["choiceStateQuestions", "x5", "options", "1", "materialSignature"],
-					before: "sha256:a30a8e1cd0e7fdeba28c36c19d8f29aff50d21bb86a52d9306b593bf3dbced0d",
-					after: "sha256:bb22abe0435dd5486cd6bee4b41c73e3ea7e757b98a1ee8ef47ec48f792f4048",
-				},
-				{
-					path: ["choiceStateSignatures", "x5"],
-					before: "sha256:4849377972acf932f44973b10e64ec942982531cf2b0993a70eff35ba42ef219",
-					after: "sha256:c9bf02c1fe66b27b16d48791aa0df23707b3e7e30fefbe16970f25cf2711c3ac",
-				},
-			],
-		],
 		source: "# P\n::: choice Word\n\n(x) @source{N}\n( ) No\n:::\n",
+		hash: "6094a2a86d571c3d1c5051b797ede2576826b5664abff6983ca263e43a6e05a2",
 	},
 	{
 		name: "labelMaterialWholeMark",
-		index: 0,
 		slug: "p",
-		beforeSha: "20ca22143b12b6c79a1053f1eef282c1dfb9f927b5c97c53d904c26439d6c633",
-		afterSha: "20ca22143b12b6c79a1053f1eef282c1dfb9f927b5c97c53d904c26439d6c633",
 		configs: 2,
-		deltas: [[], []],
 		source: "# P\n::: choice Word\n\n(x) ==Yes== @footer{N}\n( ) No\n:::\n",
+		hash: "6d619bfd2fb20284eb830b9003ff9b41130191ae7b0c4e51ff5c0fcf76d1b088",
 	},
 	{
 		name: "labelMaterialList",
-		index: 0,
 		slug: "p",
-		beforeSha: "f162e6243cc3aa8851423791985a1c1cdefc66ee093138773c43aa337bec164d",
-		afterSha: "f162e6243cc3aa8851423791985a1c1cdefc66ee093138773c43aa337bec164d",
 		configs: 2,
-		deltas: [[], []],
 		source: "# P\n::: choice Word\n\n(x) Yes @footer.insert\n( ) No\n:::\n",
+		hash: "0769bc873da9b35264dccb0e73d647289db2adc5a19206a71c6936ce63b3b0a0",
 	},
 	{
 		name: "labelTree0",
-		index: 0,
 		slug: "p",
-		beforeSha: "6be8772cbe8e2301e998cc0e0ecf3b8963e79efa45471220596a157438678abd",
-		afterSha: "6be8772cbe8e2301e998cc0e0ecf3b8963e79efa45471220596a157438678abd",
 		configs: 2,
-		deltas: [[], []],
 		source:
 			"# P\n::: choice If a<b @source{N} then b>a\nx<y @source{N} z>w\n(x) x<y @source{N} z>w\n( ) No\n:::\n",
+		hash: "d5c9ee6ed2dbff6b0d1e72224de66da9f9771cdf9144c2bdff9d94d7c3baafd8",
 	},
 	{
 		name: "labelTree1",
-		index: 0,
 		slug: "p",
-		beforeSha: "3c7d36e613133c781038ac07c527e31ef365e6272f51e83d2c52446e0ed1269a",
-		afterSha: "245e8e31349738a692241a4ed9d8b99ff4004f07b48b8017d1b33a366e0c0287",
 		configs: 2,
-		deltas: [
-			[
-				{
-					path: ["choiceStateQuestions", "x6", "materialSignature"],
-					before: "sha256:1bd047e5953de94d29c00f9631dfd585fa61d5b2c807f091a2491271d2a892f8",
-					after: "sha256:8dd81ad5e27129e707e878a345d32b2281b6503382cd3bfb9f792bce10a56f61",
-				},
-				{
-					path: ["choiceStateSignatures", "x6"],
-					before: "sha256:b601cca35b9718dea105bfb0f16828e6297e93991821b4e1c0e99b4b94df17a7",
-					after: "sha256:979de238b6139c5892cf60b318f933bbed897d8da5863149106656835fbfd60c",
-				},
-			],
-			[
-				{
-					path: ["choiceStateQuestions", "x6", "materialSignature"],
-					before: "sha256:1bd047e5953de94d29c00f9631dfd585fa61d5b2c807f091a2491271d2a892f8",
-					after: "sha256:8dd81ad5e27129e707e878a345d32b2281b6503382cd3bfb9f792bce10a56f61",
-				},
-				{
-					path: ["choiceStateSignatures", "x6"],
-					before: "sha256:b601cca35b9718dea105bfb0f16828e6297e93991821b4e1c0e99b4b94df17a7",
-					after: "sha256:979de238b6139c5892cf60b318f933bbed897d8da5863149106656835fbfd60c",
-				},
-			],
-		],
 		source:
 			"# P\n::: choice If a<b @footer{N} then b>a\nx<y @footer{N} z>w\n(x) x<y @footer{N} z>w\n( ) No\n:::\n",
+		hash: "3709b7f506507ee991b736d0425e3c5d1c2d97914e2afee814728f4af8c98f77",
 	},
 	{
 		name: "labelTree2",
-		index: 0,
 		slug: "p",
-		beforeSha: "15df9a19e6114bd55a5a0be28b39d60801343fd67101113fd66681294d995300",
-		afterSha: "180beb345e7314db6c979989f7c9642452961add9a89423da638901668704601",
 		configs: 2,
-		deltas: [
-			[
-				{
-					path: ["choiceStateQuestions", "x6", "options", "1", "materialSignature"],
-					before: "sha256:69a950ad575cd2d31f887132b4b26d6ed918391b9de726aabf33dbb0cd66b988",
-					after: "sha256:5d9f4fc1f1d85e68a4b9410b7ad412097c5439a897deca4bb13be3d48e623397",
-				},
-				{
-					path: ["choiceStateSignatures", "x6"],
-					before: "sha256:e99a666f9f7beab81178ea5002be84f81bb744f5a0c0d0282067a5285066742b",
-					after: "sha256:979de238b6139c5892cf60b318f933bbed897d8da5863149106656835fbfd60c",
-				},
-			],
-			[
-				{
-					path: ["choiceStateQuestions", "x6", "options", "1", "materialSignature"],
-					before: "sha256:69a950ad575cd2d31f887132b4b26d6ed918391b9de726aabf33dbb0cd66b988",
-					after: "sha256:5d9f4fc1f1d85e68a4b9410b7ad412097c5439a897deca4bb13be3d48e623397",
-				},
-				{
-					path: ["choiceStateSignatures", "x6"],
-					before: "sha256:e99a666f9f7beab81178ea5002be84f81bb744f5a0c0d0282067a5285066742b",
-					after: "sha256:979de238b6139c5892cf60b318f933bbed897d8da5863149106656835fbfd60c",
-				},
-			],
-		],
 		source:
 			"# P\n::: choice If a<b @sources then b>a\nx<y @sources z>w\n(x) x<y @sources z>w\n( ) No\n:::\n",
+		hash: "371c65abf2d7b737a686991b735f8136ee08fbe68d5e4fcba00b6a7ad148c3f7",
 	},
 	{
 		name: "labelTree3",
-		index: 0,
 		slug: "p",
-		beforeSha: "556fa580ffa2dac5f5502ab4c3f6410f308663a1a38fbb6ea8585d97cc49e19b",
-		afterSha: "372f02407cec13594c0b86246aa0dfc8021d5f23ede384e02a44ff01ff620b64",
 		configs: 2,
-		deltas: [
-			[
-				{
-					path: ["choiceStateQuestions", "x6", "materialSignature"],
-					before: "sha256:85d072800c31fbc41aebd8cb78dfe206aeaf21bed4f5885a5323977dd64557ab",
-					after: "sha256:8dd81ad5e27129e707e878a345d32b2281b6503382cd3bfb9f792bce10a56f61",
-				},
-				{
-					path: ["choiceStateSignatures", "x6"],
-					before: "sha256:87575710bbe8b2090880e60c00327170e88a4001ba3406d886f91a4f61a6ad59",
-					after: "sha256:979de238b6139c5892cf60b318f933bbed897d8da5863149106656835fbfd60c",
-				},
-			],
-			[
-				{
-					path: ["choiceStateQuestions", "x6", "materialSignature"],
-					before: "sha256:85d072800c31fbc41aebd8cb78dfe206aeaf21bed4f5885a5323977dd64557ab",
-					after: "sha256:8dd81ad5e27129e707e878a345d32b2281b6503382cd3bfb9f792bce10a56f61",
-				},
-				{
-					path: ["choiceStateSignatures", "x6"],
-					before: "sha256:87575710bbe8b2090880e60c00327170e88a4001ba3406d886f91a4f61a6ad59",
-					after: "sha256:979de238b6139c5892cf60b318f933bbed897d8da5863149106656835fbfd60c",
-				},
-			],
-		],
 		source:
 			"# P\n::: choice If a<b @footer.insert then b>a\nx<y @footer.insert z>w\n(x) x<y @footer.insert z>w\n( ) No\n:::\n",
+		hash: "136201856e88ac74fa1791a5a7f0e29f5e1b08fab0a2e10c9c585aa682b5dc86",
 	},
 	{
 		name: "labelTreeCode",
-		index: 0,
 		slug: "p",
-		beforeSha: "ca4d30164a73e3e258b4f1b36ac622bd982a85ab4c5729a09781d70cc0a47a3e",
-		afterSha: "accb62a414ddc420df26db26698ea1376f8a68ca999c612f5b01f86998cd3275",
 		configs: 2,
-		deltas: [
-			[
-				{
-					path: ["choiceStateQuestions", "x5", "materialSignature"],
-					before: "sha256:75e92b15a241ff9397e007ca2bdbb78a3a6d8f178fe577c1b747cdd5cecc30cc",
-					after: "sha256:1d4c7fb888cca67510951c9b049c25d39a530d3987e12eb0006c3e7ffe9b57ab",
-				},
-				{
-					path: ["choiceStateSignatures", "x5"],
-					before: "sha256:a5180cc063def9f0c03c3b40ceb894472334ed2b2592d6e53eac04d6527d5938",
-					after: "sha256:402c9654d1f4c92716c42eb930fe1adaf557235b905cf7945be7b03f4c7eb31a",
-				},
-			],
-			[
-				{
-					path: ["choiceStateQuestions", "x5", "materialSignature"],
-					before: "sha256:75e92b15a241ff9397e007ca2bdbb78a3a6d8f178fe577c1b747cdd5cecc30cc",
-					after: "sha256:1d4c7fb888cca67510951c9b049c25d39a530d3987e12eb0006c3e7ffe9b57ab",
-				},
-				{
-					path: ["choiceStateSignatures", "x5"],
-					before: "sha256:a5180cc063def9f0c03c3b40ceb894472334ed2b2592d6e53eac04d6527d5938",
-					after: "sha256:402c9654d1f4c92716c42eb930fe1adaf557235b905cf7945be7b03f4c7eb31a",
-				},
-			],
-		],
 		source: "# P\n::: choice Yes `<tag` @footer{N >}\n(x) Yes\n( ) No\n:::\n",
+		hash: "495400dbcabfa9f3aa6282dd1ff1bbc28bc7c9d97c3ee749899728aaaded4d33",
 	},
 ];
-it.each(mainDocumentCases)(
-	"publishes only enumerated material fact changes: $name in $slug",
-	async (row) => {
-		let id = 0;
-		const read = readLesson(row.source, {
-			ids: (node) =>
-				node.kind === "option" ? (node.correct ? `yes${id++}` : `no${id++}`) : `x${id++}`,
-		});
-		const context = await createCourseContext({
-			id: "course",
-			title: "P",
-			sourceLocale: "en",
-			content: read.pages,
-			htmlOutput: { islandAssets: compilerIslandAssets },
-		});
-		const html = compileDocument(context, row.slug).html;
-		expect(createHash("sha256").update(html).digest("hex")).toBe(row.afterSha);
-		let configIndex = 0;
-		const facts: unknown[] = [];
-		const restored = html.replace(
+it.each(mainDocumentCases)("preserves all ordinary document bytes: $name in $slug", async (row) => {
+	let id = 0;
+	const read = readLesson(row.source, {
+		ids: (node) =>
+			node.kind === "option" ? (node.correct ? `yes${id++}` : `no${id++}`) : `x${id++}`,
+	});
+	const context = await createCourseContext({
+		id: "course",
+		title: "P",
+		sourceLocale: "en",
+		content: read.pages,
+		htmlOutput: { islandAssets: compilerIslandAssets },
+	});
+	const html = compileDocument(context, row.slug).html;
+	const facts: unknown[] = [];
+	const configs =
+		html.match(
 			/<script id="(?:praxity-host-config|praxity-config)" type="application\/json">(.*?)<\/script>/g,
-			(whole, json: string) => {
-				const config = JSON.parse(json) as Record<string, unknown>;
-				facts.push([config.choiceStateQuestions, config.choiceStateSignatures]);
-				const delta = row.deltas[configIndex++];
-				if (!delta) throw new Error("Unexpected configuration");
-				for (const change of delta) {
-					expect(change.path.join(".")).toMatch(
-						/^choiceState(?:Questions\.[^.]+(?:\.options\.\d+)?\.materialSignature|Signatures\.[^.]+)$/,
-					);
-					let parent = config;
-					for (const key of change.path.slice(0, -1))
-						parent = parent[key] as Record<string, unknown>;
-					const leaf = change.path[change.path.length - 1];
-					expect(parent[leaf]).toBe(change.after);
-					parent[leaf] = change.before;
-				}
-				return whole.replace(json, JSON.stringify(config).replace(/<\/script/gi, "<\\/script"));
-			},
-		);
-		expect(configIndex).toBe(row.configs);
-		for (const published of facts.slice(1)) expect(published).toEqual(facts[0]);
-		expect(createHash("sha256").update(restored).digest("hex")).toBe(row.beforeSha);
-	},
-);
+		) ?? [];
+	for (const script of configs) {
+		const value = JSON.parse(script.slice(script.indexOf(">") + 1, -9));
+		facts.push([value.choiceStateQuestions, value.choiceStateSignatures]);
+	}
+	expect(configs).toHaveLength(row.configs);
+	for (const published of facts.slice(1)) expect(published).toEqual(facts[0]);
+	expect(createHash("sha256").update(stripChoiceStateFacts(html)).digest("hex")).toBe(row.hash);
+});

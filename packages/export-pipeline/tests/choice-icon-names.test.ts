@@ -94,6 +94,6 @@ for (const producer of ["grammar", "display"] as const) {
 	it(`${producer} hashes the mixed icon question without refusal`, () => {
 		const capture = captures.get(producer);
 		if (!capture) throw new Error("Missing compiled/exported capture");
-		expect(choiceContentSignature(capture.data, false)).toMatch(/^sha256:[0-9a-f]{64}$/);
+		expect(choiceContentSignature(capture.data, false)).toMatch(/^s96:[A-Za-z0-9_-]{16}$/);
 	});
 }

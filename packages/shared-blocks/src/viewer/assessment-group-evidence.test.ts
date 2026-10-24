@@ -226,15 +226,17 @@ it("keeps saved aggregate completion and capture when repaired members leave it 
 		canAutoScore: true,
 		graded: true,
 		maxAttempts: 2,
-		correctAnswerSignature:
-			"sha256:0eb5b8d6f81bc677da8a08567cc4fa9a06a57e9ec8da85ed73a7f62727996002",
-		materialSignature: `sha256:${"d".repeat(64)}`,
+		correctIds: ["a"],
+		gradingMode: "exact" as const,
+		points: 100,
+		required: true,
+		content: { text: "d", images: [], icons: [] },
 		options: [
-			{ id: "a", materialSignature: `sha256:${"b".repeat(64)}` },
-			{ id: "b", materialSignature: `sha256:${"c".repeat(64)}` },
+			{ id: "a", content: { text: "b", images: [], icons: [] }, image: null },
+			{ id: "b", content: { text: "c", images: [], icons: [] }, image: null },
 		],
 	};
-	signatures.a = "sha256:b1b74fa98c26909745962fa6d5f98b01897f03a1fa9bcbf35461c4213b407702";
+	signatures.a = "s96:glW7ns8cCA7BdGMb";
 	values.set("a", {
 		version: 1,
 		kind: "assessment",
@@ -245,9 +247,9 @@ it("keeps saved aggregate completion and capture when repaired members leave it 
 		interacted: true,
 		attemptCount: 1,
 		answer: ["a"],
-		contentSignature: "s96:sbdPqYwmkJdFli-m",
+		contentSignature: "s96:glW7ns8cCA7BdGMb",
 	});
-	rows.push({ id: "a", correct: true, contentSignature: "s96:sbdPqYwmkJdFli-m" });
+	rows.push({ id: "a", correct: true, contentSignature: "s96:glW7ns8cCA7BdGMb" });
 	const old = {
 		payload: {
 			mode: "all",

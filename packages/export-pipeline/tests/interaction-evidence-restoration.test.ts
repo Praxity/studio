@@ -9,8 +9,7 @@ import * as xapi from "../src/scorm/api/xapi";
 import { LocalStorageRuntime } from "../src/scorm/local-storage-runtime";
 import * as evidence from "../src/scorm/types";
 
-const compilerSignature = "sha256:e4df374aeafe8ae449c0321eca27fe0d42f77d070f28050db87e4957bc86e30d";
-const signature = "s96:5N83Sur-iuRJwDIe";
+const signature = "s96:3w14l18FIDxpK_Py";
 const current = {
 	id: "a",
 	response: "a",
@@ -41,16 +40,18 @@ const view: Omit<ChoiceDependencyView, "rows"> = {
 			canAutoScore: true,
 			graded: true,
 			maxAttempts: 2,
-			correctAnswerSignature:
-				"sha256:0eb5b8d6f81bc677da8a08567cc4fa9a06a57e9ec8da85ed73a7f62727996002",
-			materialSignature: `sha256:${"a".repeat(64)}`,
+			correctIds: ["a"],
+			gradingMode: "exact" as const,
+			points: 100,
+			required: true,
+			content: { text: "a", images: [], icons: [] },
 			options: [
-				{ id: "a", materialSignature: `sha256:${"b".repeat(64)}` },
-				{ id: "b", materialSignature: `sha256:${"c".repeat(64)}` },
+				{ id: "a", content: { text: "b", images: [], icons: [] }, image: null },
+				{ id: "b", content: { text: "c", images: [], icons: [] }, image: null },
 			],
 		},
 	},
-	signatures: { a: compilerSignature },
+	signatures: { a: signature },
 	readState: () => state,
 };
 

@@ -404,10 +404,9 @@ it.each([
 			if (corruption === "signature")
 				value.choiceStateSignatures[bad.id] = `sha256:${"d".repeat(64)}`;
 			if (corruption === "question signature")
-				value.choiceStateQuestions[bad.id].materialSignature = `sha256:${"d".repeat(64)}`;
+				value.choiceStateQuestions[bad.id].content.text = `sha256:${"d".repeat(64)}`;
 			if (corruption === "option signature")
-				value.choiceStateQuestions[bad.id].options[0].materialSignature =
-					`sha256:${"d".repeat(64)}`;
+				value.choiceStateQuestions[bad.id].options[0].content.text = `sha256:${"d".repeat(64)}`;
 			if (corruption === "half") delete value.choiceStateSignatures[bad.id];
 			if (corruption === "mismatched ID") {
 				value.choiceStateSignatures.extra = value.choiceStateSignatures[bad.id];
@@ -426,7 +425,7 @@ it.each([
 			expect(admitted?.choiceStateSignatures?.[bad.id]).toBeUndefined();
 			if (corruption !== "extension") {
 				expect(admitted?.choiceStateQuestions?.unaffected.selectionMode).toBe("single");
-				expect(admitted?.choiceStateSignatures?.unaffected).toMatch(/^sha256:/);
+				expect(admitted?.choiceStateSignatures?.unaffected).toMatch(/^s96:/);
 			}
 		}
 		expect(warn).toHaveBeenCalledWith(
@@ -495,4 +494,19 @@ it("projects admitted questions and options to their public fields", () => {
 	value.choiceStateQuestions[id].evil = "not public";
 	value.choiceStateQuestions[id].options[0].evil = "not public";
 	expect(admitChoiceStateFacts(value).choiceStateQuestions[id]).toEqual(original);
+});
+
+it("raw HTML option footnotes keep their source text in compiler facts", () => {
+	const signature = (note: string) => {
+		const config = course();
+		const block = choice(config);
+		const response = block.data.response as { options: Record<string, unknown>[] };
+		response.options[0] = { id: "a", isCorrect: true, label: `<span>Yes @footer{${note}}</span>` };
+		const facts = prepareHtmlCourse(config).choiceFacts;
+		expect(facts.choiceStateQuestions[block.id].options[0].content.text).toBe(
+			`Yes @footer{${note}}`,
+		);
+		return facts.choiceStateSignatures[block.id];
+	};
+	expect(signature("Old")).not.toBe(signature("New"));
 });

@@ -1,20 +1,8 @@
 import { assessmentStatePolicy } from "@praxity/content-model";
-import DOMPurify from "isomorphic-dompurify";
 import { DONT_KNOW } from "learning-patterns/patterns/dont-know/logic.js";
-import {
-	assessmentMaterialContent,
-	assessmentMaterialOptionHtml,
-	prepareAssessmentDescriptionHtml,
-} from "./assessment-content";
-import {
-	type ChoiceStateQuestion,
-	choiceAnswerSignature,
-	choiceMaterialProof,
-	choiceMaterialSignature,
-	choiceProofSignature,
-} from "./choice-state-facts";
+import { assessmentMaterialContent, assessmentMaterialOption } from "./assessment-content";
+import { type ChoiceStateQuestion, choiceQuestionSignature } from "./choice-state-facts";
 import { getStrings } from "./i18n/strings";
-import { BLOCK_NAMES } from "./sanitize";
 import type { AssessmentBlockData, ChoiceResponse } from "./types";
 
 export {
@@ -26,12 +14,9 @@ export {
 	resolveAssessmentDontKnow,
 } from "@praxity/content-model";
 export {
-	type ChoiceMaterialProof,
 	type ChoiceStateQuestion,
-	choiceAnswerSignature,
-	choiceMaterialProof,
 	choiceMaterialSignature,
-	choiceProofSignature,
+	choiceQuestionSignature,
 } from "./choice-state-facts";
 export { DONT_KNOW };
 
@@ -129,57 +114,6 @@ export function choiceInteractionReport(
 	};
 }
 
-export type ChoiceMaterialTree = (string | [string, string, string[][], ChoiceMaterialTree])[];
-const HTML_NAMESPACE = "http://www.w3.org/1999/xhtml";
-const EMPHASIS = new Set(["b", "strong", "i", "em", "u", "mark", "span"]);
-let materialDocument: Document | null = null;
-
-/** Parse the renderer's output, without applying another content sanitizer. */
-export function choiceMaterialContent(html: string): ChoiceMaterialTree {
-	materialDocument ??= DOMPurify.sanitize("", { RETURN_DOM: true }).ownerDocument;
-	if (!materialDocument) throw new Error("Missing learner HTML document");
-	const template = materialDocument.createElement("template");
-	template.innerHTML = html;
-	function children(parent: Node, preserve: boolean, block = false): ChoiceMaterialTree {
-		const result: ChoiceMaterialTree = [];
-		const append = (node: ChoiceMaterialTree[number]) => {
-			if (typeof node === "string" && typeof result.at(-1) === "string")
-				result[result.length - 1] = String(result.at(-1)) + node;
-			else result.push(node);
-		};
-		for (const node of Array.from(parent.childNodes)) {
-			if (node.nodeType === 3) append(node.textContent ?? "");
-			else if (node.nodeType === 1) {
-				const element = node as Element;
-				const attributes = Array.from(element.attributes)
-					.filter(({ name }) => name !== "class" && name !== "style")
-					.map(({ name, value }) => [name, value])
-					.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
-				const html = element.namespaceURI === HTML_NAMESPACE;
-				const content = children(
-					element,
-					preserve || (html && ["pre", "code", "textarea"].includes(element.localName)),
-					html && BLOCK_NAMES.has(element.localName),
-				);
-				if (html && !attributes.length && EMPHASIS.has(element.localName)) content.forEach(append);
-				else append([element.namespaceURI ?? "", element.localName, attributes, content]);
-			}
-		}
-		const normalized = result.map((node) =>
-			typeof node === "string" && !preserve ? node.replace(/[ \t\r\n\f]+/g, " ") : node,
-		);
-		if (block && !preserve) {
-			if (typeof normalized[0] === "string")
-				normalized[0] = normalized[0].replace(/^[ \t\r\n\f]+/, "");
-			const last = normalized.length - 1;
-			if (typeof normalized[last] === "string")
-				normalized[last] = (normalized[last] as string).replace(/[ \t\r\n\f]+$/, "");
-		}
-		return normalized.filter((node) => node !== "");
-	}
-	return children(template.content, false, true);
-}
-
 /** The same effective policy drives controls and the dormant signature. */
 export function choiceStatePolicy(data: AssessmentBlockData) {
 	const response = data.response as ChoiceResponse;
@@ -195,44 +129,30 @@ export function choiceStateQuestion(
 	const response = data.response as ChoiceResponse;
 	const policy = choiceStatePolicy(data);
 	const content = assessmentMaterialContent(data);
-	const correctAnswerSignature = choiceAnswerSignature(
-		response.options.filter((option) => option.isCorrect).map((option) => option.id),
-	);
 	return {
 		selectionMode: response.selectionMode,
 		dontKnow,
 		canAutoScore: policy.canAutoScore,
 		graded: policy.graded,
+		gradingMode: policy.gradingMode,
+		points: data.points ?? 100,
+		required: data.required ?? policy.graded,
 		maxAttempts: policy.maxAttempts === Infinity ? 0 : policy.maxAttempts,
-		correctAnswerSignature,
-		materialSignature: choiceMaterialSignature([
-			[
-				choiceMaterialContent(content.stemContent.heading),
-				choiceMaterialContent(content.stemContent.body),
-			],
-			choiceMaterialContent(prepareAssessmentDescriptionHtml(content.descriptionHtml)),
-			policy.gradingMode,
-			data.points ?? 100,
-			policy.maxAttempts === Infinity ? 0 : policy.maxAttempts,
-			data.required ?? policy.graded,
-			response.selectionMode,
-			dontKnow,
-			correctAnswerSignature,
-		]),
+		correctIds: response.options
+			.filter((option) => option.isCorrect)
+			.map((option) => option.id)
+			.sort(),
+		content,
 		options: response.options
 			.map((option) => ({
 				id: option.id,
-				materialSignature: choiceMaterialSignature([
-					option.id,
-					choiceMaterialContent(assessmentMaterialOptionHtml(option)),
-					option.image ?? null,
-					option.isCorrect === true,
-				]),
+				content: assessmentMaterialOption(option),
+				image: option.image ?? null,
 			}))
 			.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)),
 	};
 }
 
 export function choiceContentSignature(data: AssessmentBlockData, dontKnow: boolean): string {
-	return choiceProofSignature(choiceMaterialProof(choiceStateQuestion(data, dontKnow)));
+	return choiceQuestionSignature(choiceStateQuestion(data, dontKnow));
 }

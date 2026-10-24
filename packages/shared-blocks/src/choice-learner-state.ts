@@ -4,14 +4,13 @@ import {
 	type ChoiceAssessmentFacts,
 	type ChoiceStateGroup,
 	type ChoiceStateQuestion,
-	choiceAnswerSignature,
 	choiceGroupFactsAreValid,
 	choiceMaterialSignature,
 	isChoiceAssessmentFacts,
 } from "./choice-state-facts";
 
 import type { LearnerStateValue, SavedAssessmentState } from "./learner-state";
-import { choiceEvidenceSignature, isChoiceContentSignature } from "./learner-state";
+import { isChoiceContentSignature } from "./learner-state";
 
 export type { ChoiceStateGroup } from "./choice-state-facts";
 
@@ -50,10 +49,7 @@ function admitChoiceAssessmentState(
 	const signed = value.contentSignature !== undefined;
 	if (question.selectionMode === "single" && value.answer.length > 1) return null;
 	// Only a never-submitted draft can omit material evidence.
-	if (
-		(signed || hasSubmittedChoice(value)) &&
-		value.contentSignature !== choiceEvidenceSignature(facts.signature)
-	)
+	if ((signed || hasSubmittedChoice(value)) && value.contentSignature !== facts.signature)
 		return null;
 	if (
 		!value.checked &&
@@ -68,7 +64,8 @@ function admitChoiceAssessmentState(
 	const correct =
 		value.checked &&
 		question.canAutoScore &&
-		choiceAnswerSignature(value.answer) === question.correctAnswerSignature;
+		value.answer.length === question.correctIds.length &&
+		value.answer.every((id) => question.correctIds.includes(id));
 	const maxAttempts = question.maxAttempts || Infinity;
 	const completed =
 		value.checked &&
@@ -121,7 +118,7 @@ export function prepareChoiceAssessmentState(
 	}
 	return {
 		...next,
-		contentSignature: choiceEvidenceSignature(facts.signature),
+		contentSignature: facts.signature,
 		writtenAt: write.writtenAt,
 		...(history.length ? { history } : {}),
 	};
@@ -373,15 +370,13 @@ function isGroupPayload(value: unknown): value is ChoiceGroupPayload {
 /** The digest verifies the captured payload, not a reconstruction from today's drafts. */
 export function choiceGroupSignature(payload: ChoiceGroupPayload): string {
 	if (!isGroupPayload(payload)) throw new TypeError("Invalid group submission payload");
-	return choiceEvidenceSignature(
-		choiceMaterialSignature([
-			"choice-group",
-			1,
-			payload.mode,
-			payload.selectedMemberId,
-			payload.dependencies,
-		]),
-	);
+	return choiceMaterialSignature([
+		"choice-group",
+		1,
+		payload.mode,
+		payload.selectedMemberId,
+		payload.dependencies,
+	]);
 }
 
 /** Called only for a deliberate aggregate submission, after all dependencies admit. */

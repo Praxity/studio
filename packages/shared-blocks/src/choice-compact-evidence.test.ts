@@ -13,23 +13,26 @@ import { admitChoiceStateFacts, type ChoiceAssessmentFacts } from "./choice-stat
 import type { SavedAssessmentState } from "./learner-state";
 import * as learnerState from "./learner-state";
 
-// Independent Node crypto/Buffer vectors for compiler digests and saved claims.
-const full = "sha256:e4df374aeafe8ae449c0321eca27fe0d42f77d070f28050db87e4957bc86e30d";
-const short = "s96:5N83Sur-iuRJwDIe";
+// Independent version-4 compiler facts; full digests are invalid evidence.
+const full = `sha256:${"a".repeat(64)}`;
+const current = "s96:3w14l18FIDxpK_Py";
+const short = "s96:3w14l18FIDxpK_Py";
 const facts: ChoiceAssessmentFacts = {
-	signature: full,
+	signature: current,
 	question: {
 		selectionMode: "single",
 		dontKnow: false,
 		canAutoScore: true,
 		graded: true,
 		maxAttempts: 2,
-		correctAnswerSignature:
-			"sha256:0eb5b8d6f81bc677da8a08567cc4fa9a06a57e9ec8da85ed73a7f62727996002",
-		materialSignature: `sha256:${"a".repeat(64)}`,
+		correctIds: ["a"],
+		gradingMode: "exact" as const,
+		points: 100,
+		required: true,
+		content: { text: "a", images: [], icons: [] },
 		options: [
-			{ id: "a", materialSignature: `sha256:${"b".repeat(64)}` },
-			{ id: "b", materialSignature: `sha256:${"c".repeat(64)}` },
+			{ id: "a", content: { text: "b", images: [], icons: [] }, image: null },
+			{ id: "b", content: { text: "c", images: [], icons: [] }, image: null },
 		],
 	},
 };
@@ -38,20 +41,20 @@ const distractor: ChoiceAssessmentFacts = {
 		...facts.question,
 		options: [
 			...facts.question.options,
-			{ id: "c", materialSignature: `sha256:${"d".repeat(64)}` },
+			{ id: "c", content: { text: "d", images: [], icons: [] }, image: null },
 		],
 	},
-	signature: "sha256:afa3e412c508c12e3e7492d67ae263b4a30df87893ba38fedd00e8e402963063",
+	signature: "s96:vihFMjAzakxk8o2M",
 };
 const changed: ChoiceAssessmentFacts = {
 	question: {
 		...facts.question,
 		options: [
 			facts.question.options[0],
-			{ id: "b", materialSignature: `sha256:${"d".repeat(64)}` },
+			{ id: "b", content: { text: "d", images: [], icons: [] }, image: null },
 		],
 	},
-	signature: "sha256:3c059831322013bd212abe3391941db66023d34531cebc5de21734ec17ea26f4",
+	signature: "s96:j6HeATkfZ32yXYvx",
 };
 const legacy: SavedAssessmentState = {
 	version: 1,
@@ -66,7 +69,7 @@ const legacy: SavedAssessmentState = {
 };
 const signed: SavedAssessmentState = {
 	...legacy,
-	contentSignature: full,
+	contentSignature: `sha256:${"a".repeat(64)}`,
 	writtenAt: 10,
 };
 const compact: SavedAssessmentState = {
@@ -88,15 +91,6 @@ function view(
 	};
 }
 
-it.each([
-	[`sha256:${"ff".repeat(32)}`, "s96:________________"],
-	[`sha256:000102030405060708090aff${"00".repeat(20)}`, "s96:AAECAwQFBgcICQr_"],
-])("encodes URL-safe underscore evidence for %s", (signature, expected) => {
-	expect(learnerState.choiceEvidenceSignature(signature)).toBe(expected);
-	expect(learnerState.choiceEvidenceSignature(expected)).toBe(expected);
-	expect(learnerState.isChoiceContentSignature(expected)).toBe(true);
-});
-
 it("admits the exact compact digest but treats changed options and added distractors as history", () => {
 	expect(restoreChoiceAssessmentState(compact, facts).status).toBe("current");
 	expect(choiceDependencyStatus("a", view())).toBe("current");
@@ -106,17 +100,20 @@ it("admits the exact compact digest but treats changed options and added distrac
 	}
 	expect(restoreChoiceAssessmentState(signed, facts).status).toBe("review");
 	expect(
-		choiceDependencyStatus("a", view(signed, [{ id: "a", contentSignature: full }], distractor)),
+		choiceDependencyStatus(
+			"a",
+			view(signed, [{ id: "a", contentSignature: `sha256:${"a".repeat(64)}` }], distractor),
+		),
 	).toBe("history");
 });
 
 it.each([
 	null,
 	"",
-	"xs96:5N83Sur-iuRJwDIe",
-	" s96:5N83Sur-iuRJwDIe",
+	"xs96:3w14l18FIDxpK_Py",
+	" s96:3w14l18FIDxpK_Py",
 	"s96:5N83Sur-iuRJwDI",
-	"s96:5N83Sur-iuRJwDIe=",
+	"s96:3w14l18FIDxpK_Py=",
 	"s96:5N83Sur+iuRJwDIe",
 	"sha256:bad",
 ])("refuses malformed evidence %j without unsigned fallback", (contentSignature) => {
@@ -184,7 +181,7 @@ it("writes short evidence and preserves archived submissions exactly", () => {
 	});
 });
 
-it.each(["s96:too-short", "s96:5N83Sur+iuRJwDIe", "s96:5N83Sur-iuRJwDIe="])(
+it.each(["s96:too-short", "s96:5N83Sur+iuRJwDIe", "s96:3w14l18FIDxpK_Py="])(
 	"refuses malformed compact aggregate reference %s",
 	(signature) => {
 		expect(() =>
@@ -202,7 +199,7 @@ it("retains per-ID corruption while refusing an unidentifiable whole map", () =>
 	try {
 		const admitted = admitChoiceStateFacts({
 			choiceStateQuestions: { a: facts.question, broken: {} },
-			choiceStateSignatures: { a: full, broken: "bad" },
+			choiceStateSignatures: { a: current, broken: "bad" },
 		});
 		expect(() =>
 			createChoiceDependencyView(admitted, { rows: [], readState: () => compact }),
@@ -275,7 +272,7 @@ it.each(["a", "g"])(
 			completed: true,
 			submitted: {
 				payload: { mode: "all", selectedMemberId: null, dependencies: [["a", short]] },
-				contentSignature: "s96:Qf8kWQY1fzr05K52",
+				contentSignature: "s96:kmPOYqqjHUBVflOI",
 			},
 		};
 		const contentSignature = id === "a" ? short : group.submitted.contentSignature;
@@ -295,7 +292,7 @@ it.each(["a", "g"])(
 				...input,
 				rows: [
 					{ id, choiceEvidenceInvalid: true },
-					{ id, correct: true, contentSignature: id === "a" ? short : "s96:Qf8kWQY1fzr05K52" },
+					{ id, correct: true, contentSignature: id === "a" ? short : "s96:kmPOYqqjHUBVflOI" },
 				],
 			}),
 		).toBe("current");
@@ -310,7 +307,7 @@ it.each(["a", "g"])(
 
 it.each([
 	["invalid signature", { contentSignature: "sha256:broken" }],
-	["full compiler digest", { contentSignature: full }],
+	["full compiler digest", { contentSignature: `sha256:${"a".repeat(64)}` }],
 	["null signature", { contentSignature: null }],
 	["invalid members", { memberIds: ["a", 7] }],
 	["sparse members", { memberIds: new Array(1) }],

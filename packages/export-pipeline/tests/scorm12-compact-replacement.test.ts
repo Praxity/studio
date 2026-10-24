@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { choiceEvidenceSignature } from "@praxity/shared-blocks/learner-state";
+import { choiceMaterialSignature } from "@praxity/shared-blocks/choice-state-facts";
 import { JSDOM } from "jsdom";
 import { afterEach, expect, it, vi } from "vitest";
 import { Scorm12Runtime } from "../src/scorm/api/scorm12";
@@ -206,13 +206,13 @@ it("retains at least 42 original UUID answers and rows before an atomic capacity
 		let refused = false;
 		for (let index = 0; index < 100; index++) {
 			const id = uuid(`question-${index}`);
-			const signature = `sha256:${createHash("sha256").update(`material-${index}`).digest("hex")}`;
+			const signature = choiceMaterialSignature(`material-${index}`);
 			const selected = uuid(`option-${index}-0`);
 			const next = {
 				...choice,
 				answer: [selected],
 				reviewedChoiceIds: [selected],
-				contentSignature: choiceEvidenceSignature(signature),
+				contentSignature: signature,
 				writtenAt: index + 1,
 			};
 			const before = values.get("cmi.suspend_data");
@@ -226,7 +226,7 @@ it("retains at least 42 original UUID answers and rows before an atomic capacity
 			try {
 				runtime.trackInteraction(id, "action-0", true, 100, {
 					assessmentType: "choice",
-					contentSignature: choiceEvidenceSignature(signature),
+					contentSignature: signature,
 					attemptsUsed: 1,
 					maxAttempts: 2,
 				});
