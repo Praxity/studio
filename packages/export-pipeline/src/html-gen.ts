@@ -1179,12 +1179,9 @@ export function renderPageFragments(
 	};
 	const sectionBlocks = page.blocks;
 	const pageTitleBlock = sectionBlocks.find(
-		(block, index) =>
-			(block.type === "heading" && index === 0 && block.data.level === 1) ||
-			(block.type === "assessmentGroup" &&
-				block.data._headingLevel === 1 &&
-				plainTextFromHtml(getInlineField(block.data, "groupName", false)) ===
-					plainTextFromHtml(String(page.data?.title ?? page.title))),
+		(block) =>
+			(block.type === "heading" && block.data.level === 1) ||
+			(block.type === "assessmentGroup" && block.data._headingLevel === 1),
 	);
 	const sectionRhythm = "uniform";
 	const sections: SectionGroup[] = groupBlocksIntoSections(sectionBlocks, sectionRhythm);
@@ -1650,7 +1647,7 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 	const courseEstimatedMinutes = publishedReadingTimes(config.pages).courseMinutes;
 	const estimatedDuration =
 		config.estimatedDuration?.trim() ||
-		(lessonCount === 1
+		(new Set(pagesList.map((entry) => entry.lessonId)).size === 1
 			? pagesList.find((entry) => entry.lessonTime?.trim())?.lessonTime?.trim()
 			: "") ||
 		interpolate(localeStrings.narrativeReadTime, { minutes: courseEstimatedMinutes });

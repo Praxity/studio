@@ -2,9 +2,14 @@ import { readLesson } from "@praxity/grammar";
 import type { PraxityPage } from "@praxity/shared-blocks";
 import { JSDOM } from "jsdom";
 import { assert, describe, expect, it } from "vitest";
+import type { DesktopExportInput } from "../src/build";
 import { type CourseConfig, generateHtmlPage } from "../src/html-gen";
 import { compileDocument, compilePage } from "../src/preview/compile-page";
-import { createCourseContextFromHtml, refreshCourseContext } from "../src/preview/course-context";
+import {
+	createCourseContext,
+	createCourseContextFromHtml,
+	refreshCourseContext,
+} from "../src/preview/course-context";
 
 const output = {
 	islandAssets: {
@@ -18,6 +23,32 @@ const output = {
 		},
 	},
 };
+
+function desktopInput(sources: string[], deck = false): DesktopExportInput {
+	const blocks = sources.flatMap((source, index) => {
+		const read = readLesson(source);
+		expect(read.hasErrors).toBe(false);
+		const boundary = read.blocks.find((block) => block.type === "pageBreak");
+		assert(boundary);
+		Object.assign(boundary.data, {
+			lessonId: `lesson-${index + 1}`,
+			lessonTitle: read.frontmatter.title ?? "Lesson",
+			isFirstPageOfLesson: true,
+			lessonKicker: read.frontmatter.kicker,
+			lessonTime: read.frontmatter.time,
+		});
+		return read.blocks;
+	});
+	return {
+		courseId: "course",
+		blocks,
+		frontmatter: { title: "Course", lang: "en" },
+		config: { completionThreshold: 0.8, ...(deck ? { moduleDeck: {} } : {}) },
+		resolvedAssets: new Map(),
+		viewerVersion: "test",
+		locale: "en",
+	};
+}
 
 function lessonPages(metadata: Partial<PraxityPage> = {}): PraxityPage[] {
 	return readLesson("# First\nBody\n# Next\nMore\n").pages.map((page, index) => ({
@@ -58,29 +89,27 @@ function document(pages: PraxityPage[], index: number, overrides: Partial<Course
 }
 
 describe("lesson heading metadata", () => {
-	it.each(["Pages", "deck"])(
-		"decorates a folded assessment-group title in %s output without changing its accessible label",
-		async (presentation) => {
-			const read = readLesson(
-				`---\nkicker: Module 1\ntime: About 12 minutes\n${presentation === "Pages" ? "variables:\n  ready: false\n" : ""}---\n# Quiz\n::: group Quiz {level=1}\n::: choice Answer {scored}\n(x) Yes\n( ) No\n:::\n:::\n`,
+	it.each([
+		["Pages", "plain"],
+		["Pages", "nav"],
+		["Pages", "formatted"],
+		["deck", "plain"],
+		["deck", "nav"],
+		["deck", "formatted"],
+	] as const)(
+		"decorates a folded assessment-group title in %s output with a %s title through flat input",
+		async (presentation, variant) => {
+			const title = variant === "formatted" ? "**Quiz**" : "Quiz";
+			const input = desktopInput(
+				[
+					`---\nkicker: Module 1\ntime: About 12 minutes\n${presentation === "Pages" ? "variables:\n  ready: false\n" : ""}---\n# ${title}\n${variant === "nav" ? "nav: Short\n" : ""}::: group ${title} {level=1}\n::: choice Answer {scored}\n(x) Yes\n( ) No\n:::\n:::\n`,
+				],
+				presentation === "deck",
 			);
-			expect(read.hasErrors).toBe(false);
-			const group = read.pages[0].blocks.find((block) => block.type === "assessmentGroup");
+			const group = input.blocks.find((block) => block.type === "assessmentGroup");
 			assert(group);
 			group.id = "quiz-group";
-			const page = {
-				...read.pages[0],
-				id: "quiz-page",
-				lessonId: "lesson-1",
-				lessonTitle: "Quiz",
-				isFirstPageOfLesson: true,
-				lessonKicker: read.frontmatter.kicker,
-				lessonTime: read.frontmatter.time,
-			};
-			const context = await createCourseContextFromHtml(
-				{ ...config([page]), ...(presentation === "deck" ? { moduleDeck: {} } : {}) },
-				output,
-			);
+			const context = await createCourseContext({ ...input, htmlOutput: output });
 			const doc = new JSDOM(compileDocument(context, context.documents[0].slug).html).window
 				.document;
 			const heading = doc.querySelector("#assessment-group-title-quiz-group");
@@ -101,6 +130,28 @@ describe("lesson heading metadata", () => {
 			expect(doc.querySelector("#assessment-group-progress-quiz-group")?.textContent).toBe(
 				"Questions completed: 0 of 1",
 			);
+		},
+	);
+	it.each([
+		["single", "About 12 minutes"],
+		["multiple", "2 pages · ~1 min"],
+	] as const)(
+		"keeps the correct sidebar duration for %s lessons after hiding a first page",
+		async (kind, expected) => {
+			const sources = [
+				"---\ntime: About 12 minutes\n---\n# Hidden {hide}\nBody\n# Content\nBody\n",
+			];
+			if (kind === "multiple")
+				sources.push("---\ntime: About 25 minutes\n---\n# Other lesson\nBody\n");
+			const context = await createCourseContext({ ...desktopInput(sources), htmlOutput: output });
+			expect(context.pages.map((page) => page.lessonId)).toEqual(
+				kind === "single" ? ["lesson-1"] : ["lesson-1", "lesson-2"],
+			);
+			expect(context.pages[0].isFirstPageOfLesson).toBe(false);
+			for (const document of context.documents) {
+				const doc = new JSDOM(compileDocument(context, document.slug).html).window.document;
+				expect(doc.querySelector(".praxity-native-sidebar-meta")?.textContent).toBe(expected);
+			}
 		},
 	);
 	it.each([0, 1])("shows authored single-lesson time in the sidebar on page %s", (index) => {
