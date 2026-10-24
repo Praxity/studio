@@ -23,15 +23,15 @@ afterEach(() => {
 
 const submitted = {
 	payload: { mode: "all", selectedMemberId: null, dependencies: [["a", null]] },
-	contentSignature: "sha256:ff48f614173329077a69ba761d6e6ad76f6b39d24d5502419ea626dfacac7af2",
+	contentSignature: "s96:_0j2FBczKQd6abp2",
 };
 const old = {
 	payload: {
 		mode: "all",
 		selectedMemberId: null,
-		dependencies: [["a", `sha256:${"b".repeat(64)}`]],
+		dependencies: [["a", "s96:u7u7u7u7u7u7u7u7"]],
 	},
-	contentSignature: "sha256:855046ca0ab3006f658988e444dc7e03da69af411410c1947d688ffe7dc8b3b8",
+	contentSignature: "s96:y8WPEeiHKtdqKWuB",
 };
 const groupState = {
 	version: 1,
@@ -187,7 +187,7 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 		});
 		const captured = {
 			payload: { mode: "oneOf", selectedMemberId: "b", dependencies: [["b", null]] },
-			contentSignature: "sha256:8164bb73b03e3cb4d0470f8abb770779e2670d38eefc5c0aecfb04cc76bb4f05",
+			contentSignature: "s96:gWS7c7A-PLTQRw-K",
 		};
 		if (provider.stageSubmission)
 			expect(

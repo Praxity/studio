@@ -40,7 +40,7 @@ const submitted = {
 	completed: true,
 	interacted: true,
 	answer: ["a"],
-	contentSignature: facts.signature,
+	contentSignature: "s96:5N83Sur-iuRJwDIe",
 };
 
 const memberThenHole = new Array<string>(2);
@@ -133,72 +133,6 @@ it("keeps dense submitted and reviewed choices", () => {
 });
 
 it.each([
-	[
-		"only holes",
-		new Array(1),
-		"sha256:b1b510cb3c3d4dd4224df69daed1d3ee4f1f5344caf8f1ce339334d1adf68c9f",
-	],
-	[
-		"option then hole",
-		// biome-ignore lint/suspicious/noSparseArray: The signature fixture includes a missing proof index.
-		[`sha256:${"b".repeat(64)}`, ,],
-		"sha256:3f9373dace8c68549ac1fa8935919bfc802ca5708878b5ce5975fa35a77dc997",
-	],
-])("refuses a material proof with %s", (_input, options, contentSignature) => {
-	const restored = restoreChoiceAssessmentState(
-		{
-			...submitted,
-			contentSignature,
-			materialProof: { question: `sha256:${"a".repeat(64)}`, options },
-		},
-		facts,
-	);
-	expect(restored.status).toBe("review");
-	expect(restored.current).toBeNull();
-});
-
-it("keeps a dense older material proof", () => {
-	const restored = restoreChoiceAssessmentState(
-		{
-			...submitted,
-			contentSignature: "sha256:68f78369d05555af18cdf36c1e9380c9b1c40800adb89ca3e30102153d407009",
-			materialProof: {
-				question: `sha256:${"a".repeat(64)}`,
-				options: [`sha256:${"b".repeat(64)}`],
-			},
-		},
-		facts,
-	);
-	expect(restored.status).toBe("current");
-	expect(restored.current?.answer).toEqual(["a"]);
-});
-
-it.each(sparseMembers)("keeps refusing compact proof IDs with %s", (_input, optionIds) => {
-	const restored = restoreChoiceAssessmentState(
-		{
-			...submitted,
-			contentSignature: "sha256:68f78369d05555af18cdf36c1e9380c9b1c40800adb89ca3e30102153d407009",
-			materialProof: { optionIds },
-		},
-		facts,
-	);
-	expect(restored.status).toBe("review");
-	expect(restored.current).toBeNull();
-});
-
-it("keeps a dense older compact proof", () => {
-	const restored = restoreChoiceAssessmentState(
-		{
-			...submitted,
-			contentSignature: "sha256:68f78369d05555af18cdf36c1e9380c9b1c40800adb89ca3e30102153d407009",
-			materialProof: { optionIds: ["a"] },
-		},
-		facts,
-	);
-	expect(restored.status).toBe("current");
-});
-
-it.each([
 	["only holes", 1, false],
 	["dependency then hole", 2, true],
 ] as const)("keeps refusing aggregate dependencies with %s", (_input, length, hasMember) => {
@@ -214,7 +148,19 @@ it.each(sparseMembers)("refuses an aggregate row witness with %s", (_input, memb
 		admitChoiceStateFacts({
 			choiceStateGroups: { g: { mode: "all", memberIds: ["a"], requiredIds: ["a"] } },
 		}),
-		{ rows: [{ id: "g", correct: true, memberIds }], readState: () => undefined },
+		{
+			rows: [{ id: "g", correct: true, memberIds, contentSignature: "s96:_0j2FBczKQd6abp2" }],
+			readState: () => ({
+				version: 1,
+				kind: "assessmentGroup",
+				mode: "all",
+				completed: true,
+				submitted: {
+					payload: { mode: "all", selectedMemberId: null, dependencies: [["a", null]] },
+					contentSignature: "s96:_0j2FBczKQd6abp2",
+				},
+			}),
+		},
 	);
 	expect(choiceDependencyStatus("g", view)).toBe("history");
 });
@@ -224,7 +170,21 @@ it("keeps a dense aggregate row witness", () => {
 		admitChoiceStateFacts({
 			choiceStateGroups: { g: { mode: "all", memberIds: ["a"], requiredIds: ["a"] } },
 		}),
-		{ rows: [{ id: "g", correct: true, memberIds: ["a"] }], readState: () => undefined },
+		{
+			rows: [
+				{ id: "g", correct: true, memberIds: ["a"], contentSignature: "s96:_0j2FBczKQd6abp2" },
+			],
+			readState: () => ({
+				version: 1,
+				kind: "assessmentGroup",
+				mode: "all",
+				completed: true,
+				submitted: {
+					payload: { mode: "all", selectedMemberId: null, dependencies: [["a", null]] },
+					contentSignature: "s96:_0j2FBczKQd6abp2",
+				},
+			}),
+		},
 	);
 	expect(choiceDependencyStatus("g", view)).toBe("current");
 });

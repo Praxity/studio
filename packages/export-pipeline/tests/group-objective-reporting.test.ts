@@ -27,11 +27,12 @@ afterEach(() => {
 	vi.unstubAllGlobals();
 });
 
-const signature = "sha256:e4df374aeafe8ae449c0321eca27fe0d42f77d070f28050db87e4957bc86e30d";
-const changed = `sha256:${"b".repeat(64)}`;
+const compilerSignature = "sha256:e4df374aeafe8ae449c0321eca27fe0d42f77d070f28050db87e4957bc86e30d";
+const signature = "s96:5N83Sur-iuRJwDIe";
+const changed = "s96:u7u7u7u7u7u7u7u7";
 const submitted = {
 	payload: { mode: "all", selectedMemberId: null, dependencies: [["a", null]] },
-	contentSignature: "sha256:ff48f614173329077a69ba761d6e6ad76f6b39d24d5502419ea626dfacac7af2",
+	contentSignature: "s96:_0j2FBczKQd6abp2",
 };
 const groupState = {
 	version: 1,
@@ -140,7 +141,7 @@ function launch(format: Format, evidence = false, history = false) {
 				...(row.id === "g" ? { contentSignature: submitted.contentSignature } : {}),
 			})),
 			questions: { q: question },
-			signatures: { q: signature },
+			signatures: { q: compilerSignature },
 			groups: { g: { mode: "all", memberIds: ["a"], requiredIds: ["a"] } },
 			readState: (id) => win.__praxityBlockState?.get(id),
 		});

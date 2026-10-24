@@ -4,10 +4,7 @@
  */
 import type { LearnerBlockSaveResult } from "@praxity/shared-blocks/learner-block-state";
 import type { LearnerStateValue } from "@praxity/shared-blocks/learner-state";
-import {
-	isChoiceContentSignature,
-	isScorm12ChoiceSignature,
-} from "@praxity/shared-blocks/learner-state";
+import { isChoiceContentSignature } from "@praxity/shared-blocks/learner-state";
 
 export interface RuntimeDestinations {
 	readonly reporting: "device" | "lms";
@@ -91,7 +88,7 @@ export interface SCORMRuntime {
 export interface AssessmentAttemptMetadata {
 	/** Submitted material evidence, never inferred from an editable answer. */
 	contentSignature?: string;
-	/** Rejected evidence must remain distinguishable from unsigned legacy rows. */
+	/** Rejected evidence must remain distinguishable from unsigned rows. */
 	choiceEvidenceInvalid?: true;
 	/** Resolved UI attempt count, including attempts restored from learner state. */
 	attemptsUsed?: number;
@@ -133,8 +130,7 @@ export function assessmentEvidenceMetadata(input?: unknown): AssessmentAttemptMe
 	const metadata = assessmentAttemptMetadata(input);
 	if (!input || typeof input !== "object") return metadata;
 	const { contentSignature, choiceEvidenceInvalid, memberIds } = input as AssessmentAttemptMetadata;
-	const validSignature =
-		isChoiceContentSignature(contentSignature) || isScorm12ChoiceSignature(contentSignature);
+	const validSignature = isChoiceContentSignature(contentSignature);
 	// Keep ordinary member normalization unchanged until activation unifies the readers.
 	const validMembers = Array.isArray(memberIds) && Array.from(memberIds).every(isNonemptyString);
 	return {

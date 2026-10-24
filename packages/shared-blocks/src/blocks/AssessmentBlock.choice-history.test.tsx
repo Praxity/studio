@@ -48,6 +48,12 @@ afterEach(() => {
 });
 
 const variants = ["single", "multiple", "dontKnow"] as const;
+// Independent short claims for the revised fixture, so a return to full saved or event evidence fails.
+const revisedClaims = {
+	single: "s96:1pMxtSyHaiBGDeJz",
+	multiple: "s96:xypI8UFntkvVyoxu",
+	dontKnow: "s96:5Y7NQf45Ggs3VL9n",
+} as const;
 it.each(
 	(["en", "fr"] as const).flatMap((locale) => variants.map((variant) => ({ locale, variant }))),
 )(
@@ -100,7 +106,13 @@ it.each(
 		});
 		provider.getChoiceDependencyView = () =>
 			createChoiceDependencyView(admitted, {
-				rows: [{ id: "question", contentSignature: facts(originalData).signature, correct: true }],
+				rows: [
+					{
+						id: "question",
+						contentSignature: choiceEvidenceSignature(facts(originalData).signature),
+						correct: true,
+					},
+				],
 				readState: provider.get,
 			});
 		render(
@@ -219,13 +231,13 @@ it.each(
 			expect(response.mock.results[0].value.detail).toMatchObject({
 				blockId: "question",
 				submitted: true,
-				contentSignature: facts(revisedData).signature,
+				contentSignature: revisedClaims[variant],
 			});
 			expect(runtime.getBlockState("question")).toMatchObject({
 				checked: true,
 				answer: selection,
 				correct: variant !== "dontKnow",
-				contentSignature: facts(revisedData).signature,
+				contentSignature: revisedClaims[variant],
 				history: [previous],
 			});
 		} finally {
@@ -246,7 +258,7 @@ it("a current draft cannot hide the history status of its submitted evidence", (
 			completed: false,
 			interacted: true,
 			answer: ["a"],
-			contentSignature: facts(revised).signature,
+			contentSignature: choiceEvidenceSignature(facts(revised).signature),
 		}),
 		set() {},
 		getChoiceDependencyView: () => ({
@@ -277,7 +289,7 @@ it.each(["en", "fr"] as const)(
 	"%s SCORM 1.2 added distractor shows New attempt without rewriting the answer",
 	(locale) => {
 		const signature = facts(original).signature;
-		const contentSignature = choiceEvidenceSignature(signature, "scorm12");
+		const contentSignature = choiceEvidenceSignature(signature);
 		const saved = {
 			version: 1,
 			kind: "assessment",

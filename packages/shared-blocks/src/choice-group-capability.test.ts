@@ -20,7 +20,7 @@ it("the dormant view prepares and verifies a candidate through its existing owne
 	const submitted = view.prepareGroupSubmission?.("g", view);
 	expect(submitted).toEqual({
 		payload: { mode: "all", selectedMemberId: null, dependencies: [["a", null]] },
-		contentSignature: "sha256:ff48f614173329077a69ba761d6e6ad76f6b39d24d5502419ea626dfacac7af2",
+		contentSignature: "s96:_0j2FBczKQd6abp2",
 	});
 	const candidate = {
 		...view,
@@ -45,7 +45,7 @@ it("the dormant capability retains the captured payload and skips an identical s
 	});
 	const submitted = {
 		payload: { mode: "oneOf", selectedMemberId: "b", dependencies: [["b", null]] },
-		contentSignature: "sha256:8164bb73b03e3cb4d0470f8abb770779e2670d38eefc5c0aecfb04cc76bb4f05",
+		contentSignature: "s96:gWS7c7A-PLTQRw-K",
 	};
 	const previous = {
 		version: 1,
@@ -89,7 +89,7 @@ it("the dormant capability verifies a speculative aggregate and rejects a differ
 		"g",
 		{
 			...state,
-			contentSignature: "sha256:ff48f614173329077a69ba761d6e6ad76f6b39d24d5502419ea626dfacac7af2",
+			contentSignature: "s96:_0j2FBczKQd6abp2",
 		},
 		{ correct: true, memberIds: ["a"] },
 	);
@@ -100,7 +100,7 @@ it("the dormant capability verifies a speculative aggregate and rejects a differ
 			id: "g",
 			correct: true,
 			memberIds: ["a"],
-			contentSignature: "sha256:ff48f614173329077a69ba761d6e6ad76f6b39d24d5502419ea626dfacac7af2",
+			contentSignature: "s96:_0j2FBczKQd6abp2",
 		},
 	]);
 	expect(view.status("g")).toBe("history");

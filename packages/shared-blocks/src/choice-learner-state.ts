@@ -7,13 +7,11 @@ import {
 	choiceAnswerSignature,
 	choiceGroupFactsAreValid,
 	choiceMaterialSignature,
-	choiceProofSignature,
 	isChoiceAssessmentFacts,
-	isChoiceContentSignature,
 } from "./choice-state-facts";
 
 import type { LearnerStateValue, SavedAssessmentState } from "./learner-state";
-import { choiceEvidenceSignature, isScorm12ChoiceSignature } from "./learner-state";
+import { choiceEvidenceSignature, isChoiceContentSignature } from "./learner-state";
 
 export type { ChoiceStateGroup } from "./choice-state-facts";
 
@@ -24,69 +22,6 @@ function validChoiceIds(question: ChoiceStateQuestion, answer: unknown): answer 
 		Array.isArray(answer) &&
 		Array.from(answer).every((id) => typeof id === "string" && ids.has(id)) &&
 		new Set(answer).size === answer.length
-	);
-}
-
-function legacyChoiceStateIsCurrent(
-	value: Record<string, unknown>,
-	question: ChoiceStateQuestion,
-): boolean {
-	return (
-		value.checked === true &&
-		validChoiceIds(question, value.answer) &&
-		value.answer.length > 0 &&
-		value.correct ===
-			(question.canAutoScore &&
-				choiceAnswerSignature(value.answer) === question.correctAnswerSignature)
-	);
-}
-
-function choiceStateMatchesSignature(
-	value: Record<string, unknown>,
-	{ signature, question }: ChoiceAssessmentFacts,
-): boolean {
-	if (value.contentSignature === undefined) return legacyChoiceStateIsCurrent(value, question);
-	if (value.contentSignature === signature) return true;
-	if (isScorm12ChoiceSignature(value.contentSignature))
-		return (
-			value.materialProof === undefined &&
-			value.contentSignature === choiceEvidenceSignature(signature, "scorm12")
-		);
-	const old = value.materialProof;
-	if (!isRecord(old)) return false;
-	if (Array.isArray(old.optionIds)) {
-		const ids = old.optionIds;
-		if (
-			old.question !== undefined ||
-			old.options !== undefined ||
-			!ids.every(isNonemptyString) ||
-			new Set(ids).size !== ids.length
-		)
-			return false;
-		const options = question.options.filter((option) => ids.includes(option.id));
-		// The old signature proves the question and every old option unchanged.
-		// Since the question pins the correct set, any added options are distractors.
-		return (
-			options.length === ids.length &&
-			choiceProofSignature({
-				question: question.materialSignature,
-				options: options.map((option) => option.materialSignature),
-			}) === value.contentSignature
-		);
-	}
-	if (
-		!isChoiceContentSignature(old.question) ||
-		!Array.isArray(old.options) ||
-		!Array.from(old.options).every(isChoiceContentSignature)
-	)
-		return false;
-	return (
-		choiceProofSignature({ question: old.question, options: old.options }) ===
-			value.contentSignature &&
-		old.question === question.materialSignature &&
-		old.options.every((option) =>
-			question.options.some((current) => current.materialSignature === option),
-		)
 	);
 }
 
@@ -113,10 +48,22 @@ function admitChoiceAssessmentState(
 	if (value.reviewedChoiceIds !== undefined && !validChoiceIds(question, value.reviewedChoiceIds))
 		return null;
 	const signed = value.contentSignature !== undefined;
-	if ((signed || !value.checked) && question.selectionMode === "single" && value.answer.length > 1)
+	if (question.selectionMode === "single" && value.answer.length > 1) return null;
+	// Only a never-submitted draft can omit material evidence.
+	if (
+		(signed || hasSubmittedChoice(value)) &&
+		value.contentSignature !== choiceEvidenceSignature(facts.signature)
+	)
 		return null;
-	// An unsigned draft has no submitted verdict to migrate or credit.
-	if ((signed || value.checked) && !choiceStateMatchesSignature(value, facts)) return null;
+	if (
+		!value.checked &&
+		value.attemptCount > 0 &&
+		!(
+			Array.isArray(value.history) &&
+			value.history.some((entry) => isRecord(entry) && entry.checked === true)
+		)
+	)
+		return null;
 	if (value.checked && (!value.answer.length || value.attemptCount === 0)) return null;
 	const correct =
 		value.checked &&
@@ -167,68 +114,16 @@ export function prepareChoiceAssessmentState(
 	const restored = restoreChoiceAssessmentState(previous, facts);
 	const history = [...restored.history];
 	const prior = restored.current;
-	if (
-		prior?.checked &&
-		(!sameSubmittedSignature(prior.contentSignature, facts.signature) ||
-			!next.checked ||
-			next.attemptCount !== prior.attemptCount)
-	) {
-		// Preserve the stored verdict and finality, not today's normalized legacy view.
+	if (prior?.checked && (!next.checked || next.attemptCount !== prior.attemptCount)) {
+		// Preserve the submitted answer and verdict before editing the next attempt.
 		const { history: _history, ...attempt } = previous as SavedAssessmentState;
 		history.push(attempt as unknown as LearnerStateValue);
 	}
-	const proofs = new Set<string>();
-	const materialProof = { optionIds: facts.question.options.map((option) => option.id).sort() };
-	if (
-		next.checked &&
-		admitLegacyRetry(previous, facts, undefined) &&
-		!history.some((entry) => isRecord(entry) && entry.checked === true)
-	) {
-		const { history: _history, ...pending } = previous as SavedAssessmentState;
-		// Retain the same material claim as a draft write, even on direct resubmission.
-		history.push({
-			...pending,
-			legacyPending: true,
-			...(pending.contentSignature === undefined
-				? { contentSignature: facts.signature, materialProof }
-				: {}),
-		} as unknown as LearnerStateValue);
-	}
-	// Keep an erased retry's existing material claim until a new submission replaces it.
-	const erasedDraft =
-		!next.checked &&
-		isRecord(previous) &&
-		previous.checked === false &&
-		previous.contentSignature !== undefined &&
-		hasSubmittedChoice(previous) &&
-		!history.some((entry) => isRecord(entry) && entry.checked === true)
-			? (previous as unknown as SavedAssessmentState)
-			: undefined;
 	return {
 		...next,
-		contentSignature: erasedDraft ? erasedDraft.contentSignature : facts.signature,
-		materialProof: erasedDraft ? erasedDraft.materialProof : materialProof,
+		contentSignature: choiceEvidenceSignature(facts.signature),
 		writtenAt: write.writtenAt,
-		...(history.length
-			? {
-					history: history.map((entry) => {
-						if (
-							!isRecord(entry) ||
-							typeof entry.contentSignature !== "string" ||
-							!isRecord(entry.materialProof)
-						)
-							return entry;
-						const key = JSON.stringify([entry.contentSignature, entry.materialProof]);
-						if (!proofs.has(key)) {
-							proofs.add(key);
-							return entry;
-						}
-						// Keep every selection, verdict and origin; share only identical material proof.
-						const { materialProof: _proof, ...answer } = entry;
-						return answer as LearnerStateValue;
-					}),
-				}
-			: {}),
+		...(history.length ? { history } : {}),
 	};
 }
 
@@ -369,24 +264,11 @@ function hasSubmittedChoice(value: unknown): boolean {
 	);
 }
 
-// Full aggregate references survive the member's first compact write.
-function sameSubmittedSignature(left: unknown, right: unknown): boolean {
-	if (left === right) return true;
-	if (isScorm12ChoiceSignature(left) && isChoiceContentSignature(right))
-		return left === choiceEvidenceSignature(right, "scorm12");
-	if (isChoiceContentSignature(left) && isScorm12ChoiceSignature(right))
-		return choiceEvidenceSignature(left, "scorm12") === right;
-	return false;
-}
-
 // Members and aggregate references consume the same admitted submitted evidence.
 type SubmittedChoiceResolution =
 	| {
 			status: "current";
-			evidence:
-				| { kind: "submission"; answer: SavedAssessmentState }
-				| { kind: "legacy-pending" }
-				| { kind: "base" };
+			evidence: { kind: "submission"; answer: SavedAssessmentState } | { kind: "base" };
 	  }
 	| { status: "unanswered" | "history"; evidence: null };
 
@@ -405,18 +287,6 @@ export function choiceDependencyStatus(
 	return resolveMember(id, view).status;
 }
 
-function admitLegacyRetry(
-	value: unknown,
-	facts: ChoiceAssessmentFacts,
-	row: ChoiceDependencyView["rows"][number] | undefined,
-): SavedAssessmentState | null {
-	if (row?.contentSignature !== undefined || row?.correct === true) return null;
-	const draft = admitChoiceAssessmentState(value, facts);
-	if (!draft || draft.checked || draft.attemptCount === 0) return null;
-	// Pre-signature retries cannot prove old material; preserve base pending behavior.
-	return draft;
-}
-
 /** Draft signatures never stand in for a submission; only the latest checked answer counts. */
 function resolveSubmittedChoice(
 	state: unknown,
@@ -429,36 +299,15 @@ function resolveSubmittedChoice(
 	const submissions = [...history, state].filter(
 		(entry) => isRecord(entry) && entry.checked === true,
 	);
-	// A material reference resolves in its own verdict/origin context, not the newest row's.
-	let submitted = reference
-		? submissions.find((entry) =>
-				sameSubmittedSignature(entry.contentSignature ?? null, reference.signature),
-			)
+	// Resolve a captured reference independently of the newest reporting row.
+	const submitted = reference
+		? submissions.find((entry) => entry.contentSignature === reference.signature)
 		: submissions.at(-1);
-	if (reference && !submitted) {
-		const pending = history.find((entry) => isRecord(entry) && entry.legacyPending === true);
-		return reference.signature === null &&
-			admitLegacyRetry(pending ?? (submissions.length ? undefined : state), facts, undefined)
-			? { status: "current", evidence: { kind: "legacy-pending" } }
-			: { status: "history", evidence: null };
-	}
-	if (!isRecord(submitted))
-		return admitLegacyRetry(state, facts, row)
-			? { status: "current", evidence: { kind: "legacy-pending" } }
-			: { status: "history", evidence: null };
-	if (submitted.materialProof === undefined && submitted.contentSignature !== undefined) {
-		const shared = history.find(
-			(entry) =>
-				isRecord(entry) &&
-				entry.contentSignature === submitted.contentSignature &&
-				entry.materialProof !== undefined,
-		);
-		if (isRecord(shared)) submitted = { ...submitted, materialProof: shared.materialProof };
-	}
+	if (!isRecord(submitted)) return { status: "history", evidence: null };
 	const answer = admitChoiceAssessmentState(submitted, facts);
 	return answer?.checked &&
 		(!row ||
-			(sameSubmittedSignature(row.contentSignature, answer.contentSignature) &&
+			(row.contentSignature === answer.contentSignature &&
 				(row.correct === undefined || row.correct === answer.correct)))
 		? { status: "current", evidence: { kind: "submission", answer } }
 		: { status: "history", evidence: null };
@@ -509,7 +358,7 @@ function isGroupPayload(value: unknown): value is ChoiceGroupPayload {
 			pair.length !== 2 ||
 			!isNonemptyString(pair[0]) ||
 			pair[0] <= previous ||
-			(pair[1] !== null && !isChoiceContentSignature(pair[1]) && !isScorm12ChoiceSignature(pair[1]))
+			(pair[1] !== null && !isChoiceContentSignature(pair[1]))
 		)
 			return false;
 		previous = pair[0];
@@ -524,13 +373,15 @@ function isGroupPayload(value: unknown): value is ChoiceGroupPayload {
 /** The digest verifies the captured payload, not a reconstruction from today's drafts. */
 export function choiceGroupSignature(payload: ChoiceGroupPayload): string {
 	if (!isGroupPayload(payload)) throw new TypeError("Invalid group submission payload");
-	return choiceMaterialSignature([
-		"choice-group",
-		1,
-		payload.mode,
-		payload.selectedMemberId,
-		payload.dependencies,
-	]);
+	return choiceEvidenceSignature(
+		choiceMaterialSignature([
+			"choice-group",
+			1,
+			payload.mode,
+			payload.selectedMemberId,
+			payload.dependencies,
+		]),
+	);
 }
 
 /** Called only for a deliberate aggregate submission, after all dependencies admit. */
@@ -593,7 +444,7 @@ function groupDependencyStatus(
 	const ids = choiceGroupDependencyIds(id, view);
 	if (!group || !ids.length) return "history";
 	if (isRecord(state) && state.mode !== undefined && state.mode !== group.mode) return "history";
-	// Legacy ungraded rows may omit a witness; any supplied witness must agree in both formats.
+	// Any supplied row witness must agree with the captured dependency set.
 	if (
 		row?.memberIds !== undefined &&
 		(!Array.isArray(row.memberIds) ||
@@ -602,34 +453,24 @@ function groupDependencyStatus(
 				: Array.from(row.memberIds).some((member) => !ids.includes(member))))
 	)
 		return "history";
-	if (submitted !== undefined || row?.contentSignature !== undefined) {
-		if (
-			!isRecord(state) ||
-			state.version !== 1 ||
-			state.kind !== "assessmentGroup" ||
-			typeof state.completed !== "boolean" ||
-			!isRecord(submitted) ||
-			!isGroupPayload(submitted.payload) ||
-			submitted.contentSignature !== choiceGroupSignature(submitted.payload) ||
-			(row && row.contentSignature !== submitted.contentSignature) ||
-			submitted.payload.mode !== group.mode ||
-			// Valid oneOf payloads select their sole dependency, so this also checks selection.
-			JSON.stringify(submitted.payload.dependencies.map(([member]) => member)) !==
-				JSON.stringify(ids)
-		)
-			return "history";
-		return submitted.payload.dependencies.every(
-			([member, signature]) =>
-				resolveMember(member, view).status === "current" &&
-				resolveMember(member, view, { signature }).status === "current",
-		)
-			? "current"
-			: "history";
-	}
-	return ids.every(
-		(member) =>
+	if (
+		!isRecord(state) ||
+		state.version !== 1 ||
+		state.kind !== "assessmentGroup" ||
+		typeof state.completed !== "boolean" ||
+		!isRecord(submitted) ||
+		!isGroupPayload(submitted.payload) ||
+		submitted.contentSignature !== choiceGroupSignature(submitted.payload) ||
+		(row && row.contentSignature !== submitted.contentSignature) ||
+		submitted.payload.mode !== group.mode ||
+		// Valid oneOf payloads select their sole dependency, so this also checks selection.
+		JSON.stringify(submitted.payload.dependencies.map(([member]) => member)) !== JSON.stringify(ids)
+	)
+		return "history";
+	return submitted.payload.dependencies.every(
+		([member, signature]) =>
 			resolveMember(member, view).status === "current" &&
-			resolveMember(member, view, { signature: null }).status === "current",
+			resolveMember(member, view, { signature }).status === "current",
 	)
 		? "current"
 		: "history";
