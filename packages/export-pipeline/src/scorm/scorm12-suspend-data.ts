@@ -398,10 +398,11 @@ export interface Scorm12SuspendDataCodec {
 
 /** Dormant writer; hosts select this codec only when compact evidence is admitted. */
 export function serializeScorm12CompactSuspendData(data: Scorm12SuspendData): string {
+	const raw = JSON.stringify(data);
 	return preflightScorm12SuspendData(
 		data,
-		encodeEvidence(JSON.stringify(data)),
-		parseScorm12CompactSuspendData,
+		raw.length <= SCORM12_SUSPEND_DATA_LIMIT ? raw : encodeEvidence(raw),
+		scorm12CompactSuspendDataCodec.parse,
 	);
 }
 

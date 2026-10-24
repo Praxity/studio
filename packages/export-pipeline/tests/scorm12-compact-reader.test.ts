@@ -3,13 +3,7 @@ import { beforeEach, expect, it } from "vitest";
 import * as codec from "../src/scorm/scorm12-suspend-data";
 import vectors from "./fixtures/scorm12-compact-vectors";
 
-// Assertion failures, rather than missing exports, identify runtimes without compact admission.
-const read =
-	(
-		codec as Partial<typeof codec> & {
-			parseScorm12CompactSuspendData?: typeof codec.parseScorm12SuspendData;
-		}
-	).parseScorm12CompactSuspendData ?? codec.parseScorm12SuspendData;
+const read = codec.parseScorm12CompactSuspendData;
 
 beforeEach(() => {
 	// Each rejection test first proves it reached a functioning compact reader.

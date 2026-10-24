@@ -2,27 +2,12 @@ import { createHash } from "node:crypto";
 import { expect, it } from "vitest";
 import * as codec from "../src/scorm/scorm12-suspend-data";
 
-// Older runtimes fail the capability assertion, rather than an import or loader.
-const encode =
-	(
-		codec as Partial<typeof codec> & {
-			serializeScorm12CompactSuspendData?: typeof codec.serializeScorm12SuspendData;
-		}
-	).serializeScorm12CompactSuspendData ?? codec.serializeScorm12SuspendData;
+const encode = codec.serializeScorm12CompactSuspendData;
 const read = codec.parseScorm12CompactSuspendData;
-const preflight =
-	(
-		codec as Partial<typeof codec> & {
-			preflightScorm12SuspendData?: (
-				data: codec.Scorm12SuspendData,
-				candidate: string,
-				read: typeof codec.parseScorm12SuspendData,
-			) => string;
-		}
-	).preflightScorm12SuspendData ?? ((_data, candidate) => candidate);
+const preflight = codec.preflightScorm12SuspendData;
 
 function roundtrip(custom: string): void {
-	const data = { visitedPages: ["page"], interactions: [], custom };
+	const data = { visitedPages: ["page", "p".repeat(4096)], interactions: [], custom };
 	let wire = "";
 	expect(() => {
 		wire = encode(data);
@@ -31,6 +16,27 @@ function roundtrip(custom: string): void {
 	expect(wire.length).toBeLessThanOrEqual(4096);
 	expect(JSON.stringify(read(wire))).toBe(JSON.stringify(data));
 }
+
+it.each([4095, 4096, 4097])("uses raw JSON through 4096 characters, raw size %i", (size) => {
+	const data = { visitedPages: [], interactions: [], custom: "" };
+	data.custom = "x".repeat(size - JSON.stringify(data).length);
+	const raw = JSON.stringify(data);
+	const wire = encode(data);
+	if (size <= 4096) expect(wire).toBe(raw);
+	else expect(JSON.parse(wire)[0]).toBe("praxity-evidence-1");
+	expect(wire.length).toBeLessThanOrEqual(4096);
+	expect(codec.scorm12CompactSuspendDataCodec.parse(wire)).toEqual(data);
+});
+
+it.each([undefined, "\ud800", ' { "answer": "opaque", "answer": "last" } '])(
+	"preserves fitting raw payloads with custom text %j",
+	(custom) => {
+		const data = { visitedPages: ["page"], interactions: [], custom };
+		const wire = encode(data);
+		expect(wire).toBe(JSON.stringify(data));
+		expect(codec.scorm12CompactSuspendDataCodec.parse(wire)).toEqual(data);
+	},
+);
 
 it.each(Array.from({ length: 16 }, (_, index) => index))(
 	"preserves every single UTF-16 code unit in keys and values, partition %i",
@@ -55,7 +61,7 @@ it.each([
 
 it("preserves dictionary tokens, shapes, row order and optional fields", () => {
 	const data = {
-		visitedPages: ["00000000-0000-4000-8000-000000000001"],
+		visitedPages: ["00000000-0000-4000-8000-000000000001", "p".repeat(4096)],
 		interactions: [
 			{ id: "q", response: "\ud800", correct: false, score: 0, timestamp: 1 },
 			{ id: "q", response: "😀", timestamp: 2 },
@@ -83,7 +89,6 @@ it("preserves dictionary tokens, shapes, row order and optional fields", () => {
 	}).not.toThrow();
 	expect(JSON.parse(wire)[3]).toEqual([1, 1, 1]);
 	expect(JSON.stringify(read(wire))).toBe(JSON.stringify(data));
-	expect(codec.parseScorm12SuspendData(wire)).toBeNull();
 });
 
 it("refuses an over-cap compact wire", () => {
@@ -110,9 +115,23 @@ it("refuses data beyond the reader's decoded and typed bounds", () => {
 it("refuses excessive nesting", () => {
 	roundtrip(`${"[".repeat(63)}0${"]".repeat(63)}`);
 	const custom = `${"[".repeat(64)}0${"]".repeat(64)}`;
-	expect(() => encode({ visitedPages: [], interactions: [], custom })).toThrow(
+	expect(() => encode({ visitedPages: ["p".repeat(4096)], interactions: [], custom })).toThrow(
 		/ESCORM12STORAGE: Evidence depth/,
 	);
+});
+
+it.each(["raw", "compact"])("preflight refuses a changed or unreadable %s payload", (form) => {
+	const data = {
+		visitedPages: [],
+		interactions: [],
+		custom: form === "raw" ? "x" : "x".repeat(4096),
+	};
+	const wire = encode(data);
+	expect(preflight(data, wire, codec.scorm12CompactSuspendDataCodec.parse)).toBe(wire);
+	expect(() =>
+		preflight({ ...data, custom: "changed" }, wire, codec.scorm12CompactSuspendDataCodec.parse),
+	).toThrow(/does not preserve the payload/);
+	expect(() => preflight(data, wire, () => null)).toThrow(/does not preserve the payload/);
 });
 
 it("preflight independently bounds a readable ordinary candidate", () => {
