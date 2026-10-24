@@ -21,7 +21,7 @@ import { applyXapiPrivatePolicy } from "../private-xapi-policy";
 import { filterPrivateSuspendData } from "@praxity/shared-blocks/block-state-policy";
 import { declaredCourseActivityId, isAbsoluteIri } from "../activity-id.ts";
 import {
-	assessmentAttemptMetadata,
+	assessmentEvidenceMetadata,
 	assessmentRowsEvidence,
 	DEVICE_DESTINATIONS,
 	type InteractionEvidence,
@@ -54,7 +54,7 @@ const VERBS = {
 
 type VerbKey = keyof typeof VERBS;
 
-/** Dormant reader. Handle absent storage before calling; null means refused evidence. */
+/** Handle absent storage before calling; null means refused evidence. */
 export function readXapiInteractionEvidence(raw: string): InteractionEvidence[] | null {
 	try {
 		const value = JSON.parse(raw) as { interactions?: unknown } | null;
@@ -190,7 +190,7 @@ export class XapiRuntime implements SCORMRuntime {
 	private bookmark: string | null = null;
 	private suspendData: string | null = null;
 	private visitedPages: string[] = [];
-	private interactions: InteractionRecord[] = [];
+	private interactions: InteractionEvidence[] = [];
 	/** Statements the LRS did not accept; resent when the next page initializes. */
 	private outbox: XapiStatement[] = [];
 
@@ -258,7 +258,10 @@ export class XapiRuntime implements SCORMRuntime {
 			if (Array.isArray(value.visitedPages))
 				this.visitedPages = value.visitedPages.filter(isString);
 			if (Array.isArray(value.interactions))
-				this.interactions = value.interactions.filter(isInteractionRecord);
+				this.interactions = value.interactions.flatMap((row) => {
+					const admitted = assessmentRowsEvidence([row]);
+					return admitted ?? [row];
+				});
 			if (["incomplete", "completed", "passed", "failed"].includes(String(value.completionStatus)))
 				this.completionStatus = value.completionStatus as string;
 			if (value.successStatus === "passed" || value.successStatus === "failed")
@@ -452,11 +455,11 @@ export class XapiRuntime implements SCORMRuntime {
 			response,
 			correct,
 			score,
-			...assessmentAttemptMetadata(options),
+			...assessmentEvidenceMetadata(options),
 			timestamp: Date.now(),
 		};
 		// Keep the latest attempt per question, plus its latest scored one, so saved state stays bounded.
-		const isScored = (item: InteractionRecord) => typeof item.score === "number";
+		const isScored = (item: InteractionEvidence) => typeof item.score === "number";
 		const lastScored = isScored(record)
 			? undefined
 			: [...this.interactions].reverse().find((item) => item.id === id && isScored(item));
@@ -525,7 +528,11 @@ export class XapiRuntime implements SCORMRuntime {
 	}
 
 	getInteractions(): InteractionRecord[] {
-		return [...this.interactions];
+		return this.interactions.filter(isInteractionRecord);
+	}
+
+	getInteractionEvidence(): InteractionEvidence[] | null {
+		return assessmentRowsEvidence(this.interactions);
 	}
 
 	setCompletion(status: "incomplete" | "completed" | "passed" | "failed"): void {

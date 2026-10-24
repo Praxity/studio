@@ -77,8 +77,8 @@ it.each(
 		const selection = multiple ? ["a", "b"] : variant === "dontKnow" ? [DONT_KNOW] : ["a"];
 		const notice =
 			locale === "en"
-				? "This question changed after you answered it, so your earlier answer no longer counts. Select New attempt to answer it again."
-				: "Cette question a été modifiée après votre réponse. Votre réponse précédente ne compte donc plus. Sélectionnez Nouvelle tentative pour y répondre de nouveau.";
+				? "This question changed after you answered it. Your earlier result stays until you submit a new answer. Select New attempt to answer it again."
+				: "Cette question a été modifiée après votre réponse. Votre résultat précédent est conservé jusqu'à l'envoi d'une nouvelle réponse. Sélectionnez Nouvelle tentative pour y répondre de nouveau.";
 
 		const runtime = new LocalStorageRuntime(localStorage, "course", "attempt");
 		const previous = prepareChoiceAssessmentState(
@@ -343,9 +343,9 @@ it.each(["en", "fr"] as const)(
 	},
 );
 
-// Characterization: compiled signatures alone must not select recovery or signed writes.
+// A component without an admitted host never restores a submitted choice.
 it.each([false, true])(
-	"ordinary restoration stays selected with an empty capability: %s",
+	"no submitted choice restores with an empty capability: %s",
 	(emptyCapability) => {
 		const saved = prepareChoiceAssessmentState(
 			undefined,
@@ -379,8 +379,8 @@ it.each([false, true])(
 			</MantineProvider>,
 		);
 		expect(screen.queryByRole("button", { name: "New attempt" })).toBeNull();
-		expect(screen.getAllByRole("radio")[0]).toBeChecked();
-		for (const input of screen.getAllByRole("radio")) expect(input).toBeDisabled();
+		expect(screen.getAllByRole("radio")[0]).not.toBeChecked();
+		for (const input of screen.getAllByRole("radio")) expect(input).toBeEnabled();
 		expect(set).not.toHaveBeenCalled();
 	},
 );

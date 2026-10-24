@@ -49,6 +49,21 @@ function lms() {
 }
 afterEach(() => vi.unstubAllGlobals());
 
+it("preflights a compact replacement exactly once at the real adapter boundary", () => {
+	const { dom, values } = lms();
+	const parse = vi.spyOn(codec.scorm12CompactSuspendDataCodec, "parse");
+	try {
+		const runtime = new Runtime(undefined, compact);
+		runtime.initialize();
+		expect(runtime.setSuspendData("x".repeat(4096))).toBe(true);
+		expect(values.get("cmi.suspend_data")?.[0]).toBe("[");
+		expect(parse).toHaveBeenCalledOnce();
+	} finally {
+		parse.mockRestore();
+		dom.window.close();
+	}
+});
+
 it("reloads the exact lone-surrogate text draft after a choice and its row", () => {
 	const { values, dom } = lms();
 	try {

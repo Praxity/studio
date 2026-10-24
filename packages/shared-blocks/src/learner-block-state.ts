@@ -19,7 +19,7 @@ export type LearnerBlockSaveResult =
 	  };
 
 export interface LearnerBlockStateRuntime {
-	/** Absent until the host admits evidence-aware consumers together. */
+	/** The host binds current rows and state before consumers restore choices. */
 	getChoiceDependencyView?(): ChoiceDependencyEvidence | undefined;
 	get(blockId: string): LearnerStateValue | undefined;
 	set(blockId: string, value: LearnerStateValue): void;

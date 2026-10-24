@@ -142,7 +142,7 @@ export interface ChoiceDependencyView {
 /** Readers receive the status owner with the evidence, without importing admission code. */
 export interface ChoiceDependencyEvidence extends ChoiceDependencyView {
 	status(id: string, candidate?: ChoiceDependencyView): ReturnType<typeof choiceDependencyStatus>;
-	/** Group consumers use the owner without loading dormant admission into ordinary bundles. */
+	/** Group consumers reach admission through the host's bound evidence view. */
 	prepareGroupSubmission?(
 		id: string,
 		candidate: ChoiceDependencyView,
@@ -159,7 +159,7 @@ export interface ChoiceDependencyEvidence extends ChoiceDependencyView {
 	): ChoiceDependencyEvidence | null;
 }
 
-/** Bind dormant group operations beside the status owner, outside ordinary consumer bundles. */
+/** Bind group operations beside the shared submitted-material status owner. */
 export function bindChoiceDependencyView(view: ChoiceDependencyView): ChoiceDependencyEvidence {
 	const bound: ChoiceDependencyEvidence = {
 		...view,
@@ -214,7 +214,7 @@ function prepareChoiceGroupState(
 	return snapshot !== undefined && JSON.stringify(previous) === JSON.stringify(next) ? null : next;
 }
 
-/** One context for future readers; construction never admits, signs or writes an answer. */
+/** Construction never admits, signs or writes an answer. */
 export function createChoiceDependencyView(
 	facts: AdmittedChoiceStateFacts,
 	evidence: {
@@ -269,7 +269,7 @@ type SubmittedChoiceResolution =
 	  }
 	| { status: "unanswered" | "history"; evidence: null };
 
-/** One status drives future reporting, display and gates. No production caller yet. */
+/** Restoration and recovery share one submitted-material status. */
 export function choiceDependencyStatus(
 	id: string,
 	view: ChoiceDependencyView,

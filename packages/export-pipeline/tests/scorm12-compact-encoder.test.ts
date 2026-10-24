@@ -100,6 +100,14 @@ it("refuses an over-cap compact wire", () => {
 	);
 });
 
+it("selects compact before the estimate's reserved room would overflow raw JSON", () => {
+	const data = { visitedPages: [], interactions: [], custom: "x".repeat(3700) };
+	const wire = codec.serializeScorm12CompactSuspendData(data, 512);
+	expect(wire[0]).toBe("[");
+	expect(wire.length + 512).toBeLessThanOrEqual(4096);
+	expect(codec.scorm12CompactSuspendDataCodec.parse(wire)).toEqual(data);
+});
+
 it("refuses data beyond the reader's decoded and typed bounds", () => {
 	expect(() => encode({ visitedPages: [], interactions: [], custom: "a".repeat(262145) })).toThrow(
 		/exceeds the decoded limit/,

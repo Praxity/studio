@@ -19,7 +19,7 @@ import { filterPrivateSuspendData } from "@praxity/shared-blocks/block-state-pol
 import { findWindowProperty, type WindowLike } from "../api-discovery.ts";
 import { truncateInteractionResponse } from "../interaction-response";
 import {
-	assessmentAttemptMetadata,
+	assessmentEvidenceMetadata,
 	assessmentRowsEvidence,
 	type InteractionEvidence,
 	type InteractionRecord,
@@ -40,7 +40,7 @@ import {
 } from "./session.ts";
 import { sessionTime } from "./session-time.ts";
 
-/** Dormant export so ordinary adapter instances do not retain evidence code in bundles. */
+/** Retain identifiable rejected signed rows in their original order. */
 export function readScorm2004InteractionEvidence(raw: string): InteractionEvidence[] | null {
 	try {
 		const value = JSON.parse(raw) as { interactions?: unknown } | null;
@@ -361,7 +361,7 @@ export class Scorm2004Runtime implements SCORMRuntime {
 			response: storedResponse,
 			correct,
 			score,
-			...assessmentAttemptMetadata(options),
+			...assessmentEvidenceMetadata(options),
 			timestamp: Date.now(),
 		});
 		this.saveSuspendDataObject(data);
@@ -410,7 +410,11 @@ export class Scorm2004Runtime implements SCORMRuntime {
 			globalThis.__praxityPrivateState !== false
 				? interactions.filter((record) => this.blockStatePolicy[record.id] !== "device")
 				: interactions;
-		return reportable.map((record) => ({ ...record, ...assessmentAttemptMetadata(record) }));
+		return reportable.map((record) => ({ ...record, ...assessmentEvidenceMetadata(record) }));
+	}
+
+	getInteractionEvidence(): InteractionEvidence[] | null {
+		return assessmentRowsEvidence((this.loadSuspendDataObject().interactions as unknown[]) ?? []);
 	}
 
 	setCourseFailure(failed: boolean): void {

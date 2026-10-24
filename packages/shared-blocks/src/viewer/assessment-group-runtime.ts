@@ -991,6 +991,7 @@ function initAssessmentGroupLifetime(
 					const member = members.find((candidate) => candidate.id === selectedId);
 					if (!member) return;
 					status.textContent = "";
+					status.classList.add("praxity-sr-only");
 					picker.querySelectorAll<HTMLInputElement>("input").forEach((input) => {
 						input.disabled = true;
 					});
@@ -1038,6 +1039,7 @@ function initAssessmentGroupLifetime(
 				const current = selfCheckEpochTicket(root.ownerDocument);
 				if (!current() || disposed) return;
 				status.textContent = "";
+				status.classList.add("praxity-sr-only");
 				clearMemberValidation?.();
 				clearMemberValidation = undefined;
 				const unanswered = members.filter((member) => {

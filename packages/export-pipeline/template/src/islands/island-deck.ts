@@ -1227,6 +1227,8 @@ export function initDeck(): (() => void) | undefined {
 		if (!owned()) return;
 		if (inspection) return;
 		const detail = (event as CustomEvent).detail;
+		if (window.__praxityBlockState?.getSaveResult?.(detail?.blockId)?.status === "not-saved")
+			return;
 		const gate = pages[current].gates.find((item) => item.id === detail?.blockId);
 		const exhausted =
 			detail?.submitted === true &&
@@ -1246,6 +1248,7 @@ export function initDeck(): (() => void) | undefined {
 		if (!owned()) return;
 		if (inspection) return;
 		const detail = (event as CustomEvent).detail;
+		if (event.defaultPrevented) return;
 		const gate = pages[current].gates.find((item) => item.id === detail?.groupId);
 		if (gate && gateSatisfied(gate.rule, detail.passed, detail?.completed === true)) {
 			released.add(gate.id);

@@ -383,7 +383,15 @@ describe.each(["scorm12", "scorm2004"] as const)("%s commit preparation", (forma
 		runtime.commit();
 		expect(old).toHaveBeenCalledOnce();
 		const owner = win.__praxitySelfCheckDocument!;
+		const evidence = win.__praxityBlockState?.getChoiceDependencyView;
+		expect(evidence).toBeTypeOf("function");
 		owner.reset();
+		expect(win.__praxityBlockState?.getChoiceDependencyView).not.toBe(evidence);
+		expect(win.__praxityBlockState?.getChoiceDependencyView?.()?.readState("new")).toBeUndefined();
+		win.__praxityBlockState?.set("new", { answer: "later" });
+		expect(win.__praxityBlockState?.getChoiceDependencyView?.()?.readState("new")).toEqual({
+			answer: "later",
+		});
 		const readmitted = vi.fn();
 		Object.assign(win.__praxityTracker!, { prepareCommit: readmitted });
 		runtime.commit();
