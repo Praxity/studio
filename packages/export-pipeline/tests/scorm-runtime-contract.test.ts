@@ -504,6 +504,34 @@ for (const version of ["1.2", "2004"] as const) {
 			).toEqual([]);
 			dom.window.close();
 		});
+		it("creates a device attempt without randomUUID on an HTTP LMS", () => {
+			const api = version === "1.2" ? new StrictScorm12Api() : new StrictScorm2004Api();
+			api.data.set(version === "1.2" ? "cmi.core.student_id" : "cmi.learner_id", "learner-a");
+			api.data.set(version === "1.2" ? "cmi.core.entry" : "cmi.entry", "ab-initio");
+			vi.stubGlobal("crypto", { getRandomValues: (bytes: Uint8Array) => bytes.fill(255) });
+			try {
+				if (version === "1.2") installScorm12Api(api as StrictScorm12Api);
+				const runtime =
+					version === "1.2"
+						? new Scorm12Runtime()
+						: createScorm2004Runtime(api as StrictScorm2004Api);
+				expect(runtime.initialize()).toBe(true);
+				let identity: ReturnType<typeof runtime.getLearnerIdentity> | undefined;
+				expect(() => {
+					identity = runtime.getLearnerIdentity();
+				}).not.toThrow();
+				expect(identity).toEqual({
+					learnerId: "learner-a",
+					attemptId: "ffffffff-ffff-4fff-bfff-ffffffffffff",
+					newAttempt: true,
+				});
+				expect(runtime.getSuspendData()).toContain(
+					'"deviceAttemptId":"ffffffff-ffff-4fff-bfff-ffffffffffff"',
+				);
+			} finally {
+				vi.unstubAllGlobals();
+			}
+		});
 		it("resumes only the same learner and attempt, and separates a new ab-initio attempt", () => {
 			const identityKey = version === "1.2" ? "cmi.core.student_id" : "cmi.learner_id";
 			const entryKey = version === "1.2" ? "cmi.core.entry" : "cmi.entry";

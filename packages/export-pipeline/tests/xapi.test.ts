@@ -2,6 +2,7 @@ import type { LearnerBlockStateRuntime } from "@praxity/shared-blocks/learner-bl
 import { VariableStore } from "@praxity/shared-blocks/logic";
 import { JSDOM } from "jsdom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Scorm12Runtime } from "../src/scorm/api/scorm12";
 import type { XapiConfig, XapiStatement } from "../src/scorm/api/xapi";
 import { XapiRuntime } from "../src/scorm/api/xapi";
 import { CourseTracker } from "../src/scorm/tracking";
@@ -94,10 +95,72 @@ describe("XapiRuntime", () => {
 		});
 	});
 
+	it.each([
+		[3, 3],
+		[Infinity, 0],
+	])(
+		"keeps retried interaction metadata like SCORM 1.2 with limit %s",
+		(maxAttempts, storedLimit) => {
+			const values = new Map<string, string>();
+			vi.stubGlobal("window", {
+				API: {
+					LMSInitialize: () => "true",
+					LMSGetValue: (key: string) => values.get(key) ?? "",
+					LMSSetValue: (key: string, value: string) => {
+						values.set(key, value);
+						return "true";
+					},
+					LMSGetLastError: () => "0",
+				},
+			});
+			try {
+				const options = { attemptsUsed: 2, maxAttempts, memberIds: ["q1", "q2"] };
+				const scorm = new Scorm12Runtime();
+				expect(scorm.initialize()).toBe(true);
+				scorm.trackInteraction("group", "b", true, 100, options);
+				runtime.trackInteraction("group", "b", true, 100, options);
+				const expected = { attemptsUsed: 2, maxAttempts: storedLimit, memberIds: ["q1", "q2"] };
+				expect(scorm.getInteractions()[0]).toMatchObject(expected);
+				expect(runtime.getInteractions()[0]).toMatchObject(expected);
+			} finally {
+				vi.unstubAllGlobals();
+			}
+		},
+	);
+
 	// -------------------------------------------------------------------
 	// 1. buildStatement() produces correct structure
 	// -------------------------------------------------------------------
 	describe("buildStatement()", () => {
+		it("gives different statements distinct UUIDs", () => {
+			runtime.trackPageVisit("p1");
+			runtime.trackPageVisit("p2");
+			const [first, second] = allStatementsSent();
+			const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+			expect(first.id).toMatch(uuid);
+			expect(second.id).toMatch(uuid);
+			expect(first.id).not.toBe(second.id);
+		});
+
+		it("uses the native randomUUID when available", () => {
+			vi.spyOn(crypto, "randomUUID").mockReturnValue("12345678-1234-4123-8123-123456789abc");
+			runtime.trackPageVisit("p1");
+			expect(lastStatementSent()?.id).toBe("12345678-1234-4123-8123-123456789abc");
+		});
+
+		it.each([
+			[0, "00000000-0000-4000-8000-000000000000"],
+			[255, "ffffffff-ffff-4fff-bfff-ffffffffffff"],
+		])("builds a v4 UUID without randomUUID from random bytes %i", (byte, expected) => {
+			vi.stubGlobal("crypto", { getRandomValues: (bytes: Uint8Array) => bytes.fill(byte) });
+			try {
+				runtime.trackPageVisit("p1");
+				expect(lastStatementSent()?.id).toBe(expected);
+			} finally {
+				vi.unstubAllGlobals();
+			}
+		});
+
 		it("produces a statement with actor, verb, object, and timestamp", () => {
 			const statement = runtime.buildStatement("initialized", {
 				id: "https://example.com/course",
@@ -168,6 +231,19 @@ describe("XapiRuntime", () => {
 	// 2. sendStatement() POSTs to endpoint with correct headers
 	// -------------------------------------------------------------------
 	describe("sendStatement()", () => {
+		it("reuses the built statement UUID after a failed send", async () => {
+			vi.spyOn(console, "warn").mockImplementation(() => {});
+			const fetch = globalThis.fetch as ReturnType<typeof vi.fn>;
+			fetch.mockResolvedValueOnce(new Response(null, { status: 503 }));
+			const statement = runtime.buildStatement("experienced", { id: "https://example.com/p1" });
+			expect(statement).toHaveProperty("id", expect.any(String));
+			await runtime.sendStatement(statement);
+			runtime.initialize();
+			const [first, retry] = allStatementsSent();
+			expect(retry.id).toBe(statement.id);
+			expect(retry).toEqual(first);
+		});
+
 		it("POSTs to the configured endpoint with correct headers", async () => {
 			const statement = runtime.buildStatement("initialized", {
 				id: "https://example.com/course",
@@ -1257,8 +1333,13 @@ describe("XapiRuntime course state across pages", () => {
 		first.setCompletion("completed");
 		await vi.waitFor(() => expect(storage.getItem(storage.key(0) as string)).toContain('"verb"'));
 
+		const original = allStatementsSent()[0];
+		expect(original).toHaveProperty("id", expect.any(String));
+		const saved = JSON.parse(storage.getItem(storage.key(0) as string) as string);
+		expect(saved.outbox[0]).toEqual(original);
 		globalThis.fetch = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
 		new XapiRuntime(createConfig(), "course-1", storage).initialize();
+		expect(allStatementsSent()[0]).toEqual(original);
 		expect(allStatementsSent().map((statement) => statement.verb.display["en-US"])).toEqual([
 			"completed",
 			"initialized",
@@ -1266,6 +1347,82 @@ describe("XapiRuntime course state across pages", () => {
 		await vi.waitFor(() =>
 			expect(storage.getItem(storage.key(0) as string)).toContain('"outbox":[]'),
 		);
+	});
+
+	it("retires an already-stored statement when its resend receives 409", async () => {
+		const storage = memoryStorage();
+		const key = "praxity-xapi:course-1:mailto%3Alearner%40example.com";
+		const accepted = new Set<string>();
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		globalThis.fetch = vi.fn().mockImplementation(async (_url, init: RequestInit) => {
+			const statement = JSON.parse(init.body as string) as XapiStatement;
+			if (accepted.has(statement.id)) return new Response(null, { status: 409 });
+			accepted.add(statement.id);
+			if (statement.verb.id.endsWith("/completed")) throw new Error("Response lost after store");
+			return new Response(null, { status: 204 });
+		});
+		const first = new XapiRuntime(createConfig(), "course-1", storage);
+		const original = first.buildStatement("completed", { id: "https://example.com/course" });
+		await first.sendStatement(original);
+		expect(JSON.parse(storage.getItem(key) as string).outbox).toEqual([original]);
+		new XapiRuntime(createConfig(), "course-1", storage).initialize();
+		await new Promise((resolve) => setTimeout(resolve, 0));
+		expect(JSON.parse(storage.getItem(key) as string).outbox).toEqual([]);
+		new XapiRuntime(createConfig(), "course-1", storage).initialize();
+		await new Promise((resolve) => setTimeout(resolve, 0));
+		expect(allStatementsSent().filter((statement) => statement.id === original.id)).toEqual([
+			original,
+			original,
+		]);
+		expect(JSON.parse(storage.getItem(key) as string).outbox).toEqual([]);
+	});
+
+	it.each([409, 503])("retains a failed statement without an id on HTTP %i", async (status) => {
+		const storage = memoryStorage();
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		globalThis.fetch = vi.fn().mockResolvedValue(new Response(null, { status }));
+		const legacy = {
+			actor: { name: "Learner", mbox: "mailto:learner@example.com" },
+			verb: { id: "http://adlnet.gov/expapi/verbs/completed", display: { "en-US": "completed" } },
+			object: { id: "https://example.com/course" },
+			timestamp: "2026-01-01T00:00:00.000Z",
+		};
+		await new XapiRuntime(createConfig(), "course-1", storage).sendStatement(
+			legacy as XapiStatement,
+		);
+		expect(JSON.parse(storage.getItem(storage.key(0) as string) ?? "{}").outbox).toEqual([legacy]);
+	});
+
+	it("assigns and saves a legacy outbox UUID before sending and reuses it across reloads", async () => {
+		const storage = memoryStorage();
+		const key = "praxity-xapi:course-1:mailto%3Alearner%40example.com";
+		const legacy = {
+			actor: { name: "Learner", mbox: "mailto:learner@example.com" },
+			verb: { id: "http://adlnet.gov/expapi/verbs/completed", display: { "en-US": "completed" } },
+			object: { id: "https://example.com/course" },
+			timestamp: "2026-01-01T00:00:00.000Z",
+		};
+		storage.setItem(key, JSON.stringify({ outbox: [legacy] }));
+		const restored = new XapiRuntime(createConfig(), "course-1", storage);
+		const [migrated] = JSON.parse(storage.getItem(key) as string).outbox;
+		expect(migrated).toEqual(
+			expect.objectContaining({
+				id: expect.stringMatching(
+					/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+				),
+			}),
+		);
+		expect(migrated).toEqual({ ...legacy, id: migrated.id });
+		vi.spyOn(console, "warn").mockImplementation(() => {});
+		globalThis.fetch = vi.fn().mockResolvedValue(new Response(null, { status: 503 }));
+		restored.initialize();
+		await new Promise((resolve) => setTimeout(resolve, 0));
+		expect(allStatementsSent()[0]).toEqual(migrated);
+		globalThis.fetch = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+		new XapiRuntime(createConfig(), "course-1", storage).initialize();
+		await new Promise((resolve) => setTimeout(resolve, 0));
+		expect(allStatementsSent()[0]).toEqual(migrated);
+		expect(JSON.parse(storage.getItem(key) as string).outbox).toEqual([]);
 	});
 
 	it("keeps only the latest attempt and latest scored attempt per question", () => {

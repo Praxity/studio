@@ -36,10 +36,15 @@ const documents: JSDOM[] = [];
 beforeEach(() => {
 	vi.useFakeTimers({ toFake: ["Date"] });
 	vi.setSystemTime(new Date("2026-01-01T00:00:00Z"));
+	let statementId = 0;
+	vi.spyOn(crypto, "randomUUID").mockImplementation(
+		() => `00000000-0000-4000-8000-${String(++statementId).padStart(12, "0")}`,
+	);
 });
 afterEach(() => {
 	for (const dom of documents.splice(0)) dom.window.close();
 	vi.unstubAllGlobals();
+	vi.restoreAllMocks();
 	vi.useRealTimers();
 });
 

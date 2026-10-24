@@ -21,6 +21,7 @@ import { applyXapiPrivatePolicy } from "../private-xapi-policy";
 import { filterPrivateSuspendData } from "@praxity/shared-blocks/block-state-policy";
 import { declaredCourseActivityId, isAbsoluteIri } from "../activity-id.ts";
 import {
+	assessmentAttemptMetadata,
 	assessmentRowsEvidence,
 	DEVICE_DESTINATIONS,
 	type InteractionEvidence,
@@ -33,6 +34,7 @@ import {
 	type TrackInteractionOptions,
 } from "../types.ts";
 import { resolveLaunchAttempt } from "./device-attempt";
+import { runtimeUuid } from "./runtime-uuid";
 
 // ---------------------------------------------------------------------------
 // ADL verb registry
@@ -116,6 +118,7 @@ export interface XapiResult {
 }
 
 export interface XapiStatement {
+	id: string;
 	actor: {
 		name: string;
 		mbox: string;
@@ -189,7 +192,6 @@ export class XapiRuntime implements SCORMRuntime {
 	private suspendData: string | null = null;
 	private visitedPages: string[] = [];
 	private interactions: InteractionRecord[] = [];
-	private pendingStatements: XapiStatement[] = [];
 	/** Statements the LRS did not accept; resent when the next page initializes. */
 	private outbox: XapiStatement[] = [];
 
@@ -267,11 +269,21 @@ export class XapiRuntime implements SCORMRuntime {
 				this.score = { raw: score.raw, min: score.min, max: score.max };
 			if (isString(value.bookmark)) this.bookmark = value.bookmark;
 			if (isString(value.suspendData)) this.suspendData = value.suspendData;
-			if (Array.isArray(value.outbox))
+			if (Array.isArray(value.outbox)) {
 				this.outbox = value.outbox.filter(
 					(item): item is XapiStatement =>
 						!!item && typeof item === "object" && isString((item as XapiStatement).verb?.id),
 				);
+				let migrated = false;
+				for (const statement of this.outbox) {
+					if (!isString(statement.id)) {
+						statement.id = runtimeUuid();
+						migrated = true;
+					}
+				}
+				// Save legacy IDs before a send can lose its response or the page closes.
+				if (migrated) this.persist();
+			}
 		} catch {
 			// Unreadable or blocked storage starts a fresh in-memory state.
 		}
@@ -308,9 +320,11 @@ export class XapiRuntime implements SCORMRuntime {
 	 * Build a full xAPI statement with the configured actor and an ISO timestamp.
 	 */
 	buildStatement(verb: VerbKey, object: XapiObject, result?: XapiResult): XapiStatement {
+		const id = runtimeUuid();
 		const verbDef = VERBS[verb];
 		const actor = this.actor ?? { name: "Unknown Learner", mbox: "mailto:unknown@example.com" };
 		const statement: XapiStatement = {
+			id,
 			actor: {
 				name: actor.name,
 				mbox: actor.mbox.startsWith("mailto:") ? actor.mbox : `mailto:${actor.mbox}`,
@@ -350,7 +364,9 @@ export class XapiRuntime implements SCORMRuntime {
 				},
 				body: JSON.stringify(statement),
 			});
-			if (!response.ok) throw new Error(`LRS responded ${response.status}`);
+			// xAPI permits 409 for an already-stored statement with the same ID.
+			if (!response.ok && !(response.status === 409 && statement.id))
+				throw new Error(`LRS responded ${response.status}`);
 		} catch (error: unknown) {
 			const message = error instanceof Error ? error.message : String(error);
 			console.warn(`[xAPI] Failed to send statement: ${message}`);
@@ -376,7 +392,6 @@ export class XapiRuntime implements SCORMRuntime {
 			this.persist();
 			for (const statement of unsent) void this.sendStatement(statement);
 			const statement = this.buildStatement("initialized", this.courseObject());
-			this.pendingStatements.push(statement);
 			void this.sendStatement(statement);
 		}
 
@@ -399,7 +414,6 @@ export class XapiRuntime implements SCORMRuntime {
 			const verb = this.completionVerbKey();
 			const result = this.buildCompletionResult();
 			const statement = this.buildStatement(verb, this.courseObject(), result);
-			this.pendingStatements.push(statement);
 			void this.sendStatement(statement);
 		}
 
@@ -423,7 +437,6 @@ export class XapiRuntime implements SCORMRuntime {
 
 		if (this.sendEnabled) {
 			const statement = this.buildStatement("experienced", object);
-			this.pendingStatements.push(statement);
 			void this.sendStatement(statement);
 		}
 	}
@@ -446,6 +459,7 @@ export class XapiRuntime implements SCORMRuntime {
 			response,
 			correct,
 			score,
+			...assessmentAttemptMetadata(options),
 			timestamp: Date.now(),
 		};
 		// Keep the latest attempt per question, plus its latest scored one, so saved state stays bounded.
@@ -488,7 +502,6 @@ export class XapiRuntime implements SCORMRuntime {
 
 		if (this.sendEnabled) {
 			const statement = this.buildStatement("answered", object, result);
-			this.pendingStatements.push(statement);
 			void this.sendStatement(statement);
 		}
 	}
@@ -514,7 +527,6 @@ export class XapiRuntime implements SCORMRuntime {
 				},
 			};
 
-			this.pendingStatements.push(statement);
 			void this.sendStatement(statement);
 		}
 	}
@@ -538,7 +550,6 @@ export class XapiRuntime implements SCORMRuntime {
 			const verb = this.statusToVerbKey(status);
 			const result = this.buildCompletionResult();
 			const statement = this.buildStatement(verb, this.courseObject(), result);
-			this.pendingStatements.push(statement);
 			void this.sendStatement(statement);
 		}
 	}
@@ -558,7 +569,6 @@ export class XapiRuntime implements SCORMRuntime {
 			this.courseObject(),
 			this.buildCompletionResult(),
 		);
-		this.pendingStatements.push(statement);
 		void this.sendStatement(statement);
 	}
 
@@ -603,9 +613,7 @@ export class XapiRuntime implements SCORMRuntime {
 
 	commit(): boolean {
 		if (!prepareRuntimeCommit(this.commitPreparation)) return false;
-		// All statements are sent eagerly via sendStatement(), so commit is a
-		// no-op that clears the pending queue and returns true.
-		this.pendingStatements = [];
+		// All statements are sent eagerly via sendStatement().
 		return true;
 	}
 
