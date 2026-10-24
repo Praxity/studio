@@ -85,29 +85,25 @@ boundaries. Highlight, doodle and term contents belong to the whole ancillary no
 
 inlineParagraph marks compiler-created paragraph envelopes. A paragraph containing
 only ancillary nodes records the generating kind in `generatedBy`, with `sources`
-identifying a source-list insertion. Authored empty HTML stays material. These node details
+identifying a source-list insertion. These node details
 are compiler data; display HTML and exported block JSON keep their existing bytes.
 
-Choice material derivation erases these ancillary nodes and the separators they
-own before rendering fields. A highlight, doodle or glossary mark covering the
-whole stem or option label keeps its text. Partial marks and their contents are
-absent; bold and italic keep their text. Source markers, notes and source-list
-insertions are absent, including paragraphs generated solely for them. Literal
-code and authored empty HTML remain material. This derivation is available to
-compiler callers; it does not yet change saved answers or emitted configuration.
+Choice signatures hash effective compiler facts and whitespace-normalized visible
+text. Term labels, highlighted words and doodled words always count, whether a
+mark covers part or all of a field. Definitions, compiler footnotes, source lists
+and glossary entries do not count. Attributes and element boundaries do not count;
+paragraphs are separated by a space. Literal code keeps its text. Exported choice
+facts carry this signature; saved-answer behaviour remains unchanged until activation.
 
-`choiceContentSignature` counts an icon by its name from the compiler node,
-rendered as the base placeholder span without catalog data. This keeps an icon
-distinct from its escaped literal spelling. Swapping, adding or removing an
+`choiceContentSignature` counts an icon by its name from the compiler node.
+This keeps an icon distinct from its escaped literal spelling. Swapping, adding or removing an
 icon changes the hash. Catalog paths and paint, resolved versus unresolved
 display, and the icon's display HTML or SVG details do not count. This applies
-inside every compiler inline context. Ancillary erasure still applies first.
+inside every compiler inline context that contributes visible text.
 Every question receives a hash, including questions with icons.
 
 Authored raw HTML `data-praxity-inline-icon` markers do not create icon nodes in
 the current grammar or display producer. In a field with a matching compiler
-tree, a marker counts as written. Without such a tree, material uses the sanitized
-learner HTML, including a materialized SVG's catalog paths, so a catalog redraw
-can change that hash. An option label containing a raw marker normally has no
-matching compiler tree and follows this latter rule. Marker attributes never confer compiler
-provenance.
+tree, its literal text counts. Without such a tree, material uses the sanitized
+HTML's text and image sources. Attributes and SVG paths do not count. Marker
+attributes never confer compiler provenance.

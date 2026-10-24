@@ -1,19 +1,21 @@
 import type { ChoiceStateQuestion } from "../../../shared-blocks/src/choice-state-facts";
 
-// Independent version-3 question/signature pair, with a as the correct option.
-export const gateSignature =
-	"sha256:e4df374aeafe8ae449c0321eca27fe0d42f77d070f28050db87e4957bc86e30d";
+// Independent version-4 question/signature pair, with a as the correct option.
+export const gateSignature = "s96:3w14l18FIDxpK_Py";
 export const gateQuestion: ChoiceStateQuestion = {
 	selectionMode: "single",
 	dontKnow: false,
 	canAutoScore: true,
 	graded: true,
 	maxAttempts: 2,
-	correctAnswerSignature: "sha256:0eb5b8d6f81bc677da8a08567cc4fa9a06a57e9ec8da85ed73a7f62727996002",
-	materialSignature: `sha256:${"a".repeat(64)}`,
+	correctIds: ["a"],
+	gradingMode: "exact" as const,
+	points: 100,
+	required: true,
+	content: { text: "a", images: [], icons: [] },
 	options: [
-		{ id: "a", materialSignature: `sha256:${"b".repeat(64)}` },
-		{ id: "b", materialSignature: `sha256:${"c".repeat(64)}` },
+		{ id: "a", content: { text: "b", images: [], icons: [] }, image: null },
+		{ id: "b", content: { text: "c", images: [], icons: [] }, image: null },
 	],
 };
 export const exhaustedGateState = {

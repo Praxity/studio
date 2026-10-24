@@ -184,7 +184,7 @@ it.each([
 		<LocaleContext.Provider value={locale}>
 			<PreviewAssessmentBlock
 				blockId="grouped-points"
-				data={makeChoiceData({ gradingMode: "exact", points: 1000000 })}
+				data={makeChoiceData({ gradingMode: "exact" as const, points: 1000000 })}
 			/>
 		</LocaleContext.Provider>,
 		{ wrapper: Wrapper },
@@ -1272,7 +1272,7 @@ describe("PreviewAssessmentBlock — choice", () => {
 		const { container, rerender } = render(
 			<Wrapper>
 				<PreviewAssessmentBlock
-					data={makeChoiceData({ gradingMode: "exact", points: 1 })}
+					data={makeChoiceData({ gradingMode: "exact" as const, points: 1 })}
 					blockId="q-points"
 				/>
 			</Wrapper>,
@@ -1284,7 +1284,7 @@ describe("PreviewAssessmentBlock — choice", () => {
 		rerender(
 			<Wrapper>
 				<PreviewAssessmentBlock
-					data={makeChoiceData({ gradingMode: "exact", points: 2 })}
+					data={makeChoiceData({ gradingMode: "exact" as const, points: 2 })}
 					blockId="q-points"
 				/>
 			</Wrapper>,

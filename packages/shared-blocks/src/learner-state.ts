@@ -3,21 +3,6 @@ export function isChoiceContentSignature(value: unknown): value is `s96:${string
 	return typeof value === "string" && /^s96:[A-Za-z0-9_-]{16}$/.test(value);
 }
 
-/** Compiler digests become the same 96-bit saved claim on every destination. */
-export function choiceEvidenceSignature(signature: string): string {
-	if (isChoiceContentSignature(signature)) return signature;
-	if (!isCompilerChoiceSignature(signature)) throw new TypeError("Invalid choice signature");
-	let bytes = "";
-	for (let at = 7; at < 31; at += 2)
-		bytes += String.fromCharCode(Number.parseInt(signature.slice(at, at + 2), 16));
-	return `s96:${btoa(bytes).replaceAll("+", "-").replaceAll("/", "_")}`;
-}
-
-/** Full digests remain internal to compiler facts until their signature replacement. */
-export function isCompilerChoiceSignature(value: unknown): value is string {
-	return typeof value === "string" && /^sha256:[a-f0-9]{64}$/.test(value);
-}
-
 export type LearnerCompletion = "incomplete" | "completed" | "passed" | "failed";
 
 export type LearnerStateValue =

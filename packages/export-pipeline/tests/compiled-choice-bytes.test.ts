@@ -35,11 +35,12 @@ it("records exact per-document additions against main", () => {
 			},
 		],
 	};
+	// Each fact now retains the visible term label in "Pick one".
 	const expected = [
-		["practice", 26454, 2574, "cfb71a00871c56b0c63a7bf0518fbf7c99ff26fb560f487f0a3fefa180b72163"],
-		["second", 26995, 2574, "8027e369e042ce9067870db01a5bc83245ba5087df211837e2354653f2892900"],
-		["glossary", 2273, 1287, "49bc7d6126a51ebbdafcecba935f3ad9b7a6539f204cd8258441e9f7c0520cab"],
-		["resources", 22265, 2574, "13dbb99da3ea36bdba11db1e0802282cb2e0dea3a2ee24feeb9c068502728bae"],
+		["practice", 26454, 1842, "cfb71a00871c56b0c63a7bf0518fbf7c99ff26fb560f487f0a3fefa180b72163"],
+		["second", 26995, 1842, "8027e369e042ce9067870db01a5bc83245ba5087df211837e2354653f2892900"],
+		["glossary", 2273, 921, "49bc7d6126a51ebbdafcecba935f3ad9b7a6539f204cd8258441e9f7c0520cab"],
+		["resources", 22265, 1842, "13dbb99da3ea36bdba11db1e0802282cb2e0dea3a2ee24feeb9c068502728bae"],
 	] as const;
 	const current = head.prepareHtmlCourse(config, compilerIslandAssets);
 	// Pinned from main before adding facts. Every other learner/config byte stays exact.

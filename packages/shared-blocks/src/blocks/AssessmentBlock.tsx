@@ -76,11 +76,7 @@ import {
 	readLearnerBlockState,
 	writeLearnerBlockState,
 } from "../learner-block-state";
-import {
-	choiceEvidenceSignature,
-	type LearnerStateValue,
-	type SavedAssessmentState,
-} from "../learner-state";
+import type { LearnerStateValue, SavedAssessmentState } from "../learner-state";
 import { processMathSpans } from "../math/process-math-spans";
 import { htmlToPlainText, sanitizeHtml } from "../sanitize";
 import { SceneHeader } from "../scene-header";
@@ -2487,9 +2483,7 @@ export function PreviewAssessmentBlock({
 						.trim(),
 					language: locale,
 					assessmentType,
-					...(choiceFacts
-						? { contentSignature: choiceEvidenceSignature(choiceFacts.signature) }
-						: {}),
+					...(choiceFacts ? { contentSignature: choiceFacts.signature } : {}),
 					choiceDefinition: choiceReport()?.choiceDefinition,
 					correct: submittedCorrect,
 					...(unknownAnswer ? { result: "neutral" } : {}),

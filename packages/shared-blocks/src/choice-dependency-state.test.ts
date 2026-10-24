@@ -14,45 +14,42 @@ import {
 import {
 	type ChoiceAssessmentFacts,
 	type ChoiceStateQuestion,
-	choiceMaterialProof,
-	choiceProofSignature,
+	choiceQuestionSignature,
 } from "./choice-state-facts";
-import { choiceEvidenceSignature, type SavedAssessmentState } from "./learner-state";
+import type { SavedAssessmentState } from "./learner-state";
 
-// Independent SHA-256 literals for version-3 question payloads.
-const compilerSignatureA =
-	"sha256:e4df374aeafe8ae449c0321eca27fe0d42f77d070f28050db87e4957bc86e30d";
-const signatureA = "s96:5N83Sur-iuRJwDIe";
-const compilerSignatureB =
-	"sha256:b1b74fa98c26909745962fa6d5f98b01897f03a1fa9bcbf35461c4213b407702";
-const signatureB = "s96:sbdPqYwmkJdFli-m";
-const repairedSignature = "s96:XCsSLLpfHrFcyr1u";
+// Independent Python hashlib literals for version-4 facts.
+const signatureA = "s96:3w14l18FIDxpK_Py";
+const signatureB = "s96:glW7ns8cCA7BdGMb";
+const repairedSignature = "s96:pluAlGwQOqlD6-zE";
 const question: ChoiceStateQuestion = {
 	selectionMode: "single",
 	dontKnow: false,
 	canAutoScore: true,
 	graded: true,
 	maxAttempts: 2,
-	correctAnswerSignature: "sha256:0eb5b8d6f81bc677da8a08567cc4fa9a06a57e9ec8da85ed73a7f62727996002",
-	materialSignature: `sha256:${"a".repeat(64)}`,
+	correctIds: ["a"],
+	gradingMode: "exact" as const,
+	points: 100,
+	required: true,
+	content: { text: "a", images: [], icons: [] },
 	options: [
-		{ id: "a", materialSignature: `sha256:${"b".repeat(64)}` },
-		{ id: "b", materialSignature: `sha256:${"c".repeat(64)}` },
+		{ id: "a", content: { text: "b", images: [], icons: [] }, image: null },
+		{ id: "b", content: { text: "c", images: [], icons: [] }, image: null },
 	],
 };
-const factsA: ChoiceAssessmentFacts = { question, signature: compilerSignatureA };
+const factsA: ChoiceAssessmentFacts = { question, signature: signatureA };
 const factsB: ChoiceAssessmentFacts = {
-	question: { ...question, materialSignature: `sha256:${"d".repeat(64)}` },
-	signature: compilerSignatureB,
+	question: { ...question, content: { text: "d", images: [], icons: [] } },
+	signature: signatureB,
 };
 const repairedFacts: ChoiceAssessmentFacts = {
 	question: {
 		...question,
-		materialSignature: `sha256:${"f".repeat(64)}`,
-		correctAnswerSignature:
-			"sha256:a8950f05d3443e7921e7ec6fbe06c8febe40966a5db58b15f767a995d561290b",
+		content: { text: "f", images: [], icons: [] },
+		correctIds: ["b"],
 	},
-	signature: "sha256:5c2b122cba5f1eb15ccabd6efddce1542fdbcf510e411f0b803e1d367b3929fa",
+	signature: "s96:pluAlGwQOqlD6-zE",
 };
 // Literal state written before signatures/history existed, including Try again's empty draft.
 const legacySubmitted: SavedAssessmentState = {
@@ -89,13 +86,16 @@ const retryDraft = {
 const addedDistractor: ChoiceAssessmentFacts = {
 	question: {
 		...question,
-		options: [...question.options, { id: "c", materialSignature: `sha256:${"d".repeat(64)}` }],
+		options: [
+			...question.options,
+			{ id: "c", content: { text: "d", images: [], icons: [] }, image: null },
+		],
 	},
-	signature: "sha256:afa3e412c508c12e3e7492d67ae263b4a30df87893ba38fedd00e8e402963063",
+	signature: "s96:vihFMjAzakxk8o2M",
 };
 
 function factPair(question: ChoiceStateQuestion): ChoiceAssessmentFacts {
-	return { question, signature: choiceProofSignature(choiceMaterialProof(question)) };
+	return { question, signature: choiceQuestionSignature(question) };
 }
 
 function answer(correct = true, signed = true): SavedAssessmentState {
@@ -144,14 +144,14 @@ function view(
 // Precomputed from the specified JSON tuples using Node crypto, independently of this owner.
 const groupDigests = {
 	all: {
-		signed: "s96:Qf8kWQY1fzr05K52",
-		changed: "s96:XZSbOEWg8lzt5vq1",
-		repaired: "s96:EZQKOs9Zy2eJmeAz",
+		signed: "s96:kmPOYqqjHUBVflOI",
+		changed: "s96:tsxf4if_Ek_auEVR",
+		repaired: "s96:EQLVGY9BSE8yH-sf",
 	},
 	oneOf: {
-		signed: "s96:Aiij1Wv9cumvHuSr",
-		changed: "s96:Xn2GsSQS9BEXKh0L",
-		repaired: "s96:xTAQgfssHMILdFMh",
+		signed: "s96:-bRvbDSrP_HurRp3",
+		changed: "s96:hmtmkgM3fnHe-0RA",
+		repaired: "s96:EtGUE4lqmn_QKYJJ",
 	},
 };
 
@@ -527,7 +527,7 @@ describe("dormant choice admission", () => {
 		expect(
 			choiceDependencyStatus("a", view({ a: legacyRetry }, [{ id: "a", correct: true }])),
 		).toBe("history");
-		const changed = factPair({ ...question, correctAnswerSignature: `sha256:${"f".repeat(64)}` });
+		const changed = factPair({ ...question, correctIds: ["b"] });
 		expect(
 			choiceDependencyStatus(
 				"a",
@@ -581,7 +581,7 @@ describe("dormant choice admission", () => {
 	});
 
 	it("uses the compiled version-3 signature without changing the saved answer", () => {
-		expect(choiceProofSignature(choiceMaterialProof(question))).toBe(compilerSignatureA);
+		expect(choiceQuestionSignature(question)).toBe(signatureA);
 		const saved = answer();
 		const bytes = JSON.stringify(saved);
 		expect(restoreChoiceAssessmentState(saved, factsA)).toEqual({
@@ -636,7 +636,7 @@ describe("dormant choice admission", () => {
 	it("rejects removed selections and malformed signed submissions", () => {
 		const changed = {
 			...factsA,
-			question: { ...question, correctAnswerSignature: `sha256:${"f".repeat(64)}` },
+			question: { ...question, correctIds: ["b"] },
 		};
 		expect(restoreChoiceAssessmentState(answer(true, false), changed).status).toBe("review");
 		for (const invalid of [
@@ -673,16 +673,22 @@ describe("dormant choice admission", () => {
 		const saved = {
 			...answer(false),
 			attemptCount: 80,
-			contentSignature: choiceEvidenceSignature(unlimited.signature),
+			contentSignature: unlimited.signature,
 		};
 		expect(restoreChoiceAssessmentState(saved, unlimited).current).toEqual(saved);
-		const survey = factPair({ ...question, canAutoScore: false, graded: false });
+		const survey = factPair({
+			...question,
+			canAutoScore: false,
+			graded: false,
+			gradingMode: "none",
+			correctIds: [],
+		});
 		expect(
 			restoreChoiceAssessmentState(
 				{
 					...answer(false),
 					completed: true,
-					contentSignature: choiceEvidenceSignature(survey.signature),
+					contentSignature: survey.signature,
 				},
 				survey,
 			).status,
@@ -691,7 +697,7 @@ describe("dormant choice admission", () => {
 		const uncertain = {
 			...answer(false),
 			answer: ["dont-know"],
-			contentSignature: choiceEvidenceSignature(uncertainFacts.signature),
+			contentSignature: uncertainFacts.signature,
 		};
 		expect(restoreChoiceAssessmentState(uncertain, uncertainFacts).status).toBe("current");
 		expect(restoreChoiceAssessmentState(uncertain, factsA).status).toBe("review");
@@ -700,7 +706,7 @@ describe("dormant choice admission", () => {
 	it("refuses invalid compiled question facts instead of falling back to unsigned admission", () => {
 		for (const invalid of [
 			{ ...factsA, signature: "invalid" },
-			{ ...factsA, signature: compilerSignatureB },
+			{ ...factsA, signature: signatureB },
 			{ ...factsA, question: { ...question, maxAttempts: -1 } },
 			{ ...factsA, question: { ...question, options: [question.options[0], question.options[0]] } },
 		]) {
@@ -776,9 +782,12 @@ describe("dormant choice admission", () => {
 		const added = {
 			question: {
 				...question,
-				options: [...question.options, { id: "c", materialSignature: `sha256:${"d".repeat(64)}` }],
+				options: [
+					...question.options,
+					{ id: "c", content: { text: "d", images: [], icons: [] }, image: null },
+				],
 			},
-			signature: "sha256:afa3e412c508c12e3e7492d67ae263b4a30df87893ba38fedd00e8e402963063",
+			signature: "s96:vihFMjAzakxk8o2M",
 		};
 		expect(choiceDependencyStatus("a", view({ a: third }, [row()], { a: added }))).toBe("history");
 	});
@@ -864,7 +873,7 @@ describe("dormant group material references", () => {
 					["reflection", null],
 				],
 			},
-			contentSignature: "s96:QqE3NaverzpuA6Hk",
+			contentSignature: "s96:vXR9nT7fMt33HVMP",
 		};
 		for (const captured of [submitted]) {
 			for (const [memberIds, status] of [
@@ -996,9 +1005,9 @@ describe("dormant group material references", () => {
 			memberIds: ["reflection", "b", "a", "optional"],
 			requiredIds: ["a", "reflection"],
 		};
-		const ungraded = { ...factsA, question: { ...question, graded: false } };
+		const ungraded = factPair({ ...question, graded: false, gradingMode: "none" });
 		const states = {
-			a: signedSubmitted,
+			a: { ...signedSubmitted, contentSignature: ungraded.signature },
 			b: { ...legacyRetry, history: [signedSubmitted] },
 			optional: { ...legacyRetry, attemptCount: 0, answer: ["a"] },
 		};
@@ -1009,12 +1018,12 @@ describe("dormant group material references", () => {
 				mode: "all",
 				selectedMemberId: null,
 				dependencies: [
-					["a", signatureA],
+					["a", ungraded.signature],
 					["b", signatureA],
 					["reflection", null],
 				],
 			},
-			contentSignature: "s96:QqE3NaverzpuA6Hk",
+			contentSignature: "s96:g2spj79VzHzSizjh",
 		};
 		expect(prepareChoiceGroupSubmission("g", input)).toEqual(expected);
 		expect(choiceGroupSignature(expected.payload)).toBe(expected.contentSignature);
@@ -1144,7 +1153,7 @@ describe("dormant group material references", () => {
 		}
 		const bSnapshot: ChoiceGroupSubmission = {
 			payload: { mode: "oneOf", selectedMemberId: "b", dependencies: [["b", signatureA]] },
-			contentSignature: "s96:I6zefaf5Xwn0JmJP",
+			contentSignature: "s96:BvsRcbUrqP-wAVnJ",
 		};
 		const selected = groupView(
 			{

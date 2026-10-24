@@ -19,15 +19,17 @@ const facts: ChoiceAssessmentFacts = {
 		canAutoScore: true,
 		graded: true,
 		maxAttempts: 2,
-		correctAnswerSignature:
-			"sha256:0eb5b8d6f81bc677da8a08567cc4fa9a06a57e9ec8da85ed73a7f62727996002",
-		materialSignature: `sha256:${"a".repeat(64)}`,
+		correctIds: ["a"],
+		gradingMode: "exact" as const,
+		points: 100,
+		required: true,
+		content: { text: "a", images: [], icons: [] },
 		options: [
-			{ id: "a", materialSignature: `sha256:${"b".repeat(64)}` },
-			{ id: "b", materialSignature: `sha256:${"c".repeat(64)}` },
+			{ id: "a", content: { text: "b", images: [], icons: [] }, image: null },
+			{ id: "b", content: { text: "c", images: [], icons: [] }, image: null },
 		],
 	},
-	signature: "sha256:e4df374aeafe8ae449c0321eca27fe0d42f77d070f28050db87e4957bc86e30d",
+	signature: "s96:_0uFVxp3SgbBAjdL",
 };
 
 const submitted = {
@@ -40,7 +42,7 @@ const submitted = {
 	completed: true,
 	interacted: true,
 	answer: ["a"],
-	contentSignature: "s96:5N83Sur-iuRJwDIe",
+	contentSignature: "s96:_0uFVxp3SgbBAjdL",
 };
 
 const memberThenHole = new Array<string>(2);
@@ -60,15 +62,20 @@ it("keeps dense raw group members", () => {
 
 it.each([
 	["only holes", new Array(1)],
-	// biome-ignore lint/suspicious/noSparseArray: Reproduce an option followed by a missing index.
-	["option then hole", [{ id: "a", materialSignature: `sha256:${"b".repeat(64)}` }, ,]],
+	[
+		"option then hole",
+		// biome-ignore lint/suspicious/noSparseArray: Reproduce an option followed by a missing index.
+		[{ id: "a", content: { text: "b", images: [], icons: [] }, image: null }, ,],
+	],
 ])("refuses question options containing %s", (_input, options) => {
 	expect(isChoiceStateQuestion({ ...facts.question, options })).toBe(false);
 });
 
 it("keeps dense and empty question options", () => {
 	expect(isChoiceStateQuestion(facts.question)).toBe(true);
-	expect(isChoiceStateQuestion({ ...facts.question, options: [] })).toBe(true);
+	expect(
+		isChoiceStateQuestion({ ...facts.question, options: [], correctIds: [], canAutoScore: false }),
+	).toBe(true);
 });
 
 describe.each(["all", "oneOf"] as const)("sparse %s group facts", (mode) => {

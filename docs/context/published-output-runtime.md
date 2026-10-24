@@ -7,8 +7,11 @@ Read this file before changing HTML or SCORM rendering, runtime selection, islan
 `html-gen` compiles validated choice facts once per prepared course. Courses with
 choices publish `choiceStateQuestions` and `choiceStateSignatures` in both host and
 island config scripts. `choice-state-facts.ts` owns their schema and paired runtime
-admission, separately from core course configuration. Admission verifies each proof
-hash and projects only declared question/option fields. Invalid pairs are omitted
+admission, separately from core course configuration. Admission recomputes each short
+signature from effective facts and normalized visible text, then projects only declared
+question/option fields. Term labels, highlights and doodles retain their visible text;
+definitions, compiler footnotes, glossary entries, attributes and element boundaries
+do not count. Invalid pairs are omitted
 together, retain an explicit invalid status and diagnostic ID, and leave unrelated
 reporting operational. The assessment island selects its block's admitted pair;
 editor mounts without compiled facts keep their local policy. These signatures

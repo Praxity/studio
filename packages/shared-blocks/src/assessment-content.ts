@@ -2,10 +2,11 @@ import { inlineField } from "@praxity/content-model/inline-fields";
 import { inlineTextTree } from "@praxity/content-model/inline-preparation";
 import {
 	type InlineTree,
-	materialInlineTree,
-	materialInlineTrees,
+	inlineMaterial,
 	renderInlineTree,
 } from "@praxity/content-model/inline-tree";
+import DOMPurify from "isomorphic-dompurify";
+import type { ChoiceMaterialContent } from "./choice-state-facts";
 import { getInlineField, inlineMarkdown } from "./inline-markdown";
 import { processMathSpans } from "./math/process-math-spans";
 import { htmlToPlainText, sanitizeHtml, splitHeadingContent } from "./sanitize";
@@ -133,67 +134,69 @@ function fieldTrees(
 		: undefined;
 }
 
-function materialField(
-	owner: Record<string, unknown>,
-	field: string,
-	display: string,
-	interactive: boolean,
-): string | undefined {
-	const trees = fieldTrees(owner, field, display, interactive);
-	return (
-		trees &&
-		materialInlineTrees(trees, true)
-			.flatMap((tree) => (tree ? [renderInlineTree(tree, { interactive })] : []))
-			.join("")
-	);
-}
-
-/** Project envelopes before the shared learner renderer splits heading and body. */
-export function assessmentMaterialContent(data: Pick<AssessmentBlockData, "stem" | "description">) {
-	const project = (value: unknown, wholeText: boolean): unknown => {
-		if (!Array.isArray(value)) return value;
-		const entries = value.map((block) => ({
-			block,
-			trees: block?.data && fieldTrees(block.data, "content", block.data.content ?? "", true),
-		}));
-		// Coverage belongs to the whole field, including every tree and block. Unowned
-		// display content prevents claiming that an annotation covers the whole field.
-		const trees = entries.flatMap((entry) => entry.trees ?? []);
-		const material = materialInlineTrees(
-			trees,
-			wholeText && entries.every(({ block, trees }) => trees || !block?.data?.content),
-		);
-		let index = 0;
-		return entries.map(({ block, trees }) => {
-			if (!trees) return block;
-			const content = material
-				.slice(index, (index += trees.length))
-				.flatMap((tree) => (tree ? [renderInlineTree(tree)] : []))
-				.join("");
-			return { ...block, data: { ...block.data, content } };
-		});
+/** Raw HTML has no compiler exclusions. Its visible text and image sources still count. */
+function htmlMaterial(html: string): ChoiceMaterialContent {
+	const root = DOMPurify.sanitize(sanitizeHtml(html), { RETURN_DOM: true }) as Element;
+	for (const paragraph of root.querySelectorAll("p")) paragraph.append(" ");
+	return {
+		text: root.textContent ?? "",
+		images: Array.from(
+			root.querySelectorAll("img[src]"),
+			(image) => image.getAttribute("src") ?? "",
+		),
+		icons: [],
 	};
-	return prepareAssessmentContent(
-		{ stem: project(data.stem, true), description: project(data.description, false) } as Pick<
-			AssessmentBlockData,
-			"stem" | "description"
-		>,
-		"",
-	);
 }
 
-export function assessmentMaterialOptionHtml(option: Record<string, unknown>): string {
+function combineMaterial(parts: ChoiceMaterialContent[]): ChoiceMaterialContent {
+	return {
+		text: parts
+			.map((part) => part.text)
+			.join(" ")
+			.replace(/\s+/gu, " ")
+			.trim(),
+		images: parts.flatMap((part) => part.images),
+		icons: parts.flatMap((part) => part.icons),
+	};
+}
+
+function treeMaterial(trees: InlineTree[]): ChoiceMaterialContent {
+	const parts = trees.map(inlineMaterial);
+	return {
+		text: parts.map((part) => part.text).join(" "),
+		images: [],
+		icons: parts.flatMap((part) => part.icons),
+	};
+}
+
+export function assessmentMaterialContent(
+	data: Pick<AssessmentBlockData, "stem" | "description">,
+): ChoiceMaterialContent {
+	const field = (value: unknown): ChoiceMaterialContent => {
+		if (!Array.isArray(value)) return htmlMaterial(blocksToText(value));
+		return combineMaterial(
+			value.map((block) => {
+				const owner = block?.data;
+				const trees = owner && fieldTrees(owner, "content", owner.content ?? "", true);
+				return trees ? treeMaterial(trees) : htmlMaterial(blocksToText([block]));
+			}),
+		);
+	};
+	return combineMaterial([
+		field(data.stem),
+		{ text: " ", images: [], icons: [] },
+		field(data.description),
+	]);
+}
+
+export function assessmentMaterialOption(option: Record<string, unknown>): ChoiceMaterialContent {
 	const { field, text } = optionLabelSource(option);
-	const projected = field && materialField(option, field, optionLabelHtml(option), false);
-	if (typeof projected === "string") return sanitizeHtml(projected, { interactive: false });
+	const trees = field && fieldTrees(option, field, optionLabelHtml(option), false);
+	if (trees) return combineMaterial([treeMaterial(trees)]);
 	if (field && typeof (option._inline as Record<string, unknown> | undefined)?.[field] === "string")
-		return prepareAssessmentOptionHtml(option);
+		return combineMaterial([htmlMaterial(prepareAssessmentOptionHtml(option))]);
 	const tree = inlineTextTree(text);
-	const material = tree && materialInlineTree(tree, true);
-	const html = tree
-		? material
-			? renderInlineTree(material, { interactive: false })
-			: ""
-		: optionLabelHtml(option);
-	return sanitizeHtml(html, { interactive: false });
+	return tree
+		? combineMaterial([treeMaterial([tree])])
+		: combineMaterial([htmlMaterial(optionLabelHtml(option))]);
 }

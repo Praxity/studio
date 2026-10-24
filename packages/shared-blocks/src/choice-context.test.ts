@@ -95,15 +95,17 @@ describe("whole-course group facts", () => {
 			canAutoScore: true,
 			graded: true,
 			maxAttempts: 2,
-			correctAnswerSignature:
-				"sha256:0eb5b8d6f81bc677da8a08567cc4fa9a06a57e9ec8da85ed73a7f62727996002",
-			materialSignature: `sha256:${"a".repeat(64)}`,
+			correctIds: ["a"],
+			gradingMode: "exact" as const,
+			points: 100,
+			required: true,
+			content: { text: "a", images: [], icons: [] },
 			options: [
-				{ id: "a", materialSignature: `sha256:${"b".repeat(64)}` },
-				{ id: "b", materialSignature: `sha256:${"c".repeat(64)}` },
+				{ id: "a", content: { text: "b", images: [], icons: [] }, image: null },
+				{ id: "b", content: { text: "c", images: [], icons: [] }, image: null },
 			],
 		};
-		const signature = "sha256:e4df374aeafe8ae449c0321eca27fe0d42f77d070f28050db87e4957bc86e30d";
+		const signature = "s96:3w14l18FIDxpK_Py";
 		const submitted = {
 			version: 1,
 			kind: "assessment",
@@ -114,7 +116,7 @@ describe("whole-course group facts", () => {
 			completed: true,
 			interacted: true,
 			answer: ["a"],
-			contentSignature: "s96:5N83Sur-iuRJwDIe",
+			contentSignature: "s96:3w14l18FIDxpK_Py",
 		};
 		const facts = admitChoiceStateFacts({
 			choiceStateQuestions: { a: question, b: question },
@@ -124,7 +126,7 @@ describe("whole-course group facts", () => {
 		expect(facts.choiceStateFactsStatus).toBe("valid");
 		const view = createChoiceDependencyView(facts, {
 			rows: [
-				{ id: "a", correct: true, contentSignature: "s96:5N83Sur-iuRJwDIe" },
+				{ id: "a", correct: true, contentSignature: "s96:3w14l18FIDxpK_Py" },
 				{ id: "g", correct: true },
 			],
 			readState: (id) => (id === "a" ? submitted : undefined),
@@ -288,12 +290,14 @@ describe("dormant evidence view", () => {
 			canAutoScore: true,
 			graded: true,
 			maxAttempts: 2,
-			correctAnswerSignature:
-				"sha256:0eb5b8d6f81bc677da8a08567cc4fa9a06a57e9ec8da85ed73a7f62727996002",
-			materialSignature: `sha256:${"a".repeat(64)}`,
+			correctIds: ["a"],
+			gradingMode: "exact" as const,
+			points: 100,
+			required: true,
+			content: { text: "a", images: [], icons: [] },
 			options: [
-				{ id: "a", materialSignature: `sha256:${"b".repeat(64)}` },
-				{ id: "b", materialSignature: `sha256:${"c".repeat(64)}` },
+				{ id: "a", content: { text: "b", images: [], icons: [] }, image: null },
+				{ id: "b", content: { text: "c", images: [], icons: [] }, image: null },
 			],
 		};
 		const readState = vi.fn();
@@ -301,7 +305,7 @@ describe("dormant evidence view", () => {
 			admitChoiceStateFacts({
 				choiceStateQuestions: { q: question },
 				choiceStateSignatures: {
-					q: "sha256:e4df374aeafe8ae449c0321eca27fe0d42f77d070f28050db87e4957bc86e30d",
+					q: "s96:3w14l18FIDxpK_Py",
 				},
 				choiceStateGroups: {
 					g: { mode: "oneOf", memberIds: ["optional", "q"], requiredIds: ["q"] },
@@ -311,7 +315,7 @@ describe("dormant evidence view", () => {
 		);
 		expect(view.questions).toEqual({ q: question });
 		expect(view.signatures).toEqual({
-			q: "sha256:e4df374aeafe8ae449c0321eca27fe0d42f77d070f28050db87e4957bc86e30d",
+			q: "s96:3w14l18FIDxpK_Py",
 		});
 		expect(view.groups).toEqual({
 			g: { mode: "oneOf", memberIds: ["optional", "q"], requiredIds: ["q"] },

@@ -11,7 +11,7 @@ import {
 } from "../choice-learner-state";
 import { admitChoiceStateFacts } from "../choice-state-facts";
 import { LocaleContext } from "../i18n/locale-context";
-import { choiceEvidenceSignature, type LearnerStateValue } from "../learner-state";
+import type { LearnerStateValue } from "../learner-state";
 import type { AssessmentBlockData, ChoiceResponse } from "../types";
 import { PreviewAssessmentBlock } from "./AssessmentBlock";
 
@@ -50,9 +50,9 @@ afterEach(() => {
 const variants = ["single", "multiple", "dontKnow"] as const;
 // Independent short claims for the revised fixture, so a return to full saved or event evidence fails.
 const revisedClaims = {
-	single: "s96:1pMxtSyHaiBGDeJz",
-	multiple: "s96:xypI8UFntkvVyoxu",
-	dontKnow: "s96:5Y7NQf45Ggs3VL9n",
+	single: "s96:BiNK_Ru_Zk68lN0e",
+	multiple: "s96:fNrX0lOic7nXT_j6",
+	dontKnow: "s96:J8UwD8ntOETjSVOb",
 } as const;
 it.each(
 	(["en", "fr"] as const).flatMap((locale) => variants.map((variant) => ({ locale, variant }))),
@@ -109,7 +109,7 @@ it.each(
 				rows: [
 					{
 						id: "question",
-						contentSignature: choiceEvidenceSignature(facts(originalData).signature),
+						contentSignature: facts(originalData).signature,
 						correct: true,
 					},
 				],
@@ -258,7 +258,7 @@ it("a current draft cannot hide the history status of its submitted evidence", (
 			completed: false,
 			interacted: true,
 			answer: ["a"],
-			contentSignature: choiceEvidenceSignature(facts(revised).signature),
+			contentSignature: facts(revised).signature,
 		}),
 		set() {},
 		getChoiceDependencyView: () => ({
@@ -289,7 +289,7 @@ it.each(["en", "fr"] as const)(
 	"%s SCORM 1.2 added distractor shows New attempt without rewriting the answer",
 	(locale) => {
 		const signature = facts(original).signature;
-		const contentSignature = choiceEvidenceSignature(signature);
+		const contentSignature = signature;
 		const saved = {
 			version: 1,
 			kind: "assessment",

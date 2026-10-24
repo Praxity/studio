@@ -1,5 +1,11 @@
 import { sha256 } from "@noble/hashes/sha2.js";
-import { isCompilerChoiceSignature } from "./learner-state";
+import { isChoiceContentSignature } from "./learner-state";
+
+export interface ChoiceMaterialContent {
+	text: string;
+	images: readonly string[];
+	icons: readonly string[];
+}
 
 /** Published effective facts. Saved-answer admission remains dormant. */
 export interface ChoiceStateQuestion {
@@ -7,35 +13,52 @@ export interface ChoiceStateQuestion {
 	dontKnow: boolean;
 	canAutoScore: boolean;
 	graded: boolean;
+	gradingMode: "none" | "exact" | "partial";
+	points: number;
+	required: boolean;
 	/** Zero means unlimited. */
 	maxAttempts: number;
-	correctAnswerSignature: string;
-	materialSignature: string;
-	options: readonly { id: string; materialSignature: string }[];
-}
-
-export interface ChoiceMaterialProof {
-	question: string;
-	options: string[];
+	correctIds: readonly string[];
+	content: ChoiceMaterialContent;
+	options: readonly { id: string; content: ChoiceMaterialContent; image: string | null }[];
 }
 
 export function choiceMaterialSignature(value: unknown): string {
-	return `sha256:${Array.from(sha256(new TextEncoder().encode(JSON.stringify(value))), (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+	const bytes = sha256(new TextEncoder().encode(JSON.stringify(value))).subarray(0, 12);
+	return `s96:${btoa(String.fromCharCode(...bytes))
+		.replaceAll("+", "-")
+		.replaceAll("/", "_")}`;
 }
 
-export function choiceAnswerSignature(selected: readonly string[]): string {
-	return choiceMaterialSignature([...selected].sort());
+/** Explicit fields make property order and unrelated metadata immaterial. */
+export function choiceQuestionSignature(question: ChoiceStateQuestion): string {
+	const content = (value: ChoiceMaterialContent) => [value.text, value.images, value.icons];
+	return choiceMaterialSignature([
+		"choice-material",
+		4,
+		question.selectionMode,
+		question.dontKnow,
+		question.gradingMode,
+		question.points,
+		question.required,
+		question.maxAttempts,
+		[...question.correctIds].sort(),
+		content(question.content),
+		[...question.options]
+			.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+			.map((option) => [option.id, content(option.content), option.image]),
+	]);
 }
 
-export function choiceMaterialProof(question: ChoiceStateQuestion): ChoiceMaterialProof {
-	return {
-		question: question.materialSignature,
-		options: question.options.map((option) => option.materialSignature).sort(),
-	};
-}
-
-export function choiceProofSignature(proof: ChoiceMaterialProof): string {
-	return choiceMaterialSignature(["choice-material", 3, proof.question, [...proof.options].sort()]);
+function isMaterialContent(value: unknown): value is ChoiceMaterialContent {
+	return (
+		isRecord(value) &&
+		typeof value.text === "string" &&
+		Array.isArray(value.images) &&
+		Array.from(value.images).every((image) => typeof image === "string") &&
+		Array.isArray(value.icons) &&
+		Array.from(value.icons).every(isNonemptyString)
+	);
 }
 
 export function isChoiceStateQuestion(value: unknown): value is ChoiceStateQuestion {
@@ -45,17 +68,30 @@ export function isChoiceStateQuestion(value: unknown): value is ChoiceStateQuest
 		typeof value.dontKnow === "boolean" &&
 		typeof value.canAutoScore === "boolean" &&
 		typeof value.graded === "boolean" &&
+		(value.gradingMode === "none" ||
+			value.gradingMode === "exact" ||
+			value.gradingMode === "partial") &&
+		value.graded === (value.gradingMode !== "none") &&
+		Number.isFinite(value.points) &&
+		(value.points as number) >= 0 &&
+		typeof value.required === "boolean" &&
 		isCounter(value.maxAttempts) &&
-		isCompilerChoiceSignature(value.correctAnswerSignature) &&
-		isCompilerChoiceSignature(value.materialSignature) &&
+		isMaterialContent(value.content) &&
 		Array.isArray(value.options) &&
 		Array.from(value.options).every(
 			(option) =>
 				isRecord(option) &&
 				isNonemptyString(option.id) &&
-				isCompilerChoiceSignature(option.materialSignature),
+				isMaterialContent(option.content) &&
+				(option.image === null || typeof option.image === "string"),
 		) &&
-		new Set(value.options.map((option) => option.id)).size === value.options.length
+		new Set(value.options.map((option) => option.id)).size === value.options.length &&
+		Array.isArray(value.correctIds) &&
+		Array.from(value.correctIds).every((id) =>
+			(value.options as { id: string }[]).some((option) => option.id === id),
+		) &&
+		new Set(value.correctIds).size === value.correctIds.length &&
+		value.canAutoScore === value.correctIds.length > 0
 	);
 }
 
@@ -108,8 +144,8 @@ export function isChoiceAssessmentFacts(value: unknown): value is ChoiceAssessme
 	return (
 		isRecord(value) &&
 		isChoiceStateQuestion(value.question) &&
-		isCompilerChoiceSignature(value.signature) &&
-		value.signature === choiceProofSignature(choiceMaterialProof(value.question))
+		isChoiceContentSignature(value.signature) &&
+		value.signature === choiceQuestionSignature(value.question)
 	);
 }
 
@@ -192,9 +228,20 @@ export function admitChoiceStateFacts(value: Record<string, unknown>): AdmittedC
 			canAutoScore: question.canAutoScore,
 			graded: question.graded,
 			maxAttempts: question.maxAttempts,
-			correctAnswerSignature: question.correctAnswerSignature,
-			materialSignature: question.materialSignature,
-			options: question.options.map(({ id, materialSignature }) => ({ id, materialSignature })),
+			gradingMode: question.gradingMode,
+			points: question.points,
+			required: question.required,
+			correctIds: [...question.correctIds],
+			content: {
+				text: question.content.text,
+				images: [...question.content.images],
+				icons: [...question.content.icons],
+			},
+			options: question.options.map(({ id, content, image }) => ({
+				id,
+				image,
+				content: { text: content.text, images: [...content.images], icons: [...content.icons] },
+			})),
 		};
 		result.choiceStateSignatures[id] = signature;
 	}

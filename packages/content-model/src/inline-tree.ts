@@ -1,6 +1,4 @@
 import { escapeHtml } from "./constants";
-import { decodeEscapes, escapeLength } from "./escaping";
-import { parseMaterialFootnote } from "./inline-footnotes";
 import { inlineIconPlaceholder } from "./inline-icons";
 
 /** Half-open UTF-16 offsets in the original lesson, including raw escape spelling. */
@@ -70,147 +68,38 @@ const ANCILLARY_KINDS = new Set<InlineNode["kind"]>([
 const isAncillary = (node: InlineNode): node is AncillaryInlineNode =>
 	ANCILLARY_KINDS.has(node.kind);
 
-/** Normalize only the material copy; source spans and learner rendering stay owned by their producer. */
-function materialFootnoteTree(tree: InlineTree): InlineTree {
-	const copy = structuredClone(tree);
-	// Producer text is literal; only the producer decides which spans are code or syntax.
-	const normalize = (nodes: InlineNode[]): InlineNode[] =>
-		nodes.flatMap((node): InlineNode[] => {
-			if (node.kind === "doodle" || node.kind === "unresolved") {
-				const note = parseMaterialFootnote(node.raw, 0, node.start);
-				if (note && note.raw.length === node.raw.length) return [note];
-			}
-			if (node.kind !== "text")
-				return ["children" in node ? { ...node, children: normalize(node.children) } : node];
-			const pieces: InlineNode[] = [];
-			const policy = node.value === decodeEscapes(node.raw, "ascii") ? "ascii" : "legacy";
-			let start = 0;
-			const text = (end: number) => {
-				if (end > start) {
-					const raw = node.raw.slice(start, end);
-					pieces.push({
-						...node,
-						start: node.start + start,
-						end: node.start + end,
-						raw,
-						value: decodeEscapes(raw, policy),
-					});
+/** Signature facts come from compiler kinds, without rendering another HTML tree. */
+export function inlineMaterial(tree: InlineTree): { text: string; icons: string[] } {
+	const icons: string[] = [];
+	const text = (nodes: readonly InlineNode[]): string =>
+		nodes
+			.map((node): string => {
+				switch (node.kind) {
+					case "source":
+					case "sources":
+						return "";
+					case "icon":
+						icons.push(node.name.value);
+						return "";
+					case "variable":
+						return "";
+					case "text":
+						return node.value;
+					case "unresolved":
+						return node.raw;
+					case "code":
+						return node.content.value;
+					default:
+						return text(node.children);
 				}
-			};
-			for (let index = 0; index < node.raw.length; index++) {
-				if (escapeLength(node.raw, index, policy)) {
-					index++;
-					continue;
-				}
-				const note = parseMaterialFootnote(node.raw, index, node.start);
-				if (!note) continue;
-				text(index);
-				pieces.push(note);
-				index = note.end - node.start - 1;
-				start = index + 1;
-			}
-			text(node.raw.length);
-			return pieces;
-		});
-	copy.children = normalize(copy.children);
-	if (copy.envelope) copy.envelope = inlineParagraph(copy).envelope;
-	return copy;
-}
-
-/** Erase a field together: note-only paragraphs never change whole-mark coverage. */
-export function materialInlineTrees(
-	trees: readonly InlineTree[],
-	wholeText = false,
-): (InlineTree | undefined)[] {
-	const copies = trees.map(materialFootnoteTree);
-	const words: { inline: InlineTree; range: InlineRange }[] = [];
-	const fields: { inline: InlineTree; annotations: AncillaryInlineNode[] }[] = [];
-	for (const tree of copies) {
-		const annotations: AncillaryInlineNode[] = [];
-		const inspect = (nodes: InlineNode[]) => {
-			for (const node of nodes) {
-				if (isAncillary(node)) annotations.push(node);
-				if (node.kind === "source" || node.kind === "sources") continue;
-				if ("children" in node) inspect(node.children);
-				else if (node.kind !== "text" || !/^[\t\n\f\r ]*$/.test(node.value))
-					words.push({ inline: tree, range: node });
-			}
-		};
-		inspect(tree.children);
-		fields.push({ inline: tree, annotations });
-	}
-	return fields.map(({ inline, annotations }) => {
-		const retained = new Set(
-			wholeText && words.length
-				? annotations.filter(
-						(node) =>
-							node.kind !== "source" &&
-							node.kind !== "sources" &&
-							words.every(
-								(word) =>
-									word.inline === inline &&
-									word.range.start >= node.start &&
-									word.range.end <= node.end,
-							),
-					)
-				: [],
-		);
-		return eraseInlineTree(inline, annotations, retained);
-	});
-}
-
-/** Erase compiler annotations and their owned trivia before HTML fields exist. */
-export function materialInlineTree(tree: InlineTree, wholeText = false): InlineTree | undefined {
-	return materialInlineTrees([tree], wholeText)[0];
-}
-
-function eraseInlineTree(
-	tree: InlineTree,
-	marks: AncillaryInlineNode[],
-	retained: Set<AncillaryInlineNode>,
-): InlineTree | undefined {
-	ownInlineTrivia(tree, retained);
-	const trivia = marks
-		.filter((node) => !retained.has(node))
-		.flatMap((node) => node.referenceTrivia ?? []);
-	const erase = (nodes: InlineNode[]): InlineNode[] =>
-		nodes.flatMap((node): InlineNode[] => {
-			if (isAncillary(node))
-				return retained.has(node) && "children" in node ? erase(node.children) : [];
-			if (node.kind === "text") {
-				let raw = "";
-				let offset = node.start;
-				for (const range of trivia
-					.filter((range) => range.start < node.end && range.end > node.start)
-					.sort((a, b) => a.start - b.start)) {
-					raw += node.raw.slice(offset - node.start, Math.max(offset, range.start) - node.start);
-					offset = Math.max(offset, range.end);
-				}
-				raw += node.raw.slice(offset - node.start);
-				// Trivia never contains escapes; equal decoded spellings stay equal after erasure.
-				const policy = node.value === decodeEscapes(node.raw, "ascii") ? "ascii" : "legacy";
-				return raw ? [{ ...node, raw, value: decodeEscapes(raw, policy) }] : [];
-			}
-			if (!("children" in node)) return [node];
-			const children = erase(node.children);
-			return (node.kind === "strong" || node.kind === "emphasis") && !children.length
-				? []
-				: [{ ...node, children }];
-		});
-	if (tree.envelope?.generatedBy && !retained.size) return undefined;
-	return {
-		...tree,
-		children: erase(tree.children),
-		...(tree.envelope ? { envelope: { kind: "paragraph" } as const } : {}),
-	};
+			})
+			.join("");
+	return { text: text(tree.children), icons };
 }
 type Boundary = { kind: "material" } | { kind: "gap"; range: InlineRange } | AncillaryInlineNode;
 
 /** Classify a whole ancillary run before assigning any gap, across bold/italic only. */
-export function ownInlineTrivia(
-	tree: InlineTree,
-	retained = new Set<AncillaryInlineNode>(),
-): InlineTree {
+export function ownInlineTrivia(tree: InlineTree): InlineTree {
 	const sequence = (nodes: InlineNode[]): void => {
 		const boundaries: Boundary[] = [];
 		const flatten = (nodes: InlineNode[]) => {
@@ -219,8 +108,7 @@ export function ownInlineTrivia(
 					delete node.referenceTrivia;
 					// Nested annotations keep local trivia; the parent stays one ancillary boundary.
 					if ("children" in node) sequence(node.children);
-					// Whole marks are material boundaries before notes acquire separator ownership.
-					boundaries.push(retained.has(node) ? { kind: "material" } : node);
+					boundaries.push(node);
 				} else if (node.kind === "text") {
 					for (const match of node.raw.matchAll(/[\t\n\f\r ]+|[^\t\n\f\r ]+/g))
 						boundaries.push(

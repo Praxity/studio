@@ -3,10 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { expect, it } from "vitest";
 import { compilerFixture } from "../../export-pipeline/tests/fixtures/page-compiler";
 import { readLesson } from "../../grammar/src/read-lesson";
-import { choiceContentSignature, choiceMaterialContent } from "../src/assessment-choice";
 import {
-	assessmentMaterialContent,
-	assessmentMaterialOptionHtml,
 	prepareAssessmentContent,
 	prepareAssessmentDescriptionHtml,
 	prepareAssessmentOptionHtml,
@@ -16,8 +13,6 @@ import { getStrings } from "../src/i18n/strings";
 import { flattenLogicBlocks } from "../src/logic/flatten-blocks";
 import { preparePageFootnotes } from "../src/page-footnotes";
 import type { AssessmentBlockData } from "../src/types";
-import { exemptHtml, rebuild } from "./fixtures/choice-signature-html";
-import vectors from "./fixtures/choice-signature-vectors.json";
 
 const cases: { name: string; id: string; data: AssessmentBlockData }[] = (
 	await Promise.all(
@@ -67,7 +62,7 @@ cases.push({
 	} as unknown as AssessmentBlockData,
 });
 
-it.each(cases)("round-trips renderer and material HTML for $name/$id", ({ data, id, name }) => {
+it.each(cases)("preserves learner renderer HTML for $name/$id", ({ data, id, name }) => {
 	const content = prepareAssessmentContent(data, "Question");
 	const html = renderToStaticMarkup(
 		<MantineProvider>
@@ -91,38 +86,4 @@ it.each(cases)("round-trips renderer and material HTML for $name/$id", ({ data, 
 		expect(html).toContain(
 			`class="praxity-choice-label"><span>${prepareAssessmentOptionHtml(option)}</span></span>`,
 		);
-	const projection = assessmentMaterialContent(data);
-	if (data.response.type !== "choice") throw new Error("Missing material choice");
-	if (name === "ancillary") {
-		// Independent literals apply the compiler-node exemptions to the visible question words.
-		expect(exemptHtml(projection.stemContent.heading)).toBe("Pick");
-		expect(exemptHtml(projection.stemContent.body)).toBe("");
-		expect(
-			data.response.options.map((option) => exemptHtml(assessmentMaterialOptionHtml(option))),
-		).toEqual(["Yes", "No"]);
-		expect(choiceContentSignature(data, false)).toBe(vectors.question.hash);
-	}
-	if (name !== "ancillary") {
-		expect(exemptHtml(projection.stemContent.heading)).toBe(
-			exemptHtml(content.stemContent.heading),
-		);
-		expect(exemptHtml(projection.stemContent.body)).toBe(exemptHtml(content.stemContent.body));
-		expect(exemptHtml(prepareAssessmentDescriptionHtml(projection.descriptionHtml))).toBe(
-			exemptHtml(prepareAssessmentDescriptionHtml(content.descriptionHtml)),
-		);
-	}
-	for (const input of [
-		content.stemContent.heading,
-		content.stemContent.body,
-		prepareAssessmentDescriptionHtml(content.descriptionHtml),
-		projection.stemContent.heading,
-		projection.stemContent.body,
-		prepareAssessmentDescriptionHtml(projection.descriptionHtml),
-		...data.response.options.map((option) => assessmentMaterialOptionHtml(option)),
-	]) {
-		const tree = choiceMaterialContent(input);
-		const rebuilt = rebuild(tree);
-		expect(choiceMaterialContent(rebuilt)).toEqual(tree);
-		expect(exemptHtml(rebuilt)).toBe(exemptHtml(input));
-	}
 });

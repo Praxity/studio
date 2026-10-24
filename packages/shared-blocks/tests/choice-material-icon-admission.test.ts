@@ -43,7 +43,7 @@ for (const producer of producers) {
 					const data = preparedIconQuestion(producer.name, field, source, catalog);
 					const before = structuredClone(data);
 					// Compiler icon names now hash; raw HTML follows ordinary material rules.
-					expect(choiceContentSignature(data, false)).toMatch(/^sha256:[0-9a-f]{64}$/);
+					expect(choiceContentSignature(data, false)).toMatch(/^s96:[A-Za-z0-9_-]{16}$/);
 					expect(data).toEqual(before);
 				}
 			},
@@ -55,7 +55,7 @@ for (const producer of producers) {
 				data.response.options[1] = { id: "b", label: "Cached", _inline: { label: html } } as never;
 			} else (data[field] as unknown[]).push({ id: "raw", type: "text", data: { content: html } });
 			// Compiler icon names now hash; raw HTML follows ordinary material rules.
-			expect(choiceContentSignature(data, false)).toMatch(/^sha256:[0-9a-f]{64}$/);
+			expect(choiceContentSignature(data, false)).toMatch(/^s96:[A-Za-z0-9_-]{16}$/);
 		});
 		it(`${producer.name} ${field} trusts learner display over an obsolete icon tree`, () => {
 			const data = preparedIconQuestion(producer.name, field, "@icon{mail}", catalogs);
@@ -64,7 +64,7 @@ for (const producer of producers) {
 				Object.assign(data.response.options[0], { label: "Plain", _inline: { label: "Plain" } });
 			} else (data[field] as { data: { content: string } }[])[0].data.content = "<p>Plain</p>";
 			// Compiler icon names now hash; raw HTML follows ordinary material rules.
-			expect(choiceContentSignature(data, false)).toMatch(/^sha256:[0-9a-f]{64}$/);
+			expect(choiceContentSignature(data, false)).toMatch(/^s96:[A-Za-z0-9_-]{16}$/);
 		});
 	}
 }
@@ -79,7 +79,7 @@ it.each(["label", "text", "content"] as const)("hashes raw option %s icon fallba
 			: { [field]: "@icon{mail}" }),
 	} as never;
 	// Compiler icon names now hash; raw HTML follows ordinary material rules.
-	expect(choiceContentSignature(data, false)).toMatch(/^sha256:[0-9a-f]{64}$/);
+	expect(choiceContentSignature(data, false)).toMatch(/^s96:[A-Za-z0-9_-]{16}$/);
 });
 
 it("does not refuse an icon removed by the actual learner sanitizer", () => {
@@ -93,7 +93,7 @@ it("does not refuse an icon removed by the actual learner sanitizer", () => {
 	] as never;
 	expect(prepareAssessmentContent(data, "").stemContent).toEqual({ heading: "Pick", body: "" });
 	// Compiler icon names now hash; raw HTML follows ordinary material rules.
-	expect(choiceContentSignature(data, false)).toMatch(/^sha256:[0-9a-f]{64}$/);
+	expect(choiceContentSignature(data, false)).toMatch(/^s96:[A-Za-z0-9_-]{16}$/);
 });
 
 it("ignores icon metadata and feedback outside the learner material fields", () => {
@@ -103,5 +103,5 @@ it("ignores icon metadata and feedback outside the learner material fields", () 
 		feedback: { correct: placeholder },
 	});
 	// Compiler icon names now hash; raw HTML follows ordinary material rules.
-	expect(choiceContentSignature(data, false)).toMatch(/^sha256:[0-9a-f]{64}$/);
+	expect(choiceContentSignature(data, false)).toMatch(/^s96:[A-Za-z0-9_-]{16}$/);
 });

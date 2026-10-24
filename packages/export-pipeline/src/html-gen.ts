@@ -8,8 +8,7 @@ import {
 	type ChoiceStateFacts,
 	choiceGroupDefinitionIsValid,
 	choiceGroupFactsAreValid,
-	choiceMaterialProof,
-	choiceProofSignature,
+	choiceQuestionSignature,
 	isChoiceStateQuestion,
 } from "@praxity/shared-blocks/choice-state-facts";
 import { isInlineProjectionMetadataKey } from "@praxity/shared-blocks/inline-markdown";
@@ -1399,7 +1398,7 @@ function compileChoiceStateFacts(config: CourseConfig): ChoiceStateFacts {
 				enumerable: true,
 			});
 			Object.defineProperty(facts.choiceStateSignatures, block.id, {
-				value: choiceProofSignature(choiceMaterialProof(question)),
+				value: choiceQuestionSignature(question),
 				enumerable: true,
 			});
 		}
