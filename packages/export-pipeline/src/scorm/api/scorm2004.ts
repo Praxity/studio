@@ -356,9 +356,9 @@ export class Scorm2004Runtime implements SCORMRuntime {
 				? response
 				: truncateInteractionResponse(response, SCORM2004_RESPONSE_LIMIT);
 
-		this.setValue(`cmi.interactions.${n}.id`, id);
+		const accepted = this.setValue(`cmi.interactions.${n}.id`, id);
 		// An accepted ID consumes the row, even if a later reporting field fails.
-		this.interactionCount++;
+		if (accepted) this.interactionCount++;
 
 		// Mirror in suspend_data for offline retrieval
 		const data = this.loadSuspendDataObject();
@@ -372,26 +372,31 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		});
 		this.saveSuspendDataObject(data);
 
-		this.report(`cmi.interactions.${n}.type`, scormInteractionType(options?.assessmentType));
-		this.report(`cmi.interactions.${n}.learner_response`, storedResponse);
-		this.report(
-			`cmi.interactions.${n}.result`,
-			options?.result ?? (correct === undefined ? "neutral" : correct ? "correct" : "incorrect"),
-		);
-		this.report(
-			`cmi.interactions.${n}.description`,
-			interactionDescription(options?.description ?? `Interaction ${id}`, options?.language ?? ""),
-		);
+		if (accepted) {
+			this.report(`cmi.interactions.${n}.type`, scormInteractionType(options?.assessmentType));
+			this.report(`cmi.interactions.${n}.learner_response`, storedResponse);
+			this.report(
+				`cmi.interactions.${n}.result`,
+				options?.result ?? (correct === undefined ? "neutral" : correct ? "correct" : "incorrect"),
+			);
+			this.report(
+				`cmi.interactions.${n}.description`,
+				interactionDescription(
+					options?.description ?? `Interaction ${id}`,
+					options?.language ?? "",
+				),
+			);
 
-		if (score !== undefined) {
-			this.report(`cmi.interactions.${n}.weighting`, String(score));
+			if (score !== undefined) {
+				this.report(`cmi.interactions.${n}.weighting`, String(score));
+			}
+
+			this.report(
+				`cmi.interactions.${n}.timestamp`,
+				// RTE 4.1.1.7: a time zone designator requires fractional seconds (at most two digits).
+				new Date().toISOString().replace(/\dZ$/, "Z"),
+			);
 		}
-
-		this.report(
-			`cmi.interactions.${n}.timestamp`,
-			// RTE 4.1.1.7: a time zone designator requires fractional seconds (at most two digits).
-			new Date().toISOString().replace(/\dZ$/, "Z"),
-		);
 		if (storedResponse.length < response.length)
 			options?.onResponseTruncated?.(storedResponse.length);
 	}
