@@ -296,7 +296,7 @@ it.each(["refused write", "oversized response", "callback refuses", "callback th
 			runtime.trackInteraction("q", "go", false, 0, { assessmentType: "choice" });
 			expect(provider.getSaveResult?.("q")?.status).toBe("saved");
 			expect(provider.get("q")).toEqual(answer(["go"]) as LearnerStateValue);
-			expect(runtime.getInteractions()).toHaveLength(2);
+			expect(runtime.getInteractions()).toMatchObject([{ id: "q", response: "go", score: 0 }]);
 		} finally {
 			dom.window.close();
 		}

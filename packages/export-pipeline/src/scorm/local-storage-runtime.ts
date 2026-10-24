@@ -17,6 +17,7 @@ import {
 	type InteractionRecord,
 	prepareRuntimeCommit,
 	type RuntimeCommitPreparation,
+	recordInteraction,
 	type SCORMRuntime,
 	type TrackInteractionOptions,
 } from "./types.ts";
@@ -103,21 +104,6 @@ export class LocalStorageRuntime implements SCORMRuntime {
 		score?: number,
 		options?: TrackInteractionOptions,
 	): void {
-		if (
-			this.updateState((state) => {
-				state.interactions.push({
-					id,
-					response,
-					correct,
-					score,
-					...(options?.contentSignature !== undefined ? assessmentEvidenceMetadata(options) : {}),
-					timestamp: Date.now(),
-				});
-			})
-		) {
-			return;
-		}
-		const interactions = this.getInteractions();
 		const record: InteractionRecord = {
 			id,
 			response,
@@ -126,7 +112,13 @@ export class LocalStorageRuntime implements SCORMRuntime {
 			...(options?.contentSignature !== undefined ? assessmentEvidenceMetadata(options) : {}),
 			timestamp: Date.now(),
 		};
-		interactions.push(record);
+		if (
+			this.updateState((state) => {
+				state.interactions = recordInteraction(state.interactions, record);
+			})
+		)
+			return;
+		const interactions = recordInteraction(this.getInteractions(), record);
 		this.storage.setItem(this.prefix + "interactions", JSON.stringify(interactions));
 	}
 

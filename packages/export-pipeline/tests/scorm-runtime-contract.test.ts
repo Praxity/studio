@@ -62,6 +62,13 @@ class StrictScorm12Api {
 		if (!this.initialized || this.finished) return this.fail("301");
 		if (!this.isValidSetValue(element, value)) return this.fail("405");
 		this.data.set(element, value);
+		if (/^cmi\.interactions\.\d+\.id$/.test(element))
+			this.data.set(
+				"cmi.interactions._count",
+				String(
+					[...this.data.keys()].filter((key) => /^cmi\.interactions\.\d+\.id$/.test(key)).length,
+				),
+			);
 		return this.ok();
 	}
 
@@ -2876,6 +2883,30 @@ describe("SCORM 1.2 privacy append high water", () => {
 			const { api, runtime } = setup(count, {});
 			runtime.trackInteraction("public", "ordinary");
 			expect(api.data.get("cmi.interactions.1.id")).toBe("public");
+		},
+	);
+	it.each([
+		{ path: "ordinary", privatePolicy: false, indices: [1, 1] },
+		{ path: "private", privatePolicy: true, indices: [1, 2] },
+	])(
+		"pins answer and retry indices without an LMS count on the $path path",
+		({ privatePolicy, indices }) => {
+			const { api, runtime } = setup("", privatePolicy ? { secret: "device" } : {});
+			const get = api.LMSGetValue.bind(api);
+			vi.spyOn(api, "LMSGetValue").mockImplementation((key) => {
+				const value = get(key);
+				return key === "cmi.interactions._count" ? "" : value;
+			});
+			runtime.trackInteraction("public", "answer", false, 0);
+			runtime.trackInteraction("public", "retry", true, 100);
+			expect(
+				api.calls
+					.filter(
+						([name, key]) => name === "LMSSetValue" && /^cmi\.interactions\.\d+\.id$/.test(key),
+					)
+					.map(([, key]) => key),
+			).toEqual(indices.map((index) => `cmi.interactions.${index}.id`));
+			expect(api.data.get(`cmi.interactions.${indices[1]}.student_response`)).toBe("retry");
 		},
 	);
 	it.each([
