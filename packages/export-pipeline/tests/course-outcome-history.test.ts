@@ -98,7 +98,6 @@ it.each(["scorm12", "scorm2004", "xapi"] as const)(
 		runtime.trackInteraction("other", "answer", true, 100);
 		const config: TrackingConfig = { totalPages: 1, completionMethod: "quiz" };
 		expect(new CourseTracker(runtime, config).outcome("score")).toEqual({
-			kind: "decided",
 			score: 100,
 		});
 		config.getChoiceDependencyView = () =>
@@ -111,13 +110,12 @@ it.each(["scorm12", "scorm2004", "xapi"] as const)(
 				readState: () => undefined,
 			});
 		expect(new CourseTracker(runtime, config).outcome("score")).toEqual({
-			kind: "decided",
 			score: 100,
 		});
 	},
 );
 
-it("decided quiz retains main's unscored historical retry state", () => {
+it("quiz retains main's unscored historical retry state", () => {
 	const { runtime } = launch("scorm2004");
 	runtime.trackInteraction("other", "answer", false, 50, {
 		maxAttempts: 1,
@@ -133,7 +131,6 @@ it("decided quiz retains main's unscored historical retry state", () => {
 		deferRetryableFailure: true,
 	};
 	expect(new CourseTracker(runtime, config).outcome()).toMatchObject({
-		kind: "decided",
 		result: { score: 50, passed: false, retryable: true },
 		completion: "incomplete",
 	});
@@ -147,7 +144,6 @@ it("decided quiz retains main's unscored historical retry state", () => {
 		});
 	expect(config.getChoiceDependencyView()?.status("u")).toBe("history");
 	expect(new CourseTracker(runtime, config).outcome()).toMatchObject({
-		kind: "decided",
 		result: { score: 50, passed: false, retryable: true },
 		completion: "incomplete",
 	});
@@ -203,7 +199,7 @@ for (const pageKind of ["utility", "deferred content", "resume redirect"] as con
 			]);
 		});
 
-it.each(["scorm12", "scorm2004", "xapi"] as const)(
+it.each(["scorm12", "scorm2004", "xapi", "standalone"] as const)(
 	"%s reports the saved verdict even when its choice evidence is history",
 	(format) => {
 		const { runtime, values } = launch(format);
@@ -224,7 +220,6 @@ it.each(["scorm12", "scorm2004", "xapi"] as const)(
 		});
 		tracker.trackInteraction("other", "answer", false, 0);
 		expect(tracker.outcome()).toMatchObject({
-			kind: "decided",
 			result: { score: 50, passed: false },
 			completion: "failed",
 		});
@@ -232,7 +227,7 @@ it.each(["scorm12", "scorm2004", "xapi"] as const)(
 		expect(runtime.getCompletion()).toBe(format === "scorm2004" ? "completed" : "failed");
 		if (format === "scorm2004") expect(runtime.getSuccess?.()).toBe("failed");
 		tracker.trackGroupObjective("g", 50, false);
-		if (format !== "xapi") {
+		if (format === "scorm12" || format === "scorm2004") {
 			expect(values["cmi.objectives.0.id"]).toBe("g");
 			expect(
 				values[

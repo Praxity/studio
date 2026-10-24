@@ -1,5 +1,4 @@
 export interface CourseOutcome {
-	kind: "decided";
 	score?: number;
 	success?: "passed" | "failed" | "unknown";
 	completion?: "incomplete" | "completed" | "passed" | "failed";
@@ -45,17 +44,10 @@ export function writeCourseOutcome(
 }
 
 /** Runtime-only End has no tracker. Keep its legacy completion rule beside the writer. */
-export function finishRuntimeCourse(
-	runtime: OutcomeRuntime | undefined,
-	outcome?: CourseOutcome,
-): boolean {
-	return writeCourseOutcome(
-		runtime,
-		outcome ?? {
-			kind: "decided",
-			completion: "completed",
-			forceCompletion: true,
-			finish: "complete",
-		},
-	);
+export function finishRuntimeCourse(runtime: OutcomeRuntime | undefined): boolean {
+	return writeCourseOutcome(runtime, {
+		completion: "completed",
+		forceCompletion: true,
+		finish: "complete",
+	});
 }

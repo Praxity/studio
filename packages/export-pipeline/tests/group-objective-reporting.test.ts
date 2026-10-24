@@ -75,7 +75,10 @@ function launch(format: Format, evidence = false, history = false) {
 	const win = dom.window as unknown as Window & typeof globalThis;
 	vi.stubGlobal("window", win);
 	vi.stubGlobal("document", win.document);
-	vi.stubGlobal("fetch", async () => new Response(null, { status: 200 }));
+	vi.stubGlobal(
+		"fetch",
+		vi.fn(async () => new Response(null, { status: 200 })),
+	);
 	const values = new Map<string, string>();
 	const writes: string[][] = [];
 	let refuseObjectives = false;
@@ -263,7 +266,6 @@ describe.each(["xapi", "standalone"] as const)("%s without an objective sink", (
 		expect("trackObjective" in host.runtime).toBe(false);
 		expect(
 			writeCourseOutcome(host.runtime, {
-				kind: "decided",
 				objective: { id: "g", score: 100, passed: true },
 			}),
 		).toBe(true);
@@ -273,6 +275,8 @@ describe.each(["xapi", "standalone"] as const)("%s without an objective sink", (
 		for (const score of [100, undefined])
 			it(`accepts a ${history ? "historical" : "current"} ${score === undefined ? "ungraded" : "graded"} signed capture; refuses a forged candidate`, () => {
 				const host = launch(format, true, history);
+				host.runtime.trackPageVisit("one");
+				host.runtime.trackPageVisit("two");
 				expect("trackObjective" in host.runtime).toBe(false);
 				expect(host.provider.getSaveResult).toBeUndefined();
 				expect(Reflect.get(host.provider, "prepareGroupState")).toBeUndefined();
@@ -284,6 +288,12 @@ describe.each(["xapi", "standalone"] as const)("%s without an objective sink", (
 				expect(host.provider.get("g")).toEqual(groupState);
 				expect(host.runtime.getInteractions().at(-1)?.id).toBe("g");
 				expect(host.runtime.getInteractions().at(-1)?.score).toBe(score);
+				expect(host.runtime.getCompletion()).toBe("completed");
+				if (format === "xapi")
+					expect(fetch).toHaveBeenCalledWith(
+						"https://lrs.example/statements",
+						expect.objectContaining({ body: expect.stringContaining('"completion":true') }),
+					);
 				const rows = host.runtime.getInteractions();
 				expect(submit(host, { contentSignature: changed }).accepted).toBe(false);
 				expect(host.provider.get("g")).toEqual(groupState);
@@ -291,6 +301,7 @@ describe.each(["xapi", "standalone"] as const)("%s without an objective sink", (
 				expect(commit).toHaveBeenCalledTimes(1);
 				const reopened = host.open();
 				expect(reopened.initialize()).toBe(true);
+				expect(reopened.getCompletion()).toBe("completed");
 				expect(createBlockStateRuntime(reopened).get("g")).toEqual(groupState);
 			});
 });
