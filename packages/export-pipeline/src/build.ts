@@ -959,11 +959,7 @@ async function compileCourseArtifact(
 		);
 		const hasPolicy = Object.keys(blockStatePolicy).length > 0;
 		for (const hostName of VIEWER_HOST_NAMES) {
-			const privateFilename = islandManifest.privateHosts?.[hostName];
-			if (hasPolicy && !privateFilename) throw new Error("EPRIVACYASSET");
-			const source = hasPolicy
-				? path.join(path.dirname(shellRuntimePath), privateFilename as string)
-				: hostRuntimePaths[hostName];
+			const source = hostRuntimePaths[hostName];
 			if (!source) continue;
 			const destination = path.join(deploymentAssetDir, path.basename(source));
 			await fs.copy(source, destination);

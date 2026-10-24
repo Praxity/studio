@@ -58,7 +58,6 @@ it.each([undefined, "corrupt", "2026-02-30T14:05:00.000Z", "2026-10-08T14:05:00.
 	"admits and restores an accessor-backed journal with timestamp %s",
 	async (savedAt) => {
 		vi.stubGlobal("__PRAXITY_SELF_CHECK_BUILD__", "journal-owner-test");
-		vi.stubGlobal("__praxityPrivateState", false);
 		Object.defineProperty(document, "fonts", { configurable: true, value: new EventTarget() });
 		vi.stubGlobal("matchMedia", (media: string) => ({
 			media,
@@ -128,7 +127,6 @@ it.each(["missing", "hide", "provider"])(
 	"does not admit a host installation interrupted by %s",
 	(boundary) => {
 		vi.stubGlobal("__PRAXITY_SELF_CHECK_BUILD__", "journal-owner-test");
-		vi.stubGlobal("__praxityPrivateState", false);
 		let provider: Window["__praxityBlockState"];
 		let interrupted = false;
 		Object.defineProperty(window, "__praxityBlockState", {

@@ -1638,7 +1638,6 @@ for (const format of ["html", "scorm12", "scorm2004", "file"] as const) {
 				.flatMap(([, files]) => files as string[]),
 			manifest.shell,
 			...Object.values(manifest.hosts),
-			...Object.values(manifest.privateHosts ?? {}),
 			...(Object.values(manifest.hostDependencies ?? {}).flat() as string[]),
 			...(manifest.privacy?.files ?? []),
 		]);

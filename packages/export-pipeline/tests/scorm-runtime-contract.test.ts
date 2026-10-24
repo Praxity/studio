@@ -11,7 +11,6 @@ import { SCORM12_SUSPEND_DATA_LIMIT, Scorm12Runtime } from "../src/scorm/api/sco
 import { type SCORM2004API, Scorm2004Runtime, type WindowLike } from "../src/scorm/api/scorm2004";
 import { readSessionState, resetSessionState } from "../src/scorm/api/session";
 import { CourseTracker } from "../src/scorm/tracking";
-import { createBlockStateRuntime } from "../template/src/hosts/block-state-runtime";
 import { type CourseHostConfig, initializeCourseHost } from "../template/src/hosts/course-host";
 import { createPrivateBlockStateRuntime } from "../template/src/hosts/private-block-state";
 
@@ -2196,7 +2195,13 @@ describe.each(["scorm12", "scorm2004"] as const)("%s frozen learner-state fixtur
 				timestamp: 1_800_000_000_000,
 			},
 		]);
-		expect(createBlockStateRuntime(runtime).get("question")).toStrictEqual({
+		expect(
+			createPrivateBlockStateRuntime(
+				runtime,
+				{ courseId: "course", strings: {} } as CourseHostConfig,
+				{} as Window,
+			).get("question"),
+		).toStrictEqual({
 			answer: "choice-a",
 			submitted: true,
 		});
@@ -2300,7 +2305,11 @@ describe.each(["scorm12", "scorm2004"] as const)("%s frozen learner-state fixtur
 				timestamp: 1_600_000_000_000,
 			},
 		]);
-		const state = createBlockStateRuntime(runtime);
+		const state = createPrivateBlockStateRuntime(
+			runtime,
+			{ courseId: "course", strings: {} } as CourseHostConfig,
+			{} as Window,
+		);
 		expect(state.get("legacy-question")).toStrictEqual({ answer: "legacy answer" });
 		runtime.trackPageVisit("later-page");
 		state.set("later-question", { answer: "later answer" });
@@ -2580,7 +2589,11 @@ it("retains SCORM 1.2 getter and device-objective returns after another adapter 
 	retained.setBlockStatePolicy({ dev: "device" });
 	expect(retained.initialize()).toBe(true);
 	expect(finishing.initialize()).toBe(true);
-	const provider = createBlockStateRuntime(retained);
+	const provider = createPrivateBlockStateRuntime(
+		retained,
+		{ courseId: "course", strings: {} } as CourseHostConfig,
+		{} as Window,
+	);
 	expect(finishing.terminate(true)).toBe(true);
 	const calls = [...api.calls];
 	expect([

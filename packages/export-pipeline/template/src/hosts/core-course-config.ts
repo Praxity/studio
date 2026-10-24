@@ -1,4 +1,3 @@
-import type {} from "../../../src/scorm/privacy-capability";
 import { isNonemptyString, isPositiveInteger, isString } from "../../../src/scorm/types";
 import type { CourseHostConfig } from "./course-host";
 import { isRecord, isStringArray, isStringRecord, readJsonElement } from "./host-json";
@@ -38,7 +37,6 @@ export function decodeCoreCourseConfig(
 		!(pageRole === "content" || pageRole === "glossary" || pageRole === "resources") ||
 		!isStringRecord(value.strings) ||
 		!(
-			!(globalThis.__praxityPrivateState !== false) ||
 			value.blockStatePolicy === undefined ||
 			(isRecord(value.blockStatePolicy) &&
 				Object.values(value.blockStatePolicy).every((mode) => mode === "device" || mode === "lms"))
@@ -48,13 +46,11 @@ export function decodeCoreCourseConfig(
 	}
 	return {
 		version: 1,
-		...(globalThis.__praxityPrivateState !== false && value.blockStatePolicy
+		...(value.blockStatePolicy
 			? { blockStatePolicy: value.blockStatePolicy as CourseHostConfig["blockStatePolicy"] }
 			: {}),
 		...(value.deck === true ? { deck: true } : {}),
-		...(globalThis.__praxityPrivateState !== false && value.deferVisits === true
-			? { deferVisits: true }
-			: {}),
+		...(value.deferVisits === true ? { deferVisits: true } : {}),
 		courseId: value.courseId,
 		pageId: value.pageId,
 		pageTitle: value.pageTitle,

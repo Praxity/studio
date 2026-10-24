@@ -1,5 +1,15 @@
 import { createHash } from "node:crypto";
-import { cp, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
+import {
+	cp,
+	mkdir,
+	mkdtemp,
+	readdir,
+	readFile,
+	realpath,
+	rm,
+	symlink,
+	writeFile,
+} from "node:fs/promises";
 import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
@@ -104,37 +114,10 @@ const HOST_GZIP_BUDGETS: Record<ViewerHostName, number> = {
 	electronPreview: 17664,
 	// Owner rule: activation measured 15,643 B gzip; add 1 KiB rounded up to 256 B.
 	xapi: 16896,
-	// Owner rule: activation measured 22,755 B gzip; add 1 KiB rounded up to 256 B.
-	scorm12: 23808,
-	// Owner rule: activation measured 14,713 B gzip; add 1 KiB rounded up to 256 B.
-	scorm2004: 15872,
-};
-
-const PRIVATE_HOST_GZIP_BUDGETS: Record<ViewerHostName, number> = {
-	// Owner rule: activation measured 12,354 B gzip; add 1 KiB rounded up to 256 B.
-	standalone: 13568,
-	// Owner rule: activation measured 15,635 B gzip; add 1 KiB rounded up to 256 B.
-	electronPreview: 16896,
-	// Owner rule: activation measured 15,015 B gzip; add 1 KiB rounded up to 256 B.
-	xapi: 16128,
-	// Owner rule: activation measured 22,176 B gzip; add 1 KiB rounded up to 256 B.
-	scorm12: 23296,
-	// Owner rule: activation measured 13,956 B gzip; add 1 KiB rounded up to 256 B.
-	scorm2004: 15104,
-};
-
-// Size caps don't block working features (owner rule): SHA-256 pair verification in the host bundle; tighten during final size work.
-const COLD_HOST_GZIP_BUDGETS: Record<ViewerHostName, number> = {
-	// Owner rule: activation measured 13,274 B gzip; add 1 KiB rounded up to 256 B.
-	standalone: 14336,
-	// Owner rule: activation measured 16,572 B gzip; add 1 KiB rounded up to 256 B.
-	electronPreview: 17664,
-	// Owner rule: activation measured 15,643 B gzip; add 1 KiB rounded up to 256 B.
-	xapi: 16896,
-	// Owner rule: activation measured 22,755 B gzip; add 1 KiB rounded up to 256 B.
-	scorm12: 23808,
-	// Owner rule: activation measured 14,713 B gzip; add 1 KiB rounded up to 256 B.
-	scorm2004: 15872,
+	// Owner size-limits rule 2026-10-24, PR #42: 24,121 B + 2 KiB, rounded up to 256 B.
+	scorm12: 26368,
+	// Owner size-limits rule 2026-10-24, PR #42: 15,968 B + 2 KiB, rounded up to 256 B.
+	scorm2004: 18176,
 };
 
 // owner 2026-10-11: raised for S9b; size optimisation at the end
@@ -152,9 +135,10 @@ async function assertBufferedPrivateHost(
 	hostName: "standalone" | "scorm12" | "scorm2004" | "xapi",
 	fallback = false,
 	failedLocale?: "en" | "fr-CA",
+	retryAfterFailure = false,
 ) {
 	const privacy = manifest.privacy;
-	const hostFile = manifest.privateHosts?.[hostName];
+	const hostFile = manifest.hosts[hostName];
 	if (!privacy || !hostFile) throw new Error("Missing private-state assets");
 	const storageDom = new JSDOM("", { url: "https://course.example" });
 	const deployment = {
@@ -211,6 +195,12 @@ async function assertBufferedPrivateHost(
 		const setValue = (key: string, value: string) => {
 			writes.push(`${key}:${value}`);
 			lmsData.set(key, value);
+			const row = /^cmi\.interactions\.(\d+)\.id$/.exec(key);
+			if (row)
+				lmsData.set(
+					"cmi.interactions._count",
+					String(Math.max(Number(lmsData.get("cmi.interactions._count") ?? 0), Number(row[1]) + 1)),
+				);
 			return "true";
 		};
 		Object.assign(dom.window, {
@@ -329,6 +319,19 @@ async function assertBufferedPrivateHost(
 					"cmi.interactions.0.result": "correct",
 					"cmi.interactions.0.student_response": "PUBLIC REPORT",
 				});
+				if (retryAfterFailure) {
+					win.__praxityRuntime.trackInteraction(
+						"ordinary-after-failure",
+						"PUBLIC RETRY",
+						false,
+						undefined,
+						{ assessmentType: "choice" },
+					);
+					expect(writes.filter((write) => /^cmi\.interactions\.\d+\.id:/.test(write))).toEqual([
+						"cmi.interactions.0.id:ordinary-after-failure",
+						"cmi.interactions.1.id:ordinary-after-failure",
+					]);
+				}
 				expect(state.getSaveResult?.("check")).toEqual({
 					status: "not-saved",
 					code: "runtime-write-failed",
@@ -379,7 +382,7 @@ async function assertBufferedPrivateHost(
 		});
 		expect(state.get("check")).toEqual(draft);
 		if (hostName === "scorm12" && !fallback) {
-			// The actual lazy chunk owns append validation and the accepted-row high water.
+			// The adapter owns append validation and the accepted-row high water.
 			lmsData.set("cmi.interactions._count", "4");
 			lmsData.set("cmi.interactions.3.id", "earlier-public");
 			win.__praxityRuntime.trackInteraction("public-one", "PUBLIC REPORT");
@@ -1247,6 +1250,13 @@ describe("computeViewerSourceHash", () => {
 					),
 					"// stale",
 				);
+				await writeFile(
+					path.join(
+						outDir,
+						`host-${hostName === "electronPreview" ? "electron-preview" : hostName}-private-AAAAAAAA.js`,
+					),
+					"// retired split",
+				);
 			}
 
 			buildInputs = [];
@@ -1258,6 +1268,173 @@ describe("computeViewerSourceHash", () => {
 			if (outDir) await rm(outDir, { recursive: true, force: true });
 		});
 
+		it("ships one host per format for every block-state policy", async () => {
+			expect(result.manifest).not.toHaveProperty("privateHosts");
+			const files = await readdir(outDir);
+			for (const file of Object.values(result.manifest.hosts)) expect(files).toContain(file);
+			expect(files.filter((file) => /^host-.*-private-/.test(file))).toEqual([]);
+		});
+
+		it.each(["scorm12", "scorm2004"] as const)(
+			"%s empty-policy get retains the last saved answer after a size refusal",
+			async (format) => {
+				const old = {
+					version: 1,
+					kind: "assessment",
+					assessmentType: "textResponse",
+					answer: "old",
+					attemptCount: 0,
+					checked: false,
+					correct: false,
+					completed: false,
+					interacted: true,
+				};
+				const config = {
+					version: 1,
+					courseId: "course",
+					pageId: "page",
+					pageTitle: "Practice",
+					currentPage: 1,
+					totalPages: 2,
+					currentSlug: "page",
+					availableSlugs: ["page"],
+					pageIdMap: { page: "page" },
+					completionMethod: "allPages",
+					pageRole: "content",
+					strings: {},
+				};
+				const dom = new JSDOM(
+					`<script id="praxity-host-config" type="application/json">${JSON.stringify(config)}</script><script id="praxity-deployment-config" type="application/json">${JSON.stringify({ format })}</script>`,
+					{ url: "https://course.example/page.html", runScripts: "outside-only" },
+				);
+				try {
+					const data = new Map<string, string>([
+						["cmi.core.lesson_status", "incomplete"],
+						["cmi.completion_status", "incomplete"],
+						["cmi.interactions._count", "0"],
+						["cmi.objectives._count", "0"],
+					]);
+					let error = "0";
+					const get = (key: string) => {
+						error = "0";
+						return data.get(key) ?? "";
+					};
+					const set = (key: string, value: string) => {
+						error = "0";
+						// Moodle SCORM 2004 rejects suspend data beyond its 64,000-character format limit.
+						if (
+							format === "scorm2004" &&
+							key === "cmi.suspend_data" &&
+							!/^[\u0000-\uFFFF]{0,64000}$/.test(value)
+						) {
+							error = "406";
+							return "false";
+						}
+						data.set(key, value);
+						return "true";
+					};
+					Object.defineProperty(dom.window.document, "readyState", { value: "complete" });
+					Object.assign(dom.window, {
+						API: {
+							LMSInitialize: () => "true",
+							LMSGetValue: get,
+							LMSSetValue: set,
+							LMSCommit: () => "true",
+							LMSGetLastError: () => error,
+							LMSFinish: () => "true",
+						},
+						API_1484_11: {
+							Initialize: () => "true",
+							GetValue: get,
+							SetValue: set,
+							Commit: () => "true",
+							GetLastError: () => error,
+							GetErrorString: () => "",
+							GetDiagnostic: () => "",
+							Terminate: () => "true",
+						},
+					});
+					for (const file of result.manifest.hostDependencies?.[format] ?? [])
+						dom.window.eval(await readFile(path.join(outDir, file), "utf8"));
+					dom.window.eval(await readFile(result.hostPaths[format], "utf8"));
+					const state = (
+						dom.window as unknown as {
+							__praxityBlockState: import("@praxity/shared-blocks/learner-block-state").LearnerBlockStateRuntime;
+						}
+					).__praxityBlockState;
+					state.set("q", old);
+					expect(state.get("q")).toEqual(old);
+					const saved = data.get("cmi.suspend_data");
+					const answer =
+						format === "scorm2004"
+							? "x".repeat(64_001)
+							: Array.from({ length: 300 }, (_, index) =>
+									createHash("sha256").update(String(index)).digest("base64"),
+								).join("");
+					state.set("q", { ...old, answer });
+					expect(data.get("cmi.suspend_data"), "refusal leaves LMS bytes unchanged").toBe(saved);
+					const restored = state.get("q") as typeof old | undefined;
+					expect(restored?.answer === "old", "read retains the last saved answer").toBe(true);
+				} finally {
+					dom.window.close();
+				}
+			},
+		);
+
+		it("preserves xAPI text-response statements with an empty block-state policy", async () => {
+			const config = {
+				version: 1,
+				courseId: "course",
+				pageId: "page",
+				pageTitle: "Practice",
+				currentPage: 1,
+				totalPages: 1,
+				currentSlug: "page",
+				availableSlugs: ["page"],
+				pageIdMap: { page: "page" },
+				completionMethod: "allPages",
+				pageRole: "content",
+				strings: {},
+			};
+			const deployment = {
+				format: "xapi",
+				xapiConfig: {
+					endpoint: "https://lrs.example/statements",
+					auth: "Basic example",
+					actorMode: "manual",
+					actor: { name: "Learner", mbox: "mailto:learner@example.com" },
+				},
+			};
+			const dom = new JSDOM(
+				`<script id="praxity-host-config" type="application/json">${JSON.stringify(config)}</script><script id="praxity-deployment-config" type="application/json">${JSON.stringify(deployment)}</script>`,
+				{ url: "https://course.example/page.html", runScripts: "outside-only" },
+			);
+			try {
+				Object.defineProperty(dom.window.document, "readyState", { value: "complete" });
+				const fetch = vi.fn().mockResolvedValue({ ok: true });
+				Object.assign(dom.window, { fetch });
+				dom.window.eval(await readFile(result.hostPaths.xapi, "utf8"));
+				const runtime = (
+					dom.window as unknown as {
+						__praxityRuntime: import("../scorm/types").SCORMRuntime;
+					}
+				).__praxityRuntime;
+				runtime.trackInteraction("q", "A response", undefined, undefined, {
+					assessmentType: "textResponse",
+					description: "Expliquez.",
+					language: "fr",
+				});
+				const statement = JSON.parse(fetch.mock.calls.at(-1)?.[1].body ?? "null");
+				expect(statement.object.definition).toEqual({
+					name: { "en-US": "Interaction q" },
+					description: { fr: "Expliquez." },
+					type: "http://adlnet.gov/expapi/activities/cmi.interaction",
+				});
+			} finally {
+				dom.window.close();
+			}
+		});
+
 		it("keeps private choice presentation out of every existing privacy asset", async () => {
 			const notice = result.manifest.privateChoice;
 			if (!notice || !result.manifest.privacy) throw new Error("Missing private choice entry");
@@ -1267,8 +1444,8 @@ describe("computeViewerSourceHash", () => {
 				expect(await readFile(path.join(outDir, file), "utf8")).not.toContain("data-practice-mode");
 		});
 
-		it("includes the compact codec in both SCORM 1.2 host bundles", async () => {
-			for (const file of [result.manifest.hosts.scorm12, result.manifest.privateHosts?.scorm12]) {
+		it("includes the compact codec in the SCORM 1.2 host bundle", async () => {
+			for (const file of [result.manifest.hosts.scorm12]) {
 				if (!file) throw new Error("Missing SCORM 1.2 host");
 				const code = await readFile(path.join(outDir, file), "utf8");
 				expect(code, file).toContain("praxity-evidence-1");
@@ -1294,7 +1471,6 @@ describe("computeViewerSourceHash", () => {
 		it("includes interaction evidence in hosts while leaving removed waiting machinery absent", async () => {
 			const files = new Set([
 				...Object.values(result.manifest.hosts),
-				...Object.values(result.manifest.privateHosts ?? {}),
 				...Object.values(result.manifest.hostDependencies ?? {}).flat(),
 				...(result.manifest.privacy?.files ?? []),
 			]);
@@ -1318,7 +1494,8 @@ describe("computeViewerSourceHash", () => {
 			// Recovery measures at most 138,176 B gzip for the deck; add 1 KiB rounded up to 256 B.
 			// Size caps don't block working features (owner rule): group refusal/rollback runtime measures 44,590 B gzip for the page; add 1 KiB rounded up to 256 B, tighten during final size work.
 			// Owner rule: activation measured page 48,487 and deck 141,555 B gzip; add 1 KiB rounded up to 256 B.
-			const caps = { page: 49_664, deck: 142_592 };
+			// Owner size-limits rule 2026-10-24, PR #42: deck 142,663 B + 2 KiB, rounded up to 256 B.
+			const caps = { page: 49_664, deck: 144_896 };
 			const page = {
 				id: "highlight-page",
 				title: "Highlight",
@@ -1681,26 +1858,12 @@ describe("computeViewerSourceHash", () => {
 				} else {
 					expect(source).not.toContain("__praxityScormSupport");
 				}
-				expect(source).not.toContain("appendPrivateScorm12Interaction");
-				expect(source).not.toContain("interactionNextIndex");
 				expect(source).not.toMatch(/\bimport\b/u);
 				expect(source).not.toMatch(/\breact(?:-dom)?\b/iu);
 				expect(source).not.toMatch(/\bmantine\b/iu);
 				expect(gzipSync(host).byteLength, `${hostName} host gzip bytes`).toBeLessThanOrEqual(
 					HOST_GZIP_BUDGETS[hostName],
 				);
-				// Cold host ceilings have their own owning constants above.
-				expect(gzipSync(host).byteLength, `${hostName} no-self-check growth`).toBeLessThanOrEqual(
-					COLD_HOST_GZIP_BUDGETS[hostName],
-				);
-			}
-			for (const hostName of Object.keys(HOST_GZIP_BUDGETS) as ViewerHostName[]) {
-				const privateFile = result.manifest.privateHosts?.[hostName];
-				if (!privateFile) throw new Error("Missing private host");
-				expect(
-					gzipSync(await readFile(path.join(outDir, privateFile))).byteLength,
-					`${hostName} private host gzip bytes`,
-				).toBeLessThanOrEqual(PRIVATE_HOST_GZIP_BUDGETS[hostName]);
 			}
 			const navFiles = islandFilesForEntries(result.manifest, ["island-loader", "island-nav"]);
 			const ratingFiles = islandFilesForEntries(result.manifest, ["island-rating"]);
@@ -1870,6 +2033,10 @@ describe("computeViewerSourceHash", () => {
 			for (const file of navFiles) {
 				expect(await readFile(path.join(islandsDir, file), "utf-8")).not.toBe("");
 			}
+		});
+
+		it("appends SCORM 1.2 answer and retry to rows 0 and 1 after privacy support fails", async () => {
+			await assertBufferedPrivateHost(outDir, result.manifest, "scorm12", false, "en", true);
 		});
 
 		it.each([

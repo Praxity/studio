@@ -7,7 +7,6 @@ import {
 import { findWindowProperty } from "../api-discovery.ts";
 import { truncateInteractionResponse } from "../interaction-response";
 import { LocalStorageRuntime } from "../local-storage-runtime";
-import type {} from "../privacy-capability";
 import { appendPrivateScorm12Interaction } from "../private-scorm12-policy";
 import {
 	fitScorm12SuspendData,
@@ -77,35 +76,20 @@ export { SCORM12_SUSPEND_DATA_LIMIT, type Scorm12SuspendData, serializeScorm12Su
  *  - cmi.suspend_data   JSON blob holding visited pages, interactions, and
  *                        arbitrary user data (SCORM 1.2 allows up to 4096 chars)
  */
-export interface Scorm12Runtime {
-	setBlockStatePolicy(policy: Readonly<Record<string, "device" | "lms">>): void;
-	getLearnerIdentity(): { learnerId: string; attemptId: string; newAttempt: boolean } | null;
-}
-
-// biome-ignore lint/suspicious/noUnsafeDeclarationMerging: The static capability block installs these methods; interface declarations erase without emitting fields that shadow the prototype.
 export class Scorm12Runtime implements SCORMRuntime {
 	readonly destinations = LMS_DESTINATIONS;
-	static {
-		if (globalThis.__praxityPrivateState !== false) {
-			Scorm12Runtime.prototype.setBlockStatePolicy = function (
-				this: Scorm12Runtime,
-				policy: Readonly<Record<string, "device" | "lms">>,
-			): void {
-				this.blockStatePolicy = { ...policy };
-			};
-			Scorm12Runtime.prototype.getLearnerIdentity = function (
-				this: Scorm12Runtime,
-			): { learnerId: string; attemptId: string; newAttempt: boolean } | null {
-				this.ensureInitialized();
-				const learnerId = this.lmsGetValue("cmi.core.student_id").trim();
-				return learnerId
-					? {
-							learnerId,
-							...deviceAttemptId(this, this.session, this.lmsGetValue("cmi.core.entry")),
-						}
-					: null;
-			};
-		}
+	setBlockStatePolicy(policy: Readonly<Record<string, "device" | "lms">>): void {
+		this.blockStatePolicy = { ...policy };
+	}
+	getLearnerIdentity(): { learnerId: string; attemptId: string; newAttempt: boolean } | null {
+		this.ensureInitialized();
+		const learnerId = this.lmsGetValue("cmi.core.student_id").trim();
+		return learnerId
+			? {
+					learnerId,
+					...deviceAttemptId(this, this.session, this.lmsGetValue("cmi.core.entry")),
+				}
+			: null;
 	}
 
 	private api: SCORM12API | null = null;
@@ -268,8 +252,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 		score?: number,
 		options?: TrackInteractionOptions,
 	): void {
-		if (globalThis.__praxityPrivateState !== false && this.blockStatePolicy[id] === "device")
-			return;
+		if (this.blockStatePolicy[id] === "device") return;
 		this.ensureInitialized();
 		if (this.submission && this.submission.blockId !== id)
 			throw new Error("Another SCORM submission is pending");
@@ -303,9 +286,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 
 		// The ordinary path also covers republishing after the last private choice is removed.
 		try {
-			const privateAppend =
-				globalThis.__praxityPrivateState !== false &&
-				Object.values(this.blockStatePolicy).includes("device");
+			const privateAppend = Object.values(this.blockStatePolicy).includes("device");
 			let idx: number | undefined;
 			if (privateAppend) {
 				idx = appendPrivateScorm12Interaction(
@@ -324,7 +305,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 						: data.interactions.length - 1;
 			}
 			if (
-				(globalThis.__praxityPrivateState === false || idx !== undefined) &&
+				idx !== undefined &&
 				(privateAppend || this.lmsSetValue(`cmi.interactions.${idx}.id`, id))
 			) {
 				this.setReportValue(
@@ -364,8 +345,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 	getInteractions(): InteractionRecord[] {
 		this.ensureInitialized();
 		let interactions = this.loadSuspendPayload().interactions;
-		if (globalThis.__praxityPrivateState !== false)
-			interactions = interactions.filter((record) => this.blockStatePolicy[record.id] !== "device");
+		interactions = interactions.filter((record) => this.blockStatePolicy[record.id] !== "device");
 		return interactions.map((record) => ({ ...record, ...assessmentEvidenceMetadata(record) }));
 	}
 
@@ -383,8 +363,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 	trackObjective(id: string, score: number, passed: boolean): void {
 		this.loadSuspendPayload();
 		if (this.unreadableSuspendData) return;
-		if (globalThis.__praxityPrivateState !== false && this.blockStatePolicy[id] === "device")
-			return;
+		if (this.blockStatePolicy[id] === "device") return;
 		this.ensureInitialized();
 		try {
 			const n = writeObjectiveId(
@@ -601,11 +580,9 @@ export class Scorm12Runtime implements SCORMRuntime {
 			this.submission.data = data;
 			return true;
 		}
-		if (globalThis.__praxityPrivateState !== false && data.custom)
-			data.custom = filterPrivateSuspendData(data.custom, this.blockStatePolicy);
+		if (data.custom) data.custom = filterPrivateSuspendData(data.custom, this.blockStatePolicy);
 		// Filter before compression; compressed bytes must never hide private fields from policy.
-		if (globalThis.__praxityPrivateState !== false)
-			data = JSON.parse(filterPrivateSuspendData(JSON.stringify(data), this.blockStatePolicy));
+		data = JSON.parse(filterPrivateSuspendData(JSON.stringify(data), this.blockStatePolicy));
 		const serialized = this.suspendDataCodec
 			? preflightScorm12SuspendData(
 					data,

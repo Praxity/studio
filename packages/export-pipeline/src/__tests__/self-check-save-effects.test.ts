@@ -8,7 +8,8 @@ import {
 } from "@praxity/shared-blocks/self-check-state";
 import { JSDOM } from "jsdom";
 import { afterEach, expect, it, vi } from "vitest";
-import { createBlockStateRuntime } from "../../template/src/hosts/block-state-runtime";
+import type { CourseHostConfig } from "../../template/src/hosts/course-host";
+import { createPrivateBlockStateRuntime } from "../../template/src/hosts/private-block-state";
 import { disposeSelfCheckDocument, selfCheckRuntime } from "../../template/src/self-check-runtime";
 import { Scorm12Runtime } from "../scorm/api/scorm12";
 import { Scorm2004Runtime } from "../scorm/api/scorm2004";
@@ -91,7 +92,11 @@ it.each(
 						? new Scorm2004Runtime()
 						: new LocalStorageRuntime(storageDom.window.localStorage, "course");
 			runtime.initialize();
-			return createBlockStateRuntime(runtime);
+			return createPrivateBlockStateRuntime(
+				runtime,
+				{ courseId: "course", strings: {} } as CourseHostConfig,
+				{} as Window,
+			);
 		};
 		try {
 			const provider = providerForHost();

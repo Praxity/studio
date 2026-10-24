@@ -2,7 +2,8 @@ import { MantineProvider } from "@mantine/core";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { LocalStorageRuntime } from "../../../export-pipeline/src/scorm/local-storage-runtime";
-import { createBlockStateRuntime } from "../../../export-pipeline/template/src/hosts/block-state-runtime";
+import type { CourseHostConfig } from "../../../export-pipeline/template/src/hosts/course-host";
+import { createPrivateBlockStateRuntime } from "../../../export-pipeline/template/src/hosts/private-block-state";
 import { choiceContentSignature, choiceStateQuestion, DONT_KNOW } from "../assessment-choice";
 import {
 	choiceDependencyStatus,
@@ -98,7 +99,11 @@ it.each(
 			{ writtenAt: 1 },
 		);
 		runtime.setBlockState("question", JSON.parse(JSON.stringify(previous)));
-		window.__praxityBlockState = createBlockStateRuntime(runtime);
+		window.__praxityBlockState = createPrivateBlockStateRuntime(
+			runtime,
+			{ courseId: "course", strings: {} } as CourseHostConfig,
+			window,
+		);
 		const provider = window.__praxityBlockState;
 		const admitted = admitChoiceStateFacts({
 			choiceStateQuestions: { question: facts(revisedData).question },

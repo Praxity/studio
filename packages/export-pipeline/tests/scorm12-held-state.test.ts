@@ -2,7 +2,8 @@ import { JSDOM } from "jsdom";
 import { afterEach, expect, it, vi } from "vitest";
 import { Scorm12Runtime } from "../src/scorm/api/scorm12";
 import { CourseTracker } from "../src/scorm/tracking";
-import { createBlockStateRuntime } from "../template/src/hosts/block-state-runtime";
+import type { CourseHostConfig } from "../template/src/hosts/course-host";
+import { createPrivateBlockStateRuntime } from "../template/src/hosts/private-block-state";
 import compactVectors from "./fixtures/scorm12-compact-vectors";
 
 const unreadable =
@@ -63,7 +64,11 @@ it.each(compactVectors)(
 			expect(runtime.initialize()).toBe(true);
 			expect(runtime.getInteractions()).toEqual([]);
 			expect(runtime.getSuspendData()).toBeNull();
-			const provider = createBlockStateRuntime(runtime);
+			const provider = createPrivateBlockStateRuntime(
+				runtime,
+				{ courseId: "course", strings: {} } as CourseHostConfig,
+				{} as Window,
+			);
 			expect(provider.get("q")).toBeUndefined();
 			provider.set("q", { answer: "draft", checked: false });
 			expect(provider.getSaveResult?.("q")).toEqual({
@@ -145,7 +150,11 @@ it("keeps unsaved drafts scoped to the tab, course, learner and damaged original
 	const provider = (course = "course") => {
 		const runtime = new Scorm12Runtime(course);
 		runtime.initialize();
-		return createBlockStateRuntime(runtime);
+		return createPrivateBlockStateRuntime(
+			runtime,
+			{ courseId: "course", strings: {} } as CourseHostConfig,
+			{} as Window,
+		);
 	};
 	try {
 		const initial = provider();
@@ -168,7 +177,13 @@ it("keeps unsaved drafts scoped to the tab, course, learner and damaged original
 		values["cmi.suspend_data"] = "";
 		const fresh = new Scorm12Runtime("course");
 		fresh.initialize();
-		expect(createBlockStateRuntime(fresh).get("open")).toBeUndefined();
+		expect(
+			createPrivateBlockStateRuntime(
+				fresh,
+				{ courseId: "course", strings: {} } as CourseHostConfig,
+				{} as Window,
+			).get("open"),
+		).toBeUndefined();
 		fresh.setCompletion("completed");
 		fresh.setScore(80, 0, 100);
 		fresh.commit();
@@ -188,7 +203,11 @@ it("keeps an editable unsaved receipt when tab recovery storage is blocked", () 
 		});
 		const runtime = new Scorm12Runtime("course");
 		runtime.initialize();
-		const provider = createBlockStateRuntime(runtime);
+		const provider = createPrivateBlockStateRuntime(
+			runtime,
+			{ courseId: "course", strings: {} } as CourseHostConfig,
+			{} as Window,
+		);
 		provider.set("open", { answer: "Wet floor by the door", checked: false });
 		expect(provider.get("open")).toEqual({ answer: "Wet floor by the door", checked: false });
 		expect(provider.getSaveResult?.("open")).toEqual({

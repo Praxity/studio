@@ -9,8 +9,9 @@ import { Scorm12Runtime } from "../src/scorm/api/scorm12";
 import { Scorm2004Runtime } from "../src/scorm/api/scorm2004";
 import { LocalStorageRuntime } from "../src/scorm/local-storage-runtime";
 import { CourseTracker } from "../src/scorm/tracking";
-import { createBlockStateRuntime } from "../template/src/hosts/block-state-runtime";
+import type { CourseHostConfig } from "../template/src/hosts/course-host";
 import { initializeCourseHost } from "../template/src/hosts/course-host";
+import { createPrivateBlockStateRuntime } from "../template/src/hosts/private-block-state";
 import { withChoiceDependencyStatus } from "./fixtures/choice-facts";
 
 const documents: JSDOM[] = [];
@@ -101,7 +102,11 @@ function launch(
 		format === "scorm12" ? new Scorm12Runtime("course") : new Scorm2004Runtime(window);
 	const runtime = makeRuntime();
 	runtime.initialize();
-	const seed = createBlockStateRuntime(runtime);
+	const seed = createPrivateBlockStateRuntime(
+		runtime,
+		{ courseId: "course", strings: {} } as CourseHostConfig,
+		{} as Window,
+	);
 	seed.set("g", { ...groupState, submitted: old });
 	runtime.trackInteraction("g", "0%", false, 0, { memberIds: ["a"] });
 	let provider!: LearnerBlockStateRuntime;
@@ -336,7 +341,13 @@ it("SCORM 1.2 refused staged submission retains main's objective gap and rolls b
 	expect(runtime.getInteractions()).toEqual(previousRows);
 	const reload = makeRuntime();
 	reload.initialize();
-	expect(createBlockStateRuntime(reload).get("g")).toEqual(previousState);
+	expect(
+		createPrivateBlockStateRuntime(
+			reload,
+			{ courseId: "course", strings: {} } as CourseHostConfig,
+			{} as Window,
+		).get("g"),
+	).toEqual(previousState);
 	expect(reload.getInteractions()).toEqual(previousRows);
 });
 
@@ -362,7 +373,11 @@ it("ordinary non-staging local storage retains an undefined receipt capability",
 	documents.push(dom);
 	const runtime = new LocalStorageRuntime(dom.window.localStorage, "course");
 	runtime.initialize();
-	const provider = createBlockStateRuntime(runtime);
+	const provider = createPrivateBlockStateRuntime(
+		runtime,
+		{ courseId: "course", strings: {} } as CourseHostConfig,
+		{} as Window,
+	);
 	provider.set("g", groupState);
 	expect(provider.stageSubmission).toBeUndefined();
 	expect(provider.getSaveResult).toBeUndefined();

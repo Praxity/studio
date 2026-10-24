@@ -6,7 +6,6 @@ import { JSDOM } from "jsdom";
 import { afterEach, expect, it, vi } from "vitest";
 import { Scorm12Runtime } from "../src/scorm/api/scorm12";
 import { CourseTracker } from "../src/scorm/tracking";
-import { createBlockStateRuntime } from "../template/src/hosts/block-state-runtime";
 import type { CourseHostConfig } from "../template/src/hosts/course-host";
 import { bufferPrivateBlockState } from "../template/src/hosts/privacy-bootstrap";
 import { privacySupport } from "../template/src/hosts/privacy-support";
@@ -76,7 +75,11 @@ it.each([4, 6, 8, 10, 12, 14, 16, 18, 20])(
 		try {
 			const runtime = new Scorm12Runtime();
 			runtime.initialize();
-			const provider = createBlockStateRuntime(runtime);
+			const provider = createPrivateBlockStateRuntime(
+				runtime,
+				{ courseId: "course", strings: {} } as CourseHostConfig,
+				{} as Window,
+			);
 			const ids = Array.from({ length: count }, (_, n) => uuid(`question-${n}`));
 			const tracker = new CourseTracker(runtime, {
 				totalPages: count,
@@ -111,7 +114,11 @@ it.each([4, 6, 8, 10, 12, 14, 16, 18, 20])(
 			});
 			const reload = new Scorm12Runtime();
 			reload.initialize();
-			const restored = createBlockStateRuntime(reload);
+			const restored = createPrivateBlockStateRuntime(
+				reload,
+				{ courseId: "course", strings: {} } as CourseHostConfig,
+				{} as Window,
+			);
 			expect(ids.filter((id) => restored.get(id) !== undefined)).toHaveLength(accepted);
 			expect(reload.getInteractions()).toHaveLength(accepted);
 			// Twelve questions must fit; larger attempts may refuse, never orphan an answer.
@@ -128,7 +135,11 @@ it.each([70, 89])("restores all %i selected option UUIDs", (count) => {
 	try {
 		const runtime = new Scorm12Runtime();
 		runtime.initialize();
-		const provider = createBlockStateRuntime(runtime);
+		const provider = createPrivateBlockStateRuntime(
+			runtime,
+			{ courseId: "course", strings: {} } as CourseHostConfig,
+			{} as Window,
+		);
 		const response: ChoiceResponse = {
 			type: "choice",
 			selectionMode: "multiple",
@@ -155,7 +166,13 @@ it.each([70, 89])("restores all %i selected option UUIDs", (count) => {
 		expect(values["cmi.suspend_data"].length).toBeLessThanOrEqual(4096);
 		const reload = new Scorm12Runtime();
 		reload.initialize();
-		expect(createBlockStateRuntime(reload).get("q")).toEqual(saved);
+		expect(
+			createPrivateBlockStateRuntime(
+				reload,
+				{ courseId: "course", strings: {} } as CourseHostConfig,
+				{} as Window,
+			).get("q"),
+		).toEqual(saved);
 		expect(reload.getInteractions()).toMatchObject([{ id: "q", response: report.responseText }]);
 	} finally {
 		dom.window.close();
@@ -192,7 +209,11 @@ it.each(["ordinary", "private", "buffered-pending", "buffered-ready"])(
 				? bufferPrivateBlockState([runtime, config, dom.window as unknown as Window], loaded)
 				: host === "private"
 					? createPrivateBlockStateRuntime(runtime, config, dom.window as unknown as Window)
-					: createBlockStateRuntime(runtime);
+					: createPrivateBlockStateRuntime(
+							runtime,
+							{ courseId: "course", strings: {} } as CourseHostConfig,
+							{} as Window,
+						);
 			if (host === "buffered-ready") {
 				load(privacySupport);
 				await loaded;
@@ -251,7 +272,11 @@ it.each(["refused write", "oversized response", "callback refuses", "callback th
 		try {
 			const runtime = new Scorm12Runtime();
 			runtime.initialize();
-			const provider = createBlockStateRuntime(runtime);
+			const provider = createPrivateBlockStateRuntime(
+				runtime,
+				{ courseId: "course", strings: {} } as CourseHostConfig,
+				{} as Window,
+			);
 			const saved = answer(["stop"]);
 			provider.set("q", saved);
 			runtime.trackInteraction("q", "stop", true, 100, { assessmentType: "choice" });
