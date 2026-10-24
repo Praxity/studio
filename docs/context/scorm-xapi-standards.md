@@ -200,7 +200,8 @@ must not send per-document deltas.
 
 One exported course is one SCO, including its HTML pages and module decks. Initialize
 once per communication session. The adapters share the launch record by API identity
-on the API object. Later documents sharing that record skip Initialize. A bare `index.html` launch redirect resets
+on the API object. Later documents sharing that record skip Initialize. A bare
+`index.html` launch redirect resets
 existing bookkeeping, so an LMS that resets and reuses its API object starts a fresh
 session. An index route with a mapped `praxity-page` target retains the session,
 including native GET forms. Internal navigation, bookmark resolution and page or

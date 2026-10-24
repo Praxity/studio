@@ -2571,3 +2571,39 @@ for (const version of ["1.2", "2004"] as const) {
 		},
 	);
 }
+
+it("retains SCORM 1.2 getter and device-objective returns after another adapter closes the launch", () => {
+	const api = new StrictScorm12Api();
+	installScorm12Api(api);
+	const retained = new Scorm12Runtime();
+	const finishing = new Scorm12Runtime();
+	retained.setBlockStatePolicy({ dev: "device" });
+	expect(retained.initialize()).toBe(true);
+	expect(finishing.initialize()).toBe(true);
+	const provider = createBlockStateRuntime(retained);
+	expect(finishing.terminate(true)).toBe(true);
+	const calls = [...api.calls];
+	expect([
+		retained.getBlockSaveResult("q"),
+		retained.getInteractionEvidence(),
+		retained.trackObjective("dev", 1, true),
+		provider.get("q"),
+		provider.getSaveResult?.("q"),
+	]).toEqual([undefined, [], undefined, undefined, undefined]);
+	expect(api.calls).toEqual(calls);
+});
+
+it("keeps SCORM 2004 getLastError local after the shared session closes", () => {
+	const api = new StrictScorm2004Api();
+	const retained = createScorm2004Runtime(api);
+	const finishing = createScorm2004Runtime(api);
+	expect(retained.initialize()).toBe(true);
+	expect(finishing.initialize()).toBe(true);
+	expect(finishing.terminate()).toBe(true);
+	const getLastError = vi.spyOn(api, "GetLastError");
+	const calls = [...api.calls];
+	expect(retained.getLastError()).toBe("0");
+	expect(finishing.getLastError()).toBe("0");
+	expect(getLastError).not.toHaveBeenCalled();
+	expect(api.calls).toEqual(calls);
+});

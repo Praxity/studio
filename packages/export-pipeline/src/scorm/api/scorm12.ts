@@ -160,7 +160,6 @@ export class Scorm12Runtime implements SCORMRuntime {
 	}
 
 	getBlockSaveResult(blockId: string) {
-		this.ensureInitialized();
 		this.loadSuspendPayload();
 		return this.unreadableSuspendData
 			? { status: "not-saved" as const, code: "unreadable-state" as const }
@@ -174,7 +173,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 	 * Returns true on success, false if the API cannot be found or the LMS
 	 * rejects the call.
 	 *
-	 * The API marker survives internal page navigation without a duplicate LMSInitialize.
+	 * The session record survives internal page navigation without a duplicate LMSInitialize.
 	 */
 	initialize(): boolean {
 		if (this.session?.closed) return false;
@@ -371,7 +370,6 @@ export class Scorm12Runtime implements SCORMRuntime {
 	}
 
 	getInteractionEvidence(): InteractionEvidence[] | null {
-		this.ensureInitialized();
 		return readScorm12InteractionEvidence(this.loadSuspendPayload());
 	}
 
@@ -383,11 +381,11 @@ export class Scorm12Runtime implements SCORMRuntime {
 	// ---- objectives --------------------------------------------------------
 
 	trackObjective(id: string, score: number, passed: boolean): void {
-		this.ensureInitialized();
 		this.loadSuspendPayload();
 		if (this.unreadableSuspendData) return;
 		if (globalThis.__praxityPrivateState !== false && this.blockStatePolicy[id] === "device")
 			return;
+		this.ensureInitialized();
 		try {
 			const n = writeObjectiveId(
 				id,
@@ -572,7 +570,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 	private loadSuspendPayload(): Scorm12SuspendData {
 		if (this.submission) return JSON.parse(JSON.stringify(this.submission.data));
 		if (this.unreadableSuspendData) return { visitedPages: [], interactions: [] };
-		const raw = this.api?.LMSGetValue("cmi.suspend_data");
+		const raw = this.canCallLms() ? this.api?.LMSGetValue("cmi.suspend_data") : "";
 		if (raw) {
 			const data = (this.suspendDataCodec?.parse ?? parseScorm12SuspendData)(raw);
 			if (data) return data;

@@ -180,7 +180,7 @@ export class Scorm2004Runtime implements SCORMRuntime {
 
 	terminate(explicitFinish = false): boolean {
 		if (this.session?.closed) return this.session.terminationSucceeded;
-		if (!this.initialized || !this.canCallLms() || !this.session) return false;
+		if (!this.initialized || !this.api || !this.session) return false;
 		const session = this.session;
 		session.prepareCommit?.();
 		if (!this.flushCompletion()) return false;
