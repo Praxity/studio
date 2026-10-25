@@ -4,6 +4,9 @@ Praxity uses Vitest for package and desktop integration tests, Playwright for de
 
 `pnpm test:affected` selects local checks from CI's workflow filters and the diff against `origin/main`, including staged, unstaged and untracked files.
 Use `--base <ref>` to change the comparison, `--dry-run` to print the plan, or `--dry-run --files <path>` repeatedly to inspect sample diffs.
+Vitest-only selection ignores Markdown under `docs/context/` and runs the grammar
+project for Markdown under `docs/prax-format/`. Fixtures, setup dependencies and
+unknown non-source inputs still require full Vitest.
 The browser-editor shards discover the remaining `*.spec.ts` files, including
 the direct `canvas*.spec.ts` journeys and legacy shell/preview trust checks.
 The stopped U7 staged host, outline and source-host browser specs are retired;
