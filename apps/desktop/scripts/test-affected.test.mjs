@@ -116,6 +116,60 @@ test("Vitest-only selection retains related and prerequisite checks without brow
 	assert.ok(command(buildVitestPlan(["README.md"], context), "vitest-all"));
 });
 
+for (const path of ["docs/context/testing-strategy.md", "docs/prax-format/cli.md"]) {
+	for (const deleted of [[], [path]]) {
+		test(`documentation keeps its Vitest owners without a full fallback: ${path}, deleted=${deleted.length > 0}`, () => {
+			const options = { deleted };
+			const docs = buildVitestPlan([path], context, options);
+			if (path.startsWith("docs/prax-format/")) {
+				assert.deepEqual(command(docs, "vitest-format"), [
+					"exec",
+					"vitest",
+					"run",
+					"--config",
+					"vitest.workspace.ts",
+					"--maxWorkers=2",
+					"--project",
+					"grammar",
+					"--passWithNoTests",
+				]);
+			} else assert.deepEqual(docs, []);
+			const mixed = buildVitestPlan([path, "apps/desktop/src/main/cli.ts"], context, options);
+			assert.equal(command(mixed, "vitest-all"), undefined);
+			assert.ok(command(mixed, "vitest-related").includes("apps/desktop/src/main/cli.ts"));
+			assert.equal(Boolean(command(mixed, "vitest-format")), path.startsWith("docs/prax-format/"));
+		});
+	}
+}
+
+test("documentation routing keeps uncertain inputs and missing format admission on full Vitest", () => {
+	for (const path of [
+		"docs/test-fixtures/cutover-coverage.md",
+		"docs/prax-format/examples/full-featured.prax",
+		"docs/context/future.json",
+		"docs/future.md",
+		"packages/grammar/__tests__/fixtures/example.md",
+		"docs/context/__fixtures__/example.md",
+	]) {
+		for (const deleted of [[], [path]])
+			assert.ok(command(buildVitestPlan([path], context, { deleted }), "vitest-all"), path);
+	}
+	const path = "docs/context/testing-strategy.md";
+	assert.ok(command(buildVitestPlan([path], { ...context, vitestInputs: [path] }), "vitest-all"));
+	assert.ok(
+		command(
+			buildVitestPlan(["docs/prax-format/cli.md"], {
+				...context,
+				filters: { ...context.filters, format: ["unrelated/**"] },
+			}),
+			"vitest-all",
+		),
+	);
+	assert.ok(command(buildVitestPlan([path, "pnpm-lock.yaml"], context), "vitest-all"));
+	const source = "apps/desktop/src/main/cli.ts";
+	assert.ok(command(buildVitestPlan([path, source], context, { deleted: [source] }), "vitest-all"));
+});
+
 for (const path of [
 	"pnpm-lock.yaml",
 	"pnpm-workspace.yaml",

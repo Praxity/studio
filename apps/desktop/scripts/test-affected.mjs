@@ -73,8 +73,13 @@ export function buildVitestPlan(paths, context, options = {}) {
 		if (
 			paths.some((path) => {
 				const file = path.replaceAll("\\", "/");
+				// Format docs select the grammar project below; context prose has no Vitest owner.
+				const documentation =
+					file.endsWith(".md") &&
+					(file.startsWith("docs/context/") ||
+						(file.startsWith("docs/prax-format/") && matchedFilters([file], context).format));
 				return (
-					(!sourcePath(file) && !vitestTest(file)) ||
+					(!sourcePath(file) && !vitestTest(file) && !documentation) ||
 					matches(file, fullVitestConfigGlobs) ||
 					context.vitestInputs?.includes(file) ||
 					/\/(?:__)?fixtures(?:__)?\//.test(file)
