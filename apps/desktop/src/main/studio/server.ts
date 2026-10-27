@@ -208,6 +208,13 @@ async function uiFiles(editorAssetsDir: string) {
 	return { root };
 }
 
+export function defaultStudioPort(canonicalRoot: string): number {
+	return (
+		DEFAULT_PORT_START +
+		(createHash("sha256").update(canonicalRoot).digest().readUInt32BE(0) % DEFAULT_PORT_COUNT)
+	);
+}
+
 export async function startStudioServer(options: StudioServerOptions): Promise<StudioServer> {
 	assertProjectWritesAllowed();
 	const explicitPort =
@@ -215,11 +222,7 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 	const projectRoot = await assertAllowedProjectRoot(options.projectDir);
 	const ui = await uiFiles(options.editorAssetsDir);
 	const canonical = (root: string) => (process.platform === "win32" ? root.toLowerCase() : root);
-	const port =
-		explicitPort ??
-		DEFAULT_PORT_START +
-			(createHash("sha256").update(canonical(projectRoot)).digest().readUInt32BE(0) %
-				DEFAULT_PORT_COUNT);
+	const port = explicitPort ?? defaultStudioPort(canonical(projectRoot));
 	if (
 		isDesktopSubPath(canonical(projectRoot), canonical(ui.root)) ||
 		isDesktopSubPath(canonical(ui.root), canonical(projectRoot))
@@ -266,11 +269,11 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 	try {
 		await listen(port);
 	} catch (error) {
-		if ((error as NodeJS.ErrnoException).code !== "EADDRINUSE") throw error;
 		if (explicitPort === undefined) {
 			await listen(0);
 			options.onPortFallback?.();
 		} else {
+			if ((error as NodeJS.ErrnoException).code !== "EADDRINUSE") throw error;
 			const holder = await identifyStudio(port);
 			throw new Error(
 				holder

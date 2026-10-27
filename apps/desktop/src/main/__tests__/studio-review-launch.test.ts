@@ -26,6 +26,7 @@ import type { CanvasPreviewDescriptor, HostedCourseDeployment } from "../course-
 import { addStudioReadModeLink } from "../studio/author-document";
 import { startStudioReadOnlyServer } from "../studio/read-only-server";
 import { openReviewStore } from "../studio/review-store";
+import { defaultStudioPort } from "../studio/server";
 
 const cleanups: (() => Promise<unknown>)[] = [];
 const editorOrigin = "http://127.0.0.1:9000";
@@ -383,6 +384,10 @@ it.each([false, true])(
 	},
 );
 
+it("pins the default port rule to a literal canonical-path vector", () => {
+	expect(defaultStudioPort("/courses/example")).toBe(45598);
+});
+
 async function defaultPort(projectDir: string) {
 	const root = await realpath(projectDir);
 	const canonical = process.platform === "win32" ? root.toLowerCase() : root;
@@ -432,6 +437,74 @@ it("an explicit --port overrides the path default for both listeners", async () 
 	expect(started.ports).toEqual([47001, 48001]);
 });
 
+it.each([
+	["EACCES", "en"],
+	["EACCES", "fr"],
+	["EIO", "en"],
+])("a derived editor %s bind failure falls back with a notice in %s", async (code, locale) => {
+	const preferred = await defaultPort(fallbackFiles.projectDir);
+	const listen = Server.prototype.listen;
+	const spy = vi.spyOn(Server.prototype, "listen").mockImplementation(function (
+		this: Server,
+		...args: unknown[]
+	) {
+		if (args[0] === preferred) {
+			queueMicrotask(() =>
+				this.emit("error", Object.assign(new Error("Derived editor bind refused"), { code })),
+			);
+			return this;
+		}
+		return Reflect.apply(listen, this, args);
+	});
+	try {
+		const started = await launchPorts(fallbackFiles, ["--review", "--lang", locale]);
+		expect(started.ports[0]).not.toBe(preferred);
+		expect(started.ports[1]).toBe(preferred + 1000);
+		expect(started.result.stderr).toBe(
+			locale === "fr"
+				? "Le port par défaut de Studio est indisponible. Une autre instance de Studio sert peut-être déjà ce cours. Studio utilise un port temporaire pour cette session.\n"
+				: "The default Studio port is unavailable. Another Studio may already be serving this course. Studio is using a temporary port for this session.\n",
+		);
+	} finally {
+		spy.mockRestore();
+	}
+});
+
+it("an explicit editor EACCES bind refusal still stops startup", async () => {
+	const listen = Server.prototype.listen;
+	const spy = vi.spyOn(Server.prototype, "listen").mockImplementation(function (
+		this: Server,
+		...args: unknown[]
+	) {
+		if (args[0] === 47001) {
+			queueMicrotask(() =>
+				this.emit(
+					"error",
+					Object.assign(new Error("Explicit editor bind refused"), { code: "EACCES" }),
+				),
+			);
+			return this;
+		}
+		return Reflect.apply(listen, this, args);
+	});
+	try {
+		const result = await runPraxityCli(
+			["studio", fallbackFiles.projectDir, "--no-open", "--port", "47001"],
+			{
+				appVersion: "0.3.0",
+				exportAssetsDir: fallbackFiles.assetsDir,
+				editorAssetsDir: fallbackFiles.editorAssetsDir,
+			},
+		);
+		if (result.studioServer) cleanups.push(() => result.studioServer?.close() ?? Promise.resolve());
+		expect(result.exitCode).toBe(1);
+		expect(result.studioServer).toBeUndefined();
+		expect(result.stderr).toBe("Praxity studio failed: Explicit editor bind refused\n");
+	} finally {
+		spy.mockRestore();
+	}
+});
+
 it.each(["en", "fr"])(
 	"a busy default editor port falls back with a notice in %s",
 	async (locale) => {
@@ -444,8 +517,24 @@ it.each(["en", "fr"])(
 		expect(started.ports[1]).toBe(preferred + 1000);
 		expect(started.result.stderr).toBe(
 			locale === "fr"
-				? "Le port par défaut de Studio est indisponible. Studio utilise un port temporaire pour cette session.\n"
-				: "The default Studio port is unavailable. Studio is using a temporary port for this session.\n",
+				? "Le port par défaut de Studio est indisponible. Une autre instance de Studio sert peut-être déjà ce cours. Studio utilise un port temporaire pour cette session.\n"
+				: "The default Studio port is unavailable. Another Studio may already be serving this course. Studio is using a temporary port for this session.\n",
+		);
+	},
+);
+
+it.each(["en", "fr"])(
+	"a second Studio for the same course falls back and explains the possible duplicate in %s",
+	async (locale) => {
+		const first = await launchPorts(fallbackFiles, ["--lang", locale]);
+		const second = await launchPorts(fallbackFiles, ["--lang", locale]);
+		expect(first.result.stderr).toBe("");
+		expect(second.ports[0]).not.toBe(first.ports[0]);
+		expect(second.ports[1]).not.toBe(first.ports[1]);
+		expect(second.result.stderr).toBe(
+			locale === "fr"
+				? "Le port par défaut de Studio est indisponible. Une autre instance de Studio sert peut-être déjà ce cours. Studio utilise un port temporaire pour cette session.\n"
+				: "The default Studio port is unavailable. Another Studio may already be serving this course. Studio is using a temporary port for this session.\n",
 		);
 	},
 );

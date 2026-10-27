@@ -244,9 +244,15 @@ The separate learner listener prefers that port plus 1000, in 46000–46999.
 Both origins stay stable across restarts at the same course path, without running
 `praxity init` or writing port metadata. Moving the course changes its default.
 Different paths can hash to the same ports. These ranges avoid Rubato's reserved
-41700–41999 editor ports and their learner offsets. If the default editor port is
-busy, Studio uses an OS-assigned editor port and prints a localized notice on
-stderr. Its learner preference stays unchanged.
+41700–41999 editor ports and their learner offsets. If the default editor port
+cannot bind, including when busy or reserved by the OS, Studio uses an OS-assigned
+editor port and prints a localized notice on stderr. Its learner preference stays
+unchanged.
+
+These default ranges overlap Linux's default ephemeral range, 32768–60999.
+Automatic port assignments for other listeners or connections can temporarily
+occupy a preferred port and cause a fallback. See the kernel's
+[`ip_local_port_range` documentation](https://docs.kernel.org/networking/ip-sysctl.html#ip-variables).
 
 With `--review --port N`, the separate learner listener prefers `N + 1000`, so
 browser-local comment drafts survive a restart on the same browser origin. If
@@ -257,6 +263,9 @@ drafts may not survive a restart.
 The same learner fallback and draft notices apply to the default learner port.
 Published comments remain in the course's review store on either port. Explicit
 editor ports never fall back.
+For compatibility with earlier explicit-port launches, `--port N` without
+`--review` keeps an OS-assigned learner port. Persistent comment drafts need a
+stable learner origin only in review mode.
 Stop Studio with Ctrl+C.
 
 `--review` requires a regular `course.yaml` file before opening review storage.
@@ -269,6 +278,12 @@ With `--review`, unsent comment drafts stay in this browser across reloads and
 restarts while the learner origin stays the same. An edit made a moment before
 reloading can be lost, especially while another tab is editing comments on the
 same page; text already saved is kept.
+
+Drafts persist in browser storage for the stable `http://127.0.0.1:<learner-port>`
+origin. Pages at the [same origin share that storage](https://html.spec.whatwg.org/multipage/webstorage.html#the-localstorage-attribute).
+Another local program can bind that port while Studio is stopped. Reopening a
+saved tab or bookmark could then expose drafts to that program. Start Studio and
+use its newly printed ready URL.
 
 When the course is inside a linked Git worktree, `--review` prints a localized
 stderr warning. Comments are stored inside that worktree and are deleted with it
