@@ -52,11 +52,9 @@ body.praxity-layout-bottombar:has(> .prx-review-sidebar--local.prx-review-sideba
 		margin-right: var(--prx-review-panel-width);
 	}
 
-	body.praxity-layout-bottombar:has(
-			> .prx-review-sidebar--local:not(.prx-review-sidebar--collapsed)
-		)
-		#praxity-page-nav {
-		right: var(--prx-review-panel-width);
+	body:has(> .prx-review-sidebar--local:not(.prx-review-sidebar--collapsed))
+		.praxity-edge-arrow--next {
+		right: calc(var(--prx-review-panel-width) + 16px);
 	}
 }
 
@@ -561,15 +559,28 @@ html[data-praxity-mode="dark"] {
 .prx-review-sidebar--local .prx-review-header {
 	flex-wrap: wrap;
 	gap: 4px;
+}
+
+.prx-review-sidebar--local:not(.prx-review-sidebar--collapsed) .prx-review-header {
 	font-size: 0.875rem;
 }
 
 .prx-review-header-actions {
 	display: flex;
-	flex: 1 0 100%;
+	flex: 0 1 auto;
 	flex-wrap: wrap;
 	gap: 8px;
 	justify-content: flex-start;
+}
+
+@media (min-width: 721px) {
+	.prx-review-sidebar--local:not(.prx-review-sidebar--collapsed) .prx-review-header-actions {
+		flex: 1 0 100%;
+	}
+}
+
+.prx-review-sidebar--local .prx-review-header > .prx-review-toggle {
+	border-width: 2px;
 }
 
 .prx-review-sidebar--local .prx-review-header .prx-review-title {

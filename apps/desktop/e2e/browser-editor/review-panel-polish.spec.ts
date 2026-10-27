@@ -35,8 +35,9 @@ Check the soil each morning before watering the growing beds.
 
 for (const locale of ["en", "fr"] as const) {
 	test.describe(`${locale} review panel polish`, () => {
-		let root: string, url: string, server: StudioServer;
+		let root: string, url: string, projectDir: string, assetsDir: string, server: StudioServer;
 		let threadId: string;
+		const courseManifest = `title: Greenhouse basics\nlang: ${locale}\ndesign:\n  navArchetype: sidebar\n  colorMode: auto\n  navEdgeArrows: true\nlessons: [beds.prax]\n`;
 		const copy =
 			locale === "fr"
 				? {
@@ -68,8 +69,8 @@ for (const locale of ["en", "fr"] as const) {
 			root = await mkdtemp(
 				join(process.env.PRAXITY_TEST_ARTIFACTS ?? tmpdir(), "review-panel-polish-"),
 			);
-			const projectDir = join(root, "course"),
-				assetsDir = join(root, "assets");
+			projectDir = join(root, "course");
+			assetsDir = join(root, "assets");
 			await mkdir(projectDir);
 			await cp(resolve(import.meta.dirname, "../../resources/export-assets"), assetsDir, {
 				recursive: true,
@@ -79,23 +80,13 @@ for (const locale of ["en", "fr"] as const) {
 					resolve(import.meta.dirname, `../../../../packages/export-pipeline/template/${file}`),
 					join(assetsDir, file),
 				);
-			await writeFile(
-				join(projectDir, "course.yaml"),
-				`title: Greenhouse basics\nlang: ${locale}\ndesign:\n  navArchetype: sidebar\nlessons: [beds.prax]\n`,
-			);
+			await writeFile(join(projectDir, "course.yaml"), courseManifest);
 			await writeFile(
 				join(projectDir, "beds.prax"),
 				source.replace("title: Growing together", `title: Growing together\nlang: ${locale}`),
 			);
-			const started = await runPraxityCli(["studio", projectDir, "--review", "--no-open"], {
-				appVersion: "test",
-				exportAssetsDir: assetsDir,
-				editorAssetsDir: process.env.PRAXITY_BROWSER_EDITOR_ASSETS,
-			});
-			expect(started.exitCode, started.stderr).toBe(0);
-			if (!started.studioServer) throw new Error(started.stderr);
-			server = started.studioServer;
-			const response = await fetch(server.readyUrl);
+			await startServer();
+			const response = await fetch(url);
 			url = response.url;
 			const parsed = new JSDOM(await response.text());
 			const config = JSON.parse(
@@ -173,6 +164,36 @@ for (const locale of ["en", "fr"] as const) {
 			await server?.close();
 			if (root) await rm(root, { recursive: true });
 		});
+		async function startServer() {
+			const started = await runPraxityCli(["studio", projectDir, "--review", "--no-open"], {
+				appVersion: "test",
+				exportAssetsDir: assetsDir,
+				editorAssetsDir: process.env.PRAXITY_BROWSER_EDITOR_ASSETS,
+			});
+			expect(started.exitCode, started.stderr).toBe(0);
+			if (!started.studioServer) throw new Error(started.stderr);
+			server = started.studioServer;
+			url = (await fetch(server.readyUrl)).url;
+		}
+		async function setTheme(page: Page, theme: "light" | "dark") {
+			await page.emulateMedia({ colorScheme: "light" });
+			await expect(page.locator("html")).toHaveAttribute("data-praxity-mode", "light");
+			const light = await page
+				.locator(".prx-review-sidebar")
+				.evaluate((node) => getComputedStyle(node).backgroundColor);
+			if (theme === "dark") {
+				await page.emulateMedia({ colorScheme: "dark" });
+				await expect(page.locator("html")).toHaveAttribute("data-praxity-mode", "dark");
+				await expect(page.locator(".prx-review-sidebar")).not.toHaveCSS("background-color", light);
+			}
+		}
+		async function expectOneRow(page: Page, selector: string) {
+			const tops = await page
+				.locator(selector)
+				.evaluateAll((nodes) => nodes.map((node) => node.getBoundingClientRect().top));
+			expect(tops.length).toBeGreaterThan(1);
+			expect(Math.max(...tops) - Math.min(...tops)).toBeLessThanOrEqual(1);
+		}
 		async function openPanel(page: Page) {
 			await page.goto(url);
 			await page.getByRole("button", { name: copy.expand, exact: true }).click();
@@ -238,11 +259,8 @@ for (const locale of ["en", "fr"] as const) {
 			await expect(dialog).not.toHaveAttribute("aria-describedby");
 			await expect(dialog.getByRole("textbox", { name: copy.field, exact: true })).toBeFocused();
 			await expect(dialog.locator("label")).toHaveClass(/prx-review-visually-hidden/);
-			for (const theme of ["light", "dark"]) {
-				await page.evaluate(
-					(mode) => document.documentElement.setAttribute("data-praxity-mode", mode),
-					theme,
-				);
+			for (const theme of ["light", "dark"] as const) {
+				await setTheme(page, theme);
 				const buttons = await dialog
 					.locator(".prx-review-actions > button:visible")
 					.evaluateAll((nodes) =>
@@ -294,7 +312,7 @@ for (const locale of ["en", "fr"] as const) {
 				page,
 			}) => {
 				await openPanel(page);
-				for (const width of [1024, 1280, 1440, 1920, 1023, 320, 640]) {
+				for (const width of [1024, 1025, 1280, 1440, 1920, 1023, 320, 640]) {
 					await page.setViewportSize({ width, height: width === 640 ? 450 : 900 });
 					const geometry = await page.locator(".praxity-layout-wrapper").evaluate((wrapper) => ({
 						right: wrapper.getBoundingClientRect().right,
@@ -307,11 +325,27 @@ for (const locale of ["en", "fr"] as const) {
 					if (width >= 1024) {
 						expect(geometry.right).toBeLessThanOrEqual(geometry.panelLeft);
 						expect(geometry.margin).toBe("360px");
+						const next = page.locator(".praxity-edge-arrow--next");
+						await expect(next).toHaveCSS("right", "376px");
+						if (width === 1024) await expect(next).toBeHidden();
+						else {
+							await expect(next).toBeVisible();
+							const arrow = await next.boundingBox();
+							expect(arrow && arrow.x + arrow.width <= geometry.panelLeft).toBe(true);
+						}
 					} else expect(geometry.margin).toBe("0px");
+					if (width === 640) {
+						await expectOneRow(page, ".prx-review-header button, .prx-review-header a");
+						const header = await page.locator(".prx-review-header").boundingBox();
+						const panel = await page.locator(".prx-review-sidebar").boundingBox();
+						expect(header?.height).toBeLessThanOrEqual(64);
+						expect(panel && header && panel.height - header.height).toBeGreaterThanOrEqual(180);
+					}
 				}
 				await page.setViewportSize({ width: 1280, height: 900 });
 				await page.getByRole("button", { name: copy.close, exact: true }).click();
 				await expect(page.locator(".praxity-layout-wrapper")).toHaveCSS("margin-right", "0px");
+				await expectOneRow(page, ".prx-review-header button, .prx-review-header a");
 			});
 
 		test("C12 panel screenshots", async ({ page }) => {
@@ -321,10 +355,7 @@ for (const locale of ["en", "fr"] as const) {
 			for (const theme of ["light", "dark"] as const) {
 				await openPanel(page);
 				await page.setViewportSize({ width: 1280, height: 900 });
-				await page.evaluate(
-					(mode) => document.documentElement.setAttribute("data-praxity-mode", mode),
-					theme,
-				);
+				await setTheme(page, theme);
 				const shot = async (
 					item: number,
 					state: string,
@@ -363,6 +394,11 @@ for (const locale of ["en", "fr"] as const) {
 					});
 					for (const width of theme === "light" ? [1024, 1280, 1440, 1920, 320, 640] : [1440]) {
 						await page.setViewportSize({ width, height: width === 640 ? 450 : 900 });
+						await page
+							.locator(".praxity-native-outline")
+							.evaluate((node) =>
+								Promise.all(node.getAnimations().map((animation) => animation.finished)),
+							);
 						if (width <= 640)
 							await page.locator('[data-block-type="assessment"]').scrollIntoViewIfNeeded();
 						else await page.evaluate(() => window.scrollTo(0, 0));
@@ -371,15 +407,39 @@ for (const locale of ["en", "fr"] as const) {
 					if (theme === "light") {
 						await page.setViewportSize({ width: 1280, height: 900 });
 						await page.emulateMedia({ forcedColors: "active" });
-						await page.getByRole("button", { name: copy.choose, exact: true }).focus();
+						await page.getByRole("button", { name: copy.close, exact: true }).focus();
+						await page.keyboard.press("Tab");
+						await expect(page.getByRole("button", { name: copy.choose, exact: true })).toHaveCSS(
+							"outline-style",
+							"solid",
+						);
 						await shot(4, "forced", 1280, true);
 						await compose(page);
 						await shot(1, "forced");
 						await page.keyboard.press("Escape");
 						await page.emulateMedia({ forcedColors: "none" });
+						await page.getByRole("button", { name: copy.close, exact: true }).click();
+						await page.evaluate(() => window.scrollTo(0, 0));
+						await shot(3, "collapsed");
 					}
 				}
 			}
 		});
+
+		if (locale === "en")
+			test("bottom-bar collapsed toolbar stays on one row", async ({ page }) => {
+				await server.close();
+				await writeFile(
+					join(projectDir, "course.yaml"),
+					courseManifest.replace("navArchetype: sidebar", "navArchetype: bottomBar"),
+				);
+				await startServer();
+				await page.goto(url);
+				await expect(page.locator("body")).toHaveClass(/praxity-layout-bottombar/);
+				await expectOneRow(page, ".prx-review-header button, .prx-review-header a");
+				const shots = process.env.PRAXITY_C12_PANEL_SCREENSHOTS;
+				if (shots)
+					await page.screenshot({ path: join(shots, "3-collapsed-bottombar-1280-light-en.png") });
+			});
 	});
 }

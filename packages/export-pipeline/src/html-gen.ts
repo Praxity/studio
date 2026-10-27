@@ -19,7 +19,6 @@ import {
 	DEFAULT_COURSE_HOME_URL,
 } from "./course-home";
 import { fullyDecodeEntities } from "./html-entities";
-
 import {
 	type DeckPage,
 	deckPageData,
