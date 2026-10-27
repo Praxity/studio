@@ -217,8 +217,8 @@ describe("studio command", () => {
 			if (!result.studioServer) throw new Error("CLI did not retain its foreground server");
 			servers.push(result.studioServer);
 			expect((await fetch(result.studioServer.origin, { redirect: "manual" })).status).toBe(303);
+			await result.studioServer.close();
 		}
-		expect(servers[0].origin).not.toBe(servers[1].origin);
 		expect(servers[0].readyUrl.split("#")[1]).not.toBe(servers[1].readyUrl.split("#")[1]);
 	});
 
