@@ -235,7 +235,18 @@ praxity studio <course> [--review] [--port <n>] [--no-open]
 
 Studio prints its ready URL and serves the learner page in Read mode. `--no-open`
 prints the URL without opening a browser. `--port` accepts a loopback port from
-1 to 65535. Without `--port`, the OS assigns a port. A busy `--port` refuses startup.
+1 to 65535. An explicit `--port` always wins; a busy `--port` refuses startup.
+
+Without `--port`, Studio derives an editor port in 45000–45999 from the canonical
+course directory, using the first four SHA-256 bytes as an unsigned big-endian
+integer, modulo 1000, plus 45000. Windows paths are lowercased before hashing.
+The separate learner listener prefers that port plus 1000, in 46000–46999.
+Both origins stay stable across restarts at the same course path, without running
+`praxity init` or writing port metadata. Moving the course changes its default.
+Different paths can hash to the same ports. These ranges avoid Rubato's reserved
+41700–41999 editor ports and their learner offsets. If the default editor port is
+busy, Studio uses an OS-assigned editor port and prints a localized notice on
+stderr. Its learner preference stays unchanged.
 
 With `--review --port N`, the separate learner listener prefers `N + 1000`, so
 browser-local comment drafts survive a restart on the same browser origin. If
@@ -243,9 +254,9 @@ that learner port is out of range or any bind attempt fails, Studio uses an
 OS-assigned learner port. The CLI prints an EN/FR notice on stderr. The collapsed
 review toggle and composer warn that earlier drafts may be unavailable and new
 drafts may not survive a restart.
-Published comments remain in the course's review store on either port. Without
-`--port`, both listeners use OS-assigned ports and browser drafts do not survive
-an ordinary restart. The editor port itself never falls back.
+The same learner fallback and draft notices apply to the default learner port.
+Published comments remain in the course's review store on either port. Explicit
+editor ports never fall back.
 Stop Studio with Ctrl+C.
 
 `--review` requires a regular `course.yaml` file before opening review storage.
@@ -254,9 +265,10 @@ storage on first use and keeps the same review ID across restarts. Each process
 mints a fresh comments-only capability in memory. Corrupt, newer-schema or unsafe
 review storage refuses startup with the storage error code. Missing
 shipped review assets also refuse startup. Duplicate flags refuse.
-With `--review --port <n>`, unsent comment drafts stay in this browser across reloads
-and restarts. An edit made a moment before reloading can be lost, especially while
-another tab is editing comments on the same page; text already saved is kept.
+With `--review`, unsent comment drafts stay in this browser across reloads and
+restarts while the learner origin stays the same. An edit made a moment before
+reloading can be lost, especially while another tab is editing comments on the
+same page; text already saved is kept.
 
 When the course is inside a linked Git worktree, `--review` prints a localized
 stderr warning. Comments are stored inside that worktree and are deleted with it
@@ -429,6 +441,12 @@ A journal cleanup warning after a committed write still returns `0` and reports
 the warning on stderr.
 
 ## Review comments
+
+Open `praxity studio <course> --review` to write comments in the browser. Its
+default ports stay stable for the course's canonical path; `--port` overrides
+the editor port. Browser-local drafts need the same learner origin. A learner
+port fallback prints a warning because earlier drafts may be unavailable and
+new drafts may not survive a restart. Published comments stay in the review store.
 
 ```sh
 praxity comments list <course> [--status open|resolved] [--page <pageId>] [--json] [--lang en|fr]

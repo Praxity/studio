@@ -211,7 +211,11 @@ describe("studio command", () => {
 				editorAssetsDir,
 			});
 			expect(result.exitCode).toBe(0);
-			expect(result.stderr).toBe("");
+			expect(result.stderr).toBe(
+				noOpen
+					? ""
+					: "The default Studio port is unavailable. Studio is using a temporary port for this session.\n",
+			);
 			expect(result.stdout).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/#session=[A-Za-z0-9_-]{43}\n$/);
 			expect(result.openBrowser).toBe(!noOpen);
 			if (!result.studioServer) throw new Error("CLI did not retain its foreground server");

@@ -4,6 +4,7 @@
 	"adviceLanguageOption": "--lang requires en or fr, supplied once.",
 	"expectedCommand": "Expected the export, init, inspect, edit, comments, studio, recovery, identity or narration command.",
 	"studio": {
+		"portFallback": "The default Studio port is unavailable. Studio is using a temporary port for this session.",
 		"reviewCourseRequired": "--review requires a regular {filename} file in the course folder. No review storage was created.",
 		"reviewHelp": "Enable local review comments in Read mode for this session",
 		"reviewAssetsMissing": "Review asset unavailable: {filename}. Rebuild the standalone CLI. Studio did not start.",

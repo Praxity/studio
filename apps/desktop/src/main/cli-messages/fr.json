@@ -4,6 +4,7 @@
 	"adviceLanguageOption": "--lang attend en ou fr, une seule fois.",
 	"expectedCommand": "Commande attendue : export, init, inspect, edit, comments, studio, recovery, identity ou narration.",
 	"studio": {
+		"portFallback": "Le port par défaut de Studio est indisponible. Studio utilise un port temporaire pour cette session.",
 		"reviewCourseRequired": "--review nécessite un fichier {filename} ordinaire dans le dossier du cours. Aucun stockage de commentaires n'a été créé.",
 		"reviewHelp": "Activer les commentaires locaux en mode lecture pour cette session",
 		"reviewAssetsMissing": "Ressource de commentaires indisponible : {filename}. Reconstruisez la CLI autonome. Studio n'a pas démarré.",

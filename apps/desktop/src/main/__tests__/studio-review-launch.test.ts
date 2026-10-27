@@ -1,4 +1,15 @@
-import { cp, mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import {
+	cp,
+	mkdir,
+	mkdtemp,
+	readdir,
+	readFile,
+	realpath,
+	rm,
+	symlink,
+	writeFile,
+} from "node:fs/promises";
 import { createServer } from "node:http";
 import { Server } from "node:net";
 import { tmpdir } from "node:os";
@@ -101,12 +112,11 @@ async function running(
 	let head: CanvasPreviewDescriptor | undefined;
 	const server = await startStudioReadOnlyServer({
 		projectDir: files.projectDir,
+		preferredPort,
 		getEditorOrigin: () => editorOrigin,
 		getCanvasHead: () => head,
 		getInspectionScript: async () => "void 0;",
-		...(enabled
-			? { review: { store: files.store, capability, assetsDir: files.assetsDir, preferredPort } }
-			: {}),
+		...(enabled ? { review: { store: files.store, capability, assetsDir: files.assetsDir } } : {}),
 	});
 	cleanups.push(() => server.close());
 	async function host(n = 1, revisions = sourceRevisions) {
@@ -226,11 +236,11 @@ it("reuses the preferred review listener port across actual listener restarts", 
 	await first.server.close();
 	const restarted = await startStudioReadOnlyServer({
 		projectDir: first.projectDir,
+		preferredPort: address.port,
 		getEditorOrigin: () => editorOrigin,
 		review: {
 			store: await openReviewStore(first.projectDir),
 			capability: "B" + "A".repeat(42),
-			preferredPort: address.port,
 		},
 	});
 	cleanups.push(() => restarted.close());
@@ -295,11 +305,11 @@ it("rethrows the port-0 bind failure after a preferred-port refusal", async () =
 		await expect(
 			startStudioReadOnlyServer({
 				projectDir: files.projectDir,
+				preferredPort: 56789,
 				getEditorOrigin: () => editorOrigin,
 				review: {
 					store: await openReviewStore(files.projectDir),
 					capability,
-					preferredPort: 56789,
 				},
 			}),
 		).rejects.toMatchObject({ code: "EIO" });
@@ -357,17 +367,107 @@ it.each(["en", "fr"])("CLI reports preferred-port fallback on stderr in %s", asy
 		spy.mockRestore();
 	}
 });
-it("CLI without --port keeps random learner binding without a fallback notice", async () => {
-	const files = await fixture();
-	const result = await runPraxityCli(["studio", files.projectDir, "--review", "--no-open"], {
+it.each([false, true])(
+	"CLI without --port keeps both origins stable across restarts, review=%s",
+	async (review) => {
+		const files = fallbackFiles;
+		const expected = await defaultPort(files.projectDir);
+		const alias = join(files.root, `course-alias-${review}`);
+		await symlink(files.projectDir, alias, "junction");
+		for (const projectDir of [files.projectDir, alias]) {
+			const started = await launchPorts(files, review ? ["--review"] : [], projectDir);
+			expect(started.ports).toEqual([expected, expected + 1000]);
+			expect(started.result.stderr).toBe("");
+			await started.result.studioServer?.close();
+		}
+	},
+);
+
+async function defaultPort(projectDir: string) {
+	const root = await realpath(projectDir);
+	const canonical = process.platform === "win32" ? root.toLowerCase() : root;
+	// Independent expectation from the documented SHA-256 rule and literal port range.
+	return 45000 + (createHash("sha256").update(canonical).digest().readUInt32BE(0) % 1000);
+}
+
+async function launchPorts(
+	files: Awaited<ReturnType<typeof fixture>>,
+	args: string[] = [],
+	projectDir = files.projectDir,
+) {
+	const result = await runPraxityCli(["studio", projectDir, "--no-open", ...args], {
 		appVersion: "0.3.0",
 		exportAssetsDir: files.assetsDir,
 		editorAssetsDir: files.editorAssetsDir,
 	});
 	if (result.studioServer) cleanups.push(() => result.studioServer?.close() ?? Promise.resolve());
-	expect(result.exitCode).toBe(0);
-	expect(result.stderr).toBe("");
+	expect(result.exitCode, result.stderr).toBe(0);
+	if (!result.studioServer) throw new Error("Studio did not start");
+	const session = await fetch(`${result.studioServer.origin}/api/session`, {
+		headers: { Authorization: `Bearer ${new URL(result.studioServer.readyUrl).hash.slice(9)}` },
+	});
+	expect(session.status).toBe(200);
+	const snapshot = await session.json();
+	return {
+		result,
+		ports: [
+			Number(new URL(result.studioServer.origin).port),
+			Number(new URL(snapshot.result.mediaBaseUrl).port),
+		],
+	};
+}
+
+it("different courses use their own path hash, including the documented possibility of collisions", async () => {
+	const files = await fixture();
+	for (const course of [fallbackFiles, files]) {
+		const expected = await defaultPort(course.projectDir);
+		const started = await launchPorts(course, ["--review"]);
+		expect(started.ports).toEqual([expected, expected + 1000]);
+		await started.result.studioServer?.close();
+	}
 });
+
+it("an explicit --port overrides the path default for both listeners", async () => {
+	const started = await launchPorts(fallbackFiles, ["--review", "--port", "47001"]);
+	expect(started.ports).toEqual([47001, 48001]);
+});
+
+it.each(["en", "fr"])(
+	"a busy default editor port falls back with a notice in %s",
+	async (locale) => {
+		const preferred = await defaultPort(fallbackFiles.projectDir);
+		const blocker = createServer();
+		await new Promise<void>((resolve) => blocker.listen(preferred, "127.0.0.1", resolve));
+		cleanups.push(() => new Promise<void>((resolve) => blocker.close(() => resolve())));
+		const started = await launchPorts(fallbackFiles, ["--review", "--lang", locale]);
+		expect(started.ports[0]).not.toBe(preferred);
+		expect(started.ports[1]).toBe(preferred + 1000);
+		expect(started.result.stderr).toBe(
+			locale === "fr"
+				? "Le port par défaut de Studio est indisponible. Studio utilise un port temporaire pour cette session.\n"
+				: "The default Studio port is unavailable. Studio is using a temporary port for this session.\n",
+		);
+	},
+);
+
+it.each(["en", "fr"])(
+	"a busy default learner port falls back with the draft notice in %s",
+	async (locale) => {
+		const preferred = await defaultPort(fallbackFiles.projectDir);
+		const blocker = createServer();
+		await new Promise<void>((resolve) => blocker.listen(preferred + 1000, "127.0.0.1", resolve));
+		cleanups.push(() => new Promise<void>((resolve) => blocker.close(() => resolve())));
+		const started = await launchPorts(fallbackFiles, ["--review", "--lang", locale]);
+		expect(started.ports[0]).toBe(preferred);
+		expect(started.ports[1]).not.toBe(preferred + 1000);
+		expect(started.ports[1]).not.toBe(preferred);
+		expect(started.result.stderr).toBe(
+			locale === "fr"
+				? "Le port de lecture préféré est indisponible. Des brouillons antérieurs peuvent manquer et les nouveaux brouillons peuvent ne pas survivre au redémarrage.\n"
+				: "The preferred learner port is unavailable. Earlier drafts may be unavailable, and new drafts may not survive a restart.\n",
+		);
+	},
+);
 
 it("bootstraps captured two-lesson scope, reload, relative links and released revision redirects", async () => {
 	const { readUrl, server, host, release } = await running();
