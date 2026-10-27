@@ -9,6 +9,7 @@
 		"./artifact-media-types": "./src/artifact-media-types.ts",
 		"./bundle-viewer": "./src/bundle-viewer.ts",
 		"./glossary-page": "./src/glossary-page.ts",
+		"./html-pages": "./src/html-pages.ts",
 		"./scorm12-storage": "./src/scorm/scorm12-storage.ts",
 		"./generate-color-shades": "./src/generate-color-shades.ts"
 	},
