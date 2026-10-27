@@ -5,7 +5,7 @@ const range = z
 	.object({ start: z.number().int().nonnegative(), end: z.number().int().nonnegative() })
 	.strict();
 const message = z
-	.object({ key: z.string(), params: z.record(z.union([z.string(), z.number()])) })
+	.object({ key: z.string(), params: z.record(z.string(), z.union([z.string(), z.number()])) })
 	.strict();
 const nullableId = z.string().refine(isDisplayNodeId).nullable();
 
@@ -38,7 +38,7 @@ export const editCliOutputSchema = z
 					z
 						.object({
 							file: z.string(),
-							ref: z.record(z.unknown()).nullable(),
+							ref: z.record(z.string(), z.unknown()).nullable(),
 							severity: z.string(),
 							message,
 							range: range.optional(),

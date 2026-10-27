@@ -3,6 +3,7 @@ import { DEFAULT_DESIGN_VARIANTS } from "../../../../editor-core/src/lib/themes/
 import { THEME_PRESET_DEFAULTS } from "../../../../editor-core/src/lib/themes/theme-preset-defaults";
 import { extractDesktopDesignFromFrontmatter } from "../../../src/desktop-design";
 import { activityCardsFixture } from "./activity-cards-fixture";
+import { buildChoiceControlAlignmentCourse } from "./choice-control-alignment-fixture";
 
 export const DONT_KNOW_PALETTES = ["ink", "forest", "plum", "clay", "clear"] as const;
 
@@ -80,6 +81,11 @@ export function dontKnowFixture(
 		},
 		question("group-first", { attempts: 1 }),
 		question("group-second", { attempts: 1 }),
+		...buildChoiceControlAlignmentCourse().content[0].blocks.filter((block) =>
+			(
+				block.data as { stem?: Array<{ data: { content?: string } }> }
+			).stem?.[0]?.data.content?.includes("Compare the markers"),
+		),
 	];
 	if (deck) {
 		page.lessonId = "uncertainty";

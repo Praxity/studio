@@ -28,6 +28,10 @@ export async function choiceBaselines(rows: Locator) {
 				document.head.append(rule);
 				key.dataset.baselineProbe = "";
 				const letter = document.createElement("span");
+				letter.style.setProperty(
+					"text-box",
+					getComputedStyle(key, "::before").getPropertyValue("text-box"),
+				);
 				letter.textContent = "A";
 				const keyProbe = probe();
 				letter.append(keyProbe);

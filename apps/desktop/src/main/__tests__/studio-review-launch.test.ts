@@ -122,9 +122,9 @@ async function running(
 	cleanups.push(() => server.close());
 	async function host(n = 1, revisions = sourceRevisions) {
 		const pages = [
-			{ id: "page-one", lessonId: "lesson-one", slug: "index" },
-			{ id: "page-two", lessonId: "lesson-one", slug: "second" },
-			{ id: "page-three", lessonId: "lesson-two", slug: "third" },
+			{ id: "page-one", title: "Sort the seedlings", lessonId: "lesson-one", slug: "index" },
+			{ id: "page-two", title: "Water on a schedule", lessonId: "lesson-one", slug: "second" },
+			{ id: "page-three", title: "Compost notes", lessonId: "lesson-two", slug: "third" },
 		];
 		const deployment: HostedCourseDeployment = {
 			format: "standalone",
@@ -571,14 +571,17 @@ it("bootstraps captured two-lesson scope, reload, relative links and released re
 		pages: [
 			{
 				id: "page-one",
+				title: "Sort the seedlings",
 				href: `${new URL(".", readUrl).pathname}index.html?praxity-resume=0#page-one`,
 			},
 			{
 				id: "page-two",
+				title: "Water on a schedule",
 				href: `${new URL(".", readUrl).pathname}second.html?praxity-resume=0#page-two`,
 			},
 			{
 				id: "page-three",
+				title: "Compost notes",
 				href: `${new URL(".", readUrl).pathname}third.html?praxity-resume=0#page-three`,
 			},
 		],

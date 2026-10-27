@@ -4,7 +4,7 @@ Read the affected type in [questions and groups](../reference/blocks-assessments
 
 For choice, use one marker kind throughout. Parentheses allow one selection; brackets allow several. Mark correct options for a knowledge check. Leave all options unmarked for an ungraded poll or reflection. Put question feedback before options and option feedback directly after its option, without a blank line.
 
-Write or revise choice questions with the `assessment-writing` skill, which Rubato installs beside this one ([source](https://github.com/Praxity/rubato/blob/main/skills/assessment-writing/SKILL.md)). It covers distractors, feedback and the required independent cue probes. This guide owns the syntax: `{shuffle}` randomizes option order at runtime, and `dontKnow` adds an unkeyed "I don't know" answer that the runtime keeps last, so never author it as an option. Confidence and per-option "right when" fields are planned and have no syntax yet.
+Write or revise choice questions with the `assessment-writing` skill, which Rubato installs beside this one ([source](https://github.com/Praxity/rubato/blob/main/skills/assessment-writing/SKILL.md)). It covers distractors, feedback and the required independent cue probes. This guide owns the syntax: `{shuffle}` randomizes option order at runtime, and `dontKnow` adds an "I don't know" answer that the runtime keeps last, so never author it as an option. The answer has no letter; it shows a decorative "?" marker in the key position. Its accessible name stays "I don't know" in English or "Je ne sais pas" in French. Confidence and per-option "right when" fields are planned and have no syntax yet.
 
 ```prax
 # Check your understanding

@@ -628,12 +628,7 @@ function ChoicePreview({
 								onChange={() => onSelect(option.id)}
 								disabled={disabled}
 							/>
-							{isSingle && (
-								<span
-									className={unknown ? "praxity-choice-key-spacer" : "praxity-choice-key"}
-									aria-hidden="true"
-								/>
-							)}
+							{isSingle && <span className="praxity-choice-key" aria-hidden="true" />}
 							<span className="praxity-choice-text">
 								<span id={`${optionId}-label`} className="praxity-choice-label">
 									{resolveOptionLabel(option as unknown as Record<string, unknown>)}

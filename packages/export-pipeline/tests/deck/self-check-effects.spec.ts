@@ -665,6 +665,13 @@ for (const format of ["html", "scorm12", "scorm2004", "file"] as const) {
 	}
 }
 
+type RestoredSiblingsResult = {
+	events: string[];
+	firstAttributes: unknown[];
+	writes: unknown[];
+	attributes: (string | null)[];
+};
+
 for (const action of actions) {
 	test(`restored siblings ${action} at A completion project together and stop the old B event`, async ({
 		page,
@@ -675,7 +682,10 @@ for (const action of actions) {
 				window.__praxitySelfCheckSession &&
 				document.querySelectorAll("[data-self-check-comparison]").length === 2,
 		);
-		const result = await page.evaluate(async (action) => {
+		await page.evaluate((action) => {
+			const probe = Object.assign(window, {
+				restoredSiblingsResult: undefined as RestoredSiblingsResult | { error: string } | undefined,
+			});
 			const api = (
 				window as Window & {
 					PraxitySelfCheckIsland?: typeof import("../../template/src/islands/island-self-check");
@@ -735,18 +745,34 @@ for (const action of actions) {
 			};
 			const pending = window.__praxitySelfCheckSession;
 			armed = true;
-			await pending?.session.ready;
-			await successor;
-			await window.__praxitySelfCheckSession?.session.ready;
-			return {
-				events,
-				firstAttributes,
-				writes,
-				attributes: roots.map(
-					(root) => root.closest<HTMLElement>("[data-block-id]")?.dataset.completed ?? null,
-				),
-			};
+			// Keep the pending work in the page so CDP never awaits across provider replacement.
+			void (async () => {
+				await pending?.session.ready;
+				await successor;
+				await window.__praxitySelfCheckSession?.session.ready;
+				probe.restoredSiblingsResult = {
+					events,
+					firstAttributes,
+					writes,
+					attributes: roots.map(
+						(root) => root.closest<HTMLElement>("[data-block-id]")?.dataset.completed ?? null,
+					),
+				};
+			})().catch((error) => {
+				probe.restoredSiblingsResult = { error: String(error) };
+			});
 		}, action);
+		const settled = await page.waitForFunction(
+			() =>
+				(
+					window as Window & {
+						restoredSiblingsResult?: RestoredSiblingsResult | { error: string };
+					}
+				).restoredSiblingsResult,
+		);
+		const result = await settled.jsonValue();
+		if (!result) throw new Error("Missing restored siblings result");
+		if ("error" in result) throw new Error(result.error);
 		expect(result.firstAttributes).toEqual(["true", "true"]);
 		expect(result.events).toEqual(
 			action === "dispose"

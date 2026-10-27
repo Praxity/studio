@@ -1,12 +1,22 @@
-import { expect } from "@playwright/test";
+import { expect, type Locator } from "@playwright/test";
 import { contrastRatio } from "@praxity/shared-blocks/color-math";
 import { test } from "../muted-test";
 import { DONT_KNOW_PALETTES } from "./fixtures/dont-know-fixture";
 import { readTestEnv } from "./helpers";
 
+async function expectUnknownMarker(row: Locator, label: string) {
+	const key = row.locator(".praxity-choice-key");
+	await expect(key).toHaveCount(1);
+	await expect(key).toHaveAttribute("aria-hidden", "true");
+	await expect(key).toBeEmpty();
+	expect(await key.evaluate((e) => e.childNodes.length)).toBe(0);
+	expect(await key.evaluate((e) => getComputedStyle(e, "::before").content)).toBe('"?"');
+	await expect(row.getByRole("radio")).toHaveAccessibleName(label);
+}
+
 for (const direction of ["ltr", "rtl"] as const)
 	for (const width of [1280, 390]) {
-		test(`unkeyed label alignment ${direction} ${width}`, async ({ page }, testInfo) => {
+		test(`question marker label alignment ${direction} ${width}`, async ({ page }, testInfo) => {
 			await page.setViewportSize({ width, height: 900 });
 			await page.emulateMedia({ reducedMotion: "reduce" });
 			await page.goto(`${readTestEnv().url}/dont-know-ink-false-en-false/index.html`);
@@ -47,7 +57,7 @@ for (const direction of ["ltr", "rtl"] as const)
 					).toBeLessThanOrEqual(0.5);
 				}
 			}
-			await expect(unknown.locator(".praxity-choice-key")).toHaveCount(0);
+			await expectUnknownMarker(unknown, "I don't know");
 			if (direction === "rtl" && width === 390 && testInfo.project.name === "chromium")
 				await card.screenshot({ path: testInfo.outputPath("r3-rtl-390-after.png") });
 		});
@@ -74,7 +84,8 @@ for (const [palette, dark, locale] of [
 			const row = card.locator("[data-dont-know]");
 			const radio = row.getByRole("radio", { name: label, exact: true });
 			await expect(card.getByRole("radio").last()).toHaveAccessibleName(label);
-			await expect(row.locator(".praxity-choice-key")).toHaveCount(0);
+			await expectUnknownMarker(row, label);
+			await expect(card.getByRole("radio")).toHaveCount(3);
 			expect(await row.evaluate((e) => getComputedStyle(e, "::before").borderTopWidth)).toBe("1px");
 			expect((await row.boundingBox())?.height).toBeGreaterThanOrEqual(48);
 			await card.getByRole("radio").first().focus();
@@ -183,10 +194,19 @@ for (const palette of DONT_KNOW_PALETTES)
 						text: hex(getComputedStyle(e).color),
 						background: hex(getComputedStyle(e).backgroundColor),
 						icon: hex(getComputedStyle(e.querySelector("svg") ?? e).color),
+						key: (() => {
+							const key = e.closest("[data-choice-result]")?.querySelector(".praxity-choice-key");
+							if (!key) throw new Error("Missing unknown key");
+							return {
+								glyph: hex(getComputedStyle(key, "::before").color),
+								fill: hex(getComputedStyle(key).backgroundColor),
+							};
+						})(),
 					};
 				});
 			expect(contrastRatio(colors.text, colors.background)).toBeGreaterThanOrEqual(4.5);
 			expect(contrastRatio(colors.icon, colors.background)).toBeGreaterThanOrEqual(3);
+			expect(contrastRatio(colors.key.glyph, colors.key.fill)).toBeGreaterThanOrEqual(4.5);
 		});
 	}
 

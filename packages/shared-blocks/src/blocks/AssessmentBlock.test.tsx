@@ -454,7 +454,27 @@ describe("I don't know", () => {
 	])("derives the default from scoring and pass gates %j", (settings, offered) => {
 		expect(assessmentOffersDontKnow({ ...makeChoiceData(), ...settings })).toBe(offered);
 	});
-	it("renders an unkeyed last radio and submits unknown as answered, incorrect, and retryable", () => {
+	it.each([
+		["en", "I don't know"],
+		["fr", "Je ne sais pas"],
+	] as const)("keeps the decorative marker outside the radio name in %s", (locale, label) => {
+		render(
+			<LocaleContext.Provider value={locale}>
+				<PreviewAssessmentBlock data={makeChoiceData()} blockId="marker" />
+			</LocaleContext.Provider>,
+			{ wrapper: Wrapper },
+		);
+		const radios = screen.getAllByRole("radio");
+		const radio = screen.getByRole("radio", { name: label });
+		expect(radios).toHaveLength(3);
+		expect(radios.at(-1)).toBe(radio);
+		expect(radio).toHaveAccessibleName(label);
+		const keys = radio.closest("label")?.querySelectorAll(".praxity-choice-key");
+		expect(keys).toHaveLength(1);
+		expect(keys?.[0]).toHaveAttribute("aria-hidden", "true");
+		expect(keys?.[0]).toBeEmptyDOMElement();
+	});
+	it("renders the last radio and submits unknown as answered, incorrect, and retryable", () => {
 		const report = vi.fn();
 		document.addEventListener("praxity:assessment-response", report);
 		const data = makeChoiceData({
@@ -466,8 +486,7 @@ describe("I don't know", () => {
 		const view = mount();
 		const radio = getRadio("I don't know");
 		expect(screen.getAllByRole("radio").at(-1)).toBe(radio);
-		expect(radio.closest("label")?.querySelector(".praxity-choice-key")).toBeNull();
-		expect(radio.closest("label")?.querySelector(".praxity-choice-key-spacer")).toHaveAttribute(
+		expect(radio.closest("label")?.querySelector(".praxity-choice-key")).toHaveAttribute(
 			"aria-hidden",
 			"true",
 		);
