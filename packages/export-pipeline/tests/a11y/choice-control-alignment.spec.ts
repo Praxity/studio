@@ -236,11 +236,17 @@ for (const condition of markerConditions) {
 				}
 			}
 			if (settings.name === "light-1280") {
+				const loaderEvents: Array<unknown> = [];
+				page.on("request", (request) => {
+					if (request.resourceType() === "script")
+						loaderEvents.push({ event: "request", url: request.url() });
+				});
 				let release = () => {};
 				const gate = new Promise<void>((resolve) => {
 					release = resolve;
 				});
 				await page.route("**/island-loader-*.js", async (route) => {
+					loaderEvents.push({ event: "route", url: route.request().url() });
 					await gate;
 					await route.continue();
 				});
@@ -261,6 +267,20 @@ for (const condition of markerConditions) {
 					await expect(card).not.toHaveAttribute("data-hydrated");
 					await capture("disabled");
 				} finally {
+					console.log(
+						"disabled-shell-network",
+						JSON.stringify({
+							engine: testInfo.project.name,
+							events: loaderEvents,
+							document: await page.evaluate(() => ({
+								scripts: Array.from(document.scripts, (script) => script.src).filter(Boolean),
+								resources: performance.getEntriesByType("resource").map((entry) => entry.toJSON()),
+								hydrated: document
+									.querySelector('[data-island="assessment"]')
+									?.hasAttribute("data-hydrated"),
+							})),
+						}),
+					);
 					release();
 				}
 				await expect(card).toHaveAttribute("data-hydrated", "");
