@@ -194,6 +194,44 @@ for (const condition of markerConditions) {
 				.toBe(true);
 		};
 		try {
+			if (settings.name === "light-1280") {
+				// WebKit can reuse a warmed preload without invoking a late route.
+				// Hold the loader before this context's first course navigation.
+				let intercepted = false;
+				let release = () => {};
+				const gate = new Promise<void>((resolve) => {
+					release = resolve;
+				});
+				await page.route("**/island-loader-*.js", async (route) => {
+					intercepted = true;
+					await gate;
+					await route.continue();
+				});
+				try {
+					await page.goto(url, { waitUntil: "commit" });
+					await expect.poll(() => intercepted).toBe(true);
+					await expect(card).toBeVisible();
+					await page.waitForFunction(() =>
+						Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')).every(
+							(link) => link.sheet,
+						),
+					);
+					await page.evaluate(async () => {
+						const label = document.querySelector(".praxity-choice-label");
+						if (!label) throw new Error("Missing shell label");
+						const style = getComputedStyle(label);
+						await document.fonts.load(`${style.fontWeight} ${style.fontSize} ${style.fontFamily}`);
+					});
+					await expect(card).not.toHaveAttribute("data-hydrated");
+					await expect(card.getByRole("radio").first()).toBeDisabled();
+					await capture("disabled");
+					await expect(card).not.toHaveAttribute("data-hydrated");
+				} finally {
+					release();
+				}
+				await expect(card).toHaveAttribute("data-hydrated", "");
+				await page.unroute("**/island-loader-*.js");
+			}
 			await open();
 			await capture("default");
 			if (!settings.dark && !settings.fr) {
@@ -236,55 +274,6 @@ for (const condition of markerConditions) {
 				}
 			}
 			if (settings.name === "light-1280") {
-				const loaderEvents: Array<unknown> = [];
-				page.on("request", (request) => {
-					if (request.resourceType() === "script")
-						loaderEvents.push({ event: "request", url: request.url() });
-				});
-				let release = () => {};
-				const gate = new Promise<void>((resolve) => {
-					release = resolve;
-				});
-				await page.route("**/island-loader-*.js", async (route) => {
-					loaderEvents.push({ event: "route", url: route.request().url() });
-					await gate;
-					await route.continue();
-				});
-				try {
-					await page.goto(url, { waitUntil: "commit" });
-					await expect(card).toBeVisible();
-					await page.waitForFunction(() =>
-						Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')).every(
-							(link) => link.sheet,
-						),
-					);
-					await page.evaluate(async () => {
-						const label = document.querySelector(".praxity-choice-label");
-						if (!label) throw new Error("Missing shell label");
-						const style = getComputedStyle(label);
-						await document.fonts.load(`${style.fontWeight} ${style.fontSize} ${style.fontFamily}`);
-					});
-					await expect(card).not.toHaveAttribute("data-hydrated");
-					await capture("disabled");
-				} finally {
-					console.log(
-						"disabled-shell-network",
-						JSON.stringify({
-							engine: testInfo.project.name,
-							events: loaderEvents,
-							document: await page.evaluate(() => ({
-								scripts: Array.from(document.scripts, (script) => script.src).filter(Boolean),
-								resources: performance.getEntriesByType("resource").map((entry) => entry.toJSON()),
-								hydrated: document
-									.querySelector('[data-island="assessment"]')
-									?.hasAttribute("data-hydrated"),
-							})),
-						}),
-					);
-					release();
-				}
-				await expect(card).toHaveAttribute("data-hydrated", "");
-				await page.unroute("**/island-loader-*.js");
 				await open();
 				// Use the composer harness's real review store and pin overlay on
 				// the published document, with its assets still served by the fixture.
