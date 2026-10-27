@@ -16,7 +16,6 @@ import type { CanvasPageScope } from "../../shared/editor-session";
 import {
 	draftSchema,
 	draftSeedSchema,
-	EDITOR_COLLECTION_LIMIT,
 	insertionRefSchema,
 	nodeRefSchema,
 	parseEditorInput,
@@ -61,14 +60,11 @@ const canvasTextRequestSchema = z
 		text: z.string(),
 	})
 	.strict();
-export const requestSchema = z
+const requestSchema = z
 	.object({
 		transactionId: z.string().min(1),
 		operation: z.string().min(1),
-		files: z
-			.array(z.object({ path: lessonPath, baseRevision: revision }).strict())
-			.nonempty()
-			.max(EDITOR_COLLECTION_LIMIT),
+		files: z.array(z.object({ path: lessonPath, baseRevision: revision }).strict()).nonempty(),
 		targets: z
 			.array(
 				z
@@ -87,8 +83,7 @@ export const requestSchema = z
 					})
 					.strict(),
 			)
-			.nonempty()
-			.max(EDITOR_COLLECTION_LIMIT),
+			.nonempty(),
 		// The registry owns each operation's argument names and value constraints.
 		// Zod 4 omits __proto__ before validating record keys; refuse it before cloning.
 		args: z
