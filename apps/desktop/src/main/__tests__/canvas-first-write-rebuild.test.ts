@@ -98,6 +98,7 @@ async function launchGap(gapRequest: boolean) {
 			pageCount: 2,
 			pages: pages.map(({ pageId, lessonId }, index) => ({
 				id: pageId,
+				title: `Page ${index + 1}`,
 				lessonId,
 				slug: index ? "b" : "index",
 				runtime: { mode: "islands", islands: [], legacyReasons: [] },

@@ -47,6 +47,7 @@ async function fixture() {
 				pageCount: pages.length,
 				pages: pages.map((p) => ({
 					...p,
+					title: p.id,
 					runtime: { mode: "islands", islands: ["deck"], legacyReasons: [] },
 					statefulBlockIds: [],
 				})),

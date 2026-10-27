@@ -208,6 +208,32 @@ function click(doc: Document, selector: string) {
 	(doc.querySelector(selector) as HTMLButtonElement).click();
 }
 
+it.each([
+	["Current seedlings", "Old seedlings", "page", "Current seedlings · Current page"],
+	["", "Old seedlings", "page", "Old seedlings · Current page"],
+	[null, "Compost notes", "removed", "Compost notes"],
+	[null, null, "removed", "removed"],
+	[null, null, null, "Page not found"],
+])("page title fallback: current=%s stored=%s id=%s", async (current, stored, pageId, expected) => {
+	const server = fakeServer();
+	await server.seed("Check the trays", {
+		...anchor,
+		pageId,
+		context: { pageTitle: stored, targetLabel: null },
+	});
+	const { doc } = await open(server, "en", undefined, (dom) => {
+		const bootstrap = dom.window.document.querySelector("#praxity-review-config")!;
+		bootstrap.textContent = JSON.stringify({
+			...JSON.parse(bootstrap.textContent!),
+			pages:
+				current === null
+					? []
+					: [{ id: "page", title: current, href: "/canvas/preview/course/seedlings.html" }],
+		});
+	});
+	expect(doc.querySelector(".prx-review-page-heading")?.textContent).toBe(expected);
+});
+
 it.each(["en", "fr"])(
 	"Show on page keeps its visible label beside a decorative magnifier (%s)",
 	async (locale) => {
@@ -572,8 +598,7 @@ it.each(["en", "fr"].flatMap((locale) => [false, true].map((deck) => ({ locale, 
 		expect(controls).toHaveLength(1);
 		const toggle = controls[0];
 		const header = doc.querySelector(".prx-review-header")!;
-		expect([...header.children].map((node) => node.className)).toEqual([
-			"prx-review-title",
+		expect([...header.querySelectorAll("button")].map((node) => node.className)).toEqual([
 			"prx-review-toggle" + (deck ? " prx-review-toggle--deck" : ""),
 			"prx-review-choose prx-review-action",
 			"prx-review-pin prx-review-action",
@@ -995,7 +1020,7 @@ it.each(["en", "fr"])(
 			const config = dom.window.document.querySelector("#praxity-review-config")!;
 			config.textContent = JSON.stringify({
 				...JSON.parse(config.textContent!),
-				pages: [{ id: "other", href: "/canvas/preview/course/other.html" }],
+				pages: [{ id: "other", href: "/canvas/preview/course/other.html", title: "Other page" }],
 			});
 		});
 		click(doc, ".prx-review-reply-toggle");

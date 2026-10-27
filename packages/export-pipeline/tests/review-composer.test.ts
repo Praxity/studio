@@ -206,6 +206,27 @@ const posts = (ui: Awaited<ReturnType<typeof open>>) =>
 		.filter(([, init]) => init?.method === "POST")
 		.map(([, init]) => JSON.parse(init.body));
 
+it.each([
+	["en", "Comment on whole page", "Comment"],
+	["fr", "Commentaire sur toute la page", "Commentaire"],
+])(
+	"whole-page composer keeps its names without duplicate visible copy (%s)",
+	async (locale, title, fieldName) => {
+		const ui = await open({ locale });
+		await ui.pick(0);
+		const composer = ui.doc.querySelector(".prx-review-composer")!;
+		expect(composer.querySelector("h2")?.textContent).toBe(title);
+		expect(composer.querySelector<HTMLElement>(".prx-review-target-preview")?.hidden).toBe(true);
+		expect(composer.hasAttribute("aria-describedby")).toBe(false);
+		const field = composer.querySelector("textarea")!;
+		expect(field.labels?.[0].textContent).toBe(fieldName);
+		expect(field.labels?.[0].classList.contains("prx-review-visually-hidden")).toBe(true);
+		await ui.pick(1);
+		expect(composer.querySelector<HTMLElement>(".prx-review-target-preview")?.hidden).toBe(false);
+		expect(composer.getAttribute("aria-describedby")).toBe("prx-review-target-preview");
+	},
+);
+
 it.each(["MacIntel", "Win32", "iPhone", "iPad", "iPod"])(
 	"keyboard save shares composer guards and frozen retries (%s)",
 	async (platform) => {
