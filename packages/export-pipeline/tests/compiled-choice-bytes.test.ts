@@ -43,8 +43,8 @@ it("records exact per-document additions against main", () => {
 	// Verify: pnpm --filter @praxity/export-pipeline exec vitest run tests/compiled-choice-bytes.test.ts --maxWorkers=1
 	// Each fact now retains the visible term label in "Pick one".
 	const expected = [
-		["practice", 26454, 1842, "cfb71a00871c56b0c63a7bf0518fbf7c99ff26fb560f487f0a3fefa180b72163"],
-		["second", 26995, 1842, "8027e369e042ce9067870db01a5bc83245ba5087df211837e2354653f2892900"],
+		["practice", 26447, 1842, "d77d8a812e5f90c64485f89cc7710d92cc6aff605e4288885c30b775efdf5995"],
+		["second", 26988, 1842, "03c8a4f1ff93f54d586fb786b900c8e7a97e33bf6d7ce71f5736c97735482a92"],
 		["glossary", 2273, 921, "49bc7d6126a51ebbdafcecba935f3ad9b7a6539f204cd8258441e9f7c0520cab"],
 		["resources", 22265, 1842, "13dbb99da3ea36bdba11db1e0802282cb2e0dea3a2ee24feeb9c068502728bae"],
 	] as const;

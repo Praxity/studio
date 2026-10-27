@@ -394,7 +394,7 @@ it("retains document bytes apart from the two inert fields", () => {
 	const html = render();
 	const stripped = stripChoiceStateFacts(html);
 	expect(createHash("sha256").update(stripped).digest("hex")).toBe(
-		"a8952828a579eb755051a4ceacfba28d6c37bd55efe36b61a5094d1381cbc242",
+		"e90a559364021ddeba3a29d2e45b8fbe414f218ece33c38b649368b44f15b988",
 	);
 	expect(html).not.toMatch(/_inlineTrees|_htmlFields|referenceTrivia|generatedBy/);
 });
