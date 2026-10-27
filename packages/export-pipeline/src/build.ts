@@ -384,6 +384,7 @@ export interface CourseArtifactPage {
 	readonly selfCheckAssets?: readonly SelfCheckAssetReference[];
 	readonly writeDistractorsAssets?: readonly WriteDistractorsAssetReference[];
 	readonly id: string;
+	readonly title: string;
 	readonly lessonId?: string;
 	readonly slug: string;
 	readonly runtime: {

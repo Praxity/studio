@@ -239,6 +239,7 @@ describe("buildScormPackage", () => {
 			pages: [
 				{
 					id: "p1",
+					title: "Page 1",
 					slug: "page-1",
 					runtime: { mode: "static", islands: [], legacyReasons: [] },
 					statefulBlockIds: [],
@@ -440,6 +441,7 @@ describe("buildScormPackage", () => {
 		expect(artifact.manifest.pages).toEqual([
 			{
 				id: "page-stable",
+				title: "Checklist",
 				lessonId: "lesson-stable",
 				slug: "checklist",
 				runtime: { mode: "islands", islands: ["checklist"], legacyReasons: [] },

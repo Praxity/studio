@@ -112,6 +112,11 @@ import {
 	renderBlockHtml as renderSemanticBlockHtml,
 } from "./render-block-html.ts";
 
+/** Plain-text page title shared by the host config and artifact manifest. */
+export function publishedPageTitle(page: Pick<PraxityPage, "title">): string {
+	return fullyDecodeEntities(page.title);
+}
+
 const COURSE_COMPLETION_OUTCOME =
 	'<p data-course-outcome hidden><svg class="icon icon-tabler" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path/></svg><span data-course-outcome-label></span></p>';
 
@@ -1522,7 +1527,7 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 	for (const [pageId, slug] of slugMap.entries()) {
 		pageIdMap[pageId] = slug;
 	}
-	const decodedPageTitle = fullyDecodeEntities(page.title);
+	const decodedPageTitle = publishedPageTitle(page);
 	const decodedLessonTitle = page.lessonTitle ? fullyDecodeEntities(page.lessonTitle) : undefined;
 	const decodedLessonKicker =
 		typeof page.lessonKicker === "string"

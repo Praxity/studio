@@ -284,6 +284,7 @@ it.each([false, true])("admits captured deck=%s scope and resources", async (dec
 			pageCount: 2,
 			pages: ["index", "second"].map((slug, pageIndex) => ({
 				id: `page-${pageIndex}`,
+				title: `Page ${pageIndex + 1}`,
 				lessonId: "lesson",
 				slug,
 				runtime: { mode: "islands", islands: deck ? ["deck"] : [], legacyReasons: [] },
