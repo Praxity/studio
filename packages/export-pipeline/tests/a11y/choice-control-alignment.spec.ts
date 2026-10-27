@@ -108,6 +108,10 @@ for (const condition of markerConditions) {
 			scale: 1,
 			...condition,
 		};
+		// Below 360 px, --type-body clamps to 16 px while the key stays 15 px, leaving
+		// 0.5 * |key cap - text x-height| = 1.07 px. 1.25 px holds that worst case.
+		// See packages/shared-blocks/src/reading-rhythm.css:190.
+		const levelLimit = settings.large ? 1.5 : settings.width < 360 ? 1.25 : 1;
 		const context = await browser.newContext({
 			viewport: { width: settings.width, height: 900 },
 			deviceScaleFactor: settings.scale,
@@ -166,13 +170,9 @@ for (const condition of markerConditions) {
 					.soft(row.shift, "Probe preserves the rendered marker position")
 					.toBeLessThanOrEqual(0.1);
 				expect.soft(row.m1, `${state} ${row.glyph} M1`).toBeLessThanOrEqual(0.5);
-				expect
-					.soft(row.m2, `${state} ${row.glyph} M2 first line`)
-					.toBeLessThanOrEqual(settings.large ? 1.5 : 1);
+				expect.soft(row.m2, `${state} ${row.glyph} M2 first line`).toBeLessThanOrEqual(levelLimit);
 				if (row.lines === 1 && !row.hasStatus)
-					expect
-						.soft(row.m3, `${state} ${row.glyph} M3`)
-						.toBeLessThanOrEqual(settings.large ? 1.5 : 1);
+					expect.soft(row.m3, `${state} ${row.glyph} M3`).toBeLessThanOrEqual(levelLimit);
 			}
 			const first = measurements[0];
 			const unknown = measurements.at(-1);
