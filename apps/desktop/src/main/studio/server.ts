@@ -34,6 +34,9 @@ declare const __PRAXITY_CANVAS_SHA256__: string;
 
 const MAX_BODY_BYTES = 10_500_000;
 const MAX_QUEUED_EVENT_BYTES = 20_000_000;
+// Avoid Rubato's reserved 41700-41999 ports and their +1000 learner ports.
+const DEFAULT_PORT_START = 45000;
+const DEFAULT_PORT_COUNT = 1000;
 const RPC_ENVELOPE = z.object({ method: z.string().min(1).max(80), args: z.unknown() }).strict();
 const STUDIO_IDENTITY = z
 	.object({
@@ -58,6 +61,7 @@ export interface StudioServerOptions {
 	appVersion: string;
 	editorAssetsDir: string;
 	port?: number;
+	onPortFallback?: () => void;
 	exportAssetsDir?: string;
 	typstExecutablePath?: string;
 	review?: Parameters<typeof startStudioReadOnlyServer>[0]["review"];
@@ -204,12 +208,21 @@ async function uiFiles(editorAssetsDir: string) {
 	return { root };
 }
 
+export function defaultStudioPort(canonicalRoot: string): number {
+	return (
+		DEFAULT_PORT_START +
+		(createHash("sha256").update(canonicalRoot).digest().readUInt32BE(0) % DEFAULT_PORT_COUNT)
+	);
+}
+
 export async function startStudioServer(options: StudioServerOptions): Promise<StudioServer> {
 	assertProjectWritesAllowed();
-	const port = options.port === undefined ? 0 : studioPortSchema.parse(options.port);
+	const explicitPort =
+		options.port === undefined ? undefined : studioPortSchema.parse(options.port);
 	const projectRoot = await assertAllowedProjectRoot(options.projectDir);
 	const ui = await uiFiles(options.editorAssetsDir);
 	const canonical = (root: string) => (process.platform === "win32" ? root.toLowerCase() : root);
+	const port = explicitPort ?? defaultStudioPort(canonical(projectRoot));
 	if (
 		isDesktopSubPath(canonical(projectRoot), canonical(ui.root)) ||
 		isDesktopSubPath(canonical(ui.root), canonical(projectRoot))
@@ -238,13 +251,29 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 	});
 	const refuseDuringStartup = (socket: Socket) => socket.destroy();
 	server.on("connection", refuseDuringStartup);
-	try {
-		await new Promise<void>((resolve, rejectListen) => {
-			server.once("error", rejectListen);
-			server.listen(port, "127.0.0.1", resolve);
+	function listen(port: number) {
+		return new Promise<void>((resolve, rejectListen) => {
+			const failed = (error: Error) => {
+				server.off("listening", ready);
+				rejectListen(error);
+			};
+			const ready = () => {
+				server.off("error", failed);
+				resolve();
+			};
+			server.once("error", failed);
+			server.once("listening", ready);
+			server.listen(port, "127.0.0.1");
 		});
+	}
+	try {
+		await listen(port);
 	} catch (error) {
-		if (options.port !== undefined && (error as NodeJS.ErrnoException).code === "EADDRINUSE") {
+		if (explicitPort === undefined) {
+			await listen(0);
+			options.onPortFallback?.();
+		} else {
+			if ((error as NodeJS.ErrnoException).code !== "EADDRINUSE") throw error;
 			const holder = await identifyStudio(port);
 			throw new Error(
 				holder
@@ -253,7 +282,6 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 				{ cause: error },
 			);
 		}
-		throw error;
 	}
 	try {
 		let origin = "";
@@ -262,6 +290,7 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 		await withProjectFileTransaction(projectRoot, assertPlainIdentityStore, "write", false);
 		const readOnly = await startStudioReadOnlyServer({
 			projectDir: projectRoot,
+			preferredPort: explicitPort === undefined || options.review ? port + 1000 : undefined,
 			review: options.review,
 			getEditorOrigin: () => origin,
 			getCanvasHead: () => preview?.canvasHead(),
