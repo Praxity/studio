@@ -696,13 +696,13 @@ export async function runPraxityCli(args: string[], runtime: CliRuntime): Promis
 			}
 			// Argument refusals do not need the server or rendering runtime.
 			const { startStudioServer } = await import("./studio/server");
+			let portFallback = false;
 			let reviewPortFallback = false;
 			const review = reviewEnabled
 				? {
 						store: await openReviewStore(root),
 						capability: randomBytes(32).toString("base64url"),
 						assetsDir: runtime.exportAssetsDir,
-						preferredPort: port === undefined ? undefined : port + 1000,
 						onPortFallback: () => {
 							reviewPortFallback = true;
 						},
@@ -713,6 +713,9 @@ export async function runPraxityCli(args: string[], runtime: CliRuntime): Promis
 				appVersion: runtime.appVersion,
 				editorAssetsDir: runtime.editorAssetsDir,
 				port,
+				onPortFallback: () => {
+					portFallback = true;
+				},
 				exportAssetsDir: runtime.exportAssetsDir,
 				typstExecutablePath: runtime.typstExecutablePath,
 				review,
@@ -732,6 +735,7 @@ export async function runPraxityCli(args: string[], runtime: CliRuntime): Promis
 				messages: adviceLocale === "fr" ? cliFr : cliEn,
 			});
 			const notices = [
+				...(portFallback ? [messages("studio.portFallback")] : []),
 				...(reviewEnabled && (await isLinkedReviewWorktree(root))
 					? [messages("reviewWorktreeWarning")]
 					: []),
