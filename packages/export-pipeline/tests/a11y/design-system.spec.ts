@@ -1445,10 +1445,7 @@ async function inspectRadiusRoles(page: Page) {
 				".praxity-block-assessment:not(.praxity-block), .praxity-block-checklist > :is(.praxity-fieldset-reset, div), .praxity-block-rating > :is(.praxity-fieldset-reset, div), .praxity-block-signature > div, .praxity-block-journal > div, .praxity-dialogue[data-style=bubbles] .praxity-dialogue-bubble",
 				16,
 			],
-			[
-				".praxity-choice-key, .praxity-choice-key-spacer, input[type=checkbox], .mantine-Checkbox-input",
-				6,
-			],
+			[".praxity-choice-key, input[type=checkbox], .mantine-Checkbox-input", 6],
 			[
 				"mark, .praxity-required-marker, .praxity-task-list-marker, .praxity-labeled-graphic-pin, .praxity-progress-dot.is-current",
 				4,

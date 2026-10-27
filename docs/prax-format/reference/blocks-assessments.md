@@ -35,7 +35,7 @@ feedback: Continuing leaves the hazard in place.
 :::
 ```
 
-Single-answer choices offer a final, unkeyed "I don't know" answer. Set `{dontKnow}`, `{dontKnow=true}` or `{dontKnow=false}` to override the default. Values must be booleans, without quotes. This setting is an error on multiple-answer choices and other block types. When omitted, it is on for ungraded checks and off for questions that contribute to a score or pass gate, including a group's or module deck's effective pass gate.
+Single-answer choices offer a final "I don't know" answer. It has no letter; it shows a "?" marker in the key position. The marker is decorative, so the radio's accessible name stays "I don't know" in English or "Je ne sais pas" in French. Set `{dontKnow}`, `{dontKnow=true}` or `{dontKnow=false}` to override the default. Values must be booleans, without quotes. This setting is an error on multiple-answer choices and other block types. When omitted, it is on for ungraded checks and off for questions that contribute to a score or pass gate, including a group's or module deck's effective pass gate.
 
 Choosing it counts as answered for required questions and attempt gates. It earns no points and follows the same retry and gate rules as an incorrect answer. A pass gate stays locked while retries remain and opens after the submitted final attempt when no retries remain. The chosen row has a neutral question-mark icon and `You chose "I don't know"`, or `Vous avez choisi « Je ne sais pas »`. The correct answer and explanation appear after submission. Group summaries count these answers separately. Print includes the option last. Option narration, when enabled, reads it last.
 

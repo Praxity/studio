@@ -65,6 +65,36 @@ it("refuses a body whose closing tag the browser would invent", () => {
 	);
 });
 
+it("omits the three inert choice fact fields from recorded document hashes", async () => {
+	const input = fixture("choice", false);
+	input.content[0].blocks = [
+		{ id: "group", type: "assessmentGroup", data: { mode: "all", memberBlockIds: ["question"] } },
+		{
+			id: "question",
+			type: "assessment",
+			data: {
+				assessmentType: "choice",
+				gradingMode: "none",
+				dontKnow: true,
+				stem: [{ id: "stem", type: "text", data: { content: "Choose an item" } }],
+				response: {
+					type: "choice",
+					selectionMode: "single",
+					options: [
+						{ id: "yes", label: "Yes", isCorrect: true },
+						{ id: "no", label: "No" },
+					],
+				},
+			},
+		},
+	];
+	// Frozen renderer fixture bytes, including the question/group configuration
+	// apart from the same three fields excluded by the page-compiler guard.
+	expect((await recordBaseline([input])).choice.documents["tiny-page.html"]).toBe(
+		"a21f9338625453cbb6b090d402c5da81ee757764f32aae0132691dc8957ca27b",
+	);
+});
+
 it("matches renderer-only assets without removing authored lifetime references", () => {
 	const html = [
 		'<script src="self-check-lifetime-ABCDEFGH.classic.js"></script>',

@@ -19,6 +19,7 @@ import { detectVideoSource } from "@praxity/shared-blocks/video-url-utils";
 import { JSDOM } from "jsdom";
 import { type CourseExportInput, compileCourse, deployCourse } from "../src/build.ts";
 import { DEPLOYMENT_HEAD_MARKER, escapeJsonForScript } from "../src/html-gen.ts";
+import { stripChoiceStateFacts } from "../tests/fixtures/choice-facts.ts";
 import { compilerFixture, compilerIslandAssets } from "../tests/fixtures/page-compiler.ts";
 
 const hash = (html: string) => createHash("sha256").update(html).digest("hex");
@@ -144,7 +145,7 @@ export async function recordBaseline(fixtures?: readonly CourseExportInput[]) {
 							(_match, open: string, json: string, close: string) =>
 								`${open}${escapeJsonForScript(JSON.stringify(rendererMetadata(JSON.parse(json))))}${close}`,
 						);
-					html = normalizeRendererAssets(html);
+					html = normalizeRendererAssets(stripChoiceStateFacts(html));
 					for (const [local, original] of [...assets].reverse())
 						html = html.replaceAll(local, original);
 					documents[file.path] = hash(html);
