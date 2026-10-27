@@ -3,6 +3,7 @@ import {
 	assetReadSchema,
 	assetWriteSchema,
 	grammarSourceSchema,
+	narrationCleanupSchema,
 	narrationSynthesizeSchema,
 	projectConfigSchema,
 	settingsKeySchema,
@@ -10,6 +11,18 @@ import {
 } from "../../shared/ipc-schemas";
 
 describe("IPC Zod schemas", () => {
+	it("refuses oversized narration cleanup before validating its elements", () => {
+		const result = narrationCleanupSchema.safeParse({
+			paths: Array(1_000).fill(0),
+			currentSource: "",
+		});
+		expect(result.success).toBe(false);
+		if (result.success) throw new Error("Expected oversized cleanup refusal");
+		expect(result.error.issues).toEqual([
+			expect.objectContaining({ code: "too_big", path: ["paths"], maximum: 2 }),
+		]);
+	});
+
 	describe("grammarSourceSchema", () => {
 		it("accepts valid grammar text", () => {
 			const result = grammarSourceSchema.safeParse("---\ntitle: Hello\n---\n\n--- Intro\n");

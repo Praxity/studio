@@ -416,7 +416,7 @@ it("returns a typed source-ceiling refusal for a 5,000,001-unit lesson without t
 	expect(result.error.issues).toEqual([
 		expect.objectContaining({
 			code: "too_big",
-			type: "string",
+			origin: "string",
 			maximum: 5_000_000,
 			inclusive: true,
 			path: ["lessons", 0, "source"],
