@@ -37,6 +37,7 @@ function capabilityMatches(supplied: string, expected: string) {
 /** Only media and captured compiled manifests live here. No editor API or project mount. */
 export async function startStudioReadOnlyServer(options: {
 	projectDir: string;
+	preferredPort?: number;
 	getEditorOrigin: () => string;
 	getInspectionScript?: () => Promise<string>;
 	getCanvasHead?: () => CanvasPreviewDescriptor | undefined;
@@ -44,7 +45,6 @@ export async function startStudioReadOnlyServer(options: {
 		store: ReviewStore;
 		capability: string;
 		assetsDir?: string;
-		preferredPort?: number;
 		onPortFallback?: () => void;
 	};
 }) {
@@ -281,6 +281,7 @@ export async function startStudioReadOnlyServer(options: {
 							page: canvasPageScope(artifactUrl.pathname),
 							pages: resolved.hosted.deployment.manifest.pages.map((page) => ({
 								id: page.id,
+								title: page.title,
 								href: `/canvas${new URL(`${encodeURIComponent(page.slug)}.html`, artifactUrl).pathname}?praxity-resume=0#${encodeURIComponent(page.id)}`,
 							})),
 							...(draftOriginChanged ? { draftOriginChanged: true } : {}),
@@ -391,7 +392,7 @@ export async function startStudioReadOnlyServer(options: {
 			}
 		});
 	}
-	const preferred = options.review?.preferredPort;
+	const preferred = options.preferredPort;
 	if (
 		preferred !== undefined &&
 		(!Number.isInteger(preferred) || preferred < 1 || preferred > 65535)

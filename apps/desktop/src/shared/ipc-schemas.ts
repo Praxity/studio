@@ -7,7 +7,9 @@ import { z } from "zod";
 
 export const studioPortSchema = z.number().int().min(1).max(65_535);
 
-export const grammarSourceSchema = z.string().max(5_000_000);
+export const grammarSourceSchema = z
+	.string()
+	.max(5_000_000, "String must contain at most 5000000 character(s)");
 
 export const narrationAuthoringReadSchema = z
 	.object({
@@ -329,7 +331,7 @@ export const telemetryTrackSchema = z.object({
 		.min(1)
 		.max(100)
 		.regex(/^[a-z][a-z0-9_]*$/, "Event name must be snake_case"),
-	properties: z.record(z.unknown()).optional(),
+	properties: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const reportIssueSchema = z.object({
@@ -357,5 +359,5 @@ export const telemetryCaptureExceptionSchema = z.object({
 	message: z.string(),
 	name: z.string(),
 	stack: z.string().optional(),
-	context: z.record(z.unknown()).optional(),
+	context: z.record(z.string(), z.unknown()).optional(),
 });

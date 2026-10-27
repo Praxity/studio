@@ -100,6 +100,7 @@ export async function servedReview(locale: string, deck = false) {
 			pages: [
 				{
 					id: "page",
+					title: "Review fixture",
 					lessonId: "lesson",
 					slug: "index",
 					runtime: { mode: "islands", islands: [], legacyReasons: [] },
