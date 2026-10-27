@@ -771,6 +771,7 @@ for (const action of actions) {
 				).restoredSiblingsResult,
 		);
 		const result = await settled.jsonValue();
+		if (!result) throw new Error("Missing restored siblings result");
 		if ("error" in result) throw new Error(result.error);
 		expect(result.firstAttributes).toEqual(["true", "true"]);
 		expect(result.events).toEqual(
