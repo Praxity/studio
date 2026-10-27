@@ -382,17 +382,16 @@ export function selectPageBlocks(
 		if (!inventory.files.some((entry) => entry.path === file))
 			throw new PageSelectionRefusal("orphaned", "lessonMissing", { file });
 	}
-	let pages = inventory.blocks.filter(
+	const pages = inventory.blocks.filter(
 		(entry) =>
 			entry.kind === "page" &&
 			(file
 				? entry.file === file && String(entry.pageNumber) === page
-				: entry.page === page || entry.slug === page || String(entry.pageNumber) === page),
+				: entry.page === page ||
+					entry.slug === page ||
+					entry.identitySlug === page ||
+					String(entry.pageNumber) === page),
 	);
-	if (!file && !pages.length)
-		pages = inventory.blocks.filter(
-			(entry) => entry.kind === "page" && entry.identitySlug === page,
-		);
 	if (!pages.length && file)
 		throw new PageSelectionRefusal("orphaned", "pageMissing", { file, page });
 	if (!pages.length) {

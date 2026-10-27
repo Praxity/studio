@@ -131,9 +131,9 @@ it("inspection reports live export slugs after a heading rename, with course-wid
 		inventory.blocks.find((block) => block.file === "z-first.prax" && block.blockNumber === 1),
 	).toMatchObject({ slug: "new-heading", identitySlug: "old-heading" });
 	const selection = await readBlockInventory(root);
-	expect(selectPageBlocks(selection, "old-heading", 1)).toEqual(
-		selectPageBlocks(selection, "new-heading", 1),
-	);
+	expect(selectPageBlocks(selection, "old-heading", 1)[0]).toMatchObject({ file: "z-first.prax" });
+	expect(() => selectPageBlocks(selection, "new-heading-2", 1)).toThrow("pageAmbiguous");
+	expect(() => selectPageBlocks(selection, "new-heading", 1)).toThrow("pageAmbiguous");
 	const versionPath = join(root, "viewer-version.json");
 	await writeFile(versionPath, JSON.stringify({ version: "test" }));
 	const input = await buildCourseExportInput({
