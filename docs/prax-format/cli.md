@@ -318,6 +318,16 @@ praxity edit <course> setProperty --page lesson-03.prax:2 --block 1 --arg name=t
 Each source node has `address`, `file`, `nodeId`, node `revision`, `fileRevision`,
 `type`, `kind`, `label`, page name and slug, one-based `pageNumber` and `blockNumber`,
 inclusive `startLine` and `endLine`, exact `source`, and `settings`.
+`slug` is the live HTML export filename without `.html`, derived from the current
+page title by the same formatter as export. Collisions are resolved across visible
+pages in manifest lesson order, including reserved utility filenames. Hidden pages
+and pages in unlisted lessons have `slug: null` because course export omits them.
+`identitySlug` retains the identity store's allocated page slug, which survives
+heading edits and changes only through an explicit identity slug rename. It is
+separate from the export filename. This field is an additive schema-1 extension;
+consumers should tolerate added fields. Page selectors match current titles,
+export slugs, page numbers and identity slugs together, with no precedence.
+If these identify different pages, selection refuses without writes.
 `file` identifies the lesson. `--eligibility` adds `operations`, the eligible
 single-node operations from registry probes. These probes plan edits against the
 course and can be expensive on large courses. The default omits `operations`
@@ -341,7 +351,8 @@ including case and spacing. Absolute paths, traversal, backslashes and colons in
 lesson paths are refused. Course admission refuses lesson symlinks, including links
 escaping the course. The page number after `:`
 must be a positive whole number. Bare page numbers still work when unique, including
-in a one-lesson course. If several pages match, the refusal lists each
+in a one-lesson course. A unique identity slug or live export slug also works.
+If several pages match across any selector forms, the refusal lists each
 `<lesson file>:<page>` selector and page title, before checking the block number.
 The JSON refusal includes the same choices in `candidates[]`, each with `selector`
 and `title`. Reuse a returned selector with `--page`; no block inspection is needed.

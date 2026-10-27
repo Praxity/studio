@@ -8,6 +8,8 @@ import { lineColumn } from "@praxity/grammar/src/v4/lex/index.ts";
 import { getDefinition, TURN_INTO, WRAP_IN } from "@praxity/grammar/src/v4/schema.ts";
 import { definitionOf } from "@praxity/grammar/src/v4/tree/index.ts";
 import { draftRange, locateTree } from "@praxity/operations/src/ranges.ts";
+import { buildSlugMap } from "@praxity/shared-blocks/viewer/page-slug";
+import { splitBlocksIntoPages } from "@praxity/shared-blocks/viewer/split-pages";
 import { type EditorSnapshot, prepareEditorSnapshot } from "../../shared/editor-session";
 import { readCourseManifestData } from "../course-manifest-io";
 import {
@@ -117,6 +119,15 @@ export async function readBlockInventory(root: string, includeOperations = false
 		root,
 		async (admitted) => {
 			const current = await resolveLessonSources(admitted);
+			const { orderedLessons } = await readCourseManifestData(admitted);
+			// Publishing allocates visible page filenames across the manifest's lesson order.
+			const exportSlugs = buildSlugMap(
+				orderedLessons.flatMap((file) => {
+					const lesson = current.lessons.get(file);
+					if (!lesson) throw new Error("Missing inspected lesson");
+					return splitBlocksIntoPages(lesson.blocks, "");
+				}),
+			);
 			const stored = await loadIdentityStore(admitted);
 			const storedIds = new Set(
 				stored.snapshots.flatMap((snapshot) => Object.keys(snapshot.nodes)),
@@ -311,7 +322,8 @@ export async function readBlockInventory(root: string, includeOperations = false
 						page: page?.node.subject?.value ?? null,
 						pageNumber: page?.number ?? null,
 						blockNumber: page?.blockNumbers.get(entry.node) ?? null,
-						slug: pageId ? (identities.get(pageId)?.slug ?? null) : null,
+						slug: pageId ? (exportSlugs.get(pageId) ?? null) : null,
+						identitySlug: pageId ? (identities.get(pageId)?.slug ?? null) : null,
 						startLine: lineAt(entry.node.span.start),
 						endLine: lineAt(Math.max(entry.node.span.start, entry.node.span.end - 1)),
 						source: target.expectedText ?? "",
@@ -375,7 +387,10 @@ export function selectPageBlocks(
 			entry.kind === "page" &&
 			(file
 				? entry.file === file && String(entry.pageNumber) === page
-				: entry.page === page || entry.slug === page || String(entry.pageNumber) === page),
+				: entry.page === page ||
+					entry.slug === page ||
+					entry.identitySlug === page ||
+					String(entry.pageNumber) === page),
 	);
 	if (!pages.length && file)
 		throw new PageSelectionRefusal("orphaned", "pageMissing", { file, page });

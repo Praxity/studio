@@ -145,6 +145,76 @@ it("O7 page and block resolve one-based positions", async () => {
 	expect(result.exitCode, result.stderr).toBe(0);
 });
 
+async function renamedPageFixture() {
+	const root = await fixture("# Alpha\n\nFirst paragraph.\n\n# Beta\n\nSecond paragraph.\n");
+	const result = await runPraxityCli(
+		[
+			"edit",
+			root,
+			"setText",
+			"--at",
+			"lesson.prax#1",
+			"--arg",
+			"field=subject",
+			"--arg",
+			"text=Beta",
+			"--json",
+		],
+		runtime,
+	);
+	expect(result.exitCode, result.stdout || result.stderr).toBe(0);
+	return root;
+}
+
+it.each([false, true])(
+	"conflicting live and identity page slugs refuse without writes, dryRun=%s",
+	async (dryRun) => {
+		const root = await renamedPageFixture();
+		const before = await hashes(root);
+		const result = await runPraxityCli(
+			[
+				"edit",
+				root,
+				"deleteBlocks",
+				"--page",
+				"beta",
+				"--block",
+				"1",
+				...(dryRun ? ["--dry-run"] : []),
+				"--json",
+			],
+			runtime,
+		);
+		expect(result.exitCode).toBe(4);
+		expect(JSON.parse(result.stdout)).toMatchObject({
+			schema: 1,
+			ok: false,
+			code: "ambiguous",
+			candidates: [
+				{ selector: "lesson.prax:1", title: "Beta" },
+				{ selector: "lesson.prax:2", title: "Beta" },
+			],
+		});
+		expect(await hashes(root)).toEqual(before);
+	},
+);
+
+it.each([
+	["alpha", "# Beta\n\n# Beta\n\nSecond paragraph.\n"],
+	["beta-2", "# Beta\n\nFirst paragraph.\n\n# Beta\n"],
+])(
+	"unique renamed-page slug %s selects exactly its page through the CLI",
+	async (page, expected) => {
+		const root = await renamedPageFixture();
+		const result = await runPraxityCli(
+			["edit", root, "deleteBlocks", "--page", page, "--block", "1", "--json"],
+			runtime,
+		);
+		expect(result.exitCode, result.stdout || result.stderr).toBe(0);
+		expect(await readFile(join(root, "lesson.prax"), "utf8")).toBe(expected);
+	},
+);
+
 it.each(["1", "Safety:2"])(
 	"T3 one-lesson page selector %s preserves exact edited bytes",
 	async (page) => {
