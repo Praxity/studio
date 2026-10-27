@@ -13,6 +13,7 @@ import {
 	draftPersistenceOperationSchema,
 	draftPutSchema,
 	draftSchema,
+	EDITOR_COLLECTION_LIMIT,
 	type LocalClipboard,
 	parseEditorInput,
 } from "../../shared/editor-session";
@@ -40,7 +41,7 @@ import {
 
 const bucketFields = {
 	file: studioLessonFilenameSchema,
-	drafts: z.array(draftSchema),
+	drafts: z.array(draftSchema).max(EDITOR_COLLECTION_LIMIT),
 };
 const bucketSchema = z
 	.object({
@@ -199,7 +200,7 @@ function bucketChanges(
 	return [
 		{
 			path,
-			content: JSON.stringify({ schema: 2, file, drafts }),
+			content: JSON.stringify(parseEditorInput(bucketSchema, { schema: 2, file, drafts })),
 			expectedContent: existing?.path === path ? existing.text : null,
 		},
 		...(existing && existing.path !== path

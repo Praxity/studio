@@ -29,6 +29,10 @@ import { z } from "zod";
 import { grammarSourceSchema, studioLessonFilenameSchema } from "./ipc-schemas";
 import type { ProjectWriteResult } from "./project-write-errors";
 
+// Ten times the frame bridge's 5,000-node ceiling leaves headroom for course
+// files, selected nodes, draft diagnostics/buckets and manifest lists before validation.
+export const EDITOR_COLLECTION_LIMIT = 50_000;
+
 export const sourceRevisionSchema = z.string().regex(/^[a-f0-9]{64}$/u);
 export const previewRenderDraftSchema = z
 	.object({
@@ -45,7 +49,8 @@ export const nodeRefSchema = z
 	.object({
 		kind: z.literal("node"),
 		nodeId: z.string().uuid().nullable(),
-		path: z.array(z.number().int().nonnegative().safe()),
+		// Paths encode tree ancestry; 128 levels is over 20x the deepest authored fixture.
+		path: z.array(z.number().int().nonnegative().safe()).max(128),
 		fingerprint: sourceRevisionSchema,
 	})
 	.strict();
@@ -89,25 +94,27 @@ export const draftSchema = seedSchema
 		selection: z.tuple([offset, offset]),
 		generation: offset,
 		status: z.enum(["clean", "dirty", "invalid", "held", "conflict", "orphaned"]),
-		diagnostics: z.array(
-			z
-				.object({
-					file: studioLessonFilenameSchema,
-					ref: target.nullable(),
-					severity: z.enum(["error", "warning", "info"]),
-					message: z
-						.object({
-							key: z
-								.string()
-								.startsWith("op.")
-								.transform((key) => key as `op.${string}`),
-							params: z.record(safeName, z.union([z.string(), z.number().finite()])),
-						})
-						.strict(),
-					range: range.optional(),
-				})
-				.strict(),
-		),
+		diagnostics: z
+			.array(
+				z
+					.object({
+						file: studioLessonFilenameSchema,
+						ref: target.nullable(),
+						severity: z.enum(["error", "warning", "info"]),
+						message: z
+							.object({
+								key: z
+									.string()
+									.startsWith("op.")
+									.transform((key) => key as `op.${string}`),
+								params: z.record(safeName, z.union([z.string(), z.number().finite()])),
+							})
+							.strict(),
+						range: range.optional(),
+					})
+					.strict(),
+			)
+			.max(EDITOR_COLLECTION_LIMIT),
 		changedAt: z.number().finite(),
 		validatedGeneration: z.number().int().min(-1).safe(),
 		persistedGeneration: z.number().int().min(-1).safe(),
@@ -121,7 +128,7 @@ export const clipboardSchema = z
 	.object({
 		file: studioLessonFilenameSchema,
 		text: grammarSourceSchema,
-		nodeIds: z.array(z.string().uuid()).min(1),
+		nodeIds: z.array(z.string().uuid()).min(1).max(EDITOR_COLLECTION_LIMIT),
 	})
 	.strict()
 	.refine((record) => new Set(record.nodeIds).size === record.nodeIds.length);
@@ -201,7 +208,7 @@ const jsonValue: z.ZodType<JsonValue> = z.lazy(() =>
 		z.boolean(),
 		z.number().finite(),
 		z.string(),
-		z.array(jsonValue),
+		z.array(jsonValue).max(EDITOR_COLLECTION_LIMIT),
 		z.record(safeName, jsonValue),
 	]),
 );
@@ -618,8 +625,9 @@ export function editorDraftSeed(
 	};
 }
 
-// Zod can discard __proto__ while cloning. Reject it, inherited objects and
+// Zod 4 records skip __proto__ before key validation. Reject it, inherited objects and
 // prototype names before a schema or YAML setter can interpret them.
+// Keep only the first refusal so hostile collections cannot amplify pre-pass issues.
 const safeJson = z.unknown().superRefine((input, context) => {
 	const visit = (value: unknown): void => {
 		if (value === null || typeof value !== "object") return;
@@ -628,6 +636,7 @@ const safeJson = z.unknown().superRefine((input, context) => {
 			return;
 		}
 		for (const key of Object.keys(value)) {
+			if (context.issues.length) return;
 			if (key === "prototype" || Object.hasOwn(Object.prototype, key))
 				context.addIssue({ code: "custom", message: "Prototype keys are not allowed" });
 			else visit((value as Record<string, unknown>)[key]);
