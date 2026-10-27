@@ -291,6 +291,15 @@ praxity edit <course> setProperty --page lesson-03.prax:2 --block 1 --arg name=t
 Each source node has `address`, `file`, `nodeId`, node `revision`, `fileRevision`,
 `type`, `kind`, `label`, page name and slug, one-based `pageNumber` and `blockNumber`,
 inclusive `startLine` and `endLine`, exact `source`, and `settings`.
+`slug` is the live HTML export filename without `.html`, derived from the current
+page title by the same formatter as export. Collisions are resolved across visible
+pages in manifest lesson order, including reserved utility filenames. Hidden pages
+and pages in unlisted lessons have `slug: null` because course export omits them.
+`identitySlug` retains the identity store's allocated page slug, which survives
+heading edits and changes only through an explicit identity slug rename. It is
+separate from the export filename. This field is an additive schema-1 extension;
+consumers should tolerate added fields. Page selectors fall back to identity slugs
+for compatibility when no current title, export slug or page number matches.
 `file` identifies the lesson. `--eligibility` adds `operations`, the eligible
 single-node operations from registry probes. These probes plan edits against the
 course and can be expensive on large courses. The default omits `operations`

@@ -1,11 +1,18 @@
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { preparePublicationContext } from "@praxity/export-pipeline";
 import { afterEach, expect, it } from "vitest";
+import { generateHtmlPages } from "../../../../../packages/export-pipeline/src/html-pages";
 import { persistFixtureIdentity } from "../../test-utils/identity-fixture";
 import { runPraxityCli } from "../cli";
-import { inspectBlocks } from "../operations/block-inspection";
+import { buildCourseExportInput } from "../export/build-export-input-from-project";
+import {
+	inspectBlocks,
+	readBlockInventory,
+	selectPageBlocks,
+} from "../operations/block-inspection";
 
 const roots: string[] = [];
 const runtime = { appVersion: "test", exportAssetsDir: "unused" };
@@ -47,6 +54,7 @@ it("the block inspection CLI keeps the addressable fields and schema settings wi
 		"endLine",
 		"file",
 		"fileRevision",
+		"identitySlug",
 		"kind",
 		"label",
 		"nodeId",
@@ -76,6 +84,86 @@ it("the block inspection CLI keeps the addressable fields and schema settings wi
 	});
 	expect(note.nodeId).toMatch(/^[a-f0-9-]{36}$/);
 	expect(await readFile(join(root, "lesson.prax"), "utf8")).toBe(source);
+});
+
+it("inspection reports live export slugs after a heading rename, with course-wide collisions", async () => {
+	const root = await fixture({
+		"unlisted.prax": "# New heading\n\nUnlisted paragraph.\n",
+		"z-first.prax": "# Old heading\n\nFirst paragraph.\n\n# Hidden {hide}\n\nHidden paragraph.\n",
+		"a-second.prax": "# New heading\n\nSecond paragraph.\n\n# Glossary\n\nThird paragraph.\n",
+	});
+	await writeFile(
+		join(root, "course.yaml"),
+		"title: Test\nlessons: [z-first.prax, a-second.prax]\n",
+	);
+	await persistFixtureIdentity(root);
+	const renamed = await runPraxityCli(
+		[
+			"edit",
+			root,
+			"setText",
+			"--at",
+			"z-first.prax#1",
+			"--arg",
+			"field=subject",
+			"--arg",
+			"text=New heading",
+			"--json",
+		],
+		runtime,
+	);
+	expect(renamed.exitCode, renamed.stdout || renamed.stderr).toBe(0);
+	const result = await runPraxityCli(["inspect", root, "--blocks", "--json"], runtime);
+	expect(result.exitCode, result.stdout || result.stderr).toBe(0);
+	const inventory = JSON.parse(result.stdout) as Awaited<ReturnType<typeof inspectBlocks>>;
+	const pages = inventory.blocks.filter((block) => block.kind === "page");
+	expect(pages.map((page) => [page.file, page.slug])).toEqual([
+		["a-second.prax", "new-heading-2"],
+		["a-second.prax", "glossary-2"],
+		["unlisted.prax", null],
+		["z-first.prax", "new-heading"],
+		["z-first.prax", null],
+	]);
+	expect(
+		pages.find((page) => page.page === "New heading" && page.file === "z-first.prax"),
+	).toMatchObject({ identitySlug: "old-heading", slug: "new-heading" });
+	expect(
+		inventory.blocks.find((block) => block.file === "z-first.prax" && block.blockNumber === 1),
+	).toMatchObject({ slug: "new-heading", identitySlug: "old-heading" });
+	const selection = await readBlockInventory(root);
+	expect(selectPageBlocks(selection, "old-heading", 1)).toEqual(
+		selectPageBlocks(selection, "new-heading", 1),
+	);
+	const versionPath = join(root, "viewer-version.json");
+	await writeFile(versionPath, JSON.stringify({ version: "test" }));
+	const input = await buildCourseExportInput({
+		projectDir: root,
+		scope: "course",
+		completionThreshold: 0,
+		viewerVersionPath: versionPath,
+	});
+	const context = await preparePublicationContext(input);
+	const output = join(root, "html");
+	await generateHtmlPages(
+		{
+			id: context.normalizedCourse.id,
+			title: context.normalizedCourse.title,
+			sourceLocale: context.normalizedCourse.sourceLocale,
+			pages: context.normalizedCourse.content,
+			totalPages: context.normalizedCourse.content.length,
+		},
+		output,
+		{ loaderFilename: "island-loader.js", islandFilenames: { nav: "island-nav.js" } },
+	);
+	const files = await readdir(output);
+	expect(files).toEqual(
+		expect.arrayContaining(["new-heading.html", "new-heading-2.html", "glossary-2.html"]),
+	);
+	expect(files).not.toContain("old-heading.html");
+	expect(files).not.toContain("hidden.html");
+	for (const page of pages.filter((page) => page.slug !== null)) {
+		expect(files).toContain(`${page.slug}.html`);
+	}
 });
 
 it("eligibility opts into registry operation checks while keeping every default field", async () => {
