@@ -1,12 +1,332 @@
-import { mkdir } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { contrastRatio } from "@praxity/shared-blocks/color-math";
+import { servedReview } from "../../../../apps/desktop/e2e/browser-editor/review-fixture";
 import { choiceBaselines } from "./choice-baselines";
 import { readTestEnv } from "./helpers";
 
 const SHOTS = process.env.PRAXITY_ALIGNMENT_SHOTS;
 const PHASE = process.env.PRAXITY_ALIGNMENT_PHASE;
+
+async function readMeasurements(path: string): Promise<Array<unknown>> {
+	try {
+		return JSON.parse(await readFile(path, "utf8"));
+	} catch (error) {
+		if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+		throw error;
+	}
+}
+
+// Zero-width baseline probes expose the font's ex/cap metrics without relying
+// on the height of a line box or the particular letters in an answer.
+async function markerMeasurements(card: Locator) {
+	return card.locator(".praxity-assessment-choice-option").evaluateAll((rows) =>
+		rows.map((row, index) => {
+			const label = row.querySelector<HTMLElement>(".praxity-choice-label");
+			const key = row.querySelector<HTMLElement>(".praxity-choice-key, .praxity-choice-key-spacer");
+			if (!label || !key) throw new Error("Missing marker or option label");
+			const probe = (height: string) => {
+				const span = document.createElement("span");
+				span.style.cssText = `display:inline-block;width:0;height:${height};padding:0;margin:0;border:0;vertical-align:baseline`;
+				return span;
+			};
+			const textProbe = probe("1ex");
+			label.prepend(textProbe);
+			const textBox = textProbe.getBoundingClientRect();
+			const textMiddle = textBox.bottom - textBox.height / 2;
+			textProbe.remove();
+			const keyBox = key.getBoundingClientRect();
+			const rowBox = row.getBoundingClientRect();
+			const center = keyBox.top + keyBox.height / 2;
+			const pseudo = getComputedStyle(key, "::before");
+			const rule = document.createElement("style");
+			rule.textContent = "[data-marker-probe]::before { content:none !important }";
+			document.head.append(rule);
+			key.setAttribute("data-marker-probe", "");
+			const glyph = document.createElement("span");
+			glyph.style.setProperty("text-box", pseudo.getPropertyValue("text-box"));
+			glyph.textContent = row.hasAttribute("data-dont-know")
+				? "?"
+				: String.fromCharCode(65 + index);
+			const capProbe = probe("1cap");
+			glyph.append(capProbe);
+			key.append(glyph);
+			const capBox = capProbe.getBoundingClientRect();
+			const shift = Math.abs(key.getBoundingClientRect().top - keyBox.top);
+			glyph.remove();
+			key.removeAttribute("data-marker-probe");
+			rule.remove();
+			const range = document.createRange();
+			range.selectNodeContents(label);
+			const lines = new Set(
+				Array.from(range.getClientRects())
+					.filter((r) => r.width > 0)
+					.map((r) => r.top),
+			).size;
+			const style = getComputedStyle(key);
+			return {
+				glyph: row.hasAttribute("data-dont-know") ? "?" : String.fromCharCode(65 + index),
+				m1: Math.abs(center - (capBox.bottom - capBox.height / 2)),
+				m2: Math.abs(center - textMiddle),
+				m3: Math.abs(rowBox.top + rowBox.height / 2 - textMiddle),
+				x: keyBox.x - rowBox.x,
+				width: keyBox.width,
+				height: keyBox.height,
+				rowHeight: rowBox.height,
+				lines,
+				hasStatus: row.querySelector(".praxity-choice-status") !== null,
+				shift,
+				border: style.border,
+				radius: style.borderRadius,
+				display: style.display,
+			};
+		}),
+	);
+}
+
+const markerConditions = [
+	{ name: "light-1280", width: 1280 },
+	{ name: "dark-1280", width: 1280, dark: true },
+	{ name: "forced-1280", width: 1280, forced: true },
+	{ name: "large-text-1280", width: 1280, large: true },
+	{ name: "zoom200", width: 640, scale: 2 },
+	{ name: "reflow-320", width: 320 },
+	{ name: "rtl-390", width: 390, rtl: true },
+	{ name: "rtl-320", width: 320, rtl: true },
+	{ name: "fr-1280", width: 1280, fr: true },
+] as const;
+
+for (const condition of markerConditions) {
+	test(`marker layout evidence ${condition.name}`, async ({ browser }, testInfo) => {
+		const settings = {
+			dark: false,
+			forced: false,
+			large: false,
+			rtl: false,
+			fr: false,
+			scale: 1,
+			...condition,
+		};
+		const context = await browser.newContext({
+			viewport: { width: settings.width, height: 900 },
+			deviceScaleFactor: settings.scale,
+			reducedMotion: "reduce",
+			forcedColors: settings.forced ? "active" : "none",
+		});
+		const page = await context.newPage();
+		const records: Array<unknown> = [];
+		const published = `${readTestEnv().url}/choice-control-alignment/choice-control-alignment.html`;
+		const url =
+			settings.dark || settings.fr
+				? `${readTestEnv().url}/dont-know-${settings.dark ? "clay-true-en" : "ink-false-fr"}-false/index.html`
+				: published;
+		const card = settings.fr
+			? page.locator('[data-island="assessment"][data-block-id="practice"]')
+			: choice(page, "Compare the markers");
+		await context.addInitScript(({ large, rtl }) => {
+			localStorage.setItem(
+				"praxity-a11y",
+				JSON.stringify({ textSize: large ? "large" : "default", focusChoice: false }),
+			);
+			if (rtl)
+				document.addEventListener("DOMContentLoaded", () => {
+					document.documentElement.dir = "rtl";
+				});
+		}, settings);
+		const open = async () => {
+			await page.goto(url);
+			await card.scrollIntoViewIfNeeded();
+			await expect(card).toHaveAttribute("data-hydrated", "");
+			await page.evaluate(() => document.fonts.ready);
+		};
+		const capture = async (state: string) => {
+			await page.mouse.move(0, 0);
+			if (state === "hover") await card.locator(".praxity-assessment-choice-option").nth(1).hover();
+			await waitForControlPaint(page);
+			const measurements = await markerMeasurements(card);
+			records.push({ phase: PHASE ?? "after", condition: settings.name, state, measurements });
+			if (SHOTS && PHASE && testInfo.project.name === "chromium") {
+				await mkdir(SHOTS, { recursive: true });
+				await card.screenshot({ path: resolve(SHOTS, `${PHASE}-${state}-${settings.name}.png`) });
+			}
+			if (PHASE === "before" || testInfo.project.name !== "chromium") return;
+			if (settings.forced) {
+				for (const row of measurements) expect.soft(row.display).toBe("none");
+				for (const radio of await card.getByRole("radio").all()) {
+					await expect(radio).toBeVisible();
+					expect(await radio.evaluate((e) => getComputedStyle(e).opacity)).toBe("1");
+				}
+				return;
+			}
+			for (const row of measurements) {
+				expect
+					.soft(row.shift, "Probe preserves the rendered marker position")
+					.toBeLessThanOrEqual(0.1);
+				expect.soft(row.m1, `${state} ${row.glyph} M1`).toBeLessThanOrEqual(0.5);
+				expect
+					.soft(row.m2, `${state} ${row.glyph} M2 first line`)
+					.toBeLessThanOrEqual(settings.large ? 1.5 : 1);
+				if (row.lines === 1 && !row.hasStatus)
+					expect
+						.soft(row.m3, `${state} ${row.glyph} M3`)
+						.toBeLessThanOrEqual(settings.large ? 1.5 : 1);
+			}
+			const first = measurements[0];
+			const unknown = measurements.at(-1);
+			if (!unknown) throw new Error("Missing unknown row measurement");
+			for (const property of ["x", "width", "height", "rowHeight"] as const) {
+				if (property === "rowHeight" && first.hasStatus !== unknown.hasStatus) continue;
+				expect
+					.soft(Math.abs(unknown[property] - first[property]), `M4 ${property}`)
+					.toBeLessThanOrEqual(0.5);
+			}
+			expect.soft(unknown.radius).toBe(first.radius);
+			if (!state.startsWith("selected") && !state.startsWith("feedback"))
+				expect.soft(unknown.border).toBe(first.border);
+			expect
+				.soft(
+					await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+					"No horizontal overflow",
+				)
+				.toBe(true);
+		};
+		try {
+			await open();
+			await capture("default");
+			if (!settings.dark && !settings.fr) {
+				const rows = await markerMeasurements(card);
+				expect(rows[3].lines, "Invented option wraps").toBeGreaterThanOrEqual(3);
+				await capture("wrapped");
+			}
+			if (["light-1280", "dark-1280", "forced-1280"].includes(settings.name)) {
+				if (settings.name === "light-1280") await capture("hover");
+				await card.getByRole("radio").first().focus();
+				await page.keyboard.press("ArrowDown");
+				await page.keyboard.press("Tab");
+				await page.keyboard.press("Shift+Tab");
+				await expect(card.getByRole("radio").nth(1)).toBeFocused();
+				await capture("focus-visible");
+				await capture("selected");
+			} else if (settings.name === "reflow-320") {
+				await card.getByRole("radio").nth(1).check();
+				await capture("selected");
+			}
+			if (["light-1280", "forced-1280"].includes(settings.name)) {
+				await card.getByRole("radio").last().check();
+				await capture("selected-dontknow");
+			}
+			if (["light-1280", "dark-1280"].includes(settings.name)) {
+				for (const [state, index] of [
+					["correct", 0],
+					["incorrect", 1],
+					["unknown", -1],
+				] as const) {
+					await open();
+					const radios = card.getByRole("radio");
+					await (index === -1 ? radios.last() : radios.nth(index)).check();
+					await card.locator("[data-assessment-submit]").click();
+					await expect(radios.first()).toBeDisabled();
+					await expect(card.locator(`[data-choice-result="${state}"]`)).toHaveCount(1);
+					await capture(`feedback-${state}`);
+				}
+			}
+			if (settings.name === "light-1280") {
+				let release = () => {};
+				const gate = new Promise<void>((resolve) => {
+					release = resolve;
+				});
+				await page.route("**/island-loader-*.js", async (route) => {
+					await gate;
+					await route.continue();
+				});
+				try {
+					await page.goto(url, { waitUntil: "commit" });
+					await expect(card).toBeVisible();
+					await page.waitForFunction(() =>
+						Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')).every(
+							(link) => link.sheet,
+						),
+					);
+					await page.evaluate(async () => {
+						const label = document.querySelector(".praxity-choice-label");
+						if (!label) throw new Error("Missing shell label");
+						const style = getComputedStyle(label);
+						await document.fonts.load(`${style.fontWeight} ${style.fontSize} ${style.fontFamily}`);
+					});
+					await expect(card).not.toHaveAttribute("data-hydrated");
+					await capture("disabled");
+				} finally {
+					release();
+				}
+				await page.unroute("**/island-loader-*.js");
+				await open();
+				// Use the composer harness's real review store and pin overlay on
+				// the published document, with its assets still served by the fixture.
+				const html = await (await page.request.get(published)).text();
+				const review = await servedReview("en");
+				try {
+					await page.route(review.url, async (route) => {
+						const response = await route.fetch();
+						const shell = await response.text();
+						const config = shell.match(
+							/<script type="application\/json" id="praxity-review-config">[\s\S]*?<\/script>/,
+						)?.[0];
+						if (!config) throw new Error("Missing review harness config");
+						await route.fulfill({
+							response,
+							body: html.replace(
+								"<head>",
+								`<head><base href="${published}">${config}<link rel="stylesheet" href="/_praxity/review/review-comments.css"><script defer src="/_praxity/review/review-comments.js" data-praxity-review-comments="true"></script>`,
+							),
+						});
+					});
+					await page.goto(review.url);
+					await card.scrollIntoViewIfNeeded();
+					await expect(card).toHaveAttribute("data-hydrated", "");
+					const before = await markerMeasurements(card);
+					await page.getByRole("button", { name: "Pin", exact: true }).click();
+					await card.locator(".praxity-assessment-choice-option").first().click();
+					await page
+						.locator(".prx-review-composer textarea")
+						.fill("Check the first option alignment.");
+					await page.locator(".prx-review-submit").click();
+					await page.getByRole("button", { name: "Close comments" }).click();
+					await expect(page.locator(".prx-review-marker")).toBeVisible();
+					await capture("pinned");
+					expect(await markerMeasurements(card)).toEqual(before);
+				} finally {
+					await page.goto("about:blank");
+					await review.close();
+				}
+			}
+		} finally {
+			await testInfo.attach("marker-measurements", {
+				body: JSON.stringify(records, null, 2),
+				contentType: "application/json",
+			});
+			if (SHOTS && PHASE && testInfo.project.name === "chromium") {
+				const path = resolve(SHOTS, "measurements.json");
+				const previous = await readMeasurements(path);
+				await writeFile(
+					path,
+					JSON.stringify(
+						[
+							...previous.filter((r) => {
+								const record = r as { phase: string; condition: string };
+								return record.phase !== PHASE || record.condition !== settings.name;
+							}),
+							...records,
+						],
+						null,
+						2,
+					),
+				);
+			}
+			await context.close();
+		}
+	});
+}
 
 function choice(page: Page, title: string): Locator {
 	return page.locator('[data-island="assessment"]').filter({
