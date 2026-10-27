@@ -35,6 +35,12 @@ it("records exact per-document additions against main", () => {
 			},
 		],
 	};
+	// Regenerate by capturing every slug from this exact fixture through
+	// prepareHtmlCourse/renderHtmlDocument, then stripChoiceStateFacts and SHA-256.
+	// Compare raw old/new documents before accepting a new hash or UTF-8 byte count.
+	// Change baseBytes/baseHash only for reviewed markup changes; the facts-only
+	// delta must remain independently checked. Do not copy failure output blindly.
+	// Verify: pnpm --filter @praxity/export-pipeline exec vitest run tests/compiled-choice-bytes.test.ts --maxWorkers=1
 	// Each fact now retains the visible term label in "Pick one".
 	const expected = [
 		["practice", 26454, 1842, "cfb71a00871c56b0c63a7bf0518fbf7c99ff26fb560f487f0a3fefa180b72163"],

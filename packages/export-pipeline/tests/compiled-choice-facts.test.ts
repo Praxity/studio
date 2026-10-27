@@ -387,6 +387,10 @@ it("retains the graded default and the policy owner's reveal override", () => {
 	}
 });
 it("retains document bytes apart from the two inert fields", () => {
+	// Regenerate from course()/render() above, stripChoiceStateFacts, then SHA-256.
+	// Capture raw old/new documents and review every byte difference before updating
+	// this literal. Keep the existing normalization; do not add exclusions for drift.
+	// Verify: pnpm --filter @praxity/export-pipeline exec vitest run tests/compiled-choice-facts.test.ts --maxWorkers=1
 	const html = render();
 	const stripped = stripChoiceStateFacts(html);
 	expect(createHash("sha256").update(stripped).digest("hex")).toBe(
