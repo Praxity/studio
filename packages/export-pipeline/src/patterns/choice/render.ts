@@ -45,7 +45,7 @@ export function renderChoice(
 				(typeof option.label === "string" && renderInlineField(option, "label", false)) ||
 				fallbackLabels[index];
 			const optionId = `${block.id}-option-${option.id || index}`;
-			return `<label data-node-id="${escapeHtml(option.id || `${block.id}-option-${index}`)}"${unknown ? " data-dont-know" : ""} class="praxity-assessment-choice-option" for="${escapeHtml(optionId)}"><input id="${escapeHtml(optionId)}" type="${inputType}" name="${escapeHtml(block.id)}" value="${escapeHtml(option.id || String(index))}" aria-labelledby="${escapeHtml(optionId)}-label" disabled />${inputType === "radio" ? '<span class="' + (unknown ? "praxity-choice-key-spacer" : "praxity-choice-key") + '" aria-hidden="true"></span>' : ""}<span class="praxity-choice-text"><span id="${escapeHtml(optionId)}-label" class="praxity-choice-label">${label}</span></span></label>`;
+			return `<label data-node-id="${escapeHtml(option.id || `${block.id}-option-${index}`)}"${unknown ? " data-dont-know" : ""} class="praxity-assessment-choice-option" for="${escapeHtml(optionId)}"><input id="${escapeHtml(optionId)}" type="${inputType}" name="${escapeHtml(block.id)}" value="${escapeHtml(option.id || String(index))}" aria-labelledby="${escapeHtml(optionId)}-label" disabled />${inputType === "radio" ? '<span class="praxity-choice-key" aria-hidden="true"></span>' : ""}<span class="praxity-choice-text"><span id="${escapeHtml(optionId)}-label" class="praxity-choice-label">${label}</span></span></label>`;
 		})
 		.join("");
 	/*

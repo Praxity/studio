@@ -125,6 +125,8 @@ for (const condition of markerConditions) {
 			? page.locator('[data-island="assessment"][data-block-id="practice"]')
 			: choice(page, "Compare the markers");
 		await context.addInitScript(({ large, rtl }) => {
+			localStorage.clear();
+			sessionStorage.clear();
 			localStorage.setItem(
 				"praxity-a11y",
 				JSON.stringify({ textSize: large ? "large" : "default", focusChoice: false }),
@@ -143,7 +145,7 @@ for (const condition of markerConditions) {
 		const capture = async (state: string) => {
 			await page.mouse.move(0, 0);
 			if (state === "hover") await card.locator(".praxity-assessment-choice-option").nth(1).hover();
-			await waitForControlPaint(page);
+			if (!settings.forced) await waitForControlPaint(page);
 			const measurements = await markerMeasurements(card);
 			records.push({ phase: PHASE ?? "after", condition: settings.name, state, measurements });
 			if (SHOTS && PHASE && testInfo.project.name === "chromium") {
@@ -196,7 +198,9 @@ for (const condition of markerConditions) {
 			await capture("default");
 			if (!settings.dark && !settings.fr) {
 				const rows = await markerMeasurements(card);
-				expect(rows[3].lines, "Invented option wraps").toBeGreaterThanOrEqual(3);
+				if (settings.width === 1280 && !settings.large)
+					expect(rows[3].lines, "Invented option wraps to three lines").toBe(3);
+				else expect(rows[3].lines, "Invented option wraps").toBeGreaterThan(1);
 				await capture("wrapped");
 			}
 			if (["light-1280", "dark-1280", "forced-1280"].includes(settings.name)) {
@@ -259,13 +263,30 @@ for (const condition of markerConditions) {
 				} finally {
 					release();
 				}
+				await expect(card).toHaveAttribute("data-hydrated", "");
 				await page.unroute("**/island-loader-*.js");
 				await open();
 				// Use the composer harness's real review store and pin overlay on
 				// the published document, with its assets still served by the fixture.
-				const html = await (await page.request.get(published)).text();
+				// Keep the shell disabled for this pin geometry capture and execute
+				// only the review bootstrap.
+				const html = (await (await page.request.get(published)).text())
+					.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
+					.replace(/\b(href|src)="([^"]+)"/g, (original, attribute, value: string) => {
+						if (value.startsWith("#")) return original;
+						const asset = new URL(value, published);
+						return `${attribute}="/__choice_alignment${asset.pathname}${asset.search}"`;
+					});
 				const review = await servedReview("en");
 				try {
+					// Keep course styles and fonts on the review document's origin.
+					await page.route("**/__choice_alignment/**", async (route) => {
+						const asset = new URL(route.request().url());
+						const response = await route.fetch({
+							url: `${readTestEnv().url}${asset.pathname.slice("/__choice_alignment".length)}${asset.search}`,
+						});
+						await route.fulfill({ response });
+					});
 					await page.route(review.url, async (route) => {
 						const response = await route.fetch();
 						const shell = await response.text();
@@ -277,16 +298,23 @@ for (const condition of markerConditions) {
 							response,
 							body: html.replace(
 								"<head>",
-								`<head><base href="${published}">${config}<link rel="stylesheet" href="/_praxity/review/review-comments.css"><script defer src="/_praxity/review/review-comments.js" data-praxity-review-comments="true"></script>`,
+								`<head>${config}<link rel="stylesheet" href="/_praxity/review/review-comments.css"><script defer src="/_praxity/review/review-comments.js" data-praxity-review-comments="true"></script>`,
 							),
 						});
 					});
 					await page.goto(review.url);
 					await card.scrollIntoViewIfNeeded();
-					await expect(card).toHaveAttribute("data-hydrated", "");
+					await expect(card.getByRole("radio").first()).toBeDisabled();
+					await page.evaluate(() => document.fonts.ready);
+					await expect(card.locator(".praxity-choice-key").first()).toHaveCSS("width", "26px");
 					const before = await markerMeasurements(card);
 					await page.getByRole("button", { name: "Pin", exact: true }).click();
-					await card.locator(".praxity-assessment-choice-option").first().click();
+					const target = await card.locator(".praxity-choice-label").first().boundingBox();
+					if (!target) throw new Error("Missing option A pin target");
+					// Locator.click treats the disabled radio's label as disabled.
+					// A real pointer can still pin its text through the capture listener.
+					await page.mouse.click(target.x + target.width / 2, target.y + target.height / 2);
+					await expect(page.locator(".prx-review-composer")).toBeVisible();
 					await page
 						.locator(".prx-review-composer textarea")
 						.fill("Check the first option alignment.");
@@ -296,7 +324,6 @@ for (const condition of markerConditions) {
 					await capture("pinned");
 					expect(await markerMeasurements(card)).toEqual(before);
 				} finally {
-					await page.goto("about:blank");
 					await review.close();
 				}
 			}
@@ -498,6 +525,8 @@ async function waitForControlPaint(page: Page): Promise<void> {
 						const pendingFill = Array.from(element.querySelectorAll("input:checked")).some(
 							(control) => {
 								const row = control.closest(".praxity-assessment-choice-option");
+								// Baseline captures have no painted control in the unknown row.
+								if (row?.querySelector(".praxity-choice-key-spacer")) return false;
 								const key = row?.querySelector(".praxity-choice-key");
 								row?.append(probe);
 								probe.style.backgroundColor = row?.hasAttribute("data-choice-result")

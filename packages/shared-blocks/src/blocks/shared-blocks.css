@@ -5888,6 +5888,7 @@ html:not(.praxity-js) [data-card-root] .praxity-slides-item {
 	column-gap: 12px;
 	row-gap: 6px;
 	align-items: start;
+	align-content: center;
 	min-block-size: 48px;
 	margin: 0;
 	border: 1px solid var(--line-mid);
@@ -5915,8 +5916,7 @@ html:not(.praxity-js) [data-card-root] .praxity-slides-item {
 	outline: 2px solid var(--praxity-color-focus, var(--accent));
 	outline-offset: 2px;
 }
-[data-praxity-root] .praxity-choice-key,
-[data-praxity-root] .praxity-choice-key-spacer {
+[data-praxity-root] .praxity-choice-key {
 	display: grid;
 	grid-column: 1;
 	grid-row: 1;
@@ -5932,15 +5932,12 @@ html:not(.praxity-js) [data-card-root] .praxity-slides-item {
 	font-weight: 600;
 	line-height: 1;
 }
-[data-praxity-root] .praxity-choice-key-spacer {
-	visibility: hidden;
-}
-[data-praxity-root] .praxity-choice-key-spacer::before {
-	/* Reserve the key's first-line baseline as well as its inline space. */
-	content: "\00a0";
-}
 [data-praxity-root] .praxity-choice-key::before {
 	content: counter(praxity-choice-key, upper-alpha);
+	text-box: trim-both cap alphabetic;
+}
+[data-praxity-root] .praxity-assessment-choice-option[data-dont-know] .praxity-choice-key::before {
+	content: "?";
 }
 [data-praxity-root] .praxity-assessment-choice-option:has(input:checked) .praxity-choice-key {
 	color: var(--on-accent);

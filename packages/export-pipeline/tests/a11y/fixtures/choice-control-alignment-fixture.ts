@@ -10,7 +10,7 @@ const grammar =
 
 export function buildChoiceControlAlignmentCourse(): CourseExportInput {
 	const parsed = readLesson(
-		`${grammar}\n::: choice Compare the markers {dontKnow attempts=1 level=3}\ncorrect: The amber lantern belongs on the shelf.\nincorrect: Compare the labels before choosing.\n(x) Amber lantern\n( ) Blue notebook\n( ) Copper compass\n( ) This invented answer describes a violet paper kite beside a silver lantern, a blue notebook and a copper compass, then asks the learner to read every word before choosing the item that belongs on the shelf at the far end of the room.\n:::\n`,
+		`${grammar}\n::: choice Compare the markers {dontKnow attempts=1 level=3}\ncorrect: The amber lantern belongs on the shelf.\nincorrect: Compare the labels before choosing.\n(x) Amber lantern\n( ) Blue notebook\n( ) Copper compass\n( ) This answer describes a violet paper kite beside a silver lantern, a blue notebook and a copper compass, then asks the learner to read every word before selecting an item.\n:::\n`,
 	);
 	if (parsed.warnings.length) throw new Error(JSON.stringify(parsed.warnings));
 	const design = extractDesktopDesignFromFrontmatter({
