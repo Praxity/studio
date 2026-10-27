@@ -27,6 +27,7 @@
 		}
 	}
 	var transport = localConfig ? createLocalTransport(localConfig) : createLegacyShareTransport();
+	var currentTitles = new Map((localConfig?.pages || []).map((page) => [page.id, page.title]));
 	var viewingActor = null;
 	var strings =
 		config.locale === "fr"
@@ -336,8 +337,9 @@
 			(!Array.isArray(value.pages) ||
 				!value.pages.every(
 					(page) =>
-						keys(page, "id href") &&
+						keys(page, "id href title") &&
 						id(page.id, value.limits.id) &&
+						typeof page.title === "string" &&
 						typeof page.href === "string" &&
 						page.href.startsWith("/canvas/preview/") &&
 						new URL(page.href, location.origin).origin === location.origin,
@@ -615,6 +617,11 @@
 		return false;
 	}
 
+	function bounded(text, max) {
+		var end = Math.min(text.length, max);
+		if (end < text.length && /[\uD800-\uDBFF]/.test(text[end - 1])) end--;
+		return text.slice(0, end);
+	}
 	function createAnchors(pageRoot, pageId) {
 		var limits = localConfig.limits;
 		// Runtime answer projections are private even when their native controls are hidden.
@@ -671,11 +678,6 @@
 				}
 			}
 			return { text, points };
-		}
-		function bounded(text, max) {
-			var end = Math.min(text.length, max);
-			if (end < text.length && /[\uD800-\uDBFF]/.test(text[end - 1])) end--;
-			return text.slice(0, end);
 		}
 		function label(el) {
 			return bounded(stream(el).text.trim(), limits.title) || null;
@@ -1102,10 +1104,12 @@
 			header.append(title, toggle);
 		}
 		var editLink = document.querySelector(".praxity-studio-edit-link");
+		var headerActions = anchors ? element("div", "prx-review-header-actions") : header;
+		if (anchors) header.append(headerActions);
 		if (editLink) {
 			var readTools = editLink.closest(".praxity-studio-read-tools");
 			editLink.classList.add("prx-review-action");
-			header.append(editLink);
+			headerActions.append(editLink);
 			readTools?.remove();
 		}
 		var deckIcon;
@@ -2055,7 +2059,11 @@
 					group = { item, heading, threads };
 					pageGroups.set(key, group);
 				}
-				var title = rows[0].thread.anchor.context.pageTitle || key || strings.unknownPage;
+				var title =
+					(localConfig && bounded(currentTitles.get(key) || "", localConfig.limits.title)) ||
+					rows[0].thread.anchor.context.pageTitle ||
+					key ||
+					strings.unknownPage;
 				var label = `${title}${key === activePageId ? ` · ${strings.currentPage}` : ""}`;
 				if (group.heading.textContent !== label) group.heading.textContent = label;
 				var hideGroup = rows.every((entry) => entry.item.hidden);
@@ -2269,7 +2277,8 @@
 					: null;
 				if (parent === header) {
 					if (toggle.previousSibling !== title) title.after(toggle);
-					if (choose.previousSibling !== toggle) toggle.after(choose);
+					if (choose.parentElement !== headerActions || choose !== headerActions.firstChild)
+						headerActions.prepend(choose);
 					if (pin.previousSibling !== choose) choose.after(pin);
 				} else {
 					if (pin.parentElement !== parent || pin.nextSibling !== toggle)
@@ -2392,6 +2401,7 @@
 
 			var composer = dialog("prx-review-composer", "");
 			var composerTitle = composer.querySelector("h2");
+			textLabel.classList.add("prx-review-visually-hidden");
 			var preview = element("div", "prx-review-target-preview");
 			preview.id = "prx-review-target-preview";
 			composer.setAttribute("aria-describedby", preview.id);
@@ -3219,6 +3229,15 @@
 						.join(" "),
 				);
 				if (current) {
+					preview.hidden = !(
+						current.anchor.quote ||
+						current.anchor.pin ||
+						current.anchor.nodeId ||
+						current.anchor.blockId ||
+						current.anchor.cssPath
+					);
+					if (preview.hidden) composer.removeAttribute("aria-describedby");
+					else composer.setAttribute("aria-describedby", preview.id);
 					var description = describe(current.anchor);
 					if (
 						preview.textContent !== description ||

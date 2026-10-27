@@ -281,6 +281,7 @@ export async function startStudioReadOnlyServer(options: {
 							page: canvasPageScope(artifactUrl.pathname),
 							pages: resolved.hosted.deployment.manifest.pages.map((page) => ({
 								id: page.id,
+								title: page.title,
 								href: `/canvas${new URL(`${encodeURIComponent(page.slug)}.html`, artifactUrl).pathname}?praxity-resume=0#${encodeURIComponent(page.id)}`,
 							})),
 							...(draftOriginChanged ? { draftOriginChanged: true } : {}),

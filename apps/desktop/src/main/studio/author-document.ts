@@ -82,7 +82,7 @@ export async function addStudioReadModeLink(
 		reviewId: string;
 		capability: string;
 		page: CanvasPageScope | undefined;
-		pages?: { id: string; href: string }[];
+		pages?: { id: string; href: string; title: string }[];
 		draftOriginChanged?: boolean;
 	},
 ): Promise<string> {

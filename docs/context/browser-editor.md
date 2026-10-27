@@ -37,7 +37,9 @@ The fixed learner-origin routes `/_praxity/review/review-comments.js` and
 `/_praxity/review/review-comments.css` accept only GET/HEAD with the existing
 Host, Origin and Authorization guards, no-store, nosniff and asset CSP. Other
 names and encoded aliases refuse. An asset lost after startup returns 503.
-The optional `pages` array maps captured page IDs to same-origin Read URLs for review navigation.
+The optional `pages` array maps captured page IDs to same-origin Read URLs and
+current plain-text titles for review navigation and group headings. Missing pages
+fall back to the title stored with the thread.
 The client reads only the typed inert JSON script, then removes the element and
 keeps the configuration in its closure. It lists the whole review, grouped by page
 with the current page first. Open, Resolved and All filters stack vertically,

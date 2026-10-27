@@ -8,6 +8,7 @@ import {
 	generateHtmlIndex,
 	generateNumberedPageRedirect,
 	type HtmlOutputOptions,
+	publishedPageTitle,
 } from "./html-gen.ts";
 import { compileDocument, preparePageCompiler } from "./preview/compile-page.ts";
 import { createCourseContextFromHtml } from "./preview/course-context.ts";
@@ -109,6 +110,7 @@ export async function generateHtmlPages(
 						}
 					: {}),
 				id: page.id,
+				title: publishedPageTitle(page),
 				...(page.lessonId ? { lessonId: page.lessonId } : {}),
 				slug: slugList[index].slug,
 				runtime,
