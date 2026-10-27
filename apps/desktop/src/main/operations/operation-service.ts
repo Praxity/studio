@@ -85,11 +85,11 @@ const requestSchema = z
 			)
 			.nonempty(),
 		// The registry owns each operation's argument names and value constraints.
-		// Zod drops __proto__ while cloning records; reject it before it hides an extra key.
-		args: z.record(
-			z.string().refine((key) => key !== "__proto__"),
-			z.unknown(),
-		),
+		// Zod 4 omits __proto__ before validating record keys; refuse it before cloning.
+		args: z
+			.unknown()
+			.refine((args) => !args || typeof args !== "object" || !Object.hasOwn(args, "__proto__"))
+			.pipe(z.record(z.string(), z.unknown())),
 	})
 	.strict()
 	.superRefine((request, context) => {

@@ -115,6 +115,53 @@ async function rpc(server: StudioServer, method: string, args: unknown) {
 	});
 	return { status: response.status, ...(await response.json()) };
 }
+it.each(["manifestEdit", "draftPut"] as const)(
+	"%s RPC refuses nested prototype records before writing",
+	async (method) => {
+		const { root, draft } = await fixture();
+		const editorAssetsDir = await mkdtemp(join(tmpdir(), "studio-prototype-ui-"));
+		roots.push(editorAssetsDir);
+		await writeFile(join(editorAssetsDir, "index.html"), "<!doctype html><title>Test</title>");
+		await writeFile(join(editorAssetsDir, "canvas.js"), "void 0;");
+		await writeFile(
+			join(editorAssetsDir, "canvas.sha256"),
+			"4f56045c295617d094843daf46a0b666472d5613d232b9fe302224248ed4d362\n",
+		);
+		const server = await startStudioServer({
+			projectDir: root,
+			editorAssetsDir,
+			appVersion: "test",
+		});
+		sessions.push(server);
+		const before = await bytes(root);
+		for (const key of ["__proto__", "constructor", "prototype"]) {
+			const params = JSON.parse(`{"${key}":1}`);
+			const input =
+				method === "manifestEdit"
+					? {
+							file: "course.yaml",
+							baseRevision: digest(await readFile(join(root, "course.yaml"), "utf8")),
+							path: ["design"],
+							value: { a: params },
+						}
+					: {
+							draft: {
+								...draft,
+								diagnostics: [
+									{
+										file: draft.file,
+										ref: null,
+										severity: "error",
+										message: { key: "op.invalid-args", params },
+									},
+								],
+							},
+						};
+			expect((await rpc(server, method, input)).status, `${method} ${key}`).toBe(400);
+			expect(await bytes(root)).toEqual(before);
+		}
+	},
+);
 it("D17 drafts and clipboard survive a restart on a different port", async () => {
 	const { root, session, draft } = await fixture();
 	await session.close();
