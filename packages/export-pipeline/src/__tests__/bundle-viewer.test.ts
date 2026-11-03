@@ -1495,8 +1495,7 @@ describe("computeViewerSourceHash", () => {
 			// Size caps don't block working features (owner rule): group refusal/rollback runtime measures 44,590 B gzip for the page; add 1 KiB rounded up to 256 B, tighten during final size work.
 			// Owner rule: activation measured page 48,487 and deck 141,555 B gzip; add 1 KiB rounded up to 256 B.
 			// Owner size-limits rule 2026-10-24, PR #42: deck 142,663 B + 2 KiB, rounded up to 256 B.
-			// Owner size-limits rule 2026-11-03: index-session fix measures 49,726 B gzip;
-			// add 2 KiB rounded up to 256 B; size work comes after working features.
+			// Owner size-limits rule: raise byte caps generously when they block working features; size work last. SCORM commit refusal measures 49,741 B gzip; add 2 KiB rounded up to 256 B.
 			const caps = { page: 51_968, deck: 144_896 };
 			const page = {
 				id: "highlight-page",

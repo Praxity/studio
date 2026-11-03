@@ -1724,6 +1724,7 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 			...localeStrings,
 			// The assessment island reads its own catalogue; keep page-runtime bytes stable.
 			assessmentStorageNotice: undefined,
+			assessmentSessionEndedNotice: undefined,
 			// Preserve the existing serialized catalogue for courses without a pass mark.
 			courseScoreWithPassMark:
 				config.passingScore === undefined ? undefined : localeStrings.courseScoreWithPassMark,

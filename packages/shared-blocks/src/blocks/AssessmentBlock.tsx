@@ -17,6 +17,7 @@ import {
 	TextInput,
 	VisuallyHidden,
 } from "@mantine/core";
+import { useWindowEvent } from "@mantine/hooks";
 import {
 	assessmentStatePolicy,
 	decodeEscapes,
@@ -2247,7 +2248,10 @@ export function PreviewAssessmentBlock({
 		...(assessmentType === "choice" ? { reviewedChoiceIds: [...reviewedChoiceIds] } : {}),
 	});
 	const lastPersistedState = useRef({ blockId, serialized: serializedBlockState });
-	const [saveResult, setSaveResult] = useState(() => readLearnerBlockSaveResult(blockId));
+	const readSaveResult = () => readLearnerBlockSaveResult(blockId);
+	const [saveResult, setSaveResult] = useState(readSaveResult);
+	const sessionEnded = saveResult?.status === "not-saved" && saveResult.code === "commit-refused";
+	useWindowEvent("praxity:scorm-session-ended", () => setSaveResult(readSaveResult));
 	function persistAssessmentState(next: SavedAssessmentState, current: () => boolean) {
 		const prepared = choiceFacts
 			? prepareChoiceAssessmentState(readLearnerBlockState(blockId), next, choiceFacts, {
@@ -2281,9 +2285,12 @@ export function PreviewAssessmentBlock({
 		const provider = window.__praxityBlockState;
 		const atomicSubmission =
 			assessmentType === "choice" && data.private !== true && !!provider?.stageSubmission;
-		if (isChecked) return;
+		if (isChecked || sessionEnded) return;
 		const receipt = readLearnerBlockSaveResult(blockId);
-		if (receipt?.status === "not-saved" && receipt.code === "unreadable-state") {
+		if (
+			receipt?.status === "not-saved" &&
+			(receipt.code === "unreadable-state" || receipt.code === "commit-refused")
+		) {
 			persistAssessmentState(JSON.parse(serializedBlockState), current);
 			return;
 		}
@@ -2477,7 +2484,7 @@ export function PreviewAssessmentBlock({
 			const result = readLearnerBlockSaveResult(blockId);
 			if (
 				result?.status === "not-saved" &&
-				(atomicSubmission || result.code === "unreadable-state")
+				(atomicSubmission || result.code === "commit-refused" || result.code === "unreadable-state")
 			) {
 				refuseSubmission();
 				return;
@@ -2994,12 +3001,13 @@ export function PreviewAssessmentBlock({
 
 				{assessmentDisplay !== "scenario" && descriptionMarkup}
 				{typeof window !== "undefined" &&
-					window.__praxityBlockState?.stageSubmission &&
 					saveResult?.status === "not-saved" &&
+					(window.__praxityBlockState?.stageSubmission || saveResult.code === "commit-refused") &&
 					((assessmentType === "choice" && data.private !== true) ||
+						sessionEnded ||
 						saveResult.code === "unreadable-state") && (
 						<Text size="sm" role="status" c="dimmed">
-							{s.assessmentStorageNotice}
+							{sessionEnded ? s.assessmentSessionEndedNotice : s.assessmentStorageNotice}
 						</Text>
 					)}
 
@@ -3171,7 +3179,7 @@ export function PreviewAssessmentBlock({
 											? { display: "none" }
 											: undefined
 									}
-									disabled={isTextResponseSubmitDisabled}
+									disabled={sessionEnded || isTextResponseSubmitDisabled}
 									aria-describedby={
 										isTextResponseSubmitDisabled ? `${blockId}-submit-hint` : undefined
 									}

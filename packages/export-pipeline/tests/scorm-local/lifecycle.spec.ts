@@ -178,7 +178,7 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 	});
 
 	for (const failure of ["false", "throw"] as const) {
-		test(`${format}: ${failure} final commit keeps authored Finish retryable`, async ({ page }) => {
+		test(`${format}: ${failure} final commit ends Studio communication`, async ({ page }) => {
 			test.setTimeout(30_000);
 			const harness = await createLifecycleHarness(
 				packages.get(`pages-${format}`) as Buffer,
@@ -200,7 +200,14 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 				expect(count(failed, "terminate")).toBe(0);
 				expect(failed.calls.at(-1)?.[0]).toBe("commit");
 				await finishButton(frame);
-				await assertClosed(page, format, format === "scorm12" ? "" : "normal");
+				await frame.evaluate(() => {
+					window.dispatchEvent(new Event("beforeunload"));
+					window.dispatchEvent(new Event("pagehide"));
+				});
+				const after = await snapshot(page);
+				expect(after.calls).toEqual(failed.calls);
+				expect(count(after, "terminate")).toBe(0);
+				expect(after.errors).toEqual([]);
 			} finally {
 				await page.close();
 				await harness.cleanup();

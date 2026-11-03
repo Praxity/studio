@@ -15,6 +15,7 @@
 // See docs/context/scorm-xapi-standards.md for spec references
 
 import { filterPrivateSuspendData } from "@praxity/shared-blocks/block-state-policy";
+import type { LearnerBlockSaveResult } from "@praxity/shared-blocks/learner-block-state";
 import { findWindowProperty, type WindowLike } from "../api-discovery.ts";
 import { truncateInteractionResponse } from "../interaction-response";
 import {
@@ -31,6 +32,7 @@ import {
 import { deviceAttemptId } from "./device-attempt";
 import { writeObjectiveId } from "./objective-slots";
 import {
+	commitScormSession,
 	getSessionState,
 	readSessionState,
 	type ScormSessionState,
@@ -193,6 +195,12 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		return this.initialized && this.canCallLms() && this.setLmsValue(element, value);
 	}
 
+	getBlockSaveResult(_blockId: string): LearnerBlockSaveResult | undefined {
+		return this.session?.commitRefused
+			? { status: "not-saved", code: "commit-refused" }
+			: undefined;
+	}
+
 	setCommitPreparation(prepare: () => void): void {
 		if (this.session) this.session.prepareCommit = prepare;
 	}
@@ -204,11 +212,15 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	}
 
 	private commitToLms(): boolean {
-		if (!this.flushCompletion() || !this.prepareExit()) return false;
-		if (!this.session || !this.setLmsValue("cmi.session_time", sessionTime(this.session, "2004")))
+		if (
+			!this.session ||
+			this.session.closed ||
+			!this.flushCompletion() ||
+			!this.prepareExit() ||
+			!this.setLmsValue("cmi.session_time", sessionTime(this.session, "2004"))
+		)
 			return false;
-		const result = this.api?.Commit("");
-		return result === "true";
+		return commitScormSession(this.session, () => this.api?.Commit(""), this.win);
 	}
 
 	private flushCompletion(): boolean {

@@ -6,6 +6,7 @@ export interface ScormSessionState extends RuntimeCommitPreparation {
 	initialized: boolean;
 	closed: boolean;
 	terminationSucceeded: boolean;
+	commitRefused?: boolean;
 	startedAt?: number;
 	successTracked?: boolean;
 	/** CourseTracker's failure status that explicit Finish must preserve. */
@@ -28,6 +29,24 @@ type SessionStore = WeakMap<object, ScormSessionState>;
 /** Termination closes communication for every adapter in the launch. */
 export function sessionAllowsCalls(state: ScormSessionState | null): boolean {
 	return !!state && !state.closed;
+}
+
+/** A refused save leaves LMS state unknown; reopening owns recovery. */
+export function commitScormSession(
+	state: ScormSessionState,
+	commit: () => string | undefined,
+	win: WindowLike = globalThis.window,
+): boolean {
+	const view = win as unknown as Window & typeof globalThis;
+	try {
+		if (commit() === "true") return true;
+	} catch {
+		// A thrown commit has the same unknown persistence outcome as a refusal.
+	}
+	state.closed = state.commitRefused = true;
+	state.terminationSucceeded = false;
+	view?.dispatchEvent?.(new view.Event("praxity:scorm-session-ended"));
+	return false;
 }
 
 function sessionStore(win: WindowLike | undefined): SessionStore | null {

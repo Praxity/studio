@@ -65,24 +65,16 @@ export function createPrivateBlockStateRuntime(
 			return blockReportingDestination(runtime, policy(blockId));
 		},
 		getSaveResult:
-			runtime.stageSubmission || hasPolicy
+			runtime.getBlockSaveResult || hasPolicy
 				? (blockId) => {
-						const held =
-							policy(blockId) === "lms" ? runtime.getBlockSaveResult?.(blockId) : undefined;
-						if (held?.status === "not-saved" && held.code === "unreadable-state") return held;
+						const held = runtime.getBlockSaveResult?.(blockId);
+						if (held?.status === "not-saved") return held;
 						const local = results.get(blockId);
-						const result =
-							local?.status === "not-saved"
-								? local
-								: ((policy(blockId) === "lms"
-										? runtime.getBlockSaveResult?.(blockId)
-										: undefined) ?? local);
+						if (local?.status === "not-saved") return local;
+						if (policy(blockId) === "lms") return held ?? local;
 						return (
-							result ??
-							(policy(blockId) === "device" &&
-							(!device || device.hasPersistentStorage?.() === false)
-								? unavailable
-								: undefined)
+							local ??
+							(!device || device.hasPersistentStorage?.() === false ? unavailable : undefined)
 						);
 					}
 				: undefined,

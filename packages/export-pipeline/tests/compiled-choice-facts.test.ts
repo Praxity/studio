@@ -393,6 +393,7 @@ it("retains document bytes apart from the two inert fields", () => {
 	// Verify: pnpm --filter @praxity/export-pipeline exec vitest run tests/compiled-choice-facts.test.ts --maxWorkers=1
 	const html = render();
 	const stripped = stripChoiceStateFacts(html);
+	expect(html).not.toContain('"assessmentSessionEndedNotice":');
 	expect(createHash("sha256").update(stripped).digest("hex")).toBe(
 		"e90a559364021ddeba3a29d2e45b8fbe414f218ece33c38b649368b44f15b988",
 	);

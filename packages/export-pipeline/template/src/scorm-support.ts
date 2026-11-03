@@ -1,4 +1,5 @@
 import {
+	commitScormSession,
 	getSessionState,
 	readSessionState,
 	sessionAllowsCalls,
@@ -11,6 +12,7 @@ import { CourseTracker } from "../../src/scorm/tracking";
 const support = {
 	getSessionState,
 	readSessionState,
+	commitScormSession,
 	sessionAllowsCalls,
 	writeSessionState,
 	findScormApi,
