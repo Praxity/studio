@@ -205,8 +205,8 @@ on the API object. Later documents sharing that record skip Initialize. A bare
 a live session. After that read, error 301 on 1.2 or 122 on 2004 proves that an LMS
 has reset its persistent API object, so the next page initializes a fresh session.
 Other errors do not prove a new launch. Closed records are replaced as before.
-ADL's [1.2 Conformance Requirements](https://lms.technology/for/scorm/1.2/standards/SCORM_1.2_ConformanceReq.pdf),
-requirement 8.8, defines 301 for a read before initialization. The ADL-authored
+ADL's [SCORM 1.2 RTE](https://lms.technology/for/scorm/1.2/standards/SCORM_1.2_RunTimeEnv.pdf),
+section 3.3.3, defines 301 for a call before LMSInitialize. The ADL-authored
 [2004 RTE](https://upload.aura-software.com/files/20191008081839-de8fbb595231f8557780f59e3a0ae316f2a2abbf/SCORM_RunTimeEnv.pdf),
 section 3.1.7.2.8, defines 122 for that read.
 An index route with a mapped `praxity-page` target retains the session,

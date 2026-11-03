@@ -103,7 +103,7 @@ export function resetSessionState(api: object | null, win: WindowLike): void {
 		state.prepareCommit = undefined;
 		if (!state.initialized) return;
 		const sessionApi = api as SessionApi;
-		// ADL 1.2 Conformance Requirements 8.8: 301; 2004 RTE 3.1.7.2.8: 122.
+		// SCORM 1.2 RTE 3.3.3: 301; 2004 RTE 3.1.7.2.8: 122.
 		// Only "not initialized" proves that a persistent API has started another launch.
 		if (sessionApi.LMSGetValue) {
 			sessionApi.LMSGetValue("cmi.core.lesson_status");
