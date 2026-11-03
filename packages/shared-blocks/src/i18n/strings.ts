@@ -93,6 +93,7 @@ export interface LearnerStrings {
 	assessmentAttemptOf: string;
 	assessmentAttemptsUsed: string;
 	assessmentStorageNotice: string;
+	assessmentSessionEndedNotice: string;
 	showAnswer: string;
 	yourAnswer: string;
 	/** Label shown below ungraded text response (reflection). */
@@ -438,6 +439,8 @@ const en: LearnerStrings = {
 	assessmentAttemptsUsed: "{n} of {total} attempts used",
 	assessmentStorageNotice:
 		"This answer could not be saved. Your previously saved progress is kept.",
+	assessmentSessionEndedNotice:
+		"This answer could not be saved. Your previously saved progress is kept. To continue, close this course and open it again.",
 	showAnswer: "Show answer",
 	yourAnswer: "Your answer",
 	reflectionPrivateLabel: "Your reflection is private",
@@ -759,6 +762,8 @@ const fr: LearnerStrings = {
 	assessmentAttemptsUsed: "Tentatives utilisées\u00a0: {n} sur {total}",
 	assessmentStorageNotice:
 		"Cette réponse n’a pas pu être enregistrée. Votre progression enregistrée précédemment est conservée.",
+	assessmentSessionEndedNotice:
+		"Cette réponse n’a pas pu être enregistrée. Votre progression enregistrée précédemment est conservée. Pour continuer, fermez ce cours et ouvrez-le de nouveau.",
 	showAnswer: "Afficher la réponse",
 	yourAnswer: "Votre réponse",
 	reflectionPrivateLabel: "Votre réflexion est privée",

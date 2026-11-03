@@ -80,12 +80,11 @@ export function bufferPrivateBlockState(
 			pending.set(id, value);
 			return unavailable();
 		},
-		getSaveResult: (id) =>
-			provider
-				? provider.getSaveResult?.(id)
-				: isPrivate(id)
-					? unavailable()
-					: ordinary.getSaveResult?.(id),
+		getSaveResult: (id) => {
+			const result = ordinary.getSaveResult?.(id);
+			if (result?.status === "not-saved" && result.code === "commit-refused") return result;
+			return provider ? provider.getSaveResult?.(id) : isPrivate(id) ? unavailable() : result;
+		},
 	};
 	if (owner()) {
 		let current = owner()?.lifetime();

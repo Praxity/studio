@@ -144,15 +144,16 @@ describe.each(["scorm12", "scorm2004"] as const)("%s explicit finish host", (for
 		},
 	);
 
-	it("keeps a failed final commit retryable through the authored action", () => {
+	it("ends communication after a failed final commit through the authored action", () => {
 		const { calls, page, failCommit, allowCommit } = launch(format);
 		page();
 		failCommit();
 		expect(navigatePageAction("__end_lesson__", actionConfig)).toBe(false);
 		expect(calls.filter(([name]) => name === "terminate")).toHaveLength(0);
+		const endedCalls = [...calls];
 		allowCommit();
-		expect(navigatePageAction("__end_lesson__", actionConfig)).toBe(true);
-		expect(calls.filter(([name]) => name === "terminate")).toHaveLength(1);
+		expect(navigatePageAction("__end_lesson__", actionConfig)).toBe(false);
+		expect(calls).toEqual(endedCalls);
 	});
 
 	it("commits every pagehide and beforeunload without terminating", () => {

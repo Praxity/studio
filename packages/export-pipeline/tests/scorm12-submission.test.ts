@@ -5,7 +5,6 @@ import type { ChoiceResponse } from "@praxity/shared-blocks/types";
 import { JSDOM } from "jsdom";
 import { afterEach, expect, it, vi } from "vitest";
 import { Scorm12Runtime } from "../src/scorm/api/scorm12";
-import { Scorm2004Runtime, type WindowLike } from "../src/scorm/api/scorm2004";
 import { CourseTracker } from "../src/scorm/tracking";
 import type { CourseHostConfig } from "../template/src/hosts/course-host";
 import { bufferPrivateBlockState } from "../template/src/hosts/privacy-bootstrap";
@@ -323,49 +322,6 @@ it.each(["refused write", "oversized response", "callback refuses", "callback th
 			expect(provider.getSaveResult?.("q")?.status).toBe("saved");
 			expect(provider.get("q")).toEqual(answer(["go"]) as LearnerStateValue);
 			expect(runtime.getInteractions()).toMatchObject([{ id: "q", response: "go", score: 0 }]);
-		} finally {
-			dom.window.close();
-		}
-	},
-);
-
-it.each(["scorm12", "scorm2004"])(
-	"reports a failed rollback in %s without certifying a save",
-	(format) => {
-		const { api, dom, refuse } = lms();
-		try {
-			Object.assign(dom.window, {
-				API_1484_11: {
-					Initialize: api.LMSInitialize,
-					Terminate: api.LMSFinish,
-					Commit: () => "false",
-					GetValue: api.LMSGetValue,
-					SetValue: api.LMSSetValue,
-					GetLastError: api.LMSGetLastError,
-					GetErrorString: api.LMSGetErrorString,
-					GetDiagnostic: api.LMSGetDiagnostic,
-				},
-			});
-			api.LMSCommit = () => "false";
-			const runtime =
-				format === "scorm12"
-					? new Scorm12Runtime()
-					: new Scorm2004Runtime(dom.window as unknown as WindowLike);
-			runtime.initialize();
-			const provider = createPrivateBlockStateRuntime(
-				runtime,
-				{ courseId: "course", strings: {} } as CourseHostConfig,
-				{} as Window,
-			);
-			provider.stageSubmission?.("q", () => true);
-			runtime.setSuspendData("{}");
-			runtime.trackInteraction("q", "stop", true, 100, { assessmentType: "choice" });
-			refuse(true);
-			expect(() => runtime.commit()).toThrow("Could not restore the refused submission");
-			expect(runtime.getBlockSaveResult("q")).toMatchObject({
-				status: "not-saved",
-				code: format === "scorm12" ? "runtime-write-failed" : "commit-refused",
-			});
 		} finally {
 			dom.window.close();
 		}

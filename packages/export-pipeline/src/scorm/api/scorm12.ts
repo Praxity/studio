@@ -31,6 +31,7 @@ import {
 import { deviceAttemptId } from "./device-attempt";
 import { writeObjectiveId } from "./objective-slots";
 import {
+	commitScormSession,
 	getSessionState,
 	readSessionState,
 	type ScormSessionState,
@@ -115,16 +116,15 @@ export class Scorm12Runtime implements SCORMRuntime {
 		this.heldMemory.set(blockId, value);
 		return this.heldDrafts?.setBlockState(blockId, value) ?? false;
 	}
-	private awaitingCommit?: { blockId: string; raw: string };
 	private blockSaveResults = new Map<string, LearnerBlockSaveResult>();
 
 	/** The checked state is provisional until its matching row fits the same suspend write. */
 	stageSubmission(blockId: string, write: () => boolean): boolean {
+		if (this.session?.commitRefused) return false;
 		this.ensureInitialized();
 		if (this.submission) throw new Error("A SCORM submission is already pending");
 		const data = this.loadSuspendPayload();
 		if (this.unreadableSuspendData) return false;
-		this.awaitingCommit = { blockId, raw: this.lmsGetValue("cmi.suspend_data") };
 		this.submission = { blockId, data };
 		try {
 			this.blockSaveResults.set(blockId, { status: "pending" });
@@ -146,6 +146,9 @@ export class Scorm12Runtime implements SCORMRuntime {
 	}
 
 	getBlockSaveResult(blockId: string) {
+		if (this.session?.commitRefused)
+			return { status: "not-saved" as const, code: "commit-refused" as const };
+		if (this.blockStatePolicy[blockId] === "device") return undefined;
 		this.loadSuspendPayload();
 		return this.unreadableSuspendData
 			? { status: "not-saved" as const, code: "unreadable-state" as const }
@@ -254,7 +257,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 		score?: number,
 		options?: TrackInteractionOptions,
 	): void {
-		if (this.blockStatePolicy[id] === "device") return;
+		if (this.session?.commitRefused || this.blockStatePolicy[id] === "device") return;
 		this.ensureInitialized();
 		if (this.submission && this.submission.blockId !== id)
 			throw new Error("Another SCORM submission is pending");
@@ -365,7 +368,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 	trackObjective(id: string, score: number, passed: boolean): void {
 		this.loadSuspendPayload();
 		if (this.unreadableSuspendData) return;
-		if (this.blockStatePolicy[id] === "device") return;
+		if (this.session?.commitRefused || this.blockStatePolicy[id] === "device") return;
 		this.ensureInitialized();
 		try {
 			const n = writeObjectiveId(
@@ -461,36 +464,23 @@ export class Scorm12Runtime implements SCORMRuntime {
 	}
 
 	commit(): boolean {
+		if (this.session?.closed) return false;
 		this.ensureInitialized();
 		this.loadSuspendPayload();
 		this.session?.prepareCommit?.();
-		const saved = this.commitToLms();
-		const pending = this.awaitingCommit;
-		this.awaitingCommit = undefined;
-		if (pending && !saved) {
-			this.blockSaveResults.set(pending.blockId, {
-				status: "not-saved",
-				code: "runtime-write-failed",
-			});
-			if (!this.lmsSetValue("cmi.suspend_data", pending.raw))
-				throw new Error("Could not restore the refused submission");
-		}
-		return saved;
+		return this.commitToLms();
 	}
 
 	private commitToLms(): boolean {
-		if (!this.flushCompletion() || !this.prepareExit()) return false;
 		if (
 			!this.session ||
+			this.session.closed ||
+			!this.flushCompletion() ||
+			!this.prepareExit() ||
 			!this.lmsSetValue("cmi.core.session_time", sessionTime(this.session, "1.2"))
 		)
 			return false;
-		const result = this.api?.LMSCommit("");
-		if (result !== "true") {
-			if (!this.awaitingCommit) this.throwIfError("LMSCommit");
-			return false;
-		}
-		return true;
+		return commitScormSession(this.session, () => this.api?.LMSCommit(""));
 	}
 
 	// ---- internal helpers ---------------------------------------------------
@@ -518,18 +508,20 @@ export class Scorm12Runtime implements SCORMRuntime {
 	}
 
 	private ensureInitialized(): void {
-		if (!this.initialized || !this.canCallLms()) {
+		if (!this.initialized || (!this.session?.commitRefused && !this.canCallLms())) {
 			throw new Error("SCORM 1.2 runtime is not initialized. Call initialize() first.");
 		}
 	}
 
 	private lmsGetValue(element: string): string {
+		if (!this.canCallLms()) return "";
 		const value = this.api?.LMSGetValue(element) ?? "";
 		this.throwIfError(`LMSGetValue("${element}")`);
 		return value;
 	}
 
 	private lmsSetValue(element: string, value: string): boolean {
+		if (!this.canCallLms()) return false;
 		const result = this.api?.LMSSetValue(element, value);
 		if (result !== "true") {
 			this.throwIfError(`LMSSetValue("${element}", "${value}")`);
@@ -538,7 +530,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 	}
 
 	private optionalSetValue(element: string, value: string): void {
-		this.api?.LMSSetValue(element, value);
+		if (this.canCallLms()) this.api?.LMSSetValue(element, value);
 	}
 
 	/**

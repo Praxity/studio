@@ -8,6 +8,7 @@ import { afterEach, expect, vi } from "vitest";
 import { resolveAssessmentDontKnow } from "../../../content-model/src";
 import { LocalStorageRuntime } from "../../src/scorm/local-storage-runtime";
 import type { SCORMRuntime } from "../../src/scorm/types";
+import type { CourseHostConfig } from "../../template/src/hosts/course-host";
 import { initializeScorm12Host } from "../../template/src/hosts/scorm12";
 import { initializeScorm2004Host } from "../../template/src/hosts/scorm2004";
 import { initializeStandaloneHost } from "../../template/src/hosts/standalone";
@@ -26,6 +27,7 @@ export function installChoiceCourseHost(
 	id: string,
 	data: AssessmentBlockData,
 	format: "standalone" | "scorm12" | "scorm2004" = "standalone",
+	config: Partial<CourseHostConfig> = {},
 ) {
 	active?.();
 	const block = resolveAssessmentDontKnow([
@@ -56,6 +58,7 @@ export function installChoiceCourseHost(
 				strings: {},
 				choiceStateQuestions: { [id]: facts.question },
 				choiceStateSignatures: { [id]: facts.signature },
+				...config,
 			},
 		],
 		["praxity-deployment-config", { format }],
@@ -94,7 +97,9 @@ export function installChoiceCourseHost(
 	}
 	const provider = window.__praxityBlockState as LearnerBlockStateRuntime;
 	const runtime = window.__praxityRuntime as SCORMRuntime;
-	expect(provider.getChoiceDependencyView?.()?.questions[id]).toEqual(facts.question);
+	expect(provider.getChoiceDependencyView?.()?.questions[id]).toEqual(
+		config.choiceStateQuestions ? config.choiceStateQuestions[id] : facts.question,
+	);
 	const write = vi.spyOn(provider, "set");
 	active = () => {
 		for (const dispose of disposals) dispose();

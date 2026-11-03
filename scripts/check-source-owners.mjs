@@ -176,6 +176,7 @@ const uiOnlyLearnerEvents = {
 	"praxity:active-page-change": "Current-page display and playback pause",
 	"praxity:visibility-change": "Visibility display refresh",
 	"praxity:runtime-ready": "Host admission notification",
+	"praxity:scorm-session-ended": "Save-failure display refresh; handlers only read receipts",
 	"praxity:self-check-owner": "Lifetime invalidation notification",
 	"praxity:islands-ready": "Bootstrap display readiness",
 	"praxity:islands-failed": "Bootstrap unavailable display",

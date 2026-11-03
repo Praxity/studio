@@ -32,6 +32,7 @@ import {
 import { deviceAttemptId } from "./device-attempt";
 import { writeObjectiveId } from "./objective-slots";
 import {
+	commitScormSession,
 	getSessionState,
 	readSessionState,
 	type ScormSessionState,
@@ -194,12 +195,10 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		return this.initialized && this.canCallLms() && this.setLmsValue(element, value);
 	}
 
-	private previousSuspendData?: string;
-	private submittedBlock?: string;
-	private blockSaveResults = new Map<string, LearnerBlockSaveResult>();
-
-	getBlockSaveResult(blockId: string) {
-		return this.blockSaveResults.get(blockId);
+	getBlockSaveResult(_blockId: string): LearnerBlockSaveResult | undefined {
+		return this.session?.commitRefused
+			? { status: "not-saved", code: "commit-refused" }
+			: undefined;
 	}
 
 	setCommitPreparation(prepare: () => void): void {
@@ -208,34 +207,20 @@ export class Scorm2004Runtime implements SCORMRuntime {
 
 	commit(): boolean {
 		if (!this.initialized || !this.canCallLms()) return false;
-		const id = this.submittedBlock;
-		const previous = this.previousSuspendData;
-		let saved = false;
-		try {
-			this.session?.prepareCommit?.();
-			saved = this.commitToLms();
-		} catch (error) {
-			if (!id) throw error;
-		}
-		this.submittedBlock = undefined;
-		this.previousSuspendData = undefined;
-		if (id && !saved) {
-			this.blockSaveResults.set(id, {
-				status: "not-saved",
-				code: "commit-refused",
-			});
-			if (previous !== undefined && !this.setValue("cmi.suspend_data", previous))
-				throw new Error("Could not restore the refused submission");
-		}
-		return saved;
+		this.session?.prepareCommit?.();
+		return this.commitToLms();
 	}
 
 	private commitToLms(): boolean {
-		if (!this.flushCompletion() || !this.prepareExit()) return false;
-		if (!this.session || !this.setLmsValue("cmi.session_time", sessionTime(this.session, "2004")))
+		if (
+			!this.session ||
+			this.session.closed ||
+			!this.flushCompletion() ||
+			!this.prepareExit() ||
+			!this.setLmsValue("cmi.session_time", sessionTime(this.session, "2004"))
+		)
 			return false;
-		const result = this.api?.Commit("");
-		return result === "true";
+		return commitScormSession(this.session, () => this.api?.Commit(""), this.win);
 	}
 
 	private flushCompletion(): boolean {
@@ -326,8 +311,6 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		options?: TrackInteractionOptions,
 	): void {
 		if (this.blockStatePolicy[id] === "device") return;
-		this.submittedBlock = id;
-		this.blockSaveResults.delete(id);
 		const n = this.interactionCount;
 		const storedResponse =
 			options?.assessmentType === "choice"
@@ -506,10 +489,7 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	// -------------------------------------------------------------------
 
 	setSuspendData(data: string): boolean {
-		const previous = this.getValue("cmi.suspend_data");
-		const saved = this.setValue("cmi.suspend_data", data);
-		this.previousSuspendData = saved ? previous : undefined;
-		return saved;
+		return this.setValue("cmi.suspend_data", data);
 	}
 
 	getSuspendData(): string | null {

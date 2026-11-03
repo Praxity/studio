@@ -172,7 +172,7 @@ it.each([
 	["scorm2004", "en", true],
 	["scorm2004", "fr", false],
 ] as const)(
-	"keeps a refused %s commit editable with a not-saved receipt and permits retry in %s, refused state write %s",
+	"keeps a refused %s commit editable with a not-saved receipt and ends the session in %s, refused state write %s",
 	(format, locale, refuseState) => {
 		const data: AssessmentBlockData = {
 			assessmentType: "choice",
@@ -255,7 +255,6 @@ it.each([
 			);
 			fireEvent.click(screen.getByRole("radio", { name: /Stop/ }));
 			provider.set("other", { answer: "Keep this earlier answer" });
-			const draft = provider.get("q");
 			refused = true;
 			calls.length = 0;
 			fireEvent.click(
@@ -270,32 +269,28 @@ it.each([
 			expect(calls.indexOf("cmi.interactions.0.id")).toBeLessThan(calls.indexOf("commit"));
 			expect(provider.getSaveResult?.("q")).toMatchObject({
 				status: "not-saved",
-				code: format === "scorm12" ? "runtime-write-failed" : "commit-refused",
+				code: "commit-refused",
 			});
 			expect(screen.getByRole("status")).toHaveTextContent(
 				locale === "en"
-					? "This answer could not be saved. Your previously saved progress is kept."
+					? "This answer could not be saved. Your previously saved progress is kept. To continue, close this course and open it again."
 					: "Cette réponse n’a pas pu être enregistrée. Votre progression enregistrée précédemment est conservée.",
 			);
-			expect(provider.get("q")).toEqual(draft);
-			expect(provider.get("other")).toEqual({ answer: "Keep this earlier answer" });
-			expect(provider.get("q")).toMatchObject({ checked: false, attemptCount: 0 });
+			expect(values["cmi.suspend_data"]).toContain("Keep this earlier answer");
 			expect(provider.getSaveResult?.("q")?.status).toBe("not-saved");
 			expect(runtime.getInteractions()).toEqual([]);
 			expect(screen.getByRole("radio", { name: /Stop/ })).toBeEnabled();
 			expect(screen.getByRole("radio", { name: /Stop/ })).toBeChecked();
 			expect(
 				screen.getByRole("button", { name: locale === "en" ? "Submit" : "Soumettre" }),
-			).toBeEnabled();
+			).toBeDisabled();
 			expect(document.querySelector('[data-completed="true"]')).toBeNull();
 			refused = false;
 			fireEvent.click(
 				screen.getByRole("button", { name: locale === "en" ? "Submit" : "Soumettre" }),
 			);
-			expect(provider.getSaveResult?.("q")?.status).toBe("saved");
-			expect(provider.get("q")).toMatchObject({ checked: true, attemptCount: 1 });
-			expect(runtime.getInteractions()).toHaveLength(1);
-			expect(screen.queryByRole("status")).toBeNull();
+			expect(provider.getSaveResult?.("q")?.status).toBe("not-saved");
+			expect(screen.getByRole("status")).toBeVisible();
 		} finally {
 			cleanup();
 			delete (window as Window & { API?: unknown }).API;
