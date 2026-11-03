@@ -1,4 +1,3 @@
-import type { LearnerBlockSaveResult } from "@praxity/shared-blocks/learner-block-state";
 /**
  * SCORM 2004 (4th Edition) runtime wrapper.
  *
@@ -16,6 +15,7 @@ import type { LearnerBlockSaveResult } from "@praxity/shared-blocks/learner-bloc
 // See docs/context/scorm-xapi-standards.md for spec references
 
 import { filterPrivateSuspendData } from "@praxity/shared-blocks/block-state-policy";
+import type { LearnerBlockSaveResult } from "@praxity/shared-blocks/learner-block-state";
 import { findWindowProperty, type WindowLike } from "../api-discovery.ts";
 import { truncateInteractionResponse } from "../interaction-response";
 import {

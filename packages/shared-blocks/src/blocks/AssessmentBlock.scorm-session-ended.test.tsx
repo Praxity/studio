@@ -249,9 +249,11 @@ it.each(cases)(
 		act(() => {
 			tracker.trackInteraction("later", "answer", true, 100);
 			tracker.checkCompletion();
+			tracker.trackPageVisit("deck-slide", "index.html?praxity-page=deck-slide");
 			tracker.trackGroupObjective("later-objective", 100, true);
 			runtime.setScore(100, 0, 100);
 			runtime.setCompletion("completed");
+			runtime.setCourseFailure?.(true);
 			runtime.trackObjective?.("retained-objective", 100, true);
 			window.dispatchEvent(new Event("beforeunload"));
 			window.dispatchEvent(new Event("pagehide"));
