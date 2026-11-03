@@ -532,7 +532,7 @@ function installScormLifecycle(
 				const hostWindow = environment.win as CourseHostWindow;
 				hostWindow.__praxityRuntime = undefined;
 				hostWindow.__praxityTracker = undefined;
-				hostWindow.__praxityBlockState = undefined;
+				if (!session?.commitRefused) hostWindow.__praxityBlockState = undefined;
 			}
 		}
 	};

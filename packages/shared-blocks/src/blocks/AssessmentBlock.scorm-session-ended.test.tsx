@@ -1,10 +1,12 @@
 import { MantineProvider } from "@mantine/core";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
+import type { CourseTracker } from "../../../export-pipeline/src/scorm/tracking";
 import { bufferPrivateBlockState } from "../../../export-pipeline/template/src/hosts/privacy-bootstrap";
 import { installChoiceCourseHost } from "../../../export-pipeline/tests/fixtures/choice-course-host";
 import { LocaleContext } from "../i18n/locale-context";
 import type { AssessmentBlockData } from "../types";
+import { navigatePageAction } from "../viewer/navigate-page";
 import { PreviewAssessmentBlock } from "./AssessmentBlock";
 
 const choice: AssessmentBlockData = {
@@ -186,6 +188,7 @@ it.each(cases)(
 			requiredAssessmentIds: ["q"],
 			blockStatePolicy: { other: "device" },
 		});
+		const tracker = window.__praxityTracker as CourseTracker;
 		provider.set("earlier", { answer: "Earlier saved answer" });
 		expect(runtime.commit()).toBe(true);
 		const before = { ...lms.server };
@@ -244,6 +247,12 @@ it.each(cases)(
 		}))
 			expect(button).toBeDisabled();
 		act(() => {
+			tracker.trackInteraction("later", "answer", true, 100);
+			tracker.checkCompletion();
+			tracker.trackGroupObjective("later-objective", 100, true);
+			runtime.setScore(100, 0, 100);
+			runtime.setCompletion("completed");
+			runtime.trackObjective?.("retained-objective", 100, true);
 			window.dispatchEvent(new Event("beforeunload"));
 			window.dispatchEvent(new Event("pagehide"));
 			window.__praxityFinishCourse?.();
@@ -301,6 +310,56 @@ it("does not roll later writes back after a failed SCORM 1.2 stage", () => {
 	expect(runtime.commit()).toBe(false);
 	expect(lms.values["cmi.suspend_data"]).toBe(before);
 });
+
+it.each(
+	(["scorm12", "scorm2004"] as const).flatMap((format) =>
+		(["en", "fr"] as const).map((locale) => ({ format, locale })),
+	),
+)(
+	"$format $locale retains the refused authored End receipt after editing an optional answer",
+	({ format, locale }) => {
+		vi.useFakeTimers();
+		const lms = moodle(format);
+		const optional = { ...choice, required: false };
+		const { runtime, provider } = installChoiceCourseHost("q", optional, format);
+		render(
+			<MantineProvider>
+				<LocaleContext.Provider value={locale}>
+					<PreviewAssessmentBlock blockId="q" data={optional} />
+				</LocaleContext.Provider>
+			</MantineProvider>,
+		);
+		fireEvent.click(screen.getByRole("radio", { name: /Stop/ }));
+		lms.fail("false");
+		act(() => {
+			expect(
+				navigatePageAction("__end_lesson__", {
+					currentPage: 1,
+					currentSlug: "practice",
+					pages: [{ slug: "practice" }],
+					pageIdMap: { page: "practice" },
+				}),
+			).toBe(false);
+		});
+		const calls = [...lms.calls];
+		fireEvent.click(screen.getByRole("radio", { name: /Go/ }));
+		const submit = screen.getByRole("button", { name: locale === "en" ? "Submit" : "Soumettre" });
+		fireEvent.click(submit);
+		expect(screen.getByRole("status")).toHaveTextContent(notices[locale]);
+		expect(submit).toBeDisabled();
+		expect(screen.getByRole("radio", { name: /Go/ })).toBeChecked();
+		expect(document.querySelector('[data-completed="true"]')).toBeNull();
+		expect(document.querySelector('[data-attempted="true"]')).toBeNull();
+		expect(window.__praxityBlockState).toBe(provider);
+		expect(provider.getSaveResult?.("q")).toEqual({ status: "not-saved", code: "commit-refused" });
+		act(() => {
+			window.dispatchEvent(new Event("pagehide"));
+			runtime.commit();
+			runtime.terminate();
+		});
+		expect(lms.calls).toEqual(calls);
+	},
+);
 
 it("keeps device receipts independent of unreadable LMS state before a commit refusal", () => {
 	vi.useFakeTimers();

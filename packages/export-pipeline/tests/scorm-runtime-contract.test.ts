@@ -1965,6 +1965,9 @@ for (const version of ["1.2", "2004"] as const) {
 					expect(runtime.initialize()).toBe(false);
 					expect(runtime.terminate()).toBe(false);
 					expect(runtime.commit()).toBe(false);
+					runtime.setScore(100, 0, 100);
+					runtime.setCompletion("completed");
+					runtime.trackObjective?.("after-refusal", 100, true);
 					expect(api.calls).toEqual(calls);
 					return;
 				}
