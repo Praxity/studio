@@ -242,16 +242,20 @@ function mountDeck(win: Window & typeof globalThis) {
 }
 
 describe.each(["scorm12", "scorm2004"] as const)("%s commit preparation", (format) => {
-	it("characterization preserves duplicate lifecycle commits and failed Finish", () => {
+	it("preserves successful lifecycle writes and closes communication after refused Finish", () => {
 		const lms = launch(format);
 		const { win, runtime } = lms.page();
 		for (const name of triggers.slice(0, -1)) trigger(name, win, runtime);
 		lms.failCommit();
 		const refused = win.__praxityFinishCourse?.();
+		const atRefusal = [...lms.writes];
 		lms.allowCommit();
 		const finished = win.__praxityFinishCourse?.();
 		win.dispatchEvent(new win.Event("pagehide"));
 		win.dispatchEvent(new win.Event("beforeunload"));
+		expect(refused).toBe(false);
+		expect(finished).toBe(false);
+		expect(lms.writes).toEqual(atRefusal);
 		expect({ refused, finished, writes: lms.writes }).toMatchSnapshot();
 	});
 
@@ -434,8 +438,7 @@ describe.each(["scorm12", "scorm2004"] as const)("%s commit preparation", (forma
 		const current = vi.fn();
 		second.runtime.setCommitPreparation?.(current);
 		expect(first.runtime.terminate()).toBe(true);
-		if (format === "scorm12") expect(() => first.runtime.commit()).toThrow("not initialized");
-		else expect(first.runtime.commit()).toBe(false);
+		expect(first.runtime.commit()).toBe(false);
 		expect(current).not.toHaveBeenCalled();
 		expect(calls).toBe(1);
 		expect(closed).toEqual(lms.writes.slice(0, closed.length));

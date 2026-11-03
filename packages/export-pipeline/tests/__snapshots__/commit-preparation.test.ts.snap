@@ -1,8 +1,8 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`scorm12 commit preparation > characterization preserves duplicate lifecycle commits and failed Finish 1`] = `
+exports[`scorm12 commit preparation > preserves successful lifecycle writes and closes communication after refused Finish 1`] = `
 {
-  "finished": true,
+  "finished": false,
   "refused": false,
   "writes": [
     [
@@ -84,31 +84,13 @@ exports[`scorm12 commit preparation > characterization preserves duplicate lifec
     [
       "commit",
     ],
-    [
-      "cmi.core.lesson_status",
-      "completed",
-    ],
-    [
-      "cmi.core.exit",
-      "",
-    ],
-    [
-      "cmi.core.session_time",
-      "0000:00:00.00",
-    ],
-    [
-      "commit",
-    ],
-    [
-      "terminate",
-    ],
   ],
 }
 `;
 
-exports[`scorm2004 commit preparation > characterization preserves duplicate lifecycle commits and failed Finish 1`] = `
+exports[`scorm2004 commit preparation > preserves successful lifecycle writes and closes communication after refused Finish 1`] = `
 {
-  "finished": true,
+  "finished": false,
   "refused": false,
   "writes": [
     [
@@ -189,24 +171,6 @@ exports[`scorm2004 commit preparation > characterization preserves duplicate lif
     ],
     [
       "commit",
-    ],
-    [
-      "cmi.completion_status",
-      "completed",
-    ],
-    [
-      "cmi.exit",
-      "normal",
-    ],
-    [
-      "cmi.session_time",
-      "PT0S",
-    ],
-    [
-      "commit",
-    ],
-    [
-      "terminate",
     ],
   ],
 }

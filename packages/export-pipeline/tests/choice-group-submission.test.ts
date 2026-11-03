@@ -233,7 +233,8 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 			["cmi.objectives.0.score.raw", "100"],
 			[`cmi.objectives.0.${format === "scorm12" ? "status" : "success_status"}`, "passed"],
 		]);
-		if (format === "scorm2004") expect(provider.getSaveResult).toBeUndefined();
+		expect(provider.getSaveResult).toBeTypeOf("function");
+		expect(provider.getSaveResult?.("never-submitted")).toBeUndefined();
 	});
 	it(`${format} verifies the candidate against repaired members before objective-first reporting`, () => {
 		const { provider, runtime, view, order } = launch(format, true);

@@ -1936,7 +1936,7 @@ for (const version of ["1.2", "2004"] as const) {
 		});
 
 		it.each(["exit", "commit", "commit throw"])(
-			"keeps the session retryable after %s failure",
+			"keeps preparation retryable but ends the launch after %s failure",
 			(failure) => {
 				const { api, makeRuntime } = launch();
 				const runtime = makeRuntime();
@@ -1954,9 +1954,23 @@ for (const version of ["1.2", "2004"] as const) {
 						throw new Error("Commit failed");
 					});
 				else spy.mockReturnValueOnce("false");
-				if (failure === "commit throw") expect(() => runtime.terminate()).toThrow("Commit failed");
-				else expect(runtime.terminate()).toBe(false);
+				expect(runtime.terminate()).toBe(false);
 				expect(api.calls.filter(([name]) => name === terminate)).toHaveLength(0);
+				if (failure !== "exit") {
+					expect(runtime.getBlockSaveResult?.("any")).toEqual({
+						status: "not-saved",
+						code: "commit-refused",
+					});
+					const calls = [...api.calls];
+					expect(runtime.initialize()).toBe(false);
+					expect(runtime.terminate()).toBe(false);
+					expect(runtime.commit()).toBe(false);
+					runtime.setScore(100, 0, 100);
+					runtime.setCompletion("completed");
+					runtime.trackObjective?.("after-refusal", 100, true);
+					expect(api.calls).toEqual(calls);
+					return;
+				}
 				expect(runtime.initialize()).toBe(true);
 				runtime.setBookmark("retry");
 				expect(runtime.getBookmark()).toBe("retry");

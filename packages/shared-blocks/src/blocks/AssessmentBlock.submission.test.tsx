@@ -164,3 +164,138 @@ it.each(["en", "fr"])(
 		}
 	},
 );
+
+it.each([
+	["scorm12", "en", false],
+	["scorm12", "fr", false],
+	["scorm2004", "en", false],
+	["scorm2004", "en", true],
+	["scorm2004", "fr", false],
+] as const)(
+	"keeps a refused %s commit editable with a not-saved receipt and ends the session in %s, refused state write %s",
+	(format, locale, refuseState) => {
+		const data: AssessmentBlockData = {
+			assessmentType: "choice",
+			gradingMode: "exact",
+			points: 100,
+			attempts: 1,
+			feedback: {},
+			stem: [{ id: "stem", type: "text", data: { content: "Choose safely" } }],
+			response: {
+				type: "choice",
+				selectionMode: "single",
+				inputMethod: "click",
+				display: "list",
+				shuffle: false,
+				options: [
+					{ id: "stop", label: "Stop", isCorrect: true },
+					{ id: "go", label: "Go" },
+				],
+			},
+		};
+		const values: Record<string, string> = {};
+		const calls: string[] = [];
+		let refused = false;
+		let error = "0";
+		const api = {
+			initialize: () => "true",
+			finish: () => "true",
+			get: (key: string) => {
+				error = "0";
+				return values[key] ?? "";
+			},
+			set: (key: string, value: string) => {
+				calls.push(key);
+				if (refused && refuseState && key === "cmi.suspend_data") return "false";
+				error = "0";
+				values[key] = value;
+				return "true";
+			},
+			commit: () => {
+				calls.push("commit");
+				error = refused ? "101" : "0";
+				return refused ? "false" : "true";
+			},
+			lastError: () => error,
+		};
+		Object.assign(
+			window,
+			format === "scorm12"
+				? {
+						API: {
+							LMSInitialize: api.initialize,
+							LMSFinish: api.finish,
+							LMSGetValue: api.get,
+							LMSSetValue: api.set,
+							LMSCommit: api.commit,
+							LMSGetLastError: api.lastError,
+							LMSGetErrorString: () => "General exception",
+							LMSGetDiagnostic: () => "",
+						},
+					}
+				: {
+						API_1484_11: {
+							Initialize: api.initialize,
+							Terminate: api.finish,
+							GetValue: api.get,
+							SetValue: api.set,
+							Commit: api.commit,
+							GetLastError: api.lastError,
+						},
+					},
+		);
+		const { provider, runtime } = installChoiceCourseHost("q", data, format);
+		try {
+			render(
+				<MantineProvider>
+					<LocaleContext.Provider value={locale}>
+						<PreviewAssessmentBlock blockId="q" data={data} />
+					</LocaleContext.Provider>
+				</MantineProvider>,
+			);
+			fireEvent.click(screen.getByRole("radio", { name: /Stop/ }));
+			provider.set("other", { answer: "Keep this earlier answer" });
+			refused = true;
+			calls.length = 0;
+			fireEvent.click(
+				screen.getByRole("button", { name: locale === "en" ? "Submit" : "Soumettre" }),
+			);
+			expect(calls).toEqual(
+				expect.arrayContaining(["cmi.suspend_data", "cmi.interactions.0.id", "commit"]),
+			);
+			expect(calls.indexOf("cmi.suspend_data")).toBeLessThan(
+				calls.indexOf("cmi.interactions.0.id"),
+			);
+			expect(calls.indexOf("cmi.interactions.0.id")).toBeLessThan(calls.indexOf("commit"));
+			expect(provider.getSaveResult?.("q")).toMatchObject({
+				status: "not-saved",
+				code: "commit-refused",
+			});
+			expect(screen.getByRole("status")).toHaveTextContent(
+				locale === "en"
+					? "This answer could not be saved. Your previously saved progress is kept. To continue, close this course and open it again."
+					: "Cette réponse n’a pas pu être enregistrée. Votre progression enregistrée précédemment est conservée.",
+			);
+			expect(values["cmi.suspend_data"]).toContain("Keep this earlier answer");
+			expect(provider.getSaveResult?.("q")?.status).toBe("not-saved");
+			expect(runtime.getInteractions()).toEqual([]);
+			expect(screen.getByRole("radio", { name: /Stop/ })).toBeEnabled();
+			expect(screen.getByRole("radio", { name: /Stop/ })).toBeChecked();
+			expect(
+				screen.getByRole("button", { name: locale === "en" ? "Submit" : "Soumettre" }),
+			).toBeDisabled();
+			expect(document.querySelector('[data-completed="true"]')).toBeNull();
+			refused = false;
+			fireEvent.click(
+				screen.getByRole("button", { name: locale === "en" ? "Submit" : "Soumettre" }),
+			);
+			expect(provider.getSaveResult?.("q")?.status).toBe("not-saved");
+			expect(screen.getByRole("status")).toBeVisible();
+		} finally {
+			cleanup();
+			delete (window as Window & { API?: unknown }).API;
+			delete (window as Window & { API_1484_11?: unknown }).API_1484_11;
+			vi.restoreAllMocks();
+		}
+	},
+);
