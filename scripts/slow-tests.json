@@ -2512,54 +2512,6 @@
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2154 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
 	{
-		"file": "apps/desktop/src/shared/project-write-errors.test.ts",
-		"name": "has no question marks inside words in French catalogs or message modules",
-		"reason": "Borderline on merge candidate run 39192695623 (Linux shared host): 3322 ms in shard, 2135 ms alone. Unrelated to the candidate; remove when it meets the 2000 ms budget.",
-		"added": "2026-10-19",
-		"run": "39192695623",
-		"backlog": "Merge candidate run 39192695623: borderline slow-test follow-up, expire 2026-11-02"
-	},
-	{
-		"file": "packages/export-pipeline/tests/self-check-release.test.ts",
-		"name": "publishes the en fixture through the project CLI",
-		"reason": "Borderline on merge candidate run 39192695623 (Linux shared host): 2154 ms in shard, 2005 ms alone. Unrelated to the candidate; remove when it meets the 2000 ms budget.",
-		"added": "2026-10-19",
-		"run": "39192695623",
-		"backlog": "Merge candidate run 39192695623: borderline slow-test follow-up, expire 2026-11-02"
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/identity-write-correspondence.test.ts",
-		"name": "I4 a successful edit returns New and its child to the author, then reloads durable IDs",
-		"reason": "Over budget on PR run 39212840453 (Linux shared host): 2957 ms in shard, 2380 ms alone. Remove when it meets the 2000 ms budget.",
-		"added": "2026-10-19",
-		"run": "39212840453",
-		"backlog": "PR run 39212840453: identity write-correspondence test over budget, expire 2026-11-02"
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/edit-cli.test.ts",
-		"name": "O7 move keeps every moved ID without creating review metadata",
-		"reason": "Over budget on PR run 39259956943 (Linux shared host): 4000 ms in shard, 3247 ms alone. Remove when it meets the 2000 ms budget.",
-		"added": "2026-10-19",
-		"run": "39259956943",
-		"backlog": "PR run 39259956943: edit CLI O7 move test over budget, expire 2026-11-02"
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/lesson-source-identity-reuse.test.ts",
-		"name": "rereads oversized history but validates it once in a clean public save",
-		"reason": "Over budget on PR run 39259956943 (Linux shared host): 2303 ms in shard, 2064 ms alone. Remove when it meets the 2000 ms budget.",
-		"added": "2026-10-19",
-		"run": "39259956943",
-		"backlog": "PR run 39259956943: identity-reuse oversized-history test over budget, expire 2026-11-02"
-	},
-	{
-		"file": "packages/editor-core/src/frame-bridge/control-lifetime.test.ts",
-		"name": "retired handles and shadow adapters can be collected while the lens stays alive",
-		"reason": "Borderline on merge candidate run 39449974372 (#1826, Linux shared host): 2934 ms in shard, 2070 ms alone. Unrelated to the candidate; remove when it meets the 2000 ms budget.",
-		"added": "2026-10-20",
-		"run": "39449974372",
-		"backlog": "Merge candidate run 39449974372: editor-core GC test slow-test follow-up, expire 2026-11-03"
-	},
-	{
 		"file": "apps/desktop/src/main/__tests__/cli-permission.test.ts",
 		"name": "exports under permissions with assessment configuration and unchanged course identity",
 		"reason": "Linux shared-host runs at e844d74 with 21 to 23% CPU steal: 2599 ms in shard and 2018 ms alone, then 2191 ms in shard and 2098 ms alone, against the 2000 ms budget. Unrelated PR blocked twice; remove when it meets the budget.",
