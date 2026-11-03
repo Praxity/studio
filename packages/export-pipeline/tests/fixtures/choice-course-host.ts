@@ -9,6 +9,7 @@ import { resolveAssessmentDontKnow } from "../../../content-model/src";
 import { LocalStorageRuntime } from "../../src/scorm/local-storage-runtime";
 import type { SCORMRuntime } from "../../src/scorm/types";
 import { initializeScorm12Host } from "../../template/src/hosts/scorm12";
+import { initializeScorm2004Host } from "../../template/src/hosts/scorm2004";
 import { initializeStandaloneHost } from "../../template/src/hosts/standalone";
 
 let active: (() => void) | undefined;
@@ -24,7 +25,7 @@ afterEach(() => {
 export function installChoiceCourseHost(
 	id: string,
 	data: AssessmentBlockData,
-	format: "standalone" | "scorm12" = "standalone",
+	format: "standalone" | "scorm12" | "scorm2004" = "standalone",
 ) {
 	active?.();
 	const block = resolveAssessmentDontKnow([
@@ -80,7 +81,13 @@ export function installChoiceCourseHost(
 	const ready = Object.getOwnPropertyDescriptor(document, "readyState");
 	Object.defineProperty(document, "readyState", { configurable: true, value: "complete" });
 	try {
-		expect((format === "scorm12" ? initializeScorm12Host : initializeStandaloneHost)()).toBe(true);
+		expect(
+			(format === "scorm12"
+				? initializeScorm12Host
+				: format === "scorm2004"
+					? initializeScorm2004Host
+					: initializeStandaloneHost)(),
+		).toBe(true);
 	} finally {
 		docSpy.mockRestore();
 		winSpy.mockRestore();

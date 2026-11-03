@@ -1,3 +1,4 @@
+import type { LearnerBlockSaveResult } from "@praxity/shared-blocks/learner-block-state";
 /**
  * SCORM 2004 (4th Edition) runtime wrapper.
  *
@@ -193,14 +194,40 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		return this.initialized && this.canCallLms() && this.setLmsValue(element, value);
 	}
 
+	private previousSuspendData?: string;
+	private submittedBlock?: string;
+	private blockSaveResults = new Map<string, LearnerBlockSaveResult>();
+
+	getBlockSaveResult(blockId: string) {
+		return this.blockSaveResults.get(blockId);
+	}
+
 	setCommitPreparation(prepare: () => void): void {
 		if (this.session) this.session.prepareCommit = prepare;
 	}
 
 	commit(): boolean {
 		if (!this.initialized || !this.canCallLms()) return false;
-		this.session?.prepareCommit?.();
-		return this.commitToLms();
+		const id = this.submittedBlock;
+		const previous = this.previousSuspendData;
+		let saved = false;
+		try {
+			this.session?.prepareCommit?.();
+			saved = this.commitToLms();
+		} catch (error) {
+			if (!id) throw error;
+		}
+		this.submittedBlock = undefined;
+		this.previousSuspendData = undefined;
+		if (id && !saved) {
+			this.blockSaveResults.set(id, {
+				status: "not-saved",
+				code: "commit-refused",
+			});
+			if (previous !== undefined && !this.setValue("cmi.suspend_data", previous))
+				throw new Error("Could not restore the refused submission");
+		}
+		return saved;
 	}
 
 	private commitToLms(): boolean {
@@ -299,6 +326,8 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		options?: TrackInteractionOptions,
 	): void {
 		if (this.blockStatePolicy[id] === "device") return;
+		this.submittedBlock = id;
+		this.blockSaveResults.delete(id);
 		const n = this.interactionCount;
 		const storedResponse =
 			options?.assessmentType === "choice"
@@ -477,7 +506,10 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	// -------------------------------------------------------------------
 
 	setSuspendData(data: string): boolean {
-		return this.setValue("cmi.suspend_data", data);
+		const previous = this.getValue("cmi.suspend_data");
+		const saved = this.setValue("cmi.suspend_data", data);
+		this.previousSuspendData = saved ? previous : undefined;
+		return saved;
 	}
 
 	getSuspendData(): string | null {

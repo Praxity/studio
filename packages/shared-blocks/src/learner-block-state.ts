@@ -14,6 +14,7 @@ export type LearnerBlockSaveResult =
 				| "identity-unavailable"
 				| "storage-unavailable"
 				| "runtime-write-failed"
+				| "commit-refused"
 				| "unreadable-state"
 				| "runtime-loading";
 	  };

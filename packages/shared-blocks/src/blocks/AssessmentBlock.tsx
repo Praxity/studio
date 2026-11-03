@@ -2477,7 +2477,7 @@ export function PreviewAssessmentBlock({
 			const result = readLearnerBlockSaveResult(blockId);
 			if (
 				result?.status === "not-saved" &&
-				(atomicSubmission || result.code === "unreadable-state")
+				(atomicSubmission || result.code === "commit-refused" || result.code === "unreadable-state")
 			) {
 				refuseSubmission();
 				return;
@@ -2994,8 +2994,8 @@ export function PreviewAssessmentBlock({
 
 				{assessmentDisplay !== "scenario" && descriptionMarkup}
 				{typeof window !== "undefined" &&
-					window.__praxityBlockState?.stageSubmission &&
 					saveResult?.status === "not-saved" &&
+					(window.__praxityBlockState?.stageSubmission || saveResult.code === "commit-refused") &&
 					((assessmentType === "choice" && data.private !== true) ||
 						saveResult.code === "unreadable-state") && (
 						<Text size="sm" role="status" c="dimmed">

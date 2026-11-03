@@ -65,11 +65,11 @@ export function createPrivateBlockStateRuntime(
 			return blockReportingDestination(runtime, policy(blockId));
 		},
 		getSaveResult:
-			runtime.stageSubmission || hasPolicy
+			runtime.getBlockSaveResult || hasPolicy
 				? (blockId) => {
 						const held =
 							policy(blockId) === "lms" ? runtime.getBlockSaveResult?.(blockId) : undefined;
-						if (held?.status === "not-saved" && held.code === "unreadable-state") return held;
+						if (held?.status === "not-saved") return held;
 						const local = results.get(blockId);
 						const result =
 							local?.status === "not-saved"

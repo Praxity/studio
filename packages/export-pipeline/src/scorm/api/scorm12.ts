@@ -115,6 +115,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 		this.heldMemory.set(blockId, value);
 		return this.heldDrafts?.setBlockState(blockId, value) ?? false;
 	}
+	private awaitingCommit?: { blockId: string; raw: string };
 	private blockSaveResults = new Map<string, LearnerBlockSaveResult>();
 
 	/** The checked state is provisional until its matching row fits the same suspend write. */
@@ -123,6 +124,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 		if (this.submission) throw new Error("A SCORM submission is already pending");
 		const data = this.loadSuspendPayload();
 		if (this.unreadableSuspendData) return false;
+		this.awaitingCommit = { blockId, raw: this.lmsGetValue("cmi.suspend_data") };
 		this.submission = { blockId, data };
 		try {
 			this.blockSaveResults.set(blockId, { status: "pending" });
@@ -462,7 +464,18 @@ export class Scorm12Runtime implements SCORMRuntime {
 		this.ensureInitialized();
 		this.loadSuspendPayload();
 		this.session?.prepareCommit?.();
-		return this.commitToLms();
+		const saved = this.commitToLms();
+		const pending = this.awaitingCommit;
+		this.awaitingCommit = undefined;
+		if (pending && !saved) {
+			this.blockSaveResults.set(pending.blockId, {
+				status: "not-saved",
+				code: "runtime-write-failed",
+			});
+			if (!this.lmsSetValue("cmi.suspend_data", pending.raw))
+				throw new Error("Could not restore the refused submission");
+		}
+		return saved;
 	}
 
 	private commitToLms(): boolean {
@@ -474,7 +487,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 			return false;
 		const result = this.api?.LMSCommit("");
 		if (result !== "true") {
-			this.throwIfError("LMSCommit");
+			if (!this.awaitingCommit) this.throwIfError("LMSCommit");
 			return false;
 		}
 		return true;
