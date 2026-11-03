@@ -14,9 +14,9 @@ describe("SCORM communication session", () => {
 			expect(readSessionState(api, first)).toBe(false);
 			writeSessionState(api, true, first);
 			expect(readSessionState(api, next)).toBe(true);
-			// index.html starts a new launch even when the LMS reuses its API object.
+			// Index alone does not prove the LMS started another launch.
 			resetSessionState(api, next);
-			expect(readSessionState(api, first)).toBe(false);
+			expect(readSessionState(api, first)).toBe(true);
 		},
 	);
 

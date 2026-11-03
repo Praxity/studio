@@ -118,7 +118,7 @@ function redirect(config: RedirectShellConfig): void {
 		// The stable-ID route stays in this SCO, including native GET forms.
 		params.set("praxity-resume", "0");
 	} else if (config.pageIdMap) {
-		// Only the launch entry without a selected page resets communication bookkeeping.
+		// A bare entry may be an internal return or a genuinely new LMS launch.
 		resetScormSessions(window);
 	}
 	const url = new URL(target, location.href);
