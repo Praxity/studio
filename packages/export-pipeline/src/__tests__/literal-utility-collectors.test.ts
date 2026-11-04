@@ -31,7 +31,7 @@ it("compiles literal self-check tasks without utility entries and keeps nested r
 	const zip = new AdmZip((await deployCourse(artifact, { format: "html" })).zip);
 	const doc = new JSDOM(zip.readAsText("practice.html")).window.document;
 	expect(
-		[...doc.querySelectorAll("[data-self-check] .praxity-assessment-stem")].some(
+		[...doc.querySelectorAll('[data-self-check] [id$="-task"]')].some(
 			(p) => p.textContent === task,
 		),
 	).toBe(true);

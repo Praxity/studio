@@ -3,11 +3,11 @@ import { resolveLocale } from "./locale";
 export const selfCheckCompletionStrings = {
 	en: {
 		selfCheckIncomplete:
-			"Write an answer, check its parts, then show feedback to complete this activity.",
+			"Write an answer, review it against the checklist, then show the example and feedback to complete this activity.",
 	},
 	fr: {
 		selfCheckIncomplete:
-			"Écrivez une réponse, vérifiez ses éléments, puis affichez la rétroaction pour terminer cette activité.",
+			"Écrivez une réponse, revoyez-la avec la liste de vérification, puis affichez l'exemple et la rétroaction pour terminer cette activité.",
 	},
 } as const;
 export function getSelfCheckCompletionStrings(locale: string) {

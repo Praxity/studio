@@ -2709,6 +2709,7 @@ for (const width of [1280, 390]) {
 					const actions = card.querySelector(".praxity-assessment-actions");
 					const style = getComputedStyle(stem);
 					return {
+						prompt: stem.classList.contains("praxity-assessment-stem-prompt"),
 						font: style.fontSize,
 						lineHeight: Number.parseFloat(style.lineHeight) / Number.parseFloat(style.fontSize),
 						expected: style.getPropertyValue("--type-h3").trim(),
@@ -2722,6 +2723,11 @@ for (const width of [1280, 390]) {
 		for (const layout of layouts) {
 			expect.soft(layout.pointsBelow, "points below stem").toBe(true);
 			expect.soft(layout.emptyActionHeight, "no reserved action band").toBe(0);
+			// A long free-response task is a body-size prompt, not a title.
+			if (layout.prompt) {
+				expect.soft(layout.lineHeight, "prompt line height").toBeCloseTo(1.55);
+				continue;
+			}
 			expect.soft(Number.parseFloat(layout.font)).toBe(width === 390 ? 21 : 24);
 			expect.soft(layout.lineHeight, "heading line height").toBeCloseTo(1.2);
 		}

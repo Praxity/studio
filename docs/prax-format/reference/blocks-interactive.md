@@ -27,7 +27,7 @@ The subject is an optional title. Write at least one `- [ ] Task` line. Use `- [
 
 Compare a written answer with criteria and a model. See the [example](../examples/self-check/en.prax).
 
-Self-checks work in preview, HTML, SCORM and xAPI exports. In xAPI, the default private mode keeps answers on the device; `private=false` permits answer reporting to the configured learning record store. Write an answer, select Check to reveal the criteria, then select Show feedback to compare with the model and hints. Check moves focus to the first criterion. Show feedback keeps focus and announces one summary. Zero selected criteria is a valid comparison. Editing keeps the previous comparison until the next Show feedback; Start over clears it. Narration reads only the task.
+A task longer than 80 characters, or with a second sentence, shows as body text under a generated Self-check heading, without the tinted header or icon. Keep the task short when you want it as the title. Self-checks work in preview, HTML, SCORM and xAPI exports. In xAPI, the default private mode keeps answers on the device; `private=false` permits answer reporting to the configured learning record store. Write an answer, select Review against the checklist to reveal the criteria, then select Show example and feedback to compare with the model and hints. A line under the first button tells learners they compare the answer themselves; in the default private mode it adds that the answer isn't sent anywhere. Review against the checklist moves focus to the first criterion. Show example and feedback keeps focus and announces one summary. Zero selected criteria is a valid comparison. Editing keeps the previous comparison until the next Show example and feedback; Start over clears it. Narration reads only the task.
 
 Without JavaScript, the task and labelled answer field remain usable with a notice that comparison needs JavaScript. Model answers and hints ship in each activity's own runtime asset and can be read from the offline package. Missing required runtime assets refuse compilation. Browser print includes only revealed content and the current answer. Learner PDF export refuses courses containing self-checks. Enable the author answer sheet to export a workbook with tasks, model answers, evidence numbers and criterion hints.
 
@@ -41,13 +41,13 @@ Authored self-check fields have inclusive maxima: task 400; model 1,500; each cr
 
 These limits apply only to authored text. Learner answers and the number of criteria have no length or count limit. Drafts keep the learner's complete answer.
 
-If SCORM 1.2 saved progress can't be read, Studio leaves it untouched and shows an unavailable notice. Learners can edit their answer, but Show feedback stays unavailable. The browser tab can restore the unsubmitted draft after reload for the same course, LMS learner and unreadable saved progress. It won't restore that draft for another course, learner or saved record, or after saved progress loads successfully. If the browser can't save the draft or the LMS can't identify the learner, keep a copy before leaving.
+If SCORM 1.2 saved progress can't be read, Studio leaves it untouched and shows an unavailable notice. Learners can edit their answer, but Show example and feedback stays unavailable. The browser tab can restore the unsubmitted draft after reload for the same course, LMS learner and unreadable saved progress. It won't restore that draft for another course, learner or saved record, or after saved progress loads successfully. If the browser can't save the draft or the LMS can't identify the learner, keep a copy before leaving.
 
 [Shared block settings](blocks.md#shared-block-settings) apply.
 
 | Setting | Values | Default | Purpose |
 |---|---|---|---|
-| `required` | `true`, `false` | Omitted | Require a valid Show feedback action for completion, including zero ticks. |
+| `required` | `true`, `false` | Omitted | Require a valid Show example and feedback action for completion, including zero ticks. |
 | `deckGate` | `attempt` | Omitted | Release a guided-slide gate after a valid Show feedback action. |
 | `private` | `true`, `false` | `true` | `false` allows the learner's answer in LMS reporting. |
 

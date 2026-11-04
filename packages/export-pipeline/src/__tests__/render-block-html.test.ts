@@ -1532,3 +1532,46 @@ it.each(["grid", "masonry", "single"])(
 		expect(html).toContain("Hide answer");
 	},
 );
+
+it("keeps checklist item text, code and emphasis in one inline label run", () => {
+	const dom = new JSDOM(
+		renderBlockHtml({
+			id: "files",
+			type: "checklist",
+			data: { items: [{ id: "inbox", text: "Check that `inbox` still has **twelve** files" }] },
+		}),
+	);
+	try {
+		const label = dom.window.document.querySelector("[data-checklist-item] > label");
+		// A flex label makes every text node and inline element its own column.
+		expect([...(label?.childNodes ?? [])].map((node) => node.nodeName)).toEqual(["INPUT", "SPAN"]);
+		const text = label?.querySelector("span");
+		expect(text?.textContent).toBe("Check that inbox still has twelve files");
+		expect(text?.querySelector("code")?.textContent).toBe("inbox");
+		expect(text?.querySelector("strong")?.textContent).toBe("twelve");
+	} finally {
+		dom.window.close();
+	}
+});
+
+it("renders a long free-response task as a body-size prompt without the journal band", () => {
+	const task =
+		"Write your current map, the workaround you found, and your redesign. Then compare it with the example.";
+	const doc = new JSDOM(
+		renderBlockHtml({
+			id: "journal-long",
+			type: "assessment",
+			data: {
+				assessmentType: "textResponse",
+				gradingMode: "none",
+				private: true,
+				stem: [{ id: "stem", type: "text", data: { content: `<p>${task}</p>` } }],
+				response: { type: "textResponse", inputType: "long" },
+			},
+		} as PraxityBlock),
+	).window.document;
+	expect(doc.querySelector(".praxity-scene")).toBeNull();
+	const stem = doc.getElementById("assessment-question-journal-long");
+	expect(stem?.classList.contains("praxity-assessment-stem-prompt")).toBe(true);
+	expect(stem?.textContent).toBe(task);
+});

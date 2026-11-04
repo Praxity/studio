@@ -41,7 +41,7 @@ it.each([false, true])(
 		if (!prompt) throw new Error("Missing prompt");
 		const fragment = renderNode(context, page.id, prompt.id, prompt);
 		const doc = new JSDOM(fragment.html).window.document;
-		expect(doc.querySelector("[data-self-check] h2")?.textContent).toBe(task);
+		expect(doc.querySelector('[data-self-check] [id$="-task"]')?.textContent).toBe(task);
 		expect(doc.querySelectorAll("[data-self-check-context-pending]")).toHaveLength(1);
 		expect(
 			doc.querySelector("[data-self-check-context-pending]")?.hasAttribute("data-self-check"),

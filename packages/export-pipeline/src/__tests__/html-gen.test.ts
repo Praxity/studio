@@ -1696,6 +1696,53 @@ describe("generateHtmlPage", () => {
 		expect(html).toContain('class="praxity-block praxity-block-text praxity-block-txt-1"');
 	});
 
+	it("gives answer tables with many columns the feature width", () => {
+		const categorize = (id: string, count: number) => ({
+			id,
+			type: "assessment" as const,
+			data: {
+				assessmentType: "categorize",
+				stem: [],
+				response: {
+					type: "categorize",
+					categories: Array.from({ length: count }, (_, index) => ({
+						id: `c${index}`,
+						name: `Group ${index}`,
+						items: [`Item ${index}`],
+					})),
+				},
+			},
+		});
+		const matrix = (id: string, count: number) => ({
+			id,
+			type: "assessment" as const,
+			data: {
+				assessmentType: "matrix",
+				stem: [],
+				response: {
+					type: "matrix",
+					statements: [{ id: "s", text: "Statement" }],
+					scalePoints: Array.from({ length: count }, (_, value) => ({ value, label: `P${value}` })),
+				},
+			},
+		});
+		const html = renderPage({
+			pages: [
+				{
+					id: "page-1",
+					title: "Sort",
+					blocks: [categorize("three", 3), categorize("five", 5), matrix("m3", 3), matrix("m5", 5)],
+				},
+			],
+		});
+		const classes = (id: string) =>
+			html.match(new RegExp(`class="([^"]*praxity-block-${id}[^"]*)"`))?.[1] ?? "";
+		expect(classes("three")).not.toContain("praxity-block-feature-width");
+		expect(classes("five")).toContain("praxity-block-feature-width");
+		expect(classes("m3")).not.toContain("praxity-block-feature-width");
+		expect(classes("m5")).toContain("praxity-block-feature-width");
+	});
+
 	it("uses the universal layout parameter for full-frame images", () => {
 		const html = renderPage({
 			pages: [

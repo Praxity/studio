@@ -131,6 +131,8 @@ Ask learners to sort entries into categories. See the [example](../examples/full
 
 The subject is the question. Write at least two titled `::` categories. Each contains a nonempty flat bullet list of its correct entries.
 
+Learners see a table when the activity is wide enough for every category column. Otherwise each entry lists its categories as one row of choices. Five or more categories use the wider feature width on desktop. Check stays available with a count of sorted entries; checking early moves focus to the first unsorted entry and says how many are left.
+
 [Shared block settings](blocks.md#shared-block-settings) apply.
 
 [Shared question settings and parts](blocks.md#shared-question-settings-and-parts) apply.
@@ -186,6 +188,8 @@ Complete the {answer}.
 Collect a written reflection or explanation. See the [example](../examples/patterns/assessment-variants.prax).
 
 The subject is the question. Put instructions in visible body prose and a short input hint in placeholder. The button part labels the completion action. Private responses are excluded from LMS reporting.
+
+A question longer than 80 characters, or with a second sentence, shows at body size instead of as a large title, and a private journal then drops its tinted header and icon. Keep the subject short when you want a title.
 
 The description keeps every paragraph, ordered or unordered list, nested list and supported inline format, including emphasis and links. An optional `::: text` wrapper keeps the same prose. Other nested blocks, headings, images, tables, dividers and code or math fences are refused with a source location during inspection. Put those beside the question instead.
 
@@ -246,6 +250,8 @@ The subject is the question. Write a numbered list of 2 to 10 scale labels, lowe
 Ask several questions that share one rating scale. See the [example](../examples/patterns/matrix-likert.prax).
 
 The subject is the question. Write a numbered scale of 2 to 10 labels, then at least one bullet statement. Each statement uses that scale.
+
+Learners see a table when the activity is wide enough for every scale column, up to seven labels. Otherwise each statement lists the scale as one row of choices. Five or more labels use the wider feature width on desktop.
 
 [Shared block settings](blocks.md#shared-block-settings) apply.
 
