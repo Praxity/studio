@@ -352,3 +352,12 @@ describe("grammar 4 reader", () => {
 		]);
 	});
 });
+
+describe("page time", () => {
+	it("reads time: below the heading as page text metadata, beside nav:", () => {
+		const read = readLesson("# Learn the brake\nnav: Brake\ntime: About 10 minutes\nBody\n");
+		expect(read.blocks[0].data).toMatchObject({ title: "Brake", time: "About 10 minutes" });
+		expect(JSON.stringify(read.blocks.slice(1))).not.toContain("About 10 minutes");
+		expect(read.warnings).toEqual([]);
+	});
+});

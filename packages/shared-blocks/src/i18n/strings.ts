@@ -346,6 +346,8 @@ export interface LearnerStrings {
 	narrativeSectionPosition: string;
 	/** Read-time hint in the narrative context bar. */
 	narrativeReadTime: string;
+	/** Course total when some lessons lack an authored `time:`; the figure is an estimate of reading alone. */
+	courseReadingTime: string;
 
 	// Accessibility preferences bar
 	a11yPreferences: string;
@@ -671,6 +673,7 @@ const en: LearnerStrings = {
 	lessonLabel: "Lesson {n}",
 	narrativeSectionPosition: "Section {current} of {total}",
 	narrativeReadTime: "~{minutes} min",
+	courseReadingTime: "~{minutes} min reading",
 	a11yPreferences: "Reading preferences",
 	a11yLargerText: "Larger text",
 	a11yLargerTextEnabled: "Larger text enabled",
@@ -993,6 +996,7 @@ const fr: LearnerStrings = {
 	lessonLabel: "Leçon {n}",
 	narrativeSectionPosition: "Section {current} sur {total}",
 	narrativeReadTime: "~{minutes} min",
+	courseReadingTime: "~{minutes} min de lecture",
 	a11yPreferences: "Préférences de lecture",
 	a11yLargerText: "Texte plus grand",
 	a11yLargerTextEnabled: "Texte plus grand activé",

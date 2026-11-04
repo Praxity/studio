@@ -68,6 +68,7 @@ type DesktopDesignExtraction = Pick<
 	| "showCourseNameInNav"
 	| "showLessonNameInNav"
 	| "showLessonNameAsTitle"
+	| "navDensity"
 	| "customCss"
 	| "colorMode"
 	| "dividerStyle"
@@ -278,6 +279,7 @@ export function extractDesktopDesignFromFrontmatter(
 		showCourseNameInNav: navToggles.navCourseTitle,
 		showLessonNameInNav: navToggles.navLessonTitles,
 		showLessonNameAsTitle: navToggles.navLessonTitleAsHeading,
+		...(design.navDensity === "compact" ? { navDensity: "compact" as const } : {}),
 		customCss,
 		colorMode: colorMode === "auto" ? "auto" : colorMode,
 		dividerStyle: "none",

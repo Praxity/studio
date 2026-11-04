@@ -553,7 +553,7 @@ h2.praxity-page-title {
 	width: min(100%, var(--praxity-max-width, 680px));
 	margin: 0 auto;
 	padding: var(--space-4) var(--space-6) max(var(--space-4), env(safe-area-inset-bottom));
-	border-top: 1px solid var(--praxity-color-border);
+	border-top: 1px solid var(--praxity-color-divider);
 }
 
 .praxity-page-nav-fallback[data-hydrated] {
@@ -604,7 +604,7 @@ h2.praxity-page-title {
 		--praxity-color-navigation-surface,
 		var(--praxity-color-surface, var(--praxity-color-background))
 	);
-	border-bottom: 1px solid var(--praxity-color-border);
+	border-bottom: 1px solid var(--praxity-color-divider);
 }
 
 .praxity-native-sidebar-header {
@@ -698,10 +698,30 @@ h2.praxity-page-title {
 	text-decoration: none;
 }
 
+/* design.navDensity: compact. Strong weight marks only the current page and module.
+   Rows shrink only for fine pointers; touch keeps 44px rows. 32px rows stay above
+   the 24px minimum target (WCAG 2.5.8). */
+.praxity-native-outline[data-nav-density="compact"] a {
+	font-size: 0.875rem;
+}
+
+.praxity-native-outline[data-nav-density="compact"]
+	.praxity-native-module
+	> a:not([aria-current="true"]) {
+	font-weight: var(--weight-body);
+}
+
+@media (pointer: fine) {
+	.praxity-native-outline[data-nav-density="compact"] a {
+		min-height: 32px;
+		padding-block: var(--space-1);
+	}
+}
+
 .praxity-native-reference-divider {
 	margin: var(--space-2) var(--space-3);
 	border: 0;
-	border-top: 1px solid var(--praxity-color-border);
+	border-top: 1px solid var(--praxity-color-divider);
 }
 
 .praxity-native-reference {
@@ -767,7 +787,7 @@ html.praxity-js .praxity-native-outline {
 	overflow-x: hidden;
 	overflow-y: auto;
 	border: 0;
-	border-inline-end: 1px solid var(--praxity-color-border);
+	border-inline-end: 1px solid var(--praxity-color-divider);
 	box-shadow: none;
 	transform: translateX(-105%);
 	transition: transform var(--duration-state) var(--ease-in-out);
@@ -798,7 +818,7 @@ body.praxity-nav-open .praxity-native-nav-backdrop {
 	display: block;
 	width: 100%;
 	padding: 0;
-	border-top: 1px solid var(--praxity-color-border);
+	border-top: 1px solid var(--praxity-color-divider);
 }
 
 .praxity-native-page-nav .praxity-native-page-nav-inner {
@@ -1112,7 +1132,7 @@ body.praxity-nav-open .praxity-native-nav-backdrop {
 		position: sticky;
 		inset: auto;
 		inset-block-start: 0;
-		border-inline-end: 1px solid var(--praxity-color-border);
+		border-inline-end: 1px solid var(--praxity-color-divider);
 		border-bottom: 0;
 		box-shadow: none;
 		overflow-y: auto;
@@ -1866,7 +1886,7 @@ body.praxity-layout-none .praxity-navigation-proxy {
 		var(--praxity-color-surface, var(--praxity-color-background))
 	);
 	color: var(--praxity-color-text);
-	border-bottom: 1px solid var(--praxity-color-border);
+	border-bottom: 1px solid var(--praxity-color-divider);
 	box-shadow: none;
 }
 
@@ -1880,6 +1900,15 @@ body.praxity-layout-none .praxity-navigation-proxy {
 .praxity-toolbar-position {
 	flex: 0 0 auto;
 	white-space: nowrap;
+}
+
+/* The short "Module / Page" location is secondary to the course title. */
+.praxity-toolbar-location {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	color: var(--praxity-color-text-muted);
+	font-size: var(--type-small);
+	font-weight: var(--weight-body);
 }
 
 .praxity-toolbar-tools {
@@ -2217,7 +2246,7 @@ textarea:focus-visible,
 
 /* biome-ignore lint/style/noDescendingSpecificity: base page nav follows layout-specific overrides */
 .praxity-page-nav {
-	border-top: 1px solid var(--praxity-color-border);
+	border-top: 1px solid var(--praxity-color-divider);
 	background: var(
 		--praxity-color-navigation-surface,
 		var(--praxity-color-surface, var(--praxity-color-background))
@@ -2567,6 +2596,7 @@ body.praxity-minimal
 	:is(html[data-praxity-root], .praxity-viewer-shell) {
 		/* Theme tokens are inline on this element; important is required for the preference to win. */
 		--praxity-color-border: var(--praxity-color-text) !important;
+		--praxity-color-divider: var(--praxity-color-text) !important;
 		--praxity-color-control-border: var(--praxity-color-text) !important;
 		--praxity-color-activity-border: var(--praxity-color-text) !important;
 		--praxity-color-text-light: var(--praxity-color-text) !important;

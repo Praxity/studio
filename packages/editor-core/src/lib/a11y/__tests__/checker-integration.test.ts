@@ -667,6 +667,7 @@ describe("inaccessible course integration test", () => {
 		"self-check-evidence-overlap",
 		"ignored-font-setting",
 		"ignored-radius-setting",
+		"ignored-layout-setting",
 		"completion-gate-reason",
 		"abbreviation-undefined",
 		"assessment-empty-stem",

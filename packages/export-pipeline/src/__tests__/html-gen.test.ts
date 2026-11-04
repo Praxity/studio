@@ -774,7 +774,8 @@ describe("generateHtmlPage", () => {
 			}),
 		);
 
-		expect(config.estimatedDuration).toBe("~1 min");
+		// No lesson has an authored time:, so the estimate is labelled as reading time.
+		expect(config.estimatedDuration).toBe("~1 min reading");
 	});
 
 	it("never hides the nav fallback on a static page (regression: #991 broke SCORM nav)", () => {

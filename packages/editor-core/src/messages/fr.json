@@ -1637,6 +1637,10 @@
 				"title": "Réglage de rayon de coin ignoré",
 				"description": "{path} est ignoré. Les cours utilisent les rayons de coin du look v2."
 			},
+			"ignored-layout-setting": {
+				"title": "Réglage de mise en page ignoré",
+				"description": "{path} est ignoré. Les cours utilisent le rythme de lecture, l’interligne, l’échelle des titres et la largeur de ligne du look v2."
+			},
 			"ignored-font-setting": {
 				"title": "Réglage de police ignoré",
 				"description": "{path} est ignoré. Les cours utilisent la combinaison {pairing, select, book {Livre} clear {Claire} other {Sans}} ; choisissez sans, book ou clear avec typography.pairing."
@@ -3893,6 +3897,7 @@
 			"grammar_v4_part_button": "Libellé du bouton",
 			"grammar_v4_part_sublabel": "Sous-libellé",
 			"grammar_v4_part_nav": "Navigation",
+			"grammar_v4_part_time": "Durée",
 			"grammar_v4_part_if": "Condition",
 			"grammar_v4_part_and": "Et",
 			"grammar_v4_part_or": "Ou",

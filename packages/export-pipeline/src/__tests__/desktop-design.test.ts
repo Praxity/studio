@@ -168,3 +168,16 @@ it("extracts deck settings independently of standard navigation presets", () => 
 		sequentialLessons: false,
 	});
 });
+
+describe("navigation density", () => {
+	it("passes compact through and leaves every other value at the default", () => {
+		expect(
+			extractDesktopDesignFromFrontmatter({ design: { navDensity: "compact" } as never })
+				.navDensity,
+		).toBe("compact");
+		for (const navDensity of ["comfortable", "dense", undefined])
+			expect(
+				extractDesktopDesignFromFrontmatter({ design: { navDensity } as never }),
+			).not.toHaveProperty("navDensity");
+	});
+});

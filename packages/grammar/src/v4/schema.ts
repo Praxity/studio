@@ -1777,7 +1777,7 @@ export const BLOCK_SCHEMA: Readonly<Record<string, BlockDefinition>> = {
 	page: block("page", "# New page\n", {
 		subject: subject("title", true),
 		heading: true,
-		parts: ["nav"],
+		parts: ["nav", "time"],
 		settings: {
 			style: scalar("style", "name"),
 			hide: toggle("hide"),

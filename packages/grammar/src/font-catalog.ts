@@ -175,7 +175,21 @@ export type DesignSettingWarning =
 	| {
 			code: "ignored-radius-setting";
 			path: "design.borderRadius";
+	  }
+	| {
+			code: "ignored-layout-setting";
+			path: `design.${(typeof IGNORED_LAYOUT_SETTINGS)[number]}`;
 	  };
+
+/** Look v2 fixes the reading rhythm, measure, leading and heading scale
+ * (reading-rhythm.css), so these authored keys never reach preview or export. */
+const IGNORED_LAYOUT_SETTINGS = [
+	"blockSpacing",
+	"lineHeight",
+	"headingSize",
+	"contentMaxWidth",
+	"density",
+] as const;
 
 /** Report authored settings before look v2 normalization supersedes them. */
 export function getDesignSettingWarnings(
@@ -186,6 +200,9 @@ export function getDesignSettingWarnings(
 	const warnings: DesignSettingWarning[] = getTypographyWarnings(design.typography, resolved);
 	if (Object.hasOwn(design, "borderRadius"))
 		warnings.push({ code: "ignored-radius-setting", path: "design.borderRadius" });
+	for (const key of IGNORED_LAYOUT_SETTINGS)
+		if (Object.hasOwn(design, key))
+			warnings.push({ code: "ignored-layout-setting", path: `design.${key}` });
 	return warnings;
 }
 

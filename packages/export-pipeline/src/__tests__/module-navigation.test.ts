@@ -1,4 +1,4 @@
-import { computeAccessibleName } from "dom-accessibility-api";
+import { computeAccessibleDescription, computeAccessibleName } from "dom-accessibility-api";
 import { JSDOM } from "jsdom";
 import { assert, describe, expect, it, vi } from "vitest";
 import { initializeCourseHost } from "../../template/src/hosts/course-host";
@@ -183,4 +183,93 @@ describe("manifest module navigation", () => {
 			expect(createRuntime).not.toHaveBeenCalled();
 		},
 	);
+});
+
+describe("learner shell labels", () => {
+	const labelled = (lessonData: (lesson: number) => Record<string, unknown>) =>
+		pages.map((page) =>
+			page.isFirstPageOfLesson
+				? { ...page, data: lessonData(Number(page.lessonId?.split("-")[1])) }
+				: page,
+		);
+
+	it("names modules by their nav label and keeps the full title as the description", () => {
+		const doc = render(3, { pages: labelled((lesson) => ({ lessonNav: `Week ${lesson}` })) });
+		const link = doc.querySelector<HTMLAnchorElement>(
+			'.praxity-native-module > a[aria-current="true"]',
+		);
+		assert(link);
+		expect(link.querySelector(".praxity-outline-label")?.textContent).toBe("Week 1");
+		expect(computeAccessibleName(link)).toMatch(/^Week 1/);
+		expect(computeAccessibleDescription(link)).toBe("Module 1: Safety");
+		expect(doc.querySelector(".praxity-toolbar-location")?.textContent).toBe("Week 1 / Page 1-1");
+	});
+
+	it("keeps full module titles and the module title in the top bar without a nav label", () => {
+		const doc = render(3);
+		const link = doc.querySelector('.praxity-native-module > a[aria-current="true"]');
+		expect(link?.querySelector(".praxity-outline-label")?.textContent).toBe("Module 1: Safety");
+		expect(link?.hasAttribute("aria-describedby")).toBe(false);
+		expect(doc.querySelector(".praxity-toolbar-location")).toBeNull();
+		expect(doc.querySelector(".praxity-toolbar-position")?.textContent).toBe("Module 1: Safety");
+	});
+
+	it("totals authored lesson times and labels the estimate as reading time otherwise", () => {
+		const meta = (doc: Document) => doc.querySelector(".praxity-native-sidebar-meta")?.textContent;
+		const timed = (time: (lesson: number) => string | undefined) =>
+			pages.map((page) =>
+				page.isFirstPageOfLesson
+					? { ...page, lessonTime: time(Number(page.lessonId?.split("-")[1])) }
+					: page,
+			);
+		expect(
+			meta(
+				render(0, {
+					pages: timed((lesson) => ["45 minutes", "About 1 h 30 min", "2 hours", "50 min"][lesson]),
+				}),
+			),
+		).toBe("8 pages · ~305 min");
+		const oneMissing = timed((lesson) => (lesson === 2 ? undefined : "45 minutes"));
+		expect(meta(render(0, { pages: oneMissing }))).toBe("8 pages · ~1 min reading");
+		expect(meta(render(0, { pages: oneMissing, sourceLocale: "fr" }))).toBe(
+			"8 pages · ~1 min de lecture",
+		);
+		const unparsed = timed(() => "A short lesson");
+		expect(meta(render(0, { pages: unparsed }))).toBe("8 pages · ~1 min reading");
+	});
+
+	it("shows a page's own time under its title with the lesson time treatment", () => {
+		const titled = pages.map((page, index) =>
+			index === 3 || index === 2
+				? {
+						...page,
+						lessonTime: "About 45 minutes",
+						data: index === 3 ? { time: "About 10 minutes" } : {},
+						blocks: [
+							{
+								id: `title-${index}`,
+								type: "heading" as const,
+								data: { content: "<p>Brake</p>", level: 1 },
+							},
+							...page.blocks,
+						],
+					}
+				: page,
+		);
+		const time = (index: number) =>
+			[...render(index, { pages: titled }).querySelectorAll(".praxity-lesson-time")].map(
+				(node) => node.textContent,
+			);
+		expect(time(3)).toEqual(["About 10 minutes"]);
+		// Page 2 opens lesson 1, so it keeps the lesson's time.
+		expect(time(2)).toEqual(["About 45 minutes"]);
+	});
+
+	it("marks compact navigation density only when the course asks for it", () => {
+		const outline = (doc: Document) => doc.querySelector("[data-native-outline]");
+		expect(outline(render(0, { navDensity: "compact" }))?.getAttribute("data-nav-density")).toBe(
+			"compact",
+		);
+		expect(outline(render(0))?.hasAttribute("data-nav-density")).toBe(false);
+	});
 });

@@ -241,6 +241,7 @@ export const RULE_METADATA = {
 	),
 	"ignored-font-setting": metadata("designSystem", "minor", "designSystem", "advisory", "high"),
 	"ignored-radius-setting": metadata("designSystem", "minor", "designSystem", "advisory", "high"),
+	"ignored-layout-setting": metadata("designSystem", "minor", "designSystem", "advisory", "high"),
 	// Image and media
 	"image-alt": metadata("imageMedia", "critical", "blockSettings", "conformance", "high", nonText, [
 		"Images explicitly marked decorative do not require alt text, including nested images.",
