@@ -51,6 +51,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { flushSync } from "react-dom";
 import {
 	assessmentShuffle,
 	choiceAnswerResult,
@@ -80,7 +81,7 @@ import {
 import type { LearnerStateValue, SavedAssessmentState } from "../learner-state";
 import { processMathSpans } from "../math/process-math-spans";
 import { htmlToPlainText, sanitizeHtml } from "../sanitize";
-import { SceneHeader } from "../scene-header";
+import { isShortSceneTitle, SceneHeader } from "../scene-header";
 import type {
 	AssessmentBlockData,
 	BlockProps,
@@ -213,7 +214,7 @@ function joinIds(...ids: Array<string | undefined>): string | undefined {
 	return present.length > 0 ? present.join(" ") : undefined;
 }
 
-function assessmentElementId(blockId: string, kind: string, index: number): string {
+function assessmentElementId(blockId: string, kind: string, index: number | string): string {
 	const scope = blockId.replace(
 		/[^A-Za-z0-9-]/gu,
 		(character) => `_${character.codePointAt(0)?.toString(16)}_`,
@@ -1326,6 +1327,7 @@ function CategorizePreview({
 	disabled,
 	describedBy,
 	required,
+	unsortedPrompt,
 }: {
 	blockId: string;
 	response: CategorizeResponse;
@@ -1338,6 +1340,8 @@ function CategorizePreview({
 	disabled?: boolean;
 	describedBy?: string;
 	required?: boolean;
+	/** Set after an early Check; explains why focus moved to an unsorted item. */
+	unsortedPrompt?: boolean;
 }) {
 	const locale = useLocale();
 	const s = useStrings(locale);
@@ -1359,6 +1363,9 @@ function CategorizePreview({
 		const flat = categorizeItems(categories);
 		return shuffle ? shuffleArray(flat) : flat;
 	}, [shuffle, categoriesKey]);
+	const sorted = items.filter((item) => assignments[item.key]).length;
+	const unsortedId = assessmentElementId(blockId, "cat", "unsorted");
+	const showUnsorted = unsortedPrompt && !disabled && sorted < items.length;
 
 	return (
 		<fieldset className="praxity-fieldset-reset praxity-categorize" aria-describedby={describedBy}>
@@ -1420,6 +1427,9 @@ function CategorizePreview({
 												value={category.id}
 												name={assessmentElementId(blockId, "cat", item.index)}
 												checked={assignments[item.key] === category.id}
+												aria-describedby={
+													showUnsorted && !assignments[item.key] ? unsortedId : undefined
+												}
 												disabled={disabled}
 												onChange={() => {
 													onAssignmentsChange({ ...assignments, [item.key]: category.id });
@@ -1434,6 +1444,16 @@ function CategorizePreview({
 					</Table.Tbody>
 				</Table>
 			</div>
+			{showUnsorted && (
+				<p id={unsortedId} className="praxity-categorize-unsorted" data-categorize-unsorted>
+					{interpolate(s.categorizeUnsorted, { count: items.length - sorted })}
+				</p>
+			)}
+			{!disabled && (
+				<Text size="sm" role="status" data-categorize-count>
+					{interpolate(s.categorizeSortedCount, { count: sorted, total: items.length })}
+				</Text>
+			)}
 		</fieldset>
 	);
 }
@@ -2000,6 +2020,7 @@ export function PreviewAssessmentBlock({
 	const [categorizeAssignments, setCategorizeAssignments] = useState<Record<string, string | null>>(
 		assessmentType === "categorize" ? (restoredRecord as Record<string, string>) : {},
 	);
+	const [categorizeUnsortedPrompt, setCategorizeUnsortedPrompt] = useState(false);
 	const [sequenceOrder, setSequenceOrder] = useState<SequenceResponse["items"]>(restoredSequence);
 	const [textResponseValue, setTextResponseValue] = useState(
 		assessmentType === "textResponse" && typeof restoredAnswer === "string" ? restoredAnswer : "",
@@ -2286,6 +2307,19 @@ export function PreviewAssessmentBlock({
 		const atomicSubmission =
 			assessmentType === "choice" && data.private !== true && !!provider?.stageSubmission;
 		if (isChecked || sessionEnded) return;
+		// Check stays visible while sorting. An early Check explains and moves to the
+		// first unsorted item; groups validate their members themselves.
+		const firstUnsorted =
+			assessmentType === "categorize" && !cardRef.current?.closest("[data-assessment-group]")
+				? [...(cardRef.current?.querySelectorAll(".praxity-categorize-table tbody tr") ?? [])]
+						.find((row) => !row.querySelector("input:checked"))
+						?.querySelector<HTMLInputElement>("input")
+				: undefined;
+		if (firstUnsorted) {
+			flushSync(() => setCategorizeUnsortedPrompt(true));
+			firstUnsorted.focus();
+			return;
+		}
 		const receipt = readLearnerBlockSaveResult(blockId);
 		if (
 			receipt?.status === "not-saved" &&
@@ -2627,6 +2661,7 @@ export function PreviewAssessmentBlock({
 						}}
 						transformImageUrl={transformImageUrl}
 						disabled={isChecked}
+						unsortedPrompt={categorizeUnsortedPrompt}
 					/>
 				);
 			case "hotspot":
@@ -2922,9 +2957,16 @@ export function PreviewAssessmentBlock({
 		</>
 	);
 
+	// Free-response tasks are often instructions; long ones read as body text.
+	const longPrompt =
+		assessmentType === "textResponse" && !isShortSceneTitle(htmlToPlainText(stemContent.heading));
 	const questionHeader = (
 		<div className="praxity-assessment-question-header">
-			<p id={questionStemId} className="praxity-assessment-stem" tabIndex={-1}>
+			<p
+				id={questionStemId}
+				className={`praxity-assessment-stem${longPrompt ? " praxity-assessment-stem-prompt" : ""}`}
+				tabIndex={-1}
+			>
 				{stemHtml ? (
 					<>
 						<span
@@ -2996,7 +3038,11 @@ export function PreviewAssessmentBlock({
 			<Stack gap="md" data-assessment-display={assessmentDisplay}>
 				{assessmentDisplay === "scenario" && descriptionMarkup}
 
-				{journal ? <SceneHeader icon="notebook">{questionHeader}</SceneHeader> : questionHeader}
+				{journal && !longPrompt ? (
+					<SceneHeader icon="notebook">{questionHeader}</SceneHeader>
+				) : (
+					questionHeader
+				)}
 				{journal && questionMeta}
 
 				{assessmentDisplay !== "scenario" && descriptionMarkup}
@@ -3166,6 +3212,7 @@ export function PreviewAssessmentBlock({
 						(hasInteracted ||
 							(assessmentType === "hotspot" && hotspotSelectedIds.size > 0) ||
 							assessmentType === "fileUpload" ||
+							assessmentType === "categorize" ||
 							(assessmentType === "textResponse" && textResponseValue.trim() !== "")) &&
 						!isChecked && (
 							<>

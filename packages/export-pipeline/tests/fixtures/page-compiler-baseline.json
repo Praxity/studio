@@ -29,19 +29,19 @@
 			"leadership-3-33": "f797c02d3fb7d207812c0fa76783d8d6f549a98b7eff51f11f9085ac032809c6",
 			"leadership-3-52": "d5377ac22c0e36cbddce3265243275bcaa5c820a1be67a51cbef25cd597a82d4",
 			"leadership-3-65": "eac33dc09ec422600d6e963ed9c6dbdacbadff6e2b6c8a0da5b93fa8ac44bad4",
-			"leadership-3-80": "8337a94735e00697ebf707705c88bdb578cd7178ecdf83a1748d109763b54659"
+			"leadership-3-80": "443626868870dc38df126ba92bf05f8983d4aa7045420b70d25db2f627ac8183"
 		},
 		"documents": {
 			"autoevaluation-rapide-2.html": "aa906f33edc3287b5364d0990c38e27dfc6325ccbbdb2f7a61b85feac24ad929",
 			"autoevaluation-rapide-3.html": "ed671f9e583866d7ca845e7d70ecdb19d8608e0ebc0f4c133aec4c4167802e41",
 			"autoevaluation-rapide.html": "ad5fbc8f7b049a056872f2e22f1cd419f9161ede4fc8815a7c5f736748140110",
-			"communiquez-vous-de-maniere-assertive.html": "1ddc23f3f5682e48b0754280bfa32f9cba41f84ec880a7791d1b504dd01e8f69",
-			"conversations-difficiles-au-travail.html": "5d9f4427c4603d1fa36c136ba75de25974bdafbdb58ccc2d12597f45e2cb1866",
+			"communiquez-vous-de-maniere-assertive.html": "108ccb242601d646a5af6ea03068e8c810b2b573e48ca5246ccac92a6d53c370",
+			"conversations-difficiles-au-travail.html": "6bcd802ea87ee4d229a8dee51efab477dc7a26dca2b249ceb683092a98861af0",
 			"des-trucs-pour-vous-affirmer.html": "1bad5ceee1ddc925fb52bf57841025c6be366a1154af3b85e0af288d15199e5a",
 			"deux-facons-d-exprimer-un-besoin.html": "2db59120d609577a6dcc84c3d9ec0bfe51218425715ac773ea8f5dfc5545bc88",
-			"etes-vous-pret-a-resoudre-un-conflit.html": "aa15746a311f61dea2e1136c63cb3f52591655421f45b073eb2e2d18412211c7",
+			"etes-vous-pret-a-resoudre-un-conflit.html": "81d1eb15796f3e52544a150f5991b1f9ef6e24c17699935f7d1060e58aba26aa",
 			"evitement-ou-temps-mort.html": "875a5b90be230630a1dcd2cc95233ef7f4227a1fb32f49d673b5e4029f0aa732",
-			"evitez-vous-les-quatre-cavaliers.html": "7334b350022eea16d786c989c0df21f8c1158cc2f52edb8221c92a2ea94d744e",
+			"evitez-vous-les-quatre-cavaliers.html": "6a5ca473d9bd78ee619779d29335aee38602f411c9dd7e76d99967916df11c97",
 			"glossary.html": "865d1e2ce1c5cc2aefa0a73dfd740cdee3e1d98466ab2540a50d81c62b1a15c7",
 			"index.html": "eed9ef7edd98b40870e29ef38a4ea78099008dbb97291dc4dce28f6571947a51",
 			"la-technique-desc.html": "b3deba7def3a905a61b462892fb86970bf27ebe61724f4daf7ee97c7b7c5dc7c",
@@ -101,7 +101,7 @@
 		"documents": {
 			"index.html": "84944b2a9b76ae90f4b429a81c8975ac2f13c45d224bc7cd6623452798733a00",
 			"page-1.html": "ea424afb9478b8167be3d4fb97b940e55a9c02069007b0626d66633c535177e4",
-			"welcome.html": "ada5989299bafafce0ea7fb6878a0632cf7b967dbf2d881355bc705284754fee"
+			"welcome.html": "b83ae3de97175679fabce478c71433508ea8fb89636b6dff634f0dee2f0f0dda"
 		}
 	},
 	"comprehensive": {
@@ -109,24 +109,24 @@
 			"comprehensive-0-0": "c48994edd9ea9bca5ff3010c4269ad4dbfd147e4cb07c0b282ae48f685bede15",
 			"comprehensive-0-76": "ccabd1d0bbd5e631a80f47fde1eb362744ed4948ae84a5cbdc374d3f3dde690d",
 			"comprehensive-0-87": "92179f5eaf4d25870155264f2f84f027b3a06613cb76207f5530ddd41e0fc3c1",
-			"comprehensive-0-170": "f6c5d8d3ad96817be24ac56666e8e220b3ed6c4416c7416e747763fd3f43940a",
+			"comprehensive-0-170": "be05bc41b966768829c47ed53f27dd5e8e17abdccef5e97a544a9e74ef54d12a",
 			"comprehensive-0-226": "6a3f5797b0c59888d30bdd7148dca1c96b972c47671d70fd5075181d6b165fce",
 			"comprehensive-0-254": "7cc29ec3c0f9ea36be7f0b090708508a787313f5c139e319c39aa555016ab0ac",
-			"comprehensive-0-281": "66bb5d8f5d51de8c49ce78e9b70122f03af3f69c0c182b6ae279c95274c4c55f",
+			"comprehensive-0-281": "9a34493ddfec674ce78ad2385b605fa2867f3dc6d2e2f07522eb3883ddec116c",
 			"comprehensive-0-295": "fc191029eb31d063221326b76499563fe5049be5aac9ce40fac16c2621686ad5",
 			"comprehensive-0-303": "2ace45d19d60ba19bc2a7d5b98001ab50f7ae1532a98d00eb0c7e6b3feddb406",
 			"comprehensive-0-319": "c08e4a4888610583df01d3264a2f94932c0a5ad863518fb75a7e4b0a308e3d11"
 		},
 		"documents": {
-			"assessment-blocks.html": "fe891410a7071d28e1cd494ab641a0e9440d53cac17718b033d432256b981965",
-			"assessment-groups.html": "f09f9f110c82dc5465ee1b37aa70e883432a47e28b810fecec00e0ef1c22ee9e",
-			"complex-assessments.html": "72df257b3237ffd71b1ad2cf7d8320f6159503c5830f646568c6cd9c6c44fe0f",
-			"container-blocks.html": "ac9071d90e187dc258a007c0ba2c710ad8fa61c4a52a27e66ff19ec16e1b8795",
+			"assessment-blocks.html": "aa15d9d639a30f16ce08b3b506c07042d6b28f5aa3a591f6f1bbb053ad987844",
+			"assessment-groups.html": "f9025f562e4be0ada0254d9a00fd4467bfa090d51d88abf2e0a018741ba45748",
+			"complex-assessments.html": "79ba5f32b96e0c950711507029c0cc6f0036a1ae078dbea3c852283a78acce2d",
+			"container-blocks.html": "5bfc435b08374cacee66b5430d916077892c6aa44000a4ea113cd9d704d4047b",
 			"glossary.html": "acba3c9e96eeb28103899e7b086942d22b83ad02f0de17cd5cd4a301395968f5",
 			"index.html": "41cb9d2484d29f500ae1c7b02b6b573c5d9a9f0bfdaaad2d52250970c4a8500b",
-			"interactive-and-social-blocks.html": "7fec8f05ad215a180fcad7040c4abf2062fc2de992a330b112b5dfdd093275d4",
-			"layout-and-structure.html": "35640b1d4347368111fc1113d1ca2b09eb08c79a7e8d7acc7bf4c5d9b962b65a",
-			"media-and-embeds.html": "b55bfdbdf8b64a9eb1caaeff563cff8a8a193867d2ff58ea9d813f3d9b452fbb",
+			"interactive-and-social-blocks.html": "f64e12b84ce4d7c8d6659bc19885420490f0e7de6de3b69b3f7ddfeceed3a5bf",
+			"layout-and-structure.html": "6446491e467135b55a082b37acb7ad623d53bb10ca086bd5b93b1ba88e614153",
+			"media-and-embeds.html": "c7cd53b227ffb70779197a23b01e83c70a110276218a848d96a1cf9c88116e9c",
 			"page-1.html": "eabae03bfc5b33d86e5696bf05084d190de07bdf0f38ed88eeeb1b986060ee0e",
 			"page-10.html": "2a2456fc82de8f963970c0774aeb9e554a2bafeab64e2f6fc825f784aa45b105",
 			"page-2.html": "003014347855066861fd25b19164beb576e132eb3960280e80f33a6c3deb4a6d",
@@ -137,9 +137,9 @@
 			"page-7.html": "f76a3d7c04371dd2826d693842d4006f7a45d70533362c2936ecd998d47c245c",
 			"page-8.html": "a669824f6329df4af41bf3b37cc79199c631a5e9cee6dc301b3b3fa16b6aa573",
 			"page-9.html": "6433628fdcdb2450e5a9f98785f1391b42bb9eae341dfc6ac22573a626a09480",
-			"rich-content-and-typography.html": "9812f91cceeada90a61fb607e3ced83ad88a1f6694ac35a3fe04b2fab2b57153",
-			"summary.html": "e6adb043f011bd46d09181c7e57f9869341266b871285e682186da332e017002",
-			"variables-and-logic.html": "63a640ad5828cbf4456bede3506ab288617512e6feda4e299e707c999ededa9e"
+			"rich-content-and-typography.html": "ff038b683490c00d54e8ee3d08ae40ada3e3bc97f45ed770a4057b7470296c95",
+			"summary.html": "aa315e4dbd154fc6e1dae3eb42dc4f9c2ce129800b1362d9741c074c0f90d380",
+			"variables-and-logic.html": "0234aeecd754f909288502249aa86bf75de98e54834a8fe7332d79833285f62d"
 		}
 	}
 }
