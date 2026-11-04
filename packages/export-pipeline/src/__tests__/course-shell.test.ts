@@ -409,13 +409,13 @@ it.each(["API", "API_1484_11"])(
 );
 
 it.each(["API", "API_1484_11"])(
-	"clears %s's launch marker before redirecting with URL state intact",
+	"retains %s's open launch marker before redirecting with URL state intact",
 	(property) => {
 		const api = {};
 		writeSessionState(api, true);
 		document.head.innerHTML =
 			'<script id="praxity-shell-config" type="application/json">{"version":1,"kind":"redirect","target":"intro.html","pageIdMap":{"stable":"summary"}}</script>';
-		const replace = vi.fn(() => expect(readSessionState(api)).toBe(false));
+		const replace = vi.fn(() => expect(readSessionState(api)).toBe(true));
 		try {
 			vi.stubGlobal("window", { opener: { [property]: api } });
 			vi.stubGlobal("location", {

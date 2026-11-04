@@ -17,6 +17,10 @@ export interface ScormSessionState extends RuntimeCommitPreparation {
 
 interface SessionApi {
 	__praxityScormSession?: ScormSessionState;
+	LMSGetValue?: (element: string) => string;
+	LMSGetLastError?: () => string;
+	GetValue?: (element: string) => string;
+	GetLastError?: () => string;
 }
 
 const SESSION_STORE = "__praxityScormSessions";
@@ -92,8 +96,7 @@ export function writeSessionState(
 		closed: false,
 		terminationSucceeded: false,
 	};
-	// Index marks the previous launch uninitialized. Initialize owns the next
-	// session's clock and completion state; navigation into an active session keeps both.
+	// Initialize owns a fresh session's clock and completion state.
 	if (initialized && !state.initialized) {
 		state.startedAt = state.pendingCompletion = state.courseFailure = undefined;
 	}
@@ -103,7 +106,7 @@ export function writeSessionState(
 	return getSessionState(api, win) === state ? state : null;
 }
 
-/** Index can adopt an active API again; a closed launch always gets a fresh record. */
+/** Index preserves a live session; a closed launch always gets a fresh record. */
 export function resetScormSessions(win: WindowLike): void {
 	for (const name of ["API", "API_1484_11"]) {
 		resetSessionState(findWindowProperty(win, name) as object | null, win);
@@ -115,9 +118,21 @@ export function resetSessionState(api: object | null, win: WindowLike): void {
 	const state = getSessionState(api, win);
 	// Retained adapters keep a closed record when index starts another launch.
 	if (state && !state.closed) {
+		// The old document must not prepare a later document's commit.
+		state.prepareCommit = undefined;
+		if (!state.initialized) return;
+		const sessionApi = api as SessionApi;
+		// SCORM 1.2 RTE 3.3.3: 301; 2004 RTE 3.1.7.2.8: 122.
+		// Only "not initialized" proves that a persistent API has started another launch.
+		if (sessionApi.LMSGetValue) {
+			sessionApi.LMSGetValue("cmi.core.lesson_status");
+			if (String(sessionApi.LMSGetLastError?.()) !== "301") return;
+		} else {
+			sessionApi.GetValue?.("cmi.completion_status");
+			if (String(sessionApi.GetLastError?.()) !== "122") return;
+		}
 		state.initialized = false;
 		state.attemptId = undefined;
-		state.prepareCommit = undefined;
 	} else if (state) {
 		delete (api as SessionApi).__praxityScormSession;
 		sessionStore(win)?.delete(api);

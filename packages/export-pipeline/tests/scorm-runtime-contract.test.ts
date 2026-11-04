@@ -611,9 +611,9 @@ for (const version of ["1.2", "2004"] as const) {
 			first.state.set("check", saved);
 			const oldData = new Map(api.data);
 			const storage = first.dom.window.localStorage;
-			resetSessionState(api, { [version === "1.2" ? "API" : "API_1484_11"]: api });
 			Object.assign(api, version === "1.2" ? new StrictScorm12Api() : new StrictScorm2004Api());
 			api.data = oldData;
+			resetSessionState(api, { [version === "1.2" ? "API" : "API_1484_11"]: api });
 			const next = host(api, false, storage);
 			expect(next.state.get("check")).toBeUndefined();
 			expect(next.state.getSaveResult?.("check")).toBeUndefined();
@@ -1351,7 +1351,7 @@ for (const version of ["1.2", "2004"] as const) {
 					vi.setSystemTime(start + 602_349);
 					expect(next.commit()).toBe(true);
 					expect(api.data.get(timeKey)).toBe(version === "1.2" ? "0000:00:02.34" : "PT2.34S");
-					expect(api.errors).toEqual([]);
+					expect(api.errors).toEqual(closed ? [] : [version === "1.2" ? "301" : "122"]);
 				} finally {
 					vi.useRealTimers();
 					vi.unstubAllGlobals();
@@ -1476,7 +1476,7 @@ for (const version of ["1.2", "2004"] as const) {
 			expect(makeRuntime(api).initialize()).toBe(true);
 			expect(makeRuntime(api).initialize()).toBe(true);
 			expect(api.calls.filter(([name]) => name === initialize)).toHaveLength(2);
-			expect(api.errors).toEqual([]);
+			expect(api.errors).toEqual([version === "1.2" ? "301" : "122"]);
 		});
 
 		it("accepts an already running API without a marker once, then shares it", () => {
