@@ -1,4 +1,5 @@
 import { strings as selfCheckStrings } from "learning-patterns/patterns/self-check/strings.js";
+import { assessmentSessionEndedNotices } from "./assessment-session-ended-notice";
 import { nextPageUnavailable } from "./completion-gate-strings";
 import { DONT_KNOW_LABELS } from "./dont-know-labels";
 import { journalDownloadLabels } from "./journal-download-labels";
@@ -439,8 +440,7 @@ const en: LearnerStrings = {
 	assessmentAttemptsUsed: "{n} of {total} attempts used",
 	assessmentStorageNotice:
 		"This answer could not be saved. Your previously saved progress is kept.",
-	assessmentSessionEndedNotice:
-		"This answer could not be saved. Your previously saved progress is kept. To continue, close this course and open it again.",
+	assessmentSessionEndedNotice: assessmentSessionEndedNotices.en,
 	showAnswer: "Show answer",
 	yourAnswer: "Your answer",
 	reflectionPrivateLabel: "Your reflection is private",
@@ -762,8 +762,7 @@ const fr: LearnerStrings = {
 	assessmentAttemptsUsed: "Tentatives utilisées\u00a0: {n} sur {total}",
 	assessmentStorageNotice:
 		"Cette réponse n’a pas pu être enregistrée. Votre progression enregistrée précédemment est conservée.",
-	assessmentSessionEndedNotice:
-		"Cette réponse n’a pas pu être enregistrée. Votre progression enregistrée précédemment est conservée. Pour continuer, fermez ce cours et ouvrez-le de nouveau.",
+	assessmentSessionEndedNotice: assessmentSessionEndedNotices.fr,
 	showAnswer: "Afficher la réponse",
 	yourAnswer: "Votre réponse",
 	reflectionPrivateLabel: "Votre réflexion est privée",

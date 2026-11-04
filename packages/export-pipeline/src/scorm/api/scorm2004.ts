@@ -142,6 +142,7 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		this.session ??=
 			getSessionState(this.api, this.win) ??
 			writeSessionState(this.api, readSessionState(this.api, this.win), this.win);
+		if (this.session?.commitRefused) return (this.initialized = true);
 		if (!this.session || this.session.closed) return false;
 		const startedAt = Date.now();
 		if (!readSessionState(this.api, this.win)) {
