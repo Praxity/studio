@@ -382,105 +382,149 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 				expect(lms.calls).toEqual(lms.atRefusal);
 			});
 	for (const dependency of [false, true])
-		for (const locale of ["en", "fr"] as const)
-			it(`${format} ${dependency ? 10 : 9} ${locale} group refuses without Responses saved`, () => {
-				vi.useFakeTimers();
-				const lms = moodle(format);
-				page(
-					lms.player,
-					format,
-					false,
-					dependency
-						? {
-								choiceStateQuestions: {
-									a: choiceStateQuestion(choice, false),
-									b: choiceStateQuestion(choice, false),
-								},
-								choiceStateSignatures: {
-									a: choiceContentSignature(choice, false),
-									b: choiceContentSignature(choice, false),
-								},
-								choiceStateGroups: {
-									group: { mode: "oneOf", memberIds: ["a", "b"], requiredIds: ["a", "b"] },
-								},
-							}
-						: {},
-				);
-				if (dependency)
-					expect(
-						window.__praxityBlockState?.getChoiceDependencyView?.()?.groups?.group,
-					).toBeDefined();
-				const view = render(
-					<MantineProvider>
-						<LocaleContext.Provider value={locale}>
-							<PreviewAssessmentBlock
-								blockId="a"
-								data={dependency ? choice : { ...open, gradingMode: "none" }}
-							/>
-							<PreviewAssessmentBlock
-								blockId="b"
-								data={dependency ? choice : { ...open, gradingMode: "none" }}
-							/>
-						</LocaleContext.Provider>
-					</MantineProvider>,
-				);
-				if (dependency) fireEvent.click(view.getAllByRole("radio", { name: /Stop/ })[0]);
-				else
-					fireEvent.change(view.getAllByRole("textbox")[0], {
-						target: { value: "Saved member A" },
-					});
-				fireEvent.click(
-					view.getByRole("button", { name: locale === "en" ? "Submit" : "Soumettre" }),
-				);
-				expect(view.container.querySelector('[data-block-id="a"]')).toHaveAttribute(
-					"data-completed",
-					"true",
-				);
-				expect(runtime().commit()).toBe(true);
-				const blocks: PraxityBlock[] = [
-					{
-						id: "group",
-						type: "assessmentGroup",
-						data: {
-							mode: dependency ? "oneOf" : "all",
-							memberBlockIds: ["a", "b"],
-							requireAll: false,
-							showResultsSummary: true,
+		for (const scenario of ["event", "delayed", "summary"])
+			for (const locale of ["en", "fr"] as const)
+				it(`${format} ${dependency ? 10 : 9} ${locale} group refuses without Responses saved (${scenario})`, () => {
+					vi.useFakeTimers();
+					const lms = moodle(format);
+					page(
+						lms.player,
+						format,
+						false,
+						dependency
+							? {
+									choiceStateQuestions: {
+										a: choiceStateQuestion(choice, false),
+										b: choiceStateQuestion(choice, false),
+									},
+									choiceStateSignatures: {
+										a: choiceContentSignature(choice, false),
+										b: choiceContentSignature(choice, false),
+									},
+									choiceStateGroups: {
+										group: { mode: "oneOf", memberIds: ["a", "b"], requiredIds: ["a", "b"] },
+									},
+								}
+							: {},
+					);
+					if (dependency)
+						expect(
+							window.__praxityBlockState?.getChoiceDependencyView?.()?.groups?.group,
+						).toBeDefined();
+					const view = render(
+						<MantineProvider>
+							<LocaleContext.Provider value={locale}>
+								<PreviewAssessmentBlock
+									blockId="a"
+									data={dependency ? choice : { ...open, gradingMode: "none" }}
+								/>
+								<PreviewAssessmentBlock
+									blockId="b"
+									data={dependency ? choice : { ...open, gradingMode: "none" }}
+								/>
+							</LocaleContext.Provider>
+						</MantineProvider>,
+					);
+					if (dependency) fireEvent.click(view.getAllByRole("radio", { name: /Stop/ })[0]);
+					else
+						fireEvent.change(view.getAllByRole("textbox")[0], {
+							target: { value: "Saved member A" },
+						});
+					fireEvent.click(
+						view.getByRole("button", { name: locale === "en" ? "Submit" : "Soumettre" }),
+					);
+					expect(view.container.querySelector('[data-block-id="a"]')).toHaveAttribute(
+						"data-completed",
+						"true",
+					);
+					expect(runtime().commit()).toBe(true);
+					const blocks: PraxityBlock[] = [
+						{
+							id: "group",
+							type: "assessmentGroup",
+							data: {
+								mode: dependency ? "oneOf" : "all",
+								memberBlockIds: ["a", "b"],
+								requireAll: false,
+								showResultsSummary: true,
+							},
 						},
-					},
-					...["a", "b"].map((id) => ({
-						id,
-						type: "assessment" as const,
-						data: dependency
-							? (choice as unknown as Record<string, unknown>)
-							: { ...open, gradingMode: "none" },
-					})),
-				];
-				disposals.push(
-					initAssessmentGroups({ blocks, root: view.container, labels: getStrings(locale) }),
-				);
-				act(() => vi.advanceTimersByTime(20));
-				lms.fail("false");
-				act(() => {
-					expect(runtime().commit()).toBe(false);
-				});
-				const atRefusal = [...lms.calls];
-				lms.fail("none");
-				if (!dependency)
-					fireEvent.change(view.container.querySelectorAll("input[type=text]")[1], {
-						target: { value: "Unsaved answer" },
+						...["a", "b"].map((id) => ({
+							id,
+							type: "assessment" as const,
+							data: dependency
+								? (choice as unknown as Record<string, unknown>)
+								: { ...open, gradingMode: "none" },
+						})),
+					];
+					disposals.push(
+						initAssessmentGroups({ blocks, root: view.container, labels: getStrings(locale) }),
+					);
+					act(() => vi.advanceTimersByTime(20));
+					const submit = view.container.querySelector<HTMLButtonElement>(".praxity-ag-submit-btn");
+					expect(submit).not.toBeNull();
+					expect(submit).toBeEnabled();
+					const status = view.container.querySelector("[data-assessment-group-status]");
+					let atRefusal: string[];
+					if (scenario === "event") {
+						lms.fail("false");
+						act(() => {
+							expect(runtime().commit()).toBe(false);
+						});
+						atRefusal = [...lms.calls];
+						lms.fail("none");
+						expect(submit).toBeDisabled();
+						expect(status).toHaveTextContent(notices[locale]);
+						if (!dependency)
+							fireEvent.change(view.container.querySelectorAll("input[type=text]")[1], {
+								target: { value: "Unsaved answer" },
+							});
+						submit?.click();
+					} else {
+						if (scenario === "delayed" && !dependency)
+							fireEvent.change(view.container.querySelectorAll("input[type=text]")[1], {
+								target: { value: "Submitted member B" },
+							});
+						// Summary leaves B unanswered; the group's own delayed Commit is first to fail.
+						act(() => submit?.click());
+						expect(status).not.toHaveTextContent(notices[locale]);
+						lms.fail("false");
+						if (scenario === "delayed") {
+							act(() => {
+								expect(runtime().commit()).toBe(false);
+							});
+						} else {
+							const commits = lms.calls.filter((call) => call === "commit").length;
+							act(() => vi.advanceTimersByTime(100));
+							expect(lms.calls.filter((call) => call === "commit")).toHaveLength(commits + 1);
+						}
+						atRefusal = [...lms.calls];
+						lms.fail("none");
+					}
+					act(() => vi.advanceTimersByTime(100));
+					expect(submit).toBeDisabled();
+					expect(view.container.querySelector("[data-assessment-group-status]")).toHaveTextContent(
+						notices[locale],
+					);
+					expect(
+						view.container.querySelector("[data-assessment-group-results]"),
+					).not.toHaveTextContent(getStrings(locale).assessmentGroupSaved);
+					expect(
+						view.container.querySelector("[data-assessment-group-results]"),
+					).toBeEmptyDOMElement();
+					if (dependency && scenario === "delayed") {
+						const choices = view.container.querySelectorAll(".praxity-ag-radio");
+						expect(choices).toHaveLength(2);
+						for (const option of choices) expect(option).toBeDisabled();
+					}
+					expect(window.__praxityBlockState?.getSaveResult?.("group")).toEqual({
+						status: "not-saved",
+						code: "commit-refused",
 					});
-				const submit = view.container.querySelector<HTMLButtonElement>(".praxity-ag-submit-btn");
-				expect(submit).not.toBeNull();
-				submit?.click();
-				act(() => vi.advanceTimersByTime(100));
-				expect(submit).toBeDisabled();
-				expect(view.container.querySelector("[data-assessment-group-status]")).toHaveTextContent(
-					notices[locale],
-				);
-				expect(
-					view.container.querySelector("[data-assessment-group-results]"),
-				).not.toHaveTextContent(getStrings(locale).assessmentGroupSaved);
-				expect(lms.calls).toEqual(atRefusal);
-			});
+					act(() => {
+						submit?.click();
+						vi.advanceTimersByTime(60_000);
+					});
+					expect(lms.calls).toEqual(atRefusal);
+				});
 }
