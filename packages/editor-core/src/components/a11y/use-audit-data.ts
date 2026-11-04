@@ -227,7 +227,12 @@ export function useAuditData(options: UseAuditDataOptions = {}): UseAuditDataRes
 		gifCacheKey && readGifAsset && referencedGifs ? `${gifCacheKey}:${referencedGifs}` : undefined;
 	const mediaAnalysisPending = Boolean(analysisKey && analysisKey !== completedAnalysisKey);
 	const designSystemIssues = useMemo(
-		() => checkDesignSystemAccessibility(resolveDesignSystemConfig(designVariants)),
+		() =>
+			// The resolved config carries normalized lineHeight and contentMaxWidth defaults;
+			// designSettingIssues reports the authored layout keys instead.
+			checkDesignSystemAccessibility(resolveDesignSystemConfig(designVariants)).filter(
+				(issue) => issue.rule !== "ignored-layout-setting",
+			),
 		[designVariants],
 	);
 
