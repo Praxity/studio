@@ -137,11 +137,11 @@ describe("buildScormPackage desktop mode", () => {
 				"pages/html": "8426b50d0c1080c443a86557a1b5dfd64cb6543a572d3893aed645adafef0a05",
 				"pages/scorm12": "620d7639a6dbc2e271ccc640be8db84f906b121913ce5fb0fa86304a929c4529",
 				"pages/scorm2004": "a033fe665dc999103c2e1d6e4cdcaab377d29c3d23f7c8cc76ee99ce5a78189d",
-				"pages/xapi": "ebf31cb069e462d8ddc77c232b12f1b45e483685a88cb728b9bb402fd30a9f60",
+				"pages/xapi": "dd42f89ea6e3ee6a977a923c789ab57afee2db6d1cb02ee7930365fed0c548ec",
 				"guided/html": "8608dd4210e9997bfcb87a7c7c28e810a81b812e8b30f44a56128aecdc645fae",
 				"guided/scorm12": "2b08a1346f88a7ebebc134c2297d100150b6ca482e2ee4d42a7f23ab4ea3ec58",
 				"guided/scorm2004": "81090cd5949a8a54024f0f68e7215b8dd33271b1beb567cdcef41cfeb3591311",
-				"guided/xapi": "8587a973734e7468c6ce871a99230ab191152d5ced6c6ea201696783ab5b1c06",
+				"guided/xapi": "61364b01d12ba1ef7db457ff04a02ed6135011556a0dadc6ff2b6e86357bf6cb",
 			};
 			const input = createDesktopHtmlInput();
 			input.blocks = readSource("# End\n\nA [term]{A definition.}.\n").blocks;
