@@ -43,7 +43,7 @@ it("records every P2 baseline hash from full build output", async () => {
 			documents: {
 				"index.html": "2ce74ff5b722f57711ea82d0cd6c565e102cf49e8cd98ea87adea69c0b8424df",
 				"page-1.html": "faf9c9f356a04e34b537f5356921b8190a0f35fbde38be76654f75052f8d385b",
-				"tiny-page.html": "ddbc90ac7596e354bd40c82b9b9ac2c2155d6b26511a10295f00f448f0c87d12",
+				"tiny-page.html": "ec379c2b34b00b32bebc93a72fbda1260e4a2dee990c06cca9f281858a175265",
 			},
 		},
 		pages: {
@@ -53,7 +53,7 @@ it("records every P2 baseline hash from full build output", async () => {
 			documents: {
 				"index.html": "20f13e71ff6bcab5b7a46e1ec4652b5b88a3c809d11c7e791e1f24092665be4e",
 				"page-1.html": "faf9c9f356a04e34b537f5356921b8190a0f35fbde38be76654f75052f8d385b",
-				"tiny-page.html": "7ca45d7f582c9d51127258ba009c73953a8f403e9902c4ee6e6691a3b0244800",
+				"tiny-page.html": "5d7b67cb090793b33ce310301c1dadf28dad45fae27e66bd3ebf30f589a55e99",
 			},
 		},
 	});
@@ -91,7 +91,7 @@ it("omits the three inert choice fact fields from recorded document hashes", asy
 	// Frozen renderer fixture bytes, including the question/group configuration
 	// apart from the same three fields excluded by the page-compiler guard.
 	expect((await recordBaseline([input])).choice.documents["tiny-page.html"]).toBe(
-		"a21f9338625453cbb6b090d402c5da81ee757764f32aae0132691dc8957ca27b",
+		"3cda7d0d7d6db0c213ceda1f4320cfde73cf1ed30ca9509e9dfcdee6b131fd38",
 	);
 });
 

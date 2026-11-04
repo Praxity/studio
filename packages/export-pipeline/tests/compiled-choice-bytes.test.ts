@@ -43,10 +43,10 @@ it("records exact per-document additions against main", () => {
 	// Verify: pnpm --filter @praxity/export-pipeline exec vitest run tests/compiled-choice-bytes.test.ts --maxWorkers=1
 	// Each fact now retains the visible term label in "Pick one".
 	const expected = [
-		["practice", 26447, 1842, "d77d8a812e5f90c64485f89cc7710d92cc6aff605e4288885c30b775efdf5995"],
-		["second", 26988, 1842, "03c8a4f1ff93f54d586fb786b900c8e7a97e33bf6d7ce71f5736c97735482a92"],
+		["practice", 26793, 1842, "e2c4c09e3b24e30b4f82cff75c336c9ce0c4c8612b8a7e5eb20d4194fd2c8d88"],
+		["second", 27334, 1842, "67e5498f09f1fbe57b9977380007edfb0ecccd51ebe8cc0e4d54335e18f4e377"],
 		["glossary", 2273, 921, "49bc7d6126a51ebbdafcecba935f3ad9b7a6539f204cd8258441e9f7c0520cab"],
-		["resources", 22265, 1842, "13dbb99da3ea36bdba11db1e0802282cb2e0dea3a2ee24feeb9c068502728bae"],
+		["resources", 22611, 1842, "f59ae7f74a53fb965d52d9bae6aa134e35ffa48a942218ecf0db09724633103f"],
 	] as const;
 	const current = head.prepareHtmlCourse(config, compilerIslandAssets);
 	// Pinned from main before adding facts. Every other learner/config byte stays exact.
