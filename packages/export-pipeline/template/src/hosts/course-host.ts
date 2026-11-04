@@ -583,12 +583,10 @@ export function prepareScormResume(
 	environment: CourseHostEnvironment,
 ): (runtime: SCORMRuntime, page: CourseHostConfig) => "redirect" | null {
 	const freshEntry = isFreshResumeEntry(environment.win.performance);
-	const continuingSession = readSessionState(
-		findScormApi(environment.win, adapter.format === "scorm12" ? "1.2" : "2004")?.api as
-			| object
-			| null,
-		environment.win,
-	);
+	const api = findScormApi(environment.win, adapter.format === "scorm12" ? "1.2" : "2004")?.api as
+		| object
+		| null;
+	const continuingSession = readSessionState(api, environment.win);
 	return (runtime, page) =>
 		handleCourseResume(
 			runtime,
@@ -597,6 +595,7 @@ export function prepareScormResume(
 			continuingSession,
 			() =>
 				freshEntry &&
+				!getSessionState(api, environment.win)?.commitRefused &&
 				!adapter.isFallback?.(runtime) &&
 				adapter.readEntry(environment.win) === "resume",
 		);

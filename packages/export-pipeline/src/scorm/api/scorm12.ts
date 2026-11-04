@@ -173,6 +173,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 		if (!this.api) return false;
 		this.session ??=
 			getSessionState(this.api) ?? writeSessionState(this.api, readSessionState(this.api));
+		if (this.session?.commitRefused) return (this.initialized = true);
 		if (!this.session || this.session.closed) return false;
 
 		const startedAt = Date.now();

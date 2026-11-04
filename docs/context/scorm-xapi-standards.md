@@ -506,3 +506,11 @@ Scoring uses the latest scored interaction for each question ID, while LMS inter
 history retains every attempt. Resume uses this same saved history for the completion
 gate. A later incorrect submitted retry can remove the passing result; it is not a
 highest-score policy.
+
+A refused Commit closes Studio communication for that API object's remaining
+lifetime, including navigation through index and glossary opener windows. New
+documents publish the existing refusal receipt without Initialize or resume-entry
+reads. Assessments and groups disable Submit and show the EN/FR reopen notice;
+groups never certify unsaved responses. A new API object starts clean. A player
+that resets its API object in place retains the refusal until the player reloads;
+no named supported LMS is known to require that reset path.

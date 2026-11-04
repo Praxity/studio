@@ -106,7 +106,7 @@ export function writeSessionState(
 	return getSessionState(api, win) === state ? state : null;
 }
 
-/** Index preserves a live session; a closed launch always gets a fresh record. */
+/** Index preserves a live session; only a successfully closed launch gets a fresh record. */
 export function resetScormSessions(win: WindowLike): void {
 	for (const name of ["API", "API_1484_11"]) {
 		resetSessionState(findWindowProperty(win, name) as object | null, win);
@@ -133,7 +133,7 @@ export function resetSessionState(api: object | null, win: WindowLike): void {
 		}
 		state.initialized = false;
 		state.attemptId = undefined;
-	} else if (state) {
+	} else if (state && !state.commitRefused) {
 		delete (api as SessionApi).__praxityScormSession;
 		sessionStore(win)?.delete(api);
 	}

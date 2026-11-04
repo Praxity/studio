@@ -1,6 +1,8 @@
 import { assessmentGroupRequirements } from "@praxity/content-model";
 import type { ChoiceGroupSubmission } from "../choice-learner-state";
+import { assessmentSessionEndedNotices } from "../i18n/assessment-session-ended-notice";
 import { journalDownloadLabels } from "../i18n/journal-download-labels";
+import { resolveLocale } from "../i18n/locale";
 import {
 	learnerRuntime,
 	readLearnerBlockState,
@@ -42,9 +44,10 @@ export interface AssessmentGroupLabels {
 	downloadDocx: string;
 	completed: string;
 	assessmentStorageNotice: string;
+	assessmentSessionEndedNotice: string;
 }
 
-const DEFAULT_LABELS: AssessmentGroupLabels = {
+const DEFAULT_LABELS: Omit<AssessmentGroupLabels, "assessmentSessionEndedNotice"> = {
 	untitledGroup: "Untitled group",
 	assessmentGroupProgress: "Questions completed: {completed} of {total}",
 	assessmentGroupResultsSummary: "Results",
@@ -423,7 +426,11 @@ function showResults(
 			const status = container.querySelector<HTMLElement>("[data-assessment-group-status]");
 			if (status) {
 				status.classList.remove("praxity-sr-only");
-				status.textContent = labels.assessmentStorageNotice;
+				const receipt = provider?.getSaveResult?.(group.id);
+				status.textContent =
+					receipt?.status === "not-saved" && receipt.code === "commit-refused"
+						? labels.assessmentSessionEndedNotice
+						: labels.assessmentStorageNotice;
 			}
 			restorePicker();
 			return null;
@@ -634,7 +641,12 @@ function initAssessmentGroupLifetime(
 	const groups = buildAssessmentGroups(blocks);
 	if (groups.length === 0) return () => {};
 
-	const labels = { ...DEFAULT_LABELS, ...suppliedLabels };
+	const labels = {
+		...DEFAULT_LABELS,
+		assessmentSessionEndedNotice:
+			assessmentSessionEndedNotices[resolveLocale(root.ownerDocument.documentElement.lang)],
+		...suppliedLabels,
+	};
 	const cleanup: Array<() => void> = [];
 	let disposed = false;
 	const frame = requestSelfCheckFrame(() => {
@@ -795,6 +807,21 @@ function initAssessmentGroupLifetime(
 			status.setAttribute("aria-atomic", "true");
 			submitContainer.append(submitButton, results, status);
 			cleanup.push(() => status.remove());
+			const refuseEndedSession = () => {
+				const receipt = window.__praxityBlockState?.getSaveResult?.(group.id);
+				if (receipt?.status !== "not-saved" || receipt.code !== "commit-refused") return false;
+				submitButton.disabled = true;
+				results.textContent = "";
+				status.classList.remove("praxity-sr-only");
+				status.textContent = labels.assessmentSessionEndedNotice;
+				return true;
+			};
+			refuseEndedSession();
+			window.addEventListener("praxity:scorm-session-ended", refuseEndedSession);
+			cleanup.push(() =>
+				window.removeEventListener("praxity:scorm-session-ended", refuseEndedSession),
+			);
+
 			const downloadable = members.flatMap((member) => {
 				const block = memberBlocks.find((candidate) => candidate.id === member.id);
 				const response = (block?.data as { response?: { downloadAs?: unknown } } | undefined)
@@ -986,7 +1013,7 @@ function initAssessmentGroupLifetime(
 
 				const onSubmit = () => {
 					const current = selfCheckEpochTicket(root.ownerDocument);
-					if (!current() || disposed) return;
+					if (!current() || disposed || refuseEndedSession()) return;
 					if (!selectedId) return;
 					const member = members.find((candidate) => candidate.id === selectedId);
 					if (!member) return;
@@ -1000,7 +1027,7 @@ function initAssessmentGroupLifetime(
 					setSelfCheckTimeout(
 						() => {
 							// A committed native action survives a React rerender within the same lifetime.
-							if (!current()) return;
+							if (!current() || refuseEndedSession()) return;
 							if (!root.isConnected || !root.contains(member.el)) return;
 							if (
 								showResults(group, [member], root, labels, true, undefined, undefined, current) &&
@@ -1037,7 +1064,7 @@ function initAssessmentGroupLifetime(
 			cleanup.push(() => clearMemberValidation?.());
 			const onSubmit = () => {
 				const current = selfCheckEpochTicket(root.ownerDocument);
-				if (!current() || disposed) return;
+				if (!current() || disposed || refuseEndedSession()) return;
 				status.textContent = "";
 				status.classList.add("praxity-sr-only");
 				clearMemberValidation?.();
@@ -1082,7 +1109,7 @@ function initAssessmentGroupLifetime(
 				if (!current()) return;
 				setSelfCheckTimeout(
 					() => {
-						if (!current()) return;
+						if (!current() || refuseEndedSession()) return;
 						if (!root.isConnected || members.some((member) => !root.contains(member.el))) return;
 						const completed = showResults(
 							group,
@@ -1107,6 +1134,7 @@ function initAssessmentGroupLifetime(
 							writeAssessmentGroupState(group, null, false, current);
 							if (!current()) return;
 							learnerRuntime(current)?.commit?.();
+							if (refuseEndedSession()) return;
 							if (current() && !results.querySelector(".praxity-ag-results-score")) {
 								results.textContent = labels.assessmentGroupSaved;
 								status.textContent = labels.assessmentGroupSaved;
