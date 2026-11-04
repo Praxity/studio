@@ -1070,7 +1070,7 @@ Nested body.
 		);
 		await writeFile(
 			path.join(projectDir, "lesson-b.prax"),
-			"---\ntitle: Lesson B\nkicker: Module 1\ntime: About 12 minutes\ndesign:\n  navArchetype: slides\n---\n\n# Untitled {hideTitle}\n\nB content\n",
+			"---\ntitle: Lesson B\nkicker: Module 1\nnav: Week 1\ntime: About 12 minutes\ndesign:\n  navArchetype: slides\n---\n\n# Untitled {hideTitle}\n\nB content\n",
 			"utf-8",
 		);
 
@@ -1093,6 +1093,7 @@ Nested body.
 			lessonTitle: "Lesson B",
 			lessonKicker: "Module 1",
 			lessonTime: "About 12 minutes",
+			lessonNav: "Week 1",
 			isFirstPageOfLesson: true,
 			lessonId: expect.stringMatching(/^[0-9a-f-]{36}$/),
 			id: expect.stringMatching(/^[0-9a-f-]{36}$/),

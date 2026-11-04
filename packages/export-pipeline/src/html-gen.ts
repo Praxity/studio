@@ -262,6 +262,8 @@ export interface CourseConfig {
 	showCourseNameInNav?: boolean;
 	showLessonNameInNav?: boolean;
 	showLessonNameAsTitle?: boolean;
+	/** Sidebar density from `design.navDensity`; omitted means comfortable. */
+	navDensity?: "compact";
 	completionMethod?: "allPages" | "percentage" | "quiz";
 	completionThreshold?: number;
 	requireKnowledgeChecks?: boolean;
@@ -1080,6 +1082,39 @@ export function publishedReadingTimes(pages: readonly Pick<PraxityPage, "blocks"
 	};
 }
 
+/** Minutes stated in a free-text lesson `time:`, such as "45 minutes", "About 1 h 30 min"
+ * or "1,5 heures". ponytail: reads the first hours figure and the first minutes figure, so
+ * "10–15 min" counts 15 and "1h30" counts 60; a stricter duration key would remove the guess. */
+export function lessonTimeMinutes(text: unknown): number | undefined {
+	if (typeof text !== "string") return undefined;
+	const hours = /(\d+(?:[.,]\d+)?)\s*(?:h|hrs?|hours?|heures?)(?![a-z])/i.exec(text);
+	const minutes = /(\d+)\s*(?:min|mins|minutes?)(?![a-z])/i.exec(text);
+	if (!hours && !minutes) return undefined;
+	const total = Number((hours?.[1] ?? "0").replace(",", ".")) * 60 + Number(minutes?.[1] ?? 0);
+	return total > 0 ? Math.round(total) : undefined;
+}
+
+/** Course total for the sidebar: the authored lesson `time:` values when every lesson
+ * states minutes or hours, otherwise the reading estimate, which omits activities and media. */
+export function publishedCourseMinutes(
+	pages: readonly Pick<PraxityPage, "blocks" | "lessonTime" | "lessonId">[],
+): { minutes: number; authored: boolean } {
+	// Group by lesson ID: a hidden first page removes its isFirstPageOfLesson marker.
+	const lessonTime = new Map<string | undefined, string | undefined>();
+	for (const page of pages)
+		if (!lessonTime.get(page.lessonId)?.trim()) lessonTime.set(page.lessonId, page.lessonTime);
+	const lessonTimes = [...lessonTime.values()].map(lessonTimeMinutes);
+	return lessonTimes.length > 0 && lessonTimes.every((minutes) => minutes !== undefined)
+		? { minutes: lessonTimes.reduce((total, minutes) => total + (minutes ?? 0), 0), authored: true }
+		: { minutes: publishedReadingTimes(pages).courseMinutes, authored: false };
+}
+
+/** Lesson frontmatter `nav:`, the short module label for navigation. */
+function moduleNavLabel(entry: { data?: Record<string, unknown> }): string | undefined {
+	const label = entry.data?.lessonNav;
+	return typeof label === "string" && label.trim() ? fullyDecodeEntities(label.trim()) : undefined;
+}
+
 export function courseVariables(config: CourseConfig) {
 	const variableNames = new Set<string>();
 	return config.pages
@@ -1190,6 +1225,8 @@ export function renderPageFragments(
 				block.data._headingLevel === 1 &&
 				block.data._foldedPageTitle === true,
 		) ?? sectionBlocks.find((block) => block.type === "heading" && block.data.level === 1);
+	const pageTime =
+		typeof page.data?.time === "string" && page.data.time.trim() ? page.data.time : undefined;
 	const sectionRhythm = "uniform";
 	const sections: SectionGroup[] = groupBlocksIntoSections(sectionBlocks, sectionRhythm);
 	const hiddenBlockIds = initiallyHiddenBlockIds(sectionBlocks);
@@ -1312,9 +1349,14 @@ export function renderPageFragments(
 				}
 			: block;
 		const renderedBlock = renderBlockHtml(renderedNode, config.sourceLocale, localeStrings, {
+			// A page's own `time:` uses the lesson time line and replaces the lesson time there.
 			lessonHeading:
-				page.isFirstPageOfLesson && page.data?.hideTitle !== true && block === pageTitleBlock
-					? { kicker: page.lessonKicker, time: page.lessonTime }
+				(page.isFirstPageOfLesson || pageTime) &&
+				page.data?.hideTitle !== true &&
+				block === pageTitleBlock
+					? page.isFirstPageOfLesson
+						? { kicker: page.lessonKicker, time: pageTime ?? page.lessonTime }
+						: { time: pageTime }
 					: undefined,
 			...blockContext,
 			selfCheckContextPending,
@@ -1651,13 +1693,16 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 			? 0
 			: sections.length;
 	const readingTimeMinutes = publishedReadingTimes([{ blocks: sectionBlocks }]).pageMinutes[0];
-	const courseEstimatedMinutes = publishedReadingTimes(config.pages).courseMinutes;
+	const courseDuration = publishedCourseMinutes(config.pages);
 	const estimatedDuration =
 		config.estimatedDuration?.trim() ||
 		(new Set(pagesList.map((entry) => entry.lessonId)).size === 1
 			? pagesList.find((entry) => entry.lessonTime?.trim())?.lessonTime?.trim()
 			: "") ||
-		interpolate(localeStrings.narrativeReadTime, { minutes: courseEstimatedMinutes });
+		interpolate(
+			courseDuration.authored ? localeStrings.narrativeReadTime : localeStrings.courseReadingTime,
+			{ minutes: courseDuration.minutes },
+		);
 
 	const pageDurationOverride =
 		typeof page.data?.duration === "string" ? page.data.duration : undefined;
@@ -2089,7 +2134,7 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 	// while its islands showed nothing.
 	if (!suppressNav && outlineEnabled) {
 		lines.push(
-			`<nav${nativeNav ? ' id="course-nav-sidebar"' : ""} class="praxity-outline-fallback${nativeNav ? " praxity-course-menu praxity-native-outline" : ""}"${nativeNav ? ` data-island="nav" data-native-outline${hamburgerOnlyDrawer ? " data-nav-drawer" : ""}` : ""} aria-label="${escapeHtml(nativeNav ? localeStrings.courseNavigation : localeStrings.courseOutline)}">`,
+			`<nav${nativeNav ? ' id="course-nav-sidebar"' : ""} class="praxity-outline-fallback${nativeNav ? " praxity-course-menu praxity-native-outline" : ""}"${nativeNav ? ` data-island="nav" data-native-outline${hamburgerOnlyDrawer ? " data-nav-drawer" : ""}` : ""} aria-label="${escapeHtml(nativeNav ? localeStrings.courseNavigation : localeStrings.courseOutline)}"${config.navDensity === "compact" ? ' data-nav-density="compact"' : ""}>`,
 		);
 		if (nativeNav) {
 			lines.push('<div class="praxity-native-sidebar-header">');
@@ -2126,8 +2171,12 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 			for (const lesson of lessons) {
 				const current = lesson.lessonId === page.lessonId;
 				const lessonPages = pagesList.filter((entry) => entry.lessonId === lesson.lessonId);
+				const fullTitle = lesson.lessonTitle ?? lesson.title;
+				const shortLabel = moduleNavLabel(lesson);
+				// A short label names the link; the full title stays its accessible description.
+				const descriptionId = shortLabel ? `praxity-module-title-${lesson.index}` : "";
 				lines.push(
-					`<li class="praxity-native-module"><a href="${escapeHtml(lesson.slug)}.html" data-page-slug="${escapeHtml(lesson.slug)}" data-page-number="${lesson.index}" data-module-pages="${escapeHtml(JSON.stringify(lessonPages.map((entry) => entry.id)))}"${current ? ' aria-current="true"' : ""}><span class="praxity-outline-label">${escapeHtml(lesson.lessonTitle ?? lesson.title)}</span>${outlineStatus()}<span class="praxity-sr-only praxity-nav-visited-label" hidden>, ${escapeHtml(localeStrings.visitedModule)}</span></a>`,
+					`<li class="praxity-native-module"><a href="${escapeHtml(lesson.slug)}.html" data-page-slug="${escapeHtml(lesson.slug)}" data-page-number="${lesson.index}" data-module-pages="${escapeHtml(JSON.stringify(lessonPages.map((entry) => entry.id)))}"${current ? ' aria-current="true"' : ""}${shortLabel ? ` aria-describedby="${descriptionId}" title="${escapeHtml(fullTitle)}"` : ""}><span class="praxity-outline-label">${escapeHtml(shortLabel ?? fullTitle)}</span>${outlineStatus()}<span class="praxity-sr-only praxity-nav-visited-label" hidden>, ${escapeHtml(localeStrings.visitedModule)}</span></a>${shortLabel ? `<span id="${descriptionId}" hidden>${escapeHtml(fullTitle)}</span>` : ""}`,
 				);
 				if (current) {
 					lines.push('<ol role="list">');
@@ -2230,11 +2279,21 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 				pageNavToggles.navReadingTime && readingTimeMinutes > 0
 					? interpolate(localeStrings.narrativeReadTime, { minutes: readingTimeMinutes })
 					: "";
-			const headerContext = pagesPresentation ? (decodedLessonTitle ?? "") : pagePosition;
+			// With a module label, Pages show a short location ("Week 1 / Learn the brake")
+			// instead of repeating the full module title beside the sidebar.
+			const currentLessonLabel = moduleNavLabel(
+				lessons.find((entry) => entry.lessonId === page.lessonId) ?? {},
+			);
+			const shortLocation =
+				pagesPresentation && currentLessonLabel
+					? `${currentLessonLabel} / ${decodedPageTitle}`
+					: "";
+			const headerContext =
+				shortLocation || (pagesPresentation ? (decodedLessonTitle ?? "") : pagePosition);
 			const headerLabel = [headerContext, readingTime].filter(Boolean).join(" · ");
 			if (headerLabel) {
 				lines.push(
-					`<span class="praxity-page-count-text praxity-toolbar-position" title="${escapeHtml(headerContext)}"${page.lessonTitleIsFallback ? " data-lesson-title-fallback" : ""}>${escapeHtml(headerLabel)}</span>`,
+					`<span class="praxity-page-count-text praxity-toolbar-position${shortLocation ? " praxity-toolbar-location" : ""}" title="${escapeHtml(headerContext)}"${page.lessonTitleIsFallback ? " data-lesson-title-fallback" : ""}>${escapeHtml(headerLabel)}</span>`,
 				);
 			}
 		}

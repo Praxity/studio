@@ -219,7 +219,8 @@ describe("lesson heading metadata", () => {
 	);
 	it.each([
 		["single", "About 12 minutes"],
-		["multiple", "2 pages · ~1 min"],
+		// Multiple lessons sum their authored times, including a lesson whose first page is hidden.
+		["multiple", "2 pages · ~37 min"],
 	] as const)(
 		"keeps the correct sidebar duration for %s lessons after hiding a first page",
 		async (kind, expected) => {
@@ -252,14 +253,14 @@ describe("lesson heading metadata", () => {
 			}).querySelector(".praxity-native-sidebar-meta")?.textContent,
 		).toBe("2 pages · About 20 minutes");
 	});
-	it("keeps computed duration without authored time or across multiple lessons", () => {
+	it("labels computed duration as reading time and sums authored times across lessons", () => {
 		expect(
 			document(lessonPages(), 0).querySelector(".praxity-native-sidebar-meta")?.textContent,
-		).toBe("2 pages · ~1 min");
+		).toBe("2 pages · ~1 min reading");
 		const pages = lessonPages({ lessonTime: "About 12 minutes" });
 		pages[1] = { ...pages[1], lessonId: "lesson-2", isFirstPageOfLesson: true };
 		expect(document(pages, 0).querySelector(".praxity-native-sidebar-meta")?.textContent).toBe(
-			"2 pages · ~1 min",
+			"2 pages · ~24 min",
 		);
 	});
 	it("uses the shared spacing wrapper when time is the only lesson line", () => {

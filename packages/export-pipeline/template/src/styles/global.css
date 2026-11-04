@@ -8,6 +8,7 @@
 	--praxity-color-text-muted: var(--ink-2);
 	--praxity-color-control-border: var(--line);
 	--praxity-color-border: var(--line);
+	--praxity-color-divider: var(--rule);
 	--praxity-color-text-inverted: var(--paper);
 	--praxity-color-accent: var(--accent);
 	--praxity-color-link: var(--accent);

@@ -134,14 +134,14 @@ describe("buildScormPackage desktop mode", () => {
 		async (moduleDeck) => {
 			// T50 round 1 uses the shared glossary name and a single-warning media action catalog.
 			const baseline: Record<string, string> = {
-				"pages/html": "af8dd486e40e34b11bccc7e53d329ed2775e3a923341cedd484531892300310c",
-				"pages/scorm12": "75a52fde7664c2623128eab8b527b33c05a7d3713643466a9011d1ac08622c67",
-				"pages/scorm2004": "c97772888f88980089123dfeb335164120e9cde51912107c2c38dc194faed25f",
-				"pages/xapi": "ebf31cb069e462d8ddc77c232b12f1b45e483685a88cb728b9bb402fd30a9f60",
-				"guided/html": "cb5e72789be8158133cdc079eb7705e7a8f8c7656945b54232d1cf9406231987",
-				"guided/scorm12": "9e3e7d0f29bab1cedc26262712227678da75e6e181939dbf0525efad4cc35aaa",
-				"guided/scorm2004": "9d4975a9038ecbc30575ec800e73128dc3fb41e6838f35a308329c83a304cfbc",
-				"guided/xapi": "8587a973734e7468c6ce871a99230ab191152d5ced6c6ea201696783ab5b1c06",
+				"pages/html": "648fb56f06d56012b80db05a51233924c794ccec3cf7ba9d6998205c2eca1ca0",
+				"pages/scorm12": "7c7f510db9dd9545b5288737b153458a191f22fcc4290bd8bfd3f1f9f64874d2",
+				"pages/scorm2004": "653325a1abb0527a1696e33b6c058adda47f035cfbaa91b5e2eb9c827921bd18",
+				"pages/xapi": "7e46fe900b486e487a02ef086c7b8dbf203fedcce61285f427224c82cfa405b5",
+				"guided/html": "0dba8d1b5582f3db7b7726b2334389af31bd3be2dc36c93260fbc2b5f9632bf7",
+				"guided/scorm12": "d1eff0af7d9ed3deae8cdc37ab7a28582df6c674165f241948616f5b2c1b75ef",
+				"guided/scorm2004": "c6887d7e83688e7287409ff95eb06ad30541e0ea97ca3ac0e898410d4af4d909",
+				"guided/xapi": "4166d8fda96ea2065f1b8ce001076f5e1eefaab605db33629e7d1d59fa43290e",
 			};
 			const input = createDesktopHtmlInput();
 			input.blocks = readSource("# End\n\nA [term]{A definition.}.\n").blocks;
