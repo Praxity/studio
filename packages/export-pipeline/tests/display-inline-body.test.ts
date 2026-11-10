@@ -4829,28 +4829,28 @@ const mainDocumentCases = [
 		slug: "p",
 		configs: 2,
 		source: "# P\n::: choice Word\n(x) Use `<em>` tag\n( ) No\n:::\n",
-		hash: "b4527b932d5aa4ef4dd223368f989f28916de85e6bb4a9c5453b17ac747a875f",
+		hash: "2c2ed60fcecf2c0e5d7ddda0cb67a27ca3a84716eddb70ca057cbbee378d6473",
 	},
 	{
 		name: "labelEscHtml",
 		slug: "p",
 		configs: 2,
 		source: "# P\n::: choice Word\n(x) a \\<em>b\n( ) No\n:::\n",
-		hash: "591dcd12195e16462d4b536fc5358932e4539377fa259acc507e55f64844b07a",
+		hash: "7fc1e822a95255e2a85ef269150fdb610ca2def22e9b01c500f76cf7606730c7",
 	},
 	{
 		name: "labelRealHtml",
 		slug: "p",
 		configs: 2,
 		source: "# P\n::: choice Word\n(x) a <em>b</em>\n( ) No\n:::\n",
-		hash: "6401f5e18f747fbafe5868b39e6d4ce41ed5bd6e3e59817bab06030114ec2e8d",
+		hash: "f7e352410f80886b6c5eb99a9d0f6d28a300681d667ecc9ce1988771e02eee84",
 	},
 	{
 		name: "labelCodeSpan",
 		slug: "p",
 		configs: 2,
 		source: "# P\n::: choice Word\n(x) The `<span>` tag\n( ) The `<div>` tag\n:::\n",
-		hash: "91b85b65f2104ade385fd24b504689baba262df0708bda33042e620e3503eceb",
+		hash: "230bd56291e8fbdcba587c6e2e01b64a3f7381b13d1d51c13ca0aca5b77cd541",
 	},
 	{
 		name: "fbLinkTerm",
@@ -4858,7 +4858,7 @@ const mainDocumentCases = [
 		configs: 2,
 		source:
 			"# P\n::: choice Word\nincorrect: Try again\n(x) Yes\n( ) No\nfeedback: [Guide](https://example.com) [term]{Definition} and `code`\n:::\n",
-		hash: "6627194148ad128bb2b0e2837bf0d0d363e726407cb8cb60d4afa9f304b3bb01",
+		hash: "0bfb75307097506e9268cfc9157577a0d3b64684e782b9c3c2fe04c535581251",
 	},
 	{
 		name: "fbLinkTerm",
@@ -4874,7 +4874,7 @@ const mainDocumentCases = [
 		configs: 2,
 		source:
 			"# P\n::: choice Word\nincorrect: Try again\n(x) Yes\n( ) No\nfeedback: Use <em>this</em> one\n:::\n",
-		hash: "13dc9a1e507c6733bf823df4216260940a88be20970ffacf63e5542f1308a29a",
+		hash: "413667faed07555be5033658e54d88f3b2d114799d75d569b4cd519c5fbc5ab7",
 	},
 	{
 		name: "fbCodeHtml",
@@ -4882,7 +4882,7 @@ const mainDocumentCases = [
 		configs: 2,
 		source:
 			"# P\n::: choice Word\nincorrect: Try again\n(x) Yes\n( ) No\nfeedback: Use `<em>` here\n:::\n",
-		hash: "5057f8e4ee9c73f371643f1e18b127f681dce4e92051f39ef3dceebd4768f39b",
+		hash: "740a6b985a57a127255427ffcdf9ce95b52983bf62fe7b4b222e1742b843d271",
 	},
 	{
 		name: "fbMultiNoPromo",
@@ -4890,7 +4890,7 @@ const mainDocumentCases = [
 		configs: 2,
 		source:
 			"# P\n::: choice Word {multiple}\n(x) Yes\nfeedback: Good [Guide](https://example.com)\n(x) Also\nfeedback: Fine [term]{Def}\n( ) No\nfeedback: Bad [Guide](https://example.com)\n:::\n",
-		hash: "18221643dcd67ac9f7b77820f583dfcf7aa1e016ad91ba2df412616d0c2e9eac",
+		hash: "8dea8d3c69560f8069defa821feb0d86d742473da590b0a7743ba477e1f7fda2",
 	},
 	{
 		name: "fbMultiNoPromo",
@@ -4905,77 +4905,77 @@ const mainDocumentCases = [
 		slug: "p",
 		configs: 2,
 		source: "# P\n::: choice Word\n(x) Yes @footer.insert now\n( ) No\n:::\n",
-		hash: "3e81dc6fc415b425834b2ac701dbec79ce9e27b84e7e8c22488e8bbdbd7aa249",
+		hash: "8f7524da81889e9917b1b6d472b64968ea8cfe9d9b90686ee6db15a8c68ea107",
 	},
 	{
 		name: "labelFooter",
 		slug: "p",
 		configs: 2,
 		source: "# P\n::: choice Word\n(x) Yes @footer{N}\n( ) No\n:::\n",
-		hash: "404b8d375ac20cc14b0cb2cfad77f1c9c32bf221b205b252a885e057eb21f035",
+		hash: "56557f8d87552d295cbb250a17f4da47020fd208dbdaa938d7e36ea0a396ff78",
 	},
 	{
 		name: "labelSource",
 		slug: "p",
 		configs: 2,
 		source: "# P\n::: choice Word\n(x) Yes @source{N}\n( ) No\n:::\n",
-		hash: "9cb0c2875f93e46c509087a98dbc09dcf0ead48a4f4d48ce0afb7d298e0d83e6",
+		hash: "f82d1dc858d00f59665b976d1beedb38a7004b5c7e8614223ad6ff161d295201",
 	},
 	{
 		name: "labelPlain",
 		slug: "p",
 		configs: 2,
 		source: "# P\n::: choice Word\n(x) Yes\n( ) No\n:::\n",
-		hash: "c23d11f4e66649a9073067566fd0c28384eaf114e9cf7a67348d63eb04d762be",
+		hash: "d94c577b489399fd6a04414a3caf62a5fb6f00d33ce93824502930120a9e1299",
 	},
 	{
 		name: "labelWavy",
 		slug: "p",
 		configs: 2,
 		source: "# P\n::: choice Word\n(x) Yes @source.wavy{N}\n( ) No\n:::\n",
-		hash: "cd866d3c1715a749cc6d5d41e5fef661e7386c035bb6dd015ebe549305dd5c08",
+		hash: "a3da059f9b0851c65b5d44a30a51c51d5376b69a0c264f499b1492224eb984f7",
 	},
 	{
 		name: "labelMaterialHtml",
 		slug: "p",
 		configs: 2,
 		source: "# P\n::: choice Word\n\n(x) Yes @source{Use `<span>`}\n( ) No\n:::\n",
-		hash: "95e48f5a4b22a010d6301d838a0e05a93b572388f4c2bcfebeb1b02a824e136e",
+		hash: "4d962e7f63025a8e11376a8d5c76e85a513623d90d41594943145dc617c77bc7",
 	},
 	{
 		name: "labelMaterialAliasStem",
 		slug: "p",
 		configs: 2,
 		source: "# P\n::: choice Word @footer{N}\n\n(x) Yes\n( ) No\n:::\n",
-		hash: "1687ae61b5e650aa54545e0721cc01e88147f59ac427fb526289e74b3374f3af",
+		hash: "a56e3b3a6cbecf15bb9b999dbb13a9206276724975529898e177d216da96ec27",
 	},
 	{
 		name: "labelMaterialAliasDescription",
 		slug: "p",
 		configs: 2,
 		source: "# P\n::: choice Word\nDescription @footer{N}\n(x) Yes\n( ) No\n:::\n",
-		hash: "9242bc1bee333029133044dd6fdd4d67d18c6b2869ef042c372ac8ebaecd0879",
+		hash: "1b3db16cca46c874eecd8730e36389de7eb4057033d265777f540300765cd0ab",
 	},
 	{
 		name: "labelMaterialWhole",
 		slug: "p",
 		configs: 2,
 		source: "# P\n::: choice Word\n\n(x) @source{N}\n( ) No\n:::\n",
-		hash: "8018c9e7d63f446ba17bb5c76337a1ae2a682cef6a50a6b2e0ffe55573555aee",
+		hash: "58270ea813ecefacaef195b9df4d61a5773e25bacb419ec754da483359d1cf22",
 	},
 	{
 		name: "labelMaterialWholeMark",
 		slug: "p",
 		configs: 2,
 		source: "# P\n::: choice Word\n\n(x) ==Yes== @footer{N}\n( ) No\n:::\n",
-		hash: "f479ae775e34376108a704c13f484a134627a105ef7b8749fd0a7327a239ec61",
+		hash: "ca4f869c68b47bcd7f55356bb31093d817d1e2cdd1d86cf9b06f9c083aa2fac4",
 	},
 	{
 		name: "labelMaterialList",
 		slug: "p",
 		configs: 2,
 		source: "# P\n::: choice Word\n\n(x) Yes @footer.insert\n( ) No\n:::\n",
-		hash: "57a31d5c11df324a4b24e1784e25c7756cf5469ece050b3f0509fa2eb94a009f",
+		hash: "eb47e82bef9f03fd8bf62ef4105703bada834efa02e212ba914173b5e5c563ef",
 	},
 	{
 		name: "labelTree0",
@@ -4983,7 +4983,7 @@ const mainDocumentCases = [
 		configs: 2,
 		source:
 			"# P\n::: choice If a<b @source{N} then b>a\nx<y @source{N} z>w\n(x) x<y @source{N} z>w\n( ) No\n:::\n",
-		hash: "9213dd7313d411db1c673f6947a315438266c1a3ca0aa46a502d021ef6ec72e1",
+		hash: "2448cfc6463fe47eda871a75ebd6451c61fbdcb0a202fc9c70a370e1d099571b",
 	},
 	{
 		name: "labelTree1",
@@ -4991,7 +4991,7 @@ const mainDocumentCases = [
 		configs: 2,
 		source:
 			"# P\n::: choice If a<b @footer{N} then b>a\nx<y @footer{N} z>w\n(x) x<y @footer{N} z>w\n( ) No\n:::\n",
-		hash: "83596d39d6f0b0bf6f0d230674c211266ca34b32e75c7dfec65ecaed117c989e",
+		hash: "ba5712b3110d9fcb427389f9af541ea4e29fb27f10ba3bfa2e10d36db344465e",
 	},
 	{
 		name: "labelTree2",
@@ -4999,7 +4999,7 @@ const mainDocumentCases = [
 		configs: 2,
 		source:
 			"# P\n::: choice If a<b @sources then b>a\nx<y @sources z>w\n(x) x<y @sources z>w\n( ) No\n:::\n",
-		hash: "bbbfeca828dc60282514452657fc4b5074efd239d31f946c98468e6fbc17e172",
+		hash: "5b8621ca26a8d8514fb2e7d0fda182368c72f13d4c56f8bd2f72200755da8ef7",
 	},
 	{
 		name: "labelTree3",
@@ -5007,14 +5007,14 @@ const mainDocumentCases = [
 		configs: 2,
 		source:
 			"# P\n::: choice If a<b @footer.insert then b>a\nx<y @footer.insert z>w\n(x) x<y @footer.insert z>w\n( ) No\n:::\n",
-		hash: "1e7d9365d58ee938bb27629a6eaed09bb514d15fca30bb8919f08d46d859202e",
+		hash: "4cf2fd01b13a9b051bfe37aaaaf04469d38c0d1bff0d108f50c024f7eed1f199",
 	},
 	{
 		name: "labelTreeCode",
 		slug: "p",
 		configs: 2,
 		source: "# P\n::: choice Yes `<tag` @footer{N >}\n(x) Yes\n( ) No\n:::\n",
-		hash: "690d28939afb4902295c75c7f9c264639233e8ebe60025db7e71599ee0c1e287",
+		hash: "ceb8276a23e385b25fd976e241cbf47343d236d60ad1bbf13274cf8594b4458b",
 	},
 ];
 it.each(mainDocumentCases)("preserves all ordinary document bytes: $name in $slug", async (row) => {

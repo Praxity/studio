@@ -245,7 +245,7 @@ beforeAll(async () => {
 					expect(activity.querySelectorAll('[role="status"]')).toHaveLength(1);
 					expect(activity.querySelector('[role="status"]')?.innerHTML).toBe("");
 					expect(activity.querySelector("textarea")).toBeTruthy();
-					expect(activity.querySelector(".praxity-assessment-stem")?.textContent).toContain(
+					expect(activity.querySelector('[id$="-task"]')?.textContent).toContain(
 						"<script>TASK_LITERAL</script> & [TASKTERM]{Literal definition.}",
 					);
 					expect(activity.querySelectorAll("script,template,.inline-tooltip-trigger")).toHaveLength(

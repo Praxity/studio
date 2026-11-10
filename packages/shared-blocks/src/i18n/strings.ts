@@ -223,6 +223,8 @@ export interface LearnerStrings {
 	categoryFor: string;
 	categoryChoiceFor: string;
 	categorizeItemsColumn: string;
+	categorizeSortedCount: string;
+	categorizeUnsorted: string;
 	moveUp: string;
 	moveDown: string;
 	orderItemPosition: string;
@@ -233,6 +235,9 @@ export interface LearnerStrings {
 	selfCheckShowFeedback: string;
 	selfCheckStartOver: string;
 	selfCheckNeedsScript: string;
+	selfCheckOwnComparison: string;
+	selfCheckHeading: string;
+	selfCheckOwnComparisonLms: string;
 	typeYourAnswer: string;
 	enterANumber: string;
 	assessmentEnterResponse: string;
@@ -563,16 +568,21 @@ const en: LearnerStrings = {
 	categoryFor: "Category for: {item}",
 	categoryChoiceFor: "{item}: {category}",
 	categorizeItemsColumn: "Items",
+	categorizeSortedCount: "{count} of {total} sorted",
+	categorizeUnsorted: "Choose a category for every item before you check. {count} left.",
 	moveUp: "Move {label} up",
 	moveDown: "Move {label} down",
 	orderItemPosition: "Position {position} of {total}",
 	orderItemMoved: "{label} moved to position {position} of {total}",
 	orderSortableItem: "sortable item",
 	selfCheckAnswer: selfCheckStrings.en.answer,
-	selfCheckCheck: selfCheckStrings.en.check,
-	selfCheckShowFeedback: selfCheckStrings.en.show,
+	selfCheckCheck: "Review against the checklist",
+	selfCheckShowFeedback: "Show example and feedback",
 	selfCheckStartOver: selfCheckActivationStrings.en.selfCheckStartOver,
 	selfCheckNeedsScript: "Comparing your answer with the model requires JavaScript.",
+	selfCheckHeading: "Self-check",
+	selfCheckOwnComparison: "You compare your answer yourself. It isn't sent anywhere.",
+	selfCheckOwnComparisonLms: "You compare your answer yourself.",
 	typeYourAnswer: "Type your answer...",
 	enterANumber: "Enter a number...",
 	assessmentEnterResponse: "Enter a response before submitting",
@@ -885,16 +895,22 @@ const fr: LearnerStrings = {
 	categoryFor: "Catégorie pour : {item}",
 	categoryChoiceFor: "{item} : {category}",
 	categorizeItemsColumn: "Éléments",
+	categorizeSortedCount: "{count} sur {total} classés",
+	categorizeUnsorted:
+		"Choisissez une catégorie pour chaque élément avant de vérifier. Il en reste {count}.",
 	moveUp: "Déplacer {label} vers le haut",
 	moveDown: "Déplacer {label} vers le bas",
 	orderItemPosition: "Position {position} sur {total}",
 	orderItemMoved: "{label} déplacé à la position {position} sur {total}",
 	orderSortableItem: "élément déplaçable",
 	selfCheckAnswer: selfCheckStrings.fr.answer,
-	selfCheckCheck: selfCheckStrings.fr.check,
-	selfCheckShowFeedback: selfCheckStrings.fr.show,
+	selfCheckCheck: "Revoir avec la liste de vérification",
+	selfCheckShowFeedback: "Afficher l'exemple et la rétroaction",
 	selfCheckStartOver: selfCheckActivationStrings.fr.selfCheckStartOver,
 	selfCheckNeedsScript: "La comparaison de votre réponse avec le modèle nécessite JavaScript.",
+	selfCheckHeading: "Autoévaluation",
+	selfCheckOwnComparison: "Vous comparez vous-même votre réponse. Elle n'est envoyée nulle part.",
+	selfCheckOwnComparisonLms: "Vous comparez vous-même votre réponse.",
 	typeYourAnswer: "Saisissez votre réponse…",
 	enterANumber: "Entrez un nombre…",
 	assessmentEnterResponse: "Entrez une réponse avant de soumettre",

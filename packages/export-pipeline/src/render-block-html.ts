@@ -1,5 +1,6 @@
 import { isAvatarNone } from "@praxity/grammar";
 import { resolveAssessmentDontKnow } from "@praxity/shared-blocks/assessment-choice";
+import { compileBlockStatePolicy } from "@praxity/shared-blocks/block-state-policy";
 import {
 	formatChartNumber,
 	type PublishedChartSeries,
@@ -35,7 +36,7 @@ import { inlineMarkdown } from "@praxity/shared-blocks/inline-markdown";
 import { isJournal } from "@praxity/shared-blocks/journal";
 import { renderMath } from "@praxity/shared-blocks/math";
 import { htmlToPlainText, splitHeadingContent } from "@praxity/shared-blocks/sanitize";
-import { renderSceneHeader } from "@praxity/shared-blocks/scene-header";
+import { isShortSceneTitle, renderSceneHeader } from "@praxity/shared-blocks/scene-header";
 import type {
 	AssessmentBlockData,
 	AssessmentGroupBlockData,
@@ -112,6 +113,9 @@ export type RenderBlockHtmlStrings = Pick<
 	| "selfCheckCheck"
 	| "selfCheckShowFeedback"
 	| "selfCheckStartOver"
+	| "selfCheckOwnComparison"
+	| "selfCheckHeading"
+	| "selfCheckOwnComparisonLms"
 	| "dontKnow"
 	| "mediaOpen"
 	| "mediaShowEmbed"
@@ -216,6 +220,9 @@ const DEFAULT_RENDER_STRINGS: RenderBlockHtmlStrings = {
 	selfCheckCheck: getStrings("en").selfCheckCheck,
 	selfCheckShowFeedback: getStrings("en").selfCheckShowFeedback,
 	selfCheckStartOver: getStrings("en").selfCheckStartOver,
+	selfCheckOwnComparison: getStrings("en").selfCheckOwnComparison,
+	selfCheckHeading: getStrings("en").selfCheckHeading,
+	selfCheckOwnComparisonLms: getStrings("en").selfCheckOwnComparisonLms,
 	dontKnow: getStrings("en").dontKnow,
 	mediaOpen: getStrings("en").mediaOpen,
 	mediaShowEmbed: "Show embedded content",
@@ -1286,12 +1293,17 @@ function renderSelfCheck(
 ): string {
 	const prompt = constructSelfCheckPromptBlock(block);
 	const prefix = `${block.id}-${blockIndex}-self-check`;
-	const header = renderSceneHeader({
-		icon: "clipboard-check",
-		headingLevel: normalizeHeadingLevel(prompt.data.level, 2),
-		titleHtml: escapeHtml(prompt.data.content.task),
-		headingAttributes: ` id="${escapeHtml(prefix)}-task" class="praxity-assessment-stem"`,
-	});
+	const task = prompt.data.content.task;
+	const headingLevel = normalizeHeadingLevel(prompt.data.level, 2);
+	// A long task becomes the prompt under a generated heading, with no band or icon.
+	const header = isShortSceneTitle(task)
+		? renderSceneHeader({
+				icon: "clipboard-check",
+				headingLevel,
+				titleHtml: escapeHtml(task),
+				headingAttributes: ` id="${escapeHtml(prefix)}-task" class="praxity-assessment-stem"`,
+			})
+		: `<div class="praxity-assessment-question-header"><h${headingLevel} class="praxity-assessment-stem">${escapeHtml(strings.selfCheckHeading)}</h${headingLevel}><p id="${escapeHtml(prefix)}-task" class="praxity-assessment-stem-body">${escapeHtml(task)}</p></div>`;
 	const controls = [
 		["check", strings.selfCheckCheck],
 		["show-feedback", strings.selfCheckShowFeedback],
@@ -1309,7 +1321,7 @@ function renderSelfCheck(
 				`<div id="${escapeHtml(prefix)}-part-${index}" data-node-id="${escapeHtml(part.id)}"></div>`,
 		)
 		.join("");
-	return `<div class="praxity-self-check" data-self-check${contextPending ? " data-self-check-context-pending" : ""} data-self-check-incomplete="${escapeHtml(getSelfCheckCompletionStrings(locale).selfCheckIncomplete)}" data-self-check-id="${escapeHtml(block.id)}" lang="${escapeHtml(locale)}">${header}<div class="praxity-self-check-response"><label for="${escapeHtml(prefix)}-answer">${escapeHtml(strings.selfCheckAnswer)}</label><textarea id="${escapeHtml(prefix)}-answer" class="praxity-assessment-text-input" rows="5" aria-describedby="${escapeHtml(prefix)}-notice"></textarea><p id="${escapeHtml(prefix)}-answer-error" class="praxity-self-check-error" data-self-check-error hidden>${escapeHtml(selfCheckPatternStrings[resolveLocale(locale)].empty)}</p></div><p id="${escapeHtml(prefix)}-notice" class="praxity-assessment-needs-script" data-self-check-notice>${escapeHtml(strings.selfCheckNeedsScript)}</p><div class="praxity-assessment-actions">${controls}</div><div data-self-check-parts>${parts}</div><div id="${escapeHtml(prefix)}-status" role="status" aria-atomic="true" data-self-check-status></div></div>`;
+	return `<div class="praxity-self-check" data-self-check${contextPending ? " data-self-check-context-pending" : ""} data-self-check-incomplete="${escapeHtml(getSelfCheckCompletionStrings(locale).selfCheckIncomplete)}" data-self-check-id="${escapeHtml(block.id)}" lang="${escapeHtml(locale)}">${header}<div class="praxity-self-check-response"><label for="${escapeHtml(prefix)}-answer">${escapeHtml(strings.selfCheckAnswer)}</label><textarea id="${escapeHtml(prefix)}-answer" class="praxity-assessment-text-input" rows="5" aria-describedby="${escapeHtml(prefix)}-notice"></textarea><p id="${escapeHtml(prefix)}-answer-error" class="praxity-self-check-error" data-self-check-error hidden>${escapeHtml(selfCheckPatternStrings[resolveLocale(locale)].empty)}</p></div><p id="${escapeHtml(prefix)}-notice" class="praxity-assessment-needs-script" data-self-check-notice>${escapeHtml(strings.selfCheckNeedsScript)}</p><div class="praxity-assessment-actions">${controls}</div><p data-self-check-own>${escapeHtml(compileBlockStatePolicy([block])[block.id] === "lms" ? strings.selfCheckOwnComparisonLms : strings.selfCheckOwnComparison)}</p><div data-self-check-parts>${parts}</div><div id="${escapeHtml(prefix)}-status" role="status" aria-atomic="true" data-self-check-status></div></div>`;
 }
 
 function renderAssessment(
@@ -1345,18 +1357,22 @@ function renderAssessment(
 			? `<span class="praxity-assessment-points">${escapeHtml(assessmentPointsLabel(points, sourceLocale, strings))}</span>`
 			: "";
 	const headingId = `assessment-question-${block.id}`;
-	const headingAttributes = ` id="${escapeHtml(headingId)}" class="praxity-assessment-stem"`;
+	// Matches AssessmentBlock: long free-response tasks read as body text without the band.
+	const longPrompt =
+		data.assessmentType === "textResponse" && !isShortSceneTitle(htmlToPlainText(question));
+	const headingAttributes = ` id="${escapeHtml(headingId)}" class="praxity-assessment-stem${longPrompt ? " praxity-assessment-stem-prompt" : ""}"`;
 	const titleHtml = `<span class="praxity-assessment-stem-content">${question}</span>${requiredMarkup}`;
 	const bodyHtml = `${stemContent.body ? `<div class="praxity-assessment-stem-body">${stemContent.body}</div>` : ""}${pointsMarkup}`;
-	const header = isJournal(data)
-		? renderSceneHeader({
-				icon: "notebook",
-				headingLevel: "p",
-				titleHtml,
-				headingAttributes,
-				bodyHtml,
-			})
-		: `<div class="praxity-assessment-question-header"><p${headingAttributes}>${titleHtml}</p>${bodyHtml}</div>`;
+	const header =
+		isJournal(data) && !longPrompt
+			? renderSceneHeader({
+					icon: "notebook",
+					headingLevel: "p",
+					titleHtml,
+					headingAttributes,
+					bodyHtml,
+				})
+			: `<div class="praxity-assessment-question-header"><p${headingAttributes}>${titleHtml}</p>${bodyHtml}</div>`;
 	if (!data.response || typeof data.response !== "object") {
 		return `<p class="praxity-assessment-stem">${question}</p>${stemContent.body}`;
 	}
@@ -1663,7 +1679,7 @@ function renderChecklist(block: PraxityBlock, strings: RenderBlockHtmlStrings): 
 			const itemId = sourceId && !seen.has(sourceId) ? sourceId : `${sourceId || "item"}-${index}`;
 			seen.add(itemId);
 			const id = `${block.id}-check-${itemId}`;
-			return `<div data-checklist-item data-item-id="${escapeHtml(itemId)}" data-node-id="${escapeHtml(itemId)}"><label for="${escapeHtml(id)}"><input id="${escapeHtml(id)}" type="checkbox" value="${escapeHtml(itemId)}" />${label}</label></div>`;
+			return `<div data-checklist-item data-item-id="${escapeHtml(itemId)}" data-node-id="${escapeHtml(itemId)}"><label for="${escapeHtml(id)}"><input id="${escapeHtml(id)}" type="checkbox" value="${escapeHtml(itemId)}" /><span class="praxity-checklist-text">${label}</span></label></div>`;
 		})
 		.join("");
 	const required = data.required

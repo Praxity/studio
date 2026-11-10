@@ -395,7 +395,7 @@ it("retains document bytes apart from the two inert fields", () => {
 	const stripped = stripChoiceStateFacts(html);
 	expect(html).not.toContain('"assessmentSessionEndedNotice":');
 	expect(createHash("sha256").update(stripped).digest("hex")).toBe(
-		"e90a559364021ddeba3a29d2e45b8fbe414f218ece33c38b649368b44f15b988",
+		"6b55de6b3fae82f9d0c4ba686a8ebeb036e06fd58818a939098ef68b3950d2ec",
 	);
 	expect(html).not.toMatch(/_inlineTrees|_htmlFields|referenceTrivia|generatedBy/);
 });

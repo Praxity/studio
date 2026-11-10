@@ -15,6 +15,13 @@ const paths = {
 } as const;
 export type SceneIcon = keyof typeof paths;
 
+/** A task this long, or with a second sentence, is a prompt rather than a title.
+ * Renderers show it at body size without the tinted band and icon. */
+export function isShortSceneTitle(text: string): boolean {
+	const plain = text.trim();
+	return plain.length <= 80 && !/[.!?]\s+\S/u.test(plain);
+}
+
 export function SceneHeader({ icon, children }: { icon: SceneIcon; children: ReactNode }) {
 	return (
 		<div className="praxity-scene">

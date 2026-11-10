@@ -2127,6 +2127,12 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	cursor: pointer;
 }
 
+/* One flex item holds all inline content, so code and emphasis stay in the text flow. */
+.praxity-checklist-text {
+	flex: 1;
+	min-width: 0;
+}
+
 [data-checklist-item] {
 	--praxity-choice-control-size: 22px;
 }
@@ -2334,7 +2340,8 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	cursor: pointer;
 }
 
-.praxity-ag-required-error {
+.praxity-ag-required-error,
+.praxity-categorize-unsorted {
 	margin: 0 0 var(--praxity-spacing-xs, var(--space-2));
 	color: var(--praxity-color-error-text, var(--praxity-color-error));
 	font-weight: var(--weight-strong);
@@ -3193,6 +3200,14 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	line-height: var(--leading-heading);
 	margin: 0;
 	min-width: 0;
+}
+
+/* A long task is an instruction, not a title. */
+.praxity-assessment-stem.praxity-assessment-stem-prompt {
+	font-family: inherit;
+	font-size: var(--type-body);
+	font-weight: var(--weight-body);
+	line-height: var(--leading-body);
 }
 
 .praxity-assessment-stem-content {
@@ -4480,7 +4495,7 @@ html.praxity-assessment-group-ready [data-group-oneof-unselected] {
 }
 
 .praxity-matrix-statement-column {
-	width: 16rem;
+	width: var(--_statement-width, auto);
 }
 
 .praxity-categorize-table {
@@ -4488,7 +4503,7 @@ html.praxity-assessment-group-ready [data-group-oneof-unselected] {
 }
 
 .praxity-categorize-item-heading {
-	width: 44%;
+	width: var(--_item-width, auto);
 }
 
 @container assessment-content (width >= 600px) {
@@ -4627,59 +4642,157 @@ html.praxity-assessment-group-ready [data-group-oneof-unselected] {
 	background: var(--praxity-color-background);
 }
 
-@container assessment-content (width < 600px) {
-	.praxity-categorize-table,
-	.praxity-matrix-table {
-		width: 100%;
-		min-width: 0;
-	}
-	.praxity-categorize-table .praxity-categorize-item-heading,
-	.praxity-matrix-statement-column {
-		width: auto;
-	}
+/* Answer tables stack unless the table fits: categorize keeps its 44% item
+   column and gives each category at least 5rem (the 44px target plus a short
+   header word); matrix keeps its 16rem statement column plus 5rem per scale
+   point. The fit rules below count header cells and flip a pair of space
+   toggles: an empty value switches a property on, "initial" makes the var()
+   invalid so its fallback (or the property's initial value) applies.
+   ponytail: assumes header words up to about 7 characters; longer single words
+   can crowd a narrow column, which stays reachable through the wrap's scroll. */
+:is(.praxity-categorize-table, .praxity-matrix-table) {
+	--_fit: initial;
+	--_stack: ;
+	--_group: var(--_fit) table-row-group;
+	--_row: var(--_fit) table-row;
+	--_cell: var(--_fit) table-cell;
+	--_item-width: var(--_fit) 44%;
+	--_statement-width: var(--_fit) 16rem;
+}
 
-	:is(.praxity-categorize-table, .praxity-matrix-table) thead {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		clip-path: inset(50%);
-		overflow: hidden;
+@container assessment-content (width >= 18rem) {
+	.praxity-categorize-table:has(> thead > tr > :nth-child(3):last-child) {
+		--_fit: ;
+		--_stack: initial;
 	}
+}
+@container assessment-content (width >= 27rem) {
+	.praxity-categorize-table:has(> thead > tr > :nth-child(4):last-child) {
+		--_fit: ;
+		--_stack: initial;
+	}
+}
+@container assessment-content (width >= 36rem) {
+	.praxity-categorize-table:has(> thead > tr > :nth-child(5):last-child) {
+		--_fit: ;
+		--_stack: initial;
+	}
+}
+@container assessment-content (width >= 45rem) {
+	.praxity-categorize-table:has(> thead > tr > :nth-child(6):last-child) {
+		--_fit: ;
+		--_stack: initial;
+	}
+}
+@container assessment-content (width >= 54rem) {
+	.praxity-categorize-table:has(> thead > tr > :nth-child(7):last-child) {
+		--_fit: ;
+		--_stack: initial;
+	}
+}
+@container assessment-content (width >= 63rem) {
+	.praxity-categorize-table:has(> thead > tr > :nth-child(8):last-child) {
+		--_fit: ;
+		--_stack: initial;
+	}
+}
+@container assessment-content (width >= 26rem) {
+	.praxity-matrix-table:has(> thead > tr > :nth-child(3):last-child) {
+		--_fit: ;
+		--_stack: initial;
+	}
+}
+@container assessment-content (width >= 31rem) {
+	.praxity-matrix-table:has(> thead > tr > :nth-child(4):last-child) {
+		--_fit: ;
+		--_stack: initial;
+	}
+}
+@container assessment-content (width >= 36rem) {
+	.praxity-matrix-table:has(> thead > tr > :nth-child(5):last-child) {
+		--_fit: ;
+		--_stack: initial;
+	}
+}
+@container assessment-content (width >= 41rem) {
+	.praxity-matrix-table:has(> thead > tr > :nth-child(6):last-child) {
+		--_fit: ;
+		--_stack: initial;
+	}
+}
+@container assessment-content (width >= 46rem) {
+	.praxity-matrix-table:has(> thead > tr > :nth-child(7):last-child) {
+		--_fit: ;
+		--_stack: initial;
+	}
+}
+@container assessment-content (width >= 51rem) {
+	.praxity-matrix-table:has(> thead > tr > :nth-child(8):last-child) {
+		--_fit: ;
+		--_stack: initial;
+	}
+}
 
-	:is(.praxity-categorize-table, .praxity-matrix-table) :is(tbody, tr, th) {
-		display: block;
-	}
+/* Stacked: each item, then one wrapping row of labelled answer segments. */
+:is(.praxity-categorize-table, .praxity-matrix-table) thead {
+	position: var(--_stack) absolute;
+	width: var(--_stack) 1px;
+	height: var(--_stack) 1px;
+	clip-path: var(--_stack) inset(50%);
+	overflow: var(--_stack) hidden;
+}
 
-	/* Override the same baseline cell rules as Mantine's cells, so activation
-	   and inert previews keep identical row heights and borders. */
-	.praxity-block-assessment
-		:is(.praxity-categorize-table, .praxity-matrix-table)
-		tbody
-		th:first-child {
-		padding-block: var(--space-3) var(--space-1);
-		font-weight: var(--weight-body);
-		border-inline: 0;
-	}
+:is(.praxity-categorize-table, .praxity-matrix-table) tbody {
+	display: var(--_group, block);
+}
 
-	.praxity-block-assessment
-		:is(.praxity-categorize-table, .praxity-matrix-table)
-		tbody
-		td[data-category] {
-		display: flex;
-		align-items: center;
-		gap: var(--praxity-spacing-sm, var(--space-3));
-		min-height: var(--target-size);
-		text-align: start;
-		border-inline: 0;
-	}
+:is(.praxity-categorize-table, .praxity-matrix-table) tbody tr {
+	display: var(--_row, flex);
+	flex-wrap: wrap;
+	gap: var(--space-2);
+	padding-block-end: var(--_stack) var(--space-3);
+}
 
-	:is(.praxity-categorize-table, .praxity-matrix-table) tbody td::before {
-		content: attr(data-category);
-		font-size: var(--type-body);
-		flex: 1;
-		min-width: 0;
-		overflow-wrap: anywhere;
-	}
+/* Override the same baseline cell rules as Mantine's cells, so activation
+   and inert previews keep identical row heights and borders. */
+.praxity-block-assessment :is(.praxity-categorize-table, .praxity-matrix-table) tbody th {
+	display: var(--_cell, block);
+	flex: 1 0 100%;
+	padding-block: var(--_stack-padding, var(--space-3) 0);
+	padding-inline: var(--_stack-padding, 0);
+	--_stack-padding: var(--_fit) var(--space-2);
+}
+
+.praxity-block-assessment :is(.praxity-categorize-table, .praxity-matrix-table) tbody td {
+	display: var(--_cell, flex);
+	flex: 1 1 auto;
+	align-items: center;
+	position: var(--_stack) relative;
+	min-height: var(--target-size);
+	padding: var(--_stack-padding, 0 var(--space-3) 0 0);
+	--_stack-padding: var(--_fit) var(--space-2);
+}
+
+:is(.praxity-categorize-table, .praxity-matrix-table) tbody td::before {
+	content: var(--_stack) attr(data-category);
+	order: 1;
+	min-width: 0;
+	font-size: var(--type-body);
+	line-height: var(--leading-body);
+	overflow-wrap: break-word;
+}
+
+/* The whole segment selects its answer. */
+:is(.praxity-categorize-table, .praxity-matrix-table) .praxity-assessment-table-control::after {
+	content: var(--_stack) "";
+	position: absolute;
+	inset: 0;
+}
+
+/* The control stays above that overlay, so pointer and keyboard reach the input itself. */
+:is(.praxity-categorize-table, .praxity-matrix-table) .praxity-assessment-table-control > * {
+	position: relative;
+	z-index: 1;
 }
 
 .praxity-block-assessment :is(.mantine-Radio-root, .mantine-Checkbox-root),
@@ -5758,6 +5871,7 @@ html:not(.praxity-js) [data-card-root] .praxity-slides-item {
 .praxity-self-check [data-self-check-notice],
 .praxity-self-check [data-self-check-mode],
 .praxity-self-check [data-self-check-save],
+.praxity-self-check [data-self-check-own],
 .praxity-self-check-error {
 	margin-block: var(--space-3);
 }

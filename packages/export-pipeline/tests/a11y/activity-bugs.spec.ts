@@ -90,11 +90,18 @@ for (const locale of ["en", "fr"])
 		});
 	}
 
-test("tables center 44px answer targets at 600px and stack below it", async ({ page }) => {
+// The narrowest activity that fits each table, from shared-blocks.css: 5rem per
+// answer column beside a 44% item column, or beside a 16rem matrix statement.
+const fitRem = (type: string, columns: number) =>
+	type === "categorize" ? Math.ceil((columns * 5) / 0.56) : 16 + columns * 5;
+
+test("tables center 44px answer targets once they fit and stack below that", async ({ page }) => {
 	await open(page);
 	for (const type of ["categorize", "matrix"]) {
 		const table = page.locator(`.praxity-${type}-table`);
-		for (const width of [600, 599]) {
+		const columns = (await table.locator("thead th").count()) - 1;
+		const fits = fitRem(type, columns) * 16;
+		for (const width of [fits, fits - 1]) {
 			await table.evaluate((node, width) => {
 				const block = node.closest<HTMLElement>(".praxity-block-assessment");
 				if (!block) throw new Error("Missing assessment");
@@ -103,9 +110,9 @@ test("tables center 44px answer targets at 600px and stack below it", async ({ p
 			}, width);
 			await expect(table.locator("thead")).toHaveCSS(
 				"position",
-				width === 600 ? "static" : "absolute",
+				width === fits ? "static" : "absolute",
 			);
-			if (width === 600) {
+			if (width === fits) {
 				const geometry = await table.locator("tbody td").evaluateAll((cells) =>
 					cells.map((cell) => {
 						const target = cell.querySelector("label");

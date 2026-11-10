@@ -531,9 +531,21 @@ function getBlockLayoutMode(block: PraxityBlock): "narrow" | "wide" | "full" | "
 	return null;
 }
 
+/** Answer columns beyond what the reading measure holds. The table fit rules in
+ * shared-blocks.css need about 45rem (categorize) or 41rem (matrix) for five
+ * columns; the default measure leaves about 39rem for the activity. */
+function answerTableNeedsFeatureWidth(block: PraxityBlock): boolean {
+	if (block.type !== "assessment") return false;
+	const response = (block.data as unknown as AssessmentBlockData).response;
+	if (response?.type === "categorize") return (response.categories?.length ?? 0) >= 5;
+	if (response?.type === "matrix") return (response.scalePoints?.length ?? 0) >= 5;
+	return false;
+}
+
 function shouldUseFeatureWidth(block: PraxityBlock): boolean {
-	if (!FEATURE_WIDTH_BLOCK_TYPES.has(block.type)) return false;
 	if (getBlockLayoutMode(block)) return false;
+	if (answerTableNeedsFeatureWidth(block)) return true;
+	if (!FEATURE_WIDTH_BLOCK_TYPES.has(block.type)) return false;
 	if (block.type !== "image") return true;
 	const width = (block.data as Record<string, unknown>).width;
 	return width === undefined || width === null || width === "";

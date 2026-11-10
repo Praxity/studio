@@ -118,6 +118,25 @@ it.each([
 	},
 );
 
+it("shows a long journal task as a body-size prompt without the scene band", () => {
+	Object.defineProperty(document, "fonts", { configurable: true, value: new EventTarget() });
+	const task =
+		"Write your current map, the workaround you found, and your redesign. Then compare it with the example.";
+	const data = {
+		assessmentType: "textResponse",
+		gradingMode: "none",
+		private: true,
+		feedback: {},
+		stem: [{ id: "stem", type: "text", data: { content: task } }],
+		response: { type: "textResponse", inputType: "long" },
+	} as AssessmentBlockData;
+	const { container } = render(<PreviewAssessmentBlock blockId="long-journal" data={data} />, {
+		wrapper: Wrapper,
+	});
+	expect(container.querySelector(".praxity-scene")).toBeNull();
+	expect(container.querySelector(".praxity-assessment-stem-prompt")?.textContent).toBe(task);
+});
+
 it("dates a journal only when saved, preserves its date at restore, and keeps it out of reporting", () => {
 	vi.useFakeTimers();
 	vi.setSystemTime(new Date("2026-10-08T14:05:00.000Z"));
@@ -2377,6 +2396,44 @@ describe("PreviewAssessmentBlock — categorize", () => {
 		expect(screen.getByRole("radio", { name: "Hard hat: Head Protection" })).toBeTruthy();
 		expect(screen.getByAltText("Hard hat and helmet")).toBeTruthy();
 		expect(screen.queryByText("No response configured")).toBeNull();
+	});
+
+	it("keeps Check visible, counts sorted items and sends an early Check to the first unsorted item", () => {
+		const data = {
+			assessmentType: "categorize",
+			stem: [{ id: "stem", type: "text", data: { content: "<p>Sort the files</p>" } }],
+			response: {
+				type: "categorize",
+				categories: [
+					{ id: "keep", name: "Keep", items: ["Report"] },
+					{ id: "drop", name: "Delete", items: ["Draft", "Copy"] },
+				],
+			},
+			feedback: {},
+			gradingMode: "exact",
+		} as AssessmentBlockData;
+		const { container } = render(
+			<Wrapper>
+				<PreviewAssessmentBlock data={data} blockId="sort" />
+			</Wrapper>,
+		);
+		const check = screen.getByRole("button", { name: /Check|Submit/ });
+		expect(screen.getByRole("status")).toHaveTextContent("0 of 3 sorted");
+		fireEvent.click(screen.getByRole("radio", { name: "Report: Keep" }));
+		expect(screen.getByRole("status")).toHaveTextContent("1 of 3 sorted");
+		fireEvent.click(check);
+		const draft = screen.getByRole("radio", { name: "Draft: Keep" });
+		expect(document.activeElement).toBe(draft);
+		const message = container.querySelector("[data-categorize-unsorted]");
+		expect(message).toHaveTextContent("Choose a category for every item before you check. 2 left.");
+		expect(draft.getAttribute("aria-describedby")).toContain(message?.id);
+		expect(check).toBeInTheDocument();
+		expect(screen.getByRole("radio", { name: "Report: Keep" })).not.toBeDisabled();
+		fireEvent.click(screen.getByRole("radio", { name: "Draft: Delete" }));
+		fireEvent.click(screen.getByRole("radio", { name: "Copy: Delete" }));
+		expect(container.querySelector("[data-categorize-unsorted]")).toBeNull();
+		fireEvent.click(check);
+		expect(container.querySelector('[data-block-id="sort"]')).toHaveAttribute("data-score", "100");
 	});
 });
 

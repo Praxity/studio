@@ -22,22 +22,24 @@ it.each([
 	[
 		"en",
 		"Your answer",
-		"Check my answer",
-		"Show feedback",
+		"Review against the checklist",
+		"Show example and feedback",
 		"Start over",
 		"Comparing your answer with the model requires JavaScript.",
+		"You compare your answer yourself. It isn't sent anywhere.",
 	],
 	[
 		"fr",
 		"Votre réponse",
-		"Vérifier ma réponse",
-		"Afficher la rétroaction",
+		"Revoir avec la liste de vérification",
+		"Afficher l'exemple et la rétroaction",
 		"Recommencer",
 		"La comparaison de votre réponse avec le modèle nécessite JavaScript.",
+		"Vous comparez vous-même votre réponse. Elle n'est envoyée nulle part.",
 	],
 ])(
 	"renders the %s native baseline with one empty status and prepared controls",
-	(locale, label, check, show, restart, notice) => {
+	(locale, label, check, show, restart, notice, own) => {
 		const read = readLesson(`# Practice\n${activity("Write an answer.")}`);
 		const block = read.pages[0].blocks.find((block) => block.type === "selfCheck");
 		if (!block) throw new Error("Missing baseline fixture.");
@@ -57,14 +59,15 @@ it.each([
 		]);
 		expect(doc.querySelectorAll("button[data-praxity-js-control]")).toHaveLength(3);
 		expect(doc.querySelector("[data-self-check-notice]")?.textContent).toBe(notice);
+		expect(doc.querySelector("[data-self-check-own]")?.textContent).toBe(own);
 		expect(doc.querySelector("[data-self-check-error]")?.textContent).toBe(
 			locale === "fr" ? "Écrivez d'abord votre réponse." : "Write your answer first.",
 		);
 		expect(doc.querySelector("[data-self-check-error]")?.hasAttribute("hidden")).toBe(true);
 		expect(doc.querySelector("[data-self-check]")?.getAttribute("data-self-check-incomplete")).toBe(
 			locale === "fr"
-				? "Écrivez une réponse, vérifiez ses éléments, puis affichez la rétroaction pour terminer cette activité."
-				: "Write an answer, check its parts, then show feedback to complete this activity.",
+				? "Écrivez une réponse, revoyez-la avec la liste de vérification, puis affichez l'exemple et la rétroaction pour terminer cette activité."
+				: "Write an answer, review it against the checklist, then show the example and feedback to complete this activity.",
 		);
 		expect(doc.querySelector("textarea")?.getAttribute("aria-describedby")).toBe(
 			doc.querySelector("[data-self-check-notice]")?.id,
@@ -74,6 +77,35 @@ it.each([
 		);
 	},
 );
+
+it("does not claim an LMS-reported self-check stays local", () => {
+	const block = readLesson(`# Practice
+${activity("Write an answer.")}`).pages[0].blocks.find((block) => block.type === "selfCheck");
+	if (!block) throw new Error("Missing baseline fixture.");
+	const doc = new JSDOM(renderBlockHtml({ ...block, data: { ...block.data, private: false } }))
+		.window.document;
+	expect(doc.querySelector("[data-self-check-own]")?.textContent).toBe(
+		"You compare your answer yourself.",
+	);
+});
+
+it.each([
+	["en", "Self-check"],
+	["fr", "Autoévaluation"],
+])("moves a long %s task under a generated heading without the band", (locale, heading) => {
+	const task =
+		"Write your current map, the workaround you found, and your redesign with a reason for each step. Then compare it with the checklist.";
+	const block = readLesson(`# Practice
+${activity(task)}`).pages[0].blocks.find((block) => block.type === "selfCheck");
+	if (!block) throw new Error("Missing baseline fixture.");
+	const doc = new JSDOM(renderBlockHtml({ ...block, locale }, { strings: getStrings(locale) }))
+		.window.document;
+	expect(doc.querySelector(".praxity-scene, .praxity-scene-icon")).toBeNull();
+	expect([...doc.querySelectorAll("h1,h2,h3,h4,h5,h6")].map((node) => node.textContent)).toEqual([
+		heading,
+	]);
+	expect(doc.querySelector("h2 + p")?.textContent).toBe(task);
+});
 
 it("keeps hostile task text literal and IDs tied to identity and source order", () => {
 	const task =
@@ -85,7 +117,7 @@ it("keeps hostile task text literal and IDs tied to identity and source order", 
 	};
 	const doc = new JSDOM([0, 1].map((blockIndex) => renderBlockHtml(block, { blockIndex })).join(""))
 		.window.document;
-	expect([...doc.querySelectorAll("h2")].map((heading) => heading.textContent)).toEqual([
+	expect([...doc.querySelectorAll('[id$="-task"]')].map((node) => node.textContent)).toEqual([
 		task,
 		task,
 	]);
