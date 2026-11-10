@@ -14,8 +14,13 @@ import { runPraxityCli } from "../cli";
 import { CoursePreviewService } from "../course-preview-service";
 import { exportProject } from "../export/export-project";
 import { resolveLessonSources } from "../lesson-source";
+import { canvasPracticeRefusalText } from "../studio/preview-diagnostics";
 import { PreviewScheduler } from "../studio/preview-scheduler";
-import { createStudioProjectSession, type StudioEvent } from "../studio/project-session";
+import {
+	createStudioProjectSession,
+	type StudioEvent,
+	type StudioSessionError,
+} from "../studio/project-session";
 
 const mocks = vi.hoisted(() => ({
 	watcher: undefined as import("node:events").EventEmitter | undefined,
@@ -519,6 +524,108 @@ it("emits the practice-only code with source coordinates from the backend", asyn
 				],
 			}),
 		),
+	);
+});
+
+it("canvas builds refuse both practice codes with content-free source locations", async () => {
+	const root = await fixture();
+	await writeFile(
+		path.join(root, "lesson.prax"),
+		fixtureSource(21).replace("private name", "private required name"),
+	);
+	const session = await createStudioProjectSession(root, "test", preview(root));
+	sessions.push(session);
+	const failure = (await session
+		.invoke("canvasPreviewBuild", {})
+		.catch((error) => error)) as StudioSessionError;
+	expect(failure).toMatchObject({
+		status: 422,
+		code: "practice_refused",
+		message:
+			"lesson.prax, line 10, column 1: A private choice must be optional, unscored, outside assessment groups and without a gate.\nlesson.prax, line 21, column 1: This practice activity cannot be read by course logic, write course state, supply a score or progression condition, or be required directly or through a container.",
+	});
+	expect(failure.details).toEqual({
+		diagnostics: [
+			{ code: "private-choice-practice-only", file: "lesson.prax", line: 10, column: 1 },
+			{ code: "practice-no-tracking", file: "lesson.prax", line: 21, column: 1 },
+		],
+	});
+	expect(JSON.stringify({ message: failure.message, details: failure.details })).not.toMatch(
+		/HIDDEN|priv\b|picked/,
+	);
+	expect(mocks.compileCourse).not.toHaveBeenCalled();
+});
+
+it.each([
+	[
+		"en",
+		"fr",
+		"lesson.prax, ligne 10, colonne 1 : Un choix privé doit être facultatif, sans score, hors des groupes d’évaluations et sans condition de progression.\nlesson.prax, ligne 21, colonne 1 : Cette activité de pratique ne peut être lue par la logique du cours, modifier l’état du cours, fournir un score ou une condition de progression, ni être obligatoire directement ou par l’intermédiaire d’un conteneur.",
+	],
+	[
+		"fr",
+		"en",
+		"lesson.prax, line 10, column 1: A private choice must be optional, unscored, outside assessment groups and without a gate.\nlesson.prax, line 21, column 1: This practice activity cannot be read by course logic, write course state, supply a score or progression condition, or be required directly or through a container.",
+	],
+])(
+	"canvas refusal follows an outside locale change from %s to %s",
+	async (initial, current, message) => {
+		const root = await fixture();
+		const manifest = (locale: string) =>
+			`title: Admission\nlocale: ${locale}\nlessons:\n  - lesson.prax\n`;
+		await writeFile(path.join(root, "course.yaml"), manifest(initial));
+		const session = await createStudioProjectSession(root, "test", preview(root));
+		sessions.push(session);
+		await writeFile(path.join(root, "course.yaml"), manifest(current));
+		await writeFile(
+			path.join(root, "lesson.prax"),
+			fixtureSource(21).replace("private name", "private required name"),
+		);
+		await expect(session.invoke("canvasPreviewBuild", {})).rejects.toMatchObject({
+			status: 422,
+			code: "practice_refused",
+			message,
+		});
+	},
+);
+
+it("compiled-only canvas refusals keep the code without inventing a location", async () => {
+	const root = await fixture();
+	await prepareExportAdapter(root);
+	mocks.compileCourse.mockRejectedValue(
+		new PracticeAdmissionError("practice-no-tracking", "HIDDEN-ID", "pages[0].blocks[1]"),
+	);
+	const session = await createStudioProjectSession(root, "test", preview(root));
+	sessions.push(session);
+	const failure = (await session
+		.invoke("canvasPreviewBuild", {})
+		.catch((error) => error)) as StudioSessionError;
+	expect(failure).toMatchObject({
+		status: 422,
+		code: "practice_refused",
+		message:
+			"This practice activity cannot be read by course logic, write course state, supply a score or progression condition, or be required directly or through a container.",
+	});
+	expect(failure.details).toEqual({ diagnostics: [{ code: "practice-no-tracking" }] });
+	expect(JSON.stringify({ message: failure.message, details: failure.details })).not.toMatch(
+		/HIDDEN|pages\[0\]/,
+	);
+	// Other compiler failures keep the generic server error.
+	mocks.compileCourse.mockRejectedValue(new Error("HIDDEN upstream detail"));
+	await expect(session.invoke("canvasPreviewBuild", {})).rejects.not.toHaveProperty("status");
+});
+
+it("canvas refusal text is French for French courses and keeps file names literal", () => {
+	expect(
+		canvasPracticeRefusalText(
+			[
+				{ code: "practice-no-tracking", file: "{line} $& {message}.prax", line: 4, column: 7 },
+				{ code: "private-choice-practice-only" },
+			],
+			"fr",
+		),
+	).toBe(
+		"{line} $& {message}.prax, ligne 4, colonne 7 : Cette activité de pratique ne peut être lue par la logique du cours, modifier l’état du cours, fournir un score ou une condition de progression, ni être obligatoire directement ou par l’intermédiaire d’un conteneur.\nUn choix privé doit être facultatif, sans score, hors des groupes d’évaluations et sans condition de progression.",
 	);
 });
 

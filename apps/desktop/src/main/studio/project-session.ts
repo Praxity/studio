@@ -100,7 +100,12 @@ import { readProjectTree } from "../project-tree";
 import { browserExportSchema, StudioExportService } from "./export-service";
 import { identityReviewMessages, type StudioIdentityReview } from "./identity-review";
 import { studioNarrationStatus } from "./narration-policy";
-import { previewDiagnostics } from "./preview-diagnostics";
+import {
+	type CanvasPracticeDiagnostic,
+	canvasPracticeDiagnostics,
+	canvasPracticeRefusalText,
+	previewDiagnostics,
+} from "./preview-diagnostics";
 import {
 	type PreviewDraftIdentity,
 	PreviewScheduler,
@@ -128,7 +133,8 @@ export class StudioSessionError extends Error {
 		readonly details?:
 			| { file: string; count: number }
 			| { retirements: IdentityRetirementError["retirements"] }
-			| { source: string },
+			| { source: string }
+			| { diagnostics: CanvasPracticeDiagnostic[] },
 	) {
 		super(message);
 	}
@@ -913,8 +919,20 @@ export async function createStudioProjectSession(
 	if (preview) {
 		methods.set("canvasPreviewBuild", async (args) => {
 			parseEditorInput(emptyArgs, args);
-			await manifestData();
-			return preview.buildCanvas(identitySession, operations.sequence());
+			const data = await manifestData();
+			const refusalLocale = data.manifest.locale?.startsWith("fr") ? "fr" : "en";
+			try {
+				return await preview.buildCanvas(identitySession, operations.sequence());
+			} catch (error) {
+				const diagnostics = canvasPracticeDiagnostics(error);
+				if (!diagnostics) throw error;
+				throw new StudioSessionError(
+					422,
+					"practice_refused",
+					canvasPracticeRefusalText(diagnostics, refusalLocale),
+					{ diagnostics },
+				);
+			}
 		});
 		methods.set("coursePreviewBuild", async (args) => {
 			const { request, format } = z
