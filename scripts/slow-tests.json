@@ -676,38 +676,6 @@
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/line-ending-files.test.ts",
-		"name": "shared lesson writer retains exact bytes and final newline with a hidden title, \"\\n\"",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5012 ms. Existing test exceeded the budget before this guard; remove when it meets the budget.",
-		"added": "2026-10-22",
-		"backlog": "Duplicate-name rename carry-over of an existing allowlist entry (no new allowance); see the duplicate-test-names backlog item",
-		"run": "39752400359"
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/line-ending-files.test.ts",
-		"name": "shared lesson writer retains exact bytes and final newline with a note block, \"\\n\"",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5012 ms. Existing test exceeded the budget before this guard; remove when it meets the budget.",
-		"added": "2026-10-22",
-		"backlog": "Duplicate-name rename carry-over of an existing allowlist entry (no new allowance); see the duplicate-test-names backlog item",
-		"run": "39752400359"
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/line-ending-files.test.ts",
-		"name": "shared lesson writer retains exact bytes and final newline with a hidden title, \"\\r\\n\"",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5009 ms. Existing test exceeded the budget before this guard; remove when it meets the budget.",
-		"added": "2026-10-22",
-		"backlog": "Duplicate-name rename carry-over of an existing allowlist entry (no new allowance); see the duplicate-test-names backlog item",
-		"run": "39752400359"
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/line-ending-files.test.ts",
-		"name": "shared lesson writer retains exact bytes and final newline with a note block, \"\\r\\n\"",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5009 ms. Existing test exceeded the budget before this guard; remove when it meets the budget.",
-		"added": "2026-10-22",
-		"backlog": "Duplicate-name rename carry-over of an existing allowlist entry (no new allowance); see the duplicate-test-names backlog item",
-		"run": "39752400359"
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/line-ending-files.test.ts",
 		"name": "writes submitted lesson bytes literally, including mixed endings and removed final newline",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5108 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
@@ -2514,9 +2482,9 @@
 	{
 		"file": "apps/desktop/src/main/__tests__/cli-permission.test.ts",
 		"name": "exports under permissions with assessment configuration and unchanged course identity",
-		"reason": "Linux shared-host runs at e844d74 with 21 to 23% CPU steal: 2599 ms in shard and 2018 ms alone, then 2191 ms in shard and 2098 ms alone, against the 2000 ms budget. Unrelated PR blocked twice; remove when it meets the budget.",
-		"added": "2026-10-23",
-		"backlog": "Studio backlog: cli-permission export test over the slow-test budget on shared hosts (2026-10-23, expires 2026-11-06)",
-		"run": "39884426064"
+		"reason": "Linux shared-host runs at e844d74 with 21 to 23% CPU steal: 2599 ms in shard and 2018 ms alone, then 2191 ms in shard and 2098 ms alone, against the 2000 ms budget. Unrelated PR blocked twice; remove when it meets the budget. Renewal: Linux CI run 42039225244 measured 2714 ms in shard; isolated measurements were 1268 ms then 2827 ms against the 2000 ms budget. The real permission-restricted export and unchanged-identity checks remain necessary.",
+		"added": "2026-11-10",
+		"backlog": "Studio backlog: cli-permission export test over the slow-test budget on shared hosts (2026-11-10, expires 2026-11-24)",
+		"run": "42039225244"
 	}
 ]
