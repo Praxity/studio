@@ -401,6 +401,9 @@ function withLessonIdentity(
 		...(typeof frontmatter.time === "string" && frontmatter.time.trim()
 			? { lessonTime: frontmatter.time.trim() }
 			: {}),
+		...(typeof frontmatter.nav === "string" && frontmatter.nav.trim()
+			? { lessonNav: frontmatter.nav.trim() }
+			: {}),
 		isFirstPageOfLesson: true,
 	};
 }

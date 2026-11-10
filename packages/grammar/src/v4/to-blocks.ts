@@ -1064,6 +1064,7 @@ export function toBlocks(
 				data: {
 					...settings(page),
 					...(settings(page).style ? { pageStyle: settings(page).style } : {}),
+					...(partText(page, "time")?.trim() ? { time: partText(page, "time")?.trim() } : {}),
 					title: subject(page),
 				},
 				blocks: [

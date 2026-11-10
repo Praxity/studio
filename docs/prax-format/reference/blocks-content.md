@@ -390,7 +390,7 @@ Write `##` through `######` headings inside a page. Authored levels stay as writ
 
 Start a page with its title. See the [example](../examples/minimal.prax).
 
-Write `# Title` to start a page. The title is required. Put `nav:` directly below it for a shorter navigation label. Settings apply to the page. Define style names in frontmatter pageStyles. See [document structure](document-structure.md).
+Write `# Title` to start a page. The title is required. Put `nav:` directly below it for a shorter navigation label, and `time:` for the page's duration. Settings apply to the page. Define style names in frontmatter pageStyles. See [document structure](document-structure.md).
 
 | Setting | Values | Default | Purpose |
 |---|---|---|---|
@@ -402,6 +402,7 @@ Write `# Title` to start a page. The title is required. Put `nav:` directly belo
 | Part | Learner text |
 |---|---|
 | `nav:` | Navigation label, placed directly after the page heading. |
+| `time:` | Duration phrase, such as "About 10 minutes", placed directly after the page heading. Shown under the title like the lesson `time`. |
 
 ```prax
 # New page

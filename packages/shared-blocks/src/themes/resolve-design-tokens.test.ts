@@ -178,3 +178,21 @@ describe("focus contrast floor", () => {
 		expect(tokens["--praxity-color-focus"]).toBe("#1e40af");
 	});
 });
+
+describe("shell divider token", () => {
+	it.each(
+		["ink", "forest", "plum", "clay", "clear"].flatMap((palette) =>
+			(["light", "dark"] as const).map((mode) => [palette, mode] as const),
+		),
+	)("%s %s dividers are quieter than control boundaries", (palette, mode) => {
+		const tokens = resolveDesignTokens({ palette } as DesignVariants, mode);
+		const paper = tokens["--praxity-color-background"];
+		const divider = tokens["--praxity-color-divider"];
+		expect(divider).toMatch(/^#[0-9a-f]{6}$/);
+		expect(contrastRatio(divider, paper)).toBeGreaterThan(1.1);
+		expect(contrastRatio(divider, paper)).toBeLessThan(1.5);
+		expect(contrastRatio(tokens["--praxity-color-control-border"], paper)).toBeGreaterThanOrEqual(
+			3,
+		);
+	});
+});

@@ -137,22 +137,11 @@ emphasis, controls and headings, without substituting the old Atkinson face.
 Only the Latin body and heading faces are preloaded. Latin extension faces load
 through their CSS `unicode-range` when the text needs them.
 
-Published headings use one body-relative scale. `headingSize` raises that scale but
-cannot make a heading smaller than body text:
-
-| Level | Published ratio |
-|---|---|
-| h1 | `max(1.5, headingSize)` |
-| h2 | `max(1.3, headingSize × 0.75)` |
-| h3 | `max(1.15, headingSize × 0.6)` |
-| h4 | `max(1.1, headingSize × 0.5)` |
-| h5 | `max(1.05, headingSize × 0.42)` |
-| h6 | `max(1, headingSize × 0.36)` |
-
-The ratios use `rem`, so they remain constant when the learner changes the viewer's
-text size. The same scale applies inside columns, notes, accordions, tab panels, and
-assessment cards. `lineHeight` controls leading within prose; it does not replace the
-published adjacency scale.
+Published headings use one fixed type scale: h1 1.875rem, h2 1.5625rem and h3 to h6
+1.3125rem, rising to 2.375rem, 1.875rem and 1.5rem from 768px. Body text is 1.125rem
+(1.1875rem from 768px) with 1.55 leading. The same scale applies inside columns, notes,
+accordions, tab panels, and assessment cards. `headingSize` and `lineHeight` are
+retired: see [Spacing and layout](#spacing-and-layout).
 
 Studio's Design panel renders numeric settings within its control ranges:
 `accentHue` 0 to 360, `headingSize` 1.6 to 3.2 rem, and `lineHeight` 1.2 to 2.
@@ -169,19 +158,21 @@ Three-digit hex values such as `#abc` expand to `#aabbcc`. Six-digit hex and
 numeric opaque `oklch()` values are supported. Alpha hex forms such as `#abcd`
 and `#aabbccdd` are refused with a field message; the saved colour stays unchanged.
 
-- `density`: `compact | comfortable | spacious`
-- `blockSpacing`: `compact | default | spacious`
 - `sectionGap` (number)
 - `sectionRhythmMode`: `uniform | alternate | manual`
-- `contentMaxWidth` (number)
+- `blockSpacing`, `density`, `lineHeight`, `headingSize` and `contentMaxWidth`
+  (retired): retained in source but ignored. Look v2 fixes the reading rhythm, leading,
+  heading scale and 66ch measure. Export, inspect and Check report
+  `ignored-layout-setting` once per authored course or lesson key.
 - `borderRadius` (number, retired): retained in source but ignored. Export and Check
   report `ignored-radius-setting` once per authored course or lesson setting.
   Look v2 uses 16 px activity cards and dialogue bubbles, 10 px controls and frames,
   6 px letter keys and checkboxes, and 4 px marks. Images and attached edges stay square.
 
-Published content uses five body-relative rhythm tokens: `tight` (`0.825rem`), `close`
-(`1.2375rem`), `normal` (`1.65rem`), `section` (`2.475rem`), and `boundary` (`3.3rem`).
-Unknown block pairs use `normal`, so future block types have a stable fallback.
+Published content uses five rhythm tokens. Below 768px they are `tight` 8px, `close`
+12px, `normal` 24px, `section` 24px and `boundary` 48px. From 768px `close` is 16px,
+`normal` and `section` are 32px, and `boundary` is 64px. Unknown block pairs use
+`normal`, so future block types have a stable fallback.
 
 | Adjacency | Gap |
 |---|---|
@@ -200,10 +191,7 @@ Unknown block pairs use `normal`, so future block types have a stable fallback.
 
 Heavy blocks are tables, images, videos, embeds, columns, accordions, tabs,
 assessments, and assessment groups. Heading adjacency wins when a heading introduces a
-heavy block. `density` continues to control component-owned internal spacing and does
-not shrink touch targets or reading rhythm. `blockSpacing` scales the gaps while
-preserving the differences between adjacency types: `compact` uses two-thirds of
-the default spacing and `spacious` uses five-thirds. `sectionGap` controls
+heavy block. `sectionGap` controls
 alternate/manual section-band separation: values up to `3` are proportional
 multipliers; pixel-era values such as `48` are normalized against the former 48px
 default and then applied to the body-relative `section` token.
@@ -230,6 +218,24 @@ the simplified panel's defaults and setting mappings.
 - `navFloatingToc`, `navScrollProgress`, `navEdgeArrows`, `navSlideCounter` (boolean)
 - `navBreadcrumbs`, `navCourseTitle`, `navLessonTitles`, `navLessonTitleAsHeading` (boolean)
 - `navReadingTime`, `navSwipeGestures`, `navKeyboardArrows` (boolean)
+- `navDensity`: `comfortable | compact`, default `comfortable`. Course-wide sidebar density,
+  independent of activity spacing. `compact` uses 14px labels and strong weight only for
+  the current page and module. With a fine pointer its rows are at least 32px tall, above
+  the 24px minimum target; touch screens keep 44px rows.
+
+```yaml
+design:
+  navDensity: compact
+```
+
+The sidebar header shows the page count and course time. When every lesson's
+[`time`](document-structure.md#frontmatter) states minutes or hours ("About 45 minutes",
+"1 h 30 min", "2 heures"), the time is their sum ("~650 min"). Otherwise it is a reading
+estimate that omits activities and media ("~134 min reading"). A single-lesson course
+keeps showing its authored `time` text.
+A lesson's `nav:` replaces its title in the module list; the full title stays the link's
+accessible description and tooltip. With a module label, the Pages top bar shows a short
+location such as "Week 1 / Learn the brake" in place of the module title.
 
 The `slides` preset keeps previous/next controls beside its progress dots and leaves
 `navEdgeArrows` off by default. Set `navEdgeArrows: true` to opt into the additional decorative
@@ -353,12 +359,7 @@ design:
   typography:
     pairing: sans
     fontDisplay: swap
-  headingSize: 1.1
-  lineHeight: 1.6
-  density: comfortable
   sectionGap: 1.1
-  contentMaxWidth: 880
-  borderRadius: 10
   navArchetype: sidebar
   navOutline: true
   navPrevNext: true

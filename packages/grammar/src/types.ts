@@ -20,6 +20,8 @@ export interface GrammarFrontmatter {
 	kicker?: string;
 	/** Authored duration below the lesson's first page heading. */
 	time?: string;
+	/** Short module label for course navigation; the title stays its accessible description. */
+	nav?: string;
 	narrationEnabled?: boolean;
 	narrationLanguage?: string;
 	narrationVoice?: string;
@@ -179,6 +181,8 @@ export interface DesignVariants {
 	navReadingTime?: boolean;
 	navSwipeGestures?: boolean;
 	navKeyboardArrows?: boolean;
+	/** Sidebar row density, independent of activity density. Default comfortable. */
+	navDensity?: "comfortable" | "compact";
 	showA11yPill?: boolean;
 	/** Aggregate `[term]{definition}` tooltips into a published glossary page. Default true. */
 	glossaryPage?: boolean;

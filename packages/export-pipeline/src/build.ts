@@ -187,6 +187,8 @@ export interface CourseExportInput {
 	showCourseNameInNav?: boolean;
 	showLessonNameInNav?: boolean;
 	showLessonNameAsTitle?: boolean;
+	/** Sidebar density from `design.navDensity`; omitted means comfortable. */
+	navDensity?: "compact";
 	completionMethod?: "allPages" | "percentage" | "quiz";
 	completionThreshold?: number;
 	requireKnowledgeChecks?: boolean;
@@ -1136,6 +1138,7 @@ async function compileCourseArtifact(
 			showCourseNameInNav: normalizedCourse.showCourseNameInNav,
 			showLessonNameInNav: normalizedCourse.showLessonNameInNav,
 			showLessonNameAsTitle: normalizedCourse.showLessonNameAsTitle,
+			navDensity: normalizedCourse.navDensity,
 			completionMethod: normalizedCourse.completionMethod,
 			completionThreshold: normalizedCourse.completionThreshold,
 			requireKnowledgeChecks: normalizedCourse.requireKnowledgeChecks,

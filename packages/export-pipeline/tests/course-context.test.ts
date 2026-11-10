@@ -351,6 +351,24 @@ describe("P1 course context", () => {
 		expect(invalidated(previous, next, "shell")).toEqual(["page-5", "page-7", "page-9", "page-10"]);
 	});
 
+	it.each([["lessonNav", "Week 1"]])(
+		"lesson %s invalidates every shell while preserving page fragment inputs",
+		async (key, value) => {
+			const course = input();
+			const previous = await createCourseContext(course);
+			block(course, "page-5").data[key] = value;
+			const next = await refreshCourseContext(previous, course, { lessons: ["01"] });
+			expect(changedDigests(previous, next)).toEqual(["nav"]);
+			expect(invalidated(previous, next, "fragments")).toEqual([]);
+			expect(invalidated(previous, next, "shell")).toEqual([
+				"page-5",
+				"page-7",
+				"page-9",
+				"page-10",
+			]);
+		},
+	);
+
 	it("moving a page changes nav without changing lesson slices or page fragment inputs", async () => {
 		const course = input();
 		const previous = await createCourseContext(course);

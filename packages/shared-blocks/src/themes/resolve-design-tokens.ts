@@ -310,6 +310,9 @@ export function resolveDesignTokens(
 		"--praxity-color-text-light": ink2,
 		"--praxity-color-text-muted": ink2,
 		"--praxity-color-border": line,
+		// Decorative shell separators (sidebar edge, top bar, page navigation rule).
+		// They mark regions, not control boundaries, so 1.4.11's 3:1 does not apply.
+		"--praxity-color-divider": blendWithAlpha(line, paper, 0.18),
 		"--praxity-color-control-border": ensureContrastAll(line, NON_TEXT_RATIO, paper, surface),
 		"--praxity-color-accent": accent,
 		"--praxity-color-accent-text": accent,

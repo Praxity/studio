@@ -9053,10 +9053,12 @@
     {
       "id": "page",
       "parts": [
-        "nav"
+        "nav",
+        "time"
       ],
       "partLabels": {
-        "nav": "grammar.v4.part.nav"
+        "nav": "grammar.v4.part.nav",
+        "time": "grammar.v4.part.time"
       },
       "allowedChildren": [
         "body",

@@ -1637,6 +1637,10 @@
 				"title": "Ignored corner radius setting",
 				"description": "{path} is ignored. Courses use look v2 corner radii."
 			},
+			"ignored-layout-setting": {
+				"title": "Ignored layout setting",
+				"description": "{path} is ignored. Courses use the look v2 reading rhythm, line height, heading scale and measure."
+			},
 			"ignored-font-setting": {
 				"title": "Ignored font setting",
 				"description": "{path} is ignored. Courses use the {pairing, select, book {Book} clear {Clear} other {Sans}} pairing; set typography.pairing to sans, book or clear."
@@ -3893,6 +3897,7 @@
 			"grammar_v4_part_button": "Button label",
 			"grammar_v4_part_sublabel": "Sublabel",
 			"grammar_v4_part_nav": "Navigation",
+			"grammar_v4_part_time": "Duration",
 			"grammar_v4_part_if": "Condition",
 			"grammar_v4_part_and": "And",
 			"grammar_v4_part_or": "Or",

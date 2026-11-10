@@ -134,7 +134,10 @@ export function analyzeLessonTree(
 				)
 			)
 				return false;
-			return (owner.kind === "page" && name === "nav") || !!definition?.parts?.includes(name);
+			return (
+				(owner.kind === "page" && (name === "nav" || name === "time")) ||
+				!!definition?.parts?.includes(name)
+			);
 		},
 		allowsItems: (owner) =>
 			options.definition(owner.type ?? "")?.items ?? !options.definition(owner.type ?? ""),

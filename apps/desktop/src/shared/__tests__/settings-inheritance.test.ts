@@ -138,3 +138,29 @@ describe("resolveNarrationLocale", () => {
 		expect(resolveNarrationLocale(lesson, course)).toBe(expected);
 	});
 });
+
+describe("design layout warnings", () => {
+	it("reports each retired layout key from course and lesson design, but not navDensity", () => {
+		const result = resolveDesignSettings(
+			null,
+			{
+				title: "Layout",
+				lessons: [],
+				design: { blockSpacing: "compact", lineHeight: 1.65, navDensity: "compact" },
+			},
+			{ design: { headingSize: 2, contentMaxWidth: 640, density: "compact" } },
+		);
+		expect(result.designWarnings.map(({ code, path, source }) => ({ code, path, source }))).toEqual(
+			[
+				["course", "blockSpacing"],
+				["course", "lineHeight"],
+				["lesson", "headingSize"],
+				["lesson", "contentMaxWidth"],
+				["lesson", "density"],
+			].map(([source, key]) => ({ code: "ignored-layout-setting", path: `design.${key}`, source })),
+		);
+		expect(result.designWarnings[0]?.message).toBe(
+			"design.blockSpacing is ignored. Courses use the look v2 reading rhythm, line height, heading scale and measure.",
+		);
+	});
+});

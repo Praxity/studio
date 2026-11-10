@@ -15,6 +15,7 @@ Source edits also preserve CRLF, lone CR, mixed line endings and a missing final
 title: Workplace safety
 lang: en
 kicker: Module 1
+nav: Week 1
 time: About 12 minutes, including the lab
 variables:
   ready: false
@@ -33,6 +34,7 @@ design:
 | title | Lesson title. Set it for navigation. The reader accepts files without frontmatter. |
 | lang | Lesson language, such as en or fr. Overrides course locale, then workspace defaultLocale; the fallback is en. |
 | kicker | Group label, such as Module 1. Renders above the lesson's first page heading. `{hideTitle}` on that page also hides this line from the page content. Omit for no label. |
+| nav | Short module label for the course sidebar and top bar, such as `Week 1`. The title remains the module link's accessible description and tooltip. Omit to use the title. |
 | time | Free text describing how long the lesson takes. Renders below the lesson's first page heading. `{hideTitle}` on that page also hides this line from the page content. Omit for no time line. |
 | design | Presentation overrides. See [frontmatter design](frontmatter-design.md). |
 | pageStyles | Named page treatments. Select one with a page's style setting. |
@@ -50,7 +52,7 @@ The single-lesson sidebar also keeps the lesson kicker above its lesson title as
 
 ## Pages and navigation
 
-`# Title` starts a page and supplies its visible H1 and navigation label. Use `{hideTitle}` to keep the label and heading scope without displaying the title. Put `nav:` directly below it for a shorter label. Page settings are in the [page reference](blocks-content.md#page).
+`# Title` starts a page and supplies its visible H1 and navigation label. Use `{hideTitle}` to keep the label and heading scope without displaying the title. Put `nav:` directly below it for a shorter label. Put `time:` beside `nav:` to show that page's duration under its title, written like the lesson `time` ("About 10 minutes"), instead of an opening paragraph. On a lesson's first page it replaces the lesson time line. Page settings are in the [page reference](blocks-content.md#page).
 
 ```prax
 # Comment je me vois, comment je vois les autres {hideTitle deckStop}
@@ -59,6 +61,7 @@ nav: Positions de vie
 Réfléchissez à votre prochaine conversation.
 
 # Next steps
+time: About 10 minutes
 
 Choose one action to practise.
 ```
