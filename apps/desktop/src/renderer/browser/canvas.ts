@@ -206,6 +206,10 @@ export function startStudioAuthor(
 									messageRef: reply.error.messageRef,
 								});
 							}
+							if (method === "canvasPreviewBuild" && reply.error?.code === "practice_refused")
+								throw Object.assign(new Error("Practice refused", { cause: response.status }), {
+									practiceRefusal: String(reply.error.message),
+								});
 							throw new Error("RPC unavailable", { cause: response.status });
 						}
 						const reply = await response.json();
@@ -309,6 +313,8 @@ export function startStudioAuthor(
 				eventSeq = Math.max(eventSeq, snapshot.seq);
 				const liveStatus = status;
 				let refreshing = false;
+				// The current practice refusal; a later successful refresh replaces it.
+				let refusal = "";
 				let editedPageId: string | undefined;
 				let refreshed = Promise.resolve();
 				let finishRefresh: (() => void) | undefined;
@@ -596,7 +602,8 @@ export function startStudioAuthor(
 							? messages.unmapped
 							: announcement &&
 									announcement !== messages.unmapped &&
-									announcement !== messages.refreshFailed
+									announcement !== messages.refreshFailed &&
+									announcement !== refusal
 								? announcement
 								: messages.connected;
 						review.hidden = true;
@@ -625,7 +632,16 @@ export function startStudioAuthor(
 							}
 						}
 					} catch (error) {
-						if (!controller.signal.aborted) {
+						// A newer source revision supersedes diagnostics as well as successful builds.
+						if (requested !== generation) return;
+						// The server localizes this content-free refusal in the course language.
+						const practice = (error as { practiceRefusal?: string } | null)?.practiceRefusal;
+						if (practice && !controller.signal.aborted) {
+							// Read keeps the last good build. The polite status announces a changed refusal once.
+							refusal = practice;
+							liveStatus.style.whiteSpace = "pre-wrap";
+							if (liveStatus.textContent !== refusal) liveStatus.textContent = refusal;
+						} else if (!controller.signal.aborted) {
 							console.error("[studio] Canvas refresh failed", error);
 							if (status) status.textContent = messages.refreshFailed;
 						}
