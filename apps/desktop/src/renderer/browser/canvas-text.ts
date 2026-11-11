@@ -888,7 +888,7 @@ export function mountCanvasTextFields(
 			confirm.append(question, discard, keep);
 			recovery.append(copy, reload, retry, check);
 			panel.append(label, hint, field, error, recovery, confirm);
-			root.append(edit, panel, captionContext, progress);
+			root.append(edit, progress, panel, captionContext);
 			shadow.append(style, root);
 			const entry: (typeof entries)[number] = {
 				binding,

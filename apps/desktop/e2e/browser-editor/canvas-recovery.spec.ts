@@ -809,6 +809,7 @@ for (const [lang, saving, saved, label, initial, updated] of [
 			await input.press("Enter");
 			const progress = page.locator(".save-status:visible");
 			await expect(progress).toHaveText(saving);
+			await expect(progress).toBeInViewport();
 			await expect(input).toHaveAttribute("readonly", "");
 			await input.press("Escape");
 			await expect(progress).toHaveText(saving);
@@ -817,6 +818,7 @@ for (const [lang, saving, saved, label, initial, updated] of [
 			await expect(input).toHaveCount(0);
 			await expect(page.getByRole("button", { name: updated, exact: true })).toBeVisible();
 			await expect(progress).toHaveText(saved);
+			await expect(progress).toBeInViewport();
 			await expect(progress).not.toHaveAttribute("role");
 			await expect(progress).not.toHaveAttribute("aria-live");
 			await expect(status).toHaveAttribute("data-announcements", JSON.stringify([saving, saved]));
