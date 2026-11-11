@@ -730,7 +730,7 @@ export function mountCanvasTextFields(
 			reanchor(entry);
 			restoreFigureName(entry);
 			status.textContent = state.outcome === "saved" ? messages.saved : messages.cancelled;
-			status.classList.toggle("announcement-only", state.outcome === "saved");
+			status.classList.remove("announcement-only");
 			if (active) sizeField(active);
 			if (returnFocus) {
 				focus(entry.button);

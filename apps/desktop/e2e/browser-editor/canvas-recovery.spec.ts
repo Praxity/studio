@@ -818,6 +818,7 @@ for (const [lang, saving, saved, label, initial, updated] of [
 			await expect(input).toHaveCount(0);
 			await expect(page.getByRole("button", { name: updated, exact: true })).toBeVisible();
 			await expect(progress).toHaveText(saved);
+			await expect(status).not.toHaveClass(/announcement-only/u);
 			await expect(progress).toBeInViewport();
 			await expect(progress).not.toHaveAttribute("role");
 			await expect(progress).not.toHaveAttribute("aria-live");
