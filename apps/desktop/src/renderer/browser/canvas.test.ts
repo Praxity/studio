@@ -100,6 +100,7 @@ async function mountCanvas(
 			}),
 		);
 	const view: ReturnType<typeof mountCanvasTextFields> = {
+		setUpdating: vi.fn(),
 		isEditing: () => true,
 		setEditing: async () => {},
 		isOpen: () => false,
@@ -110,11 +111,15 @@ async function mountCanvas(
 		focusBinding: () => {},
 		dispose: () => {},
 	};
+	let lifecycleReload: (() => void) | undefined;
 	startStudioAuthor(
 		origin,
 		"http://127.0.0.1:9001/course.html",
 		messages,
-		() => view,
+		(...args) => {
+			lifecycleReload = args[9]?.reload;
+			return view;
+		},
 		createCanvasTextSession,
 		{ light: "", dark: "" },
 		openEvents,
@@ -132,6 +137,7 @@ async function mountCanvas(
 		panel,
 		status,
 		readLink: () => panel()?.querySelector<HTMLAnchorElement>('a[role="link"]'),
+		reload: () => lifecycleReload?.(),
 		changeSource: () =>
 			events?.enqueue(new TextEncoder().encode(`{"type":"editorChanged","seq":${++seq}}\n`)),
 		close: () => {
@@ -301,3 +307,30 @@ it("keeps the generic refresh failure for other refused builds", async () => {
 		canvas.close();
 	}
 });
+
+for (const lang of ["en", "fr"] as const)
+	it(`keeps the page updating and edits blocked until fresh content lands (${lang})`, async () => {
+		let release!: (response: Response) => void;
+		const held = new Promise<Response>((resolve) => {
+			release = resolve;
+		});
+		const canvas = await mountCanvas(
+			canvasMessages[lang],
+			() => held,
+			() => "<!doctype html><html><head></head><body><h1>Outside edit</h1></body></html>",
+		);
+		try {
+			canvas.reload();
+			await vi.waitFor(() =>
+				expect(canvas.status()?.textContent).toBe(canvasMessages[lang].updating),
+			);
+			expect(canvas.view.setUpdating).toHaveBeenLastCalledWith(true);
+			expect(canvas.window.document.body.textContent).toBe("Saved course");
+			release(new Response(JSON.stringify({ ok: true, result: built })));
+			await vi.waitFor(() => expect(canvas.window.document.body.textContent).toBe("Outside edit"));
+			expect(canvas.view.setUpdating).toHaveBeenLastCalledWith(false);
+			expect(canvas.status()?.textContent).toBe(canvasMessages[lang].connected);
+		} finally {
+			canvas.close();
+		}
+	});
