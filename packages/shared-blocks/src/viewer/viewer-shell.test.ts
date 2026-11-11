@@ -145,3 +145,21 @@ describe("viewer stylesheet scope", () => {
 		expect(new Set(unscoped.map(({ text }) => text))).toEqual(ALLOWED_UNSCOPED_SELECTORS);
 	});
 });
+
+it("allows long toolbar titles to shrink in flex and fallback grid layouts", async () => {
+	const { readFile } = await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises");
+	const css = await readFile(`${import.meta.dirname}/viewer-shell.css`, "utf8");
+	const title = css.match(/\.praxity-toolbar-position \{([^}]+)\}/)?.[1];
+	for (const declaration of [
+		"flex: 0 1 auto",
+		"min-width: 0",
+		"overflow: hidden",
+		"text-overflow: ellipsis",
+		"white-space: nowrap",
+	]) {
+		expect(title).toContain(declaration);
+	}
+	expect(css.match(/\.praxity-top-bar-fallback > \.praxity-top-bar \{([^}]+)\}/)?.[1]).toContain(
+		"grid-template-columns: auto minmax(0, 1fr) minmax(0, auto) auto auto",
+	);
+});
