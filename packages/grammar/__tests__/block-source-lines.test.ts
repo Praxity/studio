@@ -1,6 +1,6 @@
 import type { PraxityBlock } from "@praxity/shared-blocks/types";
 import { describe, expect, it } from "vitest";
-import { readBlockFixture as readBlockSource } from "../../../../../grammar/__tests__/helpers/lesson-fixture.ts";
+import { readBlockFixture as readBlockSource } from "./helpers/lesson-fixture.ts";
 
 describe("reader source coordinates", () => {
 	it("maps lines correctly with no frontmatter", () => {
