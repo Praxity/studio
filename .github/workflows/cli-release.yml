@@ -406,6 +406,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: Praxity/rubato
+          path: rubato
           ref: ${{ steps.rubato.outputs.rubato_sha }}
           persist-credentials: false
       - name: Download verified private candidate
@@ -418,6 +419,7 @@ jobs:
           EXPECTED_X64_SHA256: ${{ needs.build.outputs.x64_sha256 }}
         run: node workflow/apps/desktop/scripts/download-candidate.mjs
       - name: Publish verified Rubato pack
+        working-directory: rubato
         env:
           GH_TOKEN: ${{ secrets.RUBATO_RELEASE_TOKEN }}
           FORMAL_RELEASE: "true"

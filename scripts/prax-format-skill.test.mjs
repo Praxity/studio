@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { globSync, readFileSync } from "node:fs";
 import { posix } from "node:path";
 import { test } from "node:test";
-import { admitRelease } from "../apps/desktop/scripts/admit-rubato-release.mjs";
+import {
+	admitRelease,
+	admitRubatoPublisher,
+} from "../apps/desktop/scripts/admit-rubato-release.mjs";
 
 // Rubato installs docs/prax-format/ as the skill folder: SKILL.md plus its topic guides.
 const formatRoot = new URL("../docs/prax-format/", import.meta.url);
@@ -93,7 +96,7 @@ test("skill links resolve inside the installed prax-format folder", () => {
 	}
 });
 
-test("pack admission requires the assessment skill at the exact pinned Rubato revision", () => {
+test("publishing requires the assessment skill at the exact Rubato revision selected after approval", () => {
 	const sha = "1".repeat(40);
 	const rubatoSha = "2".repeat(40);
 	const required = `repos/Praxity/rubato/contents/skills/assessment-writing/SKILL.md?ref=${rubatoSha}`;
@@ -119,23 +122,36 @@ test("pack admission requires the assessment skill at the exact pinned Rubato re
 				workflow_runs: [
 					{
 						id: 1,
-						head_sha: sha,
+						name: "Rubato checks",
+						head_sha: route.includes("/rubato/") ? rubatoSha : sha,
 						head_branch: "main",
-						event: "workflow_dispatch",
+						event: route.includes("/rubato/") ? "push" : "workflow_dispatch",
 						status: "completed",
 						conclusion: "success",
 					},
 				],
 			});
 		if (route.endsWith("/jobs?per_page=100"))
-			return JSON.stringify([{ jobs: [{ name: "merge-gate", conclusion: "success" }] }]);
+			return JSON.stringify([
+				{
+					jobs: (route.includes("/rubato/")
+						? [
+								"macos-install (macos-15, darwin-arm64)",
+								"macos-install (macos-15-intel, darwin-x64)",
+							]
+						: ["merge-gate"]
+					).map((name) => ({ name, conclusion: "success" })),
+				},
+			]);
 		throw new Error(`Unexpected route ${route}`);
 	};
 	const content = Buffer.from(
 		"---\nname: assessment-writing\ndescription: Write choices.\n---\n",
 	).toString("base64");
-	assert.deepEqual(admitRelease(env, api({ type: "file", encoding: "base64", content })), {
-		source_ref: sha,
+	// Building and candidate packaging use only Studio source, before Rubato pins can merge.
+	assert.deepEqual(admitRelease(env, api({})), { source_ref: sha });
+	assert.ok(routes.every((route) => !route.includes("/rubato/")));
+	assert.deepEqual(admitRubatoPublisher(api({ type: "file", encoding: "base64", content })), {
 		rubato_sha: rubatoSha,
 	});
 	assert.ok(routes.includes(required));
@@ -144,7 +160,7 @@ test("pack admission requires the assessment skill at the exact pinned Rubato re
 		{ type: "dir" },
 		{ type: "file", encoding: "base64", content: Buffer.from("other skill").toString("base64") },
 	]) {
-		assert.throws(() => admitRelease(env, api(missing)), /assessment-writing/);
+		assert.throws(() => admitRubatoPublisher(api(missing)), /assessment-writing/);
 	}
 });
 const confirmation =

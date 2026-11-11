@@ -317,18 +317,20 @@ export function admitRubatoPublisher(execute = execFileSync) {
 	const rubatoSha = api("repos/Praxity/rubato/git/ref/heads/main").object?.sha;
 	if (!/^[a-f0-9]{40}$/.test(rubatoSha ?? "")) throw new Error("Invalid Rubato revision");
 	const run = api(
-		`repos/Praxity/rubato/actions/workflows/ci.yml/runs?head_sha=${rubatoSha}&branch=main&per_page=1`,
+		`repos/Praxity/rubato/actions/workflows/ci.yml/runs?head_sha=${rubatoSha}&branch=main&event=push&per_page=1`,
 	).workflow_runs[0];
 	if (
 		run?.name !== "Rubato checks" ||
 		run.head_sha !== rubatoSha ||
 		run.head_branch !== "main" ||
-		!["push", "workflow_dispatch", "schedule"].includes(run.event) ||
+		run.event !== "push" ||
 		run.status !== "completed" ||
 		run.conclusion !== "success" ||
 		!Number.isSafeInteger(run.id)
 	)
-		throw new Error("Rubato main requires a successful latest Rubato checks run");
+		throw new Error(
+			`Rubato main ${rubatoSha} requires a successful latest push run of Rubato checks; latest: ${run ? `${run.event}, ${run.status}/${run.conclusion}, ${run.html_url ?? "no run URL"}` : "no run"}`,
+		);
 	const jobs = api.list(`repos/Praxity/rubato/actions/runs/${run.id}/jobs?per_page=100`, "jobs");
 	for (const runner of ["macos-15", "macos-15-intel"]) {
 		if (
@@ -339,7 +341,9 @@ export function admitRubatoPublisher(execute = execFileSync) {
 					job.conclusion === "success",
 			)
 		)
-			throw new Error(`Rubato checks must install natively on ${runner}`);
+			throw new Error(
+				`Rubato main ${rubatoSha} must install natively on ${runner}; run: ${run.html_url ?? run.id}`,
+			);
 	}
 	// The publisher builds from this SHA, so the guide and its sibling ship in one pack.
 	const skill = api(

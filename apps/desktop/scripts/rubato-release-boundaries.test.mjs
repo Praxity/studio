@@ -549,13 +549,14 @@ function publisherApi(mutate = () => {}) {
 		if (route.includes("/actions/workflows/ci.yml/runs?")) {
 			assert.equal(
 				route,
-				`repos/Praxity/rubato/actions/workflows/ci.yml/runs?head_sha=${sha}&branch=main&per_page=1`,
+				`repos/Praxity/rubato/actions/workflows/ci.yml/runs?head_sha=${sha}&branch=main&event=push&per_page=1`,
 			);
 			result = {
 				workflow_runs: [
 					{
 						id: 456,
 						name: "Rubato checks",
+						html_url: "https://github.com/Praxity/rubato/actions/runs/456",
 						head_sha: sha,
 						head_branch: "main",
 						event: "push",
@@ -582,7 +583,19 @@ test("publisher resolves green Rubato main after approval and checks both native
 	const steps = workflow.jobs["rubato-publish"].steps;
 	const resolve = steps.findIndex((step) => step.id === "rubato");
 	assert.equal(steps[resolve].env.RESOLVE_RUBATO_PUBLISH, "true");
-	assert.ok(resolve < steps.findIndex((step) => step.with?.repository === "Praxity/rubato"));
+	const studioCheckout = steps.find((step) => step.with?.path === "workflow");
+	const rubatoCheckout = steps.find((step) => step.with?.repository === "Praxity/rubato");
+	assert.ok(studioCheckout);
+	assert.equal(rubatoCheckout.with.path, "rubato");
+	assert.ok(
+		steps
+			.filter((step) => step.uses?.startsWith("actions/checkout@"))
+			.every((step) => ["workflow", "rubato"].includes(step.with.path)),
+	);
+	assert.equal(
+		steps.find((step) => step.name === "Publish verified Rubato pack")["working-directory"],
+		"rubato",
+	);
 });
 
 for (const failure of [
@@ -613,7 +626,13 @@ for (const failure of [
 						if (result.jobs && failure === "intel failed") result.jobs[1].conclusion = "failure";
 					}),
 				),
-			/Rubato/,
+			failure === "arm64 skipped" || failure === "intel failed"
+				? new RegExp(
+						`Rubato main ${sha} must install natively on ${failure === "arm64 skipped" ? "macos-15" : "macos-15-intel"}; run: https://github.com/Praxity/rubato/actions/runs/456`,
+					)
+				: new RegExp(
+						`Rubato main ${sha} requires a successful latest push run of Rubato checks; latest: ${failure === "absent" ? "no run" : failure === "failed" ? "push, completed/failure" : failure === "running" ? "push, in_progress/success" : failure === "PR run" ? "pull_request, completed/success" : "push, completed/success"}`,
+					),
 		);
 	});
 }
