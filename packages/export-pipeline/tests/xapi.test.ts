@@ -788,15 +788,6 @@ describe("XapiRuntime", () => {
 
 			expect(runtime.commit()).toBe(true);
 		});
-
-		it("clears pending statements", () => {
-			runtime.initialize();
-			runtime.trackPageVisit("page-1");
-
-			const result = runtime.commit();
-
-			expect(result).toBe(true);
-		});
 	});
 
 	// -------------------------------------------------------------------

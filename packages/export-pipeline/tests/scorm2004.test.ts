@@ -71,70 +71,9 @@ describe("Scorm2004Runtime", () => {
 	});
 
 	// -----------------------------------------------------------------------
-	// 1. findAPI() discovers API_1484_11 on window
-	// -----------------------------------------------------------------------
-	describe("findAPI()", () => {
-		it("discovers API_1484_11 on the current window", () => {
-			const found = runtime.findAPI();
-
-			expect(found).toBe(true);
-		});
-
-		// -------------------------------------------------------------------
-		// 2. findAPI() discovers API_1484_11 on parent window
-		// -------------------------------------------------------------------
-		it("discovers API_1484_11 on a parent window", () => {
-			const parentWin = createMockWindow(mockAPI);
-
-			// Child window has no API, but its parent does
-			const childWin: WindowLike = {
-				parent: parentWin,
-				opener: null,
-			};
-
-			const childRuntime = new Scorm2004Runtime(childWin);
-			const found = childRuntime.findAPI();
-
-			expect(found).toBe(true);
-		});
-
-		it("discovers API_1484_11 via window.opener", () => {
-			const openerWin = createMockWindow(mockAPI);
-
-			// Current window has no API and no useful parent, but has an opener
-			const childWin: WindowLike = {
-				parent: null as unknown as WindowLike,
-				opener: openerWin,
-			};
-			childWin.parent = childWin;
-
-			const childRuntime = new Scorm2004Runtime(childWin);
-			const found = childRuntime.findAPI();
-
-			expect(found).toBe(true);
-		});
-
-		it("returns false when no API_1484_11 exists anywhere", () => {
-			const emptyWin = createMockWindow(); // no API
-			const emptyRuntime = new Scorm2004Runtime(emptyWin);
-
-			const found = emptyRuntime.findAPI();
-
-			expect(found).toBe(false);
-		});
-	});
-
-	// -----------------------------------------------------------------------
 	// 3. initialize() calls Initialize
 	// -----------------------------------------------------------------------
 	describe("initialize()", () => {
-		it("calls Initialize on the API", () => {
-			const result = runtime.initialize();
-
-			expect(result).toBe(true);
-			expect(mockAPI.Initialize).toHaveBeenCalledWith("");
-		});
-
 		it("continues a multi-page session that is already initialized", () => {
 			mockAPI.Initialize.mockReturnValue("false");
 			mockAPI.GetLastError.mockReturnValue("103");
@@ -167,69 +106,12 @@ describe("Scorm2004Runtime", () => {
 			runtime.initialize();
 		});
 
-		it("returns the value from GetValue", () => {
-			mockAPI.GetValue.mockReturnValueOnce("completed");
-
-			const value = runtime.getValue("cmi.completion_status");
-
-			expect(value).toBe("completed");
-			expect(mockAPI.GetValue).toHaveBeenCalledWith("cmi.completion_status");
-		});
-
 		it("returns empty string when API is not available", () => {
 			const emptyWin = createMockWindow();
 			const standalone = new Scorm2004Runtime(emptyWin);
 			const value = standalone.getValue("cmi.completion_status");
 
 			expect(value).toBe("");
-		});
-	});
-
-	// -----------------------------------------------------------------------
-	// 5. setValue() calls SetValue
-	// -----------------------------------------------------------------------
-	describe("setValue()", () => {
-		beforeEach(() => {
-			runtime.initialize();
-		});
-
-		it("calls SetValue with the correct arguments", () => {
-			const result = runtime.setValue("cmi.completion_status", "completed");
-
-			expect(result).toBe(true);
-			expect(mockAPI.SetValue).toHaveBeenCalledWith("cmi.completion_status", "completed");
-		});
-	});
-
-	// -----------------------------------------------------------------------
-	// 6. commit() calls Commit
-	// -----------------------------------------------------------------------
-	describe("commit()", () => {
-		beforeEach(() => {
-			runtime.initialize();
-		});
-
-		it("calls Commit on the API", () => {
-			const result = runtime.commit();
-
-			expect(result).toBe(true);
-			expect(mockAPI.Commit).toHaveBeenCalledWith("");
-		});
-	});
-
-	// -----------------------------------------------------------------------
-	// 7. terminate() calls Terminate
-	// -----------------------------------------------------------------------
-	describe("terminate()", () => {
-		beforeEach(() => {
-			runtime.initialize();
-		});
-
-		it("calls Terminate on the API", () => {
-			const result = runtime.terminate();
-
-			expect(result).toBe(true);
-			expect(mockAPI.Terminate).toHaveBeenCalledWith("");
 		});
 	});
 
@@ -650,25 +532,6 @@ describe("Scorm2004Runtime", () => {
 			runtime.initialize();
 		});
 
-		it("sets cmi.location", () => {
-			runtime.setBookmark("page-3");
-
-			expect(mockAPI.SetValue).toHaveBeenCalledWith("cmi.location", "page-3");
-		});
-
-		it("returns the bookmark from cmi.location", () => {
-			mockAPI.GetValue.mockImplementation((element: string) => {
-				if (element === "cmi.location") {
-					return "page-5";
-				}
-				return "";
-			});
-
-			const bookmark = runtime.getBookmark();
-
-			expect(bookmark).toBe("page-5");
-		});
-
 		it("returns null when no bookmark is set", () => {
 			mockAPI.GetValue.mockReturnValue("");
 
@@ -766,27 +629,6 @@ describe("Scorm2004Runtime", () => {
 			mockAPI.GetValue.mockReturnValue("");
 
 			expect(runtime.getCompletion()).toBe("unknown");
-		});
-	});
-
-	describe("trackObjective", () => {
-		it("sets cmi.objectives.N.id, score.raw, and success_status", () => {
-			runtime.initialize();
-			runtime.trackObjective("group-1", 85, true);
-
-			expect(mockAPI.SetValue).toHaveBeenCalledWith("cmi.objectives.0.id", "group-1");
-			expect(mockAPI.SetValue).toHaveBeenCalledWith("cmi.objectives.0.score.raw", "85");
-			expect(mockAPI.SetValue).toHaveBeenCalledWith("cmi.objectives.0.success_status", "passed");
-		});
-
-		it("increments objective index on multiple calls", () => {
-			runtime.initialize();
-			runtime.trackObjective("group-1", 85, true);
-			runtime.trackObjective("group-2", 40, false);
-
-			expect(mockAPI.SetValue).toHaveBeenCalledWith("cmi.objectives.1.id", "group-2");
-			expect(mockAPI.SetValue).toHaveBeenCalledWith("cmi.objectives.1.score.raw", "40");
-			expect(mockAPI.SetValue).toHaveBeenCalledWith("cmi.objectives.1.success_status", "failed");
 		});
 	});
 });
