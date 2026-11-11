@@ -39,7 +39,6 @@ jobs:
       actions: read
       pull-requests: read
     outputs:
-      rubato_sha: ${{ steps.admit.outputs.rubato_sha }}
       source_ref: ${{ steps.admit.outputs.source_ref }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -392,17 +391,23 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          repository: Praxity/rubato
-          ref: ${{ needs.admit.outputs.rubato_sha }}
-          persist-credentials: false
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
           ref: ${{ github.workflow_sha }}
           path: workflow
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24.22.1
+      - name: Resolve tested Rubato main
+        id: rubato
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESOLVE_RUBATO_PUBLISH: "true"
+        run: node workflow/apps/desktop/scripts/admit-rubato-release.mjs
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: Praxity/rubato
+          ref: ${{ steps.rubato.outputs.rubato_sha }}
+          persist-credentials: false
       - name: Download verified private candidate
         env:
           GH_TOKEN: ${{ github.token }}
@@ -424,9 +429,7 @@ jobs:
         run: |
           set -euo pipefail
           mode=--dry-run
-          # shortcut: refuse publication until Rubato verifies this exact pack by SHA-256 on native arm64.
           if [ "$PUBLISH_PACK" = true ]; then
-            echo "Formal release needs the native arm64 install check on Rubato's macos-15 job; not wired yet." >&2
-            exit 1
+            mode=--publish
           fi
           node scripts/publish-studio-pack.mjs --version "$PACK_VERSION" --studio-sha "$STUDIO_SHA" --expect-arm64-sha256 "$EXPECTED_ARM64_SHA256" --expect-x64-sha256 "$EXPECTED_X64_SHA256" --archives "$RUNNER_TEMP/candidate" --output "$RUNNER_TEMP/pack" "$mode"

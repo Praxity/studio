@@ -289,13 +289,8 @@ function admitPrivateRef(ref, api, repo) {
 
 export function admitRelease(env, execute = execFileSync) {
 	const { INPUT_REF: studioSha, PACK_VERSION: version } = env;
-	// shortcut: refuse publication until Rubato verifies this exact pack on native arm64.
-	if (env.PUBLISH_PACK === "true")
-		throw new Error(
-			"Formal release needs the native arm64 install check on Rubato's macos-15 job; not wired yet.",
-		);
 	const internal = !version && env.INTERNAL_INSTALL === "true" && env.PUBLISH_PACK !== "true";
-	if (!version && !internal && env.FORMAL_RELEASE !== "true") {
+	if (!version && !internal && env.FORMAL_RELEASE !== "true" && env.PUBLISH_PACK !== "true") {
 		return {
 			source_ref: admitPrivateRef(
 				studioSha ?? "",
@@ -313,29 +308,62 @@ export function admitRelease(env, execute = execFileSync) {
 		const { source: repo } = studioRepositories(env);
 		const mainSha = api(`repos/${repo}/git/ref/heads/main`).object?.sha;
 		readAdmission(studioSha, internal, api, mainSha, repo);
-		const rubatoSha = api("repos/Praxity/rubato/git/ref/heads/main").object?.sha;
-		if (!/^[a-f0-9]{40}$/.test(rubatoSha)) throw new Error("Invalid Rubato revision");
-		// The publisher builds from this SHA, so the guide and its sibling ship in one pack.
-		const skill = api(
-			`repos/Praxity/rubato/contents/skills/assessment-writing/SKILL.md?ref=${rubatoSha}`,
-		);
+		return { source_ref: studioSha };
+	}
+}
+
+export function admitRubatoPublisher(execute = execFileSync) {
+	const api = githubRead(execute);
+	const rubatoSha = api("repos/Praxity/rubato/git/ref/heads/main").object?.sha;
+	if (!/^[a-f0-9]{40}$/.test(rubatoSha ?? "")) throw new Error("Invalid Rubato revision");
+	const run = api(
+		`repos/Praxity/rubato/actions/workflows/ci.yml/runs?head_sha=${rubatoSha}&branch=main&per_page=1`,
+	).workflow_runs[0];
+	if (
+		run?.name !== "Rubato checks" ||
+		run.head_sha !== rubatoSha ||
+		run.head_branch !== "main" ||
+		!["push", "workflow_dispatch", "schedule"].includes(run.event) ||
+		run.status !== "completed" ||
+		run.conclusion !== "success" ||
+		!Number.isSafeInteger(run.id)
+	)
+		throw new Error("Rubato main requires a successful latest Rubato checks run");
+	const jobs = api.list(`repos/Praxity/rubato/actions/runs/${run.id}/jobs?per_page=100`, "jobs");
+	for (const runner of ["macos-15", "macos-15-intel"]) {
 		if (
-			skill.type !== "file" ||
-			skill.encoding !== "base64" ||
-			!/^name: assessment-writing\s*$/m.test(
-				Buffer.from(skill.content ?? "", "base64").toString("utf8"),
+			!jobs.some(
+				(job) =>
+					job.name ===
+						`macos-install (${runner}, darwin-${runner === "macos-15" ? "arm64" : "x64"})` &&
+					job.conclusion === "success",
 			)
 		)
-			throw new Error(
-				"Pinned Rubato pack must include the assessment-writing skill before publishing the choice guide",
-			);
-		return { source_ref: studioSha, rubato_sha: rubatoSha };
+			throw new Error(`Rubato checks must install natively on ${runner}`);
 	}
+	// The publisher builds from this SHA, so the guide and its sibling ship in one pack.
+	const skill = api(
+		`repos/Praxity/rubato/contents/skills/assessment-writing/SKILL.md?ref=${rubatoSha}`,
+	);
+	if (
+		skill.type !== "file" ||
+		skill.encoding !== "base64" ||
+		!/^name: assessment-writing\s*$/m.test(
+			Buffer.from(skill.content ?? "", "base64").toString("utf8"),
+		)
+	)
+		throw new Error(
+			"Pinned Rubato pack must include the assessment-writing skill before publishing the choice guide",
+		);
+	return { rubato_sha: rubatoSha };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
 	try {
-		const outputs = admitRelease(process.env);
+		const outputs =
+			process.env.RESOLVE_RUBATO_PUBLISH === "true"
+				? admitRubatoPublisher()
+				: admitRelease(process.env);
 		for (const [name, value] of Object.entries(outputs))
 			appendFileSync(process.env.GITHUB_OUTPUT, `${name}=${value}\n`);
 	} catch (error) {

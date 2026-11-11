@@ -63,7 +63,7 @@ function api(command, args) {
 }
 
 test("admission environment/API adapter resolves branch heads and compares full SHAs", () => {
-	assert.deepEqual(admission.admitRelease(env(), api), { source_ref: sha, rubato_sha: sha });
+	assert.deepEqual(admission.admitRelease(env(), api), { source_ref: sha });
 });
 
 test("formal workflow cannot fall back to private-ref admission when pack version is empty", () => {
@@ -269,14 +269,6 @@ for (const [name, routePart, change, message] of [
 		/No CI run/,
 	],
 	[
-		"invalid Rubato SHA",
-		"/rubato/git/",
-		(value) => {
-			value.object.sha = "main";
-		},
-		/Invalid Rubato revision/,
-	],
-	[
 		"invalid main SHA",
 		"studio/git/",
 		(value) => {
@@ -314,21 +306,12 @@ test("admission command refuses branch dispatch with no output", (t) => {
 	assert.equal(existsSync(output), false);
 });
 
-for (const version of ["0.1.2", "", "next"])
-	for (const internal of ["true", "false"])
-		test(`admission refuses publication before API access: version=${version}, internal=${internal}`, () => {
-			assert.throws(
-				() =>
-					admission.admitRelease(
-						{ ...env(), PACK_VERSION: version, PUBLISH_PACK: "true", INTERNAL_INSTALL: internal },
-						() => assert.fail("Publication must be refused before any API access"),
-					),
-				{
-					message:
-						"Formal release needs the native arm64 install check on Rubato's macos-15 job; not wired yet.",
-				},
-			);
-		});
+test("publication admission allows a green Studio SHA; Rubato is resolved only in the publishing job", () => {
+	assert.deepEqual(admission.admitRelease({ ...env(), PUBLISH_PACK: "true" }, api), {
+		source_ref: sha,
+	});
+	assert.equal(workflow.jobs.admit.outputs.rubato_sha, undefined);
+});
 
 test("publication requests always reach hosted admission, including a missing version", () => {
 	assert.equal(workflow.jobs.admit["runs-on"], "ubuntu-24.04");
@@ -380,11 +363,10 @@ for (const scenario of ["main", "private", "publish", "missing version", "failed
 			],
 			{ encoding: "utf8", env: input },
 		);
-		assert.equal(run.status, ["main", "private"].includes(scenario) ? 0 : 1, run.stderr);
-		if (["publish", "missing version"].includes(scenario))
-			assert.match(run.stderr, /Formal release needs the native arm64 install check/);
-		if (scenario === "main")
-			assert.equal(readFileSync(output, "utf8"), `source_ref=${sha}\nrubato_sha=${sha}\n`);
+		assert.equal(run.status, ["main", "private", "publish"].includes(scenario) ? 0 : 1, run.stderr);
+		if (scenario === "missing version") assert.match(run.stderr, /stable pack version/);
+		if (["main", "publish"].includes(scenario))
+			assert.equal(readFileSync(output, "utf8"), `source_ref=${sha}\n`);
 		else if (scenario === "private")
 			assert.equal(readFileSync(output, "utf8"), `source_ref=${sha}\n`);
 		else assert.equal(existsSync(output), false);
@@ -420,7 +402,7 @@ test("release jobs bind build digests, exact candidate ID, pinned Rubato and pub
 	assert.equal(publisher.environment, "rubato-release");
 	assert.equal(
 		publisher.steps.find((step) => step.with?.repository === "Praxity/rubato").with.ref,
-		"${{ needs.admit.outputs.rubato_sha }}",
+		"${{ steps.rubato.outputs.rubato_sha }}",
 	);
 	const command = publisher.steps.find((step) => step.name === "Publish verified Rubato pack");
 	assert.equal(command.env.GH_TOKEN, "${{ secrets.RUBATO_RELEASE_TOKEN }}");
@@ -446,7 +428,7 @@ const bash =
 			)
 		: "/bin/bash";
 
-test("formal publication refuses until Rubato's native arm64 install check is wired; dry runs still work", () => {
+test("formal publication selects publish mode; dry runs still work", () => {
 	const publisher = workflow.jobs["rubato-publish"];
 	assert.equal(
 		publisher.if,
@@ -472,18 +454,9 @@ test("formal publication refuses until Rubato's native arm64 install check is wi
 				},
 			},
 		);
-		assert.equal(result.status, publish === "true" ? 1 : 0, result.stderr);
-		if (publish === "true") {
-			assert.match(
-				result.stderr,
-				/Formal release needs the native arm64 install check on Rubato's macos-15 job; not wired yet\./,
-			);
-			assert.equal(result.stdout, "", "Refuse before invoking the publisher");
-		} else {
-			assert.match(result.stdout, /publish-studio-pack\.mjs/);
-			assert.match(result.stdout, /--dry-run/);
-			assert.doesNotMatch(result.stdout, /--publish\b/);
-		}
+		assert.equal(result.status, 0, result.stderr);
+		assert.match(result.stdout, /publish-studio-pack\.mjs/);
+		assert.match(result.stdout, publish === "true" ? /--publish\b/ : /--dry-run/);
 	}
 });
 
@@ -568,3 +541,91 @@ for (const scenario of ["ok", "missing", "duplicate", "invalid digest"])
 					new RegExp(`${arch}_sha256=${createHash("sha256").update(arch).digest("hex")}`),
 				);
 	});
+
+function publisherApi(mutate = () => {}) {
+	return (command, args) => {
+		const route = args.at(-1);
+		let result;
+		if (route.includes("/actions/workflows/ci.yml/runs?")) {
+			assert.equal(
+				route,
+				`repos/Praxity/rubato/actions/workflows/ci.yml/runs?head_sha=${sha}&branch=main&per_page=1`,
+			);
+			result = {
+				workflow_runs: [
+					{
+						id: 456,
+						name: "Rubato checks",
+						head_sha: sha,
+						head_branch: "main",
+						event: "push",
+						status: "completed",
+						conclusion: "success",
+					},
+				],
+			};
+		} else if (route === "repos/Praxity/rubato/actions/runs/456/jobs?per_page=100") {
+			result = {
+				jobs: [
+					"macos-install (macos-15, darwin-arm64)",
+					"macos-install (macos-15-intel, darwin-x64)",
+				].map((name) => ({ name, conclusion: "success" })),
+			};
+		} else return api(command, args);
+		mutate(result);
+		return JSON.stringify(args.includes("--slurp") ? [result] : result);
+	};
+}
+
+test("publisher resolves green Rubato main after approval and checks both native installs", () => {
+	assert.deepEqual(admission.admitRubatoPublisher(publisherApi()), { rubato_sha: sha });
+	const steps = workflow.jobs["rubato-publish"].steps;
+	const resolve = steps.findIndex((step) => step.id === "rubato");
+	assert.equal(steps[resolve].env.RESOLVE_RUBATO_PUBLISH, "true");
+	assert.ok(resolve < steps.findIndex((step) => step.with?.repository === "Praxity/rubato"));
+});
+
+for (const failure of [
+	"absent",
+	"failed",
+	"running",
+	"wrong SHA",
+	"wrong workflow",
+	"PR run",
+	"arm64 skipped",
+	"intel failed",
+]) {
+	test(`publisher refuses Rubato checks: ${failure}`, () => {
+		assert.throws(
+			() =>
+				admission.admitRubatoPublisher(
+					publisherApi((result) => {
+						const run = result.workflow_runs?.[0];
+						if (run) {
+							if (failure === "absent") result.workflow_runs = [];
+							if (failure === "failed") run.conclusion = "failure";
+							if (failure === "running") run.status = "in_progress";
+							if (failure === "wrong SHA") run.head_sha = "f".repeat(40);
+							if (failure === "wrong workflow") run.name = "Other checks";
+							if (failure === "PR run") run.event = "pull_request";
+						}
+						if (result.jobs && failure === "arm64 skipped") result.jobs[0].conclusion = "skipped";
+						if (result.jobs && failure === "intel failed") result.jobs[1].conclusion = "failure";
+					}),
+				),
+			/Rubato/,
+		);
+	});
+}
+
+test("publisher refuses an invalid Rubato main SHA", () => {
+	assert.throws(
+		() =>
+			admission.admitRubatoPublisher((command, args) => {
+				const value = JSON.parse(api(command, args));
+				value.object.sha = "main";
+				return JSON.stringify(value);
+			}),
+		/Invalid Rubato revision/,
+	);
+});
