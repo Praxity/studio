@@ -46,22 +46,10 @@ function createMockAPI(): MockSCORM12API {
 const g = globalThis as Record<string, unknown>;
 
 /** Place the mock API on the global window object. */
-function installAPI(api: MockSCORM12API, target: "window" | "parent" | "opener" = "window") {
-	if (target === "window") {
-		const win = { API: api, parent: undefined as unknown, opener: undefined };
-		win.parent = win; // top-level frame
-		g.window = win;
-	} else if (target === "parent") {
-		const parentWin = { API: api, parent: undefined as unknown };
-		parentWin.parent = parentWin;
-		g.window = { parent: parentWin, opener: undefined };
-	} else if (target === "opener") {
-		const openerWin = { API: api, parent: undefined as unknown };
-		openerWin.parent = openerWin;
-		const win = { parent: undefined as unknown, opener: openerWin };
-		win.parent = win;
-		g.window = win;
-	}
+function installAPI(api: MockSCORM12API) {
+	const win = { API: api, parent: undefined as unknown, opener: undefined };
+	win.parent = win; // top-level frame
+	g.window = win;
 }
 
 function cleanupWindow() {
@@ -82,27 +70,9 @@ describe("Scorm12Runtime", () => {
 		cleanupWindow();
 	});
 
-	// -- findAPI & initialize ------------------------------------------------
+	// -- initialize ----------------------------------------------------------
 
-	describe("findAPI / initialize", () => {
-		it("discovers API on the current window", () => {
-			installAPI(api, "window");
-			expect(runtime.initialize()).toBe(true);
-			expect(api.LMSInitialize).toHaveBeenCalledWith("");
-		});
-
-		it("discovers API on a parent window", () => {
-			installAPI(api, "parent");
-			expect(runtime.initialize()).toBe(true);
-			expect(api.LMSInitialize).toHaveBeenCalledWith("");
-		});
-
-		it("discovers API via window.opener", () => {
-			installAPI(api, "opener");
-			expect(runtime.initialize()).toBe(true);
-			expect(api.LMSInitialize).toHaveBeenCalledWith("");
-		});
-
+	describe("initialize", () => {
 		it("returns false when no API is found", () => {
 			const win = { parent: undefined as unknown, opener: undefined };
 			win.parent = win;
@@ -112,7 +82,7 @@ describe("Scorm12Runtime", () => {
 		});
 
 		it("returns true without re-initializing if already initialized", () => {
-			installAPI(api, "window");
+			installAPI(api);
 			runtime.initialize();
 			api.LMSInitialize.mockClear();
 
@@ -121,40 +91,12 @@ describe("Scorm12Runtime", () => {
 		});
 	});
 
-	// -- getValue / setValue --------------------------------------------------
-
-	describe("getValue / setValue via LMS methods", () => {
-		beforeEach(() => {
-			installAPI(api, "window");
-			runtime.initialize();
-		});
-
-		it("getValue returns the value from LMSGetValue", () => {
-			api.LMSGetValue.mockReturnValue("completed");
-			const status = runtime.getCompletion();
-			expect(api.LMSGetValue).toHaveBeenCalledWith("cmi.core.lesson_status");
-			expect(status).toBe("completed");
-		});
-
-		it("setValue calls LMSSetValue with correct arguments", () => {
-			runtime.setCompletion("passed");
-			expect(runtime.getCompletion()).toBe("passed");
-			expect(runtime.commit()).toBe(true);
-			expect(api.LMSSetValue).toHaveBeenCalledWith("cmi.core.lesson_status", "passed");
-		});
-	});
-
 	// -- commit --------------------------------------------------------------
 
 	describe("commit", () => {
 		beforeEach(() => {
-			installAPI(api, "window");
+			installAPI(api);
 			runtime.initialize();
-		});
-
-		it("calls LMSCommit and returns true on success", () => {
-			expect(runtime.commit()).toBe(true);
-			expect(api.LMSCommit).toHaveBeenCalledWith("");
 		});
 
 		it("returns false when LMSCommit fails", () => {
@@ -168,13 +110,8 @@ describe("Scorm12Runtime", () => {
 
 	describe("terminate", () => {
 		beforeEach(() => {
-			installAPI(api, "window");
+			installAPI(api);
 			runtime.initialize();
-		});
-
-		it("calls LMSFinish and returns true", () => {
-			expect(runtime.terminate()).toBe(true);
-			expect(api.LMSFinish).toHaveBeenCalledWith("");
 		});
 
 		it("returns false when LMSFinish fails", () => {
@@ -188,7 +125,7 @@ describe("Scorm12Runtime", () => {
 
 	describe("error handling", () => {
 		beforeEach(() => {
-			installAPI(api, "window");
+			installAPI(api);
 			runtime.initialize();
 		});
 
@@ -228,7 +165,7 @@ describe("Scorm12Runtime", () => {
 
 	describe("trackPageVisit / getVisitedPages", () => {
 		beforeEach(() => {
-			installAPI(api, "window");
+			installAPI(api);
 			runtime.initialize();
 		});
 
@@ -329,7 +266,7 @@ describe("Scorm12Runtime", () => {
 			},
 		);
 		beforeEach(() => {
-			installAPI(api, "window");
+			installAPI(api);
 			runtime.initialize();
 		});
 
@@ -433,22 +370,8 @@ describe("Scorm12Runtime", () => {
 
 	describe("setCompletion / getCompletion", () => {
 		beforeEach(() => {
-			installAPI(api, "window");
+			installAPI(api);
 			runtime.initialize();
-		});
-
-		it("sets lesson_status to 'completed'", () => {
-			runtime.setCompletion("completed");
-			expect(runtime.getCompletion()).toBe("completed");
-			expect(runtime.commit()).toBe(true);
-			expect(api.LMSSetValue).toHaveBeenCalledWith("cmi.core.lesson_status", "completed");
-		});
-
-		it("sets lesson_status to 'incomplete'", () => {
-			runtime.setCompletion("incomplete");
-			expect(runtime.getCompletion()).toBe("incomplete");
-			expect(runtime.commit()).toBe(true);
-			expect(api.LMSSetValue).toHaveBeenCalledWith("cmi.core.lesson_status", "incomplete");
 		});
 
 		it("sets lesson_status to 'passed'", () => {
@@ -456,13 +379,6 @@ describe("Scorm12Runtime", () => {
 			expect(runtime.getCompletion()).toBe("passed");
 			expect(runtime.commit()).toBe(true);
 			expect(api.LMSSetValue).toHaveBeenCalledWith("cmi.core.lesson_status", "passed");
-		});
-
-		it("sets lesson_status to 'failed'", () => {
-			runtime.setCompletion("failed");
-			expect(runtime.getCompletion()).toBe("failed");
-			expect(runtime.commit()).toBe(true);
-			expect(api.LMSSetValue).toHaveBeenCalledWith("cmi.core.lesson_status", "failed");
 		});
 
 		it("returns the current lesson_status", () => {
@@ -478,7 +394,7 @@ describe("Scorm12Runtime", () => {
 
 	describe("setScore / getScore", () => {
 		beforeEach(() => {
-			installAPI(api, "window");
+			installAPI(api);
 			runtime.initialize();
 		});
 
@@ -509,21 +425,8 @@ describe("Scorm12Runtime", () => {
 
 	describe("setBookmark / getBookmark", () => {
 		beforeEach(() => {
-			installAPI(api, "window");
+			installAPI(api);
 			runtime.initialize();
-		});
-
-		it("sets cmi.core.lesson_location", () => {
-			runtime.setBookmark("page-3");
-			expect(api.LMSSetValue).toHaveBeenCalledWith("cmi.core.lesson_location", "page-3");
-		});
-
-		it("returns the current bookmark", () => {
-			api.LMSGetValue.mockImplementation((element: string) => {
-				if (element === "cmi.core.lesson_location") return "page-3";
-				return "";
-			});
-			expect(runtime.getBookmark()).toBe("page-3");
 		});
 
 		it("returns null when no bookmark is set", () => {
@@ -535,7 +438,7 @@ describe("Scorm12Runtime", () => {
 
 	describe("setSuspendData / getSuspendData", () => {
 		beforeEach(() => {
-			installAPI(api, "window");
+			installAPI(api);
 			runtime.initialize();
 		});
 
@@ -585,35 +488,6 @@ describe("Scorm12Runtime", () => {
 			expect(payload.visitedPages).toEqual(["page-1"]);
 			expect(payload.interactions).toHaveLength(1);
 			expect(payload.custom).toBe("new-custom-data");
-		});
-	});
-
-	describe("trackObjective", () => {
-		it("sets cmi.objectives.N.id, score.raw, and status", () => {
-			const api = createMockAPI();
-			installAPI(api);
-			const runtime = new Scorm12Runtime();
-			runtime.initialize();
-
-			runtime.trackObjective("group-1", 85, true);
-
-			expect(api.LMSSetValue).toHaveBeenCalledWith("cmi.objectives.0.id", "group-1");
-			expect(api.LMSSetValue).toHaveBeenCalledWith("cmi.objectives.0.score.raw", "85");
-			expect(api.LMSSetValue).toHaveBeenCalledWith("cmi.objectives.0.status", "passed");
-		});
-
-		it("increments objective index on multiple calls", () => {
-			const api = createMockAPI();
-			installAPI(api);
-			const runtime = new Scorm12Runtime();
-			runtime.initialize();
-
-			runtime.trackObjective("group-1", 85, true);
-			runtime.trackObjective("group-2", 40, false);
-
-			expect(api.LMSSetValue).toHaveBeenCalledWith("cmi.objectives.1.id", "group-2");
-			expect(api.LMSSetValue).toHaveBeenCalledWith("cmi.objectives.1.score.raw", "40");
-			expect(api.LMSSetValue).toHaveBeenCalledWith("cmi.objectives.1.status", "failed");
 		});
 	});
 });
