@@ -80,6 +80,7 @@ describe("course palette and pairing", () => {
 		["blueprint", "forest"],
 		["marquee", "plum"],
 		["darkroom", "plum"],
+		["bold", "plum"],
 		["campfire", "clay"],
 		["dunes", "clay"],
 	])("maps saved %s to %s in grammar and editor", (old, id) => {

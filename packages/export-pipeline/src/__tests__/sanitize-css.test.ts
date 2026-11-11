@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { sanitizeCss } from "../sanitize-css";
+import { sanitizeCss } from "../sanitize-css.ts";
 
 describe("sanitizeCss", () => {
 	it("passes valid CSS through unchanged", () => {
 		const css = ".praxity-block { color: red; }";
 		expect(sanitizeCss(css)).toBe(css);
+	});
+
+	it("cannot close the course style element", () => {
+		expect(sanitizeCss(".a{}</style><p>")).not.toMatch(/<\/style>/i);
 	});
 
 	it("strips <script> tags", () => {

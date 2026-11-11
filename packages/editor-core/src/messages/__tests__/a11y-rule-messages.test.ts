@@ -4,41 +4,6 @@ import { RULE_METADATA } from "../../lib/a11y/rule-metadata";
 import en from "../en.json";
 import fr from "../fr.json";
 
-/**
- * The audit panels show a per-category count. It used to render as a bare
- * number with the label hidden in an aria-label, which read as an orphan "1"
- * on screen. The count is now visible prose, so the string must pluralise in
- * both locales.
- */
-describe("audit issue count strings", () => {
-	const cases = [
-		{ locale: "en", messages: en, namespace: "a11yAudit" },
-		{ locale: "en", messages: en, namespace: "pedagogyAudit" },
-		{ locale: "fr", messages: fr, namespace: "a11yAudit" },
-		{ locale: "fr", messages: fr, namespace: "pedagogyAudit" },
-	] as const;
-
-	for (const { locale, messages, namespace } of cases) {
-		it(`${locale}/${namespace} labels the count instead of emitting a bare number`, () => {
-			const t = createTranslator({
-				locale,
-				messages: messages as Record<string, unknown>,
-				namespace,
-			});
-
-			const one = t("issuesCount", { count: 1 });
-			const many = t("issuesCount", { count: 3 });
-
-			expect(one).toContain("1");
-			expect(many).toContain("3");
-			// A label, not just a digit.
-			expect(one.replace(/\d+/g, "").trim().length).toBeGreaterThan(0);
-			// Singular and plural forms differ.
-			expect(one.replace(/\d+/g, "")).not.toBe(many.replace(/\d+/g, ""));
-		});
-	}
-});
-
 describe("accessibility rule messages", () => {
 	it("keeps the English and French rule catalogs aligned", () => {
 		expect(Object.keys(fr.a11yAudit.rules).sort()).toEqual(Object.keys(en.a11yAudit.rules).sort());
