@@ -678,6 +678,8 @@ export { seedSchema as draftSeedSchema };
 
 /** Captured compiler page identity and position, independent of course DOM markers. */
 export interface CanvasPageScope {
+	/** Lesson file captured by the compiler, retained across transient identity changes. */
+	file?: string;
 	/** Sequence captured before compiling this retained author artifact. */
 	editorSeq?: number;
 	pageId: string;

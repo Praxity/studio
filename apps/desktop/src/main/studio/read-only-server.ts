@@ -70,7 +70,10 @@ export async function startStudioReadOnlyServer(options: {
 	let closing = false;
 	const pending = new Set<Promise<void>>();
 	const streams = new ResponseStreamOwner();
-	type CanvasRevision = Pick<HostedCourseDeployment, "editorSeq" | "sourceRevisions"> & {
+	type CanvasRevision = Pick<
+		HostedCourseDeployment,
+		"editorSeq" | "sourceRevisions" | "lessonFiles"
+	> & {
 		pages: HostedCourseDeployment["manifest"]["pages"];
 	};
 	const pageIdentities = new Map<string, CanvasRevision>();
@@ -442,9 +445,14 @@ export async function startStudioReadOnlyServer(options: {
 		const entry = new URL(head.entryUrl);
 		const current = pageIdentities.get(new URL(".", entry).pathname);
 		if (!current) return;
+		const previousFile = previous.page.lessonId && previous.lessonFiles?.[previous.page.lessonId];
 		const page =
 			current.pages.find((page) => page.id === previous.page.id) ??
 			current.pages.find((page) => page.lessonId === previous.page.lessonId) ??
+			current.pages.find(
+				(page) =>
+					previousFile && page.lessonId && current.lessonFiles?.[page.lessonId] === previousFile,
+			) ??
 			current.pages[0];
 		if (!page) return;
 		const target = new URL(`${encodeURIComponent(page.slug)}.html`, entry).pathname;
@@ -459,7 +467,11 @@ export async function startStudioReadOnlyServer(options: {
 			: recorded?.page;
 		if (!pages) return;
 		if (!page?.lessonId) return;
+		const file = (resolved?.hosted.deployment.lessonFiles ?? recorded?.lessonFiles)?.[
+			page.lessonId
+		];
 		return {
+			...(file ? { file } : {}),
 			pageId: page.id,
 			editorSeq: resolved?.hosted.deployment.editorSeq ?? recorded?.editorSeq,
 			lessonId: page.lessonId,
@@ -495,6 +507,7 @@ export async function startStudioReadOnlyServer(options: {
 			pageIdentities.set(key, {
 				pages: structuredClone(deployment.manifest.pages),
 				editorSeq: deployment.editorSeq,
+				lessonFiles: deployment.lessonFiles && { ...deployment.lessonFiles },
 				sourceRevisions: deployment.sourceRevisions && { ...deployment.sourceRevisions },
 			});
 			if (pageIdentities.size > 256) {

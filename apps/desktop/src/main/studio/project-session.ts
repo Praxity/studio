@@ -104,6 +104,7 @@ import {
 	type CanvasPracticeDiagnostic,
 	canvasPracticeDiagnostics,
 	canvasPracticeRefusalText,
+	canvasSourceLocation,
 	previewDiagnostics,
 } from "./preview-diagnostics";
 import {
@@ -1196,8 +1197,19 @@ export async function createStudioProjectSession(
 			try {
 				if (canvasPageScope && method === "canvasTextSnapshot") {
 					parseEditorInput(emptyArgs, args);
+					const snapshot = await operations.canvasTextSnapshot(canvasPageScope);
+					const error = snapshot.sourceError;
 					return {
-						...(await operations.canvasTextSnapshot(canvasPageScope)),
+						...snapshot,
+						sourceRefusal: error
+							? canvasSourceLocation(
+									error,
+									canvasMessages[locale][
+										error.code === "feedback-after-options" ? "feedbackAfterOptions" : "sourceError"
+									],
+									locale,
+								)
+							: undefined,
 						servedSeq: canvasPageScope.editorSeq,
 						servedSourceRevisions: canvasPageScope.sourceRevisions,
 					};

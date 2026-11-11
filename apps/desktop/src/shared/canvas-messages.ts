@@ -14,6 +14,9 @@ export const canvasMessages = {
 		unmapped: "Some text could not be matched to the saved page.",
 		refreshFailed: "Studio could not refresh the saved page. Reload to try again.",
 		failed: "Studio could not connect. Reopen the Studio launch link.",
+		sourceError: "Fix the source error in this lesson's .prax file to edit its text.",
+		feedbackAfterOptions:
+			"Move correct: and incorrect: before the choice options in the .prax file to edit this lesson's text.",
 		sourceLocation: "{file}, line {line}, column {column}: {message}",
 		editButton: "Edit",
 		editHeading: "Edit heading {n}",
@@ -69,6 +72,9 @@ export const canvasMessages = {
 		unmapped: "Certains textes ne correspondent pas à la page enregistrée.",
 		refreshFailed: "Studio n'a pas pu actualiser la page enregistrée. Rechargez pour réessayer.",
 		failed: "Studio n'a pas pu se connecter. Rouvrez le lien de lancement de Studio.",
+		sourceError: "Corrigez l’erreur dans le fichier .prax de cette leçon pour modifier son texte.",
+		feedbackAfterOptions:
+			"Déplacez correct: et incorrect: avant les options du choix dans le fichier .prax pour modifier le texte de cette leçon.",
 		sourceLocation: "{file}, ligne {line}, colonne {column} : {message}",
 		editButton: "Modifier",
 		editHeading: "Modifier le titre {n}",

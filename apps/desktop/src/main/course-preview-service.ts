@@ -25,6 +25,7 @@ export interface HostedCourseArtifact {
 
 /** Host-only freshness metadata, never part of the learner manifest. */
 export type HostedCourseDeployment = CoursePreviewDeployment & {
+	lessonFiles?: Record<string, string>;
 	editorSeq?: number;
 	sourceRevisions?: Record<string, string>;
 };
@@ -166,6 +167,7 @@ export class CoursePreviewService {
 				...deployment,
 				editorSeq,
 				sourceRevisions: input.sourceRevisions,
+				lessonFiles: input.lessonFiles,
 				dispose: async () => {
 					try {
 						await deployment.dispose();

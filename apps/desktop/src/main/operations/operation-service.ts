@@ -184,7 +184,36 @@ export class OperationService {
 			this.root,
 			async (root) => {
 				const current = await this.snapshot(root, true, this.canvasIdentitySession);
+				const fields = canvasTextSnapshotFields(current, scope);
+				const file = scope?.file ?? fields[0]?.file;
+				const problem = scope && file ? identitySourceError(current, [file]) : undefined;
+				const error =
+					problem &&
+					current.lessons
+						.get(problem.file)
+						?.errors.find(
+							(error) =>
+								error.line === problem.line &&
+								(error.level === "error" || error.level === "critical"),
+						);
+				// These keep the existing course-wide, multi-location build refusal.
+				const practice =
+					error?.messageRef.key === "grammar.v4.private-choice-practice-only" ||
+					error?.messageRef.key === "grammar.v4.practice-no-tracking";
+				const sourceError =
+					problem && !practice
+						? {
+								file: problem.file,
+								line: problem.line,
+								column: error?.column ?? 1,
+								code:
+									error?.messageRef.key === "grammar.v4.detached-option-feedback"
+										? ("feedback-after-options" as const)
+										: ("source-error" as const),
+							}
+						: undefined;
 				return {
+					sourceError,
 					schema: 1 as const,
 					seq: this.seq,
 					sourceRevisions: Object.fromEntries(
@@ -197,7 +226,7 @@ export class OperationService {
 								],
 							]),
 					),
-					fields: canvasTextSnapshotFields(current, scope),
+					fields: sourceError ? [] : fields,
 				};
 			},
 			"read",

@@ -147,7 +147,10 @@ export function canvasPageAdmission(
 ) {
 	const scope = {
 		...captured,
-		lessonId: resolveReadIdentityId(current, captured.lessonId),
+		lessonId:
+			current.identity.sourceMappings.find(
+				(mapping) => mapping.file === captured.file && mapping.path.length === 0,
+			)?.id ?? resolveReadIdentityId(current, captured.lessonId),
 		pageId: resolveReadIdentityId(current, captured.pageId),
 		pageIds: captured.pageIds?.map((id) => resolveReadIdentityId(current, id)),
 	};

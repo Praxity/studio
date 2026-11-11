@@ -313,8 +313,8 @@ export function startStudioAuthor(
 				eventSeq = Math.max(eventSeq, snapshot.seq);
 				const liveStatus = status;
 				let refreshing = false;
-				// The current practice refusal; a later successful refresh replaces it.
-				let refusal = "";
+				// The current source or practice refusal; a later successful refresh replaces it.
+				let refusal = snapshot.sourceRefusal ?? "";
 				let editedPageId: string | undefined;
 				let refreshed = Promise.resolve();
 				let finishRefresh: (() => void) | undefined;
@@ -394,10 +394,18 @@ export function startStudioAuthor(
 							}
 							return current;
 						}
+						if (before.sourceRefusal) {
+							if (requested !== generation || controller.signal.aborted) return;
+							refusal = before.sourceRefusal;
+							view.update([]);
+							liveStatus.style.whiteSpace = "pre-wrap";
+							if (liveStatus.textContent !== refusal) liveStatus.textContent = refusal;
+							return;
+						}
 						const built = await rpc("canvasPreviewBuild", {});
-						const pageId = before.fields.find(
-							(field: { kind: string }) => field.kind === "page",
-						)?.ownerId;
+						const pageId =
+							before.fields.find((field: { kind: string }) => field.kind === "page")?.ownerId ??
+							built.pageId;
 						const page = built.pages.find((page: { id: string }) => page.id === pageId);
 						if (!page) throw new Error("Saved page is unavailable");
 						const entry = new URL(`${encodeURIComponent(page.slug)}.html`, built.entryUrl);
@@ -674,7 +682,8 @@ export function startStudioAuthor(
 					generation++;
 					void refresh();
 				};
-				status.textContent = view.unmapped ? messages.unmapped : messages.connected;
+				status.style.whiteSpace = "pre-wrap";
+				status.textContent = refusal || (view.unmapped ? messages.unmapped : messages.connected);
 				// A watcher may arrive while the first reply is held. Compare fresh bytes, not its sequence alone.
 				const startupSnapshot = eventSeq > snapshot.seq ? await port.snapshot() : snapshot;
 				if (

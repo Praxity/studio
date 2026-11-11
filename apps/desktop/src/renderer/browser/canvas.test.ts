@@ -21,6 +21,7 @@ async function mountCanvas(
 	messages: CanvasMessages,
 	build: () => Response | Promise<Response>,
 	page: () => string = () => reviewGate,
+	sourceRefusal = "",
 ) {
 	const dom = new JSDOM(
 		"<!doctype html><html><head></head><body><h1>Saved course</h1></body></html>",
@@ -76,7 +77,14 @@ async function mountCanvas(
 			baseRevision: "b".repeat(64),
 		},
 	];
-	const snapshot = { fields, seq: 0, servedSeq: 0, sourceRevisions: {}, servedSourceRevisions: {} };
+	const snapshot = {
+		fields: sourceRefusal ? [] : fields,
+		sourceRefusal,
+		seq: 0,
+		servedSeq: 0,
+		sourceRevisions: {},
+		servedSourceRevisions: {},
+	};
 	const fetch = vi.fn<typeof window.fetch>(async (input, options) => {
 		if (String(input).endsWith("/api/rpc")) {
 			const { method } = JSON.parse(String(options?.body)) as { method: string };
@@ -129,9 +137,10 @@ async function mountCanvas(
 	const panel = () =>
 		window.document.documentElement.firstElementChild?.shadowRoot?.firstElementChild?.shadowRoot;
 	const status = () => panel()?.querySelector('[role="status"]');
-	await vi.waitFor(() => expect(status()?.textContent).toBe(messages.connected));
+	await vi.waitFor(() => expect(status()?.textContent).toBe(sourceRefusal || messages.connected));
 	return {
 		window,
+		snapshot,
 		fetch,
 		view,
 		panel,
@@ -372,3 +381,23 @@ it.each(["network", "timeout", "server", "practice", "missing-page"] as const)(
 		}
 	},
 );
+it("shows the initial source refusal and recovers using the server-selected page without a title field", async () => {
+	const sourceRefusal =
+		"lesson.prax, line 23, column 1: Move correct: and incorrect: before the choice options in the .prax file to edit this lesson's text.";
+	const canvas = await mountCanvas(
+		canvasMessages.en,
+		() => new Response(JSON.stringify({ ok: true, result: { ...built, pageId: "page" } })),
+		() => "<!doctype html><html><head></head><body><h1>Repaired lesson</h1></body></html>",
+		sourceRefusal,
+	);
+	try {
+		expect(canvas.status()?.textContent).toBe(sourceRefusal);
+		canvas.snapshot.sourceRefusal = "";
+		canvas.changeSource();
+		await vi.waitFor(() => expect(canvas.status()?.textContent).toBe("Connected"));
+		expect(canvas.window.document.body.textContent).toBe("Repaired lesson");
+		expect(canvas.readLink()?.href).toContain("page.html");
+	} finally {
+		canvas.close();
+	}
+});
