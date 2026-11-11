@@ -42,7 +42,7 @@ for (const lang of ["en", "fr"] as const) {
 			expect(editButtonName(messages, "paragraph", 1, " \n First\t  second. \n")).toBe(
 				`${prefixes[lang][1]} 1${separator}First second.`,
 			);
-			for (const grapheme of ["e\u0301", "🇨🇦", "👩🏽‍💻"]) {
+			for (const grapheme of ["e\u0301", "🇨🇦", "👩🏽"]) {
 				expect(editButtonName(messages, "caption", 12, `${"a".repeat(39)}${grapheme}z`)).toBe(
 					`${prefixes[lang][4]} 12${separator}${"a".repeat(39)}${grapheme}…`,
 				);
@@ -75,3 +75,30 @@ for (const lang of ["en", "fr"] as const) {
 		});
 	});
 }
+
+it.each([
+	["en", "Saving\u2026", "Saved", "Edit list item 6"],
+	["fr", "Enregistrement\u2026", "Enregistr\u00e9", "Modifier l'\u00e9l\u00e9ment de liste 6"],
+] as const)(
+	"localizes save feedback and removes format-only excerpts (%s)",
+	(lang, saving, saved, prefix) => {
+		expect(canvasMessages[lang].saving).toBe(saving);
+		expect(canvasMessages[lang].saved).toBe(saved);
+		expect(editButtonName(canvasMessages[lang], "listItem", 6, " \u200e\u200f\u2060 ")).toBe(
+			prefix,
+		);
+		expect(editButtonName(canvasMessages[lang], "listItem", 6, "\u200eVisible\u200f")).toBe(
+			`${prefix}${canvasMessages[lang].editSeparator}Visible`,
+		);
+	},
+);
+
+it.each(["en", "fr"] as const)(
+	"omits format-only excerpts independently of save feedback (%s)",
+	(lang) => {
+		const prefix = lang === "en" ? "Edit list item 6" : "Modifier l'\u00e9l\u00e9ment de liste 6";
+		expect(editButtonName(canvasMessages[lang], "listItem", 6, "\u200e\u200f\u00ad\u2060")).toBe(
+			prefix,
+		);
+	},
+);

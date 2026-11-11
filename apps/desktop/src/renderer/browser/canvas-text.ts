@@ -326,6 +326,7 @@ export function mountCanvasTextFields(
 		shadow: ShadowRoot;
 		button: HTMLButtonElement;
 		captionContext: HTMLSpanElement;
+		progress: HTMLSpanElement;
 		panel: HTMLDivElement;
 		field: HTMLTextAreaElement;
 		error: HTMLParagraphElement;
@@ -713,6 +714,8 @@ export function mountCanvasTextFields(
 			else entry.heading.setAttribute("style", entry.originalStyle);
 			entry.button.hidden = false;
 			entry.panel.hidden = true;
+			entry.progress.textContent = state.outcome === "saved" ? messages.saved : "";
+			entry.progress.hidden = state.outcome !== "saved";
 			active = undefined;
 			discardAction = undefined;
 			if (fallback) {
@@ -727,7 +730,7 @@ export function mountCanvasTextFields(
 			reanchor(entry);
 			restoreFigureName(entry);
 			status.textContent = state.outcome === "saved" ? messages.saved : messages.cancelled;
-			status.classList.remove("announcement-only");
+			status.classList.toggle("announcement-only", state.outcome === "saved");
 			if (active) sizeField(active);
 			if (returnFocus) {
 				focus(entry.button);
@@ -739,10 +742,14 @@ export function mountCanvasTextFields(
 		entry.field.readOnly = state.phase !== "editing";
 		entry.panel.setAttribute("aria-busy", String(state.phase === "saving"));
 		if (state.phase === "saving") {
-			if (status.textContent) status.textContent = "";
+			entry.progress.hidden = false;
+			entry.progress.textContent = messages.saving;
+			status.classList.add("announcement-only");
+			if (status.textContent !== messages.saving) status.textContent = messages.saving;
 			entry.confirm.hidden = true;
 			discardAction = undefined;
 		}
+		if (state.phase !== "saving") entry.progress.hidden = true;
 		const stale = staleRefusalCodes.includes(state.error);
 		const identityPending = state.error === "identity-retirement-pending";
 		const text =
@@ -828,6 +835,11 @@ export function mountCanvasTextFields(
 			const captionContext = createElement("span");
 			captionContext.className = "caption-context";
 			captionContext.setAttribute("aria-hidden", "true");
+			const progress = createElement("span");
+			progress.className = "save-status";
+			progress.hidden = true;
+			// The band owns polite announcements; this adjacent text has no live role.
+			progress.style.marginInlineStart = "8px";
 			const panel = createElement("div");
 			panel.className = "field";
 			panel.hidden = true;
@@ -876,7 +888,7 @@ export function mountCanvasTextFields(
 			confirm.append(question, discard, keep);
 			recovery.append(copy, reload, retry, check);
 			panel.append(label, hint, field, error, recovery, confirm);
-			root.append(edit, panel, captionContext);
+			root.append(edit, panel, captionContext, progress);
 			shadow.append(style, root);
 			const entry: (typeof entries)[number] = {
 				binding,
@@ -887,6 +899,7 @@ export function mountCanvasTextFields(
 				shadow,
 				button: edit,
 				captionContext,
+				progress,
 				panel,
 				field,
 				error,
@@ -930,6 +943,7 @@ export function mountCanvasTextFields(
 				panel.hidden = false;
 				confirm.hidden = true;
 				field.value = binding.text;
+				progress.hidden = true;
 				composing = false;
 				status.textContent = "";
 				lifecycle?.opened();
