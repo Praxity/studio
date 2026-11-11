@@ -8,7 +8,7 @@ for (const language of ["en", "fr"] as const) {
 		page,
 	}) => {
 		const fr = language === "fr";
-		const source = `${fr ? "---\nlang: fr\n---\n\n" : ""}# Page\n\n## Original\n\nKeep.\n`;
+		const source = `${fr ? "---\nlang: fr\n---\n\n" : ""}# Page\n\n## Original\n\nKeep.\n\n- Parent\n  - Child\n`;
 		const stop = await startJourney(page.context(), { standaloneSource: source });
 		try {
 			const file = join(process.env.PRAXITY_BROWSER_PROJECT ?? "", "second.prax");
@@ -32,6 +32,13 @@ for (const language of ["en", "fr"] as const) {
 						: "This line would become a list item. Remove the list marker to keep it as text.",
 				],
 				[
+					"list-item",
+					"- Parent level 1 moved",
+					fr
+						? "Cette ligne deviendrait un \u00e9l\u00e9ment de liste. Retirez le marqueur de liste pour la garder comme texte."
+						: "This line would become a list item. Remove the list marker to keep it as text.",
+				],
+				[
 					"heading",
 					"Voir {page 3}",
 					fr
@@ -46,9 +53,13 @@ for (const language of ["en", "fr"] as const) {
 								? fr
 									? "Modifier le paragraphe 1 : Keep."
 									: "Edit paragraph 1: Keep."
-								: fr
-									? "Modifier le titre 2 : Original"
-									: "Edit heading 2: Original",
+								: kind === "list-item"
+									? fr
+										? "Modifier l'\u00e9l\u00e9ment de liste 1 : Parent"
+										: "Edit list item 1: Parent"
+									: fr
+										? "Modifier le titre 2 : Original"
+										: "Edit heading 2: Original",
 						exact: true,
 					})
 					.click();
