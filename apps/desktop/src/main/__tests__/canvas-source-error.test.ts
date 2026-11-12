@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rename, rm, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { splitBlocksIntoPages } from "@praxity/shared-blocks/viewer/split-pages";
@@ -41,7 +41,7 @@ it("admits the repro lesson's text fields with the compiler's transient lesson a
 	});
 	const page = splitBlocksIntoPages(input.blocks, "Example")[0];
 	if (!page.lessonId) throw new Error("Missing compiled lesson identity");
-	const scope = { file: "lesson.prax", lessonId: page.lessonId, pageId: page.id, pageIndex: 0 };
+	const scope = { lessonId: page.lessonId, pageId: page.id, pageIndex: 0 };
 	// Entering the author document runs the identity review gate after compilation.
 	await resolveLessonSourcesForWrite(root, {}, { identitySession });
 	const current = await resolveLessonSources(root, {}, { identitySession });
@@ -58,6 +58,13 @@ it("admits the repro lesson's text fields with the compiler's transient lesson a
 	]);
 	expect(canvasTextSnapshotFields(current)).toHaveLength(14);
 	expect(canvasTextSnapshotFields(current, scope)).toHaveLength(14);
+	expect(
+		canvasTextSnapshotFields(current, {
+			...scope,
+			file: "lesson.prax",
+			lessonId: "rt-00000000000000000000000000000000",
+		}),
+	).toEqual([]);
 	const service = new OperationService(root, identitySession);
 	const refused = await service.canvasTextSnapshot(scope);
 	expect(refused.fields).toEqual([]);
@@ -65,7 +72,7 @@ it("admits the repro lesson's text fields with the compiler's transient lesson a
 		file: "lesson.prax",
 		line: 23,
 		column: 1,
-		code: "feedback-after-options",
+		code: "detached-feedback",
 	});
 	const field = canvasTextSnapshotFields(current)[0];
 	expect(
@@ -105,7 +112,6 @@ it("leaves practice admission to its existing course-wide build refusal", async 
 	if (!page) throw new Error("Missing practice page");
 	expect(current.lessons.get("lesson.prax")?.hasErrors).toBe(true);
 	const snapshot = await new OperationService(root, identitySession).canvasTextSnapshot({
-		file: "lesson.prax",
 		lessonId: current.identity.snapshots[0].lessonId,
 		pageId: page.id,
 		pageIndex: 0,
@@ -121,11 +127,11 @@ it("returns only the source location for other source errors", async () => {
 		join(root, "lesson.prax"),
 		"# Lesson\n\n::: unknown-secret-type\nHidden body\n:::\n",
 	);
-	const current = await resolveLessonSources(root);
+	const identitySession = new CourseIdentitySession(root);
+	const current = await resolveLessonSources(root, {}, { identitySession });
 	const page = current.lessons.get("lesson.prax")?.pages[0];
 	if (!page) throw new Error("Missing page");
-	const snapshot = await new OperationService(root).canvasTextSnapshot({
-		file: "lesson.prax",
+	const snapshot = await new OperationService(root, identitySession).canvasTextSnapshot({
 		lessonId: current.identity.snapshots[0].lessonId,
 		pageId: page.id,
 		pageIndex: 0,
@@ -143,11 +149,11 @@ it("returns only the source location for other source errors", async () => {
 it.each([
 	[
 		"en",
-		"lesson.prax, line 6, column 1: Move correct: and incorrect: before the choice options in the .prax file to edit this lesson's text.",
+		"lesson.prax, line 6, column 1: Fix the feedback lines in this lesson's .prax file. Put correct: and incorrect: before the answer choices, and feedback: directly under its choice, with no blank line.",
 	],
 	[
 		"fr",
-		"lesson.prax, ligne 6, colonne 1 : Déplacez correct: et incorrect: avant les options du choix dans le fichier .prax pour modifier le texte de cette leçon.",
+		"lesson.prax, ligne 6, colonne 1 : Corrigez les lignes de rétroaction du fichier .prax pour en modifier le texte. Placez correct: et incorrect: avant les choix de réponse, et feedback: directement sous le choix concerné, sans ligne vide.",
 	],
 ])(
 	"returns a content-free source refusal in %s on the first scoped snapshot",
@@ -163,14 +169,15 @@ it.each([
 			"# Lesson\n\n::: choice Hidden authored question\n(x) Hidden answer\n( ) Other\ncorrect: Hidden feedback\n:::\n",
 		);
 		await writeFile(join(root, "other.prax"), "# Other lesson\n\nValid text.\n");
-		const current = await resolveLessonSources(root);
-		const scope = (file: string) => ({
-			file,
-			lessonId: "retired-lesson",
-			pageId: current.lessons.get(file)?.pages[0].id ?? "",
-			pageIndex: 0,
-		});
 		const session = await createStudioProjectSession(root, "test");
+		const inventory = (await session.invoke("canvasTextSnapshot", {})) as Awaited<
+			ReturnType<OperationService["canvasTextSnapshot"]>
+		>;
+		const scope = (file: string) => {
+			const field = inventory.fields.find((field) => field.file === file);
+			if (!field) throw new Error("Missing fixture fields");
+			return { lessonId: field.lessonId, pageId: field.pageId, pageIndex: field.pageIndex };
+		};
 		try {
 			const snapshot = await session.invoke("canvasTextSnapshot", {}, scope("lesson.prax"));
 			expect(snapshot).toMatchObject({ fields: [], sourceRefusal: message });
@@ -185,3 +192,85 @@ it.each([
 		}
 	},
 );
+
+for (const locale of ["en", "fr"] as const) {
+	it(`gives truthful feedback advice for a detached feedback: line in ${locale}`, async () => {
+		const root = await mkdtemp(join(tmpdir(), "canvas-option-feedback-"));
+		roots.push(root);
+		await writeFile(
+			join(root, "course.yaml"),
+			`title: Example\nlocale: ${locale}\nlessons: [lesson.prax]\n`,
+		);
+		await writeFile(
+			join(root, "lesson.prax"),
+			"# Lesson\n\n::: choice Hidden question\n(x) Hidden answer\n\nfeedback: Hidden feedback\n( ) Other\n:::\n",
+		);
+		const session = await createStudioProjectSession(root, "test");
+		try {
+			const inventory = (await session.invoke("canvasTextSnapshot", {})) as Awaited<
+				ReturnType<OperationService["canvasTextSnapshot"]>
+			>;
+			const field = inventory.fields[0];
+			const snapshot = await session.invoke(
+				"canvasTextSnapshot",
+				{},
+				{ lessonId: field.lessonId, pageId: field.pageId, pageIndex: 0 },
+			);
+			const message =
+				locale === "en"
+					? "lesson.prax, line 6, column 1: Fix the feedback lines in this lesson's .prax file. Put correct: and incorrect: before the answer choices, and feedback: directly under its choice, with no blank line."
+					: "lesson.prax, ligne 6, colonne 1 : Corrigez les lignes de rétroaction du fichier .prax pour en modifier le texte. Placez correct: et incorrect: avant les choix de réponse, et feedback: directement sous le choix concerné, sans ligne vide.";
+			expect(snapshot).toMatchObject({ fields: [], sourceRefusal: message });
+			expect(JSON.stringify(snapshot)).not.toMatch(/Hidden|grammar\.v4/);
+		} finally {
+			await session.close();
+		}
+	});
+
+	for (const action of ["delete", "rename"] as const) {
+		it(`${locale}: reports a lesson ${action} instead of admitting another lesson`, async () => {
+			const root = await mkdtemp(join(tmpdir(), "canvas-missing-lesson-"));
+			roots.push(root);
+			await writeFile(
+				join(root, "course.yaml"),
+				`title: Example\nlocale: ${locale}\nlessons: [lesson.prax, other.prax]\n`,
+			);
+			await writeFile(join(root, "lesson.prax"), "# Lesson\n\nOriginal text.\n");
+			await writeFile(join(root, "other.prax"), "# Other\n\nOther text.\n");
+			const session = await createStudioProjectSession(root, "test");
+			try {
+				const inventory = (await session.invoke("canvasTextSnapshot", {})) as Awaited<
+					ReturnType<OperationService["canvasTextSnapshot"]>
+				>;
+				const field = inventory.fields.find((field) => field.file === "lesson.prax");
+				if (!field) throw new Error("Missing original lesson");
+				if (action === "rename")
+					await rename(join(root, "lesson.prax"), join(root, "renamed.prax"));
+				else await unlink(join(root, "lesson.prax"));
+				const captured = {
+					file: field.file,
+					lessonId: field.lessonId,
+					pageId: field.pageId,
+					pageIndex: field.pageIndex,
+				};
+				const expected = {
+					fields: [],
+					lessonMissing: true,
+					sourceRefusal:
+						locale === "en"
+							? "This lesson was deleted or renamed. Restore its file or update the course's lesson list, then reopen Studio."
+							: "Cette leçon a été supprimée ou renommée. Restaurez son fichier ou mettez à jour la liste des leçons du cours, puis rouvrez Studio.",
+				};
+				// Check before and after the author repairs the manifest's old filename.
+				expect(await session.invoke("canvasTextSnapshot", {}, captured)).toMatchObject(expected);
+				await writeFile(
+					join(root, "course.yaml"),
+					`title: Example\nlocale: ${locale}\nlessons: [${action === "rename" ? "renamed.prax, " : ""}other.prax]\n`,
+				);
+				expect(await session.invoke("canvasTextSnapshot", {}, captured)).toMatchObject(expected);
+			} finally {
+				await session.close();
+			}
+		});
+	}
+}

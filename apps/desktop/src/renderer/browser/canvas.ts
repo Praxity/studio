@@ -321,6 +321,7 @@ export function startStudioAuthor(
 				const lifecycle = {
 					editingChanged(editing: boolean, focusHidden: boolean) {
 						modeToggle.setAttribute("aria-pressed", String(editing));
+						if (refusal) liveStatus.textContent = refusal;
 						if (!editing && focusHidden) modeToggle.focus({ preventScroll: true });
 					},
 					opened() {
@@ -621,6 +622,7 @@ export function startStudioAuthor(
 									announcement !== refusal
 								? announcement
 								: messages.connected;
+						refusal = "";
 						review.hidden = true;
 						if (liveStatus.textContent !== nextStatus) liveStatus.textContent = nextStatus;
 						scrollTo(position);

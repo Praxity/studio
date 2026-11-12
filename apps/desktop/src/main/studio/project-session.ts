@@ -1201,15 +1201,17 @@ export async function createStudioProjectSession(
 					const error = snapshot.sourceError;
 					return {
 						...snapshot,
-						sourceRefusal: error
-							? canvasSourceLocation(
-									error,
-									canvasMessages[locale][
-										error.code === "feedback-after-options" ? "feedbackAfterOptions" : "sourceError"
-									],
-									locale,
-								)
-							: undefined,
+						sourceRefusal: snapshot.lessonMissing
+							? canvasMessages[locale].lessonGone
+							: error
+								? canvasSourceLocation(
+										error,
+										canvasMessages[locale][
+											error.code === "detached-feedback" ? "detachedFeedback" : "sourceError"
+										],
+										locale,
+									)
+								: undefined,
 						servedSeq: canvasPageScope.editorSeq,
 						servedSourceRevisions: canvasPageScope.sourceRevisions,
 					};

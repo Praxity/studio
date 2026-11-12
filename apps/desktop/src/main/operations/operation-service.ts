@@ -35,6 +35,7 @@ import {
 	type ResolvedCourseIdentity,
 	readCourseIdentity,
 	resolveCourseIdentity,
+	resolveReadIdentityId,
 	resolveReadOperation,
 } from "../identity-store";
 import { readLessonSource } from "../lesson-source";
@@ -185,7 +186,13 @@ export class OperationService {
 			async (root) => {
 				const current = await this.snapshot(root, true, this.canvasIdentitySession);
 				const fields = canvasTextSnapshotFields(current, scope);
-				const file = scope?.file ?? fields[0]?.file;
+				const file = scope
+					? current.identity.sourceMappings.find(
+							(mapping) =>
+								mapping.path.length === 0 &&
+								mapping.id === resolveReadIdentityId(current, scope.lessonId),
+						)?.file
+					: undefined;
 				const problem = scope && file ? identitySourceError(current, [file]) : undefined;
 				const error =
 					problem &&
@@ -208,12 +215,14 @@ export class OperationService {
 								column: error?.column ?? 1,
 								code:
 									error?.messageRef.key === "grammar.v4.detached-option-feedback"
-										? ("feedback-after-options" as const)
+										? ("detached-feedback" as const)
 										: ("source-error" as const),
 							}
 						: undefined;
+				const lessonMissing = Boolean(scope && (!file || (scope.file && scope.file !== file)));
 				return {
 					sourceError,
+					lessonMissing,
 					schema: 1 as const,
 					seq: this.seq,
 					sourceRevisions: Object.fromEntries(
@@ -226,7 +235,7 @@ export class OperationService {
 								],
 							]),
 					),
-					fields: sourceError ? [] : fields,
+					fields: sourceError || lessonMissing ? [] : fields,
 				};
 			},
 			"read",

@@ -15,8 +15,10 @@ export const canvasMessages = {
 		refreshFailed: "Studio could not refresh the saved page. Reload to try again.",
 		failed: "Studio could not connect. Reopen the Studio launch link.",
 		sourceError: "Fix the source error in this lesson's .prax file to edit its text.",
-		feedbackAfterOptions:
-			"Move correct: and incorrect: before the choice options in the .prax file to edit this lesson's text.",
+		detachedFeedback:
+			"Fix the feedback lines in this lesson's .prax file. Put correct: and incorrect: before the answer choices, and feedback: directly under its choice, with no blank line.",
+		lessonGone:
+			"This lesson was deleted or renamed. Restore its file or update the course's lesson list, then reopen Studio.",
 		sourceLocation: "{file}, line {line}, column {column}: {message}",
 		editButton: "Edit",
 		editHeading: "Edit heading {n}",
@@ -72,9 +74,12 @@ export const canvasMessages = {
 		unmapped: "Certains textes ne correspondent pas à la page enregistrée.",
 		refreshFailed: "Studio n'a pas pu actualiser la page enregistrée. Rechargez pour réessayer.",
 		failed: "Studio n'a pas pu se connecter. Rouvrez le lien de lancement de Studio.",
-		sourceError: "Corrigez l’erreur dans le fichier .prax de cette leçon pour modifier son texte.",
-		feedbackAfterOptions:
-			"Déplacez correct: et incorrect: avant les options du choix dans le fichier .prax pour modifier le texte de cette leçon.",
+		sourceError:
+			"Corrigez l'erreur dans le fichier .prax de cette leçon pour en modifier le texte.",
+		detachedFeedback:
+			"Corrigez les lignes de rétroaction du fichier .prax pour en modifier le texte. Placez correct: et incorrect: avant les choix de réponse, et feedback: directement sous le choix concerné, sans ligne vide.",
+		lessonGone:
+			"Cette leçon a été supprimée ou renommée. Restaurez son fichier ou mettez à jour la liste des leçons du cours, puis rouvrez Studio.",
 		sourceLocation: "{file}, ligne {line}, colonne {column} : {message}",
 		editButton: "Modifier",
 		editHeading: "Modifier le titre {n}",

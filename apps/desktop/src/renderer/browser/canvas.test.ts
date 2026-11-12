@@ -107,9 +107,10 @@ async function mountCanvas(
 				},
 			}),
 		);
+	let editing = true;
 	const view: ReturnType<typeof mountCanvasTextFields> = {
 		setUpdating: vi.fn(),
-		isEditing: () => true,
+		isEditing: () => editing,
 		setEditing: async () => {},
 		isOpen: () => false,
 		unmapped: false,
@@ -126,6 +127,11 @@ async function mountCanvas(
 		messages,
 		(...args) => {
 			lifecycleReload = args[9]?.reload;
+			view.setEditing = async (value) => {
+				editing = value;
+				args[4].textContent = value ? messages.editingOn : messages.editingOff;
+				args[9]?.editingChanged?.(value, false);
+			};
 			return view;
 		},
 		createCanvasTextSession,
@@ -383,7 +389,7 @@ it.each(["network", "timeout", "server", "practice", "missing-page"] as const)(
 );
 it("shows the initial source refusal and recovers using the server-selected page without a title field", async () => {
 	const sourceRefusal =
-		"lesson.prax, line 23, column 1: Move correct: and incorrect: before the choice options in the .prax file to edit this lesson's text.";
+		"lesson.prax, line 23, column 1: Fix the feedback lines in this lesson's .prax file. Put correct: and incorrect: before the answer choices, and feedback: directly under its choice, with no blank line.";
 	const canvas = await mountCanvas(
 		canvasMessages.en,
 		() => new Response(JSON.stringify({ ok: true, result: { ...built, pageId: "page" } })),
@@ -392,12 +398,51 @@ it("shows the initial source refusal and recovers using the server-selected page
 	);
 	try {
 		expect(canvas.status()?.textContent).toBe(sourceRefusal);
+		await canvas.view.setEditing(false);
+		expect(canvas.status()?.textContent).toBe(sourceRefusal);
+		await canvas.view.setEditing(true);
+		expect(canvas.status()?.textContent).toBe(sourceRefusal);
 		canvas.snapshot.sourceRefusal = "";
 		canvas.changeSource();
 		await vi.waitFor(() => expect(canvas.status()?.textContent).toBe("Connected"));
 		expect(canvas.window.document.body.textContent).toBe("Repaired lesson");
 		expect(canvas.readLink()?.href).toContain("page.html");
+		await canvas.view.setEditing(false);
+		await canvas.view.setEditing(true);
+		expect(canvas.status()?.textContent).toBe(canvasMessages.en.editingOn);
 	} finally {
 		canvas.close();
 	}
 });
+
+it.each(["en", "fr"] as const)(
+	"%s: a deleted or renamed lesson keeps its page with a refusal instead of Connected",
+	async (locale) => {
+		const canvas = await mountCanvas(
+			canvasMessages[locale],
+			() => new Response(JSON.stringify({ ok: true, result: { ...built, pageId: "page" } })),
+			() => "<!doctype html><html><head></head><body><h1>Other course page</h1></body></html>",
+		);
+		try {
+			const originalBody = canvas.window.document.body.innerHTML;
+			canvas.snapshot.fields = [];
+			canvas.snapshot.sourceRefusal = canvasMessages[locale].lessonGone;
+			canvas.changeSource();
+			await vi.waitFor(() =>
+				expect(canvas.status()?.textContent).toBe(canvasMessages[locale].lessonGone),
+			);
+			expect(canvas.view.update).toHaveBeenCalledWith([]);
+			expect(canvas.window.document.body.innerHTML).toBe(originalBody);
+			expect(
+				canvas.fetch.mock.calls.some(([, options]) =>
+					String(options?.body).includes("canvasPreviewBuild"),
+				),
+			).toBe(false);
+			await canvas.view.setEditing(false);
+			await canvas.view.setEditing(true);
+			expect(canvas.status()?.textContent).toBe(canvasMessages[locale].lessonGone);
+		} finally {
+			canvas.close();
+		}
+	},
+);

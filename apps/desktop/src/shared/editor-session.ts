@@ -678,7 +678,7 @@ export { seedSchema as draftSeedSchema };
 
 /** Captured compiler page identity and position, independent of course DOM markers. */
 export interface CanvasPageScope {
-	/** Lesson file captured by the compiler, retained across transient identity changes. */
+	/** Detect a deleted or renamed source file; never a replacement for identity admission. */
 	file?: string;
 	/** Sequence captured before compiling this retained author artifact. */
 	editorSeq?: number;
