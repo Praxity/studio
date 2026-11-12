@@ -24,7 +24,7 @@ Second paragraph.
 :::
 
 ::: figure
-![Exact alt](data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='40'/%3E)
+![Exact alt](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAAAoCAIAAADmAupWAAAARElEQVR42u3PMQ0AAAgDsPm3yM2LBlzw0KQGmup5JcLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwrcWWkmA8H9iA+IAAAAASUVORK5CYII=)
 First caption.
 
 Second caption.

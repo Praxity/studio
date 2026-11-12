@@ -30,6 +30,7 @@ export const canvasMessages = {
 			"Enter saves. Leaving the field saves. Esc cancels. Shift+Enter adds a wrapped line. Uses .prax inline syntax.",
 		textLabel: "Text",
 		hint: "Enter saves. Leaving the field saves. Esc cancels. Uses .prax inline syntax.",
+		saving: "Saving…",
 		saved: "Saved",
 		cancelled: "Cancelled",
 		fileChanged: "The file changed. Your text is kept. Copy it, then reload.",
@@ -87,6 +88,7 @@ export const canvasMessages = {
 			"Entrée enregistre. Quitter le champ enregistre. Échap annule. Maj+Entrée ajoute une ligne au paragraphe. Syntaxe .prax en ligne.",
 		textLabel: "Texte",
 		hint: "Entrée enregistre. Quitter le champ enregistre. Échap annule. Syntaxe .prax en ligne.",
+		saving: "Enregistrement…",
 		saved: "Enregistré",
 		cancelled: "Annulé",
 		fileChanged:
@@ -143,7 +145,11 @@ export function editButtonName(
 	text: string,
 ) {
 	const prefix = messages[editTemplates[kind]].replace("{n}", String(n));
-	const normalized = text.replace(/\s+/gu, " ").trim();
+	const normalized = text
+		.replace(/(?![\u200c\u200d\u{e0020}-\u{e007f}])\p{Cf}/gu, "")
+		.replace(/\s+/gu, " ")
+		.trim();
+	if (/^[\s\p{Cf}]*$/u.test(normalized)) return prefix;
 	let excerpt = "";
 	let count = 0;
 	for (const { segment } of graphemes.segment(normalized)) {

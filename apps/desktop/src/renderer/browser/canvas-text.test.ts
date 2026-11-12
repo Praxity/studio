@@ -692,7 +692,7 @@ function mountTextField(reply: Promise<CanvasTextReply>) {
 	const inPlaceReload = vi.fn();
 	const apply = vi.fn(() => reply);
 	const view = mountCanvasTextFields(
-		[binding],
+		[{ ...binding }],
 		{ apply, snapshot: async () => ({ fields: [binding] }) },
 		canvasMessages.en,
 		"",
@@ -789,6 +789,73 @@ it("keeps the refresh diagnostic without another live update when updating is al
 		expect(announcements).toEqual([]);
 		finish({ ok: true, files: [{ path: binding.file, toRevision: "b".repeat(64) }] });
 		await vi.waitFor(() => expect(ui.status.textContent).toBe(canvasMessages.en.saved));
+	} finally {
+		observer.disconnect();
+		ui.close();
+	}
+});
+
+it.each([
+	["empty-text", "emptyText", ""],
+	["stale", "fileChanged", "Changed text"],
+] as const)(
+	"announces each repeated refusal once without announcing save progress: %s",
+	async (code, message, text) => {
+		const ui = mountTextField(Promise.resolve({ ok: false, code }));
+		const changes: string[] = [];
+		const observer = new ui.win.MutationObserver(() => changes.push(ui.status.textContent ?? ""));
+		try {
+			ui.status.textContent = canvasMessages.en.connected;
+			observer.observe(ui.status, { childList: true, characterData: true, subtree: true });
+			ui.click(canvasMessages.en.editButton);
+			await Promise.resolve();
+			ui.field.value = text;
+			ui.field.dispatchEvent(new ui.win.Event("input", { bubbles: true }));
+			for (let attempt = 1; attempt <= 2; attempt++) {
+				ui.field.dispatchEvent(
+					new ui.win.KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+				);
+				await vi.waitFor(() => expect(ui.status.textContent).toBe(canvasMessages.en[message]));
+				expect(changes).toEqual(
+					Array.from({ length: attempt }, () => ["", canvasMessages.en[message]]).flat(),
+				);
+			}
+			expect(ui.apply).toHaveBeenCalledTimes(2);
+		} finally {
+			observer.disconnect();
+			ui.close();
+		}
+	},
+);
+
+it("shows held save progress locally and announces only the saved outcome", async () => {
+	let finish!: (reply: CanvasTextReply) => void;
+	const ui = mountTextField(
+		new Promise((resolve) => {
+			finish = resolve;
+		}),
+	);
+	const changes: string[] = [];
+	const observer = new ui.win.MutationObserver(() => changes.push(ui.status.textContent ?? ""));
+	try {
+		ui.status.textContent = canvasMessages.en.connected;
+		observer.observe(ui.status, { childList: true, characterData: true, subtree: true });
+		ui.click(canvasMessages.en.editButton);
+		await Promise.resolve();
+		ui.field.value = "Changed text";
+		ui.field.dispatchEvent(new ui.win.Event("input", { bubbles: true }));
+		ui.field.dispatchEvent(new ui.win.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+		await Promise.resolve();
+		const progress = (ui.field.getRootNode() as ShadowRoot).querySelector(".save-status");
+		expect(progress?.textContent).toBe(canvasMessages.en.saving);
+		expect(progress?.hasAttribute("role")).toBe(false);
+		expect(progress?.hasAttribute("aria-live")).toBe(false);
+		expect(ui.status.textContent).toBe("");
+		expect(changes).toEqual([""]);
+		finish({ ok: true, files: [{ path: binding.file, toRevision: "b".repeat(64) }] });
+		await vi.waitFor(() => expect(ui.status.textContent).toBe(canvasMessages.en.saved));
+		expect(changes).toEqual(["", canvasMessages.en.saved]);
+		expect(progress?.textContent).toBe(canvasMessages.en.saved);
 	} finally {
 		observer.disconnect();
 		ui.close();
