@@ -169,7 +169,8 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		this.session.startedAt ??= startedAt;
 		this.loadSuspendDataObject();
 		const completion = this.getLmsValue("cmi.completion_status") || "unknown";
-		if (!this.suspendData.unreadable && ["unknown", "not attempted"].includes(completion)) {
+		// Initial incomplete certifies no progress, even when the saved state is unreadable.
+		if (["unknown", "not attempted"].includes(completion)) {
 			if (!this.setLmsValue("cmi.completion_status", "incomplete")) return false;
 		}
 		this.interactionCount =

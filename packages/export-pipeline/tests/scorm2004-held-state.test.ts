@@ -54,10 +54,16 @@ describe("SCORM 2004 unreadable suspend data", () => {
 		expect(writes).toEqual([]);
 		expect(values["cmi.suspend_data"]).toBe(truncated);
 	});
-	it.each(["completed", "unknown", ""])(
-		"keeps prior result %j through commit and explicit finish",
-		(completion) => {
+	it.each([
+		["completed", "completed"],
+		["unknown", "incomplete"],
+		["", "incomplete"],
+	])(
+		"refuses outcome reporting after prior completion %j through commit and explicit finish",
+		(completion, expectedCompletion) => {
 			const { runtime, values, writes } = fixture(truncated, completion);
+			expect(writes).toEqual(completion === "completed" ? [] : ["cmi.completion_status"]);
+			writes.length = 0;
 			runtime.setCompletion("completed");
 			runtime.setCompletion("failed");
 			runtime.setSuccess("failed");
@@ -72,7 +78,7 @@ describe("SCORM 2004 unreadable suspend data", () => {
 				),
 			).toEqual([]);
 			expect(values["cmi.suspend_data"]).toBe(truncated);
-			expect(values["cmi.completion_status"]).toBe(completion);
+			expect(values["cmi.completion_status"]).toBe(expectedCompletion);
 			expect(values["cmi.success_status"]).toBe("passed");
 			expect(values["cmi.score.raw"]).toBe("100");
 		},
