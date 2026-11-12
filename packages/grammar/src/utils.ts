@@ -13,13 +13,62 @@ export function positionalId(type: string): string {
 	return `${type}-${blockCounter++}`;
 }
 
-const BLOCKED_SCHEMES = /^(javascript|vbscript|blob):/i;
-const BLOCKED_DATA = /^data:text\/html/i;
+const SAFE_URL_SCHEMES = new Set(["http", "https", "mailto", "tel"]);
+const URL_TAB_OR_NEWLINE = /[\t\n\r]/g;
+const URL_SCHEME = /^([a-z][a-z\d+.-]*):/i;
+// Raster images only: an SVG document can carry script.
+const RASTER_IMAGE_DATA_URL = /^data:image\/(?!svg\+xml)/i;
+const SVG_IMAGE_DATA_URL = /^data:image\/svg\+xml/i;
 
-/** Reject dangerous URL schemes in media src attributes. */
+/** Why a URL is refused; each code has its own diagnostic that names what to use instead. */
+export type UrlRefusal = "svg-data-url" | "unsafe-media-url" | "unsafe-link-url";
+
+/**
+ * Whether a URL from course source may go into an href: relative URLs, fragments, and http,
+ * https, mailto and tel. Every other scheme is refused, including `data:`, so an unknown or
+ * disguised scheme never reaches the page.
+ */
+export function isSafeUrl(url: string): boolean {
+	return linkUrlRefusal(url) === undefined;
+}
+
+/** Media src attributes accept the same URLs plus raster image `data:` URLs. */
 export function isSafeMediaUrl(url: string): boolean {
-	const trimmed = url.trim();
-	return !BLOCKED_SCHEMES.test(trimmed) && !BLOCKED_DATA.test(trimmed);
+	return mediaUrlRefusal(url) === undefined;
+}
+
+export function linkUrlRefusal(url: string): UrlRefusal | undefined {
+	return urlRefusal(url, false);
+}
+
+export function mediaUrlRefusal(url: string): UrlRefusal | undefined {
+	return urlRefusal(url, true);
+}
+
+/**
+ * Reads the scheme as the URL Standard's basic URL parser does
+ * (https://url.spec.whatwg.org/#concept-basic-url-parser), so text the browser treats as
+ * `javascript:` is refused here too:
+ * 1. "Remove any leading and trailing C0 control or space from input" (U+0000 to U+0020).
+ *    Only the leading run can change the scheme or the anchored `data:` check, so trailing
+ *    characters are left alone.
+ * 2. "Remove all ASCII tab or newline from input" (U+0009, U+000A, U+000D).
+ * 3. Scheme start and scheme states: an ASCII alpha, then ASCII alphanumerics, "+", "-" or ".",
+ *    ended by ":". Anything else has no scheme and resolves against the page.
+ * Each step is a single linear pass; a backtracking edge-trim regex took quadratic time on long
+ * whitespace runs.
+ */
+function urlRefusal(url: string, media: boolean): UrlRefusal | undefined {
+	let start = 0;
+	while (start < url.length && url.charCodeAt(start) <= 0x20) start++;
+	const normalized = url.slice(start).replace(URL_TAB_OR_NEWLINE, "");
+	const scheme = URL_SCHEME.exec(normalized)?.[1]?.toLowerCase();
+	if (scheme === undefined) return undefined;
+	if (scheme === "data" && media) {
+		if (RASTER_IMAGE_DATA_URL.test(normalized)) return undefined;
+		if (SVG_IMAGE_DATA_URL.test(normalized)) return "svg-data-url";
+	} else if (scheme !== "data" && SAFE_URL_SCHEMES.has(scheme)) return undefined;
+	return media ? "unsafe-media-url" : "unsafe-link-url";
 }
 
 /** A caption attachment is a safe VTT path or an HTTPS VTT URL. */

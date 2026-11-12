@@ -1581,6 +1581,8 @@ export class IdentitySourceError extends Error {
 		readonly copyCountDropped = false,
 		readonly sameTitlePages = false,
 		readonly code: "bad_yaml" | "source_invalid" = "source_invalid",
+		/** The first error's grammar code, such as "svg-data-url". */
+		readonly diagnostic?: string,
 	) {
 		super(`${file}:${line}`);
 	}
@@ -1616,7 +1618,17 @@ function lessonIdentitySourceError(
 	const error = lesson.errors.find(
 		(error) => error.level === "error" || error.level === "critical",
 	);
-	return error ? new IdentitySourceError(file, error.line ?? 1) : undefined;
+	return error
+		? new IdentitySourceError(
+				file,
+				error.line ?? 1,
+				false,
+				false,
+				false,
+				"source_invalid",
+				error.messageRef.key.replace(/^grammar\.v4\./, ""),
+			)
+		: undefined;
 }
 
 function designOnlySourceEdit(before: string | null | undefined, after: string): boolean {
