@@ -120,24 +120,29 @@ export class VariableStore {
 	}
 
 	private persist(): boolean {
-		const compactVariables = this.getPersistableVariables();
-		const existing = JSON.parse(this.runtime.getSuspendData() || "{}");
-		if (Object.keys(compactVariables).length === 0) {
-			delete existing[this.persistKey];
-			delete existing[this.legacyPersistKey];
-		} else {
-			existing[this.persistKey] = compactVariables;
-			delete existing[this.legacyPersistKey];
+		try {
+			const compactVariables = this.getPersistableVariables();
+			const existing = JSON.parse(this.runtime.getSuspendData() || "{}");
+			if (Object.keys(compactVariables).length === 0) {
+				delete existing[this.persistKey];
+				delete existing[this.legacyPersistKey];
+			} else {
+				existing[this.persistKey] = compactVariables;
+				delete existing[this.legacyPersistKey];
+			}
+			const serialized = JSON.stringify(existing);
+			if (serialized.length > 3800) {
+				console.warn(
+					`[logic] Variable suspend_data payload is ${serialized.length} chars; SCORM 1.2 limit is 4096.`,
+				);
+			}
+			// A refused save must not certify progress or retry with the other keys removed.
+			if (this.runtime.setSuspendData(serialized) === false) return false;
+			return this.runtime.commit() !== false;
+		} catch (error) {
+			console.warn("[logic] Variable not saved; existing suspend data kept.", error);
+			return false;
 		}
-		const serialized = JSON.stringify(existing);
-		if (serialized.length > 3800) {
-			console.warn(
-				`[logic] Variable suspend_data payload is ${serialized.length} chars; SCORM 1.2 limit is 4096.`,
-			);
-		}
-		// A refused save must not certify progress or retry with the other keys removed.
-		if (this.runtime.setSuspendData(serialized) === false) return false;
-		return this.runtime.commit() !== false;
 	}
 
 	private restore(): void {

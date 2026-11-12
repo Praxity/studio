@@ -3,22 +3,35 @@ import type { ScormSessionState } from "./session";
 /** Keep unreadable LMS bytes for recovery instead of certifying an empty attempt. */
 export class SuspendDataReader<T> {
 	unreadable = false;
+	hasNoSavedData = false;
 	constructor(
 		private readonly parse: (raw: string) => T | null,
 		private readonly empty: () => T,
+		private readonly version: "1.2" | "2004",
 	) {}
 
+	saved(): void {
+		this.hasNoSavedData = false;
+	}
+
+	// Guard checks reuse an empty read; explicit reads must still see later host data.
 	load(
-		read: () => string,
+		read: () => string | undefined,
 		session: ScormSessionState | null,
 		onUnreadable?: (raw: string) => void,
+		refreshEmpty = false,
 	): T {
-		if (this.unreadable) return this.empty();
+		if (this.unreadable || (this.hasNoSavedData && !refreshEmpty)) return this.empty();
 		const raw = read();
+		if (raw === undefined) return this.empty();
+		this.hasNoSavedData = raw === "";
 		if (raw) {
 			const data = this.parse(raw);
 			if (data) return data;
 			this.unreadable = true;
+			console.warn(
+				`[SCORM ${this.version}] Saved progress is unreadable (${raw.length} characters); suspend data writes refused.`,
+			);
 			if (session) delete session.pendingCompletion;
 			onUnreadable?.(raw);
 		}

@@ -42,7 +42,7 @@ it("keeps all SCORM 1.2 keys and propagates storage-full when a variable cannot 
 		const original = values["cmi.suspend_data"];
 		const store = new VariableStore(definitions, runtime);
 		writes.length = 0;
-		expect(() => store.set("label", "v".repeat(1000))).toThrow("ESCORM12STORAGE");
+		expect(store.set("label", "v".repeat(1000))).toBe(false);
 		expect(values["cmi.suspend_data"]).toBe(original);
 		expect(runtime.getSuspendData()).toBe(custom);
 		expect(runtime.getVisitedPages()).toEqual(["p1"]);
@@ -78,7 +78,7 @@ it("leaves unparseable SCORM 2004 bytes untouched and reports unreadable state o
 	const runtime = new Scorm2004Runtime(win);
 	expect(runtime.initialize()).toBe(true);
 	const store = new VariableStore(definitions, runtime);
-	expect(() => store.set("label", "new value")).toThrow();
+	expect(store.set("label", "new value")).toBe(false);
 	expect(saved).toBe(original);
 	expect(write).not.toHaveBeenCalled();
 	expect(commit).not.toHaveBeenCalled();
@@ -110,11 +110,7 @@ it.each(["parse", "commit", "refused-write", "refused-commit"])(
 			setSuspendData: write,
 			commit,
 		});
-		if (failure === "refused-write" || failure === "refused-commit") {
-			expect(store.set("label", "value")).toBe(false);
-		} else {
-			expect(() => store.set("label", "value")).toThrow();
-		}
+		expect(store.set("label", "value")).toBe(false);
 		expect(write).toHaveBeenCalledTimes(failure === "parse" ? 0 : 1);
 		if (failure === "commit" || failure === "refused-commit") {
 			expect(JSON.parse(saved)).toEqual({

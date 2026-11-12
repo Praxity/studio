@@ -104,6 +104,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 	private readonly suspendData = new SuspendDataReader<Scorm12SuspendData>(
 		(raw) => (this.suspendDataCodec?.parse ?? parseScorm12SuspendData)(raw),
 		() => ({ visitedPages: [], interactions: [] }),
+		"1.2",
 	);
 	private heldDrafts?: LocalStorageRuntime;
 	private heldMemory = new Map<string, LearnerStateValue>();
@@ -127,7 +128,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 		if (this.session?.commitRefused) return false;
 		this.ensureInitialized();
 		if (this.submission) throw new Error("A SCORM submission is already pending");
-		const data = this.loadSuspendPayload();
+		const data = this.loadSuspendPayload(true);
 		if (this.suspendData.unreadable) return false;
 		this.submission = { blockId, data };
 		try {
@@ -241,7 +242,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 
 	trackPageVisit(pageId: string): void {
 		this.ensureInitialized();
-		const data = this.loadSuspendPayload();
+		const data = this.loadSuspendPayload(true);
 		if (!data.visitedPages.includes(pageId)) {
 			data.visitedPages.push(pageId);
 		}
@@ -250,7 +251,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 
 	getVisitedPages(): string[] {
 		this.ensureInitialized();
-		return this.loadSuspendPayload().visitedPages;
+		return this.loadSuspendPayload(true).visitedPages;
 	}
 
 	// ---- interaction tracking ----------------------------------------------
@@ -266,7 +267,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 		this.ensureInitialized();
 		if (this.submission && this.submission.blockId !== id)
 			throw new Error("Another SCORM submission is pending");
-		const data = this.loadSuspendPayload();
+		const data = this.loadSuspendPayload(true);
 		if (options?.assessmentType === "choice" && response.length > 255) {
 			this.submission = undefined;
 			this.blockSaveResults.set(id, { status: "not-saved", code: "runtime-write-failed" });
@@ -354,13 +355,13 @@ export class Scorm12Runtime implements SCORMRuntime {
 
 	getInteractions(): InteractionRecord[] {
 		this.ensureInitialized();
-		let interactions = this.loadSuspendPayload().interactions;
+		let interactions = this.loadSuspendPayload(true).interactions;
 		interactions = interactions.filter((record) => this.blockStatePolicy[record.id] !== "device");
 		return interactions.map((record) => ({ ...record, ...assessmentEvidenceMetadata(record) }));
 	}
 
 	getInteractionEvidence(): InteractionEvidence[] | null {
-		return readScorm12InteractionEvidence(this.loadSuspendPayload());
+		return readScorm12InteractionEvidence(this.loadSuspendPayload(true));
 	}
 
 	setCourseFailure(failed: boolean): void {
@@ -451,14 +452,14 @@ export class Scorm12Runtime implements SCORMRuntime {
 	 */
 	setSuspendData(data: string): boolean {
 		this.ensureInitialized();
-		const payload = this.loadSuspendPayload();
+		const payload = this.loadSuspendPayload(true);
 		payload.custom = data;
 		return this.saveSuspendPayload(payload);
 	}
 
 	getSuspendData(): string | null {
 		this.ensureInitialized();
-		const payload = this.loadSuspendPayload();
+		const payload = this.loadSuspendPayload(true);
 		return payload.custom ?? null;
 	}
 
@@ -556,10 +557,10 @@ export class Scorm12Runtime implements SCORMRuntime {
 
 	// ---- suspend data payload management -----------------------------------
 
-	private loadSuspendPayload(): Scorm12SuspendData {
+	private loadSuspendPayload(refreshEmpty = false): Scorm12SuspendData {
 		if (this.submission) return JSON.parse(JSON.stringify(this.submission.data));
 		return this.suspendData.load(
-			() => (this.canCallLms() ? (this.api?.LMSGetValue("cmi.suspend_data") ?? "") : ""),
+			() => (this.canCallLms() ? (this.api?.LMSGetValue("cmi.suspend_data") ?? "") : undefined),
 			this.session,
 			(raw) => {
 				// Recovery stays in this tab and cannot cross courses, learners or damaged attempts.
@@ -577,6 +578,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 					}
 				}
 			},
+			refreshEmpty,
 		);
 	}
 
@@ -596,6 +598,8 @@ export class Scorm12Runtime implements SCORMRuntime {
 					this.suspendDataCodec.parse,
 				)
 			: fitScorm12SuspendData(data);
-		return this.lmsSetValue("cmi.suspend_data", serialized);
+		const saved = this.lmsSetValue("cmi.suspend_data", serialized);
+		if (saved) this.suspendData.saved();
+		return saved;
 	}
 }
