@@ -4,7 +4,7 @@ import type {
 	OperationTarget,
 } from "@praxity/grammar/src/operations/contract.ts";
 import { applyEdits, type SourceEdit } from "@praxity/grammar/src/source-edit.ts";
-import { isSafeMediaUrl } from "@praxity/grammar/src/utils.ts";
+import { isSafeUrl } from "@praxity/grammar/src/utils.ts";
 import { tokenizeInline } from "@praxity/grammar/src/v4/inline.ts";
 import { tokenizeLesson } from "@praxity/grammar/src/v4/lex/index.ts";
 import {
@@ -127,7 +127,7 @@ export function planInlineEdits(
 			if (args.definition !== undefined || args.rename !== undefined)
 				return fail("invalid-args", target);
 			if (typeof args.target === "string") {
-				if (!isSafeMediaUrl(args.target)) return fail("not-allowed", target);
+				if (!isSafeUrl(args.target)) return fail("not-allowed", target);
 				write(
 					target.file,
 					token,

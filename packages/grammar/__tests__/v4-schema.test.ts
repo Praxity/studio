@@ -162,12 +162,12 @@ describe("G4 schema public interface", () => {
 		expect(parse(source).diagnostics.map((d) => d.code)).toContain("disallowed-child");
 	});
 	it.each([
-		"# P\n::: button [Unsafe](javascript:alert)\n:::",
-		"# P\n::: embed http://example.com/embed\n:::",
-		"# P\n::: embed https://praxity.io/embed\n:::",
-		"# P\n::: video javascript:alert\n:::",
-	])("rejects unsafe subjects %s", (source) => {
-		expect(parse(source).diagnostics.map((d) => d.code)).toContain("bad-subject");
+		["# P\n::: button [Unsafe](javascript:alert)\n:::", "unsafe-link-url"],
+		["# P\n::: embed http://example.com/embed\n:::", "bad-subject"],
+		["# P\n::: embed https://praxity.io/embed\n:::", "bad-subject"],
+		["# P\n::: video javascript:alert\n:::", "unsafe-media-url"],
+	])("rejects unsafe subjects %s", (source, code) => {
+		expect(parse(source).diagnostics.map((d) => d.code)).toContain(code);
 	});
 	it.each(types)("%s exposes only valid default settings", (type) => {
 		for (const setting of Object.values(BLOCK_SCHEMA[type].settings)) {
