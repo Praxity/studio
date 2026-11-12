@@ -26,6 +26,10 @@ These settings apply to blocks, images, headings, dividers, items and back faces
 | `entrance` | `none`, `fade`, `slide`, `scale` | `none` | Entrance animation. |
 | `level` | integer, at least 1, at most 6 | Omitted | Heading level override. |
 
+## Safe links and media URLs
+
+Button links, image, audio and video sources, and quote sources accept relative paths, fragments, and `http:`, `https:`, `mailto:` and `tel:` URLs. Media sources also accept `data:` URLs other than HTML. Studio reads the scheme as browsers do, ignoring leading control characters and any tab or line break, and reports every other scheme as an error.
+
 ## Shared question settings and parts
 
 These settings and parts apply to choice, match, order, categorize, fill-blank, free-response, rating, matrix and hotspot. A group's settings are listed separately.

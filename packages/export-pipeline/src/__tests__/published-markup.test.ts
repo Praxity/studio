@@ -83,8 +83,11 @@ describe("published markup characterisation", () => {
 		["data:audio/mp3;base64,AAAA", "#", "#"],
 		[" \nJaVaScRiPt:bad()\t", "#", "#"],
 		[" \tVbScRiPt:bad()\n", "#", "#"],
-		// These scalar URL policies trim but do not decode entities or inner whitespace.
-		["java\nscript:bad()", "java\nscript:bad()", "java\nscript:bad()"],
+		// Browsers drop leading C0 controls and inner tabs and newlines before reading the scheme.
+		["java\nscript:bad()", "#", "#"],
+		["\u0001javascript:bad()", "#", "#"],
+		["\u0000 data:text/html,x", "#", "#"],
+		// Entities are not decoded: "&" cannot appear in a scheme, so these stay relative URLs.
 		["jav&#x61;script:bad()", "jav&#x61;script:bad()", "jav&#x61;script:bad()"],
 		["vb&#115;cript:bad()", "vb&#115;cript:bad()", "vb&#115;cript:bad()"],
 	])("keeps media and href JSON policies distinct: %s", (input, media, href) => {

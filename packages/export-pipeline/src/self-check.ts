@@ -1,3 +1,4 @@
+import { escapeJsonForScript } from "@praxity/content-model/constants";
 import { isInlineProjectionMetadataKey } from "@praxity/shared-blocks/inline-markdown";
 import { flattenLogicBlocks } from "@praxity/shared-blocks/logic/flatten-blocks";
 import {
@@ -283,7 +284,7 @@ export function bindSelfCheckDocument(
 							data: { name: block.data.name },
 						});
 				}
-			return open + JSON.stringify(config).replaceAll("<", "\\u003c") + close;
+			return open + escapeJsonForScript(JSON.stringify(config)) + close;
 		},
 	);
 	if (requiredIds.length)
@@ -291,7 +292,7 @@ export function bindSelfCheckDocument(
 			/(<script id="praxity-host-config" type="application\/json">)([\s\S]*?)(<\/script>)/,
 			(_match, open: string, json: string, close: string) =>
 				open +
-				JSON.stringify({ ...JSON.parse(json), deferVisits: true }).replaceAll("<", "\\u003c") +
+				escapeJsonForScript(JSON.stringify({ ...JSON.parse(json), deferVisits: true })) +
 				close,
 		);
 	return requiredIds.length

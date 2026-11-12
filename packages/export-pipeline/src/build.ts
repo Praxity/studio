@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
+import { escapeHtml } from "@praxity/content-model/constants";
 import type {
 	DeckDesign,
 	GrammarFrontmatter,
@@ -1328,14 +1329,6 @@ async function compileCourseArtifact(
 	}
 }
 
-function escapeHtmlAttribute(value: string): string {
-	return value
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;")
-		.replace(/"/g, "&quot;");
-}
-
 // null restores the default destination for LMS formats and previews.
 function withDeploymentHead(
 	filePath: string,
@@ -1353,7 +1346,7 @@ function withDeploymentHead(
 		typeof head === "string" ? head : head(filePath),
 	);
 	if (courseHomeUrl === undefined) return deployed;
-	const escaped = escapeHtmlAttribute(courseHomeUrl ?? DEFAULT_COURSE_HOME_URL);
+	const escaped = escapeHtml(courseHomeUrl ?? DEFAULT_COURSE_HOME_URL);
 	return deployed
 		.replaceAll(COURSE_HOME_LINK_SLOT, () => `href="${escaped}"`)
 		.replaceAll(COURSE_HOME_DECK_SLOT, () =>
@@ -1419,7 +1412,7 @@ async function applyDeploymentTarget(
 		);
 		reviewHead = (filePath) => {
 			const pageId = pageIds.get(filePath) ?? path.basename(filePath, ".html");
-			return `<link rel="stylesheet" href="review-comments.css?v=${cssVersion}" />\n<script defer src="review-comments.js?v=${jsVersion}" data-praxity-review-comments="true" data-review-page-id="${escapeHtmlAttribute(pageId)}" data-review-locale="${locale}" data-review-expires-at="${escapeHtmlAttribute(expiresAt)}"></script>`;
+			return `<link rel="stylesheet" href="review-comments.css?v=${cssVersion}" />\n<script defer src="review-comments.js?v=${jsVersion}" data-praxity-review-comments="true" data-review-page-id="${escapeHtml(pageId)}" data-review-locale="${locale}" data-review-expires-at="${escapeHtml(expiresAt)}"></script>`;
 		};
 	}
 	const hostName = target.format === "html" ? "standalone" : target.format;
@@ -1451,9 +1444,7 @@ async function applyDeploymentTarget(
 	};
 	const hostHead = [
 		`<script id="praxity-deployment-config" type="application/json">${escapeJsonForScript(JSON.stringify(deploymentConfig))}</script>`,
-		...dependencies.map(
-			({ filename }) => `<script defer src="${escapeHtmlAttribute(filename)}"></script>`,
-		),
+		...dependencies.map(({ filename }) => `<script defer src="${escapeHtml(filename)}"></script>`),
 		`<script defer src="${hostRuntimeFilename}"></script>`,
 	].join("\n");
 	await fillDeploymentHead(
