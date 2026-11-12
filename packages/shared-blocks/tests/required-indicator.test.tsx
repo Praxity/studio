@@ -6,10 +6,6 @@ import { RequiredIndicator } from "../src/components";
 const wrap = (ui: React.ReactElement) => render(<MantineProvider>{ui}</MantineProvider>);
 
 describe("RequiredIndicator", () => {
-	it("renders without crashing", () => {
-		expect(() => wrap(<RequiredIndicator />)).not.toThrow();
-	});
-
 	it("has an aria-hidden plain asterisk marker", () => {
 		const { container } = wrap(<RequiredIndicator />);
 		const marker = container.querySelector(".praxity-required-marker");
