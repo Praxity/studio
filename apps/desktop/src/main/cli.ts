@@ -252,7 +252,6 @@ async function errorExecution(
 	locale: "en" | "fr" = "en",
 	course?: string,
 ): Promise<CliExecution> {
-	const t = createTranslator({ locale, messages: locale === "fr" ? cliFr : cliEn });
 	if (error instanceof ProjectPermissionError)
 		return errorExecution(
 			new CliError(error.code, projectPermissionMessage(locale), 1),

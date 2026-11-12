@@ -273,10 +273,10 @@ it.each(["output", "write", "accessibility", "warning", "storageAnswers", "stora
 			);
 		else if (kind === "accessibility") {
 			expect(JSON.parse(result.stdout).error.message).toBe(
-				"Des problèmes critiques d’accessibilité ont bloqué l’exportation.",
+				"Des problèmes d’accessibilité empêchent l’exportation. Corrigez les problèmes signalés, puis réessayez.",
 			);
 			expect(result.stderr).toContain(
-				"L’exportation Praxity a échoué : 1 problème critique d’accessibilité.",
+				"La commande praxity export a échoué : Des problèmes d’accessibilité empêchent l’exportation. Corrigez les problèmes signalés, puis réessayez.",
 			);
 		} else if (kind === "warning")
 			expect(result.stderr).toContain(
@@ -421,13 +421,25 @@ it.each([
 	},
 );
 it.each([
-	["accessibility", 0, "L’exportation Praxity a échoué : 0 problème critique d’accessibilité."],
-	["accessibility", 1, "L’exportation Praxity a échoué : 1 problème critique d’accessibilité."],
-	["accessibility", 2, "L’exportation Praxity a échoué : 2 problèmes critiques d’accessibilité."],
+	[
+		"accessibility",
+		0,
+		"La commande praxity export a échoué : Des problèmes d’accessibilité empêchent l’exportation. Corrigez les problèmes signalés, puis réessayez.",
+	],
+	[
+		"accessibility",
+		1,
+		"La commande praxity export a échoué : Des problèmes d’accessibilité empêchent l’exportation. Corrigez les problèmes signalés, puis réessayez.",
+	],
+	[
+		"accessibility",
+		2,
+		"La commande praxity export a échoué : Des problèmes d’accessibilité empêchent l’exportation. Corrigez les problèmes signalés, puis réessayez.",
+	],
 	["warning", 1, "Attention : exportation effectuée malgré 1 problème critique d’accessibilité."],
 	["warning", 2, "Attention : exportation effectuée malgré 2 problèmes critiques d’accessibilité."],
 ] as const)(
-	"localizes %s advice for %i accessibility issues (fr)",
+	"localizes %s response with %i accessibility issues (fr)",
 	async (kind, count, message) => {
 		const f = await fixture();
 		const issues = Array.from({ length: count }, () => ({
@@ -460,6 +472,8 @@ it.each([
 			runtime,
 		);
 		expect(result.exitCode).toBe(kind === "accessibility" ? 1 : 0);
+		if (kind === "accessibility")
+			expect(JSON.parse(result.stdout).error.details.criticalIssueCount).toBe(count);
 		expect(result.stderr).toContain(message);
 	},
 );
