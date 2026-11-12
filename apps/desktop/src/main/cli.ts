@@ -7,6 +7,7 @@ import { DEFAULT_PROJECT_CONFIG } from "@praxity/editor-core/types";
 import { ViewerAssetsError } from "@praxity/export-pipeline/bundle-viewer";
 import { CoursePracticeAdmissionError } from "@praxity/grammar";
 import { createTranslator } from "use-intl/core";
+import { canvasMessages } from "../shared/canvas-messages";
 import { CourseHomeUrlError } from "../shared/course-manifest";
 import { type ExportFormat, studioPortSchema } from "../shared/ipc-schemas";
 import type { SelfCheckNarrationWarning } from "../shared/narration-sidecar";
@@ -381,11 +382,16 @@ async function errorExecution(
 				ok: false,
 				error: {
 					code: "accessibility_blocked",
-					message: "Critical accessibility issues blocked export.",
+					message: canvasMessages[locale === "fr" ? "fr" : "en"].exportAccessibilityBlocked,
 					details: { criticalIssueCount: error.issues.length, issues: error.issues },
 				},
 			},
-			`Praxity export failed: ${error.issues.length} critical accessibility issue(s).`,
+			(locale === "fr" ? cliFr : cliEn).commandFailed
+				.replace("{command}", command)
+				.replace(
+					"{reason}",
+					canvasMessages[locale === "fr" ? "fr" : "en"].exportAccessibilityBlocked,
+				),
 		);
 	}
 	if (error instanceof ViewerAssetsError) {

@@ -1,3 +1,4 @@
+import { escapeHtml, escapeJsonForScript } from "@praxity/content-model/constants";
 import { isInlineProjectionMetadataKey } from "@praxity/shared-blocks/inline-markdown";
 import { flattenLogicBlocks } from "@praxity/shared-blocks/logic/flatten-blocks";
 import {
@@ -185,13 +186,6 @@ export function selfCheckPageAssets(
 			sha256,
 		}));
 }
-function attribute(value: string): string {
-	return value
-		.replaceAll("&", "&amp;")
-		.replaceAll('"', "&quot;")
-		.replaceAll("<", "&lt;")
-		.replaceAll(">", "&gt;");
-}
 export function bindSelfCheckAssets(
 	html: string,
 	runtime: SelfCheckRuntime,
@@ -213,7 +207,7 @@ export function bindSelfCheckAssets(
 					})
 				);
 			})
-			.map((asset) => [attribute(asset.blockId), asset]),
+			.map((asset) => [escapeHtml(asset.blockId), asset]),
 	);
 	return html.replace(/data-self-check-id="([^"]*)"/g, (match, id: string) => {
 		const asset = assets.get(id);
@@ -283,7 +277,7 @@ export function bindSelfCheckDocument(
 							data: { name: block.data.name },
 						});
 				}
-			return open + JSON.stringify(config).replaceAll("<", "\\u003c") + close;
+			return open + escapeJsonForScript(JSON.stringify(config)) + close;
 		},
 	);
 	if (requiredIds.length)
@@ -291,13 +285,13 @@ export function bindSelfCheckDocument(
 			/(<script id="praxity-host-config" type="application\/json">)([\s\S]*?)(<\/script>)/,
 			(_match, open: string, json: string, close: string) =>
 				open +
-				JSON.stringify({ ...JSON.parse(json), deferVisits: true }).replaceAll("<", "\\u003c") +
+				escapeJsonForScript(JSON.stringify({ ...JSON.parse(json), deferVisits: true })) +
 				close,
 		);
 	return requiredIds.length
 		? html.replace(
 				/<html\b/,
-				`<html data-self-check-dependencies="${attribute(requiredIds.join(" "))}"`,
+				`<html data-self-check-dependencies="${escapeHtml(requiredIds.join(" "))}"`,
 			)
 		: html;
 }

@@ -1952,13 +1952,13 @@ describe("computeViewerSourceHash", () => {
 					// Measured 27,750 B + 1 KiB, rounded up to 256 B. Full page/deck caps stay unchanged.
 					expect(bytes, `${island} initial raw bytes`).toBeLessThanOrEqual(28_928);
 				}
-				// Size caps don't block working features (owner rule): group refusal/retry runtime measures 24,850 B raw; add 1 KiB rounded up to 256 B, tighten during final size work.
+				// Size caps don't block working features (owner rule): submission timer cleanup (studio#78) measures 26,257 B raw; add 1 KiB rounded up to 256 B, tighten during final size work.
 				else
 					expect(bytes, `${island} initial raw bytes`).toBeLessThan(
 						island === "island-self-check"
 							? SELF_CHECK_INITIAL_RAW_CEILING
 							: (island === "island-assessment-group"
-									? 25.5
+									? 26.75
 									: island === "island-rating"
 										? 18
 										: 16) * 1024,

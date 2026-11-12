@@ -1,5 +1,7 @@
 export const canvasMessages = {
 	en: {
+		exportAccessibilityBlocked:
+			"Accessibility issues blocked export. Fix the reported issues, then try again.",
 		edit: "Edit mode",
 		read: "Read mode",
 		readUpdating: "Read mode: Updating",
@@ -10,6 +12,7 @@ export const canvasMessages = {
 		editSeparator: ": ",
 		connecting: "Connecting",
 		connected: "Connected",
+		updating: "Updating page…",
 		unmapped: "Some text could not be matched to the saved page.",
 		refreshFailed: "Studio could not refresh the saved page. Reload to try again.",
 		failed: "Studio could not connect. Reopen the Studio launch link.",
@@ -54,6 +57,8 @@ export const canvasMessages = {
 		checkSaved: "Check saved bytes",
 	},
 	fr: {
+		exportAccessibilityBlocked:
+			"Des problèmes d’accessibilité empêchent l’exportation. Corrigez les problèmes signalés, puis réessayez.",
 		edit: "Mode édition",
 		read: "Mode lecture",
 		readUpdating: "Mode lecture : Mise à jour",
@@ -64,6 +69,7 @@ export const canvasMessages = {
 		editSeparator: " : ",
 		connecting: "Connexion",
 		connected: "Connecté",
+		updating: "Mise à jour de la page…",
 		unmapped: "Certains textes ne correspondent pas à la page enregistrée.",
 		refreshFailed: "Studio n'a pas pu actualiser la page enregistrée. Rechargez pour réessayer.",
 		failed: "Studio n'a pas pu se connecter. Rouvrez le lien de lancement de Studio.",
