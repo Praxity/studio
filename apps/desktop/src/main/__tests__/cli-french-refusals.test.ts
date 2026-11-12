@@ -43,26 +43,29 @@ it.each([
 	[["studio"], "Le dossier du projet est manquant."],
 	[["export", "course"], "L’option --format est manquante."],
 	[["export", "course", "--format", "html"], "L’option --output est manquante."],
-	[["export", "--format"], "--format exige une valeur."],
-	[["export", "--output"], "--output exige une valeur."],
+	[["export", "--format"], "L’option --format exige une valeur."],
+	[["export", "--output"], "L’option --output exige une valeur."],
 	[["export", "--format", "bad"], "Format non pris en charge : bad"],
 	[
 		["export", "--format", "html", "--format", "html"],
-		"--format ne peut être fourni qu’une seule fois.",
+		"L’option --format ne peut être fournie qu’une seule fois.",
 	],
 	[
 		["export", "--output", "a.zip", "--output", "b.zip"],
-		"--output ne peut être fourni qu’une seule fois.",
+		"L’option --output ne peut être fournie qu’une seule fois.",
 	],
 	[
 		["export", "--include-answer-sheet", "--include-answer-sheet"],
-		"--include-answer-sheet ne peut être fourni qu’une seule fois.",
+		"L’option --include-answer-sheet ne peut être fournie qu’une seule fois.",
 	],
 	[
 		["export", "--allow-critical-a11y-issues", "--allow-critical-a11y-issues"],
-		"--allow-critical-a11y-issues ne peut être fourni qu’une seule fois.",
+		"L’option --allow-critical-a11y-issues ne peut être fournie qu’une seule fois.",
 	],
-	[["export", "--paper-size", "bad"], "--paper-size exige a4 ou letter, une seule fois."],
+	[
+		["export", "--paper-size", "bad"],
+		"L’option --paper-size exige a4 ou letter et ne peut être fournie qu’une seule fois.",
+	],
 	[["export", "--bad"], "Option inconnue : --bad"],
 	[["export", "course", "extra"], "Argument inattendu : extra"],
 	[
@@ -73,15 +76,21 @@ it.each([
 		["export", "course", "--format", "html", "--output", "a.zip", "--include-answer-sheet"],
 		"Les options PDF exigent --format pdf.",
 	],
-	[["studio", "course", "--port", "0"], "--port exige un entier de 1 à 65535, une seule fois."],
-	[["studio", "course", "--port"], "--port exige un entier de 1 à 65535, une seule fois."],
+	[
+		["studio", "course", "--port", "0"],
+		"L’option --port exige un nombre entier de 1 à 65535 et ne peut être fournie qu’une seule fois.",
+	],
+	[
+		["studio", "course", "--port"],
+		"L’option --port exige un nombre entier de 1 à 65535 et ne peut être fournie qu’une seule fois.",
+	],
 	[
 		["studio", "course", "--bad"],
 		"Utilisation : praxity studio <project-dir> [--review] [--port <n>] [--no-open]",
 	],
 	[
 		["studio", "course"],
-		"Utilisez la distribution autonome de l’interface en ligne de commande avec les fichiers de son éditeur Web.",
+		"Utilisez la version autonome de l’interface en ligne de commande, fournie avec les fichiers de son éditeur Web.",
 	],
 	[["inspect"], "Utilisation : praxity inspect <project-dir> [--schema 0|1]"],
 ] as const)("localizes refusal %j with --lang before or after it", async (args, message) => {
@@ -109,10 +118,10 @@ it.each(["missing", "overlap", "digest", "empty"])(
 		});
 		const message =
 			kind === "missing"
-				? "Les fichiers de l’éditeur Web ne sont pas accessibles. Recompilez l’interface en ligne de commande autonome."
+				? "Les fichiers de l’éditeur Web ne sont pas accessibles. Reconstruisez l’interface en ligne de commande autonome."
 				: kind === "overlap"
 					? "Les fichiers de l’éditeur et du projet doivent être dans des dossiers racines distincts"
-					: "Les fichiers du canevas ne sont pas accessibles. Recompilez l’interface en ligne de commande autonome.";
+					: "Les fichiers du canevas ne sont pas accessibles. Reconstruisez l’interface en ligne de commande autonome.";
 		expect(result.exitCode).toBe(1);
 		expect(JSON.parse(result.stdout).error.message).toBe(message);
 		expect(result.stderr).toContain(message);
@@ -147,8 +156,8 @@ it.each([true, false])("localizes occupied-port refusal (Studio: %s)", async (st
 			{ ...runtime, editorAssetsDir: f.editorAssetsDir },
 		);
 		const message = studio
-			? `Le port ${address.port} est déjà utilisé par Studio pour le cours « ${f.projectDir} ». Arrêtez cette instance de Studio ou choisissez un autre --port.`
-			: `Le port ${address.port} est déjà utilisé par un autre programme. Arrêtez ce programme ou choisissez un autre --port.`;
+			? `Le port ${address.port} est déjà utilisé par Studio pour le cours « ${f.projectDir} ». Arrêtez cette instance de Studio ou choisissez un autre port avec --port.`
+			: `Le port ${address.port} est déjà utilisé par un autre programme. Arrêtez ce programme ou choisissez un autre port avec --port.`;
 		expect(result.exitCode).toBe(1);
 		expect(JSON.parse(result.stdout).error.message).toBe(message);
 		expect(result.stderr).toContain(message);
@@ -175,7 +184,7 @@ it("keeps catalogue keys and ICU placeholders paired", () => {
 });
 it.each([
 	["/missing", "GET", {}, "La ressource n’est pas disponible"],
-	["/api/identity", "POST", {}, "L’identité exige GET"],
+	["/api/identity", "POST", {}, "La route d’identité exige GET"],
 	["/", "POST", {}, "Le lancement exige GET"],
 	["/api/rpc", "GET", {}, "L’appel RPC exige POST"],
 	["/api/rpc", "POST", {}, "L’appel RPC exige l’origine de l’éditeur"],
@@ -183,23 +192,26 @@ it.each([
 	["/missing", "GET", { Origin: "https://example.invalid" }, "L’origine n’est pas autorisée"],
 	["/missing", "TRACE", {}, "La méthode HTTP n’est pas disponible"],
 	["/canvas", "GET", {}, "L’autorisation de lancement du canevas est requise"],
-] as const)("localizes HTTP refusal %s %s", async (url, method, headers, message) => {
-	const f = await fixture();
-	const server = await startStudioServer({ ...f, appVersion: "0.3.0", locale: "fr" });
-	servers.push(server);
-	// Node's HTTP interface permits TRACE, which fetch deliberately rejects.
-	const { request } = await import("node:http");
-	const body = await new Promise<string>((resolve, reject) => {
-		const req = request(server.origin + url, { method, headers }, (res) => {
-			let text = "";
-			res.on("data", (chunk) => (text += chunk));
-			res.on("end", () => resolve(text));
+] as const)(
+	"localizes HTTP refusal %s %s headers=%j (fr)",
+	async (url, method, headers, message) => {
+		const f = await fixture();
+		const server = await startStudioServer({ ...f, appVersion: "0.3.0", locale: "fr" });
+		servers.push(server);
+		// Node's HTTP interface permits TRACE, which fetch deliberately rejects.
+		const { request } = await import("node:http");
+		const body = await new Promise<string>((resolve, reject) => {
+			const req = request(server.origin + url, { method, headers }, (res) => {
+				let text = "";
+				res.on("data", (chunk) => (text += chunk));
+				res.on("end", () => resolve(text));
+			});
+			req.on("error", reject);
+			req.end();
 		});
-		req.on("error", reject);
-		req.end();
-	});
-	expect(JSON.parse(body).error.message).toBe(message);
-});
+		expect(JSON.parse(body).error.message).toBe(message);
+	},
+);
 
 it("localizes help without losing command syntax", async () => {
 	const result = await runPraxityCli(["--help", "--lang", "fr"], runtime);
@@ -257,23 +269,27 @@ it.each(["output", "write", "accessibility", "warning", "storageAnswers", "stora
 			expect(JSON.parse(result.stdout).error.message).toBe(
 				kind === "output"
 					? `Le chemin de sortie n’est pas accessible : ${output}`
-					: `Impossible d’enregistrer l’exportation : ${output}`,
+					: `Impossible d’enregistrer le fichier exporté : ${output}`,
 			);
 		else if (kind === "accessibility") {
 			expect(JSON.parse(result.stdout).error.message).toBe(
 				"Des problèmes critiques d’accessibilité ont bloqué l’exportation.",
 			);
 			expect(result.stderr).toContain(
-				"L’exportation Praxity a échoué : 1 problème(s) critique(s) d’accessibilité.",
+				"L’exportation Praxity a échoué : 1 problème critique d’accessibilité.",
 			);
 		} else if (kind === "warning")
 			expect(result.stderr).toContain(
-				"Avertissement : exportation avec 1 problème(s) critique(s) d’accessibilité.",
+				"Attention : exportation effectuée malgré 1 problème critique d’accessibilité.",
 			);
 		else {
 			expect(result.stderr).toContain(
-				"Avertissement : une tentative complète exige environ 5000 caractères",
+				"Attention : une tentative complète exige environ 5000 caractères",
 			);
+			if (kind === "storageAnswers")
+				expect(result.stderr).toContain(
+					"ou choisissez le stockage sur l’appareil uniquement pour les réponses d’autoévaluation.",
+				);
 			expect(result.stderr).toContain(
 				kind === "storageAnswers"
 					? "La progression et le texte des réponses"
@@ -308,7 +324,7 @@ it.each(["empty", "ambiguous"])("localizes project-session startup refusal: %s",
 	});
 	expect(result.exitCode).toBe(1);
 	expect(JSON.parse(result.stdout).error.message).toBe(
-		"Le dossier autonome est ambigu : fournissez un fichier course.yaml ou une seule leçon .prax",
+		"Ce dossier n’a pas de fichier course.yaml : ajoutez-en un ou n’y laissez qu’une seule leçon .prax",
 	);
 });
 it.each([
@@ -316,27 +332,30 @@ it.each([
 	[
 		"/api/rpc",
 		{ method: "projectReadTextFile", args: { relativePath: "narration.yaml" } },
-		"ENOENT : Les métadonnées du projet sont absentes",
+		"ENOENT : les métadonnées du projet sont absentes",
 	],
-] as const)("localizes direct session helper refusals: %j", async (url, body, message) => {
-	const f = await fixture();
-	const result = await runPraxityCli(["studio", f.projectDir, "--lang", "fr"], {
-		...runtime,
-		editorAssetsDir: f.editorAssetsDir,
-	});
-	if (!result.studioServer) throw new Error(result.stderr);
-	servers.push(result.studioServer);
-	const response = await fetch(result.studioServer.origin + url, {
-		method: "POST",
-		headers: {
-			Origin: result.studioServer.origin,
-			Authorization: `Bearer ${new URL(result.studioServer.readyUrl).hash.slice("#session=".length)}`,
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify(body),
-	});
-	expect((await response.json()).error.message).toBe(message);
-});
+] as const)(
+	"localizes POST %s session refusal body=%j (Origin, bearer, JSON; fr)",
+	async (url, body, message) => {
+		const f = await fixture();
+		const result = await runPraxityCli(["studio", f.projectDir, "--lang", "fr"], {
+			...runtime,
+			editorAssetsDir: f.editorAssetsDir,
+		});
+		if (!result.studioServer) throw new Error(result.stderr);
+		servers.push(result.studioServer);
+		const response = await fetch(result.studioServer.origin + url, {
+			method: "POST",
+			headers: {
+				Origin: result.studioServer.origin,
+				Authorization: `Bearer ${new URL(result.studioServer.readyUrl).hash.slice("#session=".length)}`,
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(body),
+		});
+		expect((await response.json()).error.message).toBe(message);
+	},
+);
 
 it.each([
 	[{}, "{}", "Utilisez application/json"],
@@ -352,30 +371,95 @@ it.each([
 		JSON.stringify({ method: "canvasTextSnapshot", args: {} }),
 		"Le canevas exige une page autorisée",
 	],
-] as const)("localizes authenticated request refusal %j", async (headers, body, message) => {
-	const f = await fixture();
-	const server = await startStudioServer({ ...f, appVersion: "0.3.0", locale: "fr" });
-	servers.push(server);
-	const { request } = await import("node:http");
-	const text = await new Promise<string>((resolve, reject) => {
-		const req = request(
-			`${server.origin}/api/rpc`,
-			{
-				method: "POST",
-				headers: {
-					Origin: server.origin,
-					Authorization: `Bearer ${new URL(server.readyUrl).hash.slice("#session=".length)}`,
-					...headers,
+] as const)(
+	"localizes POST /api/rpc refusal headers=%j body=%j (Origin, bearer; fr)",
+	async (headers, body, message) => {
+		const f = await fixture();
+		const server = await startStudioServer({ ...f, appVersion: "0.3.0", locale: "fr" });
+		servers.push(server);
+		const { request } = await import("node:http");
+		const text = await new Promise<string>((resolve, reject) => {
+			const req = request(
+				`${server.origin}/api/rpc`,
+				{
+					method: "POST",
+					headers: {
+						Origin: server.origin,
+						Authorization: `Bearer ${new URL(server.readyUrl).hash.slice("#session=".length)}`,
+						...headers,
+					},
 				},
-			},
-			(res) => {
-				let data = "";
-				res.on("data", (chunk) => (data += chunk));
-				res.on("end", () => resolve(data));
-			},
+				(res) => {
+					let data = "";
+					res.on("data", (chunk) => (data += chunk));
+					res.on("end", () => resolve(data));
+				},
+			);
+			req.on("error", reject);
+			req.end(body);
+		});
+		expect(JSON.parse(text).error.message).toBe(message);
+	},
+);
+
+it.each([
+	["en", "Project has no readable lessons"],
+	["fr", "Le projet n’a aucune leçon lisible"],
+] as const)(
+	"refuses a manifest-backed course without readable lessons (%s)",
+	async (locale, message) => {
+		const f = await fixture();
+		await rm(join(f.projectDir, "lesson.prax"));
+		await writeFile(join(f.projectDir, "course.yaml"), "title: Empty\nlessons: []\n");
+		const result = await runPraxityCli(["studio", f.projectDir, "--lang", locale], {
+			...runtime,
+			editorAssetsDir: f.editorAssetsDir,
+		});
+		expect(result.exitCode).toBe(1);
+		expect(JSON.parse(result.stdout).error.message).toBe(message);
+		expect(result.stderr).toContain(message);
+	},
+);
+it.each([
+	["accessibility", 0, "L’exportation Praxity a échoué : 0 problème critique d’accessibilité."],
+	["accessibility", 1, "L’exportation Praxity a échoué : 1 problème critique d’accessibilité."],
+	["accessibility", 2, "L’exportation Praxity a échoué : 2 problèmes critiques d’accessibilité."],
+	["warning", 1, "Attention : exportation effectuée malgré 1 problème critique d’accessibilité."],
+	["warning", 2, "Attention : exportation effectuée malgré 2 problèmes critiques d’accessibilité."],
+] as const)(
+	"localizes %s advice for %i accessibility issues (fr)",
+	async (kind, count, message) => {
+		const f = await fixture();
+		const issues = Array.from({ length: count }, () => ({
+			severity: "critical" as const,
+			rule: "image-alt",
+			outcome: "failed" as const,
+			sourceLocation: "lesson.prax:1",
+			message: "Alt",
+		}));
+		if (kind === "accessibility") {
+			const { ExportAccessibilityError } = await import("../export/accessibility-enforcement");
+			mocks.exportProject.mockRejectedValue(new ExportAccessibilityError(issues));
+		} else
+			mocks.exportProject.mockResolvedValue({
+				zip: Buffer.from("zip"),
+				pageCount: 1,
+				criticalAccessibilityIssues: issues,
+			});
+		const result = await runPraxityCli(
+			[
+				"export",
+				f.projectDir,
+				"--format",
+				"html",
+				"--output",
+				join(f.projectDir, "out.zip"),
+				"--lang",
+				"fr",
+			],
+			runtime,
 		);
-		req.on("error", reject);
-		req.end(body);
-	});
-	expect(JSON.parse(text).error.message).toBe(message);
-});
+		expect(result.exitCode).toBe(kind === "accessibility" ? 1 : 0);
+		expect(result.stderr).toContain(message);
+	},
+);

@@ -269,9 +269,7 @@
 		"conflict": "Lesson changed on disk since it was opened",
 		"metadataPath": "Metadata path is not authorized",
 		"metadataMissing": "ENOENT: Project metadata is absent",
-		"previewPage": "Course has no preview page.",
 		"export": "Export failed",
-		"closing": "Studio session is closing",
 		"method": "Method is not available"
 	}
 }

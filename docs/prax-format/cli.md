@@ -301,7 +301,8 @@ The Read document carries captured page context and loads the shipped review
 assets. Edit mode stays unchanged; its Read link returns to review-enabled Read
 mode. Without `--review`, Studio behaves as before. Local feedback and its
 capability never enter ordinary HTML or SCORM exports. `--lang fr` selects French
-CLI notices.
+CLI notices. The same option selects CLI refusal messages and Studio HTTP error
+messages; error codes stay unchanged.
 
 ## Edit source nodes
 

@@ -783,7 +783,7 @@ export async function createStudioProjectSession(
 			.strict()
 			.parse(args);
 		const selected = pageId ?? scheduler.context().pages[0]?.id;
-		if (!selected) throw new Error(t("sessionRefusals.previewPage"));
+		if (!selected) throw new Error(`${t("serverRefusals.noPage")}.`);
 		scheduler.selectPage(selected);
 		return {
 			pageId: selected,
@@ -1193,7 +1193,7 @@ export async function createStudioProjectSession(
 			);
 		},
 		async invoke(method: string, args: unknown, canvasPageScope?: CanvasPageScope) {
-			if (closed) throw new StudioSessionError(503, "session_closed", t("sessionRefusals.closing"));
+			if (closed) throw new StudioSessionError(503, "session_closed", t("serverRefusals.closing"));
 			const operation = methods.get(method);
 			if (!operation)
 				throw new StudioSessionError(404, "method_not_allowed", t("sessionRefusals.method"));
