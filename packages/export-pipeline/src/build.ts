@@ -14,6 +14,7 @@ import type {
 	TypographyVariants,
 } from "@praxity/grammar";
 import { compileBlockStatePolicy } from "@praxity/shared-blocks/block-state-policy";
+import { normalizeDesktopAssetPath } from "@praxity/shared-blocks/desktop-asset-path";
 import { getPreviewStrings } from "@praxity/shared-blocks/i18n/strings";
 import { LEARNER_STATE_SCHEMA_VERSION } from "@praxity/shared-blocks/learner-state";
 import { flattenLogicBlocks } from "@praxity/shared-blocks/logic/flatten-blocks";
@@ -52,11 +53,7 @@ import { generateHtmlPages } from "./html-pages.ts";
 import type { ModuleDeckOptions } from "./module-deck";
 import { optimizeResolvedImages } from "./optimize-resolved-images.ts";
 import { preparePageCompiler } from "./preview/compile-page.ts";
-import {
-	createCourseContext,
-	isDesktopExportInput,
-	normalizeDesktopAssetPath,
-} from "./preview/course-context.ts";
+import { createCourseContext, isDesktopExportInput } from "./preview/course-context.ts";
 import { preparePublishedImages } from "./published-images.ts";
 import type { IslandName, RuntimeMode } from "./runtime-plan.ts";
 import { declaredCourseActivityId } from "./scorm/activity-id.ts";

@@ -1678,6 +1678,14 @@
 				"title": "Texte alternatif long",
 				"description": "Limitez le texte alternatif à 125 caractères. Placez les détails supplémentaires dans le texte voisin ou une description longue."
 			},
+			"gif-flash-unchecked": {
+				"title": "Vérifier les clignotements du GIF manuellement",
+				"description": "{reason, select, size {Ce GIF est trop volumineux pour qu’on puisse vérifier s’il clignote} frames {Ce GIF contient trop de trames ou de pixels de trame pour qu’on puisse vérifier s’il clignote} other {Ce GIF est mal formé et ses clignotements ne peuvent pas être vérifiés}}",
+				"guidance": {
+					"topic": "Afficher les conseils de vérification manuelle",
+					"bullet1": "Vérifiez vous-même si ce GIF clignote avant de publier"
+				}
+			},
 			"gif-flash-threshold": {
 				"title": "Clignotement rapide potentiel",
 				"description": "Ce GIF animé semble clignoter plus de trois fois en une seconde. Remplacez-le ou ralentissez l’animation, puis vérifiez-le manuellement.",
