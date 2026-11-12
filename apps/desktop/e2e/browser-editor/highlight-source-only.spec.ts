@@ -176,7 +176,14 @@ for (const [lang, width, theme] of [
 			const root = page.locator("[data-highlight]");
 			const good = await root.innerHTML();
 			await writeFile(file, updated.replace("{key}", '{key="true"}'));
-			await expect(page.locator("#studio-status")).toHaveText(messages.refreshFailed);
+			await expect(page.locator("#studio-status")).toHaveText(
+				(lang === "fr"
+					? "second.prax, ligne 9, colonne 38 : "
+					: "second.prax, line 9, column 35: ") + messages.sourceError,
+			);
+			await expect(page.getByRole("button", { name: /^(Edit|Modifier) .*\d+\s*:/u })).toHaveCount(
+				0,
+			);
 			expect(await root.innerHTML()).toBe(good);
 			await writeFile(file, recovered);
 			await expect(chunk(page)).toHaveText(recoveredText);

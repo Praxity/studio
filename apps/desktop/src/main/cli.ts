@@ -53,53 +53,21 @@ import type { StudioServer } from "./studio/server";
 const CLI_FORMATS = new Set<ExportFormat>(["html", "scorm-1.2", "scorm-2004", "pdf"]);
 const draftExportCommand = "praxity recovery export-drafts <project-dir> <new-directory>";
 
-const help = (args: string[]) => `Usage:
-  praxity init [<course-dir>] [--lang en|fr]
-  praxity export <project-dir> --format <format> --output <file-path> [options]
-  praxity inspect <project-dir> [--schema 0|1 | <--blocks [--eligibility] | --text-fields> [--json]]
-  praxity studio <project-dir> [--review] [--port <n>] [--no-open]
-  praxity recovery run <project-dir>
-  praxity recovery list <project-dir>
-  ${draftExportCommand}
-  praxity recovery extract <project-dir> <archive> <new-directory>
-  praxity recovery restore <project-dir> <archive> <original|replacement> <path>
-  praxity recovery resolve <project-dir> <archive>
-  praxity identity merge [<course>]
-  praxity identity init <course> [--rederive --confirm-unpublished] [--lang en|fr]
-
-${(args.includes("fr") ? cliFr : cliEn).init.help}
-
-${(args.includes("fr") ? cliFr : cliEn).identityInit.help}
-
-${identityMergeHelp}
-
-${narrationHelp}
-
-${editHelp(args)}
-
-${commentsHelp(args)}
-
-inspect prints the parsed course as JSON without modifying the project.
-studio starts a foreground loopback server. Stop it with Ctrl+C.
-recovery run recovers an interrupted transaction and retains recovery copies.
-recovery list, extract, restore and resolve inspect, preserve, restore or explicitly discard retained copies.
-recovery list includes retained editor drafts; export-drafts copies their exact text without removing them.
-
-Formats:
-  html | scorm-1.2 | scorm-2004 | pdf
-
-Options:
-  --lang en|fr                 Language for inspect/export advice and Studio/recovery notices, default en
-  --paper-size a4|letter        PDF paper size, default a4
-  --include-answer-sheet       Append PDF answers; authored prose is never redacted
-  --allow-critical-a11y-issues  Export after reporting critical accessibility issues
-  --no-open                     Print the Studio ready URL without opening a browser
-  --review                      ${(args.includes("fr") ? cliFr : cliEn).studio.reviewHelp}
-  --port <n>                    Bind Studio to this loopback port, with no fallback
-  -h, --help                    Show this help
-  -v, --version                 Show the Studio version
-
-The project must contain course.yaml. Do not modify it while export is running.`;
+const help = (args: string[]) => {
+	const locale = args[args.indexOf("--lang") + 1] === "fr" ? "fr" : "en";
+	const messages = locale === "fr" ? cliFr : cliEn;
+	const t = createTranslator({ locale, messages });
+	return t
+		.raw("help")
+		.replace("{draftExportCommand}", () => draftExportCommand)
+		.replace("{initHelp}", () => messages.init.help)
+		.replace("{identityHelp}", () => messages.identityInit.help)
+		.replace("{mergeHelp}", () => identityMergeHelp)
+		.replace("{narrationHelp}", () => narrationHelp)
+		.replace("{editHelp}", () => editHelp(args))
+		.replace("{commentsHelp}", () => commentsHelp(args))
+		.replace("{reviewHelp}", () => messages.studio.reviewHelp);
+};
 
 interface CliRuntime {
 	/** Standalone hosts flush this notice before identity replacement. */
@@ -145,7 +113,7 @@ class CliError extends Error {
 	}
 }
 
-function parseExportArgs(args: string[]): ParsedExportArgs {
+function parseExportArgs(args: string[], t: ReturnType<typeof createTranslator>): ParsedExportArgs {
 	let projectDir: string | undefined;
 	let format: ParsedExportArgs["format"] | undefined;
 	let outputPath: string | undefined;
@@ -157,24 +125,20 @@ function parseExportArgs(args: string[]): ParsedExportArgs {
 		const argument = args[index];
 		if (argument === "--include-answer-sheet") {
 			if (includeAnswerSheet)
-				throw new CliError("invalid_arguments", `${argument} may be supplied only once.`, 2);
+				throw new CliError("invalid_arguments", t("refusals.once", { argument }), 2);
 			includeAnswerSheet = true;
 			continue;
 		}
 		if (argument === "--paper-size") {
 			const value = args[++index];
 			if (pageSize || (value !== "a4" && value !== "letter"))
-				throw new CliError(
-					"invalid_arguments",
-					"--paper-size requires a4 or letter, supplied once.",
-					2,
-				);
+				throw new CliError("invalid_arguments", t("refusals.paperSize"), 2);
 			pageSize = value;
 			continue;
 		}
 		if (argument === "--allow-critical-a11y-issues") {
 			if (allowCriticalA11yIssues) {
-				throw new CliError("invalid_arguments", `${argument} may be supplied only once.`, 2);
+				throw new CliError("invalid_arguments", t("refusals.once", { argument }), 2);
 			}
 			allowCriticalA11yIssues = true;
 			continue;
@@ -182,83 +146,93 @@ function parseExportArgs(args: string[]): ParsedExportArgs {
 		if (argument === "--format" || argument === "--output") {
 			const value = args[++index];
 			if (!value || value.startsWith("--")) {
-				throw new CliError("invalid_arguments", `${argument} requires a value.`, 2);
+				throw new CliError("invalid_arguments", t("refusals.value", { argument }), 2);
 			}
 			if (argument === "--format") {
-				if (format)
-					throw new CliError("invalid_arguments", "--format may be supplied only once.", 2);
+				if (format) throw new CliError("invalid_arguments", t("refusals.formatOnce"), 2);
 				if (!CLI_FORMATS.has(value as ExportFormat)) {
-					throw new CliError("invalid_arguments", `Unsupported format: ${value}`, 2);
+					throw new CliError("invalid_arguments", t("refusals.format", { value }), 2);
 				}
 				format = value as ParsedExportArgs["format"];
 			} else {
 				if (outputPath) {
-					throw new CliError("invalid_arguments", "--output may be supplied only once.", 2);
+					throw new CliError("invalid_arguments", t("refusals.outputOnce"), 2);
 				}
 				outputPath = value;
 			}
 			continue;
 		}
 		if (argument.startsWith("-")) {
-			throw new CliError("invalid_arguments", `Unknown option: ${argument}`, 2);
+			throw new CliError("invalid_arguments", t("refusals.unknown", { argument }), 2);
 		}
 		if (projectDir) {
-			throw new CliError("invalid_arguments", `Unexpected argument: ${argument}`, 2);
+			throw new CliError("invalid_arguments", t("refusals.unexpected", { argument }), 2);
 		}
 		projectDir = argument;
 	}
 
-	if (!projectDir) throw new CliError("invalid_arguments", "Missing project directory.", 2);
-	if (!format) throw new CliError("invalid_arguments", "Missing --format.", 2);
-	if (!outputPath) throw new CliError("invalid_arguments", "Missing --output.", 2);
+	if (!projectDir) throw new CliError("invalid_arguments", t("refusals.missingProject"), 2);
+	if (!format) throw new CliError("invalid_arguments", t("refusals.missingFormat"), 2);
+	if (!outputPath) throw new CliError("invalid_arguments", t("refusals.missingOutput"), 2);
 	const extension = format === "pdf" ? ".pdf" : ".zip";
 	if (path.extname(outputPath).toLowerCase() !== extension) {
-		throw new CliError("invalid_arguments", `--output must name a ${extension} file.`, 2);
+		throw new CliError("invalid_arguments", t("refusals.extension", { extension }), 2);
 	}
 	if (format !== "pdf" && (pageSize || includeAnswerSheet))
-		throw new CliError("invalid_arguments", "PDF options require --format pdf.", 2);
+		throw new CliError("invalid_arguments", t("refusals.pdfOptions"), 2);
 
 	return { projectDir, format, outputPath, allowCriticalA11yIssues, pageSize, includeAnswerSheet };
 }
 
-async function resolveProjectDir(projectDir: string): Promise<string> {
+async function resolveProjectDir(
+	projectDir: string,
+	t: ReturnType<typeof createTranslator>,
+): Promise<string> {
 	try {
 		const resolved = await realpath(path.resolve(projectDir));
-		if (!(await stat(resolved)).isDirectory()) throw new Error("Not a directory");
+		if (!(await stat(resolved)).isDirectory()) throw new Error(t("refusals.notDirectory"));
 		return resolved;
 	} catch (error) {
-		throw new CliError("project_not_found", `Project directory is unavailable: ${projectDir}`, 1, {
+		throw new CliError("project_not_found", t("refusals.project", { projectDir }), 1, {
 			cause: error instanceof Error ? error.message : String(error),
 		});
 	}
 }
 
-async function resolvePaths(parsed: ParsedExportArgs): Promise<{
+async function resolvePaths(
+	parsed: ParsedExportArgs,
+	t: ReturnType<typeof createTranslator>,
+): Promise<{
 	projectDir: string;
 	outputPath: string;
 }> {
-	const projectDir = await resolveProjectDir(parsed.projectDir);
+	const projectDir = await resolveProjectDir(parsed.projectDir, t);
 	const outputPath = path.resolve(parsed.outputPath);
 	try {
-		if (!(await stat(path.dirname(outputPath))).isDirectory()) throw new Error("Not a directory");
+		if (!(await stat(path.dirname(outputPath))).isDirectory())
+			throw new Error(t("refusals.notDirectory"));
 		try {
-			if ((await stat(outputPath)).isDirectory()) throw new Error("Output path is a directory");
+			if ((await stat(outputPath)).isDirectory()) throw new Error(t("refusals.outputDirectory"));
 		} catch (error) {
 			if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
 		}
 	} catch (error) {
-		throw new CliError("output_invalid", `Output path is unavailable: ${outputPath}`, 1, {
+		throw new CliError("output_invalid", t("refusals.output", { outputPath }), 1, {
 			cause: error instanceof Error ? error.message : String(error),
 		});
 	}
 	return { projectDir, outputPath };
 }
 
-async function replaceOutput(outputPath: string, bytes: Buffer): Promise<void> {
+async function replaceOutput(
+	outputPath: string,
+	bytes: Buffer,
+	t: ReturnType<typeof createTranslator>,
+): Promise<void> {
 	try {
 		await saveExport(path.dirname(outputPath), outputPath, bytes);
 	} catch (error) {
-		throw new CliError("output_write_failed", `Unable to write export: ${outputPath}`, 1, {
+		throw new CliError("output_write_failed", t("refusals.write", { outputPath }), 1, {
 			cause: error instanceof Error ? error.message : String(error),
 		});
 	}
@@ -398,7 +372,9 @@ async function errorExecution(
 		return jsonExecution(
 			1,
 			{ ok: false, error: { code: "export_assets_missing", message: error.message } },
-			`Praxity ${command} failed: ${error.message}`,
+			(locale === "fr" ? cliFr : cliEn).commandFailed
+				.replace("{command}", command)
+				.replace("{reason}", () => error.message),
 		);
 	}
 	if (
@@ -432,7 +408,9 @@ async function errorExecution(
 	return jsonExecution(
 		1,
 		{ ok: false, error: { code: "export_failed", message } },
-		`Praxity ${command} failed: ${message}`,
+		(locale === "fr" ? cliFr : cliEn).commandFailed
+			.replace("{command}", command)
+			.replace("{reason}", () => message),
 	);
 }
 
@@ -449,6 +427,7 @@ export async function runPraxityCli(args: string[], runtime: CliRuntime): Promis
 	if (args[0] === "--version" || args[0] === "-v") {
 		return { exitCode: 0, stdout: `${runtime.appVersion}\n`, stderr: "" };
 	}
+	// Before language validation, use the first --lang value; absent or invalid values fall back to en.
 	const writes =
 		["init", "studio"].includes(args[0]) ||
 		(args[0] === "identity" && ["init", "merge"].includes(args[1])) ||
@@ -496,6 +475,10 @@ export async function runPraxityCli(args: string[], runtime: CliRuntime): Promis
 		adviceLocale = language as "en" | "fr";
 		args = [...args.slice(0, index), ...args.slice(index + 2)];
 	}
+	const t = createTranslator({
+		locale: adviceLocale,
+		messages: adviceLocale === "fr" ? cliFr : cliEn,
+	});
 	const advice = createTranslator({
 		locale: adviceLocale,
 		messages: adviceLocale === "fr" ? fr : en,
@@ -514,7 +497,7 @@ export async function runPraxityCli(args: string[], runtime: CliRuntime): Promis
 			);
 		let root: string;
 		try {
-			root = await resolveProjectDir(args[1] ?? process.cwd());
+			root = await resolveProjectDir(args[1] ?? process.cwd(), t);
 		} catch {
 			return errorExecution(
 				new CliError("project_not_found", messages.missingCourse, 1),
@@ -584,7 +567,7 @@ export async function runPraxityCli(args: string[], runtime: CliRuntime): Promis
 					(adviceLocale === "fr" ? cliFr : cliEn).recovery.usage,
 					2,
 				);
-			const root = await resolveProjectDir(args[2]);
+			const root = await resolveProjectDir(args[2], t);
 			if (action === "list") {
 				const archives = await listProjectRecovery(root);
 				try {
@@ -636,6 +619,7 @@ export async function runPraxityCli(args: string[], runtime: CliRuntime): Promis
 							1,
 						),
 				"recovery",
+				adviceLocale,
 			);
 		}
 	}
@@ -651,32 +635,19 @@ export async function runPraxityCli(args: string[], runtime: CliRuntime): Promis
 					const value = args[++index];
 					const parsed = studioPortSchema.safeParse(Number(value));
 					if (port !== undefined || !/^\d+$/.test(value ?? "") || !parsed.success)
-						throw new CliError(
-							"invalid_arguments",
-							"--port requires an integer from 1 to 65535, supplied once.",
-							2,
-						);
+						throw new CliError("invalid_arguments", t("refusals.port"), 2);
 					port = parsed.data;
 					continue;
 				}
 				if (argument === "--no-open" && !noOpen) noOpen = true;
 				else if (argument === "--review" && !reviewEnabled) reviewEnabled = true;
 				else if (!argument.startsWith("-") && !projectDir) projectDir = argument;
-				else
-					throw new CliError(
-						"invalid_arguments",
-						"Usage: praxity studio <project-dir> [--review] [--port <n>] [--no-open]",
-						2,
-					);
+				else throw new CliError("invalid_arguments", t.raw("refusals.studioUsage"), 2);
 			}
-			if (!projectDir) throw new CliError("invalid_arguments", "Missing project directory.", 2);
+			if (!projectDir) throw new CliError("invalid_arguments", t("refusals.missingProject"), 2);
 			if (!runtime.editorAssetsDir)
-				throw new CliError(
-					"editor_assets_missing",
-					"Use the standalone CLI artifact with its browser editor assets.",
-					1,
-				);
-			const root = await resolveProjectDir(projectDir);
+				throw new CliError("editor_assets_missing", t("refusals.editorArtifact"), 1);
+			const root = await resolveProjectDir(projectDir, t);
 			if (reviewEnabled) {
 				const manifest = await lstat(path.join(root, COURSE_MANIFEST_FILENAME)).catch(
 					(error: unknown) => {
@@ -716,6 +687,7 @@ export async function runPraxityCli(args: string[], runtime: CliRuntime): Promis
 				: undefined;
 			const server = await startStudioServer({
 				projectDir: root,
+				locale: adviceLocale,
 				appVersion: runtime.appVersion,
 				editorAssetsDir: runtime.editorAssetsDir,
 				port,
@@ -802,13 +774,14 @@ export async function runPraxityCli(args: string[], runtime: CliRuntime): Promis
 				return errorExecution(
 					new CliError("EIDENTITY", projectIdentityRecoveryMessage(adviceLocale), 1),
 					"studio",
+					adviceLocale,
 				);
 			return errorExecution(
 				error instanceof CliError
 					? error
 					: new CliError(
 							"studio_failed",
-							error instanceof Error ? error.message : "Studio startup failed",
+							error instanceof Error ? error.message : t("refusals.startup"),
 							1,
 							undefined,
 							error,
@@ -826,13 +799,9 @@ export async function runPraxityCli(args: string[], runtime: CliRuntime): Promis
 				!args[1] ||
 				args[1].startsWith("-")
 			) {
-				throw new CliError(
-					"invalid_arguments",
-					"Usage: praxity inspect <project-dir> [--schema 0|1]",
-					2,
-				);
+				throw new CliError("invalid_arguments", t.raw("refusals.inspectUsage"), 2);
 			}
-			const projectDir = await resolveProjectDir(args[1]);
+			const projectDir = await resolveProjectDir(args[1], t);
 
 			const inspected = await (args[3] === "1"
 				? (await import("./export/inspect-project-v1")).inspectProjectV1
@@ -862,6 +831,7 @@ export async function runPraxityCli(args: string[], runtime: CliRuntime): Promis
 							1,
 						),
 				"inspect",
+				adviceLocale,
 			);
 		}
 	}
@@ -873,8 +843,8 @@ export async function runPraxityCli(args: string[], runtime: CliRuntime): Promis
 
 	let exportCourse: string | undefined;
 	try {
-		const parsed = parseExportArgs(args);
-		const resolved = await resolvePaths(parsed);
+		const parsed = parseExportArgs(args, t);
+		const resolved = await resolvePaths(parsed, t);
 		exportCourse = resolved.projectDir;
 		const { exportProject } = await import("./export/export-project");
 		const result = await exportProject({
@@ -896,7 +866,7 @@ export async function runPraxityCli(args: string[], runtime: CliRuntime): Promis
 			expectedAppVersion: runtime.expectedAppVersion,
 			expectedViewerSourceHash: runtime.expectedViewerSourceHash,
 		});
-		await replaceOutput(resolved.outputPath, "pdf" in result ? result.pdf : result.zip);
+		await replaceOutput(resolved.outputPath, "pdf" in result ? result.pdf : result.zip, t);
 		const overridden = result.criticalAccessibilityIssues.length > 0;
 		return jsonExecution(
 			0,
@@ -934,12 +904,22 @@ export async function runPraxityCli(args: string[], runtime: CliRuntime): Promis
 				),
 				...(overridden
 					? [
-							`Warning: exported with ${result.criticalAccessibilityIssues.length} critical accessibility issue(s).`,
+							t("refusals.accessibilityWarning", {
+								count: result.criticalAccessibilityIssues.length,
+							}),
 						]
 					: []),
 				...("scorm12Storage" in result && result.scorm12Storage?.atRisk
 					? [
-							`Warning: a full attempt needs about ${result.scorm12Storage.estimatedLength} characters of SCORM 1.2 progress storage, which holds ${result.scorm12Storage.limit}. ${result.scorm12Storage.reportingSelfCheckCount > 0 ? "Progress and answer text may exceed SCORM 1.2's storage limit. Export to SCORM 2004 if your LMS supports it, or use device-only mode for self-check answers." : "This course may be too long for SCORM 1.2. Progress may stop saving partway through. Export to SCORM 2004 if your LMS supports it."}`,
+							t("refusals.storageWarning", {
+								length: result.scorm12Storage.estimatedLength,
+								limit: result.scorm12Storage.limit,
+								advice: t(
+									result.scorm12Storage.reportingSelfCheckCount > 0
+										? "refusals.storageAnswers"
+										: "refusals.storageCourse",
+								),
+							}),
 						]
 					: []),
 				...("pdf" in result

@@ -49,13 +49,27 @@ export function canvasPracticeRefusalText(
 	return diagnostics
 		.map(({ code, file, line, column }) => {
 			const message = practiceDiagnosticMessage(code, locale);
-			if (file === undefined) return message;
-			const values = { file, line: String(line), column: String(column), message };
-			// One pass keeps a file name such as "{line}.prax" literal.
-			return canvasMessages[locale].sourceLocation.replace(
-				/\{(file|line|column|message)\}/g,
-				(_, key: keyof typeof values) => values[key],
-			);
+			return canvasSourceLocation({ file, line, column }, message, locale);
 		})
 		.join("\n");
+}
+
+/** Shared by initial source refusals and build-time practice refusals. */
+export function canvasSourceLocation(
+	location: { file?: string; line?: number; column?: number },
+	message: string,
+	locale: "en" | "fr",
+) {
+	if (location.file === undefined) return message;
+	const values = {
+		file: location.file,
+		line: String(location.line),
+		column: String(location.column),
+		message,
+	};
+	// One pass keeps a file name such as "{line}.prax" literal.
+	return canvasMessages[locale].sourceLocation.replace(
+		/\{(file|line|column|message)\}/g,
+		(_, key: keyof typeof values) => values[key],
+	);
 }
