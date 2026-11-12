@@ -1,4 +1,5 @@
 import { parseFrontmatter } from "../../frontmatter.ts";
+import { linkUrlRefusal } from "../../utils.ts";
 import { tokenizeInline } from "../inline.ts";
 import { lineColumn, type TokenLine, type TokenStream } from "../lex/index.ts";
 import { interpretBodies } from "./body.ts";
@@ -221,6 +222,17 @@ export function analyzeLessonTree(
 					type: node.type ?? node.kind,
 					name: setting.name,
 					...(suggestion ? { suggestion } : {}),
+				});
+				node.status = "unresolved";
+			} else if (
+				rule.type === "url" &&
+				typeof setting.value.value === "string" &&
+				linkUrlRefusal(setting.value.value)
+			) {
+				// Name the allowed link forms; never echo the refused URL.
+				report("unsafe-link-url", setting.span, {
+					type: node.type ?? node.kind,
+					name: setting.name,
 				});
 				node.status = "unresolved";
 			} else if (

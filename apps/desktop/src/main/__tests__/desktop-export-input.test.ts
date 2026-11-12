@@ -1228,7 +1228,7 @@ Nested body.
 		const input = await buildCourseWithCriticalIssue();
 
 		try {
-			assertExportAccessibility(input);
+			await assertExportAccessibility(input);
 			expect.unreachable("Expected the export accessibility boundary to reject the course");
 		} catch (error) {
 			expect(error).toBeInstanceOf(ExportAccessibilityError);
@@ -1249,13 +1249,13 @@ Nested body.
 			allowA11yViolations: true,
 		});
 
-		expect(() => assertExportAccessibility(input)).toThrow(ExportAccessibilityError);
+		await expect(assertExportAccessibility(input)).rejects.toThrow(ExportAccessibilityError);
 	}, 15_000);
 
 	it("allows the same course through the export boundary after deliberate enforcement disablement", async () => {
 		const input = await buildCourseWithCriticalIssue();
 
-		expect(assertExportAccessibility(input, false)).toEqual([
+		expect(await assertExportAccessibility(input, false)).toEqual([
 			expect.objectContaining({
 				rule: "image-alt",
 				severity: "critical",
@@ -1281,7 +1281,7 @@ Nested body.
 			},
 		];
 
-		expect(assertExportAccessibility(input)).toEqual([]);
+		expect(await assertExportAccessibility(input)).toEqual([]);
 	});
 
 	it("builds a lesson-scoped export input for a specific .prax file", async () => {

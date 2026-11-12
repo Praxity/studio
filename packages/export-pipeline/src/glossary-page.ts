@@ -1,3 +1,4 @@
+import { escapeHtml } from "@praxity/content-model/constants";
 import {
 	formatInlineText,
 	inlineMarkdown,
@@ -16,15 +17,6 @@ export interface GlossaryPageTerm {
 
 interface GlossaryPageOptions {
 	terms: GlossaryPageTerm[];
-}
-
-/** Escape characters that are unsafe in HTML text/attribute contexts. */
-function escapeHtml(s: string): string {
-	return s
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;")
-		.replace(/"/g, "&quot;");
 }
 
 /**
