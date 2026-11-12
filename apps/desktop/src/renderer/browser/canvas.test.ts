@@ -334,3 +334,41 @@ for (const lang of ["en", "fr"] as const)
 			canvas.close();
 		}
 	});
+
+it.each(["network", "timeout", "server", "practice", "missing-page"] as const)(
+	"releases updating after a held reload fails: %s",
+	async (kind) => {
+		vi.spyOn(console, "error").mockImplementation(() => {});
+		let fail!: () => void;
+		const held = new Promise<Response>((resolve, reject) => {
+			fail = () => {
+				if (kind === "network" || kind === "timeout") {
+					reject(new Error(kind === "timeout" ? "Request timed out" : "Network unavailable"));
+				} else if (kind === "practice") resolve(practiceRefusal());
+				else if (kind === "missing-page")
+					resolve(new Response(JSON.stringify({ ok: true, result: { ...built, pages: [] } })));
+				else
+					resolve(
+						new Response(JSON.stringify({ ok: false, error: { code: "operation_failed" } }), {
+							status: 500,
+						}),
+					);
+			};
+		});
+		const canvas = await mountCanvas(canvasMessages.en, () => held);
+		try {
+			canvas.reload();
+			expect(canvas.view.setUpdating).toHaveBeenLastCalledWith(true);
+			fail();
+			await vi.waitFor(() =>
+				expect(canvas.status()?.textContent).toBe(
+					kind === "practice" ? refusalText : canvasMessages.en.refreshFailed,
+				),
+			);
+			expect(canvas.view.setUpdating).toHaveBeenLastCalledWith(false);
+			expect(canvas.window.document.body.textContent).toBe("Saved course");
+		} finally {
+			canvas.close();
+		}
+	},
+);

@@ -603,7 +603,6 @@ export function startStudioAuthor(
 						documentPath = new URL(authorUrl).pathname;
 						destination = readArrivalUrl(savedReadUrl);
 						view.update(current.fields);
-						view.setUpdating(false);
 						const announcement = liveStatus.textContent;
 						const nextStatus = view.unmapped
 							? messages.unmapped
@@ -660,6 +659,7 @@ export function startStudioAuthor(
 						refreshing = false;
 						if (requested !== generation) void refresh();
 						else {
+							view.setUpdating(false);
 							link.href = destination;
 							link.textContent = messages.read;
 							link.removeAttribute("aria-busy");

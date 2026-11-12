@@ -86,6 +86,11 @@ export function canvasTextNeedsFallback(geometry: CanvasTextGeometry): boolean {
 	return !geometry.cornersHit;
 }
 
+// Only known saved-field recoveries bypass document admission. Other refusals may need a server page.
+export function canvasTextCanReloadInPlace(error: string): boolean {
+	return ["stale", "conflict", "orphaned", "ambiguous"].includes(error);
+}
+
 /** One in-memory field, no draft or render lifecycle. */
 export function createCanvasTextSession(port: CanvasTextPort, changed: () => void) {
 	type Phase = "closed" | "editing" | "saving" | "unknown" | "retry";
@@ -1052,11 +1057,12 @@ export function mountCanvasTextFields(
 				}
 			});
 			reload.addEventListener("click", (event) => {
-				if (event.isTrusted)
-					confirmDiscard(
-						() => (lifecycle?.reload ? lifecycle.reload() : location.reload()),
-						"reload",
-					);
+				if (!event.isTrusted) return;
+				const inPlace = canvasTextCanReloadInPlace(session.state().error);
+				confirmDiscard(
+					() => (inPlace && lifecycle?.reload ? lifecycle.reload() : location.reload()),
+					"reload",
+				);
 			});
 			keep.addEventListener("click", (event) => {
 				if (event.isTrusted) {

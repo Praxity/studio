@@ -735,9 +735,16 @@ test("Discard reload blocks stale edits until the outside text lands", async ({ 
 		await page.getByRole("button", { name: "Discard text and reload", exact: true }).click();
 		await expect(page.getByRole("status")).toHaveText("Updating page…");
 		const edits = page.getByRole("button", { name: /^Edit (heading|paragraph)/ });
+		expect(await edits.count()).toBeGreaterThan(0);
 		for (const button of await edits.all())
 			await expect(button).toHaveAttribute("aria-disabled", "true");
 		await edit(page).click({ force: true });
+		await expect(field(page)).toHaveCount(0);
+		await edits.first().focus();
+		await page.keyboard.press("Shift+Tab");
+		await page.keyboard.press("Tab");
+		await expect(edits.first()).toBeFocused();
+		await page.keyboard.press("Enter");
 		await expect(field(page)).toHaveCount(0);
 		release();
 		await expect(page.getByText("Outside.", { exact: true })).toBeVisible();

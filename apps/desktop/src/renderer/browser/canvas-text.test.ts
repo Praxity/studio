@@ -4,6 +4,7 @@ import {
 	type CanvasTextGeometry,
 	type CanvasTextReply,
 	type CanvasTextRequest,
+	canvasTextCanReloadInPlace,
 	canvasTextNeedsFallback,
 	createCanvasTextSession,
 } from "./canvas-text";
@@ -592,3 +593,20 @@ it.each([
 		expect(canvasTextNeedsFallback({ ...flowGeometry, ...geometry })).toBe(expected);
 	},
 );
+
+it.each([
+	["stale", true],
+	["conflict", true],
+	["orphaned", true],
+	["ambiguous", true],
+	["unknown", false],
+	["identity-retirement-pending", false],
+	["plain-store-required", false],
+	["not-allowed", false],
+	["recovery-required", false],
+	["unsupported-filesystem", false],
+	["future-server-page-refusal", false],
+	["", false],
+] as const)("chooses in-place reload only for saved-field recovery: %s", (error, expected) => {
+	expect(canvasTextCanReloadInPlace(error)).toBe(expected);
+});
