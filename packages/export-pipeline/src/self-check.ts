@@ -1,4 +1,4 @@
-import { escapeJsonForScript } from "@praxity/content-model/constants";
+import { escapeHtml, escapeJsonForScript } from "@praxity/content-model/constants";
 import { isInlineProjectionMetadataKey } from "@praxity/shared-blocks/inline-markdown";
 import { flattenLogicBlocks } from "@praxity/shared-blocks/logic/flatten-blocks";
 import {
@@ -186,13 +186,6 @@ export function selfCheckPageAssets(
 			sha256,
 		}));
 }
-function attribute(value: string): string {
-	return value
-		.replaceAll("&", "&amp;")
-		.replaceAll('"', "&quot;")
-		.replaceAll("<", "&lt;")
-		.replaceAll(">", "&gt;");
-}
 export function bindSelfCheckAssets(
 	html: string,
 	runtime: SelfCheckRuntime,
@@ -214,7 +207,7 @@ export function bindSelfCheckAssets(
 					})
 				);
 			})
-			.map((asset) => [attribute(asset.blockId), asset]),
+			.map((asset) => [escapeHtml(asset.blockId), asset]),
 	);
 	return html.replace(/data-self-check-id="([^"]*)"/g, (match, id: string) => {
 		const asset = assets.get(id);
@@ -298,7 +291,7 @@ export function bindSelfCheckDocument(
 	return requiredIds.length
 		? html.replace(
 				/<html\b/,
-				`<html data-self-check-dependencies="${attribute(requiredIds.join(" "))}"`,
+				`<html data-self-check-dependencies="${escapeHtml(requiredIds.join(" "))}"`,
 			)
 		: html;
 }

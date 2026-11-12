@@ -28,7 +28,7 @@ These settings apply to blocks, images, headings, dividers, items and back faces
 
 ## Safe links and media URLs
 
-Button links, image, audio and video sources, and quote sources accept relative paths, fragments, and `http:`, `https:`, `mailto:` and `tel:` URLs. Media sources also accept `data:` URLs other than HTML. Studio reads the scheme as browsers do, ignoring leading control characters and any tab or line break, and reports every other scheme as an error.
+Button and bookmark links, quote sources, and image, audio and video sources accept relative paths, fragments, and `http:`, `https:`, `mailto:` and `tel:` URLs. Image, audio and video sources also accept raster image `data:` URLs (`data:image/` followed by any type except `svg+xml`). Studio reads the scheme as browsers do, ignoring leading control characters and any tab or line break, and reports every other scheme as an error.
 
 ## Shared question settings and parts
 

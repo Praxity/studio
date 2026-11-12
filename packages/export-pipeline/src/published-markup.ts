@@ -1,5 +1,5 @@
 import { escapeHtml } from "@praxity/content-model/constants";
-import { isSafeEmbedUrl, isSafeUrl } from "@praxity/grammar";
+import { isSafeEmbedUrl, isSafeMediaUrl, isSafeUrl } from "@praxity/grammar";
 import {
 	admitWriteDistractorsPrompt,
 	constructSelfCheckPromptBlock,
@@ -35,7 +35,6 @@ export function renderInlineField(
 	return processMathSpans(sanitizeHtml(getInlineField(owner, path, interactive), { interactive }));
 }
 
-const SAFE_DATA_MIME = /^data:image\/(?!svg\+xml)/i;
 const RAW_TEXT_KEYS = new Set([
 	"code",
 	"latex",
@@ -62,7 +61,7 @@ const HREF_URL_KEYS = new Set(["href", "url", "sourceUrl"]);
 
 export function sanitizeUrl(url: string): string {
 	const trimmed = url.trim();
-	return isSafeUrl(trimmed, SAFE_DATA_MIME) ? trimmed : "#";
+	return isSafeMediaUrl(trimmed) ? trimmed : "#";
 }
 
 /** Stricter variant for <a href> — blocks ALL data: URIs (SVG scripts execute on navigation). */

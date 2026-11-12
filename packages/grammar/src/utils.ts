@@ -14,33 +14,46 @@ export function positionalId(type: string): string {
 }
 
 const SAFE_URL_SCHEMES = new Set(["http", "https", "mailto", "tel"]);
-const URL_EDGE_CONTROL_OR_SPACE = /^[\u0000- ]+|[\u0000- ]+$/g;
 const URL_TAB_OR_NEWLINE = /[\t\n\r]/g;
+const URL_SCHEME = /^([a-z][a-z\d+.-]*):/i;
+// Raster images only: an SVG document can carry script.
+const RASTER_IMAGE_DATA_URL = /^data:image\/(?!svg\+xml)/i;
 
 /**
- * Whether a URL from course source may go into an href or src attribute. Relative URLs, fragments
- * and http, https, mailto and tel pass. `data:` passes only when `allowedData` matches it.
- * Every other scheme is refused, so an unknown or disguised scheme never reaches the page.
- *
- * The scheme is read as the URL Standard's basic URL parser reads it
+ * Whether a URL from course source may go into an href: relative URLs, fragments, and http,
+ * https, mailto and tel. Every other scheme is refused, including `data:`, so an unknown or
+ * disguised scheme never reaches the page.
+ */
+export function isSafeUrl(url: string): boolean {
+	return isAllowedUrl(url, false);
+}
+
+/** Media src attributes accept the same URLs plus raster image `data:` URLs. */
+export function isSafeMediaUrl(url: string): boolean {
+	return isAllowedUrl(url, true);
+}
+
+/**
+ * Reads the scheme as the URL Standard's basic URL parser does
  * (https://url.spec.whatwg.org/#concept-basic-url-parser), so text the browser treats as
  * `javascript:` is refused here too:
  * 1. "Remove any leading and trailing C0 control or space from input" (U+0000 to U+0020).
+ *    Only the leading run can change the scheme or the anchored `data:` check, so trailing
+ *    characters are left alone.
  * 2. "Remove all ASCII tab or newline from input" (U+0009, U+000A, U+000D).
  * 3. Scheme start and scheme states: an ASCII alpha, then ASCII alphanumerics, "+", "-" or ".",
  *    ended by ":". Anything else has no scheme and resolves against the page.
+ * Each step is a single linear pass; a backtracking edge-trim regex took quadratic time on long
+ * whitespace runs.
  */
-export function isSafeUrl(url: string, allowedData?: RegExp): boolean {
-	const normalized = url.replace(URL_EDGE_CONTROL_OR_SPACE, "").replace(URL_TAB_OR_NEWLINE, "");
-	const scheme = /^([a-z][a-z\d+.-]*):/i.exec(normalized)?.[1]?.toLowerCase();
+function isAllowedUrl(url: string, rasterImageData: boolean): boolean {
+	let start = 0;
+	while (start < url.length && url.charCodeAt(start) <= 0x20) start++;
+	const normalized = url.slice(start).replace(URL_TAB_OR_NEWLINE, "");
+	const scheme = URL_SCHEME.exec(normalized)?.[1]?.toLowerCase();
 	if (scheme === undefined) return true;
-	if (scheme === "data") return allowedData?.test(normalized) ?? false;
+	if (scheme === "data") return rasterImageData && RASTER_IMAGE_DATA_URL.test(normalized);
 	return SAFE_URL_SCHEMES.has(scheme);
-}
-
-/** Media src attributes also accept `data:` URLs other than HTML documents. */
-export function isSafeMediaUrl(url: string): boolean {
-	return isSafeUrl(url, /^data:(?!text\/html)/i);
 }
 
 /** A caption attachment is a safe VTT path or an HTTPS VTT URL. */

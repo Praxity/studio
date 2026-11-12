@@ -2,8 +2,6 @@ import { describe, expect, it } from "vitest";
 import { readLesson } from "../src/index.ts";
 import { isSafeMediaUrl, isSafeUrl } from "../src/utils.ts";
 
-const RASTER_IMAGE = /^data:image\/(?!svg\+xml)/i;
-
 describe("isSafeUrl", () => {
 	it.each([
 		"https://example.org/a?b=1#c",
@@ -13,6 +11,7 @@ describe("isSafeUrl", () => {
 		"tel:+15551234567",
 		"#page",
 		"",
+		"   ",
 		"?query=1",
 		"/assets/guide.pdf",
 		"./page-2.html",
@@ -55,25 +54,13 @@ describe("isSafeUrl", () => {
 		expect(isSafeUrl(url)).toBe(false);
 	});
 
-	it("admits data: only when the caller's pattern matches the normalized URL", () => {
-		expect(isSafeUrl("data:image/png;base64,AAAA", RASTER_IMAGE)).toBe(true);
-		expect(isSafeUrl(" \u0001DATA:image/JPEG;base64,AAAA", RASTER_IMAGE)).toBe(true);
-		expect(isSafeUrl("data:image/svg+xml,<svg/>", RASTER_IMAGE)).toBe(false);
-		expect(isSafeUrl("data:image/svg\t+xml,<svg/>", RASTER_IMAGE)).toBe(false);
-		expect(isSafeUrl("da\nta:text/html,x", RASTER_IMAGE)).toBe(false);
-	});
-});
-
-describe("image sources in lesson source", () => {
-	const imageDiagnostics = (src: string) =>
-		readLesson(`# T\n\n![x](${src})\n`).diagnostics.map((d) => `${d.code}/${d.severity}`);
-
-	it.each(["javascript:alert(1)", "\u0001javascript:alert(1)"])("refuses %j", (src) => {
-		expect(imageDiagnostics(src)).toEqual(["bad-subject/error"]);
-	});
-
-	it("accepts a project asset path", () => {
-		expect(imageDiagnostics("/assets/a.png")).toEqual([]);
+	it("takes linear time on long whitespace runs", () => {
+		const run = " ".repeat(100_000);
+		const started = performance.now();
+		expect(isSafeUrl(`a${run}b`)).toBe(true);
+		expect(isSafeUrl(`${run}javascript:x${run}`)).toBe(false);
+		expect(isSafeMediaUrl(`/a.png${run}b`)).toBe(true);
+		expect(performance.now() - started).toBeLessThan(100);
 	});
 });
 
@@ -81,10 +68,11 @@ describe("isSafeMediaUrl", () => {
 	it.each([
 		"/assets/a.mp3",
 		"https://example.org/a.mp4",
-		"data:audio/mp3;base64,AAAA",
-		"data:image/svg+xml,<svg/>",
 		"tel:+15551234567",
 		"mailto:a@example.org",
+		"data:image/png;base64,AAAA",
+		" \u0001DATA:image/JPEG;base64,AAAA",
+		"data:image/webp;base64,AAAA",
 	])("accepts %j", (url) => {
 		expect(isSafeMediaUrl(url)).toBe(true);
 	});
@@ -95,8 +83,42 @@ describe("isSafeMediaUrl", () => {
 		"blob:x",
 		"data:text/html,x",
 		"\u0000data:text/html,x",
+		"da\nta:text/html,x",
+		"data:audio/mp3;base64,AAAA",
+		"data:image/svg+xml,<svg/>",
+		"data:image/svg\t+xml,<svg/>",
 		"vbscript:x",
 	])("refuses %j", (url) => {
 		expect(isSafeMediaUrl(url)).toBe(false);
+	});
+});
+
+describe("URLs in lesson source", () => {
+	const diagnostics = (source: string) =>
+		readLesson(`# T\n\n${source}\n`).diagnostics.map((d) => `${d.code}/${d.severity}`);
+
+	it.each([
+		"![x](javascript:alert(1))",
+		"![x](\u0001javascript:alert(1))",
+		"![x](data:image/svg+xml,x)",
+		"::: audio data:audio/mp3;base64,AAAA\n:::",
+		"::: button [Go](data:image/png;base64,AAAA)\n:::",
+	])("refuses %j", (source) => {
+		expect(diagnostics(source)).toEqual(["bad-subject/error"]);
+	});
+
+	it("refuses a quote source that is a data: URL", () => {
+		expect(diagnostics('::: quote {source="data:image/png;base64,AAAA"}\nWords\n:::')).toEqual([
+			"bad-setting-value/error",
+		]);
+	});
+
+	it.each([
+		"![x](/assets/a.png)",
+		"![x](data:image/png;base64,AAAA)",
+		"::: button [Go](https://example.org/)\n:::",
+		'::: quote {source="https://example.org/"}\nWords\n:::',
+	])("accepts %j", (source) => {
+		expect(diagnostics(source)).toEqual([]);
 	});
 });

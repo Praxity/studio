@@ -43,7 +43,7 @@ import { parseDocument } from "yaml";
 import { displayText } from "../line-endings.ts";
 import { parseLogicConditionExpression, parseLogicScalarValue } from "../logic-condition.ts";
 import type { DesignVariants } from "../types.ts";
-import { isSafeCaptionTrackUrl, isSafeEmbedUrl, isSafeMediaUrl } from "../utils.ts";
+import { isSafeCaptionTrackUrl, isSafeEmbedUrl, isSafeMediaUrl, isSafeUrl } from "../utils.ts";
 import { tokenizeInline } from "./inline.ts";
 import { lineColumn, tokenizeLesson } from "./lex/index.ts";
 import { readHeaderSettings } from "./tree/build.ts";
@@ -403,7 +403,7 @@ function linkSubject(value: string, raw = value): boolean {
 		nodes[0].kind === "link" &&
 		nodes[0].children.length > 0 &&
 		nodes[0].destination.value.length > 0 &&
-		isSafeMediaUrl(nodes[0].destination.value)
+		isSafeUrl(nodes[0].destination.value)
 	);
 }
 function constraints(
@@ -1416,7 +1416,7 @@ export const BLOCK_SCHEMA: Readonly<Record<string, BlockDefinition>> = {
 				"source",
 				"url",
 				"link",
-				(v) => typeof v === "string" && v.length > 0 && isSafeMediaUrl(v),
+				(v) => typeof v === "string" && v.length > 0 && isSafeUrl(v),
 			),
 		},
 	}),

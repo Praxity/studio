@@ -1137,7 +1137,7 @@ function renderResourceEntry(block: PraxityBlock, strings: RenderBlockHtmlString
 		: getFileTypeLabelFromMime(data.mimeType);
 	const isLink = data.resourceType === "link";
 	const action = isLink ? strings.resourceOpenLink : strings.documentDownload;
-	return `<div class="praxity-resource-entry"><div class="praxity-resource-content"><span class="praxity-resource-title">${title}</span>${description ? `<span class="praxity-resource-description">${description}</span>` : ""}</div>${href ? `<a href="${escapeHtml(href)}" class="praxity-resource-action"${isLink ? ' target="_blank" rel="noopener noreferrer"' : data.resourceType === "file" ? ` download="${escapeHtml(data.title)}"` : ""}>${escapeHtml(action)}${fileLabel ? ` (${escapeHtml(fileLabel)})` : ""}${accessibleTitle ? `<span class="praxity-sr-only">: ${accessibleTitle}</span>` : ""}${isLink ? externalLinkIndicatorHtml(strings.opensInNewTab) : ""}</a>` : ""}</div>`;
+	return `<div class="praxity-resource-entry"><div class="praxity-resource-content"><span class="praxity-resource-title">${title}</span>${description ? `<span class="praxity-resource-description">${description}</span>` : ""}</div>${href ? `<a href="${escapeHtml(href)}" class="praxity-resource-action"${isLink ? ' target="_blank" rel="noopener noreferrer"' : data.resourceType === "file" ? ` download="${escapeHtml(data.title)}"` : ""}>${escapeHtml(action)}${fileLabel ? ` (${escapeHtml(fileLabel)})` : ""}${accessibleTitle ? `<span class="praxity-sr-only">: ${escapeHtml(accessibleTitle)}</span>` : ""}${isLink ? externalLinkIndicatorHtml(strings.opensInNewTab) : ""}</a>` : ""}</div>`;
 }
 
 function isHttpsUrl(value: string): boolean {
