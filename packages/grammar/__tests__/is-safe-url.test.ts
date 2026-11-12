@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { readLesson } from "../src/index.ts";
 import { isSafeMediaUrl, isSafeUrl } from "../src/utils.ts";
@@ -94,31 +95,72 @@ describe("isSafeMediaUrl", () => {
 });
 
 describe("URLs in lesson source", () => {
-	const diagnostics = (source: string) =>
-		readLesson(`# T\n\n${source}\n`).diagnostics.map((d) => `${d.code}/${d.severity}`);
+	const catalogs = Object.fromEntries(
+		["en", "fr"].map((locale) => [
+			locale,
+			JSON.parse(
+				readFileSync(
+					new URL(`../../editor-core/src/messages/${locale}.json`, import.meta.url),
+					"utf8",
+				),
+			).op.diagnostic as Record<string, string>,
+		]),
+	);
+	const read = (source: string) => readLesson(`# T\n\n${source}\n`).diagnostics;
+	const codes = (source: string) => read(source).map((d) => `${d.code}/${d.severity}`);
 
 	it.each([
-		"![x](javascript:alert(1))",
-		"![x](\u0001javascript:alert(1))",
-		"![x](data:image/svg+xml,x)",
-		"::: audio data:audio/mp3;base64,AAAA\n:::",
-		"::: button [Go](data:image/png;base64,AAAA)\n:::",
-	])("refuses %j", (source) => {
-		expect(diagnostics(source)).toEqual(["bad-subject/error"]);
+		["![x](data:image/svg+xml,%3Csvg%20onload%3Dalert(1)%3E)", "svg-data-url"],
+		["![x](javascript:alert(1))", "unsafe-media-url"],
+		["![x](\u0001javascript:alert(1))", "unsafe-media-url"],
+		["::: audio data:audio/mp3;base64,AAAA\n:::", "unsafe-media-url"],
+		["::: video javascript:alert(1)\n:::", "unsafe-media-url"],
+		["::: button [Go](javascript:alert(1))\n:::", "unsafe-link-url"],
+		["::: bookmark [Go](data:image/png;base64,AAAA)\n:::", "unsafe-link-url"],
+		['::: quote {source="javascript:alert(1)"}\nWords\n:::', "unsafe-link-url"],
+	])("names why %j is refused", (source, code) => {
+		const [diagnostic, ...rest] = read(source);
+		expect(rest).toEqual([]);
+		expect(diagnostic).toMatchObject({ code, severity: "error", line: 3 });
+		// The refused URL is never echoed back.
+		expect(JSON.stringify(diagnostic.message.args)).not.toMatch(/alert|AAAA|svg/);
 	});
 
-	it("refuses a quote source that is a data: URL", () => {
-		expect(diagnostics('::: quote {source="data:image/png;base64,AAAA"}\nWords\n:::')).toEqual([
-			"bad-setting-value/error",
-		]);
+	it("explains a refused SVG data: image in English and French", () => {
+		expect(catalogs.en["svg-data-url"]).toBe(
+			"SVG can’t be embedded as a data: URL because it can carry scripts. Use an image file in the project’s assets folder, or a PNG or JPEG data: URL.",
+		);
+		expect(catalogs.fr["svg-data-url"]).toBe(
+			"Une image SVG ne peut pas être intégrée comme URL data:, car elle peut contenir des scripts. Utilisez un fichier image du dossier assets du projet, ou une URL data: PNG ou JPEG.",
+		);
+	});
+
+	it("names the allowed forms for a refused javascript: image and link in English and French", () => {
+		expect(catalogs.en["unsafe-media-url"]).toBe(
+			"This media address isn’t allowed. Use a project file path, or an https: or http: address.",
+		);
+		expect(catalogs.fr["unsafe-media-url"]).toBe(
+			"Cette adresse de média n’est pas autorisée. Utilisez le chemin d’un fichier du projet, ou une adresse https: ou http:.",
+		);
+		expect(catalogs.en["unsafe-link-url"]).toBe(
+			"This link address isn’t allowed. Use a project file path, or an https:, http:, mailto: or tel: address.",
+		);
+		expect(catalogs.fr["unsafe-link-url"]).toBe(
+			"Cette adresse de lien n’est pas autorisée. Utilisez le chemin d’un fichier du projet, ou une adresse https:, http:, mailto: ou tel:.",
+		);
+	});
+
+	it("keeps the general message for an empty image source", () => {
+		expect(codes("![x]()")).toEqual(["bad-subject/error"]);
 	});
 
 	it.each([
 		"![x](/assets/a.png)",
 		"![x](data:image/png;base64,AAAA)",
 		"::: button [Go](https://example.org/)\n:::",
+		"::: button [Write](mailto:a@example.org)\n:::",
 		'::: quote {source="https://example.org/"}\nWords\n:::',
 	])("accepts %j", (source) => {
-		expect(diagnostics(source)).toEqual([]);
+		expect(codes(source)).toEqual([]);
 	});
 });

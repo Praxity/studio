@@ -18,6 +18,10 @@ const URL_TAB_OR_NEWLINE = /[\t\n\r]/g;
 const URL_SCHEME = /^([a-z][a-z\d+.-]*):/i;
 // Raster images only: an SVG document can carry script.
 const RASTER_IMAGE_DATA_URL = /^data:image\/(?!svg\+xml)/i;
+const SVG_IMAGE_DATA_URL = /^data:image\/svg\+xml/i;
+
+/** Why a URL is refused; each code has its own diagnostic that names what to use instead. */
+export type UrlRefusal = "svg-data-url" | "unsafe-media-url" | "unsafe-link-url";
 
 /**
  * Whether a URL from course source may go into an href: relative URLs, fragments, and http,
@@ -25,12 +29,20 @@ const RASTER_IMAGE_DATA_URL = /^data:image\/(?!svg\+xml)/i;
  * disguised scheme never reaches the page.
  */
 export function isSafeUrl(url: string): boolean {
-	return isAllowedUrl(url, false);
+	return linkUrlRefusal(url) === undefined;
 }
 
 /** Media src attributes accept the same URLs plus raster image `data:` URLs. */
 export function isSafeMediaUrl(url: string): boolean {
-	return isAllowedUrl(url, true);
+	return mediaUrlRefusal(url) === undefined;
+}
+
+export function linkUrlRefusal(url: string): UrlRefusal | undefined {
+	return urlRefusal(url, false);
+}
+
+export function mediaUrlRefusal(url: string): UrlRefusal | undefined {
+	return urlRefusal(url, true);
 }
 
 /**
@@ -46,14 +58,17 @@ export function isSafeMediaUrl(url: string): boolean {
  * Each step is a single linear pass; a backtracking edge-trim regex took quadratic time on long
  * whitespace runs.
  */
-function isAllowedUrl(url: string, rasterImageData: boolean): boolean {
+function urlRefusal(url: string, media: boolean): UrlRefusal | undefined {
 	let start = 0;
 	while (start < url.length && url.charCodeAt(start) <= 0x20) start++;
 	const normalized = url.slice(start).replace(URL_TAB_OR_NEWLINE, "");
 	const scheme = URL_SCHEME.exec(normalized)?.[1]?.toLowerCase();
-	if (scheme === undefined) return true;
-	if (scheme === "data") return rasterImageData && RASTER_IMAGE_DATA_URL.test(normalized);
-	return SAFE_URL_SCHEMES.has(scheme);
+	if (scheme === undefined) return undefined;
+	if (scheme === "data" && media) {
+		if (RASTER_IMAGE_DATA_URL.test(normalized)) return undefined;
+		if (SVG_IMAGE_DATA_URL.test(normalized)) return "svg-data-url";
+	} else if (scheme !== "data" && SAFE_URL_SCHEMES.has(scheme)) return undefined;
+	return media ? "unsafe-media-url" : "unsafe-link-url";
 }
 
 /** A caption attachment is a safe VTT path or an HTTPS VTT URL. */
