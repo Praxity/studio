@@ -62,6 +62,39 @@ it.each([false, true])("checks course membership, removed=%s", async (removed) =
 	}
 });
 
+it.each([false, true])(
+	"uses the lesson language for source refusals, course manifest=%s",
+	async (manifest) => {
+		const root = await mkdtemp(join(tmpdir(), "canvas-lesson-locale-"));
+		roots.push(root);
+		if (manifest)
+			await writeFile(
+				join(root, "course.yaml"),
+				"title: Example\nlocale: en\nlessons: [lesson.prax]\n",
+			);
+		await writeFile(
+			join(root, "lesson.prax"),
+			"---\nlang: fr\n---\n# Lesson\n\nIntro.\n\n::: unknown-secret-type\nHidden body\n:::\n",
+		);
+		const session = await createStudioProjectSession(root, "test");
+		try {
+			const inventory = (await session.invoke("canvasTextSnapshot", {})) as Awaited<
+				ReturnType<OperationService["canvasTextSnapshot"]>
+			>;
+			const field = inventory.fields[0];
+			expect(field).toBeDefined();
+			const snapshot = await session.invoke("canvasTextSnapshot", {}, { ...field, pageIndex: 0 });
+			expect(snapshot).toMatchObject({
+				fields: [],
+				sourceRefusal:
+					"lesson.prax, ligne 8, colonne 1 : Corrigez l'erreur dans le fichier .prax de cette leçon pour en modifier le texte.",
+			});
+		} finally {
+			await session.close();
+		}
+	},
+);
+
 it("admits the repro lesson's text fields with the compiler's transient lesson and page scope", async () => {
 	const root = await mkdtemp(join(tmpdir(), "canvas-source-error-"));
 	roots.push(root);

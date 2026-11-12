@@ -1200,17 +1200,18 @@ export async function createStudioProjectSession(
 					parseEditorInput(emptyArgs, args);
 					const snapshot = await operations.canvasTextSnapshot(canvasPageScope);
 					const error = snapshot.sourceError;
+					const canvasLocale = snapshot.locale.startsWith("fr") ? "fr" : "en";
 					return {
 						...snapshot,
 						sourceRefusal: snapshot.lessonMissing
-							? canvasMessages[locale].lessonGone
+							? canvasMessages[canvasLocale].lessonGone
 							: error
 								? canvasSourceLocation(
 										error,
-										canvasMessages[locale][
+										canvasMessages[canvasLocale][
 											error.code === "detached-feedback" ? "detachedFeedback" : "sourceError"
 										],
-										locale,
+										canvasLocale,
 									)
 								: undefined,
 						servedSeq: canvasPageScope.editorSeq,

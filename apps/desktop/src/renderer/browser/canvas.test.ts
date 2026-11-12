@@ -432,6 +432,52 @@ it.each(["network", "timeout", "server", "practice", "missing-page"] as const)(
 		}
 	},
 );
+it.each(["en", "fr"] as const)(
+	"%s: source errors preserve the last good highlight until repair",
+	async (locale) => {
+		const messages = canvasMessages[locale];
+		const good =
+			'<h1>Practice</h1><section data-highlight=""><p data-highlight-passage="">Green passage.</p><details data-highlight-fallback="">Green answer.</details><div data-highlight-print-answer="">Green print answer.</div></section>';
+		const recovered = good.replaceAll("Green", "Red");
+		let builds = 0;
+		const canvas = await mountCanvas(
+			messages,
+			() => {
+				builds++;
+				return new Response(JSON.stringify({ ok: true, result: { ...built, pageId: "page" } }));
+			},
+			() => `<!doctype html><html><head></head><body>${recovered}</body></html>`,
+		);
+		try {
+			const body = canvas.window.document.body;
+			body.innerHTML = good;
+			const highlight = body.querySelector("[data-highlight]");
+			const fields = canvas.snapshot.fields;
+			const sourceRefusal =
+				(locale === "fr"
+					? "lesson.prax, ligne 9, colonne 35 : "
+					: "lesson.prax, line 9, column 35: ") + messages.sourceError;
+			canvas.snapshot.fields = [];
+			canvas.snapshot.sourceRefusal = sourceRefusal;
+			canvas.changeSource();
+			await vi.waitFor(() => expect(canvas.status()?.textContent).toBe(sourceRefusal));
+			expect(body.innerHTML).toBe(good);
+			expect(body.querySelector("[data-highlight]")).toBe(highlight);
+			expect(canvas.view.update).toHaveBeenLastCalledWith([]);
+			expect(builds).toBe(0);
+			canvas.snapshot.fields = fields;
+			canvas.snapshot.sourceRefusal = "";
+			canvas.changeSource();
+			await vi.waitFor(() => expect(body.innerHTML).toBe(recovered));
+			expect(canvas.status()?.textContent).toBe(messages.connected);
+			expect(canvas.view.update).toHaveBeenLastCalledWith(fields);
+			expect(canvas.readLink()?.href).toContain("page.html");
+		} finally {
+			canvas.close();
+		}
+	},
+);
+
 it("shows the initial source refusal and recovers using the server-selected page without a title field", async () => {
 	const sourceRefusal =
 		"lesson.prax, line 23, column 1: Fix the feedback lines in this lesson's .prax file to edit its text. Put correct: and incorrect: before the answer choices, and feedback: directly under its choice, with no blank line.";

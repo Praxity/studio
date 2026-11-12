@@ -23,6 +23,7 @@ import {
 } from "../../shared/editor-session";
 import { studioLessonFilenameSchema } from "../../shared/ipc-schemas";
 import type { ProjectWriteResult } from "../../shared/project-write-errors";
+import { resolveDesignSettings } from "../../shared/settings-inheritance";
 import { readCourseManifestData } from "../course-manifest-io";
 import {
 	CourseIdentitySession,
@@ -195,6 +196,11 @@ export class OperationService {
 						)?.file
 					: undefined;
 				const file = resolvedFile ?? scope?.file;
+				const locale = resolveDesignSettings(
+					null,
+					manifest.manifest,
+					(file && current.lessons.get(file)?.frontmatter) || {},
+				).locale;
 				const problem = scope && file ? identitySourceError(current, [file]) : undefined;
 				const error =
 					problem &&
@@ -228,6 +234,7 @@ export class OperationService {
 							(resolvedFile && scope.file !== resolvedFile)),
 				);
 				return {
+					locale,
 					sourceError,
 					lessonMissing,
 					schema: 1 as const,
