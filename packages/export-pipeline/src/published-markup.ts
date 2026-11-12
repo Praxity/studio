@@ -1,4 +1,5 @@
-import { isSafeEmbedUrl } from "@praxity/grammar";
+import { escapeHtml } from "@praxity/content-model/constants";
+import { isSafeEmbedUrl, isSafeMediaUrl, isSafeUrl } from "@praxity/grammar";
 import {
 	admitWriteDistractorsPrompt,
 	constructSelfCheckPromptBlock,
@@ -13,13 +14,7 @@ import { sanitizeHtml } from "@praxity/shared-blocks/sanitize";
 import type { PraxityBlock } from "@praxity/shared-blocks/types";
 import { isEmbeddableUrl, toEmbedUrl } from "@praxity/shared-blocks/video-url-utils";
 
-export function escapeHtml(s: string): string {
-	return s
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;")
-		.replace(/"/g, "&quot;");
-}
+export { escapeHtml };
 
 export function camelToKebab(str: string): string {
 	return str.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
@@ -40,8 +35,6 @@ export function renderInlineField(
 	return processMathSpans(sanitizeHtml(getInlineField(owner, path, interactive), { interactive }));
 }
 
-const DANGEROUS_SCHEME = /^(javascript|vbscript):/i;
-const SAFE_DATA_MIME = /^data:image\/(?!svg\+xml)/i;
 const RAW_TEXT_KEYS = new Set([
 	"code",
 	"latex",
@@ -68,16 +61,13 @@ const HREF_URL_KEYS = new Set(["href", "url", "sourceUrl"]);
 
 export function sanitizeUrl(url: string): string {
 	const trimmed = url.trim();
-	if (DANGEROUS_SCHEME.test(trimmed)) return "#";
-	if (/^data:/i.test(trimmed) && !SAFE_DATA_MIME.test(trimmed)) return "#";
-	return trimmed;
+	return isSafeMediaUrl(trimmed) ? trimmed : "#";
 }
 
 /** Stricter variant for <a href> — blocks ALL data: URIs (SVG scripts execute on navigation). */
 export function sanitizeHref(url: string): string {
 	const trimmed = url.trim();
-	if (DANGEROUS_SCHEME.test(trimmed) || /^data:/i.test(trimmed)) return "#";
-	return trimmed;
+	return isSafeUrl(trimmed) ? trimmed : "#";
 }
 
 export function sanitizeEmbedUrl(url: string): string {
@@ -125,11 +115,17 @@ function sanitizeForJsonValue(value: unknown, key?: string): unknown {
 				data: { ...(sanitizeForJsonValue(settings) as Record<string, unknown>), content },
 			};
 		}
+		// A logic rule's source ("variable:score", "block:q1") is a reference the runtime resolves,
+		// never a URL, so the media URL policy for the "source" key does not apply to it.
+		const logicRule = typeof (value as { comparison?: unknown }).comparison === "string";
 		const result: Record<string, unknown> = {};
 		for (const [entryKey, entryValue] of Object.entries(value)) {
 			if (entryKey === "_foldedPageTitle") continue;
 			if (isInlineProjectionMetadataKey(entryKey, { keepDisplay: true })) continue;
-			result[entryKey] = sanitizeForJsonValue(entryValue, entryKey);
+			result[entryKey] =
+				logicRule && entryKey === "source" && typeof entryValue === "string"
+					? entryValue
+					: sanitizeForJsonValue(entryValue, entryKey);
 		}
 		return result;
 	}

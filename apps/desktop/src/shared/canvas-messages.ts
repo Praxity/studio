@@ -1,5 +1,7 @@
 export const canvasMessages = {
 	en: {
+		exportAccessibilityBlocked:
+			"Accessibility issues blocked export. Fix the reported issues, then try again.",
 		edit: "Edit mode",
 		read: "Read mode",
 		readUpdating: "Read mode: Updating",
@@ -10,6 +12,7 @@ export const canvasMessages = {
 		editSeparator: ": ",
 		connecting: "Connecting",
 		connected: "Connected",
+		updating: "Updating page…",
 		unmapped: "Some text could not be matched to the saved page.",
 		refreshFailed: "Studio could not refresh the saved page. Reload to try again.",
 		failed: "Studio could not connect. Reopen the Studio launch link.",
@@ -27,6 +30,7 @@ export const canvasMessages = {
 			"Enter saves. Leaving the field saves. Esc cancels. Shift+Enter adds a wrapped line. Uses .prax inline syntax.",
 		textLabel: "Text",
 		hint: "Enter saves. Leaving the field saves. Esc cancels. Uses .prax inline syntax.",
+		saving: "Saving…",
 		saved: "Saved",
 		cancelled: "Cancelled",
 		fileChanged: "The file changed. Your text is kept. Copy it, then reload.",
@@ -54,6 +58,8 @@ export const canvasMessages = {
 		checkSaved: "Check saved bytes",
 	},
 	fr: {
+		exportAccessibilityBlocked:
+			"Des problèmes d’accessibilité empêchent l’exportation. Corrigez les problèmes signalés, puis réessayez.",
 		edit: "Mode édition",
 		read: "Mode lecture",
 		readUpdating: "Mode lecture : Mise à jour",
@@ -64,6 +70,7 @@ export const canvasMessages = {
 		editSeparator: " : ",
 		connecting: "Connexion",
 		connected: "Connecté",
+		updating: "Mise à jour de la page…",
 		unmapped: "Certains textes ne correspondent pas à la page enregistrée.",
 		refreshFailed: "Studio n'a pas pu actualiser la page enregistrée. Rechargez pour réessayer.",
 		failed: "Studio n'a pas pu se connecter. Rouvrez le lien de lancement de Studio.",
@@ -81,6 +88,7 @@ export const canvasMessages = {
 			"Entrée enregistre. Quitter le champ enregistre. Échap annule. Maj+Entrée ajoute une ligne au paragraphe. Syntaxe .prax en ligne.",
 		textLabel: "Texte",
 		hint: "Entrée enregistre. Quitter le champ enregistre. Échap annule. Syntaxe .prax en ligne.",
+		saving: "Enregistrement…",
 		saved: "Enregistré",
 		cancelled: "Annulé",
 		fileChanged:
@@ -137,7 +145,11 @@ export function editButtonName(
 	text: string,
 ) {
 	const prefix = messages[editTemplates[kind]].replace("{n}", String(n));
-	const normalized = text.replace(/\s+/gu, " ").trim();
+	const normalized = text
+		.replace(/(?![\u200c\u200d\u{e0020}-\u{e007f}])\p{Cf}/gu, "")
+		.replace(/\s+/gu, " ")
+		.trim();
+	if (/^[\s\p{Cf}]*$/u.test(normalized)) return prefix;
 	let excerpt = "";
 	let count = 0;
 	for (const { segment } of graphemes.segment(normalized)) {
