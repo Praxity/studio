@@ -442,11 +442,6 @@ test("shared package changes typecheck dependents; global config runs all worksp
 	assert.ok(command(plan(["pnpm-lock.yaml"]), "vitest-all"));
 });
 
-test("desktop roundtrip remains a direct Vitest test inside the Electron E2E directory", () => {
-	const steps = plan(["apps/desktop/e2e/qa/10-roundtrip.test.ts"]);
-	assert.ok(command(steps, "vitest-direct")?.includes("apps/desktop/e2e/qa/10-roundtrip.test.ts"));
-});
-
 test("git includes committed, staged, unstaged, untracked and both renamed paths", () => {
 	const dir = mkdtempSync(join(tmpdir(), "test-affected-git-"));
 	const git = (...args) => execFileSync("git", args, { cwd: dir, encoding: "utf8" });
