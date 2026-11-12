@@ -405,19 +405,16 @@ export function initDeck(): (() => void) | undefined {
 		const runtime = learnerRuntime(current) as SCORMRuntime | undefined;
 		if (inspection || !runtime) return;
 		try {
-			let saved: Record<string, unknown> = {};
-			try {
-				const value = JSON.parse(runtime?.getSuspendData() || "{}");
-				if (value && typeof value === "object" && !Array.isArray(value)) saved = value;
-			} catch {
-				/* Preserve valid unrelated state only. */
-			}
-			runtime.setSuspendData(
-				JSON.stringify({
-					...saved,
-					deck: { released: [...released].filter(canPersistGate) },
-				}),
-			);
+			const saved = JSON.parse(runtime.getSuspendData() || "{}");
+			if (
+				runtime.setSuspendData(
+					JSON.stringify({
+						...saved,
+						deck: { released: [...released].filter(canPersistGate) },
+					}),
+				) === false
+			)
+				throw new Error("EDECKSAVE");
 			const committed = runtime.commit();
 			if (current() && !committed) setStatus(t.saved, "error");
 		} catch {
