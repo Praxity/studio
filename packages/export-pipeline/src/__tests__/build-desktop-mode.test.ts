@@ -133,15 +133,17 @@ describe("buildScormPackage desktop mode", () => {
 		"preserves base package bytes apart from schema notices without courseHomeUrl, moduleDeck=%s",
 		async (moduleDeck) => {
 			// T50 round 1 uses the shared glossary name and a single-warning media action catalog.
+			// Inline JSON writes <, > and & as <, > and &. With only </script escaped,
+			// as before this change, every entry matches the previous hashes.
 			const baseline: Record<string, string> = {
-				"pages/html": "af8dd486e40e34b11bccc7e53d329ed2775e3a923341cedd484531892300310c",
-				"pages/scorm12": "75a52fde7664c2623128eab8b527b33c05a7d3713643466a9011d1ac08622c67",
-				"pages/scorm2004": "c97772888f88980089123dfeb335164120e9cde51912107c2c38dc194faed25f",
-				"pages/xapi": "ebf31cb069e462d8ddc77c232b12f1b45e483685a88cb728b9bb402fd30a9f60",
-				"guided/html": "cb5e72789be8158133cdc079eb7705e7a8f8c7656945b54232d1cf9406231987",
-				"guided/scorm12": "9e3e7d0f29bab1cedc26262712227678da75e6e181939dbf0525efad4cc35aaa",
-				"guided/scorm2004": "9d4975a9038ecbc30575ec800e73128dc3fb41e6838f35a308329c83a304cfbc",
-				"guided/xapi": "8587a973734e7468c6ce871a99230ab191152d5ced6c6ea201696783ab5b1c06",
+				"pages/html": "16835922715c00669311082f7f47be16f85a4a801cb63c3e40d59944eb71569b",
+				"pages/scorm12": "374b5b8a3b0433f2878b3f7a2e6611a5163376dfd7a3e0ccfd68e8f84f351da7",
+				"pages/scorm2004": "973fc10de8271bc0fe2e594a631fa3b497544036be3e29e2206658781139d47c",
+				"pages/xapi": "693a2f4cb4a137c806bd0308fdc6f8dabb52a892465be8dc9e162b997b784eb8",
+				"guided/html": "b7c2a160ad13441c8d755061c1c37338139e44d6bab4eb373484b55dcee663b6",
+				"guided/scorm12": "137740d1e55b9642dbc7e7918e22ac1b9a483978a7e5a02e6f30625b7a6abe66",
+				"guided/scorm2004": "0e7e26872249fa44f5414d6ab5ee4d371f039c94cf26a64b460d83b602ddfba7",
+				"guided/xapi": "b9d8e64859c32c7080625e878dd9ad996f38759f24bf0652be114762c05a5979",
 			};
 			const input = createDesktopHtmlInput();
 			input.blocks = readSource("# End\n\nA [term]{A definition.}.\n").blocks;

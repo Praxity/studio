@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { readLesson } from "../src/index.ts";
 import { isSafeMediaUrl, isSafeUrl } from "../src/utils.ts";
 
 const RASTER_IMAGE = /^data:image\/(?!svg\+xml)/i;
@@ -60,6 +61,19 @@ describe("isSafeUrl", () => {
 		expect(isSafeUrl("data:image/svg+xml,<svg/>", RASTER_IMAGE)).toBe(false);
 		expect(isSafeUrl("data:image/svg\t+xml,<svg/>", RASTER_IMAGE)).toBe(false);
 		expect(isSafeUrl("da\nta:text/html,x", RASTER_IMAGE)).toBe(false);
+	});
+});
+
+describe("image sources in lesson source", () => {
+	const imageDiagnostics = (src: string) =>
+		readLesson(`# T\n\n![x](${src})\n`).diagnostics.map((d) => `${d.code}/${d.severity}`);
+
+	it.each(["javascript:alert(1)", "\u0001javascript:alert(1)"])("refuses %j", (src) => {
+		expect(imageDiagnostics(src)).toEqual(["bad-subject/error"]);
+	});
+
+	it("accepts a project asset path", () => {
+		expect(imageDiagnostics("/assets/a.png")).toEqual([]);
 	});
 });
 

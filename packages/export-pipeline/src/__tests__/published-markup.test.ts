@@ -116,6 +116,18 @@ describe("published markup characterisation", () => {
 		});
 	});
 
+	it("keeps logic rule sources, which are references rather than URLs", () => {
+		const rules = [
+			{ source: "variable:quizScore", comparison: "gte", value: 80 },
+			{ source: "block:q1", field: "score", comparison: "gte", value: 1 },
+			{ source: "learnerInfo:course:progress", comparison: "gte", value: 50 },
+		];
+		expect(
+			sanitizeBlockForJson(block("logic", { conditions: { operator: "and", rules }, actions: [] }))
+				.data,
+		).toEqual({ conditions: { operator: "and", rules }, actions: [] });
+	});
+
 	it.each([
 		"http://example.test/embed",
 		"mailto:a@example.test",

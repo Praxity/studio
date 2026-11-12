@@ -116,11 +116,17 @@ function sanitizeForJsonValue(value: unknown, key?: string): unknown {
 				data: { ...(sanitizeForJsonValue(settings) as Record<string, unknown>), content },
 			};
 		}
+		// A logic rule's source ("variable:score", "block:q1") is a reference the runtime resolves,
+		// never a URL, so the media URL policy for the "source" key does not apply to it.
+		const logicRule = typeof (value as { comparison?: unknown }).comparison === "string";
 		const result: Record<string, unknown> = {};
 		for (const [entryKey, entryValue] of Object.entries(value)) {
 			if (entryKey === "_foldedPageTitle") continue;
 			if (isInlineProjectionMetadataKey(entryKey, { keepDisplay: true })) continue;
-			result[entryKey] = sanitizeForJsonValue(entryValue, entryKey);
+			result[entryKey] =
+				logicRule && entryKey === "source" && typeof entryValue === "string"
+					? entryValue
+					: sanitizeForJsonValue(entryValue, entryKey);
 		}
 		return result;
 	}
