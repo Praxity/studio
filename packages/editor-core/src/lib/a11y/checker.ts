@@ -345,10 +345,8 @@ function checkBlockAccessibility(
 	mediaAnalysis?: A11yMediaAnalysis,
 ): void {
 	const data = block.data as Record<string, unknown>;
-	if (
-		mediaAnalysis?.flashingGifSources &&
-		containsFlashingGif(data, mediaAnalysis.flashingGifSources)
-	) {
+	for (const source of mediaAnalysis?.flashingGifSources ?? []) {
+		if (!containsFlashingGif(data, new Set([source]))) continue;
 		addIssue(
 			issues,
 			{
@@ -358,7 +356,8 @@ function checkBlockAccessibility(
 					"Animated GIF may flash more than three times per second. Replace it or reduce the flashing rate before publishing.",
 				blockId: block.id,
 				pageId,
-				sourceLocation: "data.media",
+				sourceLocation: source,
+				messageValues: { path: source },
 				help: "https://www.w3.org/WAI/WCAG22/Understanding/three-flashes-or-below-threshold.html",
 			},
 			"failed",

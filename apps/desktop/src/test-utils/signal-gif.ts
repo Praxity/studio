@@ -1,5 +1,5 @@
 /** Nine alternating black/white 1px frames; delay is in hundredths of a second. */
-export function signalGif(delay: number): Uint8Array {
+export function signalGif(delay: number | readonly number[]): Uint8Array {
 	const bytes = [71, 73, 70, 56, 57, 97, 1, 0, 1, 0, 128, 0, 0, 0, 0, 0, 255, 255, 255];
 	for (let i = 0; i < 9; i++)
 		bytes.push(
@@ -7,7 +7,7 @@ export function signalGif(delay: number): Uint8Array {
 			249,
 			4,
 			0,
-			delay,
+			Array.isArray(delay) ? delay[i] : (delay as number),
 			0,
 			0,
 			0,

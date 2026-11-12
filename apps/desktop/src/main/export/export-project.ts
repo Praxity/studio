@@ -351,6 +351,7 @@ export async function exportProject(
 						}
 					: undefined,
 				accessibilitySources,
+				{ locale: options.adviceLocale, authorWarnings: (baseInput.authorWarnings ??= []) },
 			);
 			await assets.finish();
 			return issues;

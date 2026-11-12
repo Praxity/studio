@@ -1,6 +1,7 @@
 import { traverseAssetGraph } from "@praxity/shared-blocks/asset-graph";
+import { normalizeDesktopAssetPath } from "@praxity/shared-blocks/desktop-asset-path";
 import type { PraxityPage } from "@praxity/shared-blocks/types";
-import { decompressFrames, parseGIF } from "gifuct-js";
+import { decompressFrame, type ParsedFrame, parseGIF } from "gifuct-js";
 
 const MAX_PIXELS = 4_000_000;
 const MAX_FRAMES = 1_000;
@@ -8,12 +9,20 @@ const MAX_SAMPLES = 65_536;
 const LUMINANCE_CHANGE = 0.1;
 const AREA_RATIO = 0.25;
 const FLASHES_PER_SECOND_LIMIT = 3;
-const VISUAL_ASSET_FIELDS = ["src", "imageSrc", "image", "backgroundImage", "posterSrc"];
+// Reserve four RGBA canvases (16 bytes/canvas pixel), 24 bytes/frame pixel for
+// indices, interlace scratch and patches, 64 KiB/frame decoder scratch, and
+// 32x source bytes for parsed storage.
+// A 96 MiB course reservation leaves roughly 100 MiB for GC/runtime overhead,
+// keeping extra analysis memory below about 200 MiB. Files are decoded serially.
+export const MAX_GIF_ANALYSIS_BYTES = 96 * 1024 * 1024;
+const GIF_FRAME_SCRATCH_BYTES = 64 * 1024;
+type AnalysisBudget = { remainingBytes: number };
 
 export interface GifFlashAnalysis {
 	exceedsThreshold: boolean;
 	flashCount: number;
 	analyzed: boolean;
+	skipped?: "too-large";
 }
 
 type AnalysisCache = Map<string, Promise<GifFlashAnalysis>>;
@@ -104,7 +113,18 @@ function transitionDirections(
  * Export blocks detected threshold exceedances as a precaution; this does not
  * establish conformance for animations the heuristic does not flag.
  */
-export function analyzeGifFlashes(bytes: Uint8Array): GifFlashAnalysis {
+export function analyzeGifFlashes(
+	bytes: Uint8Array,
+	budget: AnalysisBudget = { remainingBytes: MAX_GIF_ANALYSIS_BYTES },
+): GifFlashAnalysis {
+	const tooLarge = (): GifFlashAnalysis => ({
+		exceedsThreshold: false,
+		flashCount: 0,
+		analyzed: false,
+		skipped: "too-large",
+	});
+	// Bound parser storage as well, before copying or parsing the source.
+	if (bytes.byteLength * 32 > budget.remainingBytes) return tooLarge();
 	try {
 		const buffer = bytes.buffer.slice(
 			bytes.byteOffset,
@@ -113,30 +133,53 @@ export function analyzeGifFlashes(bytes: Uint8Array): GifFlashAnalysis {
 		const gif = parseGIF(buffer);
 		const width = gif.lsd.width;
 		const height = gif.lsd.height;
-		const imageFrameCount = gif.frames.filter((frame) => "image" in frame).length;
+		const imageFrames = gif.frames.filter((frame) => "image" in frame);
+		let framePixels = 0;
+		for (const frame of imageFrames) {
+			const dims = frame.image?.descriptor;
+			if (
+				!dims ||
+				![dims.width, dims.height, dims.left, dims.top].every(Number.isSafeInteger) ||
+				dims.width <= 0 ||
+				dims.height <= 0 ||
+				dims.left < 0 ||
+				dims.top < 0 ||
+				dims.left + dims.width > width ||
+				dims.top + dims.height > height
+			)
+				return tooLarge();
+			framePixels += dims.width * dims.height;
+		}
+		const storageBytes =
+			bytes.byteLength * 32 +
+			width * height * 16 +
+			framePixels * 24 +
+			imageFrames.length * GIF_FRAME_SCRATCH_BYTES;
 		if (
 			width <= 0 ||
 			height <= 0 ||
 			width * height > MAX_PIXELS ||
-			imageFrameCount < 2 ||
-			imageFrameCount > MAX_FRAMES
-		) {
-			return { exceedsThreshold: false, flashCount: 0, analyzed: imageFrameCount < 2 };
-		}
+			imageFrames.length > MAX_FRAMES ||
+			!Number.isSafeInteger(storageBytes) ||
+			storageBytes > budget.remainingBytes
+		)
+			return tooLarge();
+		if (imageFrames.length < 2) return { exceedsThreshold: false, flashCount: 0, analyzed: true };
+		budget.remainingBytes -= storageBytes;
 
-		const frames = decompressFrames(gif, true);
 		const background = gif.gct?.[gif.lsd.backgroundColorIndex] ?? [255, 255, 255];
 		let canvas: Uint8ClampedArray = new Uint8ClampedArray(width * height * 4);
 		fillRect(canvas, width, 0, 0, width, height, background);
 		let previousDisplayed: Uint8ClampedArray | null = null;
-		let previousFrame = frames[0];
+		let previousFrame: Pick<ParsedFrame, "delay" | "disposalType" | "dims"> | undefined;
 		let restoreCanvas: Uint8ClampedArray | null = null;
 		let candidate: Int8Array | null = null;
+		let candidateStarted = 0;
 		let elapsed = 0;
-		const flashTimes: number[] = [];
+		const flashStarts: number[] = [];
 
-		for (const [index, frame] of frames.entries()) {
-			if (index > 0) {
+		for (const rawFrame of imageFrames) {
+			if (previousFrame) {
 				elapsed += previousFrame.delay;
 				if (previousFrame.disposalType === 2) {
 					fillRect(
@@ -153,6 +196,7 @@ export function analyzeGifFlashes(bytes: Uint8Array): GifFlashAnalysis {
 				}
 			}
 
+			const frame = decompressFrame(rawFrame, gif.gct, true);
 			restoreCanvas = frame.disposalType === 3 ? canvas.slice() : null;
 			drawPatch(canvas, width, frame.patch, frame.dims);
 			const displayed = canvas.slice();
@@ -165,72 +209,72 @@ export function analyzeGifFlashes(bytes: Uint8Array): GifFlashAnalysis {
 							if (directions[i] !== 0 && directions[i] === -candidate[i]) opposing++;
 						}
 						if (opposing / directions.length >= AREA_RATIO) {
-							flashTimes.push(elapsed);
+							flashStarts.push(candidateStarted);
 							candidate = null;
-							const firstInWindow = flashTimes.findIndex((time) => elapsed - time <= 1_000);
-							if (flashTimes.length - firstInWindow > FLASHES_PER_SECOND_LIMIT) {
-								return { exceedsThreshold: true, flashCount: flashTimes.length, analyzed: true };
+							// A complete flash must have both transitions inside the window.
+							if (
+								flashStarts.filter((start) => elapsed - start <= 1_000).length >
+								FLASHES_PER_SECOND_LIMIT
+							) {
+								return { exceedsThreshold: true, flashCount: flashStarts.length, analyzed: true };
 							}
 						} else {
 							candidate = directions;
+							candidateStarted = elapsed;
 						}
 					} else {
 						candidate = directions;
+						candidateStarted = elapsed;
 					}
 				}
 			}
 			previousDisplayed = displayed;
-			previousFrame = frame;
+			previousFrame = { delay: frame.delay, disposalType: frame.disposalType, dims: frame.dims };
 		}
 
-		return { exceedsThreshold: false, flashCount: flashTimes.length, analyzed: true };
+		return { exceedsThreshold: false, flashCount: flashStarts.length, analyzed: true };
 	} catch {
 		return { exceedsThreshold: false, flashCount: 0, analyzed: false };
 	}
-}
-
-function localGifPath(value: string): string | null {
-	const withoutProtocol = value.replace(/^praxity-asset:\/\//, "");
-	const normalized = withoutProtocol.split(/[?#]/, 1)[0]?.replace(/^\.\//, "").replace(/^\//, "");
-	return normalized?.toLowerCase().endsWith(".gif") && normalized.startsWith("assets/")
-		? normalized
-		: null;
 }
 
 export async function findFlashingGifSources(
 	pages: PraxityPage[],
 	readAsset: (relativePath: string) => Promise<Uint8Array>,
 	cache: AnalysisCache = new Map(),
+	options: {
+		resolveAssetPath?: (reference: string) => string | undefined;
+		uncheckedSources?: Set<string>;
+	} = {},
 ): Promise<Set<string>> {
 	const sources = new Map<string, Set<string>>();
-	await traverseAssetGraph(
-		pages,
-		{
-			onAsset: ({ value }) => {
-				const path = localGifPath(value);
-				if (!path) return;
-				const rawSources = sources.get(path) ?? new Set<string>();
-				rawSources.add(value);
-				sources.set(path, rawSources);
-			},
+	await traverseAssetGraph(pages, {
+		onAsset: ({ value }) => {
+			const reference = value.replace(/^praxity-asset:\/\//, "");
+			const path = options.resolveAssetPath
+				? options.resolveAssetPath(reference)
+				: normalizeDesktopAssetPath(reference.split(/[?#]/, 1)[0]);
+			if (!path?.startsWith("assets/") || !path.toLowerCase().endsWith(".gif")) return;
+			const rawSources = sources.get(path) ?? new Set<string>();
+			rawSources.add(value);
+			sources.set(path, rawSources);
 		},
-		{ assetFields: VISUAL_ASSET_FIELDS },
-	);
+	});
 
 	const flashing = new Set<string>();
-	await Promise.all(
-		[...sources].map(async ([path, rawSources]) => {
-			let analysis = cache.get(path);
-			if (!analysis) {
-				analysis = Promise.resolve(readAsset(path))
-					.then(analyzeGifFlashes)
-					.catch(() => ({ exceedsThreshold: false, flashCount: 0, analyzed: false }));
-				cache.set(path, analysis);
-			}
-			if ((await analysis).exceedsThreshold) {
-				for (const source of rawSources) flashing.add(source);
-			}
-		}),
-	);
+	const budget = { remainingBytes: MAX_GIF_ANALYSIS_BYTES };
+	// Serial reads/decode keep one GIF live and share a fixed course reservation.
+	for (const [path, rawSources] of sources) {
+		let analysis = cache.get(path);
+		if (!analysis) {
+			analysis = readAsset(path)
+				.then((bytes) => analyzeGifFlashes(bytes, budget))
+				.catch(() => ({ exceedsThreshold: false, flashCount: 0, analyzed: false }));
+			cache.set(path, analysis);
+		}
+		const result = await analysis;
+		if (result.exceedsThreshold) for (const source of rawSources) flashing.add(source);
+		if (result.skipped) for (const source of rawSources) options.uncheckedSources?.add(source);
+	}
 	return flashing;
 }

@@ -937,7 +937,11 @@ Export blocks missing image alternatives, empty link or button labels, and detec
 GIF flashing above three flashes in one second. The GIF check reuses the source-frame
 heuristic, not a calibrated WCAG conformance measurement: red flashes, rendered visual
 field, transparency and files above its safety caps still need human review. Structural
-checks and GIF analysis run for HTML, SCORM and native PDF. The export gate also
+checks and GIF analysis run for HTML, SCORM and native PDF. Analysis reserves at
+most 96 MiB of estimated storage across the course and decodes one frame at a
+time. GIFs with oversized or malformed frame descriptors, or whose estimated
+storage exceeds the remaining reservation, are skipped with `gif-flash-unchecked`
+advice to check them manually; they do not block export. The export gate also
 refuses duplicate misconception labels and overlong questions, answers, labels
 and options before packaging.
 

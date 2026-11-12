@@ -222,6 +222,7 @@ describe("exportProject", () => {
 			true,
 			expect.any(Function),
 			expect.any(Array),
+			expect.objectContaining({ authorWarnings: expect.any(Array) }),
 		);
 		expect(mocks.buildCourseExportInput).toHaveBeenCalledWith(
 			expect.objectContaining({

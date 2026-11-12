@@ -1,5 +1,7 @@
 export const canvasMessages = {
 	en: {
+		exportGifTooLarge: "This GIF is too large to check for flashing.",
+		exportGifManualReview: "Check this GIF for flashing yourself before publishing.",
 		exportAccessibilityBlocked:
 			"Accessibility issues blocked export. Fix the reported issues, then try again.",
 		edit: "Edit mode",
@@ -56,8 +58,10 @@ export const canvasMessages = {
 		checkSaved: "Check saved bytes",
 	},
 	fr: {
+		exportGifTooLarge: "Ce GIF est trop volumineux pour vérifier ses clignotements.",
+		exportGifManualReview: "Vérifiez vous-même les clignotements de ce GIF avant de publier.",
 		exportAccessibilityBlocked:
-			"Des probl?mes d?accessibilit? emp?chent l?exportation. Corrigez les probl?mes signal?s, puis r?essayez.",
+			"Des problèmes d’accessibilité empêchent l’exportation. Corrigez les problèmes signalés, puis réessayez.",
 		edit: "Mode édition",
 		read: "Mode lecture",
 		readUpdating: "Mode lecture : Mise à jour",

@@ -11,8 +11,10 @@ import en from "@praxity/editor-core/messages/en" with { type: "json" };
 import fr from "@praxity/editor-core/messages/fr" with { type: "json" };
 import type { DesktopExportInput } from "@praxity/export-pipeline";
 import type { ReadLessonResult } from "@praxity/grammar";
+import { matchingDesktopAssetPath } from "@praxity/shared-blocks/desktop-asset-path";
 import type { PraxityPage } from "@praxity/shared-blocks/types";
 import { createTranslator } from "use-intl/core";
+import { canvasMessages } from "../../shared/canvas-messages";
 
 export interface AuthorWarning {
 	code: string;
@@ -69,6 +71,7 @@ export async function assertExportAccessibility(
 		return bytes;
 	},
 	sources: readonly ReadLessonResult[] = [],
+	options: { locale?: string; authorWarnings?: AuthorWarning[] } = {},
 ): Promise<A11yIssue[]> {
 	const rawTitle = input.frontmatter?.title;
 	const page: PraxityPage = {
@@ -79,7 +82,26 @@ export async function assertExportAccessibility(
 				: "Course export",
 		blocks: Array.isArray(input.blocks) ? input.blocks : [],
 	};
-	const flashingGifSources = await findFlashingGifSources([page], readAsset);
+	const locale = options.locale ?? input.locale;
+	const t = createTranslator({
+		locale,
+		messages: locale === "fr" ? fr : en,
+		namespace: "a11yAudit",
+	});
+	const assetPaths = new Set(input.resolvedAssets.keys());
+	const uncheckedSources = new Set<string>();
+	const flashingGifSources = await findFlashingGifSources([page], readAsset, undefined, {
+		resolveAssetPath: (reference) => matchingDesktopAssetPath(reference, assetPaths),
+		uncheckedSources,
+	});
+	for (const file of uncheckedSources)
+		options.authorWarnings?.push({
+			code: "gif-flash-unchecked",
+			severity: "warning",
+			file,
+			message: `${file}: ${canvasMessages[locale === "fr" ? "fr" : "en"].exportGifTooLarge}`,
+			hint: canvasMessages[locale === "fr" ? "fr" : "en"].exportGifManualReview,
+		});
 	const criticalIssues = [
 		...checkCourseAccessibility([page], { flashingGifSources }).issues,
 		...sources.flatMap((read) =>
@@ -89,7 +111,16 @@ export async function assertExportAccessibility(
 				}),
 			),
 		),
-	].filter(isExportBlockingIssue);
+	]
+		.filter(isExportBlockingIssue)
+		.map((issue) =>
+			issue.rule === "gif-flash-threshold"
+				? {
+						...issue,
+						message: `${issue.sourceLocation}: ${t("rules.gif-flash-threshold.description")}`,
+					}
+				: issue,
+		);
 
 	if (enforcementEnabled && criticalIssues.length > 0) {
 		throw new ExportAccessibilityError(criticalIssues);

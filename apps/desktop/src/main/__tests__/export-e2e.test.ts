@@ -1518,13 +1518,93 @@ describe("SCORM export end-to-end", () => {
 				code: "accessibility_blocked",
 				message:
 					locale === "fr"
-						? "Des probl?mes d?accessibilit? emp?chent l?exportation. Corrigez les probl?mes signal?s, puis r?essayez."
+						? "Des problèmes d’accessibilité empêchent l’exportation. Corrigez les problèmes signalés, puis réessayez."
 						: "Accessibility issues blocked export. Fix the reported issues, then try again.",
 				details: { issues: [expect.objectContaining({ rule: "gif-flash-threshold" })] },
 			},
 		});
 		expect(result.stderr).toContain(locale === "fr" ? "Corrigez" : "Fix the reported issues");
+		const issue = JSON.parse(result.stdout).error.details.issues[0];
+		expect(issue.sourceLocation).toBe("/assets/signal.gif");
+		expect(issue.message).toContain("/assets/signal.gif");
+		expect(issue.message).toContain(
+			locale === "fr"
+				? "Remplacez-le ou ralentissez l\u2019animation"
+				: "Replace it or slow the animation",
+		);
+		expect(JSON.parse(result.stdout).error.message).not.toContain("?");
+		expect(issue.message).not.toContain("?");
 	});
+
+	it.each(["dialogue", "encoded-space", "encoded-unicode"])(
+		"refuses flashing GIF export in %s references",
+		async (kind) => {
+			const name =
+				kind === "encoded-space"
+					? "my signal.gif"
+					: kind === "encoded-unicode"
+						? "caf\u00e9.gif"
+						: "signal.gif";
+			const reference = `/assets/${encodeURIComponent(name)}`;
+			const source =
+				kind === "dialogue"
+					? `---\ntitle: Dialogue\ncast:\n  alex:\n    name: Alex\n    avatar: ${reference}\n---\n# Dialogue\n::: dialogue\n- alex: Hello\n:::\n`
+					: `---\ntitle: Signal\n---\n# Signal\n\n![Signal](${reference})\n`;
+			await writeFile(path.join(projectDir, "lesson-1.prax"), source);
+			await writeFile(path.join(projectDir, "assets", name), signalGif(5));
+			await expect(
+				exportProject({
+					manifestPolicy: "write",
+					projectDir,
+					format: "html",
+					exportAssetsDir,
+					scope: "course",
+					fallbackCompletionThreshold: 1,
+					enforceAccessibility: true,
+				}),
+			).rejects.toMatchObject({
+				issues: [expect.objectContaining({ rule: "gif-flash-threshold" })],
+			});
+		},
+	);
+
+	it.each(["en", "fr"] as const)(
+		"exports an oversized GIF with %s manual-review advice",
+		async (locale) => {
+			await writeFile(
+				path.join(projectDir, "lesson-1.prax"),
+				"---\ntitle: Recording\n---\n# Recording\n\n![Recording](/assets/recording.gif)\n",
+			);
+			await copyFile(
+				"packages/editor-core/src/lib/a11y/__tests__/fixtures/gif-flash/benign-large.gif",
+				path.join(projectDir, "assets/recording.gif"),
+			);
+			await persistFixtureIdentity(projectDir);
+			const result = await runPraxityCli(
+				[
+					"export",
+					projectDir,
+					"--format",
+					"html",
+					"--output",
+					path.join(exportAssetsDir, "recording.zip"),
+					"--lang",
+					locale,
+				],
+				{ appVersion: "1.0.0", exportAssetsDir },
+			);
+			expect(result.exitCode, result.stderr).toBe(0);
+			const diagnostic = JSON.parse(result.stdout).warnings.find(
+				(warning: { code: string }) => warning.code === "gif-flash-unchecked",
+			);
+			expect(diagnostic).toMatchObject({ severity: "warning", file: "/assets/recording.gif" });
+			expect(diagnostic.message).toContain(
+				locale === "fr" ? "trop volumineux" : "too large to check for flashing",
+			);
+			expect(diagnostic.hint).toContain(locale === "fr" ? "vous-m\u00eame" : "yourself");
+			expect(diagnostic.message + diagnostic.hint).not.toContain("?");
+		},
+	);
 
 	it.each(["html", "scorm-1.2", "scorm-2004", "pdf"] as const)(
 		"refuses flashing GIFs before %s packaging",
