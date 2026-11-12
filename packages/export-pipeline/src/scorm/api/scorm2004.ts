@@ -40,6 +40,7 @@ import {
 	writeSessionState,
 } from "./session.ts";
 import { sessionTime } from "./session-time.ts";
+import { SuspendDataReader } from "./suspend-data-reader";
 
 /** Retain identifiable rejected signed rows in their original order. */
 export function readScorm2004InteractionEvidence(raw: string): InteractionEvidence[] | null {
@@ -99,6 +100,16 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	private initialized = false;
 	private session: ScormSessionState | null = null;
 	private interactionCount = 0;
+	private readonly suspendData = new SuspendDataReader<Record<string, unknown>>(
+		(raw) => {
+			try {
+				return JSON.parse(raw) as Record<string, unknown>;
+			} catch {
+				return null;
+			}
+		},
+		() => ({}),
+	);
 	private win: WindowLike;
 	private blockStatePolicy: Readonly<Record<string, "device" | "lms">> = {};
 
@@ -155,8 +166,9 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		this.session = writeSessionState(this.api, true, this.win);
 		if (!this.session) return false;
 		this.session.startedAt ??= startedAt;
+		this.loadSuspendDataObject();
 		const completion = this.getLmsValue("cmi.completion_status") || "unknown";
-		if (["unknown", "not attempted"].includes(completion)) {
+		if (!this.suspendData.unreadable && ["unknown", "not attempted"].includes(completion)) {
 			if (!this.setLmsValue("cmi.completion_status", "incomplete")) return false;
 		}
 		this.interactionCount =
@@ -168,11 +180,13 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	terminate(explicitFinish = false): boolean {
 		if (this.session?.closed) return this.session.terminationSucceeded;
 		if (!this.initialized || !this.api || !this.session) return false;
+		this.loadSuspendDataObject();
 		const session = this.session;
 		session.prepareCommit?.();
 		if (!this.flushCompletion()) return false;
 		if (
 			explicitFinish &&
+			!this.suspendData.unreadable &&
 			!session.courseFailure &&
 			!this.setLmsValue("cmi.completion_status", "completed")
 		)
@@ -196,9 +210,12 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		return this.initialized && this.canCallLms() && this.setLmsValue(element, value);
 	}
 
-	getBlockSaveResult(_blockId: string): LearnerBlockSaveResult | undefined {
-		return this.session?.commitRefused
-			? { status: "not-saved", code: "commit-refused" }
+	getBlockSaveResult(blockId: string): LearnerBlockSaveResult | undefined {
+		if (this.session?.commitRefused) return { status: "not-saved", code: "commit-refused" };
+		if (this.blockStatePolicy[blockId] === "device") return undefined;
+		this.loadSuspendDataObject();
+		return this.suspendData.unreadable
+			? { status: "not-saved", code: "unreadable-state" }
 			: undefined;
 	}
 
@@ -208,6 +225,7 @@ export class Scorm2004Runtime implements SCORMRuntime {
 
 	commit(): boolean {
 		if (!this.initialized || !this.canCallLms()) return false;
+		this.loadSuspendDataObject();
 		this.session?.prepareCommit?.();
 		return this.commitToLms();
 	}
@@ -225,6 +243,7 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	}
 
 	private flushCompletion(): boolean {
+		if (this.suspendData.unreadable) return true;
 		const pending = this.session?.pendingCompletion;
 		if (pending === undefined) return true;
 		// Keep immediate course decisions, but send status after the save's score and
@@ -254,6 +273,10 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	}
 
 	private setLmsValue(element: string, value: string): boolean {
+		if (element === "cmi.suspend_data") {
+			this.loadSuspendDataObject();
+			if (this.suspendData.unreadable) return false;
+		}
 		const result = this.api?.SetValue(element, value);
 		this.checkError(element);
 		return result === "true";
@@ -312,6 +335,8 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		options?: TrackInteractionOptions,
 	): void {
 		if (this.blockStatePolicy[id] === "device") return;
+		this.loadSuspendDataObject();
+		if (this.suspendData.unreadable) throw new Error("ESCORM2004STORAGE");
 		const n = this.interactionCount;
 		const storedResponse =
 			options?.assessmentType === "choice"
@@ -393,6 +418,8 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	// -------------------------------------------------------------------
 
 	trackObjective(id: string, score: number, passed: boolean): void {
+		this.loadSuspendDataObject();
+		if (this.suspendData.unreadable) return;
 		if (this.blockStatePolicy[id] === "device") return;
 		try {
 			const n = writeObjectiveId(
@@ -416,6 +443,8 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	// -------------------------------------------------------------------
 
 	setCompletion(status: "incomplete" | "completed" | "passed" | "failed"): void {
+		this.loadSuspendDataObject();
+		if (this.suspendData.unreadable) return;
 		if (!this.initialized || !this.canCallLms() || !this.session) return;
 		if (status === "incomplete" || status === "completed") {
 			this.session.pendingCompletion = status;
@@ -431,6 +460,8 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	}
 
 	setSuccess(status: "passed" | "failed" | "unknown"): void {
+		this.loadSuspendDataObject();
+		if (this.suspendData.unreadable) return;
 		if (!this.initialized || !this.canCallLms()) return;
 		// Success policy belongs to the launch, including legacy quiz and utility pages.
 		if (this.session) this.session.successTracked = true;
@@ -446,6 +477,8 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	// -------------------------------------------------------------------
 
 	setScore(raw: number, min: number, max: number): void {
+		this.loadSuspendDataObject();
+		if (this.suspendData.unreadable) return;
 		this.setValue("cmi.score.raw", String(raw));
 		this.setValue("cmi.score.min", String(min));
 		this.setValue("cmi.score.max", String(max));
@@ -503,15 +536,10 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	// -------------------------------------------------------------------
 
 	private loadSuspendDataObject(): Record<string, unknown> {
-		const raw = this.getValue("cmi.suspend_data");
-		if (!raw) {
-			return {};
-		}
-		try {
-			return JSON.parse(raw) as Record<string, unknown>;
-		} catch {
-			return {};
-		}
+		return this.suspendData.load(
+			() => (this.canCallLms() ? this.getLmsValue("cmi.suspend_data") : ""),
+			this.session,
+		);
 	}
 
 	private saveSuspendDataObject(obj: Record<string, unknown>): void {
