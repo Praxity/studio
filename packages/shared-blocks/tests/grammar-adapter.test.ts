@@ -1310,3 +1310,36 @@ describe("fill-blank selection adaptation", () => {
 		});
 	});
 });
+
+describe("adaptation input and column widths", () => {
+	it("leaves the input blocks unchanged, with or without component defaults", () => {
+		const blocks: PraxityBlock[] = [
+			{ id: "note-1", type: "note", data: { content: "<p>Hello</p>" } },
+			{ id: "text-1", type: "text", data: { content: "<p>Body</p>" } },
+		];
+		const snapshot = structuredClone(blocks);
+		expect(adaptGrammarPreviewBlocks(blocks)).toEqual(snapshot);
+		expect(adaptGrammarPreviewBlocks(blocks, {})).toEqual(snapshot);
+		adaptGrammarPreviewBlocks(blocks, { note: { tone: "info" } });
+		expect(blocks).toEqual(snapshot);
+	});
+
+	it("shares implicit full-width column widths so the columns sum to one", () => {
+		const column = (id: string) => ({
+			id,
+			width: 1,
+			children: [{ id: `${id}-text`, type: "text", data: { content: id } }],
+		});
+		const [result] = adaptGrammarPreviewBlocks([
+			{
+				id: "comparison-1",
+				type: "columns",
+				data: { layoutMode: "breakout", items: [column("left"), column("right")] },
+			},
+		]);
+		expect((result.data.items as Array<{ width?: number }>).map((item) => item.width)).toEqual([
+			0.5, 0.5,
+		]);
+		expect(result.data.layoutMode).toBe("breakout");
+	});
+});

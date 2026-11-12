@@ -98,6 +98,27 @@ describe("navigatePage", () => {
 		expect(sessionStorage.getItem("praxity:focus-page-content")).toBe("true");
 	});
 
+	it("lets a module visit skip required blocks and logic jumps while Next still checks them", () => {
+		Object.defineProperty(Element.prototype, "scrollIntoView", {
+			configurable: true,
+			value: vi.fn(),
+		});
+		document.body.innerHTML =
+			'<button type="button" data-required="true" data-block-type="assessment">Question</button>';
+		const navigate = vi.fn(() => true);
+		window.__praxityNavigatePageHref = navigate;
+		window.__praxityLogicEngine = { evaluate: vi.fn(), getJumpTarget: () => "elsewhere" };
+		window.__praxityPageIdMap = { elsewhere: "elsewhere" };
+
+		expect(
+			navigatePage({ targetSlug: "module-two", direction: "forward", trigger: "module" }),
+		).toBe(true);
+		expect(navigate).toHaveBeenCalledWith("./module-two.html");
+		expect(navigatePage({ targetSlug: "module-two", direction: "forward" })).toBe(false);
+		expect(navigate).toHaveBeenCalledOnce();
+		expect(document.activeElement?.textContent).toBe("Question");
+	});
+
 	it("keeps slug tracking as a compatibility fallback when no stable ID map is available", () => {
 		const hrefSpy = spyOnLocationHref();
 		const trackNavigation = vi.fn();
