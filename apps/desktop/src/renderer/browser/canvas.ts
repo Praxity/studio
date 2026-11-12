@@ -330,6 +330,12 @@ export function startStudioAuthor(
 						editedPageId = binding?.pageId ?? editedPageId;
 						invalidate();
 					},
+					reload() {
+						view.setUpdating(true);
+						liveStatus.textContent = messages.updating;
+						// Closing the discarded field already started the fresh build.
+						void refresh();
+					},
 					async destination(anchor: HTMLAnchorElement | HTMLAreaElement) {
 						if (anchor !== link) return;
 						while (finishRefresh) await refreshed;
@@ -601,6 +607,7 @@ export function startStudioAuthor(
 						const nextStatus = view.unmapped
 							? messages.unmapped
 							: announcement &&
+									announcement !== messages.updating &&
 									announcement !== messages.unmapped &&
 									announcement !== messages.refreshFailed &&
 									announcement !== refusal
@@ -652,6 +659,7 @@ export function startStudioAuthor(
 						refreshing = false;
 						if (requested !== generation) void refresh();
 						else {
+							view.setUpdating(false);
 							link.href = destination;
 							link.textContent = messages.read;
 							link.removeAttribute("aria-busy");
@@ -677,8 +685,11 @@ export function startStudioAuthor(
 								([file, revision]) => startupSnapshot.servedSourceRevisions[file] !== revision,
 							)
 						: generation || startupSnapshot.seq !== startupSnapshot.servedSeq
-				)
+				) {
+					view.setUpdating(true);
+					liveStatus.textContent = messages.updating;
 					void refresh();
+				}
 			} catch (error) {
 				console.error("[studio] Canvas startup failed", error);
 				mountedFields?.dispose();
