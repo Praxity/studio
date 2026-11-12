@@ -257,6 +257,68 @@ it(
 	}),
 );
 
+it.each([false, true])(
+	"keeps a broken lesson's IDs when another lesson is saved, persisted=%s",
+	async (persisted) => {
+		const root = await mkdtemp(join(tmpdir(), "i4-invalid-save-"));
+		roots.push(root);
+		await writeFile(join(root, "course.yaml"), "title: C\nlessons: [broken.prax, valid.prax]\n");
+		const broken =
+			"# Broken\n\nIntro.\n\n::: choice Question\n(x) A\n( ) B\ncorrect: Feedback\n:::\n";
+		await writeFile(
+			join(root, "broken.prax"),
+			persisted ? broken.replace("correct: Feedback\n", "") : broken,
+		);
+		await writeFile(join(root, "valid.prax"), "# Valid\n\nBody.\n");
+		if (persisted) {
+			await withProjectFileTransaction(
+				root,
+				async () =>
+					persistCourseIdentity(
+						root,
+						await resolveCourseIdentity(root, { lessonPaths: ["broken.prax", "valid.prax"] }),
+					),
+				"write",
+				false,
+			);
+			await writeFile(join(root, "broken.prax"), broken);
+		}
+		const identitySession = new CourseIdentitySession(root);
+		const service = new OperationService(root, identitySession);
+		const captured = await service.canvasTextSnapshot();
+		const original = captured.fields.filter((field) => field.file === "broken.prax");
+		const scope = { ...original[0], pageIndex: 0 };
+		let current = captured;
+		for (const text of ["Changed body.", "Changed again."]) {
+			const field = current.fields.find(
+				(field) => field.file === "valid.prax" && field.kind === "body",
+			);
+			if (!field) throw new Error("Missing valid paragraph");
+			expect(
+				await service.canvasTextApply({
+					transactionId: randomUUID(),
+					operation: "setText",
+					file: field.file,
+					nodeId: field.nodeId,
+					baseRevision: field.baseRevision,
+					expectedText: field.text,
+					field: field.field,
+					text,
+				}),
+			).toMatchObject({ ok: true });
+			current = await service.canvasTextSnapshot();
+			expect(current.fields.filter((field) => field.file === "broken.prax")).toEqual(original);
+			expect((await service.canvasTextSnapshot(scope)).sourceError?.code).toBe("detached-feedback");
+		}
+		await writeFile(join(root, "broken.prax"), broken.replace("correct: Feedback\n", ""));
+		const repaired = await service.canvasTextSnapshot(scope);
+		expect(repaired.lessonMissing).toBe(false);
+		expect(repaired.sourceError).toBeUndefined();
+		expect(repaired.fields).toHaveLength(4);
+		expect(await readFile(join(root, "valid.prax"), "utf8")).toBe("# Valid\n\nChanged again.\n");
+	},
+);
+
 it("draft reads and caller mutation cannot contaminate the saved read scope", async () => {
 	const { root, identitySession } = await fixture();
 	const before = await bytes(root);

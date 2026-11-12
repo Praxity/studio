@@ -16,7 +16,7 @@ export const canvasMessages = {
 		failed: "Studio could not connect. Reopen the Studio launch link.",
 		sourceError: "Fix the source error in this lesson's .prax file to edit its text.",
 		detachedFeedback:
-			"Fix the feedback lines in this lesson's .prax file. Put correct: and incorrect: before the answer choices, and feedback: directly under its choice, with no blank line.",
+			"Fix the feedback lines in this lesson's .prax file to edit its text. Put correct: and incorrect: before the answer choices, and feedback: directly under its choice, with no blank line.",
 		lessonGone:
 			"This lesson was deleted or renamed. Restore its file or update the course's lesson list, then reopen Studio.",
 		sourceLocation: "{file}, line {line}, column {column}: {message}",
@@ -77,7 +77,7 @@ export const canvasMessages = {
 		sourceError:
 			"Corrigez l'erreur dans le fichier .prax de cette leçon pour en modifier le texte.",
 		detachedFeedback:
-			"Corrigez les lignes de rétroaction du fichier .prax pour en modifier le texte. Placez correct: et incorrect: avant les choix de réponse, et feedback: directement sous le choix concerné, sans ligne vide.",
+			"Corrigez les lignes de rétroaction dans le fichier .prax de cette leçon pour en modifier le texte. Placez correct: et incorrect: avant les choix de réponse, et feedback: directement sous le choix concerné, sans ligne vide.",
 		lessonGone:
 			"Cette leçon a été supprimée ou renommée. Restaurez son fichier ou mettez à jour la liste des leçons du cours, puis rouvrez Studio.",
 		sourceLocation: "{file}, ligne {line}, colonne {column} : {message}",

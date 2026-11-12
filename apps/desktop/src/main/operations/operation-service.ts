@@ -186,13 +186,15 @@ export class OperationService {
 			async (root) => {
 				const current = await this.snapshot(root, true, this.canvasIdentitySession);
 				const fields = canvasTextSnapshotFields(current, scope);
-				const file = scope
+				const manifest = await readCourseManifestData(root);
+				const resolvedFile = scope
 					? current.identity.sourceMappings.find(
 							(mapping) =>
 								mapping.path.length === 0 &&
 								mapping.id === resolveReadIdentityId(current, scope.lessonId),
 						)?.file
 					: undefined;
+				const file = resolvedFile ?? scope?.file;
 				const problem = scope && file ? identitySourceError(current, [file]) : undefined;
 				const error =
 					problem &&
@@ -219,7 +221,11 @@ export class OperationService {
 										: ("source-error" as const),
 							}
 						: undefined;
-				const lessonMissing = Boolean(scope && (!file || (scope.file && scope.file !== file)));
+				const lessonMissing = Boolean(
+					scope?.file &&
+						(!manifest.lessonFilesOnDisk.includes(scope.file) ||
+							(resolvedFile && scope.file !== resolvedFile)),
+				);
 				return {
 					sourceError,
 					lessonMissing,
@@ -228,12 +234,7 @@ export class OperationService {
 					sourceRevisions: Object.fromEntries(
 						[...current.lessons]
 							.map(([file, lesson]) => [file, digest(lesson.tree.stream.source)])
-							.concat([
-								[
-									"course.yaml",
-									digest(JSON.stringify((await readCourseManifestData(root)).manifest)),
-								],
-							]),
+							.concat([["course.yaml", digest(JSON.stringify(manifest.manifest))]]),
 					),
 					fields: sourceError || lessonMissing ? [] : fields,
 				};

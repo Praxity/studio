@@ -22,6 +22,7 @@ async function mountCanvas(
 	build: () => Response | Promise<Response>,
 	page: () => string = () => reviewGate,
 	sourceRefusal = "",
+	snapshotForDocument?: (path: string) => unknown,
 ) {
 	const dom = new JSDOM(
 		"<!doctype html><html><head></head><body><h1>Saved course</h1></body></html>",
@@ -89,7 +90,11 @@ async function mountCanvas(
 		if (String(input).endsWith("/api/rpc")) {
 			const { method } = JSON.parse(String(options?.body)) as { method: string };
 			if (method === "canvasPreviewBuild") return build();
-			const result = method === "canvasTextSnapshot" ? snapshot : {};
+			const result =
+				method === "canvasTextSnapshot"
+					? (snapshotForDocument?.(new Headers(options?.headers).get("X-Praxity-Canvas") ?? "") ??
+						snapshot)
+					: {};
 			return new Response(JSON.stringify({ ok: true, result }));
 		}
 		return new Response(page());
@@ -161,6 +166,46 @@ async function mountCanvas(
 		},
 	};
 }
+
+it.each([false, true])(
+	"uses the new document scope after temporary IDs change, refused=%s",
+	async (refused) => {
+		let fresh: unknown;
+		const canvas = await mountCanvas(
+			canvasMessages.en,
+			() => new Response(JSON.stringify({ ok: true, result: { ...built, pageId: "page" } })),
+			() => "<!doctype html><html><head></head><body><h1>Same lesson</h1></body></html>",
+			"",
+			(path) => (path.endsWith("/page.html") ? fresh : undefined),
+		);
+		try {
+			const fields = canvas.snapshot.fields.map((field) => ({
+				...field,
+				nodeId: "new-page",
+				ownerId: "new-page",
+			}));
+			fresh = {
+				...canvas.snapshot,
+				fields: refused ? [] : fields,
+				sourceRefusal: refused ? canvasMessages.en.sourceError : "",
+			};
+			canvas.snapshot.fields = [];
+			canvas.changeSource();
+			await vi.waitFor(() =>
+				expect(canvas.view.update).toHaveBeenLastCalledWith(refused ? [] : fields),
+			);
+			expect(canvas.window.document.body.textContent).toBe(
+				refused ? "Saved course" : "Same lesson",
+			);
+			expect(canvas.view.setUpdating).toHaveBeenLastCalledWith(false);
+			expect(canvas.status()?.textContent).toBe(
+				refused ? canvasMessages.en.sourceError : canvasMessages.en.connected,
+			);
+		} finally {
+			canvas.close();
+		}
+	},
+);
 
 it("offers Review changes without projecting a gate received by a background refresh", async () => {
 	const canvas = await mountCanvas(
@@ -389,7 +434,7 @@ it.each(["network", "timeout", "server", "practice", "missing-page"] as const)(
 );
 it("shows the initial source refusal and recovers using the server-selected page without a title field", async () => {
 	const sourceRefusal =
-		"lesson.prax, line 23, column 1: Fix the feedback lines in this lesson's .prax file. Put correct: and incorrect: before the answer choices, and feedback: directly under its choice, with no blank line.";
+		"lesson.prax, line 23, column 1: Fix the feedback lines in this lesson's .prax file to edit its text. Put correct: and incorrect: before the answer choices, and feedback: directly under its choice, with no blank line.";
 	const canvas = await mountCanvas(
 		canvasMessages.en,
 		() => new Response(JSON.stringify({ ok: true, result: { ...built, pageId: "page" } })),

@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rename, rm, unlink, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { splitBlocksIntoPages } from "@praxity/shared-blocks/viewer/split-pages";
-import { afterEach, expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import { buildCourseExportInput } from "../export/build-export-input-from-project";
 import { CourseIdentitySession } from "../identity-store";
 import { resolveLessonSources, resolveLessonSourcesForWrite } from "../lesson-source";
@@ -13,6 +13,46 @@ import { createStudioProjectSession } from "../studio/project-session";
 const roots: string[] = [];
 afterEach(async () => {
 	for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true });
+});
+
+it("keeps existing lessons available after a manifest edit resets transient identities", async () => {
+	const root = await mkdtemp(join(tmpdir(), "canvas-manifest-source-error-"));
+	roots.push(root);
+	await writeFile(join(root, "course.yaml"), "title: C\nlessons: [broken.prax, valid.prax]\n");
+	await writeFile(
+		join(root, "broken.prax"),
+		"# Broken\n\n::: choice Question\n(x) A\n( ) B\ncorrect: Feedback\n:::\n",
+	);
+	await writeFile(join(root, "valid.prax"), "# Valid\n\nBody.\n");
+	const session = await createStudioProjectSession(root, "test");
+	try {
+		const captured = (await session.invoke("canvasTextSnapshot", {})) as Awaited<
+			ReturnType<OperationService["canvasTextSnapshot"]>
+		>;
+		let changed = false;
+		session.subscribe((event) => {
+			if (event.type === "editorChanged") changed = true;
+		});
+		await writeFile(
+			join(root, "course.yaml"),
+			"title: Renamed course\nlessons: [broken.prax, valid.prax]\n",
+		);
+		await vi.waitFor(() => expect(changed).toBe(true));
+		for (const file of ["broken.prax", "valid.prax"]) {
+			const field = captured.fields.find((field) => field.file === file);
+			if (!field) throw new Error("Missing captured lesson");
+			const snapshot = await session.invoke("canvasTextSnapshot", {}, { ...field, pageIndex: 0 });
+			expect(snapshot).toMatchObject({ lessonMissing: false });
+			if (file === "broken.prax")
+				expect(snapshot).toMatchObject({
+					sourceError: { file, line: 6 },
+					sourceRefusal: expect.stringContaining("line 6, column 1: Fix the feedback lines"),
+				});
+			else expect(snapshot).toMatchObject({ sourceRefusal: undefined });
+		}
+	} finally {
+		await session.close();
+	}
 });
 
 it("admits the repro lesson's text fields with the compiler's transient lesson and page scope", async () => {
@@ -149,11 +189,11 @@ it("returns only the source location for other source errors", async () => {
 it.each([
 	[
 		"en",
-		"lesson.prax, line 6, column 1: Fix the feedback lines in this lesson's .prax file. Put correct: and incorrect: before the answer choices, and feedback: directly under its choice, with no blank line.",
+		"lesson.prax, line 6, column 1: Fix the feedback lines in this lesson's .prax file to edit its text. Put correct: and incorrect: before the answer choices, and feedback: directly under its choice, with no blank line.",
 	],
 	[
 		"fr",
-		"lesson.prax, ligne 6, colonne 1 : Corrigez les lignes de rétroaction du fichier .prax pour en modifier le texte. Placez correct: et incorrect: avant les choix de réponse, et feedback: directement sous le choix concerné, sans ligne vide.",
+		"lesson.prax, ligne 6, colonne 1 : Corrigez les lignes de rétroaction dans le fichier .prax de cette leçon pour en modifier le texte. Placez correct: et incorrect: avant les choix de réponse, et feedback: directement sous le choix concerné, sans ligne vide.",
 	],
 ])(
 	"returns a content-free source refusal in %s on the first scoped snapshot",
@@ -218,8 +258,8 @@ for (const locale of ["en", "fr"] as const) {
 			);
 			const message =
 				locale === "en"
-					? "lesson.prax, line 6, column 1: Fix the feedback lines in this lesson's .prax file. Put correct: and incorrect: before the answer choices, and feedback: directly under its choice, with no blank line."
-					: "lesson.prax, ligne 6, colonne 1 : Corrigez les lignes de rétroaction du fichier .prax pour en modifier le texte. Placez correct: et incorrect: avant les choix de réponse, et feedback: directement sous le choix concerné, sans ligne vide.";
+					? "lesson.prax, line 6, column 1: Fix the feedback lines in this lesson's .prax file to edit its text. Put correct: and incorrect: before the answer choices, and feedback: directly under its choice, with no blank line."
+					: "lesson.prax, ligne 6, colonne 1 : Corrigez les lignes de rétroaction dans le fichier .prax de cette leçon pour en modifier le texte. Placez correct: et incorrect: avant les choix de réponse, et feedback: directement sous le choix concerné, sans ligne vide.";
 			expect(snapshot).toMatchObject({ fields: [], sourceRefusal: message });
 			expect(JSON.stringify(snapshot)).not.toMatch(/Hidden|grammar\.v4/);
 		} finally {

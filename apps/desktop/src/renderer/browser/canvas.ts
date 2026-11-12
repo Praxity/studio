@@ -172,7 +172,7 @@ export function startStudioAuthor(
 				);
 				reservePanel();
 				if (sessionError) throw sessionError;
-				async function rpc(method: string, args: unknown) {
+				async function rpc(method: string, args: unknown, canvasPath = documentPath) {
 					const deadline = new AbortController();
 					// An absent reply is unknown, never a no-write refusal or an automatic replay.
 					const timer = setTimeout(() => deadline.abort(), requestTimeoutMs);
@@ -182,7 +182,7 @@ export function startStudioAuthor(
 							headers: {
 								Authorization: `Bearer ${token}`,
 								"Content-Type": "application/json",
-								"X-Praxity-Canvas": documentPath,
+								"X-Praxity-Canvas": canvasPath,
 							},
 							credentials: "omit",
 							signal: AbortSignal.any([controller.signal, deadline.signal]),
@@ -395,14 +395,16 @@ export function startStudioAuthor(
 							}
 							return current;
 						}
-						if (before.sourceRefusal) {
-							if (requested !== generation || controller.signal.aborted) return;
-							refusal = before.sourceRefusal;
+						function showSourceRefusal(message: string | undefined) {
+							if (!message) return false;
+							refusal = message;
 							view.update([]);
 							liveStatus.style.whiteSpace = "pre-wrap";
 							if (liveStatus.textContent !== refusal) liveStatus.textContent = refusal;
-							return;
+							return true;
 						}
+						if (requested !== generation || controller.signal.aborted) return;
+						if (showSourceRefusal(before.sourceRefusal)) return;
 						const built = await rpc("canvasPreviewBuild", {});
 						const pageId =
 							before.fields.find((field: { kind: string }) => field.kind === "page")?.ownerId ??
@@ -511,8 +513,10 @@ export function startStudioAuthor(
 							});
 							requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
 						});
-						const current = await readCurrent();
-						if (!current) return;
+						if (!(await readCurrent())) return;
+						const current = await rpc("canvasTextSnapshot", {}, new URL(authorUrl).pathname);
+						if (requested !== generation || view.isOpen() || controller.signal.aborted) return;
+						if (showSourceRefusal(current.sourceRefusal)) return;
 						const focusedBinding = view.focusedBinding();
 						const focused = activeElement() as Element | null;
 						const focusedId = focused?.id;

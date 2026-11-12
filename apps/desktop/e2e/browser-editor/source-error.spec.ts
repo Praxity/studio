@@ -6,8 +6,8 @@ import { canvasMessages } from "../../src/shared/canvas-messages";
 import { startJourney } from "./global-setup";
 
 const expected = {
-	en: "lesson.prax, line 27, column 1: Fix the feedback lines in this lesson's .prax file. Put correct: and incorrect: before the answer choices, and feedback: directly under its choice, with no blank line.",
-	fr: "lesson.prax, ligne 27, colonne 1 : Corrigez les lignes de rétroaction du fichier .prax pour en modifier le texte. Placez correct: et incorrect: avant les choix de réponse, et feedback: directement sous le choix concerné, sans ligne vide.",
+	en: "lesson.prax, line 27, column 1: Fix the feedback lines in this lesson's .prax file to edit its text. Put correct: and incorrect: before the answer choices, and feedback: directly under its choice, with no blank line.",
+	fr: "lesson.prax, ligne 27, colonne 1 : Corrigez les lignes de rétroaction dans le fichier .prax de cette leçon pour en modifier le texte. Placez correct: et incorrect: avant les choix de réponse, et feedback: directement sous le choix concerné, sans ligne vide.",
 };
 
 for (const locale of ["en", "fr"] as const) {
