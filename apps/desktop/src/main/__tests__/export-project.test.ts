@@ -217,7 +217,12 @@ describe("exportProject", () => {
 		expect(result).not.toHaveProperty("zip");
 		expect(mocks.assertViewerAssetsReady).not.toHaveBeenCalled();
 		expect(mocks.compileCourse).not.toHaveBeenCalled();
-		expect(mocks.assertExportAccessibility).toHaveBeenCalledWith(input, true);
+		expect(mocks.assertExportAccessibility).toHaveBeenCalledWith(
+			input,
+			true,
+			expect.any(Function),
+			expect.any(Array),
+		);
 		expect(mocks.buildCourseExportInput).toHaveBeenCalledWith(
 			expect.objectContaining({
 				preparePdf: true,

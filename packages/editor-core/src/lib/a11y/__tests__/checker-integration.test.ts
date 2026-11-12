@@ -638,7 +638,6 @@ describe("inaccessible course integration test", () => {
 				"self-check-hint-actionable",
 				"self-check-evidence-overlap",
 				"drag-variant-keyboard-alt",
-				"gif-flash-threshold",
 				"images-of-text",
 				"media-audio-description",
 			]),

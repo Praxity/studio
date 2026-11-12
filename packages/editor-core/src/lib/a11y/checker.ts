@@ -361,7 +361,7 @@ function checkBlockAccessibility(
 				sourceLocation: "data.media",
 				help: "https://www.w3.org/WAI/WCAG22/Understanding/three-flashes-or-below-threshold.html",
 			},
-			"cantTell",
+			"failed",
 		);
 	}
 

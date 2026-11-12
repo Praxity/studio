@@ -101,8 +101,8 @@ function transitionDirections(
  * 25% of sampled asset pixels. It does not implement the red-flash formula or
  * the rendered 10-degree visual-field area, and can miss background-dependent
  * transparency, sub-25%-of-asset flashes, and files above the safety caps.
- * ponytail: replace with a calibrated WCAG Photosensitive Epilepsy Analysis
- * Tool-equivalent pixel model if blocking enforcement ever becomes necessary.
+ * Export blocks detected threshold exceedances as a precaution; this does not
+ * establish conformance for animations the heuristic does not flag.
  */
 export function analyzeGifFlashes(bytes: Uint8Array): GifFlashAnalysis {
 	try {

@@ -933,7 +933,21 @@ command usage.
 
 ## Accessibility override
 
-Export blocks critical accessibility issues by default. During the early alpha,
+Export blocks missing image alternatives, empty link or button labels, and detected
+GIF flashing above three flashes in one second. The GIF check reuses the source-frame
+heuristic, not a calibrated WCAG conformance measurement: red flashes, rendered visual
+field, transparency and files above its safety caps still need human review. Structural
+checks and GIF analysis run for HTML, SCORM and native PDF. The export gate also
+refuses duplicate misconception labels and overlong questions, answers, labels
+and options before packaging.
+
+`theme-text-on-background-contrast` and `theme-button-text-contrast` are advisory,
+not export blockers. Published body text and button text colours are corrected by
+the design token resolver at render time. Authored low-contrast colours alone do
+not refuse export.
+
+A refusal returns `accessibility_blocked`, the issues and a fix hint in the selected
+English or French advice language. During the early alpha,
 `--allow-critical-a11y-issues` permits an export after the checker runs. The success
 JSON then reports `"status": "overridden"`, the critical issue count, and every issue.
 The flag applies only to that invocation and cannot be enabled through project files.

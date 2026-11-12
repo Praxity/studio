@@ -2,11 +2,15 @@ import {
 	type A11yIssue,
 	checkCourseAccessibility,
 	checkLessonTitleAccessibility,
+	collectAllBlocksDeep,
 } from "@praxity/editor-core/lib/a11y/checker.ts";
+import { findFlashingGifSources } from "@praxity/editor-core/lib/a11y/gif-flash-detector.ts";
 import { isExportBlockingIssue } from "@praxity/editor-core/lib/a11y/rule-metadata.ts";
+import { checkWriteDistractorsAccessibility } from "@praxity/editor-core/lib/a11y/write-distractors-advice.ts";
 import en from "@praxity/editor-core/messages/en" with { type: "json" };
 import fr from "@praxity/editor-core/messages/fr" with { type: "json" };
 import type { DesktopExportInput } from "@praxity/export-pipeline";
+import type { ReadLessonResult } from "@praxity/grammar";
 import type { PraxityPage } from "@praxity/shared-blocks/types";
 import { createTranslator } from "use-intl/core";
 
@@ -50,16 +54,22 @@ export class ExportAccessibilityError extends Error {
 }
 
 /**
- * Enforce structural accessibility against the exact block set handed to the
+ * Enforce source and animated-media accessibility against the exact block set handed to the
  * packaging pipeline. This is deliberately main-process enforcement: renderer
  * pre-flight state is useful feedback, but is not an authorization boundary.
  * The enforcement decision must come from main-process-owned settings; export
  * input is intentionally never consulted for an override.
  */
-export function assertExportAccessibility(
+export async function assertExportAccessibility(
 	input: DesktopExportInput,
 	enforcementEnabled = true,
-): A11yIssue[] {
+	readAsset: (relativePath: string) => Promise<Uint8Array> = async (relativePath) => {
+		const bytes = input.resolvedAssets.get(relativePath);
+		if (!bytes) throw new Error(`Missing export asset: ${relativePath}`);
+		return bytes;
+	},
+	sources: readonly ReadLessonResult[] = [],
+): Promise<A11yIssue[]> {
 	const rawTitle = input.frontmatter?.title;
 	const page: PraxityPage = {
 		id: "export",
@@ -69,7 +79,17 @@ export function assertExportAccessibility(
 				: "Course export",
 		blocks: Array.isArray(input.blocks) ? input.blocks : [],
 	};
-	const criticalIssues = checkCourseAccessibility([page]).issues.filter(isExportBlockingIssue);
+	const flashingGifSources = await findFlashingGifSources([page], readAsset);
+	const criticalIssues = [
+		...checkCourseAccessibility([page], { flashingGifSources }).issues,
+		...sources.flatMap((read) =>
+			read.pages.flatMap((sourcePage) =>
+				checkWriteDistractorsAccessibility(sourcePage.id, collectAllBlocksDeep(sourcePage.blocks), {
+					read,
+				}),
+			),
+		),
+	].filter(isExportBlockingIssue);
 
 	if (enforcementEnabled && criticalIssues.length > 0) {
 		throw new ExportAccessibilityError(criticalIssues);
