@@ -86,6 +86,13 @@ export function canvasTextNeedsFallback(geometry: CanvasTextGeometry): boolean {
 	return !geometry.cornersHit;
 }
 
+const staleRefusalCodes = ["stale", "conflict", "orphaned", "ambiguous"];
+
+// Only known saved-field recoveries bypass document admission. Other refusals may need a server page.
+export function canvasTextCanReloadInPlace(error: string): boolean {
+	return staleRefusalCodes.includes(error);
+}
+
 /** One in-memory field, no draft or render lifecycle. */
 export function createCanvasTextSession(port: CanvasTextPort, changed: () => void) {
 	type Phase = "closed" | "editing" | "saving" | "unknown" | "retry";
@@ -301,12 +308,14 @@ export function mountCanvasTextFields(
 	lifecycle?: {
 		opened(): void;
 		closed(binding?: CanvasTextBinding): void;
+		reload?(): void;
 		destination?(anchor: HTMLAnchorElement | HTMLAreaElement): Promise<string | undefined>;
 		editingChanged?(editing: boolean, focusHidden: boolean): void;
 	},
 ) {
 	const listeners = new AbortController();
 	let editing = true;
+	let updating = false;
 	let unmapped = false;
 	const entries: {
 		binding: CanvasTextBinding;
@@ -636,7 +645,7 @@ export function mountCanvasTextFields(
 	function render() {
 		const state = session.state();
 		for (const entry of entries)
-			entry.button.setAttribute("aria-disabled", String(state.phase !== "closed"));
+			entry.button.setAttribute("aria-disabled", String(updating || state.phase !== "closed"));
 		if (!active) return;
 		const entry = active;
 		if (state.phase === "closed") {
@@ -734,7 +743,7 @@ export function mountCanvasTextFields(
 			entry.confirm.hidden = true;
 			discardAction = undefined;
 		}
-		const stale = ["stale", "conflict", "orphaned", "ambiguous"].includes(state.error);
+		const stale = staleRefusalCodes.includes(state.error);
 		const identityPending = state.error === "identity-retirement-pending";
 		const text =
 			state.plainStorePath !== undefined
@@ -900,7 +909,7 @@ export function mountCanvasTextFields(
 				reveal(entry);
 			});
 			edit.addEventListener("click", (event) => {
-				if (!event.isTrusted || active || !editing) return;
+				if (!event.isTrusted || active || !editing || updating) return;
 				active = entry;
 				entry.originalStyle = heading.getAttribute("style");
 				const caption = heading.closest("figcaption");
@@ -1050,7 +1059,12 @@ export function mountCanvasTextFields(
 				}
 			});
 			reload.addEventListener("click", (event) => {
-				if (event.isTrusted) confirmDiscard(() => location.reload(), "reload");
+				if (!event.isTrusted) return;
+				const inPlace = canvasTextCanReloadInPlace(session.state().error);
+				confirmDiscard(
+					() => (inPlace && lifecycle?.reload ? lifecycle.reload() : location.reload()),
+					"reload",
+				);
 			});
 			keep.addEventListener("click", (event) => {
 				if (event.isTrusted) {
@@ -1210,6 +1224,11 @@ export function mountCanvasTextFields(
 	}
 	window.addEventListener("pagehide", dispose, { once: true, signal: listeners.signal });
 	return {
+		setUpdating(value: boolean) {
+			if (updating === value) return;
+			updating = value;
+			render();
+		},
 		isEditing: () => editing,
 		async setEditing(value: boolean) {
 			if (value === editing) return;
