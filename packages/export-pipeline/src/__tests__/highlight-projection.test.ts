@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
+
+import { escapeJsonForHtml } from "@praxity/content-model/constants";
 import { readHighlightContent, readLesson } from "@praxity/grammar";
 import { expect, it } from "vitest";
-import { escapeJsonForHtml } from "../escape-json-for-html";
 import { collectGlossaryTerms } from "../glossary-page";
 import { assertPracticeLogic, escapeJsonForScript } from "../html-gen";
 import { sanitizeBlockForJson } from "../published-markup";

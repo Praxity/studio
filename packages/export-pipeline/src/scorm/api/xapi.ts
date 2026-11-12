@@ -69,7 +69,7 @@ export function readXapiInteractionEvidence(raw: string): InteractionEvidence[] 
 // ---------------------------------------------------------------------------
 
 export interface XapiActor {
-	name: string;
+	name?: string;
 	mbox: string;
 }
 
@@ -118,10 +118,7 @@ export interface XapiResult {
 
 export interface XapiStatement {
 	id: string;
-	actor: {
-		name: string;
-		mbox: string;
-	};
+	actor: XapiActor;
 	verb: XapiVerb;
 	object: XapiObject;
 	result?: XapiResult;
@@ -312,7 +309,7 @@ export class XapiRuntime implements SCORMRuntime {
 		const statement: XapiStatement = {
 			id,
 			actor: {
-				name: actor.name,
+				...(actor.name ? { name: actor.name } : {}),
 				mbox: actor.mbox.startsWith("mailto:") ? actor.mbox : `mailto:${actor.mbox}`,
 			},
 			verb: {
@@ -656,12 +653,15 @@ export class XapiRuntime implements SCORMRuntime {
 		try {
 			const parsed = JSON.parse(actorJson) as { name?: string; mbox?: string };
 			if (
-				typeof parsed.name === "string" &&
-				parsed.name &&
 				typeof parsed.mbox === "string" &&
-				parsed.mbox
+				parsed.mbox &&
+				(parsed.name === undefined || typeof parsed.name === "string")
 			) {
-				const actor = { name: parsed.name, mbox: parsed.mbox };
+				// xAPI Data 2.4.2.1: the Agent name is optional; mbox identifies the learner.
+				const actor: XapiActor = {
+					mbox: parsed.mbox,
+					...(parsed.name ? { name: parsed.name } : {}),
+				};
 				if (launched) session?.setItem(sessionKey, JSON.stringify(actor));
 				return actor;
 			}

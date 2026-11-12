@@ -42,11 +42,13 @@ it("records exact per-document additions against main", () => {
 	// delta must remain independently checked. Do not copy failure output blindly.
 	// Verify: pnpm --filter @praxity/export-pipeline exec vitest run tests/compiled-choice-bytes.test.ts --maxWorkers=1
 	// Each fact now retains the visible term label in "Pick one".
+	// Inline JSON writes <, > and & as <, > and &, 5 bytes more each: the facts
+	// carry 36 such characters on practice and second, 52 on resources and none on glossary.
 	const expected = [
-		["practice", 26447, 1842, "d77d8a812e5f90c64485f89cc7710d92cc6aff605e4288885c30b775efdf5995"],
-		["second", 26988, 1842, "03c8a4f1ff93f54d586fb786b900c8e7a97e33bf6d7ce71f5736c97735482a92"],
+		["practice", 26447, 2022, "d77d8a812e5f90c64485f89cc7710d92cc6aff605e4288885c30b775efdf5995"],
+		["second", 26988, 2022, "03c8a4f1ff93f54d586fb786b900c8e7a97e33bf6d7ce71f5736c97735482a92"],
 		["glossary", 2273, 921, "49bc7d6126a51ebbdafcecba935f3ad9b7a6539f204cd8258441e9f7c0520cab"],
-		["resources", 22265, 1842, "13dbb99da3ea36bdba11db1e0802282cb2e0dea3a2ee24feeb9c068502728bae"],
+		["resources", 22265, 2102, "13dbb99da3ea36bdba11db1e0802282cb2e0dea3a2ee24feeb9c068502728bae"],
 	] as const;
 	const current = head.prepareHtmlCourse(config, compilerIslandAssets);
 	// Pinned from main before adding facts. Every other learner/config byte stays exact.

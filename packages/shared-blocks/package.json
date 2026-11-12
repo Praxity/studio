@@ -19,6 +19,7 @@
 		"./child-records": "./src/child-records.ts",
 		".": "./src/index.ts",
 		"./types": "./src/types.ts",
+		"./desktop-asset-path": "./src/desktop-asset-path.ts",
 		"./constants": "./src/constants.ts",
 		"./forced-palette": "./src/forced-palette.ts",
 		"./inline-markdown": "./src/inline-markdown.ts",

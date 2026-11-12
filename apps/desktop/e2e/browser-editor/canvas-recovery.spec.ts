@@ -756,3 +756,82 @@ test("Discard reload blocks stale edits until the outside text lands", async ({ 
 		release();
 	}
 });
+
+for (const [lang, saving, saved, label, initial, updated] of [
+	[
+		"en",
+		"Saving\u2026",
+		"Saved",
+		"Heading text",
+		"Edit heading 2: Keep clear",
+		"Edit heading 2: Updated",
+	],
+	[
+		"fr",
+		"Enregistrement\u2026",
+		"Enregistr\u00e9",
+		"Texte du titre",
+		"Modifier le titre 2 : Keep clear",
+		"Modifier le titre 2 : Updated",
+	],
+] as const)
+	test(`saving feedback stays beside the run and announces the outcome once (${lang})`, async ({
+		page,
+	}) => {
+		await page.setViewportSize({ width: 390, height: 844 });
+		if (lang === "fr") {
+			await stop?.();
+			stop = await startJourney(page.context(), {
+				standaloneSource: `---\nlang: fr\n---\n\n${source}`,
+			});
+			file = join(process.env.PRAXITY_BROWSER_PROJECT ?? "", "second.prax");
+		}
+		await page.goto(
+			`${new URL(process.env.PRAXITY_BROWSER_READY_URL ?? "").origin}/launch?canvas=1`,
+		);
+		const status = page.getByRole("status");
+		await expect(status).toHaveText(lang === "fr" ? "Connect\u00e9" : "Connected");
+		await page.getByRole("button", { name: initial, exact: true }).click();
+		const input = page.getByRole("textbox", { name: label, exact: true });
+		await input.fill("Updated");
+		await status.evaluate((node) => {
+			const seen: string[] = [];
+			new MutationObserver(() => {
+				if (node.textContent) seen.push(node.textContent);
+				node.setAttribute("data-announcements", JSON.stringify(seen));
+			}).observe(node, { childList: true, subtree: true, characterData: true });
+		});
+		let release!: () => void;
+		const held = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		await page.route("**/api/rpc", async (route) => {
+			if (route.request().postDataJSON().method === "canvasTextApply") {
+				const response = await route.fetch();
+				await held;
+				return route.fulfill({ response });
+			}
+			await route.continue();
+		});
+		try {
+			await input.press("Enter");
+			const progress = page.locator(".save-status:visible");
+			await expect(progress).toHaveText(saving);
+			await expect(progress).toBeInViewport();
+			await expect(input).toHaveAttribute("readonly", "");
+			await input.press("Escape");
+			await expect(progress).toHaveText(saving);
+			await expect(input).toHaveValue("Updated");
+			release();
+			await expect(input).toHaveCount(0);
+			await expect(page.getByRole("button", { name: updated, exact: true })).toBeVisible();
+			await expect(progress).toHaveText(saved);
+			await expect(status).not.toHaveClass(/announcement-only/u);
+			await expect(progress).toBeInViewport();
+			await expect(progress).not.toHaveAttribute("role");
+			await expect(progress).not.toHaveAttribute("aria-live");
+			await expect(status).toHaveAttribute("data-announcements", JSON.stringify([saved]));
+		} finally {
+			release();
+		}
+	});

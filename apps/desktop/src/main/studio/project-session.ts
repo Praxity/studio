@@ -19,6 +19,7 @@ import {
 import type { PreviewCompileDiagnostic } from "@praxity/shared-blocks/course-preview-protocol";
 import { LEARNER_STATE_MAX_BYTES } from "@praxity/shared-blocks/learner-state";
 import { watch } from "chokidar";
+import { createTranslator } from "use-intl/core";
 import { z } from "zod";
 import { canvasMessages } from "../../shared/canvas-messages";
 import type { CanvasPageScope } from "../../shared/editor-session";
@@ -48,6 +49,8 @@ import {
 } from "../../shared/project-write-errors";
 import type { OpenProjectResult } from "../../shared/types";
 import { DEFAULT_APP_SETTINGS } from "../../shared/types";
+import cliEn from "../cli-messages/en.json" with { type: "json" };
+import cliFr from "../cli-messages/fr.json" with { type: "json" };
 import { loadCourse, readLesson } from "../course-io";
 import { readCourseManifestData } from "../course-manifest-io";
 import { ExportAccessibilityError } from "../export/accessibility-enforcement";
@@ -98,7 +101,11 @@ import {
 } from "../project-file-transactions";
 import { readProjectTree } from "../project-tree";
 import { browserExportSchema, StudioExportService } from "./export-service";
-import { identityReviewMessages, type StudioIdentityReview } from "./identity-review";
+import {
+	identityReviewMessages,
+	type StudioIdentityReview,
+	sourceErrorMessage,
+} from "./identity-review";
 import { studioNarrationStatus } from "./narration-policy";
 import {
 	type CanvasPracticeDiagnostic,
@@ -155,7 +162,12 @@ export async function createStudioProjectSession(
 	appVersion: string,
 	preview?: import("../course-preview-service").CoursePreviewService,
 	exportOptions?: Omit<ConstructorParameters<typeof StudioExportService>[0], "onProgress">,
+	messageLocale: "en" | "fr" = "en",
 ) {
+	const t = createTranslator({
+		locale: messageLocale,
+		messages: messageLocale === "fr" ? cliFr : cliEn,
+	});
 	const root = await assertAllowedProjectRoot(path.resolve(projectDir));
 	// Capture the session scope before opening an admission. Deferred jobs must
 	// acquire fresh locks, never inherit a released T1 AsyncLocalStorage scope.
@@ -202,7 +214,7 @@ export async function createStudioProjectSession(
 			);
 		}
 	};
-	if (!(await stat(root)).isDirectory()) throw new Error("Project root must be a directory");
+	if (!(await stat(root)).isDirectory()) throw new Error(t("sessionRefusals.root"));
 	let closed = false;
 	let pendingChanges = Promise.resolve();
 	const listeners = new Set<(event: StudioEvent) => void>();
@@ -231,7 +243,7 @@ export async function createStudioProjectSession(
 	function validateFilename(filename: string) {
 		courseLessonSchema.shape.filename.parse(filename);
 		if (!studioLessonFilenameSchema.safeParse(filename).success) {
-			throw new StudioSessionError(403, "path_forbidden", "Lesson path is not authorized");
+			throw new StudioSessionError(403, "path_forbidden", t("sessionRefusals.lessonPath"));
 		}
 	}
 
@@ -242,13 +254,13 @@ export async function createStudioProjectSession(
 				const hasManifest = await optionalInput("course.yaml");
 				const data = await readCourseManifestData(root);
 				if (!hasManifest && data.lessonFilesOnDisk.length !== 1) {
-					throw new Error("Ambiguous standalone folder: supply a course.yaml or one .prax lesson");
+					throw new Error(t("sessionRefusals.standalone"));
 				}
 				for (const filename of data.manifest.lessons) {
 					validateFilename(filename);
 					await resolveExistingPathWithin(root, path.join(root, filename));
 				}
-				if (!data.orderedLessons.length) throw new Error("Project has no readable lessons");
+				if (!data.orderedLessons.length) throw new Error(t("sessionRefusals.lessons"));
 				return data;
 			},
 			"read",
@@ -263,12 +275,12 @@ export async function createStudioProjectSession(
 		validateFilename(filename);
 		const data = await manifestData();
 		if (![...data.orderedLessons, ...data.unlistedLessons].includes(filename)) {
-			throw new StudioSessionError(404, "lesson_not_found", "Lesson is not in this project");
+			throw new StudioSessionError(404, "lesson_not_found", t("sessionRefusals.lessonMissing"));
 		}
 		try {
 			await resolveExistingPathWithin(root, path.join(root, filename));
 		} catch {
-			throw new StudioSessionError(403, "path_forbidden", "Lesson path is not authorized");
+			throw new StudioSessionError(403, "path_forbidden", t("sessionRefusals.lessonPath"));
 		}
 	}
 
@@ -276,7 +288,7 @@ export async function createStudioProjectSession(
 		try {
 			await assertSamePath(root, courseDir);
 		} catch {
-			throw new StudioSessionError(403, "path_forbidden", "Course root is not authorized");
+			throw new StudioSessionError(403, "path_forbidden", t("sessionRefusals.courseRoot"));
 		}
 	}
 
@@ -310,10 +322,7 @@ export async function createStudioProjectSession(
 					code: problem.code,
 					file: problem.file,
 					line: problem.line,
-					message:
-						identityReviewMessages[locale][
-							problem.code === "bad_yaml" ? "badYaml" : "invalidSource"
-						],
+					message: sourceErrorMessage(locale, problem),
 				};
 				// Opaque invalid lessons must not prevent entry to valid lessons.
 				// Confirmation still validates the whole graph it would persist.
@@ -610,11 +619,7 @@ export async function createStudioProjectSession(
 			);
 		} catch (error) {
 			if (error instanceof Error && error.message.includes("changed on disk")) {
-				throw new StudioSessionError(
-					409,
-					"source_conflict",
-					"Lesson changed on disk since it was opened",
-				);
+				throw new StudioSessionError(409, "source_conflict", t("sessionRefusals.conflict"));
 			}
 			throw error;
 		}
@@ -689,14 +694,14 @@ export async function createStudioProjectSession(
 							throw new StudioSessionError(
 								403,
 								"path_forbidden",
-								"Metadata path is not authorized",
+								t("sessionRefusals.metadataPath"),
 							);
 						}
 						if (!present) {
 							throw new StudioSessionError(
 								404,
 								"file_not_found",
-								"ENOENT: Project metadata is absent",
+								t("sessionRefusals.metadataMissing"),
 							);
 						}
 						return readFileWithin(root, path.join(root, relativePath), "utf8");
@@ -779,7 +784,7 @@ export async function createStudioProjectSession(
 			.strict()
 			.parse(args);
 		const selected = pageId ?? scheduler.context().pages[0]?.id;
-		if (!selected) throw new Error("Course has no preview page.");
+		if (!selected) throw new Error(`${t("serverRefusals.noPage")}.`);
 		scheduler.selectPage(selected);
 		return {
 			pageId: selected,
@@ -990,7 +995,7 @@ export async function createStudioProjectSession(
 				throw new StudioSessionError(
 					422,
 					"export_failed",
-					error instanceof Error ? error.message : "Export failed",
+					error instanceof Error ? error.message : t("sessionRefusals.export"),
 				);
 			}
 		});
@@ -1189,10 +1194,10 @@ export async function createStudioProjectSession(
 			);
 		},
 		async invoke(method: string, args: unknown, canvasPageScope?: CanvasPageScope) {
-			if (closed) throw new StudioSessionError(503, "session_closed", "Studio session is closing");
+			if (closed) throw new StudioSessionError(503, "session_closed", t("serverRefusals.closing"));
 			const operation = methods.get(method);
 			if (!operation)
-				throw new StudioSessionError(404, "method_not_allowed", "Method is not available");
+				throw new StudioSessionError(404, "method_not_allowed", t("sessionRefusals.method"));
 			try {
 				if (canvasPageScope && method === "canvasTextSnapshot") {
 					parseEditorInput(emptyArgs, args);
@@ -1229,11 +1234,7 @@ export async function createStudioProjectSession(
 						canvasMessages[locale].identityReviewPending,
 					);
 				if (error instanceof IdentitySourceError)
-					throw new StudioSessionError(
-						422,
-						error.code,
-						identityReviewMessages[locale][error.code === "bad_yaml" ? "badYaml" : "invalidSource"],
-					);
+					throw new StudioSessionError(422, error.code, sourceErrorMessage(locale, error));
 				if (error instanceof EmptyCourseError)
 					throw new StudioSessionError(422, error.code, error.message);
 				throw error;

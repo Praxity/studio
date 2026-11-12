@@ -2533,3 +2533,31 @@ it("highlight practice releases no deck gate, visit or completion while the ordi
 		document.removeEventListener("praxity:assessment-response", response);
 	}
 });
+
+it("does not replace unreadable suspend data with deck state or commit it", () => {
+	const { runtime } = setup();
+	runtime.getSuspendData.mockReturnValue('{"answers":');
+	cleanup = initDeck();
+	runtime.setSuspendData.mockClear();
+	runtime.commit.mockClear();
+	document.dispatchEvent(
+		new CustomEvent("praxity:assessment-response", { detail: { blockId: "check", correct: true } }),
+	);
+	(document.getElementById("deck-next") as HTMLButtonElement).click();
+	expect(runtime.setSuspendData).not.toHaveBeenCalled();
+	expect(runtime.commit).not.toHaveBeenCalled();
+	expect(document.getElementById("deck-status")?.dataset.kind).toBe("error");
+});
+
+it("reports a refused deck suspend write without committing it", () => {
+	const { runtime } = setup();
+	cleanup = initDeck();
+	runtime.setSuspendData.mockImplementation(() => false);
+	runtime.commit.mockClear();
+	document.dispatchEvent(
+		new CustomEvent("praxity:assessment-response", { detail: { blockId: "check", correct: true } }),
+	);
+	expect(runtime.setSuspendData).toHaveBeenCalled();
+	expect(runtime.commit).not.toHaveBeenCalled();
+	expect(document.getElementById("deck-status")?.dataset.kind).toBe("error");
+});

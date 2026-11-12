@@ -1678,6 +1678,14 @@
 				"title": "Long alt text",
 				"description": "Keep alt text under 125 characters. Put longer explanations in nearby text or a long description."
 			},
+			"gif-flash-unchecked": {
+				"title": "Check GIF flashing manually",
+				"description": "{reason, select, size {This GIF is too large to check for flashing} frames {This GIF has too many frames or frame pixels to check for flashing} other {This GIF is malformed and cannot be checked for flashing}}",
+				"guidance": {
+					"topic": "Show manual checking advice",
+					"bullet1": "Check this GIF for flashing yourself before publishing"
+				}
+			},
 			"gif-flash-threshold": {
 				"title": "Potential rapid flashing",
 				"description": "This animated GIF appears to flash more than three times in one second. Replace it or slow the animation, then review it manually.",
@@ -4053,6 +4061,9 @@
 			"self-check-no-correctness": "Self-check has no correctness or score. Remove this condition.",
 			"missing-subject": "The block needs a title or subject",
 			"bad-subject": "The block’s subject is invalid",
+			"svg-data-url": "SVG can’t be embedded as a data: URL because it can carry scripts. Use an image file in the project’s assets folder, or a PNG or JPEG data: URL.",
+			"unsafe-media-url": "This media address isn’t allowed. Use a project file path, or an https: or http: address.",
+			"unsafe-link-url": "This link address isn’t allowed. Use a project file path, or an https:, http:, mailto: or tel: address.",
 			"disallowed-child": "This content is not allowed in its parent",
 			"child-count": "The block has the wrong number of items",
 			"missing-image-alt": "Give the image a description or mark it decorative",
