@@ -128,7 +128,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 		if (this.session?.commitRefused) return false;
 		this.ensureInitialized();
 		if (this.submission) throw new Error("A SCORM submission is already pending");
-		const data = this.loadSuspendPayload(true);
+		const data = this.loadSuspendPayload();
 		if (this.suspendData.unreadable) return false;
 		this.submission = { blockId, data };
 		try {
@@ -242,7 +242,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 
 	trackPageVisit(pageId: string): void {
 		this.ensureInitialized();
-		const data = this.loadSuspendPayload(true);
+		const data = this.loadSuspendPayload();
 		if (!data.visitedPages.includes(pageId)) {
 			data.visitedPages.push(pageId);
 		}
@@ -251,7 +251,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 
 	getVisitedPages(): string[] {
 		this.ensureInitialized();
-		return this.loadSuspendPayload(true).visitedPages;
+		return this.loadSuspendPayload().visitedPages;
 	}
 
 	// ---- interaction tracking ----------------------------------------------
@@ -267,7 +267,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 		this.ensureInitialized();
 		if (this.submission && this.submission.blockId !== id)
 			throw new Error("Another SCORM submission is pending");
-		const data = this.loadSuspendPayload(true);
+		const data = this.loadSuspendPayload();
 		if (options?.assessmentType === "choice" && response.length > 255) {
 			this.submission = undefined;
 			this.blockSaveResults.set(id, { status: "not-saved", code: "runtime-write-failed" });
@@ -355,13 +355,13 @@ export class Scorm12Runtime implements SCORMRuntime {
 
 	getInteractions(): InteractionRecord[] {
 		this.ensureInitialized();
-		let interactions = this.loadSuspendPayload(true).interactions;
+		let interactions = this.loadSuspendPayload().interactions;
 		interactions = interactions.filter((record) => this.blockStatePolicy[record.id] !== "device");
 		return interactions.map((record) => ({ ...record, ...assessmentEvidenceMetadata(record) }));
 	}
 
 	getInteractionEvidence(): InteractionEvidence[] | null {
-		return readScorm12InteractionEvidence(this.loadSuspendPayload(true));
+		return readScorm12InteractionEvidence(this.loadSuspendPayload());
 	}
 
 	setCourseFailure(failed: boolean): void {
@@ -452,14 +452,14 @@ export class Scorm12Runtime implements SCORMRuntime {
 	 */
 	setSuspendData(data: string): boolean {
 		this.ensureInitialized();
-		const payload = this.loadSuspendPayload(true);
+		const payload = this.loadSuspendPayload();
 		payload.custom = data;
 		return this.saveSuspendPayload(payload);
 	}
 
 	getSuspendData(): string | null {
 		this.ensureInitialized();
-		const payload = this.loadSuspendPayload(true);
+		const payload = this.loadSuspendPayload();
 		return payload.custom ?? null;
 	}
 
@@ -557,7 +557,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 
 	// ---- suspend data payload management -----------------------------------
 
-	private loadSuspendPayload(refreshEmpty = false): Scorm12SuspendData {
+	private loadSuspendPayload(): Scorm12SuspendData {
 		if (this.submission) return JSON.parse(JSON.stringify(this.submission.data));
 		return this.suspendData.load(
 			() => (this.canCallLms() ? (this.api?.LMSGetValue("cmi.suspend_data") ?? "") : undefined),
@@ -578,7 +578,6 @@ export class Scorm12Runtime implements SCORMRuntime {
 					}
 				}
 			},
-			refreshEmpty,
 		);
 	}
 
@@ -598,8 +597,6 @@ export class Scorm12Runtime implements SCORMRuntime {
 					this.suspendDataCodec.parse,
 				)
 			: fitScorm12SuspendData(data);
-		const saved = this.lmsSetValue("cmi.suspend_data", serialized);
-		if (saved) this.suspendData.saved();
-		return saved;
+		return this.lmsSetValue("cmi.suspend_data", serialized);
 	}
 }

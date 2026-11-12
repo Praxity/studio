@@ -57,7 +57,7 @@ function fixture(version: "1.2" | "2004", original: string) {
 		version === "1.2"
 			? new Scorm12Runtime()
 			: new Scorm2004Runtime(dom.window as unknown as WindowLike);
-	return { runtime, get };
+	return { runtime, get, values };
 }
 it.each(["1.2", "2004"] as const)(
 	"warns once with SCORM %s and damaged length, never learner content",
@@ -78,18 +78,18 @@ it.each(["1.2", "2004"] as const)(
 	},
 );
 it.each(["1.2", "2004"] as const)(
-	"caches empty SCORM %s guard reads while explicit reads and successful saves stay current",
+	"keeps repeated empty SCORM %s first-launch reads quiet without caching",
 	(version) => {
 		const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 		const { runtime, get } = fixture(version, "");
-		runtime.getBlockSaveResult("q"); // A read before Initialize must not cache an unavailable LMS.
+		runtime.getBlockSaveResult("q"); // A read before Initialize must not admit an unavailable LMS.
 		expect(runtime.initialize()).toBe(true);
 		for (let i = 0; i < 3; i++) {
 			runtime.getBlockSaveResult("q");
 			runtime.setCompletion("incomplete");
 			runtime.setScore(0, 0, 100);
 		}
-		expect(get.mock.calls.filter(([key]) => key === "cmi.suspend_data")).toHaveLength(1);
+		expect(get.mock.calls.filter(([key]) => key === "cmi.suspend_data").length).toBeGreaterThan(1);
 		expect(warn).not.toHaveBeenCalled();
 		expect(runtime.getVisitedPages()).toEqual([]);
 		expect(runtime.getSuspendData()).toBeNull();
@@ -98,5 +98,33 @@ it.each(["1.2", "2004"] as const)(
 		expect(runtime.getVisitedPages()).toEqual(["p1"]);
 		expect(runtime.setSuspendData('{"saved":true}')).toBe(true);
 		expect(runtime.getSuspendData()).toBe('{"saved":true}');
+	},
+);
+
+it.each(["1.2", "2004"] as const)(
+	"refreshes SCORM %s reporting guards after an initially empty host changes",
+	(version) => {
+		const { runtime, values } = fixture(version, "");
+		expect(runtime.initialize()).toBe(true);
+		const initial = { ...values };
+		const damaged = '{"answers":';
+		values["cmi.suspend_data"] = damaged;
+		runtime.setScore(100, 0, 100);
+		runtime.setCompletion("passed");
+		expect(runtime.getBlockSaveResult("q")).toEqual({
+			status: "not-saved",
+			code: "unreadable-state",
+		});
+		expect(runtime.commit()).toBe(true);
+		expect(runtime.terminate(true)).toBe(true);
+		expect(
+			Object.keys(values).filter(
+				(key) => key.startsWith("cmi.score.") || key.startsWith("cmi.core.score."),
+			),
+		).toEqual([]);
+		expect(values["cmi.completion_status"]).toBe(initial["cmi.completion_status"]);
+		expect(values["cmi.success_status"]).toBe(initial["cmi.success_status"]);
+		expect(values["cmi.core.lesson_status"]).toBe(initial["cmi.core.lesson_status"]);
+		expect(values["cmi.suspend_data"]).toBe(damaged);
 	},
 );

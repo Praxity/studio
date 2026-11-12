@@ -275,12 +275,11 @@ export class Scorm2004Runtime implements SCORMRuntime {
 
 	private setLmsValue(element: string, value: string): boolean {
 		if (element === "cmi.suspend_data") {
-			this.loadSuspendDataObject(true);
+			this.loadSuspendDataObject();
 			if (this.suspendData.unreadable) return false;
 		}
 		const result = this.api?.SetValue(element, value);
 		this.checkError(element);
-		if (result === "true" && element === "cmi.suspend_data") this.suspendData.saved();
 		return result === "true";
 	}
 
@@ -311,7 +310,7 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	// -------------------------------------------------------------------
 
 	trackPageVisit(pageId: string): void {
-		const data = this.loadSuspendDataObject(true);
+		const data = this.loadSuspendDataObject();
 		const pages: string[] = (data.visitedPages as string[]) ?? [];
 		if (!pages.includes(pageId)) {
 			pages.push(pageId);
@@ -321,7 +320,7 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	}
 
 	getVisitedPages(): string[] {
-		const data = this.loadSuspendDataObject(true);
+		const data = this.loadSuspendDataObject();
 		return (data.visitedPages as string[]) ?? [];
 	}
 
@@ -337,7 +336,7 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		options?: TrackInteractionOptions,
 	): void {
 		if (this.blockStatePolicy[id] === "device") return;
-		this.loadSuspendDataObject(true);
+		this.loadSuspendDataObject();
 		if (this.suspendData.unreadable) throw new Error("ESCORM2004STORAGE");
 		const n = this.interactionCount;
 		const storedResponse =
@@ -350,7 +349,7 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		if (accepted) this.interactionCount++;
 
 		// Mirror in suspend_data for offline retrieval
-		const data = this.loadSuspendDataObject(true);
+		const data = this.loadSuspendDataObject();
 		data.interactions = recordInteraction((data.interactions as InteractionRecord[]) ?? [], {
 			id,
 			response: storedResponse,
@@ -399,7 +398,7 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	}
 
 	getInteractions(): InteractionRecord[] {
-		const data = this.loadSuspendDataObject(true);
+		const data = this.loadSuspendDataObject();
 		const interactions = (data.interactions as InteractionRecord[]) ?? [];
 		const reportable = interactions.filter(
 			(record) => this.blockStatePolicy[record.id] !== "device",
@@ -408,9 +407,7 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	}
 
 	getInteractionEvidence(): InteractionEvidence[] | null {
-		return assessmentRowsEvidence(
-			(this.loadSuspendDataObject(true).interactions as unknown[]) ?? [],
-		);
+		return assessmentRowsEvidence((this.loadSuspendDataObject().interactions as unknown[]) ?? []);
 	}
 
 	setCourseFailure(failed: boolean): void {
@@ -531,9 +528,8 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	}
 
 	getSuspendData(): string | null {
-		this.loadSuspendDataObject(true);
-		if (this.suspendData.hasNoSavedData) return null;
-		const value = this.getValue("cmi.suspend_data");
+		this.loadSuspendDataObject();
+		const value = this.readSuspendData();
 		return value || null;
 	}
 
@@ -541,19 +537,16 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	// Internal suspend-data helpers (JSON envelope)
 	// -------------------------------------------------------------------
 
-	private loadSuspendDataObject(refreshEmpty = false): Record<string, unknown> {
-		return this.suspendData.load(
-			() => {
-				if (!this.canCallLms()) return undefined;
-				const raw = this.api?.GetValue("cmi.suspend_data") ?? "";
-				// An unset optional element is normal on the first launch (ADL error 403).
-				if (raw || this.api?.GetLastError() !== "403") this.checkError("cmi.suspend_data");
-				return raw;
-			},
-			this.session,
-			undefined,
-			refreshEmpty,
-		);
+	private readSuspendData(): string | undefined {
+		if (!this.canCallLms()) return undefined;
+		const raw = this.api?.GetValue("cmi.suspend_data") ?? "";
+		// An unset optional element is normal on the first launch (ADL error 403).
+		if (raw || this.api?.GetLastError() !== "403") this.checkError("cmi.suspend_data");
+		return raw;
+	}
+
+	private loadSuspendDataObject(): Record<string, unknown> {
+		return this.suspendData.load(() => this.readSuspendData(), this.session);
 	}
 
 	private saveSuspendDataObject(obj: Record<string, unknown>): void {
