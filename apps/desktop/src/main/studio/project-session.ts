@@ -98,7 +98,11 @@ import {
 } from "../project-file-transactions";
 import { readProjectTree } from "../project-tree";
 import { browserExportSchema, StudioExportService } from "./export-service";
-import { identityReviewMessages, type StudioIdentityReview } from "./identity-review";
+import {
+	identityReviewMessages,
+	type StudioIdentityReview,
+	sourceErrorMessage,
+} from "./identity-review";
 import { studioNarrationStatus } from "./narration-policy";
 import {
 	type CanvasPracticeDiagnostic,
@@ -310,10 +314,7 @@ export async function createStudioProjectSession(
 					code: problem.code,
 					file: problem.file,
 					line: problem.line,
-					message:
-						identityReviewMessages[locale][
-							problem.code === "bad_yaml" ? "badYaml" : "invalidSource"
-						],
+					message: sourceErrorMessage(locale, problem),
 				};
 				// Opaque invalid lessons must not prevent entry to valid lessons.
 				// Confirmation still validates the whole graph it would persist.
@@ -1229,11 +1230,7 @@ export async function createStudioProjectSession(
 						canvasMessages[locale].identityReviewPending,
 					);
 				if (error instanceof IdentitySourceError)
-					throw new StudioSessionError(
-						422,
-						error.code,
-						identityReviewMessages[locale][error.code === "bad_yaml" ? "badYaml" : "invalidSource"],
-					);
+					throw new StudioSessionError(422, error.code, sourceErrorMessage(locale, error));
 				if (error instanceof EmptyCourseError)
 					throw new StudioSessionError(422, error.code, error.message);
 				throw error;

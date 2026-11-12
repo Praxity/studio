@@ -39,6 +39,7 @@ import {
 	writeSessionState,
 } from "./session.ts";
 import { sessionTime } from "./session-time.ts";
+import { SuspendDataReader } from "./suspend-data-reader";
 
 /** The wire reader and adapter share admission of raw and compact rows. */
 export function readScorm12InteractionEvidence(
@@ -100,7 +101,11 @@ export class Scorm12Runtime implements SCORMRuntime {
 
 	private submission?: { blockId: string; data: Scorm12SuspendData };
 	private reportingSubmission = false;
-	private unreadableSuspendData = false;
+	private readonly suspendData = new SuspendDataReader<Scorm12SuspendData>(
+		(raw) => (this.suspendDataCodec?.parse ?? parseScorm12SuspendData)(raw),
+		() => ({ visitedPages: [], interactions: [] }),
+		"1.2",
+	);
 	private heldDrafts?: LocalStorageRuntime;
 	private heldMemory = new Map<string, LearnerStateValue>();
 	constructor(
@@ -124,7 +129,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 		this.ensureInitialized();
 		if (this.submission) throw new Error("A SCORM submission is already pending");
 		const data = this.loadSuspendPayload();
-		if (this.unreadableSuspendData) return false;
+		if (this.suspendData.unreadable) return false;
 		this.submission = { blockId, data };
 		try {
 			this.blockSaveResults.set(blockId, { status: "pending" });
@@ -150,7 +155,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 			return { status: "not-saved" as const, code: "commit-refused" as const };
 		if (this.blockStatePolicy[blockId] === "device") return undefined;
 		this.loadSuspendPayload();
-		return this.unreadableSuspendData
+		return this.suspendData.unreadable
 			? { status: "not-saved" as const, code: "unreadable-state" as const }
 			: this.blockSaveResults.get(blockId);
 	}
@@ -196,7 +201,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 		this.loadSuspendPayload();
 		const currentStatus = this.lmsGetValue("cmi.core.lesson_status");
 		if (
-			!this.unreadableSuspendData &&
+			!this.suspendData.unreadable &&
 			(!currentStatus || currentStatus === "not attempted" || currentStatus === "browsed")
 		) {
 			if (!this.lmsSetValue("cmi.core.lesson_status", "incomplete")) return false;
@@ -218,7 +223,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 		if (!this.flushCompletion()) return false;
 		if (
 			explicitFinish &&
-			!this.unreadableSuspendData &&
+			!this.suspendData.unreadable &&
 			!session.courseFailure &&
 			!["failed", "passed"].includes(this.lmsGetValue("cmi.core.lesson_status")) &&
 			!this.lmsSetValue("cmi.core.lesson_status", "completed")
@@ -368,7 +373,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 
 	trackObjective(id: string, score: number, passed: boolean): void {
 		this.loadSuspendPayload();
-		if (this.unreadableSuspendData) return;
+		if (this.suspendData.unreadable) return;
 		if (this.session?.commitRefused || this.blockStatePolicy[id] === "device") return;
 		this.ensureInitialized();
 		try {
@@ -396,7 +401,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 	setCompletion(status: "incomplete" | "completed" | "passed" | "failed"): void {
 		this.ensureInitialized();
 		this.loadSuspendPayload();
-		if (!this.unreadableSuspendData && this.session) this.session.pendingCompletion = status;
+		if (!this.suspendData.unreadable && this.session) this.session.pendingCompletion = status;
 	}
 
 	getCompletion(): string {
@@ -409,7 +414,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 	setScore(raw: number, min: number, max: number): void {
 		this.ensureInitialized();
 		this.loadSuspendPayload();
-		if (this.unreadableSuspendData) return;
+		if (this.suspendData.unreadable) return;
 		this.lmsSetValue("cmi.core.score.raw", String(raw));
 		this.lmsSetValue("cmi.core.score.min", String(min));
 		this.lmsSetValue("cmi.core.score.max", String(max));
@@ -487,7 +492,7 @@ export class Scorm12Runtime implements SCORMRuntime {
 	// ---- internal helpers ---------------------------------------------------
 
 	private flushCompletion(): boolean {
-		if (this.unreadableSuspendData) return true;
+		if (this.suspendData.unreadable) return true;
 		const pending = this.session?.pendingCompletion;
 		if (pending === undefined) return true;
 		// A page can complete before an assessment submits in the same save. Transfer
@@ -554,34 +559,30 @@ export class Scorm12Runtime implements SCORMRuntime {
 
 	private loadSuspendPayload(): Scorm12SuspendData {
 		if (this.submission) return JSON.parse(JSON.stringify(this.submission.data));
-		if (this.unreadableSuspendData) return { visitedPages: [], interactions: [] };
-		const raw = this.canCallLms() ? this.api?.LMSGetValue("cmi.suspend_data") : "";
-		if (raw) {
-			const data = (this.suspendDataCodec?.parse ?? parseScorm12SuspendData)(raw);
-			if (data) return data;
-			// Keep the original LMS bytes until recovery, rather than certify an empty attempt.
-			this.unreadableSuspendData = true;
-			if (this.session) delete this.session.pendingCompletion;
-			// Recovery stays in this tab and cannot cross courses, learners or damaged attempts.
-			// Failure leaves the receipt not-saved and the on-screen draft editable.
-			if (this.courseId && raw.length <= LEARNER_STATE_MAX_BYTES) {
-				try {
-					const learnerId = this.lmsGetValue("cmi.core.student_id").trim();
-					if (learnerId)
-						this.heldDrafts = new LocalStorageRuntime(
-							window.sessionStorage,
-							JSON.stringify(["scorm12-unsaved", this.courseId, learnerId, raw]),
-						);
-				} catch {
-					this.heldDrafts = undefined;
+		return this.suspendData.load(
+			() => (this.canCallLms() ? (this.api?.LMSGetValue("cmi.suspend_data") ?? "") : undefined),
+			this.session,
+			(raw) => {
+				// Recovery stays in this tab and cannot cross courses, learners or damaged attempts.
+				// Failure leaves the receipt not-saved and the on-screen draft editable.
+				if (this.courseId && raw.length <= LEARNER_STATE_MAX_BYTES) {
+					try {
+						const learnerId = this.lmsGetValue("cmi.core.student_id").trim();
+						if (learnerId)
+							this.heldDrafts = new LocalStorageRuntime(
+								window.sessionStorage,
+								JSON.stringify(["scorm12-unsaved", this.courseId, learnerId, raw]),
+							);
+					} catch {
+						this.heldDrafts = undefined;
+					}
 				}
-			}
-		}
-		return { visitedPages: [], interactions: [] };
+			},
+		);
 	}
 
 	private saveSuspendPayload(data: Scorm12SuspendData): boolean {
-		if (this.unreadableSuspendData) return false;
+		if (this.suspendData.unreadable) return false;
 		if (this.submission && !this.reportingSubmission) {
 			this.submission.data = data;
 			return true;
