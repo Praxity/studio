@@ -86,9 +86,11 @@ export function canvasTextNeedsFallback(geometry: CanvasTextGeometry): boolean {
 	return !geometry.cornersHit;
 }
 
+const staleRefusalCodes = ["stale", "conflict", "orphaned", "ambiguous"];
+
 // Only known saved-field recoveries bypass document admission. Other refusals may need a server page.
 export function canvasTextCanReloadInPlace(error: string): boolean {
-	return ["stale", "conflict", "orphaned", "ambiguous"].includes(error);
+	return staleRefusalCodes.includes(error);
 }
 
 /** One in-memory field, no draft or render lifecycle. */
@@ -741,7 +743,7 @@ export function mountCanvasTextFields(
 			entry.confirm.hidden = true;
 			discardAction = undefined;
 		}
-		const stale = ["stale", "conflict", "orphaned", "ambiguous"].includes(state.error);
+		const stale = staleRefusalCodes.includes(state.error);
 		const identityPending = state.error === "identity-retirement-pending";
 		const text =
 			state.plainStorePath !== undefined
@@ -1223,6 +1225,7 @@ export function mountCanvasTextFields(
 	window.addEventListener("pagehide", dispose, { once: true, signal: listeners.signal });
 	return {
 		setUpdating(value: boolean) {
+			if (updating === value) return;
 			updating = value;
 			render();
 		},

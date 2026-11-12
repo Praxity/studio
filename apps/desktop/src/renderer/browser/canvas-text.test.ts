@@ -1,4 +1,6 @@
-import { expect, it } from "vitest";
+import { JSDOM } from "jsdom";
+import { afterEach, expect, it, vi } from "vitest";
+import { canvasMessages } from "../../shared/canvas-messages";
 import {
 	type CanvasTextBinding,
 	type CanvasTextGeometry,
@@ -7,6 +9,7 @@ import {
 	canvasTextCanReloadInPlace,
 	canvasTextNeedsFallback,
 	createCanvasTextSession,
+	mountCanvasTextFields,
 } from "./canvas-text";
 
 const original = "# Page\n\n## Before\n\nOther.\n";
@@ -609,4 +612,185 @@ it.each([
 	["", false],
 ] as const)("chooses in-place reload only for saved-field recovery: %s", (error, expected) => {
 	expect(canvasTextCanReloadInPlace(error)).toBe(expected);
+});
+
+// jsdom has no layout or native trusted input. Adapt those browser boundaries;
+// the actual field listeners and session remain under test.
+function mountTextField(reply: Promise<CanvasTextReply>) {
+	const dom = new JSDOM(
+		'<!doctype html><html><body><h2 class="praxity-block" data-node-id="heading">Before</h2></body></html>',
+		{ url: "http://127.0.0.1:9000/canvas/preview/page.html" },
+	);
+	const win = dom.window;
+	for (const name of [
+		"window",
+		"document",
+		"Document",
+		"EventTarget",
+		"HTMLElement",
+		"Element",
+		"Node",
+		"ShadowRoot",
+		"MouseEvent",
+		"HTMLAnchorElement",
+		"HTMLAreaElement",
+		"AbortController",
+		"getComputedStyle",
+		"innerHeight",
+		"innerWidth",
+		"scrollY",
+	] as const)
+		vi.stubGlobal(name, name === "window" ? win : win[name]);
+	vi.stubGlobal("requestAnimationFrame", () => 0);
+	vi.stubGlobal(
+		"ResizeObserver",
+		class {
+			observe() {}
+			unobserve() {}
+			disconnect() {}
+		},
+	);
+	win.HTMLElement.prototype.getBoundingClientRect = () => new win.DOMRect(20, 100, 300, 100);
+	win.HTMLElement.prototype.checkVisibility = () => true;
+	win.HTMLElement.prototype.scrollIntoView = () => {};
+	win.HTMLElement.prototype.showPopover = () => {};
+	win.HTMLElement.prototype.hidePopover = () => {};
+	win.Document.prototype.elementFromPoint = () => win.document.querySelector('div[id^="studio-"]');
+	const documentReload = vi.fn();
+	vi.stubGlobal("location", { reload: documentReload });
+	const makeElement = ((tag: string) => {
+		const element = win.document.createElement(tag);
+		if (tag === "textarea") element.style.minHeight = "72px";
+		const listen = element.addEventListener.bind(element);
+		element.addEventListener = (
+			type: string,
+			listener: EventListenerOrEventListenerObject | null,
+			options?: boolean | AddEventListenerOptions,
+		) => {
+			listen(
+				type,
+				(event) => {
+					const trusted = new Proxy(event, {
+						get(target, key) {
+							if (key === "isTrusted") return true;
+							const value = Reflect.get(target, key, target);
+							return typeof value === "function" ? value.bind(target) : value;
+						},
+					});
+					if (typeof listener === "function") listener.call(element, trusted);
+					else listener?.handleEvent(trusted);
+				},
+				options,
+			);
+		};
+		return element;
+	}) as typeof document.createElement;
+	const status = win.document.createElement("p");
+	status.setAttribute("role", "status");
+	const toggle = win.document.createElement("button");
+	win.document.body.append(status, toggle);
+	const inPlaceReload = vi.fn();
+	const apply = vi.fn(() => reply);
+	const view = mountCanvasTextFields(
+		[binding],
+		{ apply, snapshot: async () => ({ fields: [binding] }) },
+		canvasMessages.en,
+		"",
+		status,
+		createCanvasTextSession,
+		makeElement,
+		win.document.documentElement,
+		toggle,
+		{ opened() {}, closed() {}, reload: inPlaceReload },
+	);
+	const shadow = win.document.querySelector('div[id^="studio-"]')?.shadowRoot;
+	if (!shadow) throw new Error("Field did not mount");
+	const field = shadow.querySelector("textarea");
+	if (!field) throw new Error("Field missing textarea");
+	const click = (label: string) => {
+		const button = [...shadow.querySelectorAll("button")].find(
+			(button) => button.textContent === label,
+		);
+		if (!button) throw new Error(`Missing button: ${label}`);
+		button.click();
+	};
+	return {
+		win,
+		status,
+		field,
+		view,
+		inPlaceReload,
+		documentReload,
+		apply,
+		click,
+		startSave() {
+			click(canvasMessages.en.editButton);
+			field.value = "Changed text";
+			field.dispatchEvent(new win.Event("input", { bubbles: true }));
+			field.dispatchEvent(new win.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+		},
+		close() {
+			view.dispose();
+			win.close();
+		},
+	};
+}
+
+afterEach(() => {
+	vi.unstubAllGlobals();
+	vi.restoreAllMocks();
+});
+
+it.each([
+	["identity-retirement-pending", "reviewChanges", false],
+	["stale", "reload", true],
+] as const)(
+	"routes confirmed field reload through its DOM handler: %s",
+	async (code, label, inPlace) => {
+		const ui = mountTextField(Promise.resolve({ ok: false, code }));
+		try {
+			ui.startSave();
+			await vi.waitFor(() =>
+				expect(ui.status.textContent).toBe(
+					code === "stale"
+						? canvasMessages.en.fileChanged
+						: canvasMessages.en.identityReviewPending,
+				),
+			);
+			ui.click(canvasMessages.en[label]);
+			ui.click(canvasMessages.en.discardReload);
+			expect(ui.apply).toHaveBeenCalledTimes(1);
+			expect(ui.inPlaceReload).toHaveBeenCalledTimes(inPlace ? 1 : 0);
+			expect(ui.documentReload).toHaveBeenCalledTimes(inPlace ? 0 : 1);
+		} finally {
+			ui.close();
+		}
+	},
+);
+
+it("keeps the refresh diagnostic without another live update when updating is already false during a save", async () => {
+	let finish!: (reply: CanvasTextReply) => void;
+	const held = new Promise<CanvasTextReply>((resolve) => {
+		finish = resolve;
+	});
+	const ui = mountTextField(held);
+	const announcements: string[] = [];
+	const observer = new ui.win.MutationObserver(() => {
+		announcements.push(ui.status.textContent ?? "");
+	});
+	try {
+		ui.startSave();
+		expect(ui.field.readOnly).toBe(true);
+		ui.status.textContent = canvasMessages.en.refreshFailed;
+		observer.observe(ui.status, { childList: true, characterData: true, subtree: true });
+		ui.view.setUpdating(false);
+		await Promise.resolve();
+		expect(ui.status.textContent).toBe(canvasMessages.en.refreshFailed);
+		expect(announcements).toEqual([]);
+		finish({ ok: true, files: [{ path: binding.file, toRevision: "b".repeat(64) }] });
+		await vi.waitFor(() => expect(ui.status.textContent).toBe(canvasMessages.en.saved));
+	} finally {
+		observer.disconnect();
+		ui.close();
+	}
 });
