@@ -12,6 +12,7 @@ const prefixes = {
 	],
 };
 const kinds = ["heading", "paragraph", "listItem", "choiceLabel", "caption"] as const;
+const scotlandFlag = "\u{1f3f4}\u{e0067}\u{e0062}\u{e0073}\u{e0063}\u{e0074}\u{e007f}";
 const adversarial = [
 	"Repeated paragraph., position 2",
 	"Use {position} here.",
@@ -45,7 +46,7 @@ for (const lang of ["en", "fr"] as const) {
 			expect(editButtonName(messages, "paragraph", 1, " \n First\t  second. \n")).toBe(
 				`${prefixes[lang][1]} 1${separator}First second.`,
 			);
-			for (const grapheme of ["e\u0301", "🇨🇦", "👩🏽‍💻"]) {
+			for (const grapheme of ["e\u0301", "🇨🇦", "👩🏽‍💻", scotlandFlag]) {
 				expect(editButtonName(messages, "caption", 12, `${"a".repeat(39)}${grapheme}z`)).toBe(
 					`${prefixes[lang][4]} 12${separator}${"a".repeat(39)}${grapheme}…`,
 				);
@@ -71,11 +72,14 @@ for (const lang of ["en", "fr"] as const) {
 				expect(names.size).toBe(50_000);
 			},
 		);
-		it.each(["👩🏽‍💻", "👨‍👩‍👧‍👦", "می‌روم", "क्‍ष"])("preserves authored joiners in %s", (text) => {
-			expect(editButtonName(messages, "paragraph", 3, text)).toBe(
-				`${prefixes[lang][1]} 3${separator}${text}`,
-			);
-		});
+		it.each(["👩🏽‍💻", "👨‍👩‍👧‍👦", "می‌روم", "क्‍ष", scotlandFlag])(
+			"preserves authored text sequences in %s",
+			(text) => {
+				expect(editButtonName(messages, "paragraph", 3, text)).toBe(
+					`${prefixes[lang][1]} 3${separator}${text}`,
+				);
+			},
+		);
 		it("has no ambiguous kind prefixes", () => {
 			const starts = prefixes[lang].map((prefix) => `${prefix} 1${separator}`);
 			for (const start of starts)

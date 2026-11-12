@@ -142,7 +142,7 @@ export function editButtonName(
 ) {
 	const prefix = messages[editTemplates[kind]].replace("{n}", String(n));
 	const normalized = text
-		.replace(/(?![\u200c\u200d])\p{Cf}/gu, "")
+		.replace(/(?![\u200c\u200d\u{e0020}-\u{e007f}])\p{Cf}/gu, "")
 		.replace(/\s+/gu, " ")
 		.trim();
 	if (/^[\s\p{Cf}]*$/u.test(normalized)) return prefix;
