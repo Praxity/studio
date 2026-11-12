@@ -2295,7 +2295,10 @@ async function resolveAdmittedCourseIdentity(
 				!options.approvedConversion;
 			// Refresh the saved display proof before a writer plans against current sources.
 			if (!readSession && !options.strict && !base && savedWriteAdmission)
-				sessionState?.readSession?.resolve(input);
+				sessionState?.readSession?.resolve({
+					...input,
+					parsedDocuments: parsed.map(({ path, read }) => ({ path, tree: read.tree })),
+				});
 			let identity =
 				readResolution?.candidate ??
 				adopted?.identity ??
@@ -2718,15 +2721,19 @@ export async function persistCourseIdentity(
 		priorHeads: payload.identity.heads,
 		priorSnapshots: payload.identity.snapshots,
 	};
-	const displayedIdentity = {
-		...payload.identity,
-		heads: payload.identity.heads.filter((head) => !baseline.preservedLessons.has(head.path)),
+	const displayInput = {
+		...installedInput,
+		parsedDocuments: [...payload.lessons].map(([path, lesson]) => ({ path, tree: lesson.tree })),
 	};
+	// Preserved lessons are absent from the write candidate, but must remain in the read proof.
+	const displayedIdentity = baseline.preservedLessons.size
+		? resolveIdentity({ ...displayInput, operations: undefined }, dependencies)
+		: payload.identity;
 	const transitions =
 		session && identitySessions.get(session.owner) === session.state
 			? [
 					session.state.readSession?.prepareWrite(
-						installedInput,
+						displayInput,
 						baseline.writeBase && {
 							...baseline.writeBase,
 							heads: baseline.writeBase.heads.filter(
@@ -2737,7 +2744,7 @@ export async function persistCourseIdentity(
 					),
 					// Draft display descriptors describe the result, not the saved operation base.
 					session.state.draftReadSession?.prepareWrite(
-						{ ...installedInput, operations: undefined },
+						{ ...displayInput, operations: undefined },
 						undefined,
 						displayedIdentity,
 					),

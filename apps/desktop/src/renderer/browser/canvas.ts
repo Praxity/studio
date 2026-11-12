@@ -172,7 +172,7 @@ export function startStudioAuthor(
 				);
 				reservePanel();
 				if (sessionError) throw sessionError;
-				async function rpc(method: string, args: unknown) {
+				async function rpc(method: string, args: unknown, canvasPath = documentPath) {
 					const deadline = new AbortController();
 					// An absent reply is unknown, never a no-write refusal or an automatic replay.
 					const timer = setTimeout(() => deadline.abort(), requestTimeoutMs);
@@ -182,7 +182,7 @@ export function startStudioAuthor(
 							headers: {
 								Authorization: `Bearer ${token}`,
 								"Content-Type": "application/json",
-								"X-Praxity-Canvas": documentPath,
+								"X-Praxity-Canvas": canvasPath,
 							},
 							credentials: "omit",
 							signal: AbortSignal.any([controller.signal, deadline.signal]),
@@ -313,14 +313,15 @@ export function startStudioAuthor(
 				eventSeq = Math.max(eventSeq, snapshot.seq);
 				const liveStatus = status;
 				let refreshing = false;
-				// The current practice refusal; a later successful refresh replaces it.
-				let refusal = "";
+				// The current source or practice refusal; a later successful refresh replaces it.
+				let refusal = snapshot.sourceRefusal ?? "";
 				let editedPageId: string | undefined;
 				let refreshed = Promise.resolve();
 				let finishRefresh: (() => void) | undefined;
 				const lifecycle = {
 					editingChanged(editing: boolean, focusHidden: boolean) {
 						modeToggle.setAttribute("aria-pressed", String(editing));
+						if (refusal) liveStatus.textContent = refusal;
 						if (!editing && focusHidden) modeToggle.focus({ preventScroll: true });
 					},
 					opened() {
@@ -394,10 +395,20 @@ export function startStudioAuthor(
 							}
 							return current;
 						}
+						function showSourceRefusal(message: string | undefined) {
+							if (!message) return false;
+							refusal = message;
+							view.update([]);
+							liveStatus.style.whiteSpace = "pre-wrap";
+							if (liveStatus.textContent !== refusal) liveStatus.textContent = refusal;
+							return true;
+						}
+						if (requested !== generation || controller.signal.aborted) return;
+						if (showSourceRefusal(before.sourceRefusal)) return;
 						const built = await rpc("canvasPreviewBuild", {});
-						const pageId = before.fields.find(
-							(field: { kind: string }) => field.kind === "page",
-						)?.ownerId;
+						const pageId =
+							before.fields.find((field: { kind: string }) => field.kind === "page")?.ownerId ??
+							built.pageId;
 						const page = built.pages.find((page: { id: string }) => page.id === pageId);
 						if (!page) throw new Error("Saved page is unavailable");
 						const entry = new URL(`${encodeURIComponent(page.slug)}.html`, built.entryUrl);
@@ -502,8 +513,10 @@ export function startStudioAuthor(
 							});
 							requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
 						});
-						const current = await readCurrent();
-						if (!current) return;
+						if (!(await readCurrent())) return;
+						const current = await rpc("canvasTextSnapshot", {}, new URL(authorUrl).pathname);
+						if (requested !== generation || view.isOpen() || controller.signal.aborted) return;
+						if (showSourceRefusal(current.sourceRefusal)) return;
 						const focusedBinding = view.focusedBinding();
 						const focused = activeElement() as Element | null;
 						const focusedId = focused?.id;
@@ -613,6 +626,7 @@ export function startStudioAuthor(
 									announcement !== refusal
 								? announcement
 								: messages.connected;
+						refusal = "";
 						review.hidden = true;
 						if (liveStatus.textContent !== nextStatus) liveStatus.textContent = nextStatus;
 						scrollTo(position);
@@ -674,7 +688,8 @@ export function startStudioAuthor(
 					generation++;
 					void refresh();
 				};
-				status.textContent = view.unmapped ? messages.unmapped : messages.connected;
+				status.style.whiteSpace = "pre-wrap";
+				status.textContent = refusal || (view.unmapped ? messages.unmapped : messages.connected);
 				// A watcher may arrive while the first reply is held. Compare fresh bytes, not its sequence alone.
 				const startupSnapshot = eventSeq > snapshot.seq ? await port.snapshot() : snapshot;
 				if (

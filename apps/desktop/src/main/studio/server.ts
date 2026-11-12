@@ -555,10 +555,19 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 								: undefined;
 						if (!canvasPageScope) reject(403, "canvas_page_required", t("serverRefusals.page"));
 					}
-					json(res, 200, {
-						ok: true,
-						result: await session.invoke(input.method, input.args, canvasPageScope),
-					});
+					let result = await session.invoke(input.method, input.args, canvasPageScope);
+					if (input.method === "canvasPreviewBuild") {
+						const documentPath = req.headers["x-praxity-canvas"];
+						const previous =
+							typeof documentPath === "string" && documentPath.startsWith("/canvas/")
+								? documentPath.slice("/canvas".length)
+								: undefined;
+						if (previous) {
+							const current = readOnly.currentCanvasDocument(previous) ?? previous;
+							result = { ...(result as object), pageId: readOnly.canvasPageScope(current)?.pageId };
+						}
+					}
+					json(res, 200, { ok: true, result });
 					return;
 				}
 				if (route === "/api/session" || route === "/api/events") {

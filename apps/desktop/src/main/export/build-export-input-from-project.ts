@@ -124,6 +124,8 @@ export interface BuildExportInputFromProjectOptions {
 }
 
 export interface ProjectExportInput extends DesktopExportInput {
+	/** Host-only lesson selection; never serialized into learner output. */
+	lessonFiles?: Record<string, string>;
 	/** Host-only captured source hashes, excluded from compiler manifests. */
 	sourceRevisions?: Record<string, string>;
 	authorWarnings?: AuthorWarning[];
@@ -958,6 +960,11 @@ async function buildCourseInputSnapshot(
 		...(options.preparePdf ? { preparedLessons } : {}),
 		courseId: identity.identity.course.courseId,
 		blocks: combinedBlocks,
+		lessonFiles: Object.fromEntries(
+			identity.identity.sourceMappings
+				.filter((mapping) => mapping.path.length === 0)
+				.map((mapping) => [mapping.id, mapping.file]),
+		),
 		sourceRevisions: Object.fromEntries(
 			[...savedSources]
 				.map(([file, source]) => [file, digest(source)])

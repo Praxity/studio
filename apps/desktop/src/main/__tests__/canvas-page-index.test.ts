@@ -23,6 +23,7 @@ async function fixture() {
 			{ id: "second", lessonId: "one", slug: "second" },
 			{ id: "third", lessonId: "two", slug: "third" },
 		],
+		lessonFiles?: Record<string, string>,
 	) {
 		const files = Object.fromEntries(
 			pages.map((p) => [
@@ -36,6 +37,7 @@ async function fixture() {
 			format: "standalone",
 			courseToken: "a".repeat(32),
 			editorSeq: n,
+			lessonFiles,
 			sourceRevisions: { "one.prax": "source" },
 			manifest: {
 				version: 1,
@@ -150,4 +152,78 @@ it("keeps at most 256 recorded revisions and touches a recorded lookup", async (
 	expect(server.canvasPageScope(paths[1])).toBeUndefined();
 	await server.close();
 	expect(server.canvasPageScope(paths[0])).toBeUndefined();
+});
+
+it("recovers the same lesson by captured file when both lesson and page identities change", async () => {
+	const { server, host } = await fixture();
+	const old = await host(
+		1,
+		[
+			{ id: "first", lessonId: "one", slug: "first" },
+			{ id: "second", lessonId: "two", slug: "second" },
+		],
+		{ one: "intro.prax", two: "lesson.prax" },
+	);
+	await old.release();
+	const newest = await host(
+		2,
+		[
+			{ id: "new-first", lessonId: "new-one", slug: "intro" },
+			{ id: "new-second", lessonId: "new-two", slug: "repaired-lesson" },
+		],
+		{ "new-one": "intro.prax", "new-two": "lesson.prax" },
+	);
+	const expected = new URL("repaired-lesson.html", newest.entryUrl).pathname;
+	expect(server.currentCanvasDocument(old.path)).toBe(expected);
+	expect(server.canvasPageScope(expected)?.pageId).toBe("new-second");
+	const response = await fetch(`${server.origin}/canvas${old.path}`, { redirect: "manual" });
+	expect(response.status).toBe(303);
+	expect(response.headers.get("location")).toBe(`/canvas${expected}?praxity-resume=0`);
+});
+
+it.each(["lesson", "replaced-lesson"])(
+	"keeps page 2 after repair with lesson identity %s",
+	async (lessonId) => {
+		const { server, host } = await fixture();
+		const old = await host(
+			1,
+			[
+				{ id: "intro", lessonId: "intro", slug: "intro" },
+				{ id: "first", lessonId: "lesson", slug: "lesson-start" },
+				{ id: "second", lessonId: "lesson", slug: "second" },
+			],
+			{ intro: "intro.prax", lesson: "lesson.prax" },
+		);
+		await old.release();
+		const newest = await host(
+			2,
+			[
+				{ id: "intro", lessonId: "intro", slug: "intro" },
+				{ id: "first", lessonId, slug: "lesson-start" },
+				{ id: "repaired-second", lessonId, slug: "repaired-second" },
+			],
+			{ intro: "intro.prax", [lessonId]: "lesson.prax" },
+		);
+		const expected = new URL("repaired-second.html", newest.entryUrl).pathname;
+		expect(server.currentCanvasDocument(old.path)).toBe(expected);
+		const response = await fetch(`${server.origin}/canvas${old.path}`, { redirect: "manual" });
+		expect(response.headers.get("location")).toBe(`/canvas${expected}?praxity-resume=0`);
+	},
+);
+
+it("does not treat a surviving sibling as a replacement for a deleted page", async () => {
+	const { server, host } = await fixture();
+	const old = await host(1, [
+		{ id: "first", lessonId: "one", slug: "first" },
+		{ id: "second", lessonId: "one", slug: "second" },
+		{ id: "third", lessonId: "one", slug: "third" },
+	]);
+	await old.release();
+	const newest = await host(2, [
+		{ id: "first", lessonId: "one", slug: "first" },
+		{ id: "third", lessonId: "one", slug: "third" },
+	]);
+	expect(server.currentCanvasDocument(old.path)).toBe(
+		new URL("first.html", newest.entryUrl).pathname,
+	);
 });
