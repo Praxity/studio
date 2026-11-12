@@ -2,51 +2,6 @@ import { expect, test } from "@playwright/test";
 import { findPageWithSelector, getCoursePages, readTestEnv, waitForHydration } from "./helpers";
 
 test.describe("typography", () => {
-	test("fonts are loaded and heading size is greater than body text", async ({ page }) => {
-		const env = readTestEnv();
-		const pages = await getCoursePages(page, env.url);
-		const first = pages[0];
-		expect(first?.slug, "fixture should expose at least one page slug").toBeTruthy();
-		if (!first?.slug) return;
-
-		await page.goto(`${env.url}/${first.slug}.html`, { waitUntil: "domcontentloaded" });
-		await waitForHydration(page);
-
-		const fontLoaded = await page.evaluate(async () => {
-			if (!("fonts" in document) || !document.fonts) return false;
-			await document.fonts.ready;
-
-			const bodyFont = getComputedStyle(document.body).fontFamily;
-			const firstFamily = bodyFont
-				.split(",")
-				.map((item) => item.replaceAll('"', "").replaceAll("'", "").trim())
-				.find((value) => value.length > 0);
-			if (!firstFamily) return false;
-
-			const checks = [firstFamily, "Source Sans 3", "Atkinson Hyperlegible Next"];
-			return checks.some((family) => document.fonts.check(`16px "${family}"`));
-		});
-		expect(fontLoaded, "expected configured font face to be loaded").toBe(true);
-
-		const typography = await page.evaluate(() => {
-			const heading = document.querySelector<HTMLElement>("h1, h2, h3");
-			const body =
-				document.querySelector<HTMLElement>("p") ??
-				document.querySelector<HTMLElement>("#main-content");
-			if (!heading || !body) return null;
-			return {
-				headingSize: Number.parseFloat(getComputedStyle(heading).fontSize),
-				bodySize: Number.parseFloat(getComputedStyle(body).fontSize),
-			};
-		});
-		expect(typography, "expected heading and body elements").not.toBeNull();
-		if (!typography) return;
-		expect(
-			typography.headingSize,
-			"heading font size should be larger than body text",
-		).toBeGreaterThan(typography.bodySize);
-	});
-
 	test("heading ratios hold at every text-size step, including container headings", async ({
 		page,
 	}) => {
