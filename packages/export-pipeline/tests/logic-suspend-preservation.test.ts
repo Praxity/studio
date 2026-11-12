@@ -56,8 +56,8 @@ it("keeps all SCORM 1.2 keys and propagates storage-full when a variable cannot 
 it("leaves unparseable SCORM 2004 bytes untouched and reports unreadable state on a variable write", () => {
 	const original = '{"deck":{"released":["gate"]},"answers":';
 	let saved = original;
-	const write = vi.fn((_key: string, value: string) => {
-		saved = value;
+	const write = vi.fn((key: string, value: string) => {
+		if (key === "cmi.suspend_data") saved = value;
 		return "true";
 	});
 	const commit = vi.fn(() => "true");
@@ -77,6 +77,8 @@ it("leaves unparseable SCORM 2004 bytes untouched and reports unreadable state o
 	win.parent = win;
 	const runtime = new Scorm2004Runtime(win);
 	expect(runtime.initialize()).toBe(true);
+	expect(write).toHaveBeenCalledExactlyOnceWith("cmi.completion_status", "incomplete");
+	write.mockClear();
 	const store = new VariableStore(definitions, runtime);
 	expect(store.set("label", "new value")).toBe(false);
 	expect(saved).toBe(original);

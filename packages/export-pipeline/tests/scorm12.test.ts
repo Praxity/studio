@@ -193,8 +193,11 @@ describe("Scorm12Runtime", () => {
 		});
 
 		it("throws descriptive error when LMSGetLastError returns non-zero", () => {
-			api.LMSSetValue.mockReturnValue("false");
-			api.LMSGetLastError.mockReturnValue("405");
+			api.LMSGetLastError.mockReturnValue("0");
+			api.LMSSetValue.mockImplementation(() => {
+				api.LMSGetLastError.mockReturnValue("405");
+				return "false";
+			});
 			api.LMSGetErrorString.mockReturnValue("Incorrect Data Type");
 			api.LMSGetDiagnostic.mockReturnValue("Expected integer value");
 
@@ -206,8 +209,11 @@ describe("Scorm12Runtime", () => {
 		});
 
 		it("throws error without diagnostic when diagnostic is empty", () => {
-			api.LMSSetValue.mockReturnValue("false");
-			api.LMSGetLastError.mockReturnValue("201");
+			api.LMSGetLastError.mockReturnValue("0");
+			api.LMSSetValue.mockImplementation(() => {
+				api.LMSGetLastError.mockReturnValue("201");
+				return "false";
+			});
 			api.LMSGetErrorString.mockReturnValue("Invalid argument error");
 			api.LMSGetDiagnostic.mockReturnValue("");
 
