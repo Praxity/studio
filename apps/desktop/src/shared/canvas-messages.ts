@@ -142,9 +142,10 @@ export function editButtonName(
 ) {
 	const prefix = messages[editTemplates[kind]].replace("{n}", String(n));
 	const normalized = text
-		.replace(/\p{Cf}/gu, "")
+		.replace(/(?![\u200c\u200d])\p{Cf}/gu, "")
 		.replace(/\s+/gu, " ")
 		.trim();
+	if (/^[\s\p{Cf}]*$/u.test(normalized)) return prefix;
 	let excerpt = "";
 	let count = 0;
 	for (const { segment } of graphemes.segment(normalized)) {

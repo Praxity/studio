@@ -35,14 +35,17 @@ for (const lang of ["en", "fr"] as const) {
 				`${prefixes[lang][1]} 3${separator}${text}`,
 			);
 		});
-		it.each(["", " \n\t "])("omits the separator for empty text %j", (text) => {
-			expect(editButtonName(messages, "heading", 1, text)).toBe(`${prefixes[lang][0]} 1`);
-		});
+		it.each(["", " \n\t ", "\u200c", "\u200d", "\u200c \u200d"])(
+			"omits the separator for empty text %j",
+			(text) => {
+				expect(editButtonName(messages, "heading", 1, text)).toBe(`${prefixes[lang][0]} 1`);
+			},
+		);
 		it("collapses whitespace and keeps 40 whole graphemes, with an ellipsis only when cut", () => {
 			expect(editButtonName(messages, "paragraph", 1, " \n First\t  second. \n")).toBe(
 				`${prefixes[lang][1]} 1${separator}First second.`,
 			);
-			for (const grapheme of ["e\u0301", "🇨🇦", "👩🏽"]) {
+			for (const grapheme of ["e\u0301", "🇨🇦", "👩🏽‍💻"]) {
 				expect(editButtonName(messages, "caption", 12, `${"a".repeat(39)}${grapheme}z`)).toBe(
 					`${prefixes[lang][4]} 12${separator}${"a".repeat(39)}${grapheme}…`,
 				);
@@ -68,6 +71,11 @@ for (const lang of ["en", "fr"] as const) {
 				expect(names.size).toBe(50_000);
 			},
 		);
+		it.each(["👩🏽‍💻", "👨‍👩‍👧‍👦", "می‌روم", "क्‍ष"])("preserves authored joiners in %s", (text) => {
+			expect(editButtonName(messages, "paragraph", 3, text)).toBe(
+				`${prefixes[lang][1]} 3${separator}${text}`,
+			);
+		});
 		it("has no ambiguous kind prefixes", () => {
 			const starts = prefixes[lang].map((prefix) => `${prefix} 1${separator}`);
 			for (const start of starts)
