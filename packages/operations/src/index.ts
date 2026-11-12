@@ -180,7 +180,8 @@ export function canvasTextRefusal(
 	if (!text.trim()) return "empty-text";
 	if (/[\uD800-\uDFFF\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u.test(text))
 		return "unsupported-syntax";
-	if (descriptor?.accepts?.(text) === false) return "unsupported-syntax";
+	if (descriptor?.accepts?.(text) === false)
+		return node.kind === "list-entry" ? "list-marker" : "unsupported-syntax";
 	text = canvasTextReplacement(descriptor?.field, text);
 	const candidate = source.slice(0, field.range.start) + text + source.slice(field.range.end);
 	const before = locateTree(analyzeLessonTree(stream, { definition: getDefinition }));
