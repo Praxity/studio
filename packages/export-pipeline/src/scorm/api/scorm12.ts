@@ -557,10 +557,19 @@ export class Scorm12Runtime implements SCORMRuntime {
 
 	// ---- suspend data payload management -----------------------------------
 
+	private readSuspendData(): string | undefined {
+		if (!this.canCallLms()) return undefined;
+		return this.suspendData.read(
+			() => this.api?.LMSGetValue("cmi.suspend_data") ?? "",
+			() => this.api?.LMSGetLastError() ?? "0",
+			this.session,
+		);
+	}
+
 	private loadSuspendPayload(): Scorm12SuspendData {
 		if (this.submission) return JSON.parse(JSON.stringify(this.submission.data));
 		return this.suspendData.load(
-			() => (this.canCallLms() ? (this.api?.LMSGetValue("cmi.suspend_data") ?? "") : undefined),
+			() => this.readSuspendData(),
 			this.session,
 			(raw) => {
 				// Recovery stays in this tab and cannot cross courses, learners or damaged attempts.
