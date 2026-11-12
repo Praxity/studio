@@ -15,7 +15,7 @@ afterEach(async () => {
 	for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true });
 });
 
-it("keeps existing lessons available after a manifest edit resets transient identities", async () => {
+it.each([false, true])("checks course membership, removed=%s", async (removed) => {
 	const root = await mkdtemp(join(tmpdir(), "canvas-manifest-source-error-"));
 	roots.push(root);
 	await writeFile(join(root, "course.yaml"), "title: C\nlessons: [broken.prax, valid.prax]\n");
@@ -35,21 +35,28 @@ it("keeps existing lessons available after a manifest edit resets transient iden
 		});
 		await writeFile(
 			join(root, "course.yaml"),
-			"title: Renamed course\nlessons: [broken.prax, valid.prax]\n",
+			`title: Renamed course\nlessons: [broken.prax${removed ? "" : ", valid.prax"}]\n`,
 		);
 		await vi.waitFor(() => expect(changed).toBe(true));
 		for (const file of ["broken.prax", "valid.prax"]) {
 			const field = captured.fields.find((field) => field.file === file);
 			if (!field) throw new Error("Missing captured lesson");
 			const snapshot = await session.invoke("canvasTextSnapshot", {}, { ...field, pageIndex: 0 });
-			expect(snapshot).toMatchObject({ lessonMissing: false });
+			const missing = removed && file === "valid.prax";
+			expect(snapshot).toMatchObject({ lessonMissing: missing });
 			if (file === "broken.prax")
 				expect(snapshot).toMatchObject({
 					sourceError: { file, line: 6 },
 					sourceRefusal: expect.stringContaining("line 6, column 1: Fix the feedback lines"),
 				});
+			else if (missing)
+				expect(snapshot).toMatchObject({
+					fields: [],
+					sourceRefusal: expect.stringContaining("This lesson was deleted or renamed."),
+				});
 			else expect(snapshot).toMatchObject({ sourceRefusal: undefined });
 		}
+		expect(await readFile(join(root, "valid.prax"), "utf8")).toBe("# Valid\n\nBody.\n");
 	} finally {
 		await session.close();
 	}

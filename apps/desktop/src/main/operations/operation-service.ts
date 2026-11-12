@@ -223,7 +223,8 @@ export class OperationService {
 						: undefined;
 				const lessonMissing = Boolean(
 					scope?.file &&
-						(!manifest.lessonFilesOnDisk.includes(scope.file) ||
+						(!manifest.orderedLessons.includes(scope.file) ||
+							!manifest.lessonFilesOnDisk.includes(scope.file) ||
 							(resolvedFile && scope.file !== resolvedFile)),
 				);
 				return {
