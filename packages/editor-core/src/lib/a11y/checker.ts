@@ -1,4 +1,5 @@
 import { isInlineProjectionMetadataKey } from "@praxity/shared-blocks/inline-markdown";
+import type { GifSkipReason } from "./gif-flash-detector";
 /**
  * Accessibility checker for Praxity courses.
  *
@@ -82,6 +83,7 @@ export interface DesignSystemConfig {
 
 export interface A11yMediaAnalysis {
 	flashingGifSources?: ReadonlySet<string>;
+	uncheckedGifSources?: ReadonlyMap<string, GifSkipReason>;
 }
 
 // Generic link text patterns (case-insensitive)
@@ -345,10 +347,8 @@ function checkBlockAccessibility(
 	mediaAnalysis?: A11yMediaAnalysis,
 ): void {
 	const data = block.data as Record<string, unknown>;
-	if (
-		mediaAnalysis?.flashingGifSources &&
-		containsFlashingGif(data, mediaAnalysis.flashingGifSources)
-	) {
+	for (const source of mediaAnalysis?.flashingGifSources ?? []) {
+		if (!containsFlashingGif(data, new Set([source]))) continue;
 		addIssue(
 			issues,
 			{
@@ -358,8 +358,30 @@ function checkBlockAccessibility(
 					"Animated GIF may flash more than three times per second. Replace it or reduce the flashing rate before publishing.",
 				blockId: block.id,
 				pageId,
-				sourceLocation: "data.media",
+				sourceLocation: source,
+				messageValues: { path: source },
 				help: "https://www.w3.org/WAI/WCAG22/Understanding/three-flashes-or-below-threshold.html",
+			},
+			"failed",
+		);
+	}
+
+	for (const [source, reason] of mediaAnalysis?.uncheckedGifSources ?? []) {
+		if (!containsFlashingGif(data, new Set([source]))) continue;
+		addIssue(
+			issues,
+			{
+				severity: "minor",
+				rule: "gif-flash-unchecked",
+				message: "Check this GIF for flashing manually",
+				blockId: block.id,
+				pageId,
+				sourceLocation: source,
+				messageValues: {
+					path: source,
+					reason:
+						reason === "too-large" ? "size" : reason === "too-many-frames" ? "frames" : "malformed",
+				},
 			},
 			"cantTell",
 		);

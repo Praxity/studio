@@ -1,5 +1,7 @@
 export const canvasMessages = {
 	en: {
+		exportAccessibilityBlocked:
+			"Accessibility issues blocked export. Fix the reported issues, then try again.",
 		edit: "Edit mode",
 		read: "Read mode",
 		readUpdating: "Read mode: Updating",
@@ -56,6 +58,8 @@ export const canvasMessages = {
 		checkSaved: "Check saved bytes",
 	},
 	fr: {
+		exportAccessibilityBlocked:
+			"Des problèmes d’accessibilité empêchent l’exportation. Corrigez les problèmes signalés, puis réessayez.",
 		edit: "Mode édition",
 		read: "Mode lecture",
 		readUpdating: "Mode lecture : Mise à jour",
