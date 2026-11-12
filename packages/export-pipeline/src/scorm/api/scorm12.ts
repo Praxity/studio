@@ -198,12 +198,10 @@ export class Scorm12Runtime implements SCORMRuntime {
 		// Set initial status to "incomplete" if the LMS hasn't already set
 		// a terminal status. Without this, SCORM Cloud auto-marks the registration
 		// as COMPLETED when the session terminates without an explicit status.
+		// Unreadable progress must also stay incomplete to avoid that default.
 		this.loadSuspendPayload();
 		const currentStatus = this.lmsGetValue("cmi.core.lesson_status");
-		if (
-			!this.suspendData.unreadable &&
-			(!currentStatus || currentStatus === "not attempted" || currentStatus === "browsed")
-		) {
+		if (!currentStatus || currentStatus === "not attempted" || currentStatus === "browsed") {
 			if (!this.lmsSetValue("cmi.core.lesson_status", "incomplete")) return false;
 		}
 		this.initialized = true;
@@ -557,10 +555,19 @@ export class Scorm12Runtime implements SCORMRuntime {
 
 	// ---- suspend data payload management -----------------------------------
 
+	private readSuspendData(): string | undefined {
+		if (!this.canCallLms()) return undefined;
+		return this.suspendData.read(
+			() => this.api?.LMSGetValue("cmi.suspend_data") ?? "",
+			() => this.api?.LMSGetLastError() ?? "0",
+			this.session,
+		);
+	}
+
 	private loadSuspendPayload(): Scorm12SuspendData {
 		if (this.submission) return JSON.parse(JSON.stringify(this.submission.data));
 		return this.suspendData.load(
-			() => (this.canCallLms() ? (this.api?.LMSGetValue("cmi.suspend_data") ?? "") : undefined),
+			() => this.readSuspendData(),
 			this.session,
 			(raw) => {
 				// Recovery stays in this tab and cannot cross courses, learners or damaged attempts.

@@ -10,6 +10,7 @@ import {
 	assertIdentityExportable,
 	CourseIdentitySession,
 	persistCourseIdentity,
+	readCourseIdentity,
 	resolveCourseIdentity,
 } from "../identity-store";
 import { resolveLessonSources } from "../lesson-source";
@@ -70,6 +71,37 @@ async function bytes(root: string, prefix = ""): Promise<Record<string, string>>
 	}
 	return result;
 }
+
+it("keeps every transient ID of an invalid lesson through the Edit-mode identity check", async () => {
+	const root = await mkdtemp(join(tmpdir(), "i4-invalid-entry-"));
+	roots.push(root);
+	await writeFile(join(root, "course.yaml"), "title: C\nlessons: [broken.prax, valid.prax]\n");
+	await writeFile(
+		join(root, "broken.prax"),
+		"# Broken\n\nIntro.\n\n::: choice Question\n(x) A\n( ) B\ncorrect: Feedback\n:::\n",
+	);
+	await writeFile(join(root, "valid.prax"), "# Valid\n\nBody.\n");
+	const options = {
+		lessonPaths: ["broken.prax", "valid.prax"],
+		identitySession: new CourseIdentitySession(root),
+	};
+	const before = await bytes(root);
+	const captured = await readCourseIdentity(root, options);
+	expect(captured.lessons.get("broken.prax")?.hasErrors).toBe(true);
+	expect(captured.transientIds).toBe(true);
+	// This is the write-candidate check made by identityReview when Edit mode opens.
+	const candidate = await resolveCourseIdentity(root, options);
+	expect(candidate.identity.exportable).toBe(false);
+	const current = await readCourseIdentity(root, options);
+	expect(current.identity.sourceMappings.map(({ file, path, id }) => ({ file, path, id }))).toEqual(
+		captured.identity.sourceMappings.map(({ file, path, id }) => ({ file, path, id })),
+	);
+	const originalLesson = captured.lessons.get("broken.prax");
+	const currentLesson = current.lessons.get("broken.prax");
+	if (!originalLesson || !currentLesson) throw new Error("Missing invalid lesson");
+	expect([...currentLesson.nodes.keys()]).toEqual([...originalLesson.nodes.keys()]);
+	expect(await bytes(root)).toEqual(before);
+});
 
 it(
 	"I4 read views retain New and its body across the literal outside-edit sequence",
@@ -223,6 +255,68 @@ it(
 		);
 		expect(JSON.stringify(await inspectProjectV1(root, "test"))).not.toMatch(/rt-[a-f0-9]{32}/);
 	}),
+);
+
+it.each([false, true])(
+	"keeps a broken lesson's IDs when another lesson is saved, persisted=%s",
+	async (persisted) => {
+		const root = await mkdtemp(join(tmpdir(), "i4-invalid-save-"));
+		roots.push(root);
+		await writeFile(join(root, "course.yaml"), "title: C\nlessons: [broken.prax, valid.prax]\n");
+		const broken =
+			"# Broken\n\nIntro.\n\n::: choice Question\n(x) A\n( ) B\ncorrect: Feedback\n:::\n";
+		await writeFile(
+			join(root, "broken.prax"),
+			persisted ? broken.replace("correct: Feedback\n", "") : broken,
+		);
+		await writeFile(join(root, "valid.prax"), "# Valid\n\nBody.\n");
+		if (persisted) {
+			await withProjectFileTransaction(
+				root,
+				async () =>
+					persistCourseIdentity(
+						root,
+						await resolveCourseIdentity(root, { lessonPaths: ["broken.prax", "valid.prax"] }),
+					),
+				"write",
+				false,
+			);
+			await writeFile(join(root, "broken.prax"), broken);
+		}
+		const identitySession = new CourseIdentitySession(root);
+		const service = new OperationService(root, identitySession);
+		const captured = await service.canvasTextSnapshot();
+		const original = captured.fields.filter((field) => field.file === "broken.prax");
+		const scope = { ...original[0], pageIndex: 0 };
+		let current = captured;
+		for (const text of ["Changed body.", "Changed again."]) {
+			const field = current.fields.find(
+				(field) => field.file === "valid.prax" && field.kind === "body",
+			);
+			if (!field) throw new Error("Missing valid paragraph");
+			expect(
+				await service.canvasTextApply({
+					transactionId: randomUUID(),
+					operation: "setText",
+					file: field.file,
+					nodeId: field.nodeId,
+					baseRevision: field.baseRevision,
+					expectedText: field.text,
+					field: field.field,
+					text,
+				}),
+			).toMatchObject({ ok: true });
+			current = await service.canvasTextSnapshot();
+			expect(current.fields.filter((field) => field.file === "broken.prax")).toEqual(original);
+			expect((await service.canvasTextSnapshot(scope)).sourceError?.code).toBe("detached-feedback");
+		}
+		await writeFile(join(root, "broken.prax"), broken.replace("correct: Feedback\n", ""));
+		const repaired = await service.canvasTextSnapshot(scope);
+		expect(repaired.lessonMissing).toBe(false);
+		expect(repaired.sourceError).toBeUndefined();
+		expect(repaired.fields).toHaveLength(4);
+		expect(await readFile(join(root, "valid.prax"), "utf8")).toBe("# Valid\n\nChanged again.\n");
+	},
 );
 
 it("draft reads and caller mutation cannot contaminate the saved read scope", async () => {

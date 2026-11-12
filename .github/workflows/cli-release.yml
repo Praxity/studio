@@ -385,6 +385,8 @@ jobs:
     environment: rubato-release
     permissions:
       contents: write # Download the private draft; the Rubato token is step-scoped.
+      id-token: write
+      attestations: write
     concurrency:
       group: rubato-pack-publisher
       cancel-in-progress: false
@@ -435,3 +437,10 @@ jobs:
             mode=--publish
           fi
           node scripts/publish-studio-pack.mjs --version "$PACK_VERSION" --studio-sha "$STUDIO_SHA" --expect-arm64-sha256 "$EXPECTED_ARM64_SHA256" --expect-x64-sha256 "$EXPECTED_X64_SHA256" --archives "$RUNNER_TEMP/candidate" --output "$RUNNER_TEMP/pack" "$mode"
+      - name: Attest published Rubato assets
+        if: inputs.publish_pack
+        uses: actions/attest-build-provenance@43d14bc2b83dec42d39ecae14e916627a18bb661 # v3
+        with:
+          subject-path: |
+            ${{ runner.temp }}/candidate/*.tar.gz
+            ${{ runner.temp }}/pack/*

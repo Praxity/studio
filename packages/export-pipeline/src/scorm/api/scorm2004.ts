@@ -169,7 +169,8 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		this.session.startedAt ??= startedAt;
 		this.loadSuspendDataObject();
 		const completion = this.getLmsValue("cmi.completion_status") || "unknown";
-		if (!this.suspendData.unreadable && ["unknown", "not attempted"].includes(completion)) {
+		// Initial incomplete certifies no progress, even when the saved state is unreadable.
+		if (["unknown", "not attempted"].includes(completion)) {
 			if (!this.setLmsValue("cmi.completion_status", "incomplete")) return false;
 		}
 		this.interactionCount =
@@ -268,6 +269,7 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	}
 
 	private getLmsValue(element: string): string {
+		if (element === "cmi.suspend_data") return this.readSuspendData() ?? "";
 		const value = this.api?.GetValue(element) ?? "";
 		this.checkError(element);
 		return value;
@@ -539,10 +541,11 @@ export class Scorm2004Runtime implements SCORMRuntime {
 
 	private readSuspendData(): string | undefined {
 		if (!this.canCallLms()) return undefined;
-		const raw = this.api?.GetValue("cmi.suspend_data") ?? "";
-		// An unset optional element is normal on the first launch (ADL error 403).
-		if (raw || this.api?.GetLastError() !== "403") this.checkError("cmi.suspend_data");
-		return raw;
+		return this.suspendData.read(
+			() => this.api?.GetValue("cmi.suspend_data") ?? "",
+			() => this.api?.GetLastError() ?? "0",
+			this.session,
+		);
 	}
 
 	private loadSuspendDataObject(): Record<string, unknown> {

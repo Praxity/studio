@@ -21,6 +21,8 @@ async function mountCanvas(
 	messages: CanvasMessages,
 	build: () => Response | Promise<Response>,
 	page: () => string = () => reviewGate,
+	sourceRefusal = "",
+	snapshotForDocument?: (path: string) => unknown,
 ) {
 	const dom = new JSDOM(
 		"<!doctype html><html><head></head><body><h1>Saved course</h1></body></html>",
@@ -76,12 +78,23 @@ async function mountCanvas(
 			baseRevision: "b".repeat(64),
 		},
 	];
-	const snapshot = { fields, seq: 0, servedSeq: 0, sourceRevisions: {}, servedSourceRevisions: {} };
+	const snapshot = {
+		fields: sourceRefusal ? [] : fields,
+		sourceRefusal,
+		seq: 0,
+		servedSeq: 0,
+		sourceRevisions: {},
+		servedSourceRevisions: {},
+	};
 	const fetch = vi.fn<typeof window.fetch>(async (input, options) => {
 		if (String(input).endsWith("/api/rpc")) {
 			const { method } = JSON.parse(String(options?.body)) as { method: string };
 			if (method === "canvasPreviewBuild") return build();
-			const result = method === "canvasTextSnapshot" ? snapshot : {};
+			const result =
+				method === "canvasTextSnapshot"
+					? (snapshotForDocument?.(new Headers(options?.headers).get("X-Praxity-Canvas") ?? "") ??
+						snapshot)
+					: {};
 			return new Response(JSON.stringify({ ok: true, result }));
 		}
 		return new Response(page());
@@ -99,9 +112,10 @@ async function mountCanvas(
 				},
 			}),
 		);
+	let editing = true;
 	const view: ReturnType<typeof mountCanvasTextFields> = {
 		setUpdating: vi.fn(),
-		isEditing: () => true,
+		isEditing: () => editing,
 		setEditing: async () => {},
 		isOpen: () => false,
 		unmapped: false,
@@ -118,6 +132,11 @@ async function mountCanvas(
 		messages,
 		(...args) => {
 			lifecycleReload = args[9]?.reload;
+			view.setEditing = async (value) => {
+				editing = value;
+				args[4].textContent = value ? messages.editingOn : messages.editingOff;
+				args[9]?.editingChanged?.(value, false);
+			};
 			return view;
 		},
 		createCanvasTextSession,
@@ -129,9 +148,10 @@ async function mountCanvas(
 	const panel = () =>
 		window.document.documentElement.firstElementChild?.shadowRoot?.firstElementChild?.shadowRoot;
 	const status = () => panel()?.querySelector('[role="status"]');
-	await vi.waitFor(() => expect(status()?.textContent).toBe(messages.connected));
+	await vi.waitFor(() => expect(status()?.textContent).toBe(sourceRefusal || messages.connected));
 	return {
 		window,
+		snapshot,
 		fetch,
 		view,
 		panel,
@@ -146,6 +166,46 @@ async function mountCanvas(
 		},
 	};
 }
+
+it.each([false, true])(
+	"uses the new document scope after temporary IDs change, refused=%s",
+	async (refused) => {
+		let fresh: unknown;
+		const canvas = await mountCanvas(
+			canvasMessages.en,
+			() => new Response(JSON.stringify({ ok: true, result: { ...built, pageId: "page" } })),
+			() => "<!doctype html><html><head></head><body><h1>Same lesson</h1></body></html>",
+			"",
+			(path) => (path.endsWith("/page.html") ? fresh : undefined),
+		);
+		try {
+			const fields = canvas.snapshot.fields.map((field) => ({
+				...field,
+				nodeId: "new-page",
+				ownerId: "new-page",
+			}));
+			fresh = {
+				...canvas.snapshot,
+				fields: refused ? [] : fields,
+				sourceRefusal: refused ? canvasMessages.en.sourceError : "",
+			};
+			canvas.snapshot.fields = [];
+			canvas.changeSource();
+			await vi.waitFor(() =>
+				expect(canvas.view.update).toHaveBeenLastCalledWith(refused ? [] : fields),
+			);
+			expect(canvas.window.document.body.textContent).toBe(
+				refused ? "Saved course" : "Same lesson",
+			);
+			expect(canvas.view.setUpdating).toHaveBeenLastCalledWith(false);
+			expect(canvas.status()?.textContent).toBe(
+				refused ? canvasMessages.en.sourceError : canvasMessages.en.connected,
+			);
+		} finally {
+			canvas.close();
+		}
+	},
+);
 
 it("offers Review changes without projecting a gate received by a background refresh", async () => {
 	const canvas = await mountCanvas(
@@ -367,6 +427,111 @@ it.each(["network", "timeout", "server", "practice", "missing-page"] as const)(
 			);
 			expect(canvas.view.setUpdating).toHaveBeenLastCalledWith(false);
 			expect(canvas.window.document.body.textContent).toBe("Saved course");
+		} finally {
+			canvas.close();
+		}
+	},
+);
+it.each(["en", "fr"] as const)(
+	"%s: source errors preserve the last good highlight until repair",
+	async (locale) => {
+		const messages = canvasMessages[locale];
+		const good =
+			'<h1>Practice</h1><section data-highlight=""><p data-highlight-passage="">Green passage.</p><details data-highlight-fallback="">Green answer.</details><div data-highlight-print-answer="">Green print answer.</div></section>';
+		const recovered = good.replaceAll("Green", "Red");
+		let builds = 0;
+		const canvas = await mountCanvas(
+			messages,
+			() => {
+				builds++;
+				return new Response(JSON.stringify({ ok: true, result: { ...built, pageId: "page" } }));
+			},
+			() => `<!doctype html><html><head></head><body>${recovered}</body></html>`,
+		);
+		try {
+			const body = canvas.window.document.body;
+			body.innerHTML = good;
+			const highlight = body.querySelector("[data-highlight]");
+			const fields = canvas.snapshot.fields;
+			const sourceRefusal =
+				(locale === "fr"
+					? "lesson.prax, ligne 9, colonne 35 : "
+					: "lesson.prax, line 9, column 35: ") + messages.sourceError;
+			canvas.snapshot.fields = [];
+			canvas.snapshot.sourceRefusal = sourceRefusal;
+			canvas.changeSource();
+			await vi.waitFor(() => expect(canvas.status()?.textContent).toBe(sourceRefusal));
+			expect(body.innerHTML).toBe(good);
+			expect(body.querySelector("[data-highlight]")).toBe(highlight);
+			expect(canvas.view.update).toHaveBeenLastCalledWith([]);
+			expect(builds).toBe(0);
+			canvas.snapshot.fields = fields;
+			canvas.snapshot.sourceRefusal = "";
+			canvas.changeSource();
+			await vi.waitFor(() => expect(body.innerHTML).toBe(recovered));
+			expect(canvas.status()?.textContent).toBe(messages.connected);
+			expect(canvas.view.update).toHaveBeenLastCalledWith(fields);
+			expect(canvas.readLink()?.href).toContain("page.html");
+		} finally {
+			canvas.close();
+		}
+	},
+);
+
+it("shows the initial source refusal and recovers using the server-selected page without a title field", async () => {
+	const sourceRefusal =
+		"lesson.prax, line 23, column 1: Fix the feedback lines in this lesson's .prax file to edit its text. Put correct: and incorrect: before the answer choices, and feedback: directly under its choice, with no blank line.";
+	const canvas = await mountCanvas(
+		canvasMessages.en,
+		() => new Response(JSON.stringify({ ok: true, result: { ...built, pageId: "page" } })),
+		() => "<!doctype html><html><head></head><body><h1>Repaired lesson</h1></body></html>",
+		sourceRefusal,
+	);
+	try {
+		expect(canvas.status()?.textContent).toBe(sourceRefusal);
+		await canvas.view.setEditing(false);
+		expect(canvas.status()?.textContent).toBe(sourceRefusal);
+		await canvas.view.setEditing(true);
+		expect(canvas.status()?.textContent).toBe(sourceRefusal);
+		canvas.snapshot.sourceRefusal = "";
+		canvas.changeSource();
+		await vi.waitFor(() => expect(canvas.status()?.textContent).toBe("Connected"));
+		expect(canvas.window.document.body.textContent).toBe("Repaired lesson");
+		expect(canvas.readLink()?.href).toContain("page.html");
+		await canvas.view.setEditing(false);
+		await canvas.view.setEditing(true);
+		expect(canvas.status()?.textContent).toBe(canvasMessages.en.editingOn);
+	} finally {
+		canvas.close();
+	}
+});
+
+it.each(["en", "fr"] as const)(
+	"%s: a deleted or renamed lesson keeps its page with a refusal instead of Connected",
+	async (locale) => {
+		const canvas = await mountCanvas(
+			canvasMessages[locale],
+			() => new Response(JSON.stringify({ ok: true, result: { ...built, pageId: "page" } })),
+			() => "<!doctype html><html><head></head><body><h1>Other course page</h1></body></html>",
+		);
+		try {
+			const originalBody = canvas.window.document.body.innerHTML;
+			canvas.snapshot.fields = [];
+			canvas.snapshot.sourceRefusal = canvasMessages[locale].lessonGone;
+			canvas.changeSource();
+			await vi.waitFor(() =>
+				expect(canvas.status()?.textContent).toBe(canvasMessages[locale].lessonGone),
+			);
+			expect(canvas.view.update).toHaveBeenCalledWith([]);
+			expect(canvas.window.document.body.innerHTML).toBe(originalBody);
+			expect(
+				canvas.fetch.mock.calls.some(([, options]) =>
+					String(options?.body).includes("canvasPreviewBuild"),
+				),
+			).toBe(false);
+			await canvas.view.setEditing(false);
+			await canvas.view.setEditing(true);
+			expect(canvas.status()?.textContent).toBe(canvasMessages[locale].lessonGone);
 		} finally {
 			canvas.close();
 		}
