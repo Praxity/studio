@@ -151,7 +151,7 @@ test("public publisher stays manual and depends on every verification job", () =
 	const command = publisher.steps.find((step) => step.name === "Publish verified Rubato pack");
 	assert.match(command.run, /publish-studio-pack\.mjs/);
 	assert.match(command.run, /--dry-run/);
-	assert.doesNotMatch(command.run, /--publish/);
+	assert.match(command.run, /mode=--publish/);
 	assert.doesNotMatch(command.run, /\$\{\{ inputs\./);
 	for (const job of Object.values(workflow.jobs)) {
 		assert.equal(job["continue-on-error"], undefined);
