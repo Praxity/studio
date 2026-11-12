@@ -1576,7 +1576,7 @@ describe("SCORM export end-to-end", () => {
 				"---\ntitle: Recording\n---\n# Recording\n\n![Recording](/assets/recording.gif)\n",
 			);
 			await copyFile(
-				"packages/editor-core/src/lib/a11y/__tests__/fixtures/gif-flash/benign-large.gif",
+				"packages/editor-core/src/lib/a11y/__tests__/fixtures/gif-flash/oversized-canvas.gif",
 				path.join(projectDir, "assets/recording.gif"),
 			);
 			await persistFixtureIdentity(projectDir);
@@ -1603,10 +1603,15 @@ describe("SCORM export end-to-end", () => {
 			);
 			expect(diagnostic.hint).toContain(locale === "fr" ? "vous-m\u00eame" : "yourself");
 			expect(diagnostic.message + diagnostic.hint).not.toContain("?");
+			const line = result.stderr.split("\n").find((line) => line.includes("/assets/recording.gif"));
+			expect(line).toBeDefined();
+			expect(line?.match(/\/assets\/recording\.gif/g)).toHaveLength(1);
+			expect(line).not.toContain("..");
+			if (locale === "fr") expect(line).toContain("pour qu\u2019on puisse v\u00e9rifier");
 		},
 	);
 
-	it.each(["html", "scorm-1.2", "scorm-2004", "pdf"] as const)(
+	it.each(["html", "scorm-1.2", "scorm-2004"] as const)(
 		"refuses flashing GIFs before %s packaging",
 		async (format) => {
 			await writeFile(

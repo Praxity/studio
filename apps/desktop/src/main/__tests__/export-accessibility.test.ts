@@ -3,7 +3,7 @@ import { RULE_METADATA } from "@praxity/editor-core/lib/a11y/rule-metadata.ts";
 import type { DesktopExportInput } from "@praxity/export-pipeline";
 import { readLesson } from "@praxity/grammar";
 import type { PraxityBlock } from "@praxity/shared-blocks/types";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { signalGif } from "../../test-utils/signal-gif";
 import { type AuthorWarning, assertExportAccessibility } from "../export/accessibility-enforcement";
 
@@ -62,6 +62,25 @@ describe("export accessibility contract", () => {
 			),
 		);
 	});
+	it.each([2, 8])("refuses a %i-frame looping strobe", async (frames) => {
+		const course = input([block("image", { src: "/assets/signal.gif", altText: "Signal" })]);
+		course.resolvedAssets.set("assets/signal.gif", signalGif(10, { frames, loop: 0 }));
+		await expect(assertExportAccessibility(course)).rejects.toMatchObject({
+			issues: [expect.objectContaining({ rule: "gif-flash-threshold" })],
+		});
+	});
+	it.each([undefined, 1])("does not replay an eight-frame GIF with loop count %s", async (loop) => {
+		const course = input([block("image", { src: "/assets/signal.gif", altText: "Signal" })]);
+		course.resolvedAssets.set("assets/signal.gif", signalGif(10, { frames: 8, loop }));
+		await expect(assertExportAccessibility(course)).resolves.toEqual([]);
+	});
+	it("refuses a strobe with enough finite repetitions", async () => {
+		const course = input([block("image", { src: "/assets/signal.gif", altText: "Signal" })]);
+		course.resolvedAssets.set("assets/signal.gif", signalGif(10, { frames: 2, loop: 5 }));
+		await expect(assertExportAccessibility(course)).rejects.toMatchObject({
+			issues: [expect.objectContaining({ rule: "gif-flash-threshold" })],
+		});
+	});
 	it("permits the long-held frame without counting an incomplete flash in the window", async () => {
 		const course = input([block("image", { src: "/assets/signal.gif", altText: "Signal" })]);
 		course.resolvedAssets.set("assets/signal.gif", signalGif([5, 200, 5, 5, 5, 5, 5, 5, 5]));
@@ -91,12 +110,12 @@ describe("export accessibility contract", () => {
 			});
 		},
 	);
-	it("keeps benign oversize GIFs advisory instead of decoding all their frames", async () => {
+	it("keeps oversized canvases advisory instead of allocating them", async () => {
 		const course = input([block("image", { src: "/assets/signal.gif", altText: "Recording" })]);
 		course.resolvedAssets.set(
 			"assets/signal.gif",
 			await readFile(
-				"packages/editor-core/src/lib/a11y/__tests__/fixtures/gif-flash/benign-large.gif",
+				"packages/editor-core/src/lib/a11y/__tests__/fixtures/gif-flash/oversized-canvas.gif",
 			),
 		);
 		// The export interface must keep this recording publishable, with an actionable warning.
@@ -112,7 +131,7 @@ describe("export accessibility contract", () => {
 			}),
 		]);
 	});
-	it("shares the analysis reservation across course GIFs", async () => {
+	it("gives each course GIF its own live-memory budget", async () => {
 		const bytes = await readFile(
 			"packages/editor-core/src/lib/a11y/__tests__/fixtures/gif-flash/benign-medium.gif",
 		);
@@ -128,9 +147,9 @@ describe("export accessibility contract", () => {
 		await expect(
 			assertExportAccessibility(course, true, undefined, [], { authorWarnings: warnings }),
 		).resolves.toEqual([]);
-		expect(warnings.map((warning) => warning.file)).toEqual(["/assets/second.gif"]);
+		expect(warnings).toEqual([]);
 	});
-	it("treats an invalid frame descriptor as too large without trying to decode it", async () => {
+	it("treats an invalid frame descriptor as malformed without trying to decode it", async () => {
 		const bytes = signalGif(5);
 		bytes[32] = 255;
 		bytes[33] = 255;
@@ -141,6 +160,79 @@ describe("export accessibility contract", () => {
 			assertExportAccessibility(course, true, undefined, [], { authorWarnings: warnings }),
 		).resolves.toEqual([]);
 		expect(warnings).toEqual([expect.objectContaining({ code: "gif-flash-unchecked" })]);
+	});
+
+	it.each(["benign-medium.gif", "benign-large.gif"])(
+		"still refuses a strobe after %s",
+		async (name) => {
+			const prefix = "packages/editor-core/src/lib/a11y/__tests__/fixtures/gif-flash/";
+			const course = input([
+				block("image", { src: "/assets/intro.gif", altText: "Intro" }),
+				{ ...block("image", { src: "/assets/strobe.gif", altText: "Strobe" }), id: "strobe" },
+			]);
+			course.resolvedAssets = new Map([
+				["assets/intro.gif", await readFile(prefix + name)],
+				["assets/strobe.gif", await readFile(prefix + "strobe-320x240.gif")],
+			]);
+			const warnings: AuthorWarning[] = [];
+			await expect(
+				assertExportAccessibility(course, true, undefined, [], { authorWarnings: warnings }),
+			).rejects.toMatchObject({
+				issues: [
+					expect.objectContaining({
+						sourceLocation: "/assets/strobe.gif",
+						rule: "gif-flash-threshold",
+					}),
+				],
+			});
+			expect(warnings).toEqual([]);
+		},
+	);
+	it.each([0, 1, 12, 20, 22, 30, 255])(
+		"skips malformed LZW code size %i before decode",
+		async (code) => {
+			const bytes = signalGif(5, { frames: 2 });
+			bytes[37] = code;
+			bytes[60] = code;
+			expect(bytes.byteLength).toBe(66);
+			const course = input([block("image", { src: "/assets/signal.gif", altText: "Signal" })]);
+			course.resolvedAssets.set("assets/signal.gif", bytes);
+			const warnings: AuthorWarning[] = [];
+			await expect(
+				assertExportAccessibility(course, true, undefined, [], { authorWarnings: warnings }),
+			).resolves.toEqual([]);
+			expect(warnings).toEqual([
+				expect.objectContaining({
+					message: "This GIF is malformed and cannot be checked for flashing",
+				}),
+			]);
+		},
+	);
+	it("reports excessive frame-pixel work before decoding", async () => {
+		const bytes = signalGif(5, { frames: 801 });
+		// Valid descriptors request 200.25M frame pixels; compressed payload is never decoded.
+		bytes.set([244, 1, 244, 1], 6);
+		for (let i = 0; i < 801; i++) bytes.set([244, 1, 244, 1], 32 + i * 23);
+		const course = input([block("image", { src: "/assets/signal.gif", altText: "Signal" })]);
+		course.resolvedAssets.set("assets/signal.gif", bytes);
+		const warnings: AuthorWarning[] = [];
+		await assertExportAccessibility(course, true, undefined, [], { authorWarnings: warnings });
+		expect(warnings[0].message).toContain("too many frames or frame pixels");
+	});
+	it("reports the frame-count limit with its own reason", async () => {
+		const course = input([block("image", { src: "/assets/signal.gif", altText: "Signal" })]);
+		course.resolvedAssets.set("assets/signal.gif", signalGif(5, { frames: 1001 }));
+		const warnings: AuthorWarning[] = [];
+		await assertExportAccessibility(course, true, undefined, [], { authorWarnings: warnings });
+		expect(warnings[0].message).toContain("too many frames");
+	});
+	it("does not read GIF bytes for static PDF checking", async () => {
+		const course = input([block("image", { src: "/assets/signal.gif", altText: "Signal" })]);
+		const read = vi.fn(async () => signalGif(5));
+		await expect(
+			assertExportAccessibility(course, true, read, [], { checkFlashing: false }),
+		).resolves.toEqual([]);
+		expect(read).not.toHaveBeenCalled();
 	});
 	it("does not reuse an earlier GIF analysis after bytes change", async () => {
 		const course = input([block("image", { src: "/assets/signal.gif", altText: "Signal" })]);

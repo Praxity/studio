@@ -4,7 +4,10 @@ import {
 	checkLessonTitleAccessibility,
 	collectAllBlocksDeep,
 } from "@praxity/editor-core/lib/a11y/checker.ts";
-import { findFlashingGifSources } from "@praxity/editor-core/lib/a11y/gif-flash-detector.ts";
+import {
+	findFlashingGifSources,
+	type GifSkipReason,
+} from "@praxity/editor-core/lib/a11y/gif-flash-detector.ts";
 import { isExportBlockingIssue } from "@praxity/editor-core/lib/a11y/rule-metadata.ts";
 import { checkWriteDistractorsAccessibility } from "@praxity/editor-core/lib/a11y/write-distractors-advice.ts";
 import en from "@praxity/editor-core/messages/en" with { type: "json" };
@@ -14,7 +17,6 @@ import type { ReadLessonResult } from "@praxity/grammar";
 import { matchingDesktopAssetPath } from "@praxity/shared-blocks/desktop-asset-path";
 import type { PraxityPage } from "@praxity/shared-blocks/types";
 import { createTranslator } from "use-intl/core";
-import { canvasMessages } from "../../shared/canvas-messages";
 
 export interface AuthorWarning {
 	code: string;
@@ -71,7 +73,7 @@ export async function assertExportAccessibility(
 		return bytes;
 	},
 	sources: readonly ReadLessonResult[] = [],
-	options: { locale?: string; authorWarnings?: AuthorWarning[] } = {},
+	options: { locale?: string; authorWarnings?: AuthorWarning[]; checkFlashing?: boolean } = {},
 ): Promise<A11yIssue[]> {
 	const rawTitle = input.frontmatter?.title;
 	const page: PraxityPage = {
@@ -89,21 +91,29 @@ export async function assertExportAccessibility(
 		namespace: "a11yAudit",
 	});
 	const assetPaths = new Set(input.resolvedAssets.keys());
-	const uncheckedSources = new Set<string>();
-	const flashingGifSources = await findFlashingGifSources([page], readAsset, undefined, {
-		resolveAssetPath: (reference) => matchingDesktopAssetPath(reference, assetPaths),
-		uncheckedSources,
+	const uncheckedSources = new Map<string, GifSkipReason>();
+	const flashingGifSources =
+		options.checkFlashing === false
+			? new Set<string>()
+			: await findFlashingGifSources([page], readAsset, undefined, {
+					resolveAssetPath: (reference) => matchingDesktopAssetPath(reference, assetPaths),
+					uncheckedSources,
+				});
+	const report = checkCourseAccessibility([page], {
+		flashingGifSources,
+		uncheckedGifSources: uncheckedSources,
 	});
-	for (const file of uncheckedSources)
+	for (const issue of report.issues.filter((issue) => issue.rule === "gif-flash-unchecked"))
 		options.authorWarnings?.push({
-			code: "gif-flash-unchecked",
+			code: issue.rule,
 			severity: "warning",
-			file,
-			message: `${file}: ${canvasMessages[locale === "fr" ? "fr" : "en"].exportGifTooLarge}`,
-			hint: canvasMessages[locale === "fr" ? "fr" : "en"].exportGifManualReview,
+			file: issue.sourceLocation,
+			message: t("rules.gif-flash-unchecked.description", issue.messageValues),
+			hint: t("rules.gif-flash-unchecked.guidance.bullet1"),
 		});
+
 	const criticalIssues = [
-		...checkCourseAccessibility([page], { flashingGifSources }).issues,
+		...report.issues,
 		...sources.flatMap((read) =>
 			read.pages.flatMap((sourcePage) =>
 				checkWriteDistractorsAccessibility(sourcePage.id, collectAllBlocksDeep(sourcePage.blocks), {

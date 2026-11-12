@@ -9,20 +9,21 @@ const MAX_SAMPLES = 65_536;
 const LUMINANCE_CHANGE = 0.1;
 const AREA_RATIO = 0.25;
 const FLASHES_PER_SECOND_LIMIT = 3;
-// Reserve four RGBA canvases (16 bytes/canvas pixel), 24 bytes/frame pixel for
-// indices, interlace scratch and patches, 64 KiB/frame decoder scratch, and
-// 32x source bytes for parsed storage.
-// A 96 MiB course reservation leaves roughly 100 MiB for GC/runtime overhead,
-// keeping extra analysis memory below about 200 MiB. Files are decoded serially.
+// Per-GIF live storage: four RGBA canvases, the largest decoded frame and
+// interlace scratch, parser estimate and fixed LZW tables. Frames decode serially.
 export const MAX_GIF_ANALYSIS_BYTES = 96 * 1024 * 1024;
 const GIF_FRAME_SCRATCH_BYTES = 64 * 1024;
-type AnalysisBudget = { remainingBytes: number };
+// The review measured 5.7 s for 26M frame pixels. This 200M work ceiling admits
+// ordinary recordings but bounds pathological files and loop replay (~44 s at
+// that measured rate). MAX_FRAMES also bounds tiny-frame metadata/sample work.
+const MAX_FRAME_WORK_PIXELS = 200_000_000;
+export type GifSkipReason = "too-large" | "too-many-frames" | "malformed";
 
 export interface GifFlashAnalysis {
 	exceedsThreshold: boolean;
 	flashCount: number;
 	analyzed: boolean;
-	skipped?: "too-large";
+	skipped?: GifSkipReason;
 }
 
 type AnalysisCache = Map<string, Promise<GifFlashAnalysis>>;
@@ -113,18 +114,15 @@ function transitionDirections(
  * Export blocks detected threshold exceedances as a precaution; this does not
  * establish conformance for animations the heuristic does not flag.
  */
-export function analyzeGifFlashes(
-	bytes: Uint8Array,
-	budget: AnalysisBudget = { remainingBytes: MAX_GIF_ANALYSIS_BYTES },
-): GifFlashAnalysis {
-	const tooLarge = (): GifFlashAnalysis => ({
+export function analyzeGifFlashes(bytes: Uint8Array): GifFlashAnalysis {
+	const skipped = (reason: GifSkipReason): GifFlashAnalysis => ({
 		exceedsThreshold: false,
 		flashCount: 0,
 		analyzed: false,
-		skipped: "too-large",
+		skipped: reason,
 	});
 	// Bound parser storage as well, before copying or parsing the source.
-	if (bytes.byteLength * 32 > budget.remainingBytes) return tooLarge();
+	if (bytes.byteLength * 32 > MAX_GIF_ANALYSIS_BYTES) return skipped("too-large");
 	try {
 		const buffer = bytes.buffer.slice(
 			bytes.byteOffset,
@@ -133,8 +131,19 @@ export function analyzeGifFlashes(
 		const gif = parseGIF(buffer);
 		const width = gif.lsd.width;
 		const height = gif.lsd.height;
+		if (
+			gif.header.signature !== "GIF" ||
+			!["87a", "89a"].includes(gif.header.version) ||
+			![width, height].every(Number.isSafeInteger) ||
+			width <= 0 ||
+			height <= 0
+		)
+			return skipped("malformed");
 		const imageFrames = gif.frames.filter((frame) => "image" in frame);
+		if (imageFrames.length === 0) return skipped("malformed");
+		if (imageFrames.length > MAX_FRAMES) return skipped("too-many-frames");
 		let framePixels = 0;
+		let largestFramePixels = 0;
 		for (const frame of imageFrames) {
 			const dims = frame.image?.descriptor;
 			if (
@@ -147,25 +156,76 @@ export function analyzeGifFlashes(
 				dims.left + dims.width > width ||
 				dims.top + dims.height > height
 			)
-				return tooLarge();
+				return skipped("malformed");
+			const minCodeSize = frame.image.data?.minCodeSize;
+			const table = dims.lct?.exists
+				? (frame.image as typeof frame.image & { lct?: number[][] }).lct
+				: gif.gct;
+			if (
+				!Number.isSafeInteger(minCodeSize) ||
+				minCodeSize < 2 ||
+				minCodeSize > 11 ||
+				!frame.image.data.blocks?.length ||
+				typeof dims.lct?.exists !== "boolean" ||
+				typeof dims.lct.interlaced !== "boolean" ||
+				!table ||
+				table.length < 2 ||
+				table.length > 256 ||
+				!table.every(
+					(color) =>
+						color?.length === 3 &&
+						[...color].every(
+							(channel) => Number.isInteger(channel) && channel >= 0 && channel <= 255,
+						),
+				)
+			)
+				return skipped("malformed");
+			if (
+				frame.gce &&
+				(!Number.isInteger(frame.gce.delay) ||
+					frame.gce.delay < 0 ||
+					frame.gce.delay > 65535 ||
+					!Number.isInteger(frame.gce.extras?.disposal) ||
+					frame.gce.extras.disposal < 0 ||
+					frame.gce.extras.disposal > 3 ||
+					typeof frame.gce.extras.transparentColorGiven !== "boolean" ||
+					!Number.isInteger(frame.gce.transparentColorIndex) ||
+					frame.gce.transparentColorIndex < 0 ||
+					frame.gce.transparentColorIndex > 255)
+			)
+				return skipped("malformed");
 			framePixels += dims.width * dims.height;
+			largestFramePixels = Math.max(largestFramePixels, dims.width * dims.height);
 		}
 		const storageBytes =
 			bytes.byteLength * 32 +
 			width * height * 16 +
-			framePixels * 24 +
-			imageFrames.length * GIF_FRAME_SCRATCH_BYTES;
+			largestFramePixels * 24 +
+			GIF_FRAME_SCRATCH_BYTES;
 		if (
-			width <= 0 ||
-			height <= 0 ||
 			width * height > MAX_PIXELS ||
-			imageFrames.length > MAX_FRAMES ||
 			!Number.isSafeInteger(storageBytes) ||
-			storageBytes > budget.remainingBytes
+			storageBytes > MAX_GIF_ANALYSIS_BYTES
 		)
-			return tooLarge();
+			return skipped("too-large");
+		let loopCount = 1;
+		for (const frame of gif.frames)
+			if ("application" in frame && frame.application.id === "NETSCAPE2.0") {
+				const block = frame.application.blocks;
+				if (block.length !== 3 || block[0] !== 1) return skipped("malformed");
+				loopCount = block[1] + 256 * block[2];
+			}
+		const cycleDuration = imageFrames.reduce(
+			(ms, frame) => ms + (frame.gce ? (frame.gce.delay || 10) * 10 : Number.NaN),
+			0,
+		);
+		const passes =
+			Number.isFinite(cycleDuration) && cycleDuration > 0 && (loopCount === 0 || loopCount > 1)
+				? Math.min(loopCount || Infinity, 1 + Math.ceil(1000 / cycleDuration))
+				: 1;
+		// Cap source work before decoding, and count actual replay work below.
+		if (framePixels > MAX_FRAME_WORK_PIXELS) return skipped("too-many-frames");
 		if (imageFrames.length < 2) return { exceedsThreshold: false, flashCount: 0, analyzed: true };
-		budget.remainingBytes -= storageBytes;
 
 		const background = gif.gct?.[gif.lsd.backgroundColorIndex] ?? [255, 255, 255];
 		let canvas: Uint8ClampedArray = new Uint8ClampedArray(width * height * 4);
@@ -177,64 +237,75 @@ export function analyzeGifFlashes(
 		let candidateStarted = 0;
 		let elapsed = 0;
 		const flashStarts: number[] = [];
+		let decodedPixels = 0;
 
-		for (const rawFrame of imageFrames) {
-			if (previousFrame) {
-				elapsed += previousFrame.delay;
-				if (previousFrame.disposalType === 2) {
-					fillRect(
-						canvas,
-						width,
-						previousFrame.dims.left,
-						previousFrame.dims.top,
-						previousFrame.dims.width,
-						previousFrame.dims.height,
-						background,
-					);
-				} else if (previousFrame.disposalType === 3 && restoreCanvas) {
-					canvas = restoreCanvas;
-				}
+		playback: for (let pass = 0; pass < passes; pass++) {
+			if (pass > 0) {
+				elapsed += previousFrame?.delay ?? 0;
+				previousFrame = undefined;
+				restoreCanvas = null;
+				fillRect(canvas, width, 0, 0, width, height, background);
 			}
+			for (const rawFrame of imageFrames) {
+				if (previousFrame) {
+					elapsed += previousFrame.delay;
+					if (previousFrame.disposalType === 2) {
+						fillRect(
+							canvas,
+							width,
+							previousFrame.dims.left,
+							previousFrame.dims.top,
+							previousFrame.dims.width,
+							previousFrame.dims.height,
+							background,
+						);
+					} else if (previousFrame.disposalType === 3 && restoreCanvas) {
+						canvas = restoreCanvas;
+					}
+				}
 
-			const frame = decompressFrame(rawFrame, gif.gct, true);
-			restoreCanvas = frame.disposalType === 3 ? canvas.slice() : null;
-			drawPatch(canvas, width, frame.patch, frame.dims);
-			const displayed = canvas.slice();
-			if (previousDisplayed) {
-				const directions = transitionDirections(previousDisplayed, displayed, width, height);
-				if (directions) {
-					if (candidate) {
-						let opposing = 0;
-						for (let i = 0; i < directions.length; i++) {
-							if (directions[i] !== 0 && directions[i] === -candidate[i]) opposing++;
-						}
-						if (opposing / directions.length >= AREA_RATIO) {
-							flashStarts.push(candidateStarted);
-							candidate = null;
-							// A complete flash must have both transitions inside the window.
-							if (
-								flashStarts.filter((start) => elapsed - start <= 1_000).length >
-								FLASHES_PER_SECOND_LIMIT
-							) {
-								return { exceedsThreshold: true, flashCount: flashStarts.length, analyzed: true };
+				if (pass > 0 && elapsed > cycleDuration + 1000) break playback;
+				decodedPixels += rawFrame.image.descriptor.width * rawFrame.image.descriptor.height;
+				if (decodedPixels > MAX_FRAME_WORK_PIXELS) return skipped("too-many-frames");
+				const frame = decompressFrame(rawFrame, gif.gct, true);
+				restoreCanvas = frame.disposalType === 3 ? canvas.slice() : null;
+				drawPatch(canvas, width, frame.patch, frame.dims);
+				const displayed = canvas.slice();
+				if (previousDisplayed) {
+					const directions = transitionDirections(previousDisplayed, displayed, width, height);
+					if (directions) {
+						if (candidate) {
+							let opposing = 0;
+							for (let i = 0; i < directions.length; i++) {
+								if (directions[i] !== 0 && directions[i] === -candidate[i]) opposing++;
+							}
+							if (opposing / directions.length >= AREA_RATIO) {
+								flashStarts.push(candidateStarted);
+								candidate = null;
+								// A complete flash must have both transitions inside the window.
+								if (
+									flashStarts.filter((start) => elapsed - start <= 1_000).length >
+									FLASHES_PER_SECOND_LIMIT
+								) {
+									return { exceedsThreshold: true, flashCount: flashStarts.length, analyzed: true };
+								}
+							} else {
+								candidate = directions;
+								candidateStarted = elapsed;
 							}
 						} else {
 							candidate = directions;
 							candidateStarted = elapsed;
 						}
-					} else {
-						candidate = directions;
-						candidateStarted = elapsed;
 					}
 				}
+				previousDisplayed = displayed;
+				previousFrame = { delay: frame.delay, disposalType: frame.disposalType, dims: frame.dims };
 			}
-			previousDisplayed = displayed;
-			previousFrame = { delay: frame.delay, disposalType: frame.disposalType, dims: frame.dims };
 		}
-
 		return { exceedsThreshold: false, flashCount: flashStarts.length, analyzed: true };
 	} catch {
-		return { exceedsThreshold: false, flashCount: 0, analyzed: false };
+		return skipped("malformed");
 	}
 }
 
@@ -244,7 +315,7 @@ export async function findFlashingGifSources(
 	cache: AnalysisCache = new Map(),
 	options: {
 		resolveAssetPath?: (reference: string) => string | undefined;
-		uncheckedSources?: Set<string>;
+		uncheckedSources?: Map<string, GifSkipReason>;
 	} = {},
 ): Promise<Set<string>> {
 	const sources = new Map<string, Set<string>>();
@@ -262,19 +333,19 @@ export async function findFlashingGifSources(
 	});
 
 	const flashing = new Set<string>();
-	const budget = { remainingBytes: MAX_GIF_ANALYSIS_BYTES };
-	// Serial reads/decode keep one GIF live and share a fixed course reservation.
+	// Serial reads/decode keep one GIF working set live; each GIF has its own budget.
 	for (const [path, rawSources] of sources) {
 		let analysis = cache.get(path);
 		if (!analysis) {
 			analysis = readAsset(path)
-				.then((bytes) => analyzeGifFlashes(bytes, budget))
+				.then((bytes) => analyzeGifFlashes(bytes))
 				.catch(() => ({ exceedsThreshold: false, flashCount: 0, analyzed: false }));
 			cache.set(path, analysis);
 		}
 		const result = await analysis;
 		if (result.exceedsThreshold) for (const source of rawSources) flashing.add(source);
-		if (result.skipped) for (const source of rawSources) options.uncheckedSources?.add(source);
+		if (result.skipped)
+			for (const source of rawSources) options.uncheckedSources?.set(source, result.skipped);
 	}
 	return flashing;
 }

@@ -265,6 +265,9 @@ export const RULE_METADATA = {
 		[],
 		["Length is readability guidance, not a WCAG maximum."],
 	),
+	"gif-flash-unchecked": metadata("imageMedia", "recommended", "blockSettings", "advisory", "low", [
+		wcag("2.3.1", "A"),
+	]),
 	"gif-flash-threshold": {
 		...metadata(
 			"imageMedia",

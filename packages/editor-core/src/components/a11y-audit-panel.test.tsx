@@ -152,6 +152,29 @@ describe("A11yAuditPanel card images", () => {
 });
 
 describe("A11yAuditPanel media analysis", () => {
+	it.each([
+		["strobe-480x270.gif", "Potential rapid flashing"],
+		["oversized-canvas.gif", "Check GIF flashing manually"],
+	])("shows GIF analysis for %s in the panel", async (name, title) => {
+		const bytes = await fixture(name);
+		useGrammarDocumentStore.setState({
+			courseId: `panel-${name}`,
+			parsedBlocks: [
+				{ id: "gif", type: "image", data: { src: `/assets/${name}`, altText: "Signal" } },
+			],
+			frontmatter: { title: "Signal" },
+			parseError: null,
+		});
+		renderWithProviders(
+			<A11yAuditPanel
+				gifFlashAnalysis={{ cacheKey: `panel-${name}`, readAsset: async () => bytes }}
+			/>,
+		);
+		expect(await screen.findByText(title)).toBeTruthy();
+		if (name === "oversized-canvas.gif")
+			expect(screen.getByText("This GIF is too large to check for flashing")).toBeTruthy();
+	});
+
 	it("waits for GIF analysis before showing a no-issues result", async () => {
 		const bytes = await fixture("flashing.gif");
 		let resolveAsset!: (value: Uint8Array) => void;

@@ -29,7 +29,6 @@ import type { DesignWarning } from "../../shared/settings-inheritance";
 import type { ExportDiagnostic, Scorm2004Edition } from "../../shared/types";
 import { readCourseManifestData } from "../course-manifest-io";
 import { resolveLessonSources } from "../lesson-source";
-import { createProjectAssetAdmission } from "../project-assets";
 import { resolveCompletionSettings } from "../project-config";
 import { withProjectFileTransaction } from "../project-file-transactions";
 import { getMetricsFromBlocks } from "../telemetry-utils";
@@ -333,31 +332,18 @@ export async function exportProject(
 				reviewExpiresAt: options.reviewExpiresAt,
 			}
 		: baseInput;
-	const criticalAccessibilityIssues = await withProjectFileTransaction(
-		options.projectDir,
-		async (root) => {
-			const assets = createProjectAssetAdmission(root);
-			const issues = await assertExportAccessibility(
-				exportInput,
-				options.enforceAccessibility,
-				options.format === "pdf"
-					? async (relativePath) => {
-							const file = await assets.open(path.join(root, relativePath));
-							try {
-								return await file.readFile();
-							} finally {
-								await file.close();
-							}
-						}
-					: undefined,
-				accessibilitySources,
-				{ locale: options.adviceLocale, authorWarnings: (baseInput.authorWarnings ??= []) },
-			);
-			await assets.finish();
-			return issues;
+	const criticalAccessibilityIssues = await assertExportAccessibility(
+		exportInput,
+		options.enforceAccessibility,
+		undefined,
+		accessibilitySources,
+		{
+			locale: options.adviceLocale,
+			authorWarnings: (baseInput.authorWarnings ??= []),
+			checkFlashing: options.format !== "pdf",
 		},
-		"read",
 	);
+
 	options.signal?.throwIfAborted();
 	const metrics = getMetricsFromBlocks(exportInput.blocks);
 	if (options.format === "pdf") {

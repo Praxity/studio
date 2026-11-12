@@ -220,9 +220,9 @@ describe("exportProject", () => {
 		expect(mocks.assertExportAccessibility).toHaveBeenCalledWith(
 			input,
 			true,
-			expect.any(Function),
+			undefined,
 			expect.any(Array),
-			expect.objectContaining({ authorWarnings: expect.any(Array) }),
+			expect.objectContaining({ authorWarnings: expect.any(Array), checkFlashing: false }),
 		);
 		expect(mocks.buildCourseExportInput).toHaveBeenCalledWith(
 			expect.objectContaining({

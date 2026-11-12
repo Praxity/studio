@@ -936,14 +936,21 @@ command usage.
 Export blocks missing image alternatives, empty link or button labels, and detected
 GIF flashing above three flashes in one second. The GIF check reuses the source-frame
 heuristic, not a calibrated WCAG conformance measurement: red flashes, rendered visual
-field, transparency and files above its safety caps still need human review. Structural
-checks and GIF analysis run for HTML, SCORM and native PDF. Analysis reserves at
-most 96 MiB of estimated storage across the course and decodes one frame at a
-time. GIFs with oversized or malformed frame descriptors, or whose estimated
-storage exceeds the remaining reservation, are skipped with `gif-flash-unchecked`
-advice to check them manually; they do not block export. The export gate also
-refuses duplicate misconception labels and overlong questions, answers, labels
-and options before packaging.
+field, transparency and files above its safety caps still need human review.
+Structural checks run for HTML, SCORM and native PDF. Flashing checks run only
+for HTML and SCORM, since PDF images cannot animate. The flash gate does not
+read GIFs for PDF. NETSCAPE looping animations are checked across the wrap for
+one additional second, up to their configured repetition count.
+
+GIFs decode one frame at a time against a per-GIF 96 MiB estimated live-storage
+budget, based on four canvases and the largest decoded frame, not all frames.
+A separate limit of 1,000 source frames and 200 million replay frame pixels bounds
+analysis work.
+Skipped GIFs produce `gif-flash-unchecked` advice with the reason: too large,
+too many frames/frame pixels, or malformed. These advisories do not block export.
+The same manual-check item appears in the accessibility panel. Source practice
+checks also refuse duplicate misconception labels and overlong questions,
+answers, labels and options before packaging.
 
 `theme-text-on-background-contrast` and `theme-button-text-contrast` are advisory,
 not export blockers. Published body text and button text colours are corrected by
