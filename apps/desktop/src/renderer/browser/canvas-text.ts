@@ -745,7 +745,8 @@ export function mountCanvasTextFields(
 			entry.progress.hidden = false;
 			entry.progress.textContent = messages.saving;
 			status.classList.add("announcement-only");
-			if (status.textContent !== messages.saving) status.textContent = messages.saving;
+			// Keep the polite region for outcomes; clear it so an identical refusal can announce again.
+			if (status.textContent) status.textContent = "";
 			entry.confirm.hidden = true;
 			discardAction = undefined;
 		}

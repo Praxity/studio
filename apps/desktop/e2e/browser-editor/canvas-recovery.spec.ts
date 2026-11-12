@@ -775,9 +775,17 @@ for (const [lang, saving, saved, label, initial, updated] of [
 		"Modifier le titre 2 : Updated",
 	],
 ] as const)
-	test(`saving feedback stays beside the run and announces once (${lang})`, async ({ page }) => {
+	test(`saving feedback stays beside the run and announces the outcome once (${lang})`, async ({
+		page,
+	}) => {
 		await page.setViewportSize({ width: 390, height: 844 });
-		if (lang === "fr") await project(page, (html) => html.replace(/lang="[^"]+"/u, 'lang="fr"'));
+		if (lang === "fr") {
+			await stop?.();
+			stop = await startJourney(page.context(), {
+				standaloneSource: `---\nlang: fr\n---\n\n${source}`,
+			});
+			file = join(process.env.PRAXITY_BROWSER_PROJECT ?? "", "second.prax");
+		}
 		await page.goto(
 			`${new URL(process.env.PRAXITY_BROWSER_READY_URL ?? "").origin}/launch?canvas=1`,
 		);
@@ -822,7 +830,7 @@ for (const [lang, saving, saved, label, initial, updated] of [
 			await expect(progress).toBeInViewport();
 			await expect(progress).not.toHaveAttribute("role");
 			await expect(progress).not.toHaveAttribute("aria-live");
-			await expect(status).toHaveAttribute("data-announcements", JSON.stringify([saving, saved]));
+			await expect(status).toHaveAttribute("data-announcements", JSON.stringify([saved]));
 		} finally {
 			release();
 		}
