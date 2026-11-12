@@ -70,6 +70,7 @@ const page1: PraxityPage = {
 		b("image", { src: "/d7.jpg", decorative: true }),
 		// 13 images, 7 decorative → 53.8% → triggers decorative-image-overuse
 		b("note", { backgroundImage: "/assets/flashing.gif", content: "Safety signal" }),
+		b("note", { backgroundImage: "/assets/unchecked.gif", content: "Recording" }),
 	],
 };
 
@@ -575,6 +576,7 @@ describe("inaccessible course integration test", () => {
 		[...inaccessibleCourse, ...selfCheckReads.flatMap((read) => read.pages)],
 		{
 			flashingGifSources: new Set(["/assets/flashing.gif"]),
+			uncheckedGifSources: new Map([["/assets/unchecked.gif", "too-large"]]),
 		},
 		authorSources,
 	);
@@ -638,8 +640,8 @@ describe("inaccessible course integration test", () => {
 				"self-check-hint-actionable",
 				"self-check-evidence-overlap",
 				"drag-variant-keyboard-alt",
-				"gif-flash-threshold",
 				"images-of-text",
+				"gif-flash-unchecked",
 				"media-audio-description",
 			]),
 		);
@@ -700,6 +702,7 @@ describe("inaccessible course integration test", () => {
 		"card-both-sides",
 		"font-size-minimum",
 		"gif-flash-threshold",
+		"gif-flash-unchecked",
 		"glossary-term-orphaned",
 		"gmcq-correct-answer",
 		"gmcq-image-alt",
