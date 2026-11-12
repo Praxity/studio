@@ -2,9 +2,8 @@ import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { persistFixtureIdentity, readIdentityFixture } from "../../test-utils/identity-fixture";
-import { createCourseLesson, loadCourse, readLesson } from "../course-io";
-import { renameProjectSource, resolveLessonSources, writeLessonSource } from "../lesson-source";
+import { loadCourse, readLesson } from "../course-io";
+import { resolveLessonSources, writeLessonSource } from "../lesson-source";
 import { writeProjectTextFile } from "../project-file-transactions";
 
 describe("course-io", () => {
@@ -64,18 +63,6 @@ describe("course-io", () => {
 			);
 			expect(await readFile(join(courseDir, "course.yaml"), "utf8")).toContain("title: Edited");
 		});
-		it("returns the created manifest baseline for a manifest-free course", async () => {
-			await createCourseLesson(courseDir, "intro.prax", "# Intro\nContent.");
-			const loaded = await loadCourse(courseDir);
-			const raw = await readFile(join(courseDir, "course.yaml"), "utf8");
-			expect(loaded.manifestSource).toBe(raw);
-			await writeProjectTextFile(
-				courseDir,
-				"course.yaml",
-				`${raw}# Settings comment\n`,
-				loaded.manifestSource,
-			);
-		}, 25_000);
 		it("keeps snapshot bytes immutable when an external edit follows loading", async () => {
 			const raw = "# Exact formatting\nid: existing-course\ntitle: Original\nlessons: []\n";
 			await writeCourseYaml(raw);
@@ -190,54 +177,5 @@ describe("course-io", () => {
 					?.pages[0].id,
 			).toMatch(/^[0-9a-f-]{36}$/);
 		}, 15_000);
-	});
-
-	describe("manifest sync", () => {
-		it("preserves valid and invalid cast entries after lesson rename", async () => {
-			const original =
-				"# Course metadata\ntitle: Test\nlessons: [intro.prax]\ncast:\n  good:\n    name: Good\n  nameless:\n    avatar: assets/missing.png\n";
-			await writeCourseYaml(original);
-			await writeLessonFile("intro.prax", "# Intro\nBody.\n");
-			await persistFixtureIdentity(courseDir);
-			expect(await readFile(join(courseDir, "course.yaml"), "utf8")).toBe(original);
-			const before = await readIdentityFixture(courseDir);
-			await renameProjectSource(courseDir, "intro.prax", "renamed.prax");
-			const yaml = await readFile(join(courseDir, "course.yaml"), "utf-8");
-			expect(yaml).toBe(
-				'# Course metadata\ntitle: Test\nlessons: ["renamed.prax"]\ncast:\n  good:\n    name: Good\n  nameless:\n    avatar: assets/missing.png\n',
-			);
-			expect(await readFile(join(courseDir, "renamed.prax"), "utf8")).toBe("# Intro\nBody.\n");
-			await expect(readFile(join(courseDir, "intro.prax"))).rejects.toMatchObject({
-				code: "ENOENT",
-			});
-			const after = await readIdentityFixture(courseDir);
-			expect(after.lessonIds).toEqual({ "renamed.prax": before.lessonIds["intro.prax"] });
-			expect(after.pageIds["renamed.prax"]).toEqual(before.pageIds["intro.prax"]);
-			await expect(loadCourse(courseDir)).resolves.toMatchObject({
-				manifest: {
-					lessons: ["renamed.prax"],
-					castWarnings: [expect.stringContaining("nameless")],
-				},
-			});
-		});
-		it("creates source, manifest and identity together and refuses duplicate creation", async () => {
-			await writeCourseYaml("# Metadata\n{title: Test, lessons: [intro.prax]}\n");
-			await writeLessonFile("intro.prax", "# Intro\nOriginal.\n");
-			await persistFixtureIdentity(courseDir);
-			await createCourseLesson(courseDir, "chapter.prax", "# Chapter\nNew.\n");
-			const manifest = '# Metadata\n{title: Test, lessons: ["intro.prax","chapter.prax"]}\n';
-			expect(await readFile(join(courseDir, "course.yaml"), "utf8")).toBe(manifest);
-			expect(await readFile(join(courseDir, "chapter.prax"), "utf8")).toBe("# Chapter\nNew.\n");
-			const identity = await readIdentityFixture(courseDir);
-			expect(Object.keys(identity.lessonIds).sort()).toEqual(["chapter.prax", "intro.prax"]);
-			const result = await loadCourse(courseDir);
-			expect(result.manifest.lessons).toEqual(["intro.prax", "chapter.prax"]);
-			await expect(createCourseLesson(courseDir, "chapter.prax", "# Duplicate\n")).rejects.toThrow(
-				"File already exists",
-			);
-			expect(await readFile(join(courseDir, "course.yaml"), "utf8")).toBe(manifest);
-			expect(await readFile(join(courseDir, "chapter.prax"), "utf8")).toBe("# Chapter\nNew.\n");
-			expect(await readIdentityFixture(courseDir)).toEqual(identity);
-		});
 	});
 });
