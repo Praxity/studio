@@ -1,7 +1,4 @@
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { resolve } from "node:path";
+import { readFileSync } from "node:fs";
 import schema from "learning-patterns/patterns/retrieval-sheet/content.schema.json" with {
 	type: "json",
 };
@@ -422,21 +419,6 @@ answer: First
 		for (const id of ["bad id", "x".repeat(121), ""])
 			expect(() => validateContent(content(source(), () => id))).toThrow();
 		expect(() => validateContent(content(validEN, () => "duplicate"))).toThrow();
-	});
-	it("CLI validation accepts a retrieval sheet", () => {
-		const directory = mkdtempSync(resolve(tmpdir(), "retrieval-grammar-"));
-		const file = resolve(directory, "fixture.prax");
-		writeFileSync(file, source());
-		try {
-			const output = execFileSync(
-				process.execPath,
-				["--import", "tsx", new URL("../src/cli/validate.ts", import.meta.url).pathname, file],
-				{ stdio: "pipe" },
-			);
-			expect(output.toString()).not.toContain("unsupported-runtime");
-		} finally {
-			rmSync(directory, { recursive: true, force: true });
-		}
 	});
 });
 

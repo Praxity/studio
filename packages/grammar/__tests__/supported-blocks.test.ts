@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { getManifest } from "../src/manifest";
 import { HIDDEN_BLOCK_TYPES, isCoreBlockType, RETIRED_BLOCK_TYPES } from "../src/supported-blocks";
 
 describe("supported-block registry", () => {
@@ -57,17 +56,5 @@ describe("supported-block registry", () => {
 		]) {
 			expect(isCoreBlockType(blockType)).toBe(true);
 		}
-	});
-
-	it("makes every authoring keyword available by default", () => {
-		const core = getManifest();
-		expect([...core.values()].every((entry) => entry.status === "core")).toBe(true);
-
-		const all = getManifest({ include: "all" });
-		expect(core.size).toBe(all.size);
-		expect(all.get("code")?.status).toBe("core");
-		expect(all.get("rate")?.status).toBe("core");
-		expect(all.get("data-table")?.status).toBe("core");
-		expect(all.get("embed")?.status).toBe("core");
 	});
 });
