@@ -2283,7 +2283,10 @@ async function resolveAdmittedCourseIdentity(
 				!options.approvedConversion;
 			// Refresh the saved display proof before a writer plans against current sources.
 			if (!readSession && !options.strict && !base && savedWriteAdmission)
-				sessionState?.readSession?.resolve(input);
+				sessionState?.readSession?.resolve({
+					...input,
+					parsedDocuments: parsed.map(({ path, read }) => ({ path, tree: read.tree })),
+				});
 			let identity =
 				readResolution?.candidate ??
 				adopted?.identity ??

@@ -10,6 +10,7 @@ import {
 	assertIdentityExportable,
 	CourseIdentitySession,
 	persistCourseIdentity,
+	readCourseIdentity,
 	resolveCourseIdentity,
 } from "../identity-store";
 import { resolveLessonSources } from "../lesson-source";
@@ -70,6 +71,37 @@ async function bytes(root: string, prefix = ""): Promise<Record<string, string>>
 	}
 	return result;
 }
+
+it("keeps every transient ID of an invalid lesson through the Edit-mode identity check", async () => {
+	const root = await mkdtemp(join(tmpdir(), "i4-invalid-entry-"));
+	roots.push(root);
+	await writeFile(join(root, "course.yaml"), "title: C\nlessons: [broken.prax, valid.prax]\n");
+	await writeFile(
+		join(root, "broken.prax"),
+		"# Broken\n\nIntro.\n\n::: choice Question\n(x) A\n( ) B\ncorrect: Feedback\n:::\n",
+	);
+	await writeFile(join(root, "valid.prax"), "# Valid\n\nBody.\n");
+	const options = {
+		lessonPaths: ["broken.prax", "valid.prax"],
+		identitySession: new CourseIdentitySession(root),
+	};
+	const before = await bytes(root);
+	const captured = await readCourseIdentity(root, options);
+	expect(captured.lessons.get("broken.prax")?.hasErrors).toBe(true);
+	expect(captured.transientIds).toBe(true);
+	// This is the write-candidate check made by identityReview when Edit mode opens.
+	const candidate = await resolveCourseIdentity(root, options);
+	expect(candidate.identity.exportable).toBe(false);
+	const current = await readCourseIdentity(root, options);
+	expect(current.identity.sourceMappings.map(({ file, path, id }) => ({ file, path, id }))).toEqual(
+		captured.identity.sourceMappings.map(({ file, path, id }) => ({ file, path, id })),
+	);
+	const originalLesson = captured.lessons.get("broken.prax");
+	const currentLesson = current.lessons.get("broken.prax");
+	if (!originalLesson || !currentLesson) throw new Error("Missing invalid lesson");
+	expect([...currentLesson.nodes.keys()]).toEqual([...originalLesson.nodes.keys()]);
+	expect(await bytes(root)).toEqual(before);
+});
 
 it(
 	"I4 read views retain New and its body across the literal outside-edit sequence",

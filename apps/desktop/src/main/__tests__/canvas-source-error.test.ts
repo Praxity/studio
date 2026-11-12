@@ -47,7 +47,7 @@ it("admits the repro lesson's text fields with the compiler's transient lesson a
 	const current = await resolveLessonSources(root, {}, { identitySession });
 	expect(current.transientIds).toBe(true);
 	expect(input.lessonFiles?.[scope.lessonId]).toBe("lesson.prax");
-	expect(current.identity.snapshots[0].lessonId).not.toBe(scope.lessonId);
+	expect(current.identity.snapshots[0].lessonId).toBe(scope.lessonId);
 	expect(
 		current.lessons
 			.get("lesson.prax")
