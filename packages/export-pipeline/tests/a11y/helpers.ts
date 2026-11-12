@@ -1,5 +1,4 @@
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Locator, type Page } from "@playwright/test";
 
@@ -48,18 +47,8 @@ export interface VariantEnv {
 	fullFixtureVariants: Record<string, string>;
 }
 
-interface AxeBaselineEntry {
-	id: string;
-	count?: number;
-}
-
-type AxeBaseline = Record<string, AxeBaselineEntry[]>;
-
-const AXE_BASELINE_PATH = resolve(import.meta.dirname, "axe-baseline.json");
-
 const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"];
 
-let baselineCache: AxeBaseline | null = null;
 const pageSelectorCache = new Map<string, CoursePageMeta>();
 
 // SSR selector inventory for direct addressing. Visibility and hydration are
@@ -170,14 +159,6 @@ export function readNavVariantUrl(name: string): string | undefined {
 
 export function readThemeVariantUrl(name: string): string | undefined {
 	return readVariantEnv().themeVariants[name];
-}
-
-function readAxeBaseline(): AxeBaseline {
-	if (baselineCache) {
-		return baselineCache;
-	}
-	baselineCache = readJsonFile<AxeBaseline>(AXE_BASELINE_PATH) ?? {};
-	return baselineCache;
 }
 
 // Waits for the shell and navigation only. Reveal lazy blocks and await their own
@@ -300,48 +281,10 @@ export async function assertAxeScenario(page: Page, scenarioKey: string): Promis
 			// one run in three. Our own iframe elements are still checked.
 			.setLegacyMode(),
 	);
-	const baseline = readAxeBaseline();
-	const expected = baseline[scenarioKey] ?? baseline["*"];
-	if (!expected) {
-		expect(
-			results.violations,
-			`${scenarioKey} violations:\n${formatAxeViolations(results.violations)}`,
-		).toEqual([]);
-		return;
-	}
-
-	const actual = results.violations.map((violation) => ({
-		id: violation.id,
-		count: violation.nodes.length,
-	}));
-	const allowedById = new Map(expected.map((entry) => [entry.id, entry]));
-	const unexpected = actual.filter((entry) => !allowedById.has(entry.id));
-	const unexpectedDetails = results.violations
-		.filter((violation) => unexpected.some((entry) => entry.id === violation.id))
-		.map((violation) => {
-			const nodes = violation.nodes
-				.map((node) => {
-					const target = Array.isArray(node.target) ? node.target.join(", ") : String(node.target);
-					return `${target} :: ${normalizeText(node.html)}`;
-				})
-				.join("\n");
-			return `[${violation.id}] ${violation.help}\n${nodes}`;
-		})
-		.join("\n\n");
 	expect(
-		unexpected,
-		`${scenarioKey} has violations outside baseline\n${unexpectedDetails}`,
+		results.violations,
+		`${scenarioKey} violations:\n${formatAxeViolations(results.violations)}`,
 	).toEqual([]);
-
-	for (const entry of actual) {
-		const expectedEntry = allowedById.get(entry.id);
-		if (expectedEntry?.count != null) {
-			expect(
-				entry.count,
-				`${scenarioKey} baseline mismatch for ${entry.id}: expected ${expectedEntry.count}, received ${entry.count}`,
-			).toBe(expectedEntry.count);
-		}
-	}
 }
 
 export async function findPageWithSelector(
