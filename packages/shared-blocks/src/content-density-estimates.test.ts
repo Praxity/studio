@@ -1,6 +1,6 @@
-import type { PraxityBlock } from "@praxity/shared-blocks";
-import { countWordsInHtml, estimateBlockTime } from "@praxity/shared-blocks/content-density";
 import { describe, expect, it } from "vitest";
+import { countWordsInHtml, estimateBlockTime } from "./content-density";
+import type { PraxityBlock } from "./types";
 
 const makeBlock = (
 	type: PraxityBlock["type"],
