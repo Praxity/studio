@@ -43,7 +43,15 @@ import { parseDocument } from "yaml";
 import { displayText } from "../line-endings.ts";
 import { parseLogicConditionExpression, parseLogicScalarValue } from "../logic-condition.ts";
 import type { DesignVariants } from "../types.ts";
-import { isSafeCaptionTrackUrl, isSafeEmbedUrl, isSafeMediaUrl } from "../utils.ts";
+import {
+	isSafeCaptionTrackUrl,
+	isSafeEmbedUrl,
+	isSafeMediaUrl,
+	isSafeUrl,
+	linkUrlRefusal,
+	mediaUrlRefusal,
+	type UrlRefusal,
+} from "../utils.ts";
 import { tokenizeInline } from "./inline.ts";
 import { lineColumn, tokenizeLesson } from "./lex/index.ts";
 import { readHeaderSettings } from "./tree/build.ts";
@@ -395,6 +403,19 @@ function subject(
 			: {}),
 	};
 }
+/** A refused media source or link destination gets a diagnostic that names what to use instead. */
+function subjectUrlRefusal(
+	kind: SubjectDefinition["kind"],
+	value: string,
+	raw = value,
+): UrlRefusal | undefined {
+	if (kind === "source") return mediaUrlRefusal(value);
+	if (kind !== "link") return undefined;
+	const nodes = tokenizeInline(raw).children;
+	return nodes.length === 1 && nodes[0].kind === "link"
+		? linkUrlRefusal(nodes[0].destination.value)
+		: undefined;
+}
 function linkSubject(value: string, raw = value): boolean {
 	// Delimiters must be identified before G1's subject escapes are decoded.
 	const nodes = tokenizeInline(raw).children;
@@ -403,7 +424,7 @@ function linkSubject(value: string, raw = value): boolean {
 		nodes[0].kind === "link" &&
 		nodes[0].children.length > 0 &&
 		nodes[0].destination.value.length > 0 &&
-		isSafeMediaUrl(nodes[0].destination.value)
+		isSafeUrl(nodes[0].destination.value)
 	);
 }
 function constraints(
@@ -426,7 +447,7 @@ function constraints(
 			(definition.subject.accepts && !definition.subject.accepts(value, node.subject?.raw)))
 	)
 		issues.push({
-			code: "bad-subject",
+			code: subjectUrlRefusal(definition.subject.kind, value, node.subject?.raw) ?? "bad-subject",
 			span: location,
 			args: { type: node.type ?? node.kind, subject: definition.subject.kind },
 		});
@@ -484,11 +505,10 @@ function constraints(
 		);
 		if (!String(node.alt?.value ?? "").trim() && !decorative)
 			issues.push({ code: "missing-image-alt", span: location });
-		if (
-			!String(node.source?.value ?? "").trim() ||
-			!isSafeMediaUrl(String(node.source?.value ?? ""))
-		)
-			issues.push({ code: "bad-subject", span: location, args: { subject: "source" } });
+		const source = String(node.source?.value ?? "");
+		const refusal = source.trim() ? mediaUrlRefusal(source) : undefined;
+		if (!source.trim() || refusal)
+			issues.push({ code: refusal ?? "bad-subject", span: location, args: { subject: "source" } });
 	}
 	if (node.type === "float" && node.children[0]?.kind !== "image")
 		issues.push({
@@ -1416,7 +1436,7 @@ export const BLOCK_SCHEMA: Readonly<Record<string, BlockDefinition>> = {
 				"source",
 				"url",
 				"link",
-				(v) => typeof v === "string" && v.length > 0 && isSafeMediaUrl(v),
+				(v) => typeof v === "string" && v.length > 0 && isSafeUrl(v),
 			),
 		},
 	}),

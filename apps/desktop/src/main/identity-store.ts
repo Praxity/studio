@@ -1581,6 +1581,8 @@ export class IdentitySourceError extends Error {
 		readonly copyCountDropped = false,
 		readonly sameTitlePages = false,
 		readonly code: "bad_yaml" | "source_invalid" = "source_invalid",
+		/** The first error's grammar code, such as "svg-data-url". */
+		readonly diagnostic?: string,
 	) {
 		super(`${file}:${line}`);
 	}
@@ -1616,7 +1618,17 @@ function lessonIdentitySourceError(
 	const error = lesson.errors.find(
 		(error) => error.level === "error" || error.level === "critical",
 	);
-	return error ? new IdentitySourceError(file, error.line ?? 1) : undefined;
+	return error
+		? new IdentitySourceError(
+				file,
+				error.line ?? 1,
+				false,
+				false,
+				false,
+				"source_invalid",
+				error.messageRef.key.replace(/^grammar\.v4\./, ""),
+			)
+		: undefined;
 }
 
 function designOnlySourceEdit(before: string | null | undefined, after: string): boolean {
@@ -2283,7 +2295,10 @@ async function resolveAdmittedCourseIdentity(
 				!options.approvedConversion;
 			// Refresh the saved display proof before a writer plans against current sources.
 			if (!readSession && !options.strict && !base && savedWriteAdmission)
-				sessionState?.readSession?.resolve(input);
+				sessionState?.readSession?.resolve({
+					...input,
+					parsedDocuments: parsed.map(({ path, read }) => ({ path, tree: read.tree })),
+				});
 			let identity =
 				readResolution?.candidate ??
 				adopted?.identity ??
@@ -2706,15 +2721,19 @@ export async function persistCourseIdentity(
 		priorHeads: payload.identity.heads,
 		priorSnapshots: payload.identity.snapshots,
 	};
-	const displayedIdentity = {
-		...payload.identity,
-		heads: payload.identity.heads.filter((head) => !baseline.preservedLessons.has(head.path)),
+	const displayInput = {
+		...installedInput,
+		parsedDocuments: [...payload.lessons].map(([path, lesson]) => ({ path, tree: lesson.tree })),
 	};
+	// Preserved lessons are absent from the write candidate, but must remain in the read proof.
+	const displayedIdentity = baseline.preservedLessons.size
+		? resolveIdentity({ ...displayInput, operations: undefined }, dependencies)
+		: payload.identity;
 	const transitions =
 		session && identitySessions.get(session.owner) === session.state
 			? [
 					session.state.readSession?.prepareWrite(
-						installedInput,
+						displayInput,
 						baseline.writeBase && {
 							...baseline.writeBase,
 							heads: baseline.writeBase.heads.filter(
@@ -2725,7 +2744,7 @@ export async function persistCourseIdentity(
 					),
 					// Draft display descriptors describe the result, not the saved operation base.
 					session.state.draftReadSession?.prepareWrite(
-						{ ...installedInput, operations: undefined },
+						{ ...displayInput, operations: undefined },
 						undefined,
 						displayedIdentity,
 					),

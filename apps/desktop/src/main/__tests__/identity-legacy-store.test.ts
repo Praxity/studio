@@ -160,7 +160,7 @@ it("Studio preserves version-refusal advice in both requested languages without 
 		expect(JSON.parse(result.stdout).error.message).toBe(versionAdvice[locale]);
 		expect(result.stderr).toBe(
 			locale === "fr"
-				? `Échec de Praxity studio : ${versionAdvice.fr}\n`
+				? `La commande praxity studio a échoué : ${versionAdvice.fr}\n`
 				: `Praxity studio failed: ${versionAdvice.en}\n`,
 		);
 	}

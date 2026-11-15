@@ -63,11 +63,40 @@ export function isSectionPalette(value: unknown): value is SectionPaletteName {
 	return typeof value === "string" && (SECTION_PALETTES as readonly string[]).includes(value);
 }
 
-/** Escape HTML special characters for safe interpolation. */
+/**
+ * Escape text for HTML text content and double-quoted attributes. This is the only HTML escaper:
+ * published pages, the grammar and shared blocks all import it, so one fix reaches every output.
+ */
 export function escapeHtml(str: string): string {
 	return str
 		.replace(/&/g, "&amp;")
 		.replace(/</g, "&lt;")
 		.replace(/>/g, "&gt;")
 		.replace(/"/g, "&quot;");
+}
+
+/** Escape a JSON string for a single-quoted HTML attribute. */
+export function escapeJsonForHtml(json: string): string {
+	return json
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/'/g, "&#39;");
+}
+
+const JSON_SCRIPT_ESCAPES: Record<string, string> = {
+	"<": "\\u003c",
+	">": "\\u003e",
+	"&": "\\u0026",
+};
+
+/**
+ * Escape JSON for a `<script type="application/json">` element. The HTML tokenizer reads script
+ * content as raw text, where `</script` ends the element early and `<!--` followed by `<script`
+ * enters the "script data double escaped" state, in which `</script>` no longer ends it and the
+ * rest of the page is swallowed. Writing `<` as a JSON string escape keeps `JSON.parse` output
+ * unchanged; `>` and `&` are escaped too, following the usual JSON-in-HTML convention.
+ */
+export function escapeJsonForScript(json: string): string {
+	return json.replace(/[<>&]/g, (character) => JSON_SCRIPT_ESCAPES[character] ?? character);
 }

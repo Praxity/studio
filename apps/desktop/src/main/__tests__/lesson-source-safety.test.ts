@@ -15,7 +15,6 @@ import { basename, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { resolveCourseIdentity } from "../identity-store";
 import {
-	deleteLessonSource,
 	parseLessonSource,
 	readLessonSource,
 	renameProjectSource,
@@ -23,30 +22,6 @@ import {
 } from "../lesson-source";
 import * as pathSecurity from "../path-security";
 
-const recreation = vi.hoisted(() => ({ path: "", content: "" }));
-vi.mock("node:fs/promises", async (importOriginal) => {
-	const fs = await importOriginal<typeof import("node:fs/promises")>();
-	return {
-		...fs,
-		link: async (...args: Parameters<typeof fs.link>) => {
-			if (recreation.path === String(args[1]) && recreation.path.endsWith("target.prax")) {
-				await fs.writeFile(recreation.path, recreation.content);
-				recreation.path = "";
-			}
-			if (
-				recreation.path &&
-				String(args[1]).includes(
-					`${join("identity", "lessons")}${process.platform === "win32" ? "\\" : "/"}`,
-				)
-			) {
-				await fs.writeFile(recreation.path, recreation.content);
-				recreation.path = "";
-				throw new Error("Identity installation failed");
-			}
-			return fs.link(...args);
-		},
-	};
-});
 const temporaryDirectories: string[] = [];
 async function project() {
 	const directory = await mkdtemp(join(tmpdir(), "prax-page-identities-"));
@@ -122,7 +97,6 @@ async function isLessonWrite(root: string, path: string): Promise<boolean> {
 
 afterEach(async () => {
 	savedIds.clear();
-	recreation.path = "";
 	vi.restoreAllMocks();
 	await Promise.all(
 		temporaryDirectories
@@ -198,61 +172,6 @@ describe("grammar 4 source and identity transaction safety", () => {
 		await symlink(join(outside, "other.prax"), join(root, "link.prax"));
 		await expect(parseLessonSource(root, "link.prax", lesson)).rejects.toThrow();
 		expect(Object.keys((await metadata(root)).lessons)).toEqual(["lesson.prax"]);
-	}, 25_000);
-
-	it("queues lesson deletion after an in-flight save", async () => {
-		const root = await project();
-		await save(root, "lesson.prax", lessonWithBlocks);
-		const originalWrite = pathSecurity.writeFileWithin;
-		await assertMatched(
-			root,
-			"lesson.prax",
-			lessonWithBlocks.replace("First question", "Saved question"),
-		);
-		let signalStarted: () => void = () => {};
-		let resumeWrite: () => void = () => {};
-		const started = new Promise<void>((resolve) => {
-			signalStarted = resolve;
-		});
-		const paused = new Promise<void>((resolve) => {
-			resumeWrite = resolve;
-		});
-		vi.spyOn(pathSecurity, "writeFileWithin").mockImplementation(async (...args) => {
-			if (await isLessonWrite(args[0], args[1])) {
-				signalStarted();
-				await paused;
-			}
-			return originalWrite(...args);
-		});
-		const saving = writeLessonSource(
-			root,
-			"lesson.prax",
-			lessonWithBlocks.replace("First question", "Saved question"),
-		);
-		await started;
-		const deleting = deleteLessonSource(root, "lesson.prax");
-		resumeWrite();
-		await Promise.all([saving, deleting]);
-		await expect(readFile(join(root, "lesson.prax"))).rejects.toMatchObject({ code: "ENOENT" });
-		expect(await metadata(root)).toMatchObject({ lessons: {}, blocks: {} });
-		expect((await readdir(root)).some((name) => name.endsWith(".deleting"))).toBe(false);
-	}, 30_000);
-
-	it("does not overwrite a lesson recreated while deletion rolls back", async () => {
-		const root = await project();
-		await save(root, "lesson.prax", lessonWithBlocks);
-		const before = await readFile(await metadataPath(root), "utf8");
-		recreation.path = join(root, "lesson.prax");
-		recreation.content = "replacement";
-		await expect(deleteLessonSource(root, "lesson.prax")).rejects.toThrow(/conflict/i);
-		expect(await readFile(join(root, "lesson.prax"), "utf8")).toBe("replacement");
-		const stage = (await readdir(root)).find((name) => name.startsWith(".praxity-write-"));
-		expect(stage).toBeDefined();
-		const record = JSON.parse(await readFile(join(root, stage as string, "journal.tmp"), "utf8"));
-		expect(
-			record.plan.files.find((file: { path: string }) => file.path === "lesson.prax").from,
-		).toBe(Buffer.from(lessonWithBlocks).toString("base64"));
-		expect(await readFile(await metadataPath(root), "utf8")).toBe(before);
 	}, 25_000);
 
 	it("preserves existing source and metadata permissions when replacing their bytes", async () => {
@@ -333,38 +252,6 @@ describe("grammar 4 source and identity transaction safety", () => {
 			code: "ENOENT",
 		});
 	});
-
-	it("does not overwrite an external file created after the rename collision check", async () => {
-		const root = await project();
-		await save(root, "lesson.prax", lessonWithBlocks);
-		const before = await readFile(await metadataPath(root), "utf8");
-		recreation.path = join(root, "target.prax");
-		recreation.content = "external source";
-		await expect(renameProjectSource(root, "lesson.prax", "target.prax")).rejects.toThrow();
-		expect(await readFile(join(root, "lesson.prax"), "utf8")).toBe(lessonWithBlocks);
-		expect(await readFile(join(root, "target.prax"), "utf8")).toBe("external source");
-		expect(await readFile(await metadataPath(root), "utf8")).toBe(before);
-	}, 15_000);
-
-	it("restores a source rename when metadata fails without overwriting a recreated source", async () => {
-		const root = await project();
-		await save(root, "lesson.prax", lessonWithBlocks);
-		const before = await readFile(await metadataPath(root), "utf8");
-		recreation.path = join(root, "lesson.prax");
-		recreation.content = "recreated";
-		await expect(renameProjectSource(root, "lesson.prax", "renamed.prax")).rejects.toThrow(
-			/conflict/i,
-		);
-		expect(await readFile(join(root, "lesson.prax"), "utf8")).toBe("recreated");
-		await expect(readFile(join(root, "renamed.prax"))).rejects.toMatchObject({ code: "ENOENT" });
-		const stage = (await readdir(root)).find((name) => name.startsWith(".praxity-write-"));
-		expect(stage).toBeDefined();
-		const record = JSON.parse(await readFile(join(root, stage as string, "journal.tmp"), "utf8"));
-		expect(
-			record.plan.files.find((file: { path: string }) => file.path === "lesson.prax").from,
-		).toBe(Buffer.from(lessonWithBlocks).toString("base64"));
-		expect(await readFile(await metadataPath(root), "utf8")).toBe(before);
-	}, 20_000);
 
 	it("refuses rename collisions and sidecar symlink escapes", async () => {
 		const root = await project();

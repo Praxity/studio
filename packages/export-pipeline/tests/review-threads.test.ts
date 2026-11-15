@@ -249,6 +249,18 @@ it.each(["en", "fr"])(
 	},
 );
 
+it("shows thread and reply bodies as literal text without interpreting their HTML", async () => {
+	const server = fakeServer();
+	const body = '<img src=x onerror="alert(1)"> Helpful note';
+	const thread = await server.seed(body);
+	await server.mutate("reply", thread.id, "<b>Bold</b> reply");
+	const { doc } = await open(server);
+	expect(
+		[...doc.querySelectorAll(".prx-review-comment-text")].map((node) => node.textContent),
+	).toEqual([body, "<b>Bold</b> reply"]);
+	expect(doc.querySelector(".prx-review-sidebar img, .prx-review-sidebar b")).toBeNull();
+});
+
 it.each(["MacIntel", "Linux x86_64"])(
 	"keyboard reply uses validation, in-flight guards and frozen retry (%s)",
 	async (platform) => {
