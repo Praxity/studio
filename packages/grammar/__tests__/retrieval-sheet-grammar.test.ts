@@ -431,7 +431,12 @@ answer: First
 		try {
 			const output = execFileSync(
 				process.execPath,
-				["--import", "tsx", fileURLToPath(new URL("../src/cli/validate.ts", import.meta.url)), file],
+				[
+					"--import",
+					"tsx",
+					fileURLToPath(new URL("../src/cli/validate.ts", import.meta.url)),
+					file,
+				],
 				{ stdio: "pipe" },
 			);
 			expect(output.toString()).not.toContain("unsupported-runtime");
