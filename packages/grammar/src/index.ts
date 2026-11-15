@@ -160,7 +160,13 @@ export type {
 	PronunciationLexeme,
 	TypographyVariants,
 } from "./types.ts";
-export { escapeHtml, isSafeCaptionTrackUrl, isSafeEmbedUrl, isSafeMediaUrl } from "./utils.ts";
+export {
+	escapeHtml,
+	isSafeCaptionTrackUrl,
+	isSafeEmbedUrl,
+	isSafeMediaUrl,
+	isSafeUrl,
+} from "./utils.ts";
 export { lineColumn } from "./v4/lex/index.ts";
 export { type CourseDiagnostic, type CourseLesson, validateCourse } from "./v4/schema.ts";
 export {

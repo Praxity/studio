@@ -1,3 +1,4 @@
+import { escapeHtml } from "@praxity/content-model/constants";
 import type { VideoSource } from "../../types";
 import type { VideoSourceTier } from "./types";
 
@@ -78,14 +79,6 @@ export function getYouTubeThumbnailUrl(url: string): string | null {
 	return id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : null;
 }
 
-function escapeAttribute(value: string): string {
-	return value
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;")
-		.replace(/"/g, "&quot;");
-}
-
 /** A no-JS YouTube facade. The link navigates its own iframe when activated. */
 export function getYouTubeFacadeSrcDoc(
 	url: string,
@@ -97,7 +90,7 @@ export function getYouTubeFacadeSrcDoc(
 	const target = new URL(url);
 	target.searchParams.set("autoplay", "1");
 	const label = `${playLabel} ${title}`.trim();
-	return `<!doctype html><meta name="viewport" content="width=device-width"><style>*{box-sizing:border-box}html,body,a{width:100%;height:100%;margin:0}a{display:block;position:relative;background:#000;overflow:hidden}img{width:100%;height:100%;object-fit:cover}.play{position:absolute;left:50%;top:50%;width:68px;height:48px;transform:translate(-50%,-50%);border-radius:12px;background:#c00;box-shadow:0 2px 12px #0008}.play:after{content:"";position:absolute;left:28px;top:13px;border-left:20px solid #fff;border-top:11px solid transparent;border-bottom:11px solid transparent}a:focus-visible{outline:4px solid #fff;outline-offset:-4px}</style><a href="${escapeAttribute(target.toString())}" aria-label="${escapeAttribute(label)}"><img src="${escapeAttribute(thumbnailUrl)}" alt="" width="480" height="360"><span class="play" aria-hidden="true"></span></a>`;
+	return `<!doctype html><meta name="viewport" content="width=device-width"><style>*{box-sizing:border-box}html,body,a{width:100%;height:100%;margin:0}a{display:block;position:relative;background:#000;overflow:hidden}img{width:100%;height:100%;object-fit:cover}.play{position:absolute;left:50%;top:50%;width:68px;height:48px;transform:translate(-50%,-50%);border-radius:12px;background:#c00;box-shadow:0 2px 12px #0008}.play:after{content:"";position:absolute;left:28px;top:13px;border-left:20px solid #fff;border-top:11px solid transparent;border-bottom:11px solid transparent}a:focus-visible{outline:4px solid #fff;outline-offset:-4px}</style><a href="${escapeHtml(target.toString())}" aria-label="${escapeHtml(label)}"><img src="${escapeHtml(thumbnailUrl)}" alt="" width="480" height="360"><span class="play" aria-hidden="true"></span></a>`;
 }
 
 export function isVimeoEmbed(url: string): boolean {

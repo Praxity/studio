@@ -17,6 +17,7 @@ import {
 	assertCoursePracticeAdmission,
 	CoursePracticeAdmissionError,
 	LessonRuntimeError,
+	type ReadLessonResult,
 } from "@praxity/grammar";
 import { interpolate } from "@praxity/shared-blocks/i18n/interpolate";
 import { resolveLocale } from "@praxity/shared-blocks/i18n/locale";
@@ -26,6 +27,7 @@ import type { ExportFormat } from "../../shared/ipc-schemas";
 import type { SelfCheckNarrationWarning } from "../../shared/narration-sidecar";
 import type { DesignWarning } from "../../shared/settings-inheritance";
 import type { ExportDiagnostic, Scorm2004Edition } from "../../shared/types";
+import { readCourseManifestData } from "../course-manifest-io";
 import { resolveLessonSources } from "../lesson-source";
 import { resolveCompletionSettings } from "../project-config";
 import { withProjectFileTransaction } from "../project-file-transactions";
@@ -248,6 +250,7 @@ export async function exportProject(
 		});
 
 	let baseInput: ProjectExportInput;
+	let accessibilitySources: ReadLessonResult[] = [];
 	let pdfAssets: Map<string, Uint8Array> | undefined;
 	try {
 		baseInput = await withProjectFileTransaction(
@@ -256,6 +259,14 @@ export async function exportProject(
 				// Validate the captured course before lesson projection or PDF/HTML
 				// branching. The selective admission owner decides which diagnostics refuse output.
 				const admission = await resolveLessonSources(options.projectDir);
+				const selectedLesson =
+					options.lessonFilename ??
+					(options.scope === "lesson"
+						? (await readCourseManifestData(options.projectDir)).orderedLessons[0]
+						: undefined);
+				accessibilitySources = [...admission.lessons]
+					.filter(([filename]) => options.scope === "course" || filename === selectedLesson)
+					.map(([, read]) => read);
 				assertCoursePracticeAdmission(
 					[...admission.lessons].map(([path, read]) => ({ path, read })),
 					options.adviceLocale,
@@ -321,10 +332,18 @@ export async function exportProject(
 				reviewExpiresAt: options.reviewExpiresAt,
 			}
 		: baseInput;
-	const criticalAccessibilityIssues = assertExportAccessibility(
+	const criticalAccessibilityIssues = await assertExportAccessibility(
 		exportInput,
 		options.enforceAccessibility,
+		undefined,
+		accessibilitySources,
+		{
+			locale: options.adviceLocale,
+			authorWarnings: (baseInput.authorWarnings ??= []),
+			checkFlashing: options.format !== "pdf",
+		},
 	);
+
 	options.signal?.throwIfAborted();
 	const metrics = getMetricsFromBlocks(exportInput.blocks);
 	if (options.format === "pdf") {

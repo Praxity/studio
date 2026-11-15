@@ -52,13 +52,17 @@ export async function createLifecycleHarness(
 			.map((entry) => [`/course/${entry.entryName}`, entry.getData()]),
 	);
 	const lms = `<!doctype html><html lang="en"><title>Lifecycle LMS</title><body>
-<button id="exit" type="button">Return to LMS</button><button id="launch" type="button">Launch course</button>
-<iframe title="Course" style="width:100%;height:800px"></iframe><script>
+<style>
+body { margin: 0; height: 100dvh; display: flex; flex-direction: column; }
+iframe { width: 100%; flex: 1; min-height: 0; box-sizing: border-box; }
+</style>
+<div><button id="exit" type="button">Return to LMS</button><button id="launch" type="button">Launch course</button></div>
+<iframe title="Course"></iframe><script>
 const format = ${JSON.stringify(format)};
 const is12 = format === 'scorm12';
 // Opt-in test LMS policy: final failed status ends the attempt despite suspend.
 const failedStatusEndsAttempt = ${JSON.stringify(options.failedStatusEndsAttempt ?? false)};
-const calls = []; const errors = []; const values = {};
+const calls = []; const errors = []; const errorReads = []; const values = {};
 let state = 'new', error = '0', saved = {}, entry = 'ab-initio', commitFailure = null;
 const ok = () => { error = '0'; return 'true'; };
 const fail = code => { error = code; errors.push(code); return 'false'; };
@@ -69,7 +73,7 @@ const initialize = arg => {
 };
 const get = key => {
  calls.push(['get', key]);
- if (state !== 'active') { fail(is12 ? '301' : '123'); return ''; }
+ if (state !== 'active') { fail(is12 ? '301' : state === 'new' ? '122' : '123'); return ''; }
  ok(); return key === (is12 ? 'cmi.core.entry' : 'cmi.entry') ? entry : values[key] || '';
 };
 const set = (key, value) => {
@@ -92,11 +96,16 @@ const terminate = arg => {
  if (state !== 'active') return fail(is12 ? '301' : '113');
  saved = {...values}; state = 'closed'; return ok();
 };
+// Record nonzero diagnostic reads separately so operation-order assertions stay exact.
+const getLastError = () => {
+ if (error !== '0') errorReads.push({code: error, callIndex: calls.length});
+ return error;
+};
 const api = is12
- ? { LMSInitialize: initialize, LMSGetValue: get, LMSSetValue: set, LMSCommit: commit, LMSFinish: terminate, LMSGetLastError: () => error, LMSGetErrorString: code => code, LMSGetDiagnostic: code => code }
- : { Initialize: initialize, GetValue: get, SetValue: set, Commit: commit, Terminate: terminate, GetLastError: () => error, GetErrorString: code => code, GetDiagnostic: code => code };
+ ? { LMSInitialize: initialize, LMSGetValue: get, LMSSetValue: set, LMSCommit: commit, LMSFinish: terminate, LMSGetLastError: getLastError, LMSGetErrorString: code => code, LMSGetDiagnostic: code => code }
+ : { Initialize: initialize, GetValue: get, SetValue: set, Commit: commit, Terminate: terminate, GetLastError: getLastError, GetErrorString: code => code, GetDiagnostic: code => code };
 window[is12 ? 'API' : 'API_1484_11'] = api;
-window.lifecycle = { calls, errors, failNextCommit: mode => { commitFailure = mode; }, snapshot: () => ({state, entry, saved: {...saved}, values: {...values}}) };
+window.lifecycle = { calls, errors, failNextCommit: mode => { commitFailure = mode; }, snapshot: () => ({state, entry, errorReads, saved: {...saved}, values: {...values}}) };
 const frame = document.querySelector('iframe');
 const launch = () => {
  const exit = saved[is12 ? 'cmi.core.exit' : 'cmi.exit'];

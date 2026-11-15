@@ -6,16 +6,6 @@
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/course-io.test.ts",
-		"name": "course-io > loadCourse > returns the created manifest baseline for a manifest-free course",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5047 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/course-io.test.ts",
-		"name": "course-io > manifest sync > preserves valid and invalid cast entries after lesson rename",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2043 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/course-io.test.ts",
 		"name": "course-io > readLesson / writeLessonSource > reads a lesson file",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3047 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
@@ -586,16 +576,6 @@
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/lesson-source-safety.test.ts",
-		"name": "grammar 4 source and identity transaction safety > does not overwrite a lesson recreated while deletion rolls back",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5005 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/lesson-source-safety.test.ts",
-		"name": "grammar 4 source and identity transaction safety > does not overwrite an external file created after the rename collision check",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5018 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/lesson-source-safety.test.ts",
 		"name": "grammar 4 source and identity transaction safety > keeps clean source unchanged and persists identities across reads and copied projects",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3531 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
@@ -611,11 +591,6 @@
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/lesson-source-safety.test.ts",
-		"name": "grammar 4 source and identity transaction safety > queues lesson deletion after an in-flight save",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5029 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/lesson-source-safety.test.ts",
 		"name": "grammar 4 source and identity transaction safety > refuses rename collisions and sidecar symlink escapes",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5042 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
@@ -628,11 +603,6 @@
 		"file": "apps/desktop/src/main/__tests__/lesson-source-safety.test.ts",
 		"name": "grammar 4 source and identity transaction safety > reports source and rollback failures together",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4358 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/lesson-source-safety.test.ts",
-		"name": "grammar 4 source and identity transaction safety > restores a source rename when metadata fails without overwriting a recreated source",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5008 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/lesson-source-safety.test.ts",
@@ -773,11 +743,6 @@
 		"file": "apps/desktop/src/main/__tests__/narration-authoring.test.ts",
 		"name": "N2 status lists flagged and unresolved targets without writes",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5069 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/narration.test.ts",
-		"name": "Soniox narration boundary > accepts audio only after audio_end, terminated, and complete timestamps",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3806 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/nested-project-reader.test.ts",
