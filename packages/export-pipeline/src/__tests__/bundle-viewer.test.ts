@@ -112,8 +112,8 @@ const HOST_GZIP_BUDGETS: Record<ViewerHostName, number> = {
 	standalone: 14336,
 	// Owner rule: activation measured 16,572 B gzip; add 1 KiB rounded up to 256 B.
 	electronPreview: 17664,
-	// Owner rule: activation measured 15,643 B gzip; add 1 KiB rounded up to 256 B.
-	xapi: 16896,
+	// Owner rule: studio#76 deck reload fix measured 16,908 B gzip; add 1 KiB rounded up to 256 B.
+	xapi: 18176,
 	// Owner size-limits rule 2026-10-24, PR #42: 24,121 B + 2 KiB, rounded up to 256 B.
 	scorm12: 26368,
 	// Owner size-limits rule 2026-10-24, PR #42: 15,968 B + 2 KiB, rounded up to 256 B.
@@ -1952,13 +1952,13 @@ describe("computeViewerSourceHash", () => {
 					// Measured 27,750 B + 1 KiB, rounded up to 256 B. Full page/deck caps stay unchanged.
 					expect(bytes, `${island} initial raw bytes`).toBeLessThanOrEqual(28_928);
 				}
-				// Size caps don't block working features (owner rule): group refusal/retry runtime measures 24,850 B raw; add 1 KiB rounded up to 256 B, tighten during final size work.
+				// Size caps don't block working features (owner rule): submission timer cleanup (studio#78) measures 26,257 B raw; add 1 KiB rounded up to 256 B, tighten during final size work.
 				else
 					expect(bytes, `${island} initial raw bytes`).toBeLessThan(
 						island === "island-self-check"
 							? SELF_CHECK_INITIAL_RAW_CEILING
 							: (island === "island-assessment-group"
-									? 25.5
+									? 26.75
 									: island === "island-rating"
 										? 18
 										: 16) * 1024,

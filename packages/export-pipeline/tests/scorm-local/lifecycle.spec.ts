@@ -72,6 +72,7 @@ interface LifecycleState {
 	values: Record<string, string>;
 	calls: string[][];
 	errors: string[];
+	errorReads: { code: string; callIndex: number }[];
 }
 
 async function snapshot(page: Page): Promise<LifecycleState> {
@@ -207,7 +208,9 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 				const after = await snapshot(page);
 				expect(after.calls).toEqual(failed.calls);
 				expect(count(after, "terminate")).toBe(0);
-				expect(after.errors).toEqual([]);
+				expect(after.errors).toEqual(
+					failure === "false" ? [format === "scorm12" ? "101" : "391"] : [],
+				);
 			} finally {
 				await page.close();
 				await harness.cleanup();
@@ -395,9 +398,16 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 					await nativeLink(frame, "two.html");
 					await frame.waitForURL("**/two.html");
 				} else {
+					await expect(page.locator("iframe")).toBeInViewport({ ratio: 1 });
 					await frame.locator("#deck-next").click();
 					await expect(frame.locator('[data-deck-slide="page-2"]')).toBeVisible();
 					const previous = frame.url();
+					await expect(page.locator("iframe")).toBeInViewport({ ratio: 1 });
+					await frame.locator("#deck-next").click();
+					await expect(frame.locator("#deck-completion")).toBeVisible();
+					await expect(frame.locator("#deck-next")).toHaveAccessibleName(
+						"Next module: Last module",
+					);
 					await frame.locator("#deck-next").click();
 					await frame.waitForURL(
 						(url) => url.href !== previous && !url.pathname.endsWith("/index.html"),
@@ -449,7 +459,17 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 						([operation, key]) => operation === "set" && key.endsWith("total_time"),
 					),
 				).toBe(false);
-				expect(relaunched.errors).toEqual([]);
+				const probeCode = format === "scorm12" ? "301" : "122";
+				expect(relaunched.errors).toEqual([probeCode]);
+				const probeIndex =
+					relaunched.calls.findIndex(
+						([operation], index) => operation === "initialize" && index > 0,
+					) - 1;
+				expect(relaunched.calls.slice(probeIndex, probeIndex + 2)).toEqual([
+					["get", format === "scorm12" ? "cmi.core.lesson_status" : "cmi.completion_status"],
+					["initialize", ""],
+				]);
+				expect(relaunched.errorReads).toEqual([{ code: probeCode, callIndex: probeIndex + 1 }]);
 			} finally {
 				await page.close();
 				await harness.cleanup();
@@ -469,6 +489,7 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 				const frame = await ready(page);
 				const returnUrl = frame.url();
 				if (mode === "guided") {
+					await expect(page.locator("iframe")).toBeInViewport({ ratio: 1 });
 					await frame.locator("#deck-next").click();
 					await expect(frame.locator('[data-deck-slide="page-2"]')).toBeVisible();
 				}

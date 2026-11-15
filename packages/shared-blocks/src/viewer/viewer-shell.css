@@ -1878,7 +1878,10 @@ body.praxity-layout-none .praxity-navigation-proxy {
 }
 
 .praxity-toolbar-position {
-	flex: 0 0 auto;
+	flex: 0 1 auto;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
 	white-space: nowrap;
 }
 
@@ -1893,7 +1896,7 @@ body.praxity-layout-none .praxity-navigation-proxy {
    its own full-width row, rather than wrapping inside three nested flexboxes. */
 .praxity-top-bar-fallback > .praxity-top-bar {
 	display: grid;
-	grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+	grid-template-columns: auto minmax(0, 1fr) minmax(0, auto) auto auto;
 	height: auto;
 	min-height: 52px;
 	column-gap: var(--space-3);

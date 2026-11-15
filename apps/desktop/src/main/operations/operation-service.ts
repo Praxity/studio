@@ -23,6 +23,7 @@ import {
 } from "../../shared/editor-session";
 import { studioLessonFilenameSchema } from "../../shared/ipc-schemas";
 import type { ProjectWriteResult } from "../../shared/project-write-errors";
+import { resolveDesignSettings } from "../../shared/settings-inheritance";
 import { readCourseManifestData } from "../course-manifest-io";
 import {
 	CourseIdentitySession,
@@ -35,6 +36,7 @@ import {
 	type ResolvedCourseIdentity,
 	readCourseIdentity,
 	resolveCourseIdentity,
+	resolveReadIdentityId,
 	resolveReadOperation,
 } from "../identity-store";
 import { readLessonSource } from "../lesson-source";
@@ -184,20 +186,65 @@ export class OperationService {
 			this.root,
 			async (root) => {
 				const current = await this.snapshot(root, true, this.canvasIdentitySession);
+				const fields = canvasTextSnapshotFields(current, scope);
+				const manifest = await readCourseManifestData(root);
+				const resolvedFile = scope
+					? current.identity.sourceMappings.find(
+							(mapping) =>
+								mapping.path.length === 0 &&
+								mapping.id === resolveReadIdentityId(current, scope.lessonId),
+						)?.file
+					: undefined;
+				const file = resolvedFile ?? scope?.file;
+				const locale = resolveDesignSettings(
+					null,
+					manifest.manifest,
+					(file && current.lessons.get(file)?.frontmatter) || {},
+				).locale;
+				const problem = scope && file ? identitySourceError(current, [file]) : undefined;
+				const error =
+					problem &&
+					current.lessons
+						.get(problem.file)
+						?.errors.find(
+							(error) =>
+								error.line === problem.line &&
+								(error.level === "error" || error.level === "critical"),
+						);
+				// These keep the existing course-wide, multi-location build refusal.
+				const practice =
+					error?.messageRef.key === "grammar.v4.private-choice-practice-only" ||
+					error?.messageRef.key === "grammar.v4.practice-no-tracking";
+				const sourceError =
+					problem && !practice
+						? {
+								file: problem.file,
+								line: problem.line,
+								column: error?.column ?? 1,
+								code:
+									error?.messageRef.key === "grammar.v4.detached-option-feedback"
+										? ("detached-feedback" as const)
+										: ("source-error" as const),
+							}
+						: undefined;
+				const lessonMissing = Boolean(
+					scope?.file &&
+						(!manifest.orderedLessons.includes(scope.file) ||
+							!manifest.lessonFilesOnDisk.includes(scope.file) ||
+							(resolvedFile && scope.file !== resolvedFile)),
+				);
 				return {
+					locale,
+					sourceError,
+					lessonMissing,
 					schema: 1 as const,
 					seq: this.seq,
 					sourceRevisions: Object.fromEntries(
 						[...current.lessons]
 							.map(([file, lesson]) => [file, digest(lesson.tree.stream.source)])
-							.concat([
-								[
-									"course.yaml",
-									digest(JSON.stringify((await readCourseManifestData(root)).manifest)),
-								],
-							]),
+							.concat([["course.yaml", digest(JSON.stringify(manifest.manifest))]]),
 					),
-					fields: canvasTextSnapshotFields(current, scope),
+					fields: sourceError || lessonMissing ? [] : fields,
 				};
 			},
 			"read",

@@ -62,6 +62,7 @@ interface LmsState {
 	saved: Record<string, string>;
 	calls: string[][];
 	errors: string[];
+	errorReads: { code: string; callIndex: number }[];
 }
 
 for (const format of ["scorm12", "scorm2004"] as const) {
@@ -162,7 +163,13 @@ async function assessment(page: Page, mode: "pages" | "guided"): Promise<Frame> 
 	for (const id of ["page-2", "page-3"]) {
 		const frame = await ready(page);
 		if (mode === "guided") {
+			await expect(page.locator("iframe")).toBeInViewport({ ratio: 1 });
 			await frame.locator("#deck-next").click();
+			if (id === "page-3") {
+				await expect(frame.locator("#deck-completion")).toBeVisible();
+				await expect(frame.locator("#deck-next")).toHaveAccessibleName("Next module: Last module");
+				await frame.locator("#deck-next").click();
+			}
 			await expect
 				.poll(async () => (await ready(page)).locator(`[data-deck-slide="${id}"]`).isVisible())
 				.toBe(true);
@@ -258,8 +265,27 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 					}
 					expect(final.calls.filter(([operation]) => operation === "initialize")).toHaveLength(2);
 					expect(final.calls.filter(([operation]) => operation === "terminate")).toHaveLength(0);
-					expect(final.errors).toEqual([]);
+					const probeCode = format === "scorm12" ? "301" : "122";
+					expect(final.errors).toEqual([probeCode]);
+					const probeIndex =
+						final.calls.findIndex(([operation], index) => operation === "initialize" && index > 0) -
+						1;
+					expect(final.calls.slice(probeIndex, probeIndex + 2)).toEqual([
+						["get", format === "scorm12" ? "cmi.core.lesson_status" : "cmi.completion_status"],
+						["initialize", ""],
+					]);
+					expect(final.errorReads).toEqual([{ code: probeCode, callIndex: probeIndex + 1 }]);
 					if (!retryPasses) {
+						const retained = await frame.evaluate(
+							(assessmentId) =>
+								(window.__praxityRuntime as SCORMRuntime)
+									.getInteractions()
+									.filter((interaction) => interaction.id === assessmentId),
+							assessmentIds.get(mode),
+						);
+						// recordInteraction retains the latest scored row, not an append-only retry history.
+						expect(retained).toHaveLength(1);
+						expect(retained[0]).toMatchObject({ correct: false, score: 0 });
 						// A final failure can return empty entry with saved answers. That is not confirmed resume.
 						await page.getByRole("button", { name: "Return to LMS" }).click();
 						await frame.waitForURL("**/away.html");
@@ -275,10 +301,22 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 								(assessmentId) =>
 									(window.__praxityRuntime as SCORMRuntime)
 										?.getInteractions()
-										.filter((interaction) => interaction.id === assessmentId).length,
+										.filter((interaction) => interaction.id === assessmentId),
 								assessmentIds.get(mode),
 							),
-						).toBe(2);
+						).toEqual(retained);
+						const restarted = await snapshot(page);
+						expect(restarted.errors).toEqual([probeCode, probeCode]);
+						const nextProbeIndex =
+							restarted.calls.map(([operation]) => operation).lastIndexOf("initialize") - 1;
+						expect(restarted.calls.slice(nextProbeIndex, nextProbeIndex + 2)).toEqual([
+							["get", format === "scorm12" ? "cmi.core.lesson_status" : "cmi.completion_status"],
+							["initialize", ""],
+						]);
+						expect(restarted.errorReads).toEqual([
+							...final.errorReads,
+							{ code: probeCode, callIndex: nextProbeIndex + 1 },
+						]);
 					}
 				} finally {
 					await page.close();

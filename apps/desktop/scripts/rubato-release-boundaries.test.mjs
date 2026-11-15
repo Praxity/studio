@@ -648,3 +648,28 @@ test("publisher refuses an invalid Rubato main SHA", () => {
 		/Invalid Rubato revision/,
 	);
 });
+
+test("Rubato release attests all five assets with publisher-scoped permissions", () => {
+	const publisher = workflow.jobs["rubato-publish"];
+	assert.deepEqual(publisher.permissions, {
+		contents: "write",
+		"id-token": "write",
+		attestations: "write",
+	});
+	assert.deepEqual(workflow.permissions, { contents: "read" });
+	for (const [name, job] of Object.entries(workflow.jobs)) {
+		if (name === "rubato-publish") continue;
+		assert.equal(job.permissions?.["id-token"], undefined);
+		assert.equal(job.permissions?.attestations, undefined);
+	}
+	const step = publisher.steps.at(-1);
+	assert.equal(publisher.steps.at(-2).name, "Publish verified Rubato pack");
+	assert.equal(
+		step.uses,
+		"actions/attest-build-provenance@43d14bc2b83dec42d39ecae14e916627a18bb661",
+	);
+	assert.equal(step.if, "inputs.publish_pack");
+	assert.deepEqual(step.with, {
+		"subject-path": "${{ runner.temp }}/candidate/*.tar.gz\n${{ runner.temp }}/pack/*\n",
+	});
+});

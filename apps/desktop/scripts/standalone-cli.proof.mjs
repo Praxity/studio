@@ -334,6 +334,18 @@ async function filesIn(directory, prefix = "") {
 	return files.sort();
 }
 
+test("CLI payload retains gifuct-js and its MIT licence", async () => {
+	const artifact = new URL("../../../dist/studio-cli/", import.meta.url);
+	const inventory = JSON.parse(await readFile(new URL("inventory.json", artifact), "utf8"));
+	const dependency = inventory.dependencies.find((entry) => entry.name === "gifuct-js");
+	assert.equal(dependency?.version, "2.1.2");
+	assert.equal(dependency.license, "MIT");
+	const license = "licenses/gifuct-js@2.1.2/LICENSE";
+	assert.ok(dependency.notices.includes(license));
+	assert.ok(inventory.files.some((entry) => entry.path === license));
+	assert.match(await readFile(new URL(license, artifact), "utf8"), /Permission is hereby granted/);
+});
+
 test("CLI payload retains the pinned learning-patterns MIT license", async () => {
 	const artifact = new URL("../../../dist/studio-cli/", import.meta.url);
 	const inventory = JSON.parse(await readFile(new URL("inventory.json", artifact), "utf8"));

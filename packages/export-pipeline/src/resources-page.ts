@@ -1,6 +1,8 @@
+import { escapeHtml } from "@praxity/content-model/constants";
 import { externalLinkIndicatorHtml } from "@praxity/shared-blocks/external-link-utils";
 import { getStrings } from "@praxity/shared-blocks/i18n/strings";
 import { sanitizeHtml } from "@praxity/shared-blocks/sanitize";
+import { sanitizeHref } from "./published-markup.ts";
 
 export interface ResourcePageEntry {
 	title: string;
@@ -15,15 +17,6 @@ interface ResourcesPageOptions {
 	entries: ResourcePageEntry[];
 	courseTitle: string;
 	locale?: string;
-}
-
-/** Escape characters that are unsafe in HTML text/attribute contexts. */
-function escapeHtml(s: string): string {
-	return s
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;")
-		.replace(/"/g, "&quot;");
 }
 
 /** Extract uppercase file extension from URL (e.g. "PDF" from ".../file.pdf"). */
@@ -66,9 +59,10 @@ export function generateResourcesPageHtml(opts: ResourcesPageOptions): string {
 				const isExternal =
 					item.resourceType === "link" ||
 					(item.resourceType === "document" && /^https:\/\//i.test(item.url));
+				const href = escapeHtml(sanitizeHref(item.url));
 				const linkAttrs = isExternal
-					? `href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer"`
-					: `href="${escapeHtml(item.url)}" download`;
+					? `href="${href}" target="_blank" rel="noopener noreferrer"`
+					: `href="${href}" download`;
 				const sourceLine =
 					item.lessonTitle && item.lessonSlug
 						? `<p class="praxity-resource-source"><a href="${escapeHtml(item.lessonSlug)}.html">${escapeHtml(strings.resourceFromLesson.replace("{lesson}", item.lessonTitle))}</a></p>`
