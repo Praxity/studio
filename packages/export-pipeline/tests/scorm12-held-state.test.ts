@@ -99,13 +99,19 @@ it.each(compactVectors)(
 		}
 	},
 );
-it.each(["passed", "failed", ""])(
-	"reports no completion, success or score over unreadable data with prior status %j",
-	(status) => {
+it.each([
+	["passed", "passed"],
+	["failed", "failed"],
+	["", "incomplete"],
+])(
+	"refuses outcome reporting over unreadable data with prior status %j",
+	(status, expectedStatus) => {
 		const { values, writes, dom } = fixture(status);
 		try {
 			const runtime = new Scorm12Runtime("course");
 			expect(runtime.initialize()).toBe(true);
+			expect(writes).toEqual(status === "" ? ["cmi.core.lesson_status"] : []);
+			writes.length = 0;
 			const tracker = new CourseTracker(runtime, {
 				totalPages: 1,
 				completionMethod: "allPages",
@@ -126,7 +132,7 @@ it.each(["passed", "failed", ""])(
 						key.startsWith("cmi.objectives."),
 				),
 			).toEqual([]);
-			expect(values["cmi.core.lesson_status"]).toBe(status);
+			expect(values["cmi.core.lesson_status"]).toBe(expectedStatus);
 			expect(values["cmi.core.score.raw"]).toBe("100");
 			expect(values["cmi.suspend_data"]).toBe(unreadable);
 		} finally {
