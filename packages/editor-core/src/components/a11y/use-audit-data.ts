@@ -17,7 +17,11 @@ import {
 	collectAllBlocksDeep,
 } from "../../lib/a11y/checker";
 import { resolveDesignSystemConfig } from "../../lib/a11y/design-system-config";
-import { findFlashingGifSources, type GifFlashAnalysis } from "../../lib/a11y/gif-flash-detector";
+import {
+	findFlashingGifSources,
+	type GifFlashAnalysis,
+	type GifSkipReason,
+} from "../../lib/a11y/gif-flash-detector";
 import { buildA11yOccurrenceId } from "../../lib/a11y/occurrence-id";
 import {
 	DISPLAY_CATEGORY_ORDER,
@@ -218,6 +222,9 @@ export function useAuditData(options: UseAuditDataOptions = {}): UseAuditDataRes
 			})),
 		[documents],
 	);
+	const [uncheckedGifSources, setUncheckedGifSources] = useState<Map<string, GifSkipReason>>(
+		new Map(),
+	);
 	const [flashingGifSources, setFlashingGifSources] = useState<Set<string>>(new Set());
 	const [completedAnalysisKey, setCompletedAnalysisKey] = useState<string>();
 	const gifCacheKey = options.gifFlashAnalysis?.cacheKey;
@@ -234,6 +241,7 @@ export function useAuditData(options: UseAuditDataOptions = {}): UseAuditDataRes
 	useEffect(() => {
 		if (!analysisKey || !gifCacheKey || !readGifAsset || parseError) {
 			setFlashingGifSources(new Set());
+			setUncheckedGifSources(new Map());
 			return;
 		}
 		let cancelled = false;
@@ -242,12 +250,16 @@ export function useAuditData(options: UseAuditDataOptions = {}): UseAuditDataRes
 			cache = new Map();
 			gifAnalysisCaches.set(gifCacheKey, cache);
 		}
-		void findFlashingGifSources(pages, readGifAsset, cache).then((sources) => {
-			if (!cancelled) {
-				setFlashingGifSources(sources);
-				setCompletedAnalysisKey(analysisKey);
-			}
-		});
+		const unchecked = new Map<string, GifSkipReason>();
+		void findFlashingGifSources(pages, readGifAsset, cache, { uncheckedSources: unchecked }).then(
+			(sources) => {
+				if (!cancelled) {
+					setFlashingGifSources(sources);
+					setUncheckedGifSources(unchecked);
+					setCompletedAnalysisKey(analysisKey);
+				}
+			},
+		);
 		return () => {
 			cancelled = true;
 		};
@@ -278,6 +290,7 @@ export function useAuditData(options: UseAuditDataOptions = {}): UseAuditDataRes
 			pages,
 			{
 				flashingGifSources,
+				uncheckedGifSources,
 			},
 			authorSources,
 		);
@@ -392,6 +405,7 @@ export function useAuditData(options: UseAuditDataOptions = {}): UseAuditDataRes
 		designSettingIssues,
 		documents,
 		flashingGifSources,
+		uncheckedGifSources,
 		mediaAnalysisPending,
 		pages,
 		authorSources,

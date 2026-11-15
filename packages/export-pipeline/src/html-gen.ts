@@ -93,6 +93,11 @@ import {
 export { PracticeAdmissionError } from "./practice-admission";
 
 import {
+	escapeHtml,
+	escapeJsonForHtml,
+	escapeJsonForScript,
+} from "@praxity/content-model/constants";
+import {
 	assessmentGroupRequirements,
 	assessmentGroupSubmitLabel,
 	buildAssessmentGroups,
@@ -102,7 +107,6 @@ import {
 	resolvePageSlideStyle,
 	type SlideStyleDef,
 } from "@praxity/shared-blocks/viewer/slide-styles";
-import { escapeJsonForHtml } from "./escape-json-for-html.ts";
 import { enforceColorShadeTextContrast, enforceTextColorContrast } from "./export-contrast.ts";
 import { generateColorShades } from "./generate-color-shades.ts";
 import { generateGlossaryPageHtml } from "./glossary-page.ts";
@@ -326,15 +330,6 @@ export interface CourseConfig {
 
 const RTL_LANGS = ["ar", "he", "ur", "fa", "ps"];
 
-/** Escape characters that are unsafe in HTML text/attribute contexts. */
-function escapeHtml(s: string): string {
-	return s
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;")
-		.replace(/"/g, "&quot;");
-}
-
 function plainTextFromHtml(value: unknown): string {
 	if (typeof value !== "string") return "";
 	return fullyDecodeEntities(sanitizeHtml(value).replace(/<[^>]*>/gu, " "))
@@ -347,15 +342,6 @@ function narrationSeekLabel(script: string): string {
 	if (heading) return plainTextFromHtml(heading);
 	const words = narrationScriptText(narrationDisplayText(script)).split(/\s+/u);
 	return words.slice(0, 6).join(" ") + (words.length > 6 ? "…" : "");
-}
-
-/**
- * Escape a JSON string for safe embedding inside a `<script>` tag.
- * Only `</script>` sequences need escaping — HTML entities must NOT be used
- * because script content is parsed as raw text, not HTML.
- */
-function escapeJsonForScript(json: string): string {
-	return json.replace(/<\/script/gi, "<\\/script");
 }
 
 function camelToKebab(str: string): string {

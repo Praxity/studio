@@ -76,7 +76,7 @@ describe("Scorm2004Runtime", () => {
 	describe("initialize()", () => {
 		it("continues a multi-page session that is already initialized", () => {
 			mockAPI.Initialize.mockReturnValue("false");
-			mockAPI.GetLastError.mockReturnValue("103");
+			mockAPI.GetLastError.mockReturnValueOnce("103").mockReturnValue("0");
 			mockAPI.GetValue.mockImplementation((element: string) =>
 				element === "cmi.interactions._count" ? "2" : "",
 			);

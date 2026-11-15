@@ -1,3 +1,4 @@
+import { escapeJsonForHtml } from "@praxity/content-model/constants";
 import { isAvatarNone } from "@praxity/grammar";
 import { resolveAssessmentDontKnow } from "@praxity/shared-blocks/assessment-choice";
 import {
@@ -70,7 +71,6 @@ import { assessmentGroupHasProgress } from "@praxity/shared-blocks/viewer/assess
 import { strings as retrievalSheetPatternStrings } from "learning-patterns/patterns/retrieval-sheet/strings.js";
 import { strings as selfCheckPatternStrings } from "learning-patterns/patterns/self-check/strings.js";
 import { codeTokenCss, highlightCode } from "./code-highlighting.ts";
-import { escapeJsonForHtml } from "./escape-json-for-html.ts";
 import { renderChoice } from "./patterns/choice/render.ts";
 import {
 	type LessonHeading,
@@ -1110,8 +1110,8 @@ function renderDocument(block: PraxityBlock, strings: RenderBlockHtmlStrings): s
 		description?: string;
 		filename?: string;
 	};
-	const url = typeof data?.url === "string" ? data.url : "";
-	if (!url) return "";
+	const url = typeof data?.url === "string" ? sanitizeHref(data.url) : "";
+	if (!url || url === "#") return "";
 	const title =
 		sanitizeInline(data?.title, false) || sanitizeInline(data?.filename, false) || "Document";
 	const description = sanitizeInline(data?.description);
@@ -1137,7 +1137,7 @@ function renderResourceEntry(block: PraxityBlock, strings: RenderBlockHtmlString
 		: getFileTypeLabelFromMime(data.mimeType);
 	const isLink = data.resourceType === "link";
 	const action = isLink ? strings.resourceOpenLink : strings.documentDownload;
-	return `<div class="praxity-resource-entry"><div class="praxity-resource-content"><span class="praxity-resource-title">${title}</span>${description ? `<span class="praxity-resource-description">${description}</span>` : ""}</div>${href ? `<a href="${escapeHtml(href)}" class="praxity-resource-action"${isLink ? ' target="_blank" rel="noopener noreferrer"' : data.resourceType === "file" ? ` download="${escapeHtml(data.title)}"` : ""}>${escapeHtml(action)}${fileLabel ? ` (${escapeHtml(fileLabel)})` : ""}${accessibleTitle ? `<span class="praxity-sr-only">: ${accessibleTitle}</span>` : ""}${isLink ? externalLinkIndicatorHtml(strings.opensInNewTab) : ""}</a>` : ""}</div>`;
+	return `<div class="praxity-resource-entry"><div class="praxity-resource-content"><span class="praxity-resource-title">${title}</span>${description ? `<span class="praxity-resource-description">${description}</span>` : ""}</div>${href ? `<a href="${escapeHtml(href)}" class="praxity-resource-action"${isLink ? ' target="_blank" rel="noopener noreferrer"' : data.resourceType === "file" ? ` download="${escapeHtml(data.title)}"` : ""}>${escapeHtml(action)}${fileLabel ? ` (${escapeHtml(fileLabel)})` : ""}${accessibleTitle ? `<span class="praxity-sr-only">: ${escapeHtml(accessibleTitle)}</span>` : ""}${isLink ? externalLinkIndicatorHtml(strings.opensInNewTab) : ""}</a>` : ""}</div>`;
 }
 
 function isHttpsUrl(value: string): boolean {
@@ -1621,7 +1621,7 @@ function renderAssessmentGroup(
 							strings.assessmentGroupQuestionFallback.replace("{index}", String(index + 1)),
 						);
 						const radioId = `ag-radio-${block.id}-${member.id}`;
-						return `<div class="praxity-ag-radio-row"><input type="radio" class="praxity-ag-radio" name="${escapeHtml(`ag-${block.id}`)}" value="${escapeHtml(member.id)}" id="${escapeHtml(radioId)}"${index === 0 ? " checked" : ""} disabled><label class="praxity-ag-radio-label" for="${escapeHtml(radioId)}">${question}</label></div>`;
+						return `<div class="praxity-ag-radio-row"><input type="radio" class="praxity-ag-radio" name="${escapeHtml(`ag-${block.id}`)}" value="${escapeHtml(member.id)}" id="${escapeHtml(radioId)}"${index === 0 ? " checked" : ""} disabled><label class="praxity-ag-radio-label" for="${escapeHtml(radioId)}">${escapeHtml(question)}</label></div>`;
 					})
 					.join("")}</div></fieldset>`
 			: "";

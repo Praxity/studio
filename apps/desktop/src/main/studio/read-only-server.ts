@@ -3,6 +3,7 @@ import { constants } from "node:fs";
 import { open, readFile, stat } from "node:fs/promises";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import path from "node:path";
+import { selectCanvasPage } from "../../shared/canvas-page-selection";
 import type { CanvasPageScope } from "../../shared/editor-session";
 import { createCourseArtifactHost } from "../course-artifact-host";
 import { getMimeType, serveCourseFile, serveOpenedFile } from "../course-file-response";
@@ -70,7 +71,10 @@ export async function startStudioReadOnlyServer(options: {
 	let closing = false;
 	const pending = new Set<Promise<void>>();
 	const streams = new ResponseStreamOwner();
-	type CanvasRevision = Pick<HostedCourseDeployment, "editorSeq" | "sourceRevisions"> & {
+	type CanvasRevision = Pick<
+		HostedCourseDeployment,
+		"editorSeq" | "sourceRevisions" | "lessonFiles"
+	> & {
 		pages: HostedCourseDeployment["manifest"]["pages"];
 	};
 	const pageIdentities = new Map<string, CanvasRevision>();
@@ -442,9 +446,27 @@ export async function startStudioReadOnlyServer(options: {
 		const entry = new URL(head.entryUrl);
 		const current = pageIdentities.get(new URL(".", entry).pathname);
 		if (!current) return;
+		const previousFile = previous.page.lessonId && previous.lessonFiles?.[previous.page.lessonId];
+		const lessonId =
+			current.pages.find((page) => page.lessonId === previous.page.lessonId)?.lessonId ??
+			current.pages.find(
+				(page) =>
+					previousFile && page.lessonId && current.lessonFiles?.[page.lessonId] === previousFile,
+			)?.lessonId;
+		const siblings = previous.pages.filter((page) => page.lessonId === previous.page.lessonId);
+		const selected = selectCanvasPage(
+			current.pages
+				.filter((page) => page.lessonId === lessonId)
+				.map((page, pageIndex) => ({ page, pageId: page.id, pageIndex })),
+			{
+				pageId: previous.page.id,
+				pageIndex: siblings.indexOf(previous.page),
+				pageIds: siblings.map((page) => page.id),
+			},
+		);
 		const page =
 			current.pages.find((page) => page.id === previous.page.id) ??
-			current.pages.find((page) => page.lessonId === previous.page.lessonId) ??
+			selected?.page ??
 			current.pages[0];
 		if (!page) return;
 		const target = new URL(`${encodeURIComponent(page.slug)}.html`, entry).pathname;
@@ -459,7 +481,11 @@ export async function startStudioReadOnlyServer(options: {
 			: recorded?.page;
 		if (!pages) return;
 		if (!page?.lessonId) return;
+		const file = (resolved?.hosted.deployment.lessonFiles ?? recorded?.lessonFiles)?.[
+			page.lessonId
+		];
 		return {
+			...(file ? { file } : {}),
 			pageId: page.id,
 			editorSeq: resolved?.hosted.deployment.editorSeq ?? recorded?.editorSeq,
 			lessonId: page.lessonId,
@@ -495,6 +521,7 @@ export async function startStudioReadOnlyServer(options: {
 			pageIdentities.set(key, {
 				pages: structuredClone(deployment.manifest.pages),
 				editorSeq: deployment.editorSeq,
+				lessonFiles: deployment.lessonFiles && { ...deployment.lessonFiles },
 				sourceRevisions: deployment.sourceRevisions && { ...deployment.sourceRevisions },
 			});
 			if (pageIdentities.size > 256) {
