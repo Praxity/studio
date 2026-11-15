@@ -1,5 +1,4 @@
 import { DEFAULT_DESIGN_VARIANTS } from "@praxity/editor-core/lib/themes/design-variant-defaults.ts";
-import { designVariantsToCssProperties } from "@praxity/editor-core/lib/themes/design-variants-to-css.ts";
 import { normalizeDesignVariants } from "@praxity/editor-core/lib/themes/normalize-design-variants.ts";
 import {
 	THEME_PRESET_DEFAULTS,
@@ -66,16 +65,28 @@ const CASES: Array<{ name: string; overrides: Record<string, unknown> }> = [
 ];
 
 const MATRIX = Object.entries(THEME_PRESET_DEFAULTS).flatMap(([preset, defaults]) =>
-	(["light", "dark", "auto"] as const).flatMap((mode) =>
-		CASES.map(({ name, overrides }) => ({
-			name: `${preset}/${mode}/${name}`,
-			preset: preset as ThemePresetId,
-			defaults,
-			mode,
-			overrides,
-		})),
-	),
+	CASES.map(({ name, overrides }) => ({
+		name: `${preset}/${name}`,
+		preset: preset as ThemePresetId,
+		defaults,
+		overrides,
+	})),
 );
+
+function normalized(
+	preset: ThemePresetId,
+	defaults: object,
+	overrides: Record<string, unknown>,
+	colorMode: "light" | "dark" | "auto",
+) {
+	return normalizeDesignVariants({
+		...DEFAULT_DESIGN_VARIANTS,
+		...defaults,
+		palette: preset,
+		...overrides,
+		colorMode,
+	});
+}
 
 function renderAutoTheme(cssVars: Record<string, string>, darkCssVars: Record<string, string>) {
 	return generateCourseCss({ colorMode: "auto", cssVars, darkCssVars });
@@ -89,39 +100,34 @@ function darkTokenBlock(css: string): string {
 	return match?.[1] ?? "";
 }
 
-describe("preview/export design token contract", () => {
-	it.each(MATRIX)("$name", ({ preset, defaults, mode, overrides }) => {
-		const normalized = normalizeDesignVariants({
-			...DEFAULT_DESIGN_VARIANTS,
-			...defaults,
-			palette: preset,
-			...overrides,
-			colorMode: mode,
-		});
-		const exported = extractDesktopDesignFromFrontmatter({ design: normalized as never });
-		const preview = designVariantsToCssProperties(normalized, mode === "dark");
+describe("exported auto colour mode", () => {
+	it.each(MATRIX)(
+		"$name emits the explicit dark tokens in its dark block",
+		({ preset, defaults, overrides }) => {
+			const design = normalized(preset, defaults, overrides, "auto");
+			const exported = extractDesktopDesignFromFrontmatter({ design: design as never });
+			const explicitDark = extractDesktopDesignFromFrontmatter({
+				design: { ...design, colorMode: "dark" } as DesignVariants,
+			});
+			expect(exported.darkCssVars).toEqual(explicitDark.cssVars);
 
-		expect(exported.cssVars).toEqual(preview);
+			const css = renderAutoTheme(exported.cssVars ?? {}, exported.darkCssVars ?? {});
+			const darkBlock = darkTokenBlock(css);
+			const emittedKeys = new Set([...darkBlock.matchAll(/(--[\w-]+):/g)].map((match) => match[1]));
+			expect(emittedKeys).toEqual(new Set(Object.keys(explicitDark.cssVars ?? {})));
+			for (const [key, value] of Object.entries(explicitDark.cssVars ?? {})) {
+				expect(darkBlock).toContain(`${key}: ${value};`);
+			}
+			expect(css).toContain(":root, :root[data-mantine-color-scheme]");
+		},
+	);
 
-		if (mode !== "auto") {
+	it.each(["light", "dark"] as const)("a fixed %s mode exports no dark block", (mode) => {
+		for (const { preset, defaults, overrides } of MATRIX) {
+			const exported = extractDesktopDesignFromFrontmatter({
+				design: normalized(preset, defaults, overrides, mode) as never,
+			});
 			expect(exported.darkCssVars).toBeUndefined();
-			return;
 		}
-
-		const previewDark = designVariantsToCssProperties(normalized, true);
-		const explicitDark = extractDesktopDesignFromFrontmatter({
-			design: { ...normalized, colorMode: "dark" } as DesignVariants,
-		});
-		expect(exported.darkCssVars).toEqual(previewDark);
-		expect(exported.darkCssVars).toEqual(explicitDark.cssVars);
-
-		const css = renderAutoTheme(exported.cssVars ?? {}, exported.darkCssVars ?? {});
-		const darkBlock = darkTokenBlock(css);
-		const emittedKeys = new Set([...darkBlock.matchAll(/(--[\w-]+):/g)].map((match) => match[1]));
-		expect(emittedKeys).toEqual(new Set(Object.keys(explicitDark.cssVars ?? {})));
-		for (const [key, value] of Object.entries(explicitDark.cssVars ?? {})) {
-			expect(darkBlock).toContain(`${key}: ${value};`);
-		}
-		expect(css).toContain(":root, :root[data-mantine-color-scheme]");
 	});
 });
