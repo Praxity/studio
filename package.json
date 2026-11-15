@@ -98,7 +98,8 @@
 			"browserslist@<4.28.7": "4.28.7",
 			"baseline-browser-mapping@>=2.0.0 <2.11.0": "2.11.0",
 			"@tiptap/extension-bubble-menu": "3.30.5",
-			"@tiptap/extension-floating-menu": "3.30.5"
+			"@tiptap/extension-floating-menu": "3.30.5",
+			"archiver>readdir-glob": "4.0.0"
 		},
 		"patchedDependencies": {
 			"dompurify@3.4.17": "patches/dompurify@3.4.17.patch"

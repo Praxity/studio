@@ -1,5 +1,6 @@
 import katex from "katex";
 import { describe, expect, it, vi } from "vitest";
+import { sanitizeHtml } from "../sanitize";
 import { processMathSpans } from "./process-math-spans";
 import { renderMath } from "./render-math";
 
@@ -63,6 +64,43 @@ describe("equation output fidelity", () => {
 		} finally {
 			renderer.mockRestore();
 		}
+	});
+
+	it("renders nothing for blank source", () => {
+		expect(renderMath("")).toBe("");
+		expect(renderMath("   ")).toBe("");
+	});
+
+	it("wraps inline math in a span and display math in a div", () => {
+		expect(renderMath("x^2", false)).toMatch(/^<span role="math"/);
+		expect(renderMath("x^2", true)).toMatch(/^<div role="math"/);
+	});
+
+	it("leaves HTML without math spans unchanged", () => {
+		const html = "<p>Hello world</p>";
+		expect(processMathSpans(html)).toBe(html);
+	});
+
+	it("decodes attribute entities before rendering", () => {
+		const root = document.createElement("div");
+		root.innerHTML = processMathSpans(
+			'<p><span class="praxity-math-inline" data-math-latex="a &lt; b">a &lt; b</span></p>',
+		);
+		expect(root.querySelector(".praxity-math-error")).toBeNull();
+		expect(root.querySelector("mo")?.textContent).toBe("<");
+	});
+
+	it("renders math after sanitizeHtml keeps its source attribute", () => {
+		const root = document.createElement("div");
+		root.innerHTML = processMathSpans(
+			sanitizeHtml(
+				'<p>Half <span class="praxity-math-inline" data-math-latex="\\frac{1}{2}">fallback</span>.</p>',
+			),
+		);
+		expect(root.querySelectorAll("mfrac")).toHaveLength(1);
+		expect(root.querySelector("[data-math-latex]")?.getAttribute("data-math-latex")).toBe(
+			"\\frac{1}{2}",
+		);
 	});
 
 	it("retains a single fraction in sanitized inline span output", () => {

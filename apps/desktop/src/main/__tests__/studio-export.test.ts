@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import AdmZip from "adm-zip";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
+import { persistFixtureIdentity } from "../../test-utils/identity-fixture";
 import { runPraxityCli } from "../cli";
 import { StudioExportService } from "../studio/export-service";
 import { startStudioServer } from "../studio/server";
@@ -78,6 +79,76 @@ afterEach(async () => {
 	await Promise.all(servers.splice(0).map((server) => server.close()));
 	await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
+describe("CLI deck gates", () => {
+	async function exportGate(body: string, enabled: boolean, locale = "en") {
+		const files = await fixture();
+		await writeFile(
+			join(files.projectDir, "course.yaml"),
+			`title: Gates\nlocale: ${locale}\nmoduleDeck: ${enabled}\nlessons: [lesson.prax]\n`,
+		);
+		await writeFile(join(files.projectDir, "lesson.prax"), `# Gates\n\n${body}`);
+		await persistFixtureIdentity(files.projectDir);
+		const output = join(files.root, "course.zip");
+		const result = await runPraxityCli(
+			["export", files.projectDir, "--format", "html", "--output", output, "--lang", locale],
+			{ appVersion: "0.3.0", exportAssetsDir: join(resourcesDir, "export-assets") },
+		);
+		return { result, output };
+	}
+	for (const enabled of [true, false]) {
+		for (const [kind, body, rule] of [
+			[
+				"self-check",
+				"::: self-check Explain why. {deckGate=attempt}\nmodel: Because.\n:: Reason\nmissed: Explain the reason.\n:::\n",
+				"attempt",
+			],
+			...["attempt", "pass"].flatMap((rule) => [
+				["assessment", `::: choice Choose {deckGate=${rule}}\n(x) Yes\n( ) No\n:::\n`, rule],
+				[
+					"assessment group",
+					`::: group Together {deckGate=${rule}}\n::: choice Choose\n(x) Yes\n( ) No\n:::\n:::\n`,
+					rule,
+				],
+			]),
+		]) {
+			it(`exports ${kind} ${rule} with deck mode ${enabled}`, async () => {
+				const { result, output } = await exportGate(body, enabled);
+				expect(result.exitCode, result.stdout).toBe(0);
+				const html = new AdmZip(await readFile(output))
+					.getEntries()
+					.filter((entry) => entry.entryName.endsWith(".html"))
+					.map((entry) => entry.getData().toString())
+					.join("\n");
+				expect(html).toContain("Gates");
+				if (enabled) expect(html).toContain(`"rule":"${rule}"`);
+				if (!enabled) expect(html).not.toContain(`"rule":"${rule}"`);
+			});
+		}
+		for (const locale of ["en", "fr"]) {
+			it.each([
+				["value", "::: choice Choose {deckGate=never}\n(x) Yes\n( ) No\n:::\n"],
+				[
+					"self-check pass",
+					"::: self-check Explain. {deckGate=pass}\nmodel: Because.\n:: Reason\nmissed: Explain the reason.\n:::\n",
+				],
+				["block type", "::: note Note {deckGate=attempt}\nBody.\n:::\n"],
+			])(
+				`refuses invalid %s with a source location (${locale}, deck ${enabled})`,
+				async (_kind, body) => {
+					const { result } = await exportGate(body, enabled, locale);
+					expect(result.exitCode, result.stdout).toBe(1);
+					const response = JSON.parse(result.stdout);
+					expect(response.error.code).toBe("project_invalid");
+					expect(response.error.message).toContain("lesson.prax:3");
+					expect(response.error.message).toContain(
+						locale === "fr" ? "Export refusé" : "Export refused",
+					);
+				},
+			);
+		}
+	}
+});
+
 describe("Studio exports", () => {
 	describe("write-distractors RPC publication", () => {
 		const publications: Array<{
@@ -324,7 +395,7 @@ describe("Studio exports", () => {
 				const output = join(root, format === "pdf" ? "previous.pdf" : "previous.zip");
 				await writeFile(output, "previous output");
 				const result = await runPraxityCli(
-					["export", projectDir, "--format", format, "--output", output],
+					["export", projectDir, "--format", format, "--output", output, "--lang", locale],
 					{
 						appVersion: "0.3.0",
 						exportAssetsDir: join(resourcesDir, "export-assets"),

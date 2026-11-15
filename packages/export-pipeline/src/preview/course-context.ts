@@ -1,6 +1,10 @@
 import crypto from "node:crypto";
 import { traverseAssetGraph } from "@praxity/shared-blocks/asset-graph";
 import { ASSET_FIELDS } from "@praxity/shared-blocks/constants";
+import {
+	matchingDesktopAssetPath,
+	normalizeDesktopAssetPath,
+} from "@praxity/shared-blocks/desktop-asset-path";
 import { adaptGrammarPreviewBlocks } from "@praxity/shared-blocks/grammar-adapter";
 import {
 	isInlineProjectionMetadataKey,
@@ -853,24 +857,6 @@ function normalizeDesktopCourseInput(input: DesktopExportInput): CourseExportInp
 		reviewMode: input.reviewMode,
 		reviewExpiresAt: input.reviewExpiresAt,
 	};
-}
-
-export function normalizeDesktopAssetPath(assetPath: string): string {
-	return assetPath.replace(/\\/g, "/").replace(/^(?:\.\/|\/)+/, "");
-}
-
-function matchingDesktopAssetPath(
-	url: string,
-	resolvedAssetPaths: ReadonlySet<string>,
-): string | undefined {
-	const normalized = normalizeDesktopAssetPath(url.split(/[?#]/, 1)[0]);
-	if (resolvedAssetPaths.has(normalized)) return normalized;
-	try {
-		const decoded = decodeURIComponent(normalized);
-		return resolvedAssetPaths.has(decoded) ? decoded : undefined;
-	} catch {
-		return undefined;
-	}
 }
 
 function rewriteDesktopAssetUrl(

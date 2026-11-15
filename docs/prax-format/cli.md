@@ -301,7 +301,8 @@ The Read document carries captured page context and loads the shipped review
 assets. Edit mode stays unchanged; its Read link returns to review-enabled Read
 mode. Without `--review`, Studio behaves as before. Local feedback and its
 capability never enter ordinary HTML or SCORM exports. `--lang fr` selects French
-CLI notices.
+CLI notices. The same option selects CLI refusal messages and Studio HTTP error
+messages; error codes stay unchanged.
 
 ## Edit source nodes
 
@@ -933,7 +934,32 @@ command usage.
 
 ## Accessibility override
 
-Export blocks critical accessibility issues by default. During the early alpha,
+Export blocks missing image alternatives, empty link or button labels, and detected
+GIF flashing above three flashes in one second. The GIF check reuses the source-frame
+heuristic, not a calibrated WCAG conformance measurement: red flashes, rendered visual
+field, transparency and files above its safety caps still need human review.
+Structural checks run for HTML, SCORM and native PDF. Flashing checks run only
+for HTML and SCORM, since PDF images cannot animate. The flash gate does not
+read GIFs for PDF. NETSCAPE looping animations are checked across the wrap for
+one additional second, up to their configured repetition count.
+
+GIFs decode one frame at a time against a per-GIF 96 MiB estimated live-storage
+budget, based on four canvases and the largest decoded frame, not all frames.
+A separate limit of 1,000 source frames and 200 million replay frame pixels bounds
+analysis work.
+Skipped GIFs produce `gif-flash-unchecked` advice with the reason: too large,
+too many frames/frame pixels, or malformed. These advisories do not block export.
+The same manual-check item appears in the accessibility panel. Source practice
+checks also refuse duplicate misconception labels and overlong questions,
+answers, labels and options before packaging.
+
+`theme-text-on-background-contrast` and `theme-button-text-contrast` are advisory,
+not export blockers. Published body text and button text colours are corrected by
+the design token resolver at render time. Authored low-contrast colours alone do
+not refuse export.
+
+A refusal returns `accessibility_blocked`, the issues and a fix hint in the selected
+English or French advice language. During the early alpha,
 `--allow-critical-a11y-issues` permits an export after the checker runs. The success
 JSON then reports `"status": "overridden"`, the critical issue count, and every issue.
 The flag applies only to that invocation and cannot be enabled through project files.

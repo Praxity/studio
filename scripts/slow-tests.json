@@ -6,16 +6,6 @@
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/course-io.test.ts",
-		"name": "course-io > loadCourse > returns the created manifest baseline for a manifest-free course",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5047 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/course-io.test.ts",
-		"name": "course-io > manifest sync > preserves valid and invalid cast entries after lesson rename",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2043 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/course-io.test.ts",
 		"name": "course-io > readLesson / writeLessonSource > reads a lesson file",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3047 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
@@ -586,16 +576,6 @@
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/lesson-source-safety.test.ts",
-		"name": "grammar 4 source and identity transaction safety > does not overwrite a lesson recreated while deletion rolls back",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5005 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/lesson-source-safety.test.ts",
-		"name": "grammar 4 source and identity transaction safety > does not overwrite an external file created after the rename collision check",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5018 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/lesson-source-safety.test.ts",
 		"name": "grammar 4 source and identity transaction safety > keeps clean source unchanged and persists identities across reads and copied projects",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3531 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
@@ -611,11 +591,6 @@
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/lesson-source-safety.test.ts",
-		"name": "grammar 4 source and identity transaction safety > queues lesson deletion after an in-flight save",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5029 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/lesson-source-safety.test.ts",
 		"name": "grammar 4 source and identity transaction safety > refuses rename collisions and sidecar symlink escapes",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5042 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
@@ -628,11 +603,6 @@
 		"file": "apps/desktop/src/main/__tests__/lesson-source-safety.test.ts",
 		"name": "grammar 4 source and identity transaction safety > reports source and rollback failures together",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4358 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/lesson-source-safety.test.ts",
-		"name": "grammar 4 source and identity transaction safety > restores a source rename when metadata fails without overwriting a recreated source",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5008 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/lesson-source-safety.test.ts",
@@ -773,11 +743,6 @@
 		"file": "apps/desktop/src/main/__tests__/narration-authoring.test.ts",
 		"name": "N2 status lists flagged and unresolved targets without writes",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5069 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/narration.test.ts",
-		"name": "Soniox narration boundary > accepts audio only after audio_end, terminated, and complete timestamps",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3806 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/nested-project-reader.test.ts",
@@ -2163,86 +2128,6 @@
 		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
 		"name": "Studio startup admission > returns the shared busy code for reads and writes, keeps source and permits retry after release",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 19462 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "packages/editor-core/src/components/a11y-audit-panel.test.tsx",
-		"name": "A11yAuditPanel dismissal > dismisses only for the current course session",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2419 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "packages/editor-core/src/components/design-navigation-defaults.test.tsx",
-		"name": "persists Accordion style from the actual default control",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4633 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "packages/editor-core/src/components/design-navigation-defaults.test.tsx",
-		"name": "persists Card shadow from the actual default control",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2489 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "packages/editor-core/src/components/design-navigation-defaults.test.tsx",
-		"name": "persists Card transition from the actual default control",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2927 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "packages/editor-core/src/components/design-navigation-defaults.test.tsx",
-		"name": "persists Comparison layout from the actual default control",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2889 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "packages/editor-core/src/components/design-navigation-defaults.test.tsx",
-		"name": "persists Sequence alignment from the actual default control",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2405 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "packages/editor-core/src/components/design-navigation-defaults.test.tsx",
-		"name": "persists Sequence orientation from the actual default control",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2523 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "packages/editor-core/src/components/design-navigation-defaults.test.tsx",
-		"name": "persists Sequence style from the actual default control",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2456 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "packages/editor-core/src/components/design-navigation-defaults.test.tsx",
-		"name": "persists Tabs orientation from the actual default control",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2391 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "packages/editor-core/src/components/design-navigation-defaults.test.tsx",
-		"name": "persists Tabs style from the actual default control",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2768 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "packages/editor-core/src/components/design-navigation-defaults.test.tsx",
-		"name": "preserves image dimensions when editing an exposed card default: {\"size\":\"small\",\"width\":\"full\"}",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2283 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "packages/editor-core/src/components/design-navigation-defaults.test.tsx",
-		"name": "preserves image dimensions when editing an exposed card default: {\"width\":\"full\"}",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2417 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "packages/editor-core/src/components/design-navigation-defaults.test.tsx",
-		"name": "replaces a legacy colored card default without retaining its hidden tint",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2749 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "packages/editor-core/src/components/design-system-panel.test.tsx",
-		"name": "DesignSystemPanel > offers five course palettes",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3580 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "packages/editor-core/src/components/design-system-panel.test.tsx",
-		"name": "DesignSystemPanel > persists Heading size through its real control",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2040 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "packages/editor-core/src/components/design-system-panel.test.tsx",
-		"name": "DesignSystemPanel > replaces all visual customizations when selecting ink",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2097 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
 	{
 		"file": "packages/editor-core/src/session/session.test.ts",
