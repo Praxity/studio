@@ -2107,7 +2107,7 @@ it("C06a refuses structure, controls, empty deletion and forged fields with zero
 			nodeId: parent.id,
 			expectedText: "Parent",
 		}),
-	).toMatchObject({ ok: false, code: "unsupported-syntax" });
+	).toMatchObject({ ok: false, code: "list-marker" });
 	expect(await bytes(root)).toEqual(before);
 });
 

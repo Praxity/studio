@@ -72,7 +72,14 @@ export interface BodyDefinition {
 	itemHeading?: boolean;
 	parts?: readonly string[];
 	settings?: Readonly<
-		Record<string, { values?: readonly string[]; accepts?: (value: string | boolean) => boolean }>
+		Record<
+			string,
+			{
+				type?: string;
+				values?: readonly string[];
+				accepts?: (value: string | boolean) => boolean;
+			}
+		>
 	>;
 	settingAliases?: Readonly<Record<string, string>>;
 	/** Item declarations belong to the enclosing container, not a global item vocabulary. */
@@ -157,6 +164,9 @@ export type AnalysisDiagnosticCode =
 	| "part-colon-spacing"
 	| "missing-subject"
 	| "bad-subject"
+	| "svg-data-url"
+	| "unsafe-media-url"
+	| "unsafe-link-url"
 	| "disallowed-child"
 	| "child-count"
 	| "missing-part"

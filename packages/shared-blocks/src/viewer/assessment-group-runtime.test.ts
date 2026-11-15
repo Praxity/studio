@@ -26,6 +26,75 @@ function assessmentMember(id: string, completed = false): string {
 }
 
 it.each([
+	["all", "unmount"],
+	["oneOf", "unmount"],
+	["all", "owner revocation"],
+	["oneOf", "owner revocation"],
+] as const)("cancels every pending %s submission on %s", (mode, boundary) => {
+	vi.useFakeTimers();
+	let active = true;
+	Object.assign(window, {
+		__praxitySelfCheckDocument: { loadTicket: () => () => active },
+	});
+	const receipt = vi.fn();
+	window.__praxityBlockState = { get: () => null, set: () => {}, getSaveResult: receipt };
+	document.body.innerHTML = assessmentMember("q1", true);
+	const dispose = initAssessmentGroups({
+		blocks: [
+			{ id: "group", type: "assessmentGroup", data: { mode, memberBlockIds: ["q1"] } },
+			{ id: "q1", type: "assessment", data: { gradingMode: "exact" } },
+		] as PraxityBlock[],
+		root: document.body,
+	});
+	try {
+		vi.advanceTimersByTime(20);
+		const submit = document.querySelector<HTMLButtonElement>(".praxity-ag-submit-btn");
+		assert(submit);
+		submit.click();
+		submit.click();
+		expect(vi.getTimerCount()).toBe(2);
+		if (boundary === "unmount") dispose();
+		else {
+			active = false;
+			document.dispatchEvent(new Event("praxity:self-check-owner"));
+		}
+		expect(vi.getTimerCount()).toBe(0);
+		document.body.replaceChildren();
+		receipt.mockClear();
+		expect(() => vi.advanceTimersByTime(100)).not.toThrow();
+		expect(receipt).not.toHaveBeenCalled();
+		expect(vi.getTimerCount()).toBe(0);
+	} finally {
+		dispose();
+		vi.clearAllTimers();
+		vi.useRealTimers();
+		Reflect.deleteProperty(window, "__praxitySelfCheckDocument");
+	}
+});
+
+it("cancels setup when the group is unmounted before its first frame", () => {
+	vi.useFakeTimers();
+	document.body.innerHTML = assessmentMember("q1");
+	const dispose = initAssessmentGroups({
+		blocks: [
+			{ id: "group", type: "assessmentGroup", data: { mode: "all", memberBlockIds: ["q1"] } },
+			{ id: "q1", type: "assessment", data: { gradingMode: "exact" } },
+		] as PraxityBlock[],
+		root: document.body,
+	});
+	try {
+		expect(vi.getTimerCount()).toBe(1);
+		dispose();
+		expect(vi.getTimerCount()).toBe(0);
+		expect(() => vi.advanceTimersByTime(100)).not.toThrow();
+		expect(document.querySelector(".praxity-ag-submit-btn")).toBeNull();
+	} finally {
+		dispose();
+		vi.useRealTimers();
+	}
+});
+
+it.each([
 	["mode mismatch", "all", "q1"],
 	["removed oneOf member", "oneOf", "removed"],
 ])("starts fresh after a saved %s", async (_reason, mode, selectedMemberId) => {
