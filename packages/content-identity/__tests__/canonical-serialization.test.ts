@@ -15,3 +15,10 @@ it("preserves exact lexical key order, escaping, Unicode and omitted undefined f
 		'{"10":[true,null,1.25],"2":0,"a":{"__proto__":"owned","constructor":"value"},"z":"café\\n\\"\\\\"}',
 	);
 });
+
+it("serializes the caller's current values on each call", () => {
+	const value = { name: "first" };
+	expect(serializeIdentity(value)).toBe('{"name":"first"}');
+	value.name = "other";
+	expect(serializeIdentity(value)).toBe('{"name":"other"}');
+});
