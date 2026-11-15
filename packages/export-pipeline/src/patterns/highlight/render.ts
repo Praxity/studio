@@ -1,6 +1,8 @@
 // Adapted from learning-patterns/patterns/highlight/render.js at
 // b3f82d2415982da20dda28b61770d7e85084901b. Copyright (c) 2026 Ariel Harlap.
 // MIT licensed; see LICENSE in this folder. Studio owns this presentation.
+
+import { escapeJsonForHtml } from "@praxity/content-model/constants";
 import { normalizeHeadingLevel } from "@praxity/shared-blocks/heading-styles";
 import { getHighlightStrings } from "@praxity/shared-blocks/i18n/highlight-strings";
 import { labelWithSeparator } from "@praxity/shared-blocks/i18n/label-separator";
@@ -8,7 +10,6 @@ import { resolveLocale } from "@praxity/shared-blocks/i18n/locale";
 import type { HighlightContent } from "@praxity/shared-blocks/types";
 import { markLimit, validateContent } from "learning-patterns/patterns/highlight/logic.js";
 import { strings } from "learning-patterns/patterns/highlight/strings.js";
-import { escapeJsonForHtml } from "../../escape-json-for-html.ts";
 import { escapeHtml } from "../../published-markup.ts";
 import { formatCount } from "./format-count.ts";
 

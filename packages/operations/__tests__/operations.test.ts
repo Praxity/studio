@@ -804,7 +804,8 @@ describe("O1 public registry", () => {
 		);
 	});
 	it.each([
-		["- x", "unsupported-syntax"],
+		["- x", "list-marker"],
+		["- Une ann\u00e9e", "list-marker"],
 		["Parent\n  - x", "list-marker"],
 		["Parent\n  1. x", "list-marker"],
 		["Parent\n\nExtra", "unsupported-syntax"],
@@ -820,7 +821,7 @@ describe("O1 public registry", () => {
 		const f = fixture("# Page\n\n- Leaf\n");
 		expect(
 			f.run("setText", [f.target("list-entry")], { field: "text", text: "- x" }),
-		).toMatchObject({ ok: false, code: "unsupported-syntax" });
+		).toMatchObject({ ok: false, code: "list-marker" });
 	});
 	it("C06a review refuses a status-only change to an existing fill-blank through ordinary setText", () => {
 		const f = fixture("# Page\n::: fill-blank Q\nVerify {a} now.\n:::\n");

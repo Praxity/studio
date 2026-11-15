@@ -798,3 +798,65 @@ describe("LogicEngine", () => {
 		});
 	});
 });
+
+it.each(["unreadable", "full"])(
+	"continues later actions and rules after a %s variable save",
+	(cause) => {
+		const original = cause === "unreadable" ? '{"answers":' : '{"answers":{"q":"saved"}}';
+		const write = vi.fn(() => {
+			throw new Error("ESCORM12STORAGE");
+		});
+		const commit = vi.fn();
+		const store = new VariableStore([{ name: "attempts", dataType: "number" }], {
+			getSuspendData: () => original,
+			setSuspendData: write,
+			commit,
+		});
+		const engine = new LogicEngine(store, [
+			{ id: "next", type: "text", visible: false },
+			{ id: "old", type: "text" },
+			{ id: "later", type: "text", visible: false },
+		]);
+		engine.registerLogicBlock({
+			blockId: "first",
+			conditions: {
+				operator: "and",
+				rules: [{ source: "variable:attempts", comparison: "gte", value: 0 }],
+			},
+			actions: [
+				{ type: "setVariable", target: "attempts", value: 1 },
+				{ type: "show", target: "next" },
+				{ type: "hide", target: "old" },
+			],
+		});
+		engine.registerLogicBlock({
+			blockId: "second",
+			conditions: {
+				operator: "and",
+				rules: [{ source: "variable:attempts", comparison: "gte", value: 0 }],
+			},
+			actions: [
+				{ type: "show", target: "later" },
+				{ type: "jumpToPage", target: "page-next" },
+			],
+		});
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+		try {
+			for (let i = 0; i < 2; i++) {
+				expect(() => engine.evaluate()).not.toThrow();
+				expect(store.get("attempts")).toBe(1);
+				expect(engine.getVisibleBlockIds()).toEqual(new Set(["next", "later"]));
+				expect(engine.getJumpTarget()).toBe("page-next");
+			}
+			expect(commit).not.toHaveBeenCalled();
+			expect(warn).toHaveBeenCalledTimes(2);
+			expect(warn).toHaveBeenCalledWith(
+				"[logic] Variable not saved; existing suspend data kept.",
+				expect.any(cause === "unreadable" ? SyntaxError : Error),
+			);
+			if (cause === "full") expect(warn.mock.calls[0][1].message).toContain("ESCORM12STORAGE");
+		} finally {
+			warn.mockRestore();
+		}
+	},
+);

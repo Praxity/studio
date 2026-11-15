@@ -629,6 +629,16 @@ export function initAssessmentGroups(options: {
 	);
 }
 
+type PendingSubmission = { effect: () => void; due: number; current: () => boolean };
+// React effect replacement hands committed actions to the next runtime on the same root.
+const submissionSchedulers = new WeakMap<
+	HTMLElement,
+	{
+		defer: (effect: () => void, delay: number, current: () => boolean) => void;
+		pending: Map<number, PendingSubmission>;
+	}
+>();
+
 function initAssessmentGroupLifetime(
 	{
 		blocks,
@@ -649,6 +659,30 @@ function initAssessmentGroupLifetime(
 	};
 	const cleanup: Array<() => void> = [];
 	let disposed = false;
+	const pendingSubmissions = new Map<number, PendingSubmission>();
+	const deferSubmission = (effect: () => void, delay: number, current: () => boolean) => {
+		if (disposed) {
+			const replacement = submissionSchedulers.get(root);
+			if (replacement && replacement.defer !== deferSubmission)
+				replacement.defer(effect, delay, current);
+			return;
+		}
+		const timer = setSelfCheckTimeout(
+			() => {
+				pendingSubmissions.delete(timer);
+				effect();
+			},
+			delay,
+			current,
+		);
+		pendingSubmissions.set(timer, { effect, due: Date.now() + delay, current });
+	};
+	const previousScheduler = submissionSchedulers.get(root);
+	const scheduler = { defer: deferSubmission, pending: pendingSubmissions };
+	submissionSchedulers.set(root, scheduler);
+	for (const job of previousScheduler?.pending.values() ?? [])
+		deferSubmission(job.effect, Math.max(0, job.due - Date.now()), job.current);
+	previousScheduler?.pending.clear();
 	const frame = requestSelfCheckFrame(() => {
 		if (disposed || !activation()) return;
 		for (const group of groups) {
@@ -1024,7 +1058,7 @@ function initAssessmentGroupLifetime(
 					});
 					clickHiddenSubmit(member.el, current, group.showResultsSummary);
 					if (!current()) return;
-					setSelfCheckTimeout(
+					deferSubmission(
 						() => {
 							// A committed native action survives a React rerender within the same lifetime.
 							if (!current() || refuseEndedSession()) return;
@@ -1107,7 +1141,7 @@ function initAssessmentGroupLifetime(
 						clickHiddenSubmit(member.el, current, focusGroupResults);
 				}
 				if (!current()) return;
-				setSelfCheckTimeout(
+				deferSubmission(
 					() => {
 						if (!current() || refuseEndedSession()) return;
 						if (!root.isConnected || members.some((member) => !root.contains(member.el))) return;
@@ -1159,6 +1193,12 @@ function initAssessmentGroupLifetime(
 	return () => {
 		disposed = true;
 		window.cancelAnimationFrame(frame);
+		for (const timer of pendingSubmissions.keys()) window.clearTimeout(timer);
+		// Only a synchronous replacement may inherit the cancelled work; unmount drops it.
+		queueMicrotask(() => {
+			if (submissionSchedulers.get(root) === scheduler) submissionSchedulers.delete(root);
+			pendingSubmissions.clear();
+		});
 		cleanup.forEach((restore) => restore());
 	};
 }

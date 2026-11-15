@@ -265,17 +265,23 @@ export const RULE_METADATA = {
 		[],
 		["Length is readability guidance, not a WCAG maximum."],
 	),
-	"gif-flash-threshold": metadata(
-		"imageMedia",
-		"recommended",
-		"blockSettings",
-		"conformance",
-		"low",
-		[wcag("2.3.1", "A")],
-		[
-			"Frame timing is estimated from the source GIF; rendered size and flash area still require human review.",
-		],
-	),
+	"gif-flash-unchecked": metadata("imageMedia", "recommended", "blockSettings", "advisory", "low", [
+		wcag("2.3.1", "A"),
+	]),
+	"gif-flash-threshold": {
+		...metadata(
+			"imageMedia",
+			"recommended",
+			"blockSettings",
+			"conformance",
+			"low",
+			[wcag("2.3.1", "A")],
+			[
+				"Frame timing is estimated from the source GIF; rendered size and flash area still require human review.",
+			],
+		),
+		exportPolicy: "block",
+	},
 	"images-of-text": metadata(
 		"imageMedia",
 		"recommended",
@@ -880,17 +886,23 @@ export const RULE_METADATA = {
 		"designSystem",
 		"critical",
 		"designSystem",
-		"conformance",
+		"advisory",
 		"high",
 		[wcag("1.4.3", "AA")],
+		[
+			"Published body and button text colours are corrected at render time by resolveDesignTokens; authored colours do not establish a rendered contrast failure.",
+		],
 	),
 	"theme-button-text-contrast": metadata(
 		"designSystem",
 		"critical",
 		"designSystem",
-		"conformance",
+		"advisory",
 		"high",
 		[wcag("1.4.3", "AA")],
+		[
+			"Published body and button text colours are corrected at render time by resolveDesignTokens; authored colours do not establish a rendered contrast failure.",
+		],
 	),
 	"theme-accent-on-background-contrast": metadata(
 		"designSystem",
@@ -982,11 +994,5 @@ export function isExportBlockingIssue(issue: {
 	rule: string;
 }): boolean {
 	const rule = getRuleMetadata(issue.rule);
-	return (
-		issue.outcome === "failed" &&
-		rule.kind === "conformance" &&
-		rule.confidence === "high" &&
-		rule.displaySeverity === "critical" &&
-		rule.exportPolicy === "block"
-	);
+	return issue.outcome === "failed" && rule.exportPolicy === "block";
 }
