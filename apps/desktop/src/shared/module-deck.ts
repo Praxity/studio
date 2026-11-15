@@ -23,12 +23,8 @@ export function moduleDeckOptions(
 		for (const block of flattenLogicBlocks(page.blocks)) {
 			const rule = block.data.deckGate;
 			if (rule === undefined) continue;
-			if (
-				!["assessment", "assessmentGroup"].includes(block.type) ||
-				(rule !== "attempt" && rule !== "pass")
-			)
-				throw new Error("deckGate must be attempt or pass on an assessment or assessment group");
-			gates[block.id] = rule;
+			// Grammar owns authored gate settings; the compiler validates resolved gates.
+			gates[block.id] = rule as (typeof gates)[string];
 		}
 	}
 	return enabled === true ? { gates, stops } : undefined;

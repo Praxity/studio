@@ -11,6 +11,7 @@ import { blocksToText, optionFeedbackHtml } from "@praxity/shared-blocks/assessm
 import { flattenLogicBlocks } from "@praxity/shared-blocks/logic/flatten-blocks";
 import { sanitizeHtml } from "@praxity/shared-blocks/sanitize";
 import type { AssessmentBlockData, ChoiceResponse } from "@praxity/shared-blocks/types";
+import { selectCanvasPage } from "../../shared/canvas-page-selection";
 import type { CanvasPageScope } from "../../shared/editor-session";
 import { type ResolvedCourseIdentity, resolveReadIdentityId } from "../identity-store";
 
@@ -151,16 +152,11 @@ export function canvasPageAdmission(
 		pageId: resolveReadIdentityId(current, captured.pageId),
 		pageIds: captured.pageIds?.map((id) => resolveReadIdentityId(current, id)),
 	};
-	// Position is only a fallback for a retired transient ID, such as an outside title edit.
-	const pageIndex =
-		fields.find((field) => field.lessonId === scope.lessonId && field.pageId === scope.pageId)
-			?.pageIndex ?? scope.pageIndex;
-	const candidate = fields.find(
-		(field) => field.lessonId === scope.lessonId && field.pageIndex === pageIndex,
-	);
-	const removed =
-		candidate && candidate.pageId !== scope.pageId && scope.pageIds?.includes(candidate.pageId);
-	const selected = candidate && !removed ? pageIndex : 0;
+	const selected =
+		selectCanvasPage(
+			fields.filter((field) => field.lessonId === scope.lessonId),
+			scope,
+		)?.pageIndex ?? 0;
 	return (field: CanvasPageScope) =>
 		field.lessonId === scope.lessonId && (scope.allLessonPages || field.pageIndex === selected);
 }

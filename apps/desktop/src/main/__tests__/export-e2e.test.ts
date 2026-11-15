@@ -14,13 +14,16 @@ import path from "node:path";
 import type { IdentityNode } from "@praxity/content-identity";
 import { buildScormPackage } from "@praxity/export-pipeline";
 import { ISLAND_MANIFEST_ENTRY_NAMES } from "@praxity/export-pipeline/bundle-viewer";
+import { contrastRatio } from "@praxity/shared-blocks/color-math";
 import AdmZip from "adm-zip";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
+	persistFixtureIdentity,
 	persistLegacyPendingFixture,
 	readIdentityFixture,
 } from "../../test-utils/identity-fixture";
 import { projectDiskSnapshot } from "../../test-utils/interrupted-project-write";
+import { signalGif } from "../../test-utils/signal-gif";
 import { runPraxityCli } from "../cli";
 import { buildExportInputFromProject } from "../export/build-export-input-from-project";
 import { exportProject } from "../export/export-project";
@@ -101,6 +104,7 @@ describe("SCORM export end-to-end", () => {
 		);
 		await writeFile(path.join(exportAssetsDir, "styles-lite.css"), "", "utf-8");
 		await mkdir(path.join(exportAssetsDir, "schemas", "scorm2004"), { recursive: true });
+		await mkdir(path.join(exportAssetsDir, "schemas", "scorm12"), { recursive: true });
 		await writeFile(path.join(exportAssetsDir, "review-comments.js"), "", "utf-8");
 		await writeFile(path.join(exportAssetsDir, "review-comments.css"), "", "utf-8");
 		await mkdir(path.join(exportAssetsDir, "islands"), { recursive: true });
@@ -1487,6 +1491,189 @@ describe("SCORM export end-to-end", () => {
 			expect(JSON.parse(unchanged.stdout)).toEqual({ ok: true, changed: false });
 		},
 	);
+
+	it.each(["en", "fr"] as const)("refuses flashing GIF export with %s advice", async (locale) => {
+		await writeFile(
+			path.join(projectDir, "lesson-1.prax"),
+			"---\ntitle: Signal\n---\n# Signal\n\n![Signal](/assets/signal.gif)\n",
+		);
+		await writeFile(path.join(projectDir, "assets/signal.gif"), signalGif(5));
+		await persistFixtureIdentity(projectDir);
+		const result = await runPraxityCli(
+			[
+				"export",
+				projectDir,
+				"--format",
+				"html",
+				"--output",
+				path.join(exportAssetsDir, "signal.zip"),
+				"--lang",
+				locale,
+			],
+			{ appVersion: "1.0.0", exportAssetsDir },
+		);
+		expect(result.exitCode).toBe(1);
+		expect(JSON.parse(result.stdout)).toMatchObject({
+			error: {
+				code: "accessibility_blocked",
+				message:
+					locale === "fr"
+						? "Des problèmes d’accessibilité empêchent l’exportation. Corrigez les problèmes signalés, puis réessayez."
+						: "Accessibility issues blocked export. Fix the reported issues, then try again.",
+				details: { issues: [expect.objectContaining({ rule: "gif-flash-threshold" })] },
+			},
+		});
+		expect(result.stderr).toContain(locale === "fr" ? "Corrigez" : "Fix the reported issues");
+		const issue = JSON.parse(result.stdout).error.details.issues[0];
+		expect(issue.sourceLocation).toBe("/assets/signal.gif");
+		expect(issue.message).toContain("/assets/signal.gif");
+		expect(issue.message).toContain(
+			locale === "fr"
+				? "Remplacez-le ou ralentissez l\u2019animation"
+				: "Replace it or slow the animation",
+		);
+		expect(JSON.parse(result.stdout).error.message).not.toContain("?");
+		expect(issue.message).not.toContain("?");
+	});
+
+	it.each(["dialogue", "encoded-space", "encoded-unicode"])(
+		"refuses flashing GIF export in %s references",
+		async (kind) => {
+			const name =
+				kind === "encoded-space"
+					? "my signal.gif"
+					: kind === "encoded-unicode"
+						? "caf\u00e9.gif"
+						: "signal.gif";
+			const reference = `/assets/${encodeURIComponent(name)}`;
+			const source =
+				kind === "dialogue"
+					? `---\ntitle: Dialogue\ncast:\n  alex:\n    name: Alex\n    avatar: ${reference}\n---\n# Dialogue\n::: dialogue\n- alex: Hello\n:::\n`
+					: `---\ntitle: Signal\n---\n# Signal\n\n![Signal](${reference})\n`;
+			await writeFile(path.join(projectDir, "lesson-1.prax"), source);
+			await writeFile(path.join(projectDir, "assets", name), signalGif(5));
+			await expect(
+				exportProject({
+					manifestPolicy: "write",
+					projectDir,
+					format: "html",
+					exportAssetsDir,
+					scope: "course",
+					fallbackCompletionThreshold: 1,
+					enforceAccessibility: true,
+				}),
+			).rejects.toMatchObject({
+				issues: [expect.objectContaining({ rule: "gif-flash-threshold" })],
+			});
+		},
+	);
+
+	it.each(["en", "fr"] as const)(
+		"exports an oversized GIF with %s manual-review advice",
+		async (locale) => {
+			await writeFile(
+				path.join(projectDir, "lesson-1.prax"),
+				"---\ntitle: Recording\n---\n# Recording\n\n![Recording](/assets/recording.gif)\n",
+			);
+			await copyFile(
+				"packages/editor-core/src/lib/a11y/__tests__/fixtures/gif-flash/oversized-canvas.gif",
+				path.join(projectDir, "assets/recording.gif"),
+			);
+			await persistFixtureIdentity(projectDir);
+			const result = await runPraxityCli(
+				[
+					"export",
+					projectDir,
+					"--format",
+					"html",
+					"--output",
+					path.join(exportAssetsDir, "recording.zip"),
+					"--lang",
+					locale,
+				],
+				{ appVersion: "1.0.0", exportAssetsDir },
+			);
+			expect(result.exitCode, result.stderr).toBe(0);
+			const diagnostic = JSON.parse(result.stdout).warnings.find(
+				(warning: { code: string }) => warning.code === "gif-flash-unchecked",
+			);
+			expect(diagnostic).toMatchObject({ severity: "warning", file: "/assets/recording.gif" });
+			expect(diagnostic.message).toContain(
+				locale === "fr" ? "trop volumineux" : "too large to check for flashing",
+			);
+			expect(diagnostic.hint).toContain(locale === "fr" ? "vous-m\u00eame" : "yourself");
+			expect(diagnostic.message + diagnostic.hint).not.toContain("?");
+			const line = result.stderr.split("\n").find((line) => line.includes("/assets/recording.gif"));
+			expect(line).toBeDefined();
+			expect(line?.match(/\/assets\/recording\.gif/g)).toHaveLength(1);
+			expect(line).not.toContain("..");
+			if (locale === "fr") expect(line).toContain("pour qu\u2019on puisse v\u00e9rifier");
+		},
+	);
+
+	it.each(["html", "scorm-1.2", "scorm-2004"] as const)(
+		"refuses flashing GIFs before %s packaging",
+		async (format) => {
+			await writeFile(
+				path.join(projectDir, "lesson-1.prax"),
+				"---\ntitle: Signal\n---\n# Signal\n\n![Signal](/assets/signal.gif)\n",
+			);
+			await writeFile(path.join(projectDir, "assets/signal.gif"), signalGif(5));
+			await expect(
+				exportProject({
+					manifestPolicy: "write",
+					projectDir,
+					format,
+					exportAssetsDir,
+					scope: "course",
+					fallbackCompletionThreshold: 1,
+					enforceAccessibility: true,
+				}),
+			).rejects.toMatchObject({
+				name: "ExportAccessibilityError",
+				issues: [expect.objectContaining({ rule: "gif-flash-threshold" })],
+			});
+		},
+	);
+
+	it("exports a slow GIF and corrected body and button colours", async () => {
+		await writeFile(
+			path.join(projectDir, "lesson-1.prax"),
+			"---\ntitle: Signal\ndesign:\n  colorText: '#eeeeee'\n  colorAccent: '#eeeeee'\n  colorBackground: '#ffffff'\n  colorButtonText: '#eeeeee'\n  colorButtonBackground: '#ffffff'\n---\n# Signal\n\n![Signal](/assets/signal.gif)\n",
+		);
+		await writeFile(path.join(projectDir, "assets/signal.gif"), signalGif(60));
+		const result = await exportProject({
+			manifestPolicy: "write",
+			projectDir,
+			format: "html",
+			exportAssetsDir,
+			scope: "course",
+			fallbackCompletionThreshold: 1,
+			enforceAccessibility: true,
+		});
+		expect(result.criticalAccessibilityIssues).toEqual([]);
+		expect(result.zip.byteLength).toBeGreaterThan(0);
+		const zip = new AdmZip(result.zip);
+		const css = zip
+			.getEntries()
+			.filter((entry) => entry.entryName.endsWith(".css"))
+			.map((entry) => zip.readAsText(entry))
+			.join("\n");
+		const colour = (token: string): string => {
+			const value = css.match(new RegExp(`${token}:\\s*(#[0-9a-fA-F]{6})`))?.[1];
+			if (!value) throw new Error(`Missing published colour: ${token}`);
+			return value;
+		};
+		expect(
+			contrastRatio(colour("--praxity-color-text"), colour("--praxity-color-background")),
+		).toBeGreaterThanOrEqual(12);
+		expect(
+			contrastRatio(
+				colour("--praxity-color-button-text"),
+				colour("--praxity-color-button-background"),
+			),
+		).toBeGreaterThanOrEqual(4.5);
+	});
 
 	it("exports decorative card images without an accessibility override", async () => {
 		await writeFile(

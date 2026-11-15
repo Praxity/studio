@@ -3,6 +3,7 @@ import { readFile, realpath, stat } from "node:fs/promises";
 import { createServer, type IncomingMessage, request, type ServerResponse } from "node:http";
 import type { Socket } from "node:net";
 import path from "node:path";
+import { createTranslator } from "use-intl/core";
 import { ZodError, z } from "zod";
 import type { CanvasPageScope } from "../../shared/editor-session";
 import { studioPortSchema } from "../../shared/ipc-schemas";
@@ -14,6 +15,8 @@ import {
 	projectReadErrorKey,
 } from "../../shared/project-write-errors";
 import { DEFAULT_APP_SETTINGS } from "../../shared/types";
+import cliEn from "../cli-messages/en.json" with { type: "json" };
+import cliFr from "../cli-messages/fr.json" with { type: "json" };
 import { CoursePreviewService } from "../course-preview-service";
 import { CoursePreviewStateStore } from "../course-preview-state-store";
 import { assertPlainIdentityStore } from "../identity-store";
@@ -57,6 +60,7 @@ const STUDIO_IDENTITY = z
 	.strict();
 
 export interface StudioServerOptions {
+	locale?: "en" | "fr";
 	projectDir: string;
 	appVersion: string;
 	editorAssetsDir: string;
@@ -144,15 +148,18 @@ function identifyStudio(port: number): Promise<string | null> {
 	});
 }
 
-async function readBody(req: IncomingMessage): Promise<unknown> {
+async function readBody(
+	req: IncomingMessage,
+	t: ReturnType<typeof createTranslator>,
+): Promise<unknown> {
 	if (!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(req.headers["content-type"] ?? "")) {
-		reject(415, "media_type", "Use application/json");
+		reject(415, "media_type", t("serverRefusals.mediaType"));
 	}
 	if (req.headers["content-encoding"] && req.headers["content-encoding"] !== "identity") {
-		reject(415, "content_encoding", "Encoded bodies are not accepted");
+		reject(415, "content_encoding", t("serverRefusals.encoding"));
 	}
 	if (Number(req.headers["content-length"]) > MAX_BODY_BYTES) {
-		reject(413, "body_too_large", "Request body is too large");
+		reject(413, "body_too_large", t("serverRefusals.bodySize"));
 	}
 	const body = await new Promise<Buffer>((resolve, rejectBody) => {
 		let size = 0;
@@ -168,8 +175,7 @@ async function readBody(req: IncomingMessage): Promise<unknown> {
 			cleanup();
 			rejectBody(error);
 		};
-		const abort = () =>
-			fail(new RequestError(400, "request_aborted", "Request body was interrupted"));
+		const abort = () => fail(new RequestError(400, "request_aborted", t("serverRefusals.aborted")));
 		const data = (chunk: Buffer) => {
 			size += chunk.byteLength;
 			if (size > MAX_BODY_BYTES) {
@@ -182,7 +188,7 @@ async function readBody(req: IncomingMessage): Promise<unknown> {
 			// Drain oversized chunked uploads without retaining them. Closing while the
 			// client is still sending can reset its socket before it receives the 413.
 			if (oversized)
-				rejectBody(new RequestError(413, "body_too_large", "Request body is too large"));
+				rejectBody(new RequestError(413, "body_too_large", t("serverRefusals.bodySize")));
 			else resolve(Buffer.concat(chunks));
 		};
 		req.on("data", data).once("end", end).once("error", fail).once("aborted", abort);
@@ -190,18 +196,18 @@ async function readBody(req: IncomingMessage): Promise<unknown> {
 	try {
 		return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(body));
 	} catch {
-		reject(400, "invalid_json", "Request must contain valid UTF-8 JSON");
+		reject(400, "invalid_json", t("serverRefusals.json"));
 	}
 }
 
 // Capture only trusted build output. Project files never participate in editor routing.
-async function uiFiles(editorAssetsDir: string) {
+async function uiFiles(editorAssetsDir: string, t: ReturnType<typeof createTranslator>) {
 	let root: string;
 	try {
 		root = await realpath(editorAssetsDir);
 		if (!(await stat(root)).isDirectory()) throw new Error("Missing canvas directory");
 	} catch (cause) {
-		throw new Error("Browser editor assets are unavailable. Rebuild the standalone CLI.", {
+		throw new Error(t("serverRefusals.browserAssets"), {
 			cause,
 		});
 	}
@@ -216,18 +222,20 @@ export function defaultStudioPort(canonicalRoot: string): number {
 }
 
 export async function startStudioServer(options: StudioServerOptions): Promise<StudioServer> {
+	const locale = options.locale ?? "en";
+	const t = createTranslator({ locale, messages: locale === "fr" ? cliFr : cliEn });
 	assertProjectWritesAllowed();
 	const explicitPort =
 		options.port === undefined ? undefined : studioPortSchema.parse(options.port);
 	const projectRoot = await assertAllowedProjectRoot(options.projectDir);
-	const ui = await uiFiles(options.editorAssetsDir);
+	const ui = await uiFiles(options.editorAssetsDir, t);
 	const canonical = (root: string) => (process.platform === "win32" ? root.toLowerCase() : root);
 	const port = explicitPort ?? defaultStudioPort(canonical(projectRoot));
 	if (
 		isDesktopSubPath(canonical(projectRoot), canonical(ui.root)) ||
 		isDesktopSubPath(canonical(ui.root), canonical(projectRoot))
 	) {
-		throw new Error("Editor assets and project files must have separate roots");
+		throw new Error(t("serverRefusals.roots"));
 	}
 	let canvasScript: string;
 	try {
@@ -241,7 +249,7 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 		canvasScript = String(bytes);
 		if (!canvasScript.trim()) throw new Error("Empty canvas.js");
 	} catch (cause) {
-		throw new Error("Canvas assets are unavailable. Rebuild the standalone CLI.", { cause });
+		throw new Error(t("serverRefusals.canvasAssets"), { cause });
 	}
 	// Claim the port before identity persistence, preview compilation and watcher startup.
 	const server = createServer({
@@ -277,8 +285,8 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 			const holder = await identifyStudio(port);
 			throw new Error(
 				holder
-					? `Port ${port} is already used by Studio for course "${holder}". Stop that Studio or choose another --port.`
-					: `Port ${port} is already used by another program. Stop it or choose another --port.`,
+					? t("serverRefusals.studioPort", { port, holder })
+					: t("serverRefusals.foreignPort", { port }),
 				{ cause: error },
 			);
 		}
@@ -341,6 +349,7 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 							registerDownload: readOnly.registerDownload,
 						}
 					: undefined,
+				locale,
 			);
 		} catch (error) {
 			try {
@@ -391,7 +400,7 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 				Buffer.byteLength(supplied) !== Buffer.byteLength(expected) ||
 				!timingSafeEqual(Buffer.from(supplied), Buffer.from(expected))
 			) {
-				reject(401, "unauthorized", "Session capability is required");
+				reject(401, "unauthorized", t("serverRefusals.capability"));
 			}
 		}
 		function requireLocalLaunch(req: IncomingMessage) {
@@ -405,7 +414,7 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 				!["none", "same-origin"].includes(String(req.headers["sec-fetch-site"])) &&
 				!sameSiteDocument
 			)
-				reject(403, "origin_forbidden", "Canvas compilation requires a local launch");
+				reject(403, "origin_forbidden", t("serverRefusals.localLaunch"));
 		}
 		async function serveIdentityGate(req: IncomingMessage, res: ServerResponse) {
 			requireLocalLaunch(req);
@@ -443,36 +452,36 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 		async function handle(req: IncomingMessage, res: ServerResponse, signal: AbortSignal) {
 			for (const [name, value] of Object.entries(privateHeaders)) res.setHeader(name, value);
 			try {
-				if (closing) reject(503, "session_closed", "Studio session is closing");
+				if (closing) reject(503, "session_closed", t("serverRefusals.closing"));
 				for (const name of ["host", "origin", "authorization", "content-type"]) {
 					let count = 0;
 					for (let i = 0; i < req.rawHeaders.length; i += 2) {
 						if (req.rawHeaders[i].toLowerCase() === name) count++;
 					}
-					if (count > 1) reject(400, "duplicate_header", "Duplicate security header");
+					if (count > 1) reject(400, "duplicate_header", t("serverRefusals.header"));
 				}
 				if (req.headers.host !== new URL(origin).host)
-					reject(403, "host_forbidden", "Host is not authorized");
+					reject(403, "host_forbidden", t("serverRefusals.host"));
 				if (req.headers.origin !== undefined && req.headers.origin !== origin)
-					reject(403, "origin_forbidden", "Origin is not authorized");
+					reject(403, "origin_forbidden", t("serverRefusals.origin"));
 				if (!["GET", "HEAD", "POST"].includes(req.method ?? ""))
-					reject(405, "http_method", "HTTP method is not available");
+					reject(405, "http_method", t("serverRefusals.method"));
 				const route = req.url ?? "";
 				if (route === "/") {
-					if (req.method !== "GET") reject(405, "http_method", "Launch requires GET");
+					if (req.method !== "GET") reject(405, "http_method", t("serverRefusals.launchGet"));
 					// An explicit empty fragment prevents the ready URL's bearer reaching learner HTML.
 					res.writeHead(303, { Location: "/launch?canvas=read#" });
 					res.end();
 					return;
 				}
 				if (route.startsWith("/launch?canvas=")) {
-					if (req.method !== "GET") reject(405, "http_method", "Launch requires GET");
+					if (req.method !== "GET") reject(405, "http_method", t("serverRefusals.launchGet"));
 					const encoded = route.slice("/launch?canvas=".length);
 					let target = "";
 					try {
 						target = decodeURIComponent(encoded);
 					} catch {
-						reject(404, "not_found", "Resource is not available");
+						reject(404, "not_found", t("serverRefusals.resource"));
 					}
 					if (
 						encodeURIComponent(target) !== encoded ||
@@ -481,7 +490,7 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 							!readOnly.hasCanvasDocument(target) &&
 							!readOnly.currentCanvasDocument(target))
 					)
-						reject(404, "not_found", "Resource is not available");
+						reject(404, "not_found", t("serverRefusals.resource"));
 					const compile = target === "1" || target === "read";
 					if (target !== "read" && (await serveIdentityGate(req, res))) return;
 					let destination = `/canvas${readOnly.currentCanvasDocument(target) ?? target}#session=${token}`;
@@ -505,37 +514,38 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 					return;
 				}
 				if (route === "/launch") {
-					if (req.method !== "GET") reject(405, "http_method", "Launch requires GET");
+					if (req.method !== "GET") reject(405, "http_method", t("serverRefusals.launchGet"));
 					if (await serveIdentityGate(req, res)) return;
 					res.writeHead(303, { Location: "/launch?canvas=1" });
 					res.end();
 					return;
 				}
 				if (route === "/api/identity/confirm") {
-					if (req.method !== "POST") reject(405, "http_method", "Confirmation requires POST");
+					if (req.method !== "POST")
+						reject(405, "http_method", t("serverRefusals.confirmationPost"));
 					if (req.headers.origin !== origin)
-						reject(403, "origin_required", "Confirmation requires the editor Origin");
+						reject(403, "origin_required", t("serverRefusals.confirmationOrigin"));
 					authenticate(req);
 					const { revision } = z
 						.object({ revision: z.string().regex(/^[a-f0-9]{64}$/) })
 						.strict()
-						.parse(await readBody(req));
+						.parse(await readBody(req, t));
 					await session.confirmIdentityRetirements(revision);
 					res.writeHead(303, { Location: "/launch" });
 					res.end();
 					return;
 				}
 				if (route === "/api/identity") {
-					if (req.method !== "GET") reject(405, "http_method", "Identity requires GET");
+					if (req.method !== "GET") reject(405, "http_method", t("serverRefusals.identityGet"));
 					json(res, 200, { service: "praxity-studio", projectDir: projectRoot });
 					return;
 				}
 				if (route === "/api/rpc") {
-					if (req.method !== "POST") reject(405, "http_method", "RPC requires POST");
+					if (req.method !== "POST") reject(405, "http_method", t("serverRefusals.rpcPost"));
 					if (req.headers.origin !== origin)
-						reject(403, "origin_required", "RPC requires the editor Origin");
+						reject(403, "origin_required", t("serverRefusals.rpcOrigin"));
 					authenticate(req);
-					const input = RPC_ENVELOPE.parse(await readBody(req));
+					const input = RPC_ENVELOPE.parse(await readBody(req, t));
 					let canvasPageScope: CanvasPageScope | undefined;
 					if (input.method === "canvasTextSnapshot" || input.method === "canvasTextApply") {
 						const documentPath = req.headers["x-praxity-canvas"];
@@ -543,17 +553,25 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 							typeof documentPath === "string" && documentPath.startsWith("/canvas/")
 								? readOnly.canvasPageScope(documentPath.slice("/canvas".length))
 								: undefined;
-						if (!canvasPageScope)
-							reject(403, "canvas_page_required", "Canvas requires an admitted page");
+						if (!canvasPageScope) reject(403, "canvas_page_required", t("serverRefusals.page"));
 					}
-					json(res, 200, {
-						ok: true,
-						result: await session.invoke(input.method, input.args, canvasPageScope),
-					});
+					let result = await session.invoke(input.method, input.args, canvasPageScope);
+					if (input.method === "canvasPreviewBuild") {
+						const documentPath = req.headers["x-praxity-canvas"];
+						const previous =
+							typeof documentPath === "string" && documentPath.startsWith("/canvas/")
+								? documentPath.slice("/canvas".length)
+								: undefined;
+						if (previous) {
+							const current = readOnly.currentCanvasDocument(previous) ?? previous;
+							result = { ...(result as object), pageId: readOnly.canvasPageScope(current)?.pageId };
+						}
+					}
+					json(res, 200, { ok: true, result });
 					return;
 				}
 				if (route === "/api/session" || route === "/api/events") {
-					if (req.method !== "GET") reject(405, "http_method", "This API requires GET");
+					if (req.method !== "GET") reject(405, "http_method", t("serverRefusals.apiGet"));
 					authenticate(req);
 					if (route === "/api/session") {
 						json(res, 200, {
@@ -562,7 +580,7 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 						});
 						return;
 					}
-					if (streams.size >= 8) reject(429, "stream_limit", "Too many event streams");
+					if (streams.size >= 8) reject(429, "stream_limit", t("serverRefusals.streams"));
 					res.writeHead(200, { "Content-Type": "application/x-ndjson; charset=utf-8" });
 					streams.add(res);
 					const send = (event: unknown) => {
@@ -586,29 +604,29 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 					return;
 				}
 				if (req.method !== "GET" && req.method !== "HEAD")
-					reject(405, "http_method", "Static assets are read-only");
+					reject(405, "http_method", t("serverRefusals.readOnly"));
 				if (route === "/canvas" || route.startsWith("/canvas?")) {
 					expireCanvasAdmissions();
 					const admission = canvasAdmissions.get(route);
 					if (!admission) {
 						if (await retryCanvasNavigation(req, res)) return;
-						reject(401, "unauthorized", "Canvas launch admission is required");
+						reject(401, "unauthorized", t("serverRefusals.admission"));
 					}
 					requireLocalLaunch(req);
 					const read = admission.read;
 					canvasAdmissions.delete(route);
-					if (req.method !== "GET") reject(405, "http_method", "Canvas launch requires GET");
+					if (req.method !== "GET") reject(405, "http_method", t("serverRefusals.canvasGet"));
 					if (canvasBuilding) {
 						if (req.headers["sec-fetch-dest"] !== "document")
-							reject(409, "canvas_busy", "Canvas compilation is already running");
+							reject(409, "canvas_busy", t("serverRefusals.compiling"));
 						const entry = await canvasBuilding;
 						if (!entry || signal.aborted || closing)
-							reject(503, "session_closed", "Canvas launch was cancelled");
+							reject(503, "session_closed", t("serverRefusals.cancelled"));
 						// Share the in-flight capture so queued tabs cannot release each other's output.
 						redirectCanvasDocument(res, read, entry);
 						return;
 					}
-					if (!preview) reject(503, "preview_unavailable", "Course preview is unavailable");
+					if (!preview) reject(503, "preview_unavailable", t("serverRefusals.preview"));
 					let finishBuild: (entry?: string) => void = () => {};
 					canvasBuilding = new Promise<string | undefined>((resolve) => {
 						finishBuild = resolve;
@@ -620,9 +638,9 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 							pages: Array<{ slug: string }>;
 						};
 						if (signal.aborted || closing)
-							reject(503, "session_closed", "Canvas launch was cancelled");
+							reject(503, "session_closed", t("serverRefusals.cancelled"));
 						const page = built.pages[0];
-						if (!page) reject(404, "not_found", "Course has no preview page");
+						if (!page) reject(404, "not_found", t("serverRefusals.noPage"));
 						const entry = new URL(`${encodeURIComponent(page.slug)}.html`, built.entryUrl);
 						redirectCanvasDocument(res, read, entry.pathname);
 						completedEntry = entry.pathname;
@@ -647,7 +665,7 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 						}
 					}
 					const html = await readOnly.readCanvasDocument(relativeUrl, signal);
-					if (html === null) reject(404, "not_found", "Resource is not available");
+					if (html === null) reject(404, "not_found", t("serverRefusals.resource"));
 					const response = await serveStudioAuthorDocument(
 						new Request(`${origin}${route}`, { method: req.method }),
 						html,
@@ -660,7 +678,7 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 					return;
 				}
 				if (await retryCanvasNavigation(req, res)) return;
-				reject(404, "not_found", "Resource is not available");
+				reject(404, "not_found", t("serverRefusals.resource"));
 			} catch (error) {
 				const known = error instanceof RequestError || error instanceof StudioSessionError;
 				// Zod includes unrecognized input keys in its message; they cannot classify project errors.
@@ -718,10 +736,10 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 							: recoveryConflict || recoveryRequired || unsupportedFilesystem
 								? String(error)
 								: fileBusy
-									? "File is in use by another program. Try saving again."
+									? t("serverRefusals.fileBusy")
 									: schemaError
-										? "Request does not match the input schema"
-										: "Project operation failed";
+										? t("serverRefusals.schema")
+										: t("serverRefusals.operation");
 				if (status === 500) console.error("[studio] Project operation failed", error);
 				if (res.headersSent) {
 					res.destroy();
@@ -794,7 +812,7 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 		});
 		server.off("connection", refuseDuringStartup);
 		const address = server.address();
-		if (!address || typeof address === "string") throw new Error("Studio listener did not bind");
+		if (!address || typeof address === "string") throw new Error(t("serverRefusals.listener"));
 		origin = `http://127.0.0.1:${address.port}`;
 		let closePromise: Promise<void> | undefined;
 		return {

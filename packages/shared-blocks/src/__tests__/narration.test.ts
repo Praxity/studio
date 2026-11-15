@@ -734,6 +734,10 @@ describe("block narration model", () => {
 		});
 	});
 
+	it("strips non-spoken URL text but keeps its trailing punctuation", () => {
+		expect(plainNarrationText("See https://example.test/path.")).toBe("See .");
+	});
+
 	it("keeps authored inline punctuation and French spaces in derived narration", () => {
 		const english = plainNarrationText(
 			'<p><span class="inline-tooltip-trigger">magnification</span>, <mark>focus</mark>, and alignment.</p>',
