@@ -1,4 +1,6 @@
 import { randomBytes } from "node:crypto";
+import editorEn from "@praxity/editor-core/messages/en" with { type: "json" };
+import editorFr from "@praxity/editor-core/messages/fr" with { type: "json" };
 import { escapeHtml } from "@praxity/shared-blocks/constants";
 import en from "../cli-messages/en.json" with { type: "json" };
 import fr from "../cli-messages/fr.json" with { type: "json" };
@@ -46,6 +48,20 @@ export const identityReviewMessages = {
 			"Cet enregistrement retirerait du contenu enregistré : {list}. Gardez ce texte, ou faites la modification dans le canevas, où Studio en garde la trace.",
 	},
 };
+
+// These grammar messages name what to use instead and never quote the source, so the band
+// shows them in place of the general repair sentence.
+const URL_REFUSALS = ["svg-data-url", "unsafe-media-url", "unsafe-link-url"] as const;
+
+/** The located repair sentence for a source error, in the course language. */
+export function sourceErrorMessage(
+	locale: "en" | "fr",
+	error: { code: "bad_yaml" | "source_invalid"; diagnostic?: string },
+): string {
+	const refusal = URL_REFUSALS.find((code) => code === error.diagnostic);
+	if (refusal) return (locale === "fr" ? editorFr : editorEn).op.diagnostic[refusal];
+	return identityReviewMessages[locale][error.code === "bad_yaml" ? "badYaml" : "invalidSource"];
+}
 
 export interface StudioIdentityReview {
 	locale: "en" | "fr";

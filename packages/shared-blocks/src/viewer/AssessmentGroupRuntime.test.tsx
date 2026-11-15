@@ -69,6 +69,30 @@ function JournalHarness({ optionalPlan = false }: { optionalPlan?: boolean }) {
 	);
 }
 
+it("cancels a queued journal submission when React unmounts the activity", async () => {
+	const receipt = vi.fn();
+	window.__praxityBlockState = { get: () => null, set: () => {}, getSaveResult: receipt };
+	const view = render(<JournalHarness />);
+	try {
+		const submit = await screen.findByRole("button", { name: "Check all" });
+		for (const name of [/reflection/i, /plan/i])
+			fireEvent.change(screen.getByRole("textbox", { name }), { target: { value: "My response" } });
+		vi.useFakeTimers();
+		fireEvent.click(submit);
+		expect(vi.getTimerCount()).toBeGreaterThan(0);
+		view.unmount();
+		receipt.mockClear();
+		expect(() => act(() => vi.advanceTimersByTime(100))).not.toThrow();
+		expect(receipt).not.toHaveBeenCalled();
+		expect(vi.getTimerCount()).toBe(0);
+	} finally {
+		view.unmount();
+		vi.clearAllTimers();
+		vi.useRealTimers();
+		delete window.__praxityBlockState;
+	}
+});
+
 it("saves the required response and completes with an optional response empty", async () => {
 	const values = new Map<string, unknown>();
 	window.__praxityBlockState = {
@@ -230,6 +254,28 @@ function Harness({
 }
 
 describe("assessment group initializer", () => {
+	it("cancels a submission inherited during a mounted rerender when the successor unmounts", async () => {
+		const receipt = vi.fn();
+		window.__praxityBlockState = { get: () => null, set: () => {}, getSaveResult: receipt };
+		const view = render(<Harness rerenderOnSubmit />);
+		try {
+			const submit = await screen.findByRole("button", { name: "Submit all" });
+			vi.useFakeTimers();
+			fireEvent.click(submit);
+			act(() => vi.advanceTimersByTime(20));
+			view.unmount();
+			receipt.mockClear();
+			expect(() => act(() => vi.advanceTimersByTime(100))).not.toThrow();
+			expect(receipt).not.toHaveBeenCalled();
+			expect(vi.getTimerCount()).toBe(0);
+		} finally {
+			view.unmount();
+			vi.clearAllTimers();
+			vi.useRealTimers();
+			delete window.__praxityBlockState;
+		}
+	});
+
 	it("excludes an ungradable member from the group percentage", async () => {
 		const onComplete = vi.fn();
 		document.addEventListener("praxity:assessment-group-complete", onComplete);

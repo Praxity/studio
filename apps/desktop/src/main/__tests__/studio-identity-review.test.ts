@@ -448,9 +448,27 @@ it("admits author entry and an HTTP edit to a valid lesson while another stays i
 	expect(await Promise.all(opaquePaths.map((path) => readFile(path)))).toEqual(opaque);
 });
 
-it.each(["en", "fr"])(
-	"shows located %s source repair in a blocked retirement gate",
-	async (locale) => {
+const svgDataImage = "![Chart](data:image/svg+xml,%3Csvg%3E%3C/svg%3E)";
+it.each([
+	["en", "::: nosuch\n:::", "Fix the source errors before reviewing content changes."],
+	[
+		"fr",
+		"::: nosuch\n:::",
+		"Corrigez les erreurs du texte source avant d'examiner les modifications du contenu.",
+	],
+	[
+		"en",
+		svgDataImage,
+		"SVG can’t be embedded as a data: URL because it can carry scripts. Use an image file in the project’s assets folder, or a PNG or JPEG data: URL.",
+	],
+	[
+		"fr",
+		svgDataImage,
+		"Une image SVG ne peut pas être intégrée comme URL data:, car elle peut contenir des scripts. Utilisez un fichier image du dossier assets du projet, ou une URL data: PNG ou JPEG.",
+	],
+])(
+	"shows located %s source repair in a blocked retirement gate for %j",
+	async (locale, invalidBlock, repair) => {
 		const files = await fixture(paragraph, paragraph, locale);
 		const { projectDir } = files;
 		await writeFile(
@@ -470,7 +488,7 @@ it.each(["en", "fr"])(
 			join(projectDir, "first.prax"),
 			paragraph.replace("Alpha paragraph about safety.\n\n", ""),
 		);
-		await writeFile(join(projectDir, "second.prax"), "# Second\n\n::: nosuch\n:::\n");
+		await writeFile(join(projectDir, "second.prax"), `# Second\n\n${invalidBlock}\n`);
 		const identity = await bytes(join(projectDir, ".praxity/identity"));
 		const authored = () =>
 			Promise.all(
@@ -492,9 +510,7 @@ it.each(["en", "fr"])(
 					document.querySelector("#review-heading")?.getAttribute("aria-describedby"),
 				).toContain("review-source-error");
 				expect(document.querySelector("#review-source-error")?.textContent).toBe(
-					locale === "fr"
-						? "second.prax: Ligne 3. Corrigez les erreurs du texte source avant d'examiner les modifications du contenu."
-						: "second.prax: Line 3. Fix the source errors before reviewing content changes.",
+					`second.prax: ${locale === "fr" ? "Ligne" : "Line"} 3. ${repair}`,
 				);
 				expect(document.querySelector("main > ul")?.textContent).toContain(
 					"Alpha paragraph about safety.",
