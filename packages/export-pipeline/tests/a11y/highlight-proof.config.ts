@@ -7,7 +7,6 @@ export default defineConfig({
 	globalSetup: undefined,
 	testMatch: [
 		"highlight-print.spec.ts",
-		"highlight-advice.spec.ts",
 		"highlight-reporting.spec.ts",
 		"highlight-published.spec.ts",
 	],

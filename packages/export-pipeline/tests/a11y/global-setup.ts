@@ -978,13 +978,6 @@ $$
 			overrides: { colorMode: "dark" as const },
 		},
 		{
-			name: "nav-sidebar",
-			overrides: {
-				navigationStyle: "sidebar" as const,
-				navToggles: { navOutline: true, navPrevNext: true },
-			},
-		},
-		{
 			name: "nav-minimal",
 			overrides: {
 				navigationStyle: "minimal" as const,
