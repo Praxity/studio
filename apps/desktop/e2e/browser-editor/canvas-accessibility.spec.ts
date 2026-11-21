@@ -146,6 +146,12 @@ for (const lang of ["en", "fr"]) {
 		await expect.poll(() => names(page)).toEqual(refreshed);
 		expect(new Set(await names(page)).size).toBe(refreshed.length);
 		const acknowledge = async (labels: string[], editing: boolean) => {
+			await expect(
+				page.getByRole("heading", {
+					level: 1,
+					name: /^(Some blocks would get new IDs|Certains blocs recevraient de nouveaux identifiants)$/,
+				}),
+			).toBeVisible();
 			const gateFrench = (await page.locator("html").getAttribute("lang")) === "fr";
 			await expect(page.locator("main > ul > li")).toHaveText(
 				labels.map(
