@@ -210,7 +210,8 @@ test("every candidate build requires admission, private candidates included", ()
 	assert.deepEqual(active, [
 		["admit", []],
 		["build", ["admit"]],
-		["publish", ["build"]],
+		["browser-editor", ["admit", "build"]],
+		["publish", ["build", "browser-editor"]],
 	]);
 	assert.equal(
 		enabled(workflow.jobs.build, { pack_version: "", publish_pack: true }, "skipped"),

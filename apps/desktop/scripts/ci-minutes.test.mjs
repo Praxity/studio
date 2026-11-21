@@ -47,6 +47,10 @@ const checkActionlintConfig = (config) =>
 
 const actionsWithoutUploads = new Map([
 	[
+		"actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093",
+		"Downloads this run's sealed CLI archives.",
+	],
+	[
 		"actions/attest-build-provenance@43d14bc2b83dec42d39ecae14e916627a18bb661",
 		"Writes signed provenance to the attestations API, not workflow artifacts.",
 	],
