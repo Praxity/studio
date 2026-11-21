@@ -1,34 +1,4 @@
 import {
-	choiceFactError,
-	choiceStateQuestion,
-	resolveAssessmentDontKnow,
-} from "@praxity/shared-blocks/assessment-choice";
-import { compileBlockStatePolicy } from "@praxity/shared-blocks/block-state-policy";
-import {
-	type ChoiceStateFacts,
-	choiceGroupDefinitionIsValid,
-	choiceGroupFactsAreValid,
-	choiceQuestionSignature,
-	isChoiceStateQuestion,
-} from "@praxity/shared-blocks/choice-state-facts";
-import { isInlineProjectionMetadataKey } from "@praxity/shared-blocks/inline-markdown";
-import { isStatefulBlock } from "@praxity/shared-blocks/types";
-import {
-	COURSE_HOME_DECK_SLOT,
-	COURSE_HOME_LINK_SLOT,
-	DEFAULT_COURSE_HOME_URL,
-} from "./course-home";
-import { fullyDecodeEntities } from "./html-entities";
-import {
-	type DeckPage,
-	deckPageData,
-	type ModuleDeckOptions,
-	validateModuleDeck,
-} from "./module-deck";
-import { deckStrings } from "./module-deck-strings";
-import { narrationPlaylistFromConfig } from "./narration-playlist";
-
-import {
 	compileVisibleExpression,
 	type DeckDesign,
 	type ImageEffectsMap,
@@ -42,6 +12,19 @@ import {
 	navArchetypeToLayoutClass,
 } from "@praxity/grammar/src/nav-archetype-layout.ts";
 import { getPageFocusDefault } from "@praxity/grammar/src/page-nav-overrides.ts";
+import {
+	choiceFactError,
+	choiceStateQuestion,
+	resolveAssessmentDontKnow,
+} from "@praxity/shared-blocks/assessment-choice";
+import { compileBlockStatePolicy } from "@praxity/shared-blocks/block-state-policy";
+import {
+	type ChoiceStateFacts,
+	choiceGroupDefinitionIsValid,
+	choiceGroupFactsAreValid,
+	choiceQuestionSignature,
+	isChoiceStateQuestion,
+} from "@praxity/shared-blocks/choice-state-facts";
 import { ensureContrast, formatOklch } from "@praxity/shared-blocks/color-math";
 import { estimateBlockTime } from "@praxity/shared-blocks/content-density";
 import { externalLinkIndicatorHtml } from "@praxity/shared-blocks/external-link-utils";
@@ -51,6 +34,7 @@ import { getPreviewStrings, getStrings, interpolate } from "@praxity/shared-bloc
 import { imageFloatRegions } from "@praxity/shared-blocks/image-float";
 import {
 	getInlineField,
+	isInlineProjectionMetadataKey,
 	prepareInlineBlocks,
 	renderInlineIcons,
 } from "@praxity/shared-blocks/inline-markdown";
@@ -75,6 +59,21 @@ import {
 } from "@praxity/shared-blocks/section-grouping";
 import { resolveDesignTokens } from "@praxity/shared-blocks/themes/resolve-design-tokens";
 import type { AssessmentBlockData, PraxityBlock, PraxityPage } from "@praxity/shared-blocks/types";
+import { isStatefulBlock } from "@praxity/shared-blocks/types";
+import {
+	COURSE_HOME_DECK_SLOT,
+	COURSE_HOME_LINK_SLOT,
+	DEFAULT_COURSE_HOME_URL,
+} from "./course-home";
+import { fullyDecodeEntities } from "./html-entities";
+import {
+	type DeckPage,
+	deckPageData,
+	type ModuleDeckOptions,
+	validateModuleDeck,
+} from "./module-deck";
+import { deckStrings } from "./module-deck-strings";
+import { narrationPlaylistFromConfig } from "./narration-playlist";
 import { privateChoicePrintCss } from "./patterns/choice/render";
 import type { LessonHeading } from "./patterns/heading/render";
 import { WRITE_DISTRACTORS_STYLESHEET } from "./patterns/write-distractors/assets";

@@ -1,7 +1,6 @@
-import { applyXapiPrivatePolicy } from "../private-xapi-policy";
-
 import { filterPrivateSuspendData } from "@praxity/shared-blocks/block-state-policy";
 import { declaredCourseActivityId, isAbsoluteIri } from "../activity-id.ts";
+import { applyXapiPrivatePolicy } from "../private-xapi-policy";
 import {
 	assessmentEvidenceMetadata,
 	assessmentRowsEvidence,
