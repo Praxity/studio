@@ -54,6 +54,7 @@ const claims = (sub: string, email: string, extra: Record<string, unknown> = {})
 });
 
 let env: Env;
+let raw: DatabaseSync;
 let tokens: Record<"ana" | "ben" | "staff", string>;
 
 beforeAll(async () => {
@@ -90,6 +91,7 @@ beforeAll(async () => {
 beforeEach(() => {
 	const db = new DatabaseSync(":memory:");
 	db.exec(schema);
+	raw = db;
 	env = {
 		DB: d1(db),
 		ACCESS_TEAM_DOMAIN: TEAM,
@@ -349,5 +351,95 @@ describe("cross-origin course pages", () => {
 				})
 			).status,
 		).toBe(403);
+	});
+});
+
+describe("limits from the security review", () => {
+	it("allows 100 messages a day per learner, even when each minute stays under 10", async () => {
+		const start = Date.now();
+		vi.useFakeTimers({ now: start, toFake: ["Date"] });
+		const token = await sign(signingKey, claims("user-ana", "ana@example.org"));
+		for (let minute = 0; minute < 10; minute++) {
+			vi.setSystemTime(start + minute * 61_000);
+			for (let i = 0; i < 10; i++) {
+				expect(
+					(await call("/threads", { token, body: { ...question, body: `Q${minute}-${i}` } }))
+						.status,
+				).toBe(201);
+			}
+		}
+		// Tokens last 10 minutes, so sign a fresh one after each jump.
+		const fresh = () => sign(signingKey, claims("user-ana", "ana@example.org"));
+		vi.setSystemTime(start + 11 * 61_000);
+		expect((await call("/threads", { token: await fresh(), body: question })).status).toBe(429);
+		vi.setSystemTime(start + 86_401_000 + 10 * 61_000);
+		expect((await call("/threads", { token: await fresh(), body: question })).status).toBe(201);
+	});
+
+	it("shows staff every waiting thread plus the 200 newest, not every thread ever asked", async () => {
+		const insert = raw.prepare(
+			"INSERT INTO help_messages (learner_id, learner_email, thread_id, page_id, body, from_staff, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+		);
+		for (let n = 1; n <= 210; n++) {
+			const id = Number(
+				insert.run(
+					`user-${n}`,
+					`l${n}@example.org`,
+					null,
+					"page-1",
+					`Q${n}`,
+					0,
+					"2026-01-01T00:00:00Z",
+				).lastInsertRowid,
+			);
+			// Every question but the first has a staff reply, so only the first is waiting.
+			if (n > 1)
+				insert.run(`user-${n}`, `l${n}@example.org`, id, null, `A${n}`, 1, "2026-01-01T00:00:01Z");
+		}
+		const ids = [
+			...raw.prepare("SELECT id FROM help_messages WHERE thread_id IS NULL ORDER BY id").all(),
+		].map((r) => Number(r.id));
+		const markup = await (await call("/staff", { token: tokens.staff })).text();
+		expect(markup).toContain(`id="thread-${ids[0]}"`); // waiting, oldest
+		expect(markup).toContain(`id="thread-${ids[209]}"`); // newest
+		expect(markup).toContain(`id="thread-${ids[10]}"`); // the 200th newest
+		expect(markup).not.toContain(`id="thread-${ids[5]}"`); // answered and older than the newest 200
+	});
+
+	it("refuses a path starting with // rather than using it as the staff form's prefix", async () => {
+		const response = await handleRequest(
+			new Request(`${ORIGIN}//evil.example/staff`, {
+				headers: { "Cf-Access-Jwt-Assertion": tokens.staff },
+			}),
+			env,
+		);
+		expect(response.status).toBe(404);
+	});
+
+	it("stops reading a body sent without Content-Length once it passes the size limit", async () => {
+		const big = new TextEncoder().encode(
+			JSON.stringify({ ...question, body: "x".repeat(MAX_REQUEST_BYTES) }),
+		);
+		const stream = new ReadableStream({
+			start(controller) {
+				for (let at = 0; at < big.length; at += 4096) controller.enqueue(big.slice(at, at + 4096));
+				controller.close();
+			},
+		});
+		const request = new Request(`${ORIGIN}/help/threads`, {
+			method: "POST",
+			headers: { "Cf-Access-Jwt-Assertion": tokens.ana, "Content-Type": "application/json" },
+			body: stream,
+			duplex: "half",
+		} as RequestInit);
+		expect(request.headers.get("Content-Length")).toBeNull();
+		expect((await handleRequest(request, env)).status).toBe(413);
+	});
+
+	it("never grants CORS to the null origin, even when it is listed", async () => {
+		env.COURSE_ORIGINS = "null, https://pages.example.net";
+		const response = await call("/threads", { headers: { Origin: "null" } });
+		expect(response.status).toBe(403);
+		expect(response.headers.get("Access-Control-Allow-Origin")).toBeNull();
 	});
 });

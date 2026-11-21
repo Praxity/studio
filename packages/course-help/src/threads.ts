@@ -4,6 +4,10 @@
 export const LIMITS = { pageId: 200, pageTitle: 200, quote: 300, body: 2000 } as const;
 /** Learner messages (questions and replies) allowed per learner per minute. */
 export const WRITES_PER_MINUTE = 10;
+/** Learner messages allowed per learner per day, so one learner can't fill the staff page. */
+export const WRITES_PER_DAY = 100;
+/** The staff page shows every thread waiting for a reply plus this many of the newest. */
+export const STAFF_RECENT_THREADS = 200;
 
 export interface Reply {
 	id: number;
@@ -57,8 +61,21 @@ export type Invalid = "invalid" | "too_large";
 const COLUMNS =
 	"id, learner_id, learner_email, thread_id, page_id, page_title, quote, body, from_staff, read_at, created_at";
 
-// Newest question first; replies oldest first under their question.
+// Newest question first; replies oldest first under their question. Rows arrive in id order.
 function threads(rows: Row[]): StaffThread[] {
+	const replies = new Map<number, Reply[]>();
+	for (const row of rows) {
+		if (row.thread_id === null) continue;
+		const list = replies.get(row.thread_id) ?? [];
+		list.push({
+			id: row.id,
+			body: row.body,
+			fromStaff: row.from_staff === 1,
+			read: row.read_at !== null,
+			createdAt: row.created_at,
+		});
+		replies.set(row.thread_id, list);
+	}
 	return rows
 		.filter((row) => row.thread_id === null)
 		.reverse()
@@ -70,15 +87,7 @@ function threads(rows: Row[]): StaffThread[] {
 			quote: question.quote ?? "",
 			body: question.body,
 			createdAt: question.created_at,
-			replies: rows
-				.filter((row) => row.thread_id === question.id)
-				.map((row) => ({
-					id: row.id,
-					body: row.body,
-					fromStaff: row.from_staff === 1,
-					read: row.read_at !== null,
-					createdAt: row.created_at,
-				})),
+			replies: replies.get(question.id) ?? [],
 		}));
 }
 
@@ -139,8 +148,11 @@ export async function learnerView(db: D1Database, learnerId: string): Promise<Le
 }
 
 const sinceMinute = (now: Date) => new Date(now.getTime() - 60_000).toISOString();
-// The count and the insert are one statement, so concurrent requests can't overshoot the limit.
-const UNDER_LIMIT = `(SELECT COUNT(*) FROM help_messages WHERE learner_id = ? AND from_staff = 0 AND created_at > ?) < ${WRITES_PER_MINUTE}`;
+const sinceDay = (now: Date) => new Date(now.getTime() - 86_400_000).toISOString();
+// The counts and the insert are one statement, so concurrent requests can't overshoot either limit.
+// Binds: learner ID, sinceMinute, learner ID, sinceDay.
+const UNDER_LIMIT = `(SELECT COUNT(*) FROM help_messages WHERE learner_id = ? AND from_staff = 0 AND created_at > ?) < ${WRITES_PER_MINUTE}
+	AND (SELECT COUNT(*) FROM help_messages WHERE learner_id = ? AND from_staff = 0 AND created_at > ?) < ${WRITES_PER_DAY}`;
 
 /** Returns false when the learner is over the write limit. */
 export async function ask(
@@ -164,6 +176,8 @@ export async function ask(
 			now.toISOString(),
 			learner.id,
 			sinceMinute(now),
+			learner.id,
+			sinceDay(now),
 		)
 		.first();
 	return inserted !== null;
@@ -194,6 +208,8 @@ export async function learnerReply(
 			learner.id,
 			learner.id,
 			sinceMinute(now),
+			learner.id,
+			sinceDay(now),
 		)
 		.first();
 	if (inserted) return "saved";
@@ -215,9 +231,19 @@ export async function markRead(db: D1Database, learnerId: string, now = new Date
 		.run();
 }
 
+// A thread waits for a reply when its newest message isn't from staff.
+const WAITING = `(SELECT from_staff FROM help_messages m WHERE m.id = q.id OR m.thread_id = q.id ORDER BY m.id DESC LIMIT 1) = 0`;
+
+/** Every thread waiting for a reply, plus the newest STAFF_RECENT_THREADS, so the page stays a bounded size. */
 export async function allThreads(db: D1Database): Promise<StaffThread[]> {
 	const { results } = await db
-		.prepare(`SELECT ${COLUMNS} FROM help_messages ORDER BY id`)
+		.prepare(
+			`WITH shown AS (
+				SELECT q.id FROM help_messages q WHERE q.thread_id IS NULL AND (${WAITING}
+					OR q.id IN (SELECT id FROM help_messages WHERE thread_id IS NULL ORDER BY id DESC LIMIT ?)))
+			SELECT ${COLUMNS} FROM help_messages WHERE id IN shown OR thread_id IN shown ORDER BY id`,
+		)
+		.bind(STAFF_RECENT_THREADS)
 		.all<Row>();
 	return threads(results);
 }

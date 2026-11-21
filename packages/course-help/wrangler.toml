@@ -1,6 +1,8 @@
 name = "praxity-course-help"
 main = "src/worker.ts"
 compatibility_date = "2026-07-22"
+# Serve only on the route behind Access; the workers.dev hostname would sit outside it.
+workers_dev = false
 
 [vars]
 # Your Cloudflare Access team domain and the application's audience (AUD) tag.

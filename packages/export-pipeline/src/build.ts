@@ -1305,8 +1305,8 @@ function withDeploymentHead(
 	if (html.indexOf(DEPLOYMENT_HEAD_MARKER, slot + DEPLOYMENT_HEAD_MARKER.length) !== -1) {
 		throw new Error(`Course page has more than one deployment head slot: ${filePath}`);
 	}
-	const deployed = html.replace(
-		DEPLOYMENT_HEAD_MARKER,
+	// A replacer function, so "$" in a page title or label is inserted as text, not a replacement pattern.
+	const deployed = html.replace(DEPLOYMENT_HEAD_MARKER, () =>
 		typeof head === "string" ? head : head(filePath),
 	);
 	if (courseHomeUrl === undefined) return deployed;

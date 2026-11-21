@@ -67,7 +67,8 @@ course files beside it. Then `endpoint: help/` works without CORS.
 
 If the course is hosted somewhere else, set `endpoint` to the Worker's absolute HTTPS URL and
 list the course origin, such as `https://learn.example.net`, in `COURSE_ORIGINS`. The Worker then
-answers that origin with credentialed CORS and refuses all other origins. In the Access
+answers that origin with credentialed CORS and refuses all other origins. Never list `null`: it is
+the origin of `file://` pages and sandboxed frames on any site, and the Worker refuses it. In the Access
 application's CORS settings, allow that origin with credentials and let `OPTIONS` requests
 through, because browsers send preflights without cookies. Learners must already have an Access
 session for the Worker's hostname; otherwise the panel says it can't load their questions.
@@ -85,8 +86,11 @@ text, the conversation so far and a reply form. A learner who isn't in `STAFF_EM
   not-before. It refuses tokens without an email, such as service tokens.
 - Threads belong to the token's `sub`, the stable Access user ID. A learner can read and reply
   only to their own threads.
-- A learner can send 10 messages (questions and replies together) per minute. The count and the
-  insert are one statement in D1.
+- Staff are decided by the token's email, so the Access identity provider must assert verified
+  email addresses (one-time PIN and Google do). Learners and staff share the Access application.
+- A learner can send 10 messages (questions and replies together) per minute and 100 per day.
+  The counts and the insert are one statement in D1.
+- The staff page shows every thread waiting for a reply plus the 200 newest threads.
 - Request bodies are limited to 16 KiB. Fields: page ID 200 characters, page title 200,
   quote 300, message 2,000.
 

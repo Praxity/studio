@@ -61,17 +61,38 @@ function html(body: string, status = 200): Response {
 const failure = (error: Invalid) =>
 	error === "too_large" ? json({ error }, 413) : json({ error }, 400);
 
+// Reads at most MAX_REQUEST_BYTES, stopping early, so a body sent without Content-Length can't be buffered whole.
 async function readBody(request: Request): Promise<string | null> {
 	if (Number(request.headers.get("Content-Length") ?? 0) > MAX_REQUEST_BYTES) return null;
-	const body = await request.text();
-	return new TextEncoder().encode(body).byteLength > MAX_REQUEST_BYTES ? null : body;
+	if (!request.body) return "";
+	const reader = request.body.getReader(),
+		chunks: Uint8Array[] = [];
+	let size = 0;
+	for (;;) {
+		const { done, value } = await reader.read();
+		if (done) break;
+		size += value.byteLength;
+		if (size > MAX_REQUEST_BYTES) {
+			await reader.cancel();
+			return null;
+		}
+		chunks.push(value);
+	}
+	const body = new Uint8Array(size);
+	let at = 0;
+	for (const chunk of chunks) {
+		body.set(chunk, at);
+		at += chunk.byteLength;
+	}
+	return new TextDecoder().decode(body);
 }
 
 /** Same-origin requests need no CORS headers; listed course origins get credentialed CORS. */
 function crossOrigin(request: Request, env: Env): { allowed: boolean; origin: string | null } {
 	const origin = request.headers.get("Origin");
 	if (!origin || origin === new URL(request.url).origin) return { allowed: true, origin: null };
-	return { allowed: list(env.COURSE_ORIGINS).includes(origin), origin };
+	// "null" is the origin of file:// pages and sandboxed frames on any site, so it is never allowed.
+	return { allowed: origin !== "null" && list(env.COURSE_ORIGINS).includes(origin), origin };
 }
 
 function withCors(response: Response, origin: string | null): Response {
@@ -181,6 +202,8 @@ type Route =
 	| { kind: "learner"; action: "threads" | "read" | "reply"; threadId?: number };
 
 function matchRoute(pathname: string): Route | null {
+	// A path starting "//" would make the route prefix a protocol-relative URL in the staff form and redirect.
+	if (pathname.startsWith("//")) return null;
 	for (const [pattern, build] of ROUTES) {
 		const match = pathname.match(pattern);
 		if (match) return build(match);

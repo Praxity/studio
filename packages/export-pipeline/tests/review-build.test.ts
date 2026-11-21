@@ -186,7 +186,8 @@ describe("review HTML builds", () => {
 	describe("course help", () => {
 		const help = {
 			endpoint: "https://help.example.org/q?course=a&b",
-			label: "Ask a tutor",
+			// "$'" and "$&" are replacement patterns in String.replace; they must arrive as text.
+			label: "Ask a tutor ($'s & $&)",
 			intro: 'Say "hi"',
 		};
 		const build = async (format: "html" | "scorm12", withHelp: boolean, reviewMode = false) => {
