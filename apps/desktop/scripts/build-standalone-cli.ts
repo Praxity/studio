@@ -73,6 +73,7 @@ execFileSync(
 		platform,
 		"--arch",
 		arch,
+		"--assetsOnly",
 		"--output",
 		path.join(outputDir, "typst"),
 	],
@@ -116,7 +117,7 @@ const bundle = await build({
 	sourcemap: false,
 	external: ["isomorphic-dompurify", "jsdom"],
 	banner: {
-		js: 'import { createRequire as createBundleRequire } from "node:module"; const require = createBundleRequire(import.meta.url);',
+		js: '#!/usr/bin/env node\nimport { createRequire as createBundleRequire } from "node:module"; const require = createBundleRequire(import.meta.url);',
 	},
 	define: {
 		__PRAXITY_CANVAS_SHA256__: JSON.stringify(
@@ -212,15 +213,12 @@ for (const file of [...assetFiles].sort()) {
 	await cp(path.join(assetsDir, file), target);
 }
 const dependencies: { name: string; version: string; license?: string; notices: string[] }[] = [];
-dependencies.push(
-	{
-		name: "typst",
-		version: "0.15.1",
-		license: "Apache-2.0 AND upstream component licenses",
-		notices: ["typst/LICENSE", "typst/NOTICE", "typst/FONT-NOTICE"],
-	},
-	{ name: "mitex", version: "0.2.7", license: "Apache-2.0", notices: ["typst/mitex/LICENSE"] },
-);
+dependencies.push({
+	name: "mitex",
+	version: "0.2.7",
+	license: "Apache-2.0",
+	notices: ["typst/mitex/LICENSE"],
+});
 for (const directory of [...packageRoots].sort()) {
 	await recordInput(path.join(directory, "package.json"), "third-party-notice-provenance");
 	const pkg = JSON.parse(await readFile(path.join(directory, "package.json"), "utf8"));
@@ -270,10 +268,27 @@ await writeFile(
 		{
 			name: "@praxity/studio-cli",
 			version,
-			private: true,
-			license: "SEE LICENSE IN legal/LICENSE",
+			bin: { praxity: "praxity.mjs" },
+			license: "MIT",
+			repository: { type: "git", url: "https://github.com/Praxity/studio.git" },
+			files: [
+				"*.mjs",
+				"editor/",
+				"export-assets/",
+				"typst/",
+				"legal/",
+				"licenses/",
+				"prax-format/",
+				"inventory.json",
+			],
+			dependencies: Object.fromEntries(
+				runtimePackages
+					.filter((pkg) => !pkg.path.slice("node_modules/".length).includes("node_modules/"))
+					.map((pkg) => [pkg.name, pkg.version]),
+			),
+			bundleDependencies: ["isomorphic-dompurify", "jsdom"],
 			type: "module",
-			engines: { node: ">=24.22.1 <25.0.0" },
+			engines: { node: ">=24.22.1 <25" },
 		},
 		null,
 		2,
@@ -305,13 +320,13 @@ const inventory = {
 	schemaVersion: 1,
 	name: "@praxity/studio-cli",
 	version,
-	distribution: "private-binary",
-	license: "SEE LICENSE IN legal/LICENSE",
+	distribution: "npm-tarball",
+	license: "MIT",
 	sourceRevision,
 	sourceTreeDirty: Boolean(
 		execFileSync("git", ["status", "--porcelain"], { cwd: repoDir, encoding: "utf8" }).trim(),
 	),
-	node: ">=24.22.1 <25.0.0",
+	node: ">=24.22.1 <25",
 	buildNode: process.version,
 	entrypoint: "praxity.mjs",
 	legal: legalFiles.map((filename) => `legal/${filename}`),

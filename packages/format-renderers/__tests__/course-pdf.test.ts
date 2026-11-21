@@ -1,4 +1,7 @@
 import { readFileSync } from "node:fs";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { adaptGrammarPreviewBlocks } from "@praxity/shared-blocks/grammar-adapter";
 import { describe, expect, it, vi } from "vitest";
 import { readLessonFixture as readBlockSource } from "../../grammar/__tests__/helpers/lesson-fixture.ts";
@@ -1097,5 +1100,44 @@ describe("course PDF workbook", () => {
 			files: new Map(),
 		});
 		expect(buildCoursePdfSource(input).typstSource).not.toContain("Answer sheet");
+	});
+	it("loads math and theme fonts independently of the compiler, preserving the adjacent default", async () => {
+		const root = await mkdtemp(path.join(tmpdir(), "pdf-assets-"));
+		const assets = path.join(root, "assets");
+		const font = "fonts/source-sans-3/400-normal.ttf";
+		const math = [
+			"lib.typ",
+			"mitex.typ",
+			"mitex.wasm",
+			"specs/mod.typ",
+			"specs/prelude.typ",
+			"specs/latex/standard.typ",
+		];
+		try {
+			for (const file of [font, ...math.map((file) => `mitex/${file}`)]) {
+				await mkdir(path.dirname(path.join(assets, file)), { recursive: true });
+				await writeFile(path.join(assets, file), `bytes:${file}`);
+			}
+			const input = course("# Formula\n\n$$\nx^2\n$$\n");
+			input.lessons[0].design = { typography: { pairing: "sans" } };
+			for (const separate of [false, true]) {
+				const executablePath = path.join(separate ? path.join(root, "external") : assets, "typst");
+				await exportCoursePdf({
+					...input,
+					executablePath,
+					...(separate ? { assetDirectory: assets } : {}),
+				});
+				const call = vi.mocked(compileTypst).mock.calls.at(-1);
+				expect(call?.[0]).toContain('#import "mitex/lib.typ": mitex');
+				expect(call?.[1].executablePath).toBe(executablePath);
+				expect(Buffer.from(call?.[1].files?.get(font) ?? []).toString()).toBe(`bytes:${font}`);
+				for (const file of math)
+					expect(Buffer.from(call?.[1].files?.get(`mitex/${file}`) ?? []).toString()).toBe(
+						`bytes:mitex/${file}`,
+					);
+			}
+		} finally {
+			await rm(root, { recursive: true, force: true });
+		}
 	});
 });

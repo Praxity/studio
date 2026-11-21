@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed. Implementation is paused for scope approval; runtime behaviour is unchanged.
+Accepted 2026-11-21.
 
 ## Context
 
@@ -12,7 +12,7 @@ This requires a change to the PDF renderer interface beyond the standalone build
 
 ## Decision
 
-Propose a bounded follow-up:
+The standalone CLI uses the following boundaries:
 
 1. Give `exportCoursePdf` a PDF asset-directory option separate from `executablePath`. Have `exportProject` pass Studio's packaged asset directory. Preserve existing direct callers' results and test a compiler installed outside that directory, including math and a theme font.
 2. Stage fonts, MiTeX and their notices without downloading or shipping the Typst executable. Remove Typst-only inventory entries; retain every notice for files still shipped.
@@ -21,7 +21,7 @@ Propose a bounded follow-up:
 
 ## Consequences
 
-Approval is needed to include the PDF renderer interface and its regression tests in the implementation slice. No installer or canvas change is proposed.
+The PDF renderer accepts a separate asset directory. Omitting it preserves existing direct callers' asset lookup beside the compiler. Installer and canvas behaviour are unchanged.
 
 Acceptance remains: affected checks; lookup tests for precedence, missing and wrong versions, PATH and Windows shims; and a clean tarball install running `npx praxity --help`, HTML export and PDF export with a digest-verified official Typst 0.15.1 download. PDF evidence must also exercise math and theme fonts so the asset-directory separation is tested.
 

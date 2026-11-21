@@ -453,29 +453,26 @@ test("portable CLI exports and preserves identities outside the checkout", async
 		const bundle = path.join(root, "tool with spaces");
 		await cp(new URL("../../../dist/studio-cli", import.meta.url), bundle, { recursive: true });
 		const inventory = JSON.parse(await readFile(path.join(bundle, "inventory.json"), "utf8"));
-		assert.equal(inventory.distribution, "private-binary");
+		assert.equal(inventory.distribution, "npm-tarball");
 		assert.equal(inventory.entrypoint, "praxity.mjs");
 		assert.equal(inventory.platform, process.platform);
 		assert.equal(inventory.arch, process.arch);
-		assert.equal(inventory.license, "SEE LICENSE IN legal/LICENSE");
+		assert.equal(inventory.license, "MIT");
 		assert.equal(inventory.licenseVersion, "1.0.1");
 		assert.equal(inventory.licenseEffectiveDate, "2026-09-29");
 		const typstExecutable = process.platform === "win32" ? "typst.exe" : "typst";
-		for (const filename of [typstExecutable, "LICENSE", "NOTICE", "FONT-NOTICE", "version.json"]) {
-			assert.ok(
-				inventory.files.some(
-					(file) => file.path === `typst/${filename}` && file.component === "third-party",
-				),
-			);
-		}
-		const engine = JSON.parse(await readFile(path.join(bundle, "typst/version.json"), "utf8"));
-		assert.equal(engine.version, "0.15.1");
-		assert.equal(engine.platform, process.platform);
-		assert.equal(engine.arch, process.arch);
+		for (const filename of [typstExecutable, "LICENSE", "NOTICE", "FONT-NOTICE", "version.json"])
+			assert.ok(!inventory.files.some((file) => file.path === `typst/${filename}`));
+		assert.ok(!inventory.dependencies.some((dependency) => dependency.name === "typst"));
 		assert.ok(inventory.files.some((file) => file.path === "typst/mitex/mitex.wasm"));
-		assert.equal(
-			engine.binarySha256,
-			sha256(await readFile(path.join(bundle, "typst", typstExecutable))),
+		assert.ok(inventory.files.some((file) => file.path === "typst/mitex/LICENSE"));
+		assert.ok(inventory.files.some((file) => file.path === "typst/fonts/source-sans-3/LICENSE"));
+		const externalTypst = path.join(root, "external", typstExecutable);
+		await mkdir(path.dirname(externalTypst));
+		await cp(
+			process.env.PRAXITY_STUDIO_TYPST ??
+				fileURLToPath(new URL(`../resources/typst/${typstExecutable}`, import.meta.url)),
+			externalTypst,
 		);
 		assert.ok(inventory.dependencies.some((dependency) => dependency.name === "react"));
 		assert.ok(
@@ -511,7 +508,15 @@ test("portable CLI exports and preserves identities outside the checkout", async
 		assert.deepEqual(inventory.legal, ["legal/LICENSE", "legal/LICENSING.md"]);
 		assert.deepEqual(await filesIn(path.join(bundle, "legal")), ["LICENSE", "LICENSING.md"]);
 		const manifest = JSON.parse(await readFile(path.join(bundle, "package.json"), "utf8"));
-		assert.equal(manifest.license, "SEE LICENSE IN legal/LICENSE");
+		assert.equal(manifest.license, "MIT");
+		assert.deepEqual(manifest.bin, { praxity: "praxity.mjs" });
+		assert.ok(
+			(await readFile(path.join(bundle, manifest.bin.praxity), "utf8")).startsWith(
+				"#!/usr/bin/env node\n",
+			),
+		);
+		assert.equal(manifest.engines.node, ">=24.22.1 <25");
+		assert.deepEqual(manifest.bundleDependencies, ["isomorphic-dompurify", "jsdom"]);
 		for (const name of ["LICENSE", "LICENSING.md"]) {
 			assert.deepEqual(
 				await readFile(path.join(bundle, "legal", name)),
@@ -589,6 +594,7 @@ test("portable CLI exports and preserves identities outside the checkout", async
 					encoding: "utf8",
 					env: {
 						PATH: path.dirname(process.execPath),
+						PRAXITY_STUDIO_TYPST: externalTypst,
 						HOME: root,
 						USERPROFILE: root,
 						TMPDIR: root,

@@ -760,6 +760,8 @@ Keep the original directory.
 
 ## Export a PDF workbook
 
+PDF export requires a separately installed Typst 0.15.1. For CLI exports, set `PRAXITY_STUDIO_TYPST` to the executable path or put `typst` on PATH. Programmatic hosts may supply `typstExecutablePath`, which takes precedence over both. Install from the [official release](https://github.com/typst/typst/releases/tag/v0.15.1), `winget install --id Typst.Typst`, or `brew install typst`, and check the version. On Windows, select the real `typst.exe`; `.cmd` and `.bat` shims are unsupported. Studio supplies its own theme fonts and MiTeX.
+
 `--format pdf` produces a printable, tagged PDF/UA-1 study workbook. It follows the
 course theme's colours and fonts, prints narration scripts after their slides, and
 expands interactive blocks such as tabs, accordions and flip cards so every panel

@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { inflateSync } from "node:zlib";
@@ -307,4 +307,38 @@ it.skipIf(!process.env.PRAXITY_TEST_TYPST)(
 		}
 	},
 	30000,
+);
+
+it.skipIf(!process.env.PRAXITY_TEST_TYPST)(
+	"exports math with a theme font when the compiler is outside the asset directory",
+	async () => {
+		const original = process.env.PRAXITY_TEST_TYPST as string;
+		const assetDirectory = process.env.PRAXITY_TEST_PDF_ASSETS ?? path.dirname(original);
+		const root = await mkdtemp(path.join(tmpdir(), "external-typst-"));
+		try {
+			const executablePath = path.join(root, path.basename(original));
+			await cp(original, executablePath);
+			const { pdf } = await exportCoursePdf({
+				title: "External compiler",
+				locale: "en",
+				lessons: [
+					{
+						id: "lesson",
+						title: "Formula",
+						locale: "en",
+						blocks: readBlockSource("# Formula\n\nA useful formula.\n\n$$\nx^2\n$$\n").blocks,
+						design: { typography: { pairing: "book" } },
+					},
+				],
+				executablePath,
+				assetDirectory,
+			});
+			expect(pdf.subarray(0, 5).toString()).toBe("%PDF-");
+			const decoded = decodedPdf(pdf);
+			expect(decoded).toMatch(/SourceSerif4/);
+			expect(decoded).toContain("/Formula");
+		} finally {
+			await rm(root, { recursive: true, force: true });
+		}
+	},
 );

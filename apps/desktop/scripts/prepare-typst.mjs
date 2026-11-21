@@ -9,7 +9,9 @@ import { parseArgs } from "node:util";
 import { inflateSync } from "node:zlib";
 import { FONT_LIST } from "../../../packages/grammar/src/font-catalog.ts";
 
-export const TYPST_VERSION = "0.15.1";
+import { TESTED_TYPST_VERSION as TYPST_VERSION } from "../src/main/export/resolve-typst-executable.ts";
+
+export { TYPST_VERSION };
 export const MITEX_SHA256 = "0159e214845e49cbdc332d9d572da112dae5ad248072e0a7680d38c8307c2e15";
 export const MITEX_FILES = [
 	"lib.typ",
@@ -198,6 +200,7 @@ export async function prepareTypst({
 	output = path.join(desktopDir, "resources/typst"),
 	archive,
 	mitexArchive,
+	assetsOnly = false,
 	cache = path.join(desktopDir, "resources/.typst-cache"),
 } = {}) {
 	const release = selectTypstRelease(platform, arch);
@@ -214,34 +217,36 @@ export async function prepareTypst({
 	const name = `typst-${release.target}`;
 	const archivePath = archive ?? path.join(cache, `${name}-${TYPST_VERSION}.${extension}`);
 	let bytes;
-	try {
-		bytes = await readFile(archivePath);
-	} catch (error) {
-		if (archive || error.code !== "ENOENT") throw error;
-		bytes = await downloadWithRetry(
-			`https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/${name}.${extension}`,
-			"Typst",
-		);
-		verifyArchive(bytes, arch, platform);
-		await mkdir(cache, { recursive: true });
-		const pending = `${archivePath}.${randomUUID()}.tmp`;
+	if (!assetsOnly) {
 		try {
-			await writeFile(pending, bytes, { flag: "wx" });
-			await rename(pending, archivePath);
-		} finally {
-			await rm(pending, { force: true });
+			bytes = await readFile(archivePath);
+		} catch (error) {
+			if (archive || error.code !== "ENOENT") throw error;
+			bytes = await downloadWithRetry(
+				`https://github.com/typst/typst/releases/download/v${TYPST_VERSION}/${name}.${extension}`,
+				"Typst",
+			);
+			verifyArchive(bytes, arch, platform);
+			await mkdir(cache, { recursive: true });
+			const pending = `${archivePath}.${randomUUID()}.tmp`;
+			try {
+				await writeFile(pending, bytes, { flag: "wx" });
+				await rename(pending, archivePath);
+			} finally {
+				await rm(pending, { force: true });
+			}
 		}
-	}
-	verifyArchive(bytes, arch, platform);
-	if (archive) {
-		await mkdir(cache, { recursive: true });
-		const cached = path.join(cache, `${name}-${TYPST_VERSION}.${extension}`);
-		const pending = `${cached}.${randomUUID()}.tmp`;
-		try {
-			await writeFile(pending, bytes, { flag: "wx" });
-			await rename(pending, cached);
-		} finally {
-			await rm(pending, { force: true });
+		verifyArchive(bytes, arch, platform);
+		if (archive) {
+			await mkdir(cache, { recursive: true });
+			const cached = path.join(cache, `${name}-${TYPST_VERSION}.${extension}`);
+			const pending = `${cached}.${randomUUID()}.tmp`;
+			try {
+				await writeFile(pending, bytes, { flag: "wx" });
+				await rename(pending, cached);
+			} finally {
+				await rm(pending, { force: true });
+			}
 		}
 	}
 	await mkdir(path.dirname(output), { recursive: true });
@@ -276,38 +281,42 @@ export async function prepareTypst({
 			await mkdir(path.dirname(target), { recursive: true });
 			await writeFile(target, content, { flag: "wx" });
 		}
-		const zip = platform === "win32" ? path.join(staging, ".typst.zip") : undefined;
-		if (zip) await writeFile(zip, bytes, { flag: "wx" });
-		for (const file of [binary, "LICENSE", "NOTICE"]) {
-			const content = execFileSync(tar, [zip ? "-xOf" : "-xJOf", zip ?? "-", `${name}/${file}`], {
-				input: zip ? undefined : bytes,
-				maxBuffer: 100 * 1024 * 1024,
-			});
-			if (file === binary) verifyBinary(content, arch, platform);
-			await writeFile(path.join(staging, file), content, { flag: "wx" });
+		if (!assetsOnly) {
+			const zip = platform === "win32" ? path.join(staging, ".typst.zip") : undefined;
+			if (zip) await writeFile(zip, bytes, { flag: "wx" });
+			for (const file of [binary, "LICENSE", "NOTICE"]) {
+				const content = execFileSync(tar, [zip ? "-xOf" : "-xJOf", zip ?? "-", `${name}/${file}`], {
+					input: zip ? undefined : bytes,
+					maxBuffer: 100 * 1024 * 1024,
+				});
+				if (file === binary) verifyBinary(content, arch, platform);
+				await writeFile(path.join(staging, file), content, { flag: "wx" });
+			}
+			if (zip) await rm(zip);
+			if (platform !== "win32") await chmod(path.join(staging, binary), 0o755);
 		}
-		if (zip) await rm(zip);
-		if (platform !== "win32") await chmod(path.join(staging, binary), 0o755);
 		await stageThemeFonts(path.join(staging, "fonts"));
-		let version = `typst ${TYPST_VERSION} (pinned archive; cross-architecture build)`;
-		if (platform === process.platform && arch === process.arch) {
-			version = execFileSync(path.join(staging, binary), ["--version"], {
-				encoding: "utf8",
-				timeout: 10_000,
-			}).trim();
-			if (version !== "typst 0.15.1 (9dfd3a08)")
-				throw new Error(`Unexpected Typst version: ${version}`);
+		if (!assetsOnly) {
+			let version = `typst ${TYPST_VERSION} (pinned archive; cross-architecture build)`;
+			if (platform === process.platform && arch === process.arch) {
+				version = execFileSync(path.join(staging, binary), ["--version"], {
+					encoding: "utf8",
+					timeout: 10_000,
+				}).trim();
+				if (version !== `typst ${TYPST_VERSION} (9dfd3a08)`)
+					throw new Error(`Unexpected Typst version: ${version}`);
+			}
+			await writeFile(
+				path.join(staging, "FONT-NOTICE"),
+				await readFile(
+					path.join(desktopDir, "resources/third-party-notices/typst-assets-0.15.1/NOTICE"),
+				),
+			);
+			await writeFile(
+				path.join(staging, "version.json"),
+				`${JSON.stringify({ version: TYPST_VERSION, platform, arch, archiveSha256: release.sha256, binarySha256: digest(await readFile(path.join(staging, binary))), reportedVersion: version }, null, 2)}\n`,
+			);
 		}
-		await writeFile(
-			path.join(staging, "FONT-NOTICE"),
-			await readFile(
-				path.join(desktopDir, "resources/third-party-notices/typst-assets-0.15.1/NOTICE"),
-			),
-		);
-		await writeFile(
-			path.join(staging, "version.json"),
-			`${JSON.stringify({ version: TYPST_VERSION, platform, arch, archiveSha256: release.sha256, binarySha256: digest(await readFile(path.join(staging, binary))), reportedVersion: version }, null, 2)}\n`,
-		);
 		const previous = `${output}.${randomUUID()}.old`;
 		let moved = false;
 		try {
@@ -338,6 +347,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
 			archive: { type: "string" },
 			mitexArchive: { type: "string" },
 			cache: { type: "string" },
+			assetsOnly: { type: "boolean" },
 		},
 	});
 	console.log(await prepareTypst(values));

@@ -40,6 +40,7 @@ import {
 	type ProjectExportInput,
 } from "./build-export-input-from-project";
 import { resolvePdfAssets } from "./resolve-pdf-assets";
+import { resolveTypstExecutable } from "./resolve-typst-executable";
 
 export interface ExportProjectOptions {
 	adviceLocale?: "en" | "fr";
@@ -353,8 +354,10 @@ export async function exportProject(
 				resolvedAssets: pdfAssets,
 				pageSize: options.pageSize,
 				includeAnswerSheet: options.includeAnswerSheet,
-				executablePath:
-					options.typstExecutablePath ?? path.resolve(options.exportAssetsDir, "../typst/typst"),
+				executablePath: await resolveTypstExecutable(options.typstExecutablePath, {
+					locale: options.adviceLocale,
+				}),
+				assetDirectory: path.resolve(options.exportAssetsDir, "../typst"),
 				signal: options.signal,
 				temporaryRoot: options.temporaryRoot,
 			});
