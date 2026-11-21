@@ -39,7 +39,7 @@ Scripts live in the root `package.json`. Use pnpm, never npm or yarn.
 
 ## Load context on demand
 
-- Licensing → `LICENSING.md` and `docs/context/licensing-boundaries.md`. Releases after 0.2.0 use PolyForm Perimeter 1.0.1 (root `LICENSE`); 0.2.0 texts are archived in `legal/archive/0.2.0/`. Exports always ship `PRAXITY-COURSE-RUNTIME-LICENSE.txt`.
+- Licensing → `LICENSING.md` and `docs/context/licensing-boundaries.md`. Praxity-authored code, including earlier versions and the exported course player, uses MIT (root `LICENSE`); past terms are archived in `legal/archive/`. Exports always ship `PRAXITY-COURSE-RUNTIME-LICENSE.txt`.
 - Product direction and v1 scope: `docs/context/product-synopsis.md`. Maintainers: consult `AGENTS.local.md` for the backlog.
 - Grammar syntax or parsing → `docs/prax-format/reference/document-structure.md`, `docs/prax-format/reference/blocks.md`, `packages/grammar/src/v4/schema.ts` and `packages/grammar/src/read-lesson.ts`.
 - Editor, blocks, assets, rendering, preview, or export → `docs/context/architecture.md`

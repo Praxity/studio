@@ -2,7 +2,7 @@
 	"name": "@praxity/shared-blocks",
 	"version": "0.1.0",
 	"private": true,
-	"license": "SEE LICENSE IN LICENSE",
+	"license": "MIT",
 	"type": "module",
 	"sideEffects": [
 		"**/*.css"

@@ -22,4 +22,4 @@ Outside PRs need a maintainer to push the reviewed change to a repository branch
 
 PR titles, bodies, commits, comments, code, fixtures and docs must never name clients, machine paths or private repositories. Keep client material private. Use invented examples and repository-relative paths.
 
-Studio is source-available under PolyForm Perimeter 1.0.1. Read [LICENSE](LICENSE) and [LICENSING.md](LICENSING.md); retain third-party notices and the separate terms for exported course runtimes.
+Praxity-authored Studio code and the exported course player use the MIT licence. Read [LICENSE](LICENSE) and [LICENSING.md](LICENSING.md); retain third-party notices and separately licensed content terms.
