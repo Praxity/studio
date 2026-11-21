@@ -28,7 +28,7 @@ The grammar keeps a lossless source tree alongside learner projections. Source e
 ### `packages/grammar/__tests__/v4-body.test.ts`
 
 - `definitions`: Literal declarations stand in for the grammar 4 semantic schema. The tree owns no block/setting vocabulary.
-- Parameterized test "derived headings equal authored grammar-3 levels: ${lesson}": `repeatedBoundary` excludes the first H1 group only when its level and title repeat the page heading. The folded group keeps its title even when the page has explicit metadata.
+- Parameterized test "derived headings equal authored grammar-3 levels: ${lesson}": `repeatedBoundary` drops the page's own heading when the page's first block is a level-1 group with the same title; the group's authored H1 stays. The folded group keeps its title even when the page has explicit metadata.
 
 ### `packages/grammar/__tests__/v4-docs.test.ts`
 
