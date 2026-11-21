@@ -2,7 +2,6 @@ import type { TokenLine, TokenStream } from "../lex/index.ts";
 import { bodyNode, bodyValue, span } from "./source.ts";
 import type { BodyValue } from "./types.ts";
 
-/** Pipe separators outside escapes and matched inline code runs delimit cells. */
 function cells(stream: TokenStream, line: TokenLine): BodyValue[] | undefined {
 	const text = stream.source.slice(line.start, line.contentEnd);
 	const boundaries: number[] = [];

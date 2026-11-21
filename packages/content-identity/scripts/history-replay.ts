@@ -15,7 +15,6 @@ export interface HistoryOccurrence {
 	kind: "lesson" | "page" | "block" | "part";
 	type: string;
 }
-/** C2 archives this binding with its conversion evidence; it is not manifest authority. */
 export interface HistoryConversionProof {
 	schema: 1;
 	commit: string;
@@ -25,17 +24,14 @@ export interface HistoryConversionProof {
 	aliases: { keys: string[]; reason: string }[];
 }
 export interface HistoryReplayDependencies extends IdentityDependencies {
-	/** Load exact UTF-8 bytes of <proofHash>.json from the independent C2 archive. */
 	loadProof: (proofHash: string) => string;
 }
 export interface HistoryCorpus {
 	schema: 1;
 	snapshots: {
 		commit: string;
-		/** SHA-256 of C2's archived conversion proof for this snapshot. */
 		proofHash: string;
 		sources: Record<string, string>;
-		/** Study node key to converted tree address, supplied by the converter. */
 		occurrences: Record<string, HistoryOccurrence>;
 	}[];
 	transitions: { old: string; new: string; pairs: Record<string, string> }[];
@@ -189,7 +185,6 @@ export function replayHistory(
 		const transition = input.transitions[index];
 		const previous = input.snapshots[index];
 		const next = input.snapshots[index + 1];
-		// evaluate.py scores each pair independently. Preserve that denominator and oracle.
 		const before = resolveIdentity(
 			{ parsedDocuments: parsed[index], priorSnapshots: [] },
 			dependencies,

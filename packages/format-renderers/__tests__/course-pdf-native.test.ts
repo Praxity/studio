@@ -31,7 +31,6 @@ function decodedPdf(pdf: Buffer): string {
 	);
 }
 
-// Native checks require the bundled compiler and Poppler. A supplied path must work.
 it.skipIf(!process.env.PRAXITY_TEST_TYPST)(
 	"exports marked matching and rating blocks with the native compiler",
 	async () => {
@@ -114,7 +113,6 @@ it.skipIf(!process.env.PRAXITY_TEST_TYPST)(
 				await writeFile(file, pdf);
 				const text = execFileSync("pdftotext", ["-layout", file, "-"], { encoding: "utf8" });
 				expect(text).toMatch(/Roger:\s+Hi there[\s\S]*Roxanne:\s+Second turn/);
-				// The bundled engine directory supplies theme fonts converted at build time.
 				expect(execFileSync("pdffonts", [file], { encoding: "utf8" })).toContain(
 					"AtkinsonHyperlegibleNext",
 				);
@@ -218,15 +216,12 @@ it.skipIf(!process.env.PRAXITY_TEST_TYPST)(
 				expect(position, `${marker} follows the preceding authored item`).toBeGreaterThan(previous);
 				previous = position;
 			}
-			// The Figure element carries the exact alt, with nothing after the text.
 			expect(decodedPdf(pdf)).toMatch(
 				/<<\/Type\/StructElem\/S\/Figure\b[^>]*\/Alt\(Accessible valve diagram\)/,
 			);
 			const tags = execFileSync("pdfinfo", ["-struct", file], { encoding: "utf8" });
 			const nodes = structureNodes(parsePdfStructure(tags));
-			// Poppler 24.02 omits alt text; the exact /Alt assertion above reads the PDF itself.
 			expect(nodes.filter((node) => node.tag === "Figure")).toHaveLength(1);
-			// #1295 restored the card group heading; its faces nest below it, as in HTML.
 			for (const [tag, title] of [
 				["H2", "Terms"],
 				["H3", "Front"],
@@ -258,8 +253,6 @@ it.skipIf(!process.env.PRAXITY_TEST_TYPST)(
 				lessons: [{ id: "dynamic", title: "Feature tour", locale: "en", blocks: dynamic.blocks }],
 			}),
 		).toThrow("Logic needs a static version");
-		// The static workbook fixes the example's initial passedCheckpoint=false
-		// state, revealing remediation while retaining all authored questions.
 		const source = await readFile(
 			new URL("../../../docs/test-fixtures/pdf-full-featured.prax", import.meta.url),
 			"utf8",

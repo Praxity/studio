@@ -122,7 +122,6 @@ describe("URLs in lesson source", () => {
 		const [diagnostic, ...rest] = read(source);
 		expect(rest).toEqual([]);
 		expect(diagnostic).toMatchObject({ code, severity: "error", line: 3 });
-		// The refused URL is never echoed back.
 		expect(JSON.stringify(diagnostic.message.args)).not.toMatch(/alert|AAAA|svg/);
 	});
 

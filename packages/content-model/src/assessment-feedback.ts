@@ -1,5 +1,3 @@
-/** Result-specific text wins over option feedback, then generic question text.
- * Legacy feedback timing values are settings, not learner prose. */
 export function assessmentFeedbackText(
 	question: { correct?: string; incorrect?: string; feedback?: string },
 	options: { correct?: string; incorrect?: string } = {},

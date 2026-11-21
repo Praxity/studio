@@ -1,4 +1,3 @@
-// Executed by the selected checkout's tsx, with every production import rooted there.
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";

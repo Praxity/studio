@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applyKeyboardNavFloor, mergePageNavToggles } from "../src/page-nav-overrides.ts";
 
-/**
- * A page that turns every visible control off leaves swipe as the only way out:
- * unusable by keyboard (2.1.1) and unusable by mouse, a swipe being a dragging
- * movement with no single-pointer alternative (2.5.7).
- */
 describe("keyboard nav floor", () => {
 	it("restores arrow keys when nothing visible can change page", () => {
 		const stranded = {
@@ -61,7 +56,6 @@ describe("keyboard nav floor", () => {
 	});
 
 	it("repairs the page-override case that produced this rule", () => {
-		// `--- Assessment Blocks` / `nav: minimal` / `navKeyboardArrows: false`
 		const resolved = mergePageNavToggles(
 			{ navOutline: true, navPrevNext: true, navKeyboardArrows: true },
 			{ nav: "minimal", navKeyboardArrows: false },

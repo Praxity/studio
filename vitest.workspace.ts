@@ -4,7 +4,6 @@ import SlowTestsReporter from "./scripts/slow-tests-reporter.mjs";
 import DurationSequencer, { FileTimingReporter } from "./scripts/vitest-sequencer";
 
 export const workspaceProjects = [
-	// ─── Packages (use their own vitest.config.ts) ───
 	"packages/grammar",
 	"packages/content-identity",
 	"packages/operations",
@@ -14,7 +13,6 @@ export const workspaceProjects = [
 	"packages/format-renderers",
 	"packages/review-share",
 
-	// ─── Apps (use their own vitest.config.ts) ───
 	"apps/desktop",
 ] as const;
 
@@ -25,7 +23,6 @@ export default defineConfig({
 				? ["default", new SlowTestsReporter(), new FileTimingReporter()]
 				: ["default"],
 		sequence: { sequencer: DurationSequencer },
-		// Serialize filesystem-heavy Mac files; their child writers still run concurrently.
 		maxWorkers:
 			platform() === "darwin"
 				? 1

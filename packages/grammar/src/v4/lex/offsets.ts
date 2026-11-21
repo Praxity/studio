@@ -8,7 +8,6 @@ function pointWidth(point: number): number {
 	return point <= 0x7f ? 1 : point <= 0x7ff ? 2 : point <= 0xffff ? 3 : 4;
 }
 
-/** UTF-8 encodes isolated surrogates as U+FFFD, as TextEncoder does. */
 export function toUtf8Offset(text: string, utf16Offset: number): number {
 	validOffset(utf16Offset, text.length);
 	let bytes = 0;
@@ -22,7 +21,6 @@ export function toUtf8Offset(text: string, utf16Offset: number): number {
 	return bytes;
 }
 
-/** Rejects byte offsets inside a UTF-8 scalar instead of rounding a write boundary. */
 export function toUtf16Offset(text: string, utf8Offset: number): number {
 	if (!Number.isInteger(utf8Offset) || utf8Offset < 0) throw new RangeError("Invalid UTF-8 offset");
 	let bytes = 0;
@@ -37,7 +35,6 @@ export function toUtf16Offset(text: string, utf8Offset: number): number {
 	return index;
 }
 
-/** One-based UTF-16 columns. A CRLF break completes after LF, a lone CR after CR. */
 export function lineColumn(text: string, utf16Offset: number): { line: number; column: number } {
 	validOffset(utf16Offset, text.length);
 	let line = 1;

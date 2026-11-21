@@ -12,7 +12,6 @@ const parentKey = (d: CanonicalDescriptor) => serializeIdentity([d.file, d.paren
 const compatible = (a: IdentityNode, b: CanonicalDescriptor) =>
 	a.kind === b.kind && a.type === b.type;
 
-/** Reject multi-fragment coverage, including small tails the study's guard misses. */
 function fragments<D, P>(
 	donors: readonly D[],
 	parts: readonly P[],
@@ -37,8 +36,6 @@ function fragments<D, P>(
 			for (const start of starts) chunks.push({ start, end: start + y.length, part });
 		}
 		chunks.sort((a, b) => a.start - b.start || a.end - b.end);
-		// Repeated words may give a tail several possible positions. Memoize coverage
-		// instead of enumerating every path; monotonic sibling order forbids reusing a part.
 		const paths = new Map<string, Set<P> | null>();
 		const visit = (index: number, coverage: number, direction: number): Set<P> | null => {
 			const key = `${index}:${coverage}:${direction}`;
@@ -73,13 +70,11 @@ function fragments<D, P>(
 	return blocked;
 }
 
-/** Returns only mutual, sufficiently separated matches. No IDs are allocated here. */
 export function matchSimilar(
 	old: readonly PriorDescriptor[],
 	current: readonly CanonicalDescriptor[],
 	bindings: ReadonlyMap<CanonicalDescriptor, string>,
 	kind: IdentityNode["kind"],
-	/** Accept this depth only; all unmatched descriptors still compete in the frozen matrix. */
 	targets?: ReadonlySet<CanonicalDescriptor>,
 ): [CanonicalDescriptor, string][] {
 	const used = new Set(bindings.values());
@@ -141,7 +136,6 @@ export function matchSimilar(
 					: a.node.parent !== null && owners.get(parentKey(b)) === a.node.parent;
 			const oldSiblings = old
 				.filter((x) => x.node.kind === kind && x.node.parent === a.node.parent)
-				// An absent pending record can share an ordinal and start with a shifted sibling.
 				.sort(
 					(x, y) =>
 						x.node.order - y.node.order ||
@@ -175,7 +169,6 @@ export function matchSimilar(
 				next.filter((x) => normalizeText(x.label) === label).length === 1
 			)
 				anchors = Math.max(anchors, 2);
-			// Integer weights keep the inclusive .90 boundary exact when L=1 and A=0.
 			let score = (70 * l + 20 * Number(owner) + 10 * (anchors / 2)) / 100;
 			if (!owner && l >= 0.96) score = Math.max(score, l);
 			scores.push({ a, b, lexical: l, score, owner });
@@ -188,10 +181,8 @@ export function matchSimilar(
 		const best = ranked[0];
 		if (!best || best.score < 0.9 || best.lexical < 0.8 || (!best.owner && best.lexical < 0.96))
 			continue;
-		// Keep sub-threshold competitors. Filtering them first defeats the mutual margin.
 		const otherOld = ranked.slice(1).map((s) => s.score);
 		const otherNew = scores.filter((s) => s.a === best.a && s.b !== b).map((s) => s.score);
-		// One machine epsilon compensates for subtraction at an exact .15 margin.
 		if (
 			best.score - Math.max(0, ...otherOld) + Number.EPSILON < 0.15 ||
 			best.score - Math.max(0, ...otherNew) + Number.EPSILON < 0.15

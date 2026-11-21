@@ -7,7 +7,6 @@ import { parseArgs } from "node:util";
 
 export const inputsPath = fileURLToPath(new URL("./inputs.json", import.meta.url));
 
-/** Validate frozen paths and hashes without requiring a course checkout. */
 export function validateInputEntries(input) {
 	const expected = new Map();
 	for (const files of Object.values(input.files)) {
@@ -27,7 +26,6 @@ export function validateInputEntries(input) {
 	return expected;
 }
 
-/** Compare the checkout, including ignored extras, with the pinned Git inventory. */
 export async function verifyInput(input, coursePath) {
 	const cwd = path.resolve(coursePath);
 	const git = (...args) =>
@@ -45,7 +43,6 @@ export async function verifyInput(input, coursePath) {
 	if (prefix !== input.path)
 		throw new Error(`course path: expected ${input.path}, found ${prefix || "."}`);
 	const expected = validateInputEntries(input);
-	// ls-tree (not the index or a directory walk) defines the frozen inventory.
 	const pinned = new Set(
 		git("ls-tree", "-r", "--name-only", "-z", input.commit, "--", ".").split("\0").filter(Boolean),
 	);
@@ -53,7 +50,6 @@ export async function verifyInput(input, coursePath) {
 		if (!expected.has(name)) problems.push(`unpinned tracked file: ${name}`);
 	for (const name of expected.keys())
 		if (!pinned.has(name)) problems.push(`not tracked at pinned commit: ${name}`);
-	// Deliberately omit --exclude-standard: ignored additions are drift too.
 	const present = new Set(
 		git(
 			"-c",
@@ -73,7 +69,6 @@ export async function verifyInput(input, coursePath) {
 	for (const [name, hash] of expected) {
 		try {
 			const filename = path.join(cwd, name);
-			// Never follow a replaced identity/assets directory outside this checkout.
 			let current = cwd;
 			for (const part of name.split("/")) {
 				current = path.join(current, part);

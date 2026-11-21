@@ -44,7 +44,6 @@ function header(
 	if (group < end) lexSettings(text, group, end, tokens);
 }
 
-/** The line recognizer needs image boundaries; inline rendering remains G6's responsibility. */
 function balancedEnd(
 	text: string,
 	start: number,
@@ -175,7 +174,6 @@ function structural(
 	return "prose";
 }
 
-/** Lossless UTF-16 token partition. The tree resolves schema-dependent part candidates. */
 export function tokenizeLesson(text: string, options: LexOptions = {}): TokenStream {
 	const stream: TokenStream = { source: text, tokens: [], lines: [] };
 	const { tokens } = stream;

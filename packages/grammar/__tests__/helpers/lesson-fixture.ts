@@ -8,7 +8,6 @@ export function grammar4Starter(keyword: string): string {
 	return source;
 }
 
-/** Change an authored setting on the first explicit block in a G4 fixture. */
 export function withFixtureSetting(source: string, key: string, value?: string): string {
 	return source.replace(
 		/^(:::\s+[^\n{]+)(?:\s+\{([^}]*)\})?$/m,
@@ -24,8 +23,6 @@ export function withFixtureSetting(source: string, key: string, value?: string):
 	);
 }
 
-/** Block-focused fixtures omit page boundaries. IDs are explicit test allocations,
- * so reparsing can compare semantic data without random transient UUIDs. */
 export function readLessonFixture(source: string) {
 	let sequence = 0;
 	return readLesson(source, {
@@ -36,8 +33,6 @@ export function readLessonFixture(source: string) {
 }
 
 export function readBlockFixture(source: string) {
-	// Fragment fixtures belong to one explicit, hidden-title page. Their block
-	// syntax is still read by G4; this does not translate legacy declarations.
 	if (!/^#\s/m.test(source) && source.slice(findFrontmatterEndOffset(source)).trim()) {
 		const body = findFrontmatterEndOffset(source);
 		source = `${source.slice(0, body)}# Fixture {hideTitle}\n\n${source.slice(body)}`;
@@ -46,12 +41,10 @@ export function readBlockFixture(source: string) {
 	return { ...read, blocks: read.blocks.filter((block) => block.type !== "pageBreak") };
 }
 
-/** Grammar 4 saves the token stream, including trivia, rather than renderer data. */
 export function replayLesson(read: ReadLessonResult): string {
 	return read.tree.stream.tokens.map((token) => token.raw).join("");
 }
 
-/** Identity-only wrappers do not change a list's learner-visible HTML. */
 export function withoutNodeIdentity(html: unknown): string {
 	const wrappers: boolean[] = [];
 	return String(html)

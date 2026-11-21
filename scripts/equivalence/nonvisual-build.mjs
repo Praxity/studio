@@ -1,4 +1,3 @@
-// Trusted adapter; all production imports resolve inside the selected checkout.
 import { mkdir, readdir, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";

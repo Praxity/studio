@@ -54,7 +54,6 @@ export function resolveLegacyFixture(mode: LegacyMode) {
 			priorHeads: [fixture.head],
 			priorSnapshots: [fixture.snapshot],
 			parsedDocuments: [{ path: "lesson.prax", tree: readLesson(fixture.source).tree }],
-			// Deliberately infer reader roles from stored records.
 		},
 		{
 			digest,
@@ -65,7 +64,6 @@ export function resolveLegacyFixture(mode: LegacyMode) {
 	);
 }
 
-/** Synthetic future descriptor, deliberately different from the legacy subtree. */
 export function version2Fixture() {
 	const fixture = legacyFixture("reader-roles");
 	const node = Object.values(fixture.snapshot.nodes).find((node) => node.type === "accordion");

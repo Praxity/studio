@@ -30,9 +30,6 @@ import type {
 } from "./index.ts";
 import { inverseEdits, locateTree, translateRange } from "./ranges.ts";
 
-// Review timings: five saves took 25 ms for one lesson; twenty took 1,671 ms for twenty lessons.
-// A refusal backstop that bounds synchronous work and record cloning. It is not a grouping rule:
-// D16 keeps one source session as one entry, so slice 04 coalesces a session to one record per node.
 export const MAX_INVERSE_GROUP_MEMBERS = 5;
 const issuedGroupIdentities = new WeakMap<
 	InverseGroupPlan,
@@ -43,7 +40,6 @@ const issuedGroupIdentities = new WeakMap<
 	}
 >();
 
-/** Single-use registry evidence, checked against the store-admitted base and server-owned records. */
 export function consumeInverseGroupIdentity(
 	plan: InverseGroupPlan,
 	binding: InverseGroupIdentityBinding,
@@ -59,7 +55,6 @@ export function consumeInverseGroupIdentity(
 	return { identity: structuredClone(issued.identity) };
 }
 
-/** Plan newest-first against private intermediate states; hosts install the whole plan atomically. */
 export function planInverseGroup(
 	files: readonly OperationSourceFile[],
 	request: InverseGroupRequest,
@@ -139,7 +134,6 @@ export function planInverseGroup(
 	return plan;
 }
 
-/** Recorded source and ID anchors let unrelated edits move the protected inverse slices. */
 export function applyRecordedInverse(
 	files: readonly OperationSourceFile[],
 	request: OperationRequest,
@@ -191,7 +185,6 @@ export function applyRecordedInverse(
 	}
 	if (operation.files.some((f) => !request.files.some((b) => b.path === f.path)))
 		return refusal("invalid-args");
-	// Clipboard changes are history conflicts just as written source changes are.
 	if (serializeIdentity(context.clipboard ?? null) !== serializeIdentity(operation.clipboard))
 		return refusal("conflict");
 	if (
@@ -212,8 +205,6 @@ export function applyRecordedInverse(
 		if (!f) throw new Error("inverse-file");
 		return f.source;
 	};
-	// Identity also maps virtual reader parts, such as page titles. Only parsed
-	// children participate in structural insertion boundaries.
 	const currentDocuments = new Map(
 		files.map((file) => {
 			const previous = parsedDocuments?.get(file.path);
@@ -385,15 +376,12 @@ export function applyRecordedInverse(
 		const record = records.snapshots
 			.flatMap((s) => Object.entries(s.nodes))
 			.find(([id]) => id === map.newId)?.[1];
-		// Discarded placements never return; a durable donor can be pending without a placement.
 		if (record && map.newId && !isDurableIdentity(map.newId, record, context.activeHistoryIds))
 			continue;
 		if (!original) {
 			if (map.fate === "pending") bind(map);
 			continue;
 		}
-		// Only an outside cross-file move follows the current location. A move by
-		// the recorded operation itself must still return to its original file.
 		const keepCurrent =
 			now &&
 			!protectedSlice &&
@@ -431,8 +419,6 @@ export function applyRecordedInverse(
 			}
 		}
 		if (start === undefined && !now) {
-			// A compact edit can retire a descendant without covering its whole span.
-			// Its exact written ancestor guards the recorded relative position.
 			const root = operation.inverse.guards
 				.flatMap((g) => {
 					if (g.kind !== "written" || g.file !== file) return [];
@@ -458,7 +444,6 @@ export function applyRecordedInverse(
 		}
 		if (start === undefined || !bind(map, file, start, record?.type)) return refusal("conflict");
 	}
-	// Preserve current unrelated nodes using exact translated locations, without old fingerprints.
 	for (const m of current.filter(
 		(m) => !claimed.has(m.id) && !evidence.mapping.some((e) => e.newId === m.id),
 	)) {
@@ -489,7 +474,6 @@ export function applyRecordedInverse(
 	);
 
 	const guards: InverseGuard[] = [];
-	// Redo retains the forward operation's written scope, even for compact edits.
 	for (const guard of operation.inverse.guards) {
 		if (guard.kind !== "written") continue;
 		const root = identity.sourceMappings.find((m) => m.id === guard.ref.nodeId);
@@ -557,11 +541,7 @@ export function applyRecordedInverse(
 						ref: { kind: "node", nodeId: m.id, path: m.path, fingerprint: m.fingerprint },
 						text: text.slice(m.span.start, m.span.end),
 					});
-			// An empty inline value belongs to its written node, not to a sibling insertion boundary.
 			if (edit.start === edit.end && !written.length) {
-				// Reinserting a deleted node uses its surviving structural parent.
-				// At a page's end, containment alone would guard the last block
-				// instead of the neighbouring page.
 				const removed = currentSyntax
 					.get(f.path)
 					?.find(

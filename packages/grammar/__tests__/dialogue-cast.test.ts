@@ -135,8 +135,6 @@ describe("dialogue cast", () => {
 		const { blocks } = readBlockSource(
 			"---\ncast:\n  coach: {voice: v1}\n---\n\n# Fixture {hideTitle}\n\n::: dialogue\n- COACH: Hi\n:::\n",
 		);
-		// G4 requires attributed source turns. The resolver also accepts persisted
-		// unattributed turns, so exercise that fallback through its model interface.
 		blocks[0].data.turns.unshift({
 			id: "00000000-0000-4000-8000-000000000004",
 			paragraphs: ["Hello"],

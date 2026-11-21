@@ -88,8 +88,6 @@ it("keeps response metadata on the question and prose children free of settings"
 		points: 2,
 		response: { shuffle: true },
 	});
-	// The compiler-node binding amendment adds compile-only provenance; keep the
-	// original literal checking that response settings stay off prose children.
 	expect(withoutInlineProjectionMetadata(question.data.stem, { keepDisplay: true })).toEqual([
 		expect.objectContaining({ type: "text", data: { content: "<p>Ready?</p>" } }),
 	]);

@@ -11,16 +11,9 @@ export interface FrontmatterResult {
 	frontmatter: GrammarFrontmatter;
 	body: string;
 	warnings?: string[];
-	/** Zero-based line in the full source when the YAML block cannot be parsed. */
 	errorLine?: number;
 }
 
-/**
- * Find the character offset where frontmatter ends in a grammar source string.
- * Returns 0 if no frontmatter block exists.
- * The offset includes the closing `---` line and any trailing blank lines,
- * so `source.slice(offset)` gives the body content.
- */
 export function findFrontmatterEndOffset(source: string): number {
 	const range = findFrontmatterRange(source);
 	if (!range || range.endIndex === -1) return 0;
@@ -34,14 +27,6 @@ export function findFrontmatterEndOffset(source: string): number {
 	return offset;
 }
 
-/**
- * Serialize frontmatter back into YAML format prepended to body.
- * Inverse of parseFrontmatter: serializeFrontmatter(fm, body) produces
- * a string that parseFrontmatter will round-trip.
- *
- * flowLevel: 3 means objects 3+ levels deep use inline (JSON-like) syntax,
- * keeping deeply nested values like componentDefaults compact.
- */
 export function serializeFrontmatter(frontmatter: GrammarFrontmatter, body: string): string {
 	const entries = Object.entries(frontmatter).filter(([, v]) => v !== undefined && v !== null);
 	if (entries.length === 0) return body;
@@ -78,8 +63,6 @@ export function parseFrontmatter(source: string): FrontmatterResult {
 	try {
 		parsed = YAML.parse(normalizeLineEndings(yamlContent));
 	} catch (error) {
-		// Malformed YAML: return empty frontmatter but still strip the
-		// frontmatter block from the body (lines after the closing ---)
 		const body = source.slice(range.end).replace(/^(?:\r\n|\r|\n)+/, "");
 		const yamlLine = (error as { linePos?: Array<{ line: number }> }).linePos?.[0]?.line;
 		return {

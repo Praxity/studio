@@ -66,3 +66,12 @@ Other separate terms:
 
 Installed dependencies keep the licences supplied in their packages. Generated
 CLI and course notices preserve the terms of dependencies included in each build.
+
+Licence-test reference texts:
+
+- scripts/notice.test.mjs checks the Feather licence from
+  https://github.com/feathericons/feather/blob/v4.29.2/LICENSE with LF line endings.
+- The same test checks the Apache 2.0 licence from
+  https://www.apache.org/licenses/LICENSE-2.0.txt, retrieved 2026-10-19, and
+  the complete licence and disclaimers from
+  https://www.w3.org/copyright/document-license-2002/.

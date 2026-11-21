@@ -17,14 +17,11 @@ export interface PracticeSourceDiagnostic {
 	file: string;
 	line: number;
 	column: number;
-	/** UTF-16 source offsets, not rendered text or a learner value. */
 	span: { start: number; end: number };
 }
 
 export type PracticeAdmissionLesson = CourseLesson | { path: string; read: ReadLessonResult };
 
-/** Selective publication admission. Existing course diagnostics remain advisory
- * to these hosts; never turn validateCourse's entire result into a build gate. */
 export function practiceAdmissionDiagnostics(
 	lessons: readonly PracticeAdmissionLesson[],
 	locale = "en",
@@ -53,8 +50,6 @@ export function practiceAdmissionDiagnostics(
 			},
 		];
 	});
-	// Rejected settings disappear from the renderer projection. Carry their source
-	// refusal through the same located error path as the other admission codes.
 	for (const lesson of lessons) {
 		if (!("read" in lesson)) continue;
 		for (const error of lesson.read.errors) {
@@ -80,8 +75,6 @@ export function practiceAdmissionDiagnostics(
 			});
 		}
 	}
-	// Native PDF admission is separate from grammar validity. Retain
-	// lossless source locations even when a malformed ancestor has no projection.
 	for (const lesson of format === "native-pdf" ? lessons : []) {
 		const tree = "read" in lesson ? lesson.read.tree : lesson.tree;
 		const visit = (node: TreeNode): void => {

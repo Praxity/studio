@@ -19,7 +19,6 @@ import { operationRefusalCodes } from "../../grammar/src/operations/contract.ts"
 import { operationRegistry } from "../src/index.ts";
 
 const hostile = ["__proto__", "constructor", "toString"];
-// Free author text and titles are content, not names used for registry lookup.
 const nameArguments = new Set(["name", "field", "type", "direction", "position", "rename"]);
 const runtime = { appVersion: "test", exportAssetsDir: "unused" };
 const source =
@@ -113,7 +112,6 @@ for (const [operation, argumentsAllowed] of Object.entries(operationRegistry)) {
 			const note = inventory.blocks.find((block) => block.type === "note");
 			const page = inventory.blocks.find((block) => block.kind === "page");
 			if (!note || !page) throw new Error("Missing fixture target");
-			// Supply only declared arguments so a lookup-name test cannot pass on an extra-key refusal.
 			if (!entry.label.startsWith("key="))
 				for (const key of Object.keys(entry.args))
 					if (!argumentsAllowed.includes(key)) delete entry.args[key];

@@ -12,11 +12,9 @@ export interface FontEntry {
 	value: string;
 	fontsource: string | null;
 	group: "Accessibility" | "Sans-serif" | "Serif" | "Monospace";
-	/** Exact bundled faces; null selects Fontsource's combined subset stylesheet. */
 	faces?: { weights: readonly FontWeight[]; subset: "latin" | null };
 }
 
-// Clear uses regular prose, semibold controls, bold prose and ExtraBold headings.
 export const CLEAR_FONT_WEIGHTS = [400, 600, 700, 800] as const;
 
 export const FONT_LIST: FontEntry[] = [
@@ -37,7 +35,6 @@ export const FONT_LIST: FontEntry[] = [
 		value: "'Atkinson Hyperlegible Next', sans-serif",
 		fontsource: "@fontsource/atkinson-hyperlegible-next",
 		group: "Accessibility",
-		// The combined Latin/Latin-ext stylesheet covers French Ÿ.
 		faces: { weights: CLEAR_FONT_WEIGHTS, subset: null },
 	},
 ];
@@ -146,8 +143,6 @@ export function normalizeTypography(
 	const raw = isRecord(value) ? value : {};
 	const body = isRecord(raw.body) ? raw.body : {};
 	const families = normalizeFontFamilyList(body.fontFamily, []);
-	// The owner chose Sans even for saved courses containing the old serif default.
-	// Only legacy Atkinson carries a pairing choice when there is no persisted id.
 	const id =
 		raw.pairing === "book" || raw.pairing === "clear" || raw.pairing === "sans"
 			? raw.pairing
@@ -177,7 +172,6 @@ export type DesignSettingWarning =
 			path: "design.borderRadius";
 	  };
 
-/** Report authored settings before look v2 normalization supersedes them. */
 export function getDesignSettingWarnings(
 	design: unknown,
 	resolved?: TypographyVariants,
@@ -189,7 +183,6 @@ export function getDesignSettingWarnings(
 	return warnings;
 }
 
-/** Inspect authored settings before normalization discards retired font choices. */
 export function getTypographyWarnings(
 	value: unknown,
 	resolved = normalizeTypography(value),
@@ -211,7 +204,6 @@ export function getTypographyWarnings(
 								normalizeFontFamilyList([family], [family.trim()])[0] === role.fontFamily?.[index],
 						)
 					: authored === role[key] ||
-						// Saved Clear headings used 600 before the Next migration.
 						(key === "fontWeight" &&
 							resolved.pairing === "clear" &&
 							authored === 600 &&
@@ -322,7 +314,6 @@ export function collectTypographyFontFaces(typography: TypographyVariants): Font
 	addRole(typography.body);
 	addRole({ ...typography.body, fontWeight: typography.headings.fontWeight });
 	if (typography.pairing === "clear") {
-		// Authored emphasis can occur in prose, control labels and headings.
 		for (const fontWeight of CLEAR_FONT_WEIGHTS)
 			addRole({ ...typography.body, fontWeight, fontStyle: "italic" });
 	}

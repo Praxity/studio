@@ -69,7 +69,6 @@ interface PreparedResolution {
 	snapshots: { text: string; hash: string }[];
 }
 
-/** One plan owns its inputs. Nothing is retained between operations or file admissions. */
 export function createIdentityPlan(
 	input: Omit<ResolveIdentityInput, "parsedDocuments" | "operations">,
 	dependencies: IdentityDependencies,
@@ -96,7 +95,6 @@ export function createIdentityPlan(
 				}),
 			);
 			return {
-				// Callers own their copies; only this closure can supply prepared evidence to I1.
 				descriptors: structuredClone(descriptors),
 				resolve(operations: readonly IdentityOperation[]): IdentityResolution {
 					return resolve(
@@ -111,7 +109,6 @@ export function createIdentityPlan(
 	};
 }
 
-/** All decisions stay in memory. Hosts own reads, writes, locks and transaction durability. */
 export function resolveIdentity(
 	input: ResolveIdentityInput,
 	dependencies: IdentityDependencies,
@@ -123,7 +120,6 @@ function unchangedMapping(id: string): IdentityMapping {
 	return { oldId: id, newId: id, fate: "kept" };
 }
 
-/** Never-active records carry no learner history. Consumer metadata still protects an ID. */
 export function isDurableIdentity(
 	id: string,
 	node: IdentityNode,
@@ -137,9 +133,6 @@ export function isDurableIdentity(
 	);
 }
 
-/** I4 may retain this view only after proving the complete committed store and sources.
- * Recorded operation fates describe the previous edit, not a later unchanged admission.
- */
 export function committedIdentityView(identity: IdentityResolution): IdentityResolution {
 	const result = structuredClone(identity);
 	result.mapping = result.sourceMappings.map(({ id }) => unchangedMapping(id));
@@ -148,7 +141,6 @@ export function committedIdentityView(identity: IdentityResolution): IdentityRes
 	return result;
 }
 
-/** Retain validated evidence privately. Callers still supply the complete document inventory. */
 export function createIdentityResolver(
 	input: ResolveIdentityInput,
 	dependencies: IdentityDependencies,
@@ -161,7 +153,6 @@ export function createIdentityResolver(
 	);
 	const priorHashes = new Set(hashes.values());
 	const heads = new Map(captured.priorHeads?.map((h) => [h.path, h.head]));
-	// Pending or changed baseline records do not prove that an untouched head stays fixed.
 	const stable =
 		!captured.operations?.length &&
 		!captured.mergeBase?.length &&
@@ -234,7 +225,6 @@ export function assertDurableCandidate(value: IdentityResolution): void {
 	for (const id of value.exportIds) check(id);
 }
 
-/** Hosts admit bytes before each call and revoke this session on admission errors. */
 export function createIdentityReadSession(
 	dependencies: IdentityDependencies,
 	reservedRuntimeIds: () => Iterable<string> = () => [],
@@ -264,7 +254,6 @@ export function createIdentityReadSession(
 		const epoch = ++generation;
 		try {
 			const captured = structuredClone(input);
-			// An absent store has one provisional course namespace until the host installs it.
 			const provisionalNamespace = !captured.course && !captured.priorSnapshots.length;
 			if (provisionalNamespace && previous?.provisionalNamespace)
 				captured.course = previous.candidateCourse;
@@ -274,7 +263,6 @@ export function createIdentityReadSession(
 			if (write && previous) {
 				if (write.before) assertDurableCandidate(write.before);
 				assertDurableCandidate(candidate);
-				// The admitted pre-write source proves these locations describe the same nodes.
 				const shown = new Map(
 					previous.view.sourceMappings.map((m) => [location(m.file, m.path), m.id]),
 				);
@@ -319,7 +307,6 @@ export function createIdentityReadSession(
 							fresh.add(location(d.file, d.path));
 				}
 			}
-			// These graphs exist only for matching the last read. They never feed the candidate.
 			const matched = previous
 				? resolve(
 						{
@@ -369,7 +356,6 @@ export function createIdentityReadSession(
 					if (!isRuntimeNodeId(id)) fail("invalid allocated runtime ID");
 					if (used.has(id)) fail("duplicate allocated read ID");
 					used.add(id);
-					// A held author snapshot still uses this retired locator.
 				} while (reserved.has(id));
 				return id;
 			};
@@ -460,7 +446,6 @@ export function createIdentityReadSession(
 			};
 			if (runtimeCourse)
 				correspondence.push({ runtimeId: runtimeCourse, durableId: candidate.course.courseId });
-			// Retired nodes received UUIDs in this write too; operation fates handle their removal.
 			const corresponded = new Set(correspondence.map((pair) => pair.runtimeId));
 			if (write?.before)
 				for (const [durableId, runtimeId] of previous?.candidateBindings ?? [])
@@ -521,7 +506,6 @@ export function createIdentityReadSession(
 			previous = undefined;
 		},
 		resolve: resolveRead,
-		/** Prepare under the write admission; publish only after installing these exact bytes. */
 		prepareWrite(
 			input: ResolveIdentityInput,
 			before: IdentityResolution | undefined,
@@ -566,7 +550,6 @@ function resolve(
 ): IdentityResolution {
 	for (const snapshot of [...input.priorSnapshots, ...(input.mergeBase ?? [])])
 		assertLegacyIdentitySnapshot(snapshot);
-	// Only the private continuation call admits the session's own display graph.
 	const parseSnapshot = displayIds ? parseIdentityReadSnapshot : parseIdentitySnapshot;
 	const exactKey = (node: IdentityNode | CanonicalDescriptor) => {
 		if (!retained) return identityKey(node);
@@ -855,7 +838,6 @@ function resolve(
 			)
 				fail("absorbed ID has no chosen survivor");
 	}
-	// Surrounding placement evidence cannot promote a never-active copy over its donor.
 	for (const [descriptor, id] of bindings) {
 		if (!provisional.has(id)) continue;
 		bindings.delete(descriptor);
@@ -864,7 +846,6 @@ function resolve(
 		explicit.delete(descriptor);
 		if (mapping) maps.splice(maps.indexOf(mapping), 1);
 	}
-	// Copy evidence authorizes the donor's ordered subtree. No external ordinal matching.
 	for (const [root, donorId] of [...copiedFrom]) {
 		const donorFor = new Map<string, string>([[location(root.file, root.path), donorId]]);
 		for (const child of descriptors.filter((d) => isBelow(d, root))) {
@@ -882,7 +863,6 @@ function resolve(
 			}
 		}
 	}
-	// A mapped fresh subtree never steals an exact identity from its original.
 	const resumesCut = (node: IdentityNode) => {
 		let parent = node.parent;
 		while (parent) {
@@ -905,7 +885,6 @@ function resolve(
 	const eligibleNew = () => descriptors.filter((d) => !bindings.has(d) && !fresh.has(d));
 	const savedOrder = (a: IdentityNode, b: IdentityNode) =>
 		a.span.start - b.span.start || a.order - b.order || a.span.end - b.span.end;
-	// Lesson head path is namespace evidence, not a positional content identity.
 	for (const d of descriptors.filter((d) => d.kind === "lesson" && !bindings.has(d))) {
 		const priorLesson = priorByPath.get(d.file);
 		if (
@@ -922,13 +901,9 @@ function resolve(
 		const sourceHash = hash((documents.get(root.file) as ParsedDocument).tree.stream.source);
 		if (![...priorByPath].some(([file, s]) => documents.has(file) && s.sourceHash === sourceHash))
 			continue;
-		// Keeping the old path proves a whole-file copy, even when the original was
-		// edited concurrently. Its descendants cannot compete for the original IDs.
 		fresh.add(root);
 		for (const child of descriptors.filter((d) => isBelow(d, root))) fresh.add(child);
 	}
-	// Whole-source evidence distinguishes simultaneous renames with identical metadata.
-	// A donor path still in the complete inventory is a copy, never a rename.
 	const renameDonors = bucket(
 		[...priorByPath].filter(
 			([file, s]) =>
@@ -994,8 +969,6 @@ function resolve(
 		for (const [d, id] of matchSimilar(priorEvidence, evidence, boundEvidence, "lesson"))
 			bind(roots[evidence.indexOf(d)], id);
 	}
-	// An unchanged, uniquely identified file proves its entire ordered tree, including
-	// repeated siblings. Pending records still require explicit resolution.
 	for (const root of descriptors.filter((d) => d.kind === "lesson" && bindings.has(d))) {
 		if (retained && unchanged.has(root.file)) {
 			for (const d of descriptors.filter((d) => d.file === root.file && !bindings.has(d))) {
@@ -1034,7 +1007,6 @@ function resolve(
 			if (candidates.length === 1) bind(d, candidates[0][0]);
 		}
 	}
-	// Unique course-wide exact content and exact matches under already matched owners.
 	const matchExact = () => {
 		const allOld = bucket(
 			[...old].filter(
@@ -1085,7 +1057,6 @@ function resolve(
 						ownedOld.length > 1 &&
 						ownedOld.length === ownedNew.length
 					) {
-						// Equal durable multiplicity preserves saved source order despite edits elsewhere.
 						ownedOld.sort((a, b) => savedOrder(a[1].node, b[1].node));
 						if (
 							ownedOld.some(
@@ -1102,7 +1073,6 @@ function resolve(
 					}
 				}
 			}
-			// Ordinals are allowed only for an entire unchanged sibling sequence with stable multiplicities.
 			for (const [ownerDescriptor, ownerId] of bindings) {
 				if (unchanged.has(ownerDescriptor.file)) continue;
 				const children = descriptors
@@ -1120,7 +1090,6 @@ function resolve(
 							e.node.status !== "retired" &&
 							e.node.status !== "cut",
 					)
-					// Projections follow authored children; their shifted ordinals can overlap an absent child.
 					.sort((a, b) => siblingOrder(a[1].node, b[1].node));
 				if (
 					!children.length ||
@@ -1145,8 +1114,6 @@ function resolve(
 		}
 	};
 	matchExact();
-	// Owners precede descendants. Each sibling stage gets one frozen score/anchor matrix;
-	// consuming its winners never gives rejected siblings a second, weaker margin test.
 	const depths = [...new Set(descriptors.map((d) => d.path.length))].sort((a, b) => a - b);
 	for (const depth of depths) {
 		for (const kind of ["lesson", "page", "block", "part"] as const) {
@@ -1171,9 +1138,6 @@ function resolve(
 			if (matches.length) matchExact();
 		}
 	}
-	// Metadata-identical lesson roots can remain ambiguous even after every child
-	// has a conservative course-wide match. A complete conserved subtree proves
-	// the rename without relaxing any child score or choosing a positional winner.
 	const conservedRenames = new Map<CanonicalDescriptor, string[]>();
 	for (const root of descriptors.filter(
 		(d) => d.kind === "lesson" && !bindings.has(d) && !fresh.has(d),
@@ -1219,7 +1183,6 @@ function resolve(
 			[...conservedRenames.values()].filter((ids) => ids.includes(candidates[0])).length === 1
 		)
 			bind(root, candidates[0]);
-	// An inverse's unplaced pending donor still makes restored copies ambiguous.
 	const candidateGroups = () =>
 		bucket(
 			[
@@ -1252,7 +1215,6 @@ function resolve(
 				if (candidates.length < 2 || candidates.length !== next.length) continue;
 				if (candidates.some(([id, entry]) => terminal.has(id) || entry.node.kind !== "block"))
 					continue;
-				// Resolve durable owners before assigning their identical descendants.
 				if (
 					next.some((d) => {
 						const parent = parentOf(d);
@@ -1282,7 +1244,6 @@ function resolve(
 				);
 				const pairs = new Map<CanonicalDescriptor, string>();
 				const used = new Set<string>();
-				// Keep as many IDs at their saved owner as possible before pairing moved copies.
 				for (const d of current) {
 					const parent = parentOf(d);
 					const owner = parent ? bindings.get(parent) : undefined;
@@ -1319,8 +1280,6 @@ function resolve(
 			);
 		for (const [id] of candidates) pendingOld.add(id);
 	}
-	// Placement evidence preserves source locations, but cannot settle an earlier
-	// external duplicate. Its provisional IDs and displaced donor remain pending.
 	const priorGroups = bucket(matchableOld(), ([, entry]) => exactKey(entry.node));
 	for (const d of descriptors) {
 		const id = bindings.get(d);
@@ -1344,7 +1303,6 @@ function resolve(
 		);
 		for (const [candidate] of candidates) pendingOld.add(candidate);
 	}
-	// Pending descendants invalidate their export owner, even if that owner's parse was valid.
 	const pendingDescriptors = new Set(
 		descriptors.filter((d) => !d.valid || ambiguous.has(d) || explicit.get(d)?.fate === "pending"),
 	);
@@ -1357,8 +1315,6 @@ function resolve(
 			parent = owner.parentPath;
 		}
 	}
-	// Keep one complete saved order through a copy-count change, rather than mixing
-	// absent donors' old ordinals with their unchanged siblings' shifted positions.
 	const savedOrders = new Map<CanonicalDescriptor, number>();
 	const pendingOwners = new Set([...pendingOld].map((id) => old.get(id)?.node.parent));
 	for (const [owner, ownerId] of bindings) {
@@ -1541,12 +1497,10 @@ function resolve(
 			nodes,
 		});
 	}
-	// Retain records absent from current source. Invalid parses cannot prove deletion.
 	for (const [id, entry] of old) {
 		if (nodesById.has(id)) continue;
 		let snapshot = snapshots.find((s) => s.lessonId === entry.snapshot.lessonId);
 		if (!snapshot) {
-			// Without I3 evidence, an absent lesson remains reviewable rather than disappearing.
 			snapshot = structuredClone(entry.snapshot);
 			snapshot.parents = [snapshotHash(entry.snapshot)];
 			snapshot.nodes = {};
@@ -1588,7 +1542,6 @@ function resolve(
 				reason: pendingOld.has(id) ? "duplicate" : "invalid",
 			});
 	}
-	// Retained descendants of a moved parent belong to its new lesson.
 	for (const snapshot of snapshots) {
 		for (const [id, node] of Object.entries(snapshot.nodes)) {
 			if (node.parent && !snapshot.nodes[node.parent]) {

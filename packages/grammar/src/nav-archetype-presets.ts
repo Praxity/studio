@@ -1,19 +1,5 @@
 import type { NavArchetype } from "./types.ts";
 
-/**
- * The nav toggles each archetype implies when the author has not overridden
- * them.
- *
- * These presets live in `grammar` rather than `editor-core` because both sides
- * of the pipeline need them and they must not drift: the desktop editor resolves
- * them for the live preview, and `export-pipeline`'s `desktop-design.ts` resolves
- * them for the published package. While the exporter had its own sidebar-shaped
- * default table, a course whose only nav setting was `navArchetype: slides`
- * exported with `navOutline: true`, `navEdgeArrows: false`,
- * `navHamburgerMenu: false`, `navSlideCounter: false` and `navProgressStyle: bar`
- * — the slides layout class with sidebar navigation, so the published slides had
- * no edge arrows, no hamburger outline, no counter and no dots.
- */
 export interface NavToggleValues {
 	navOutline: boolean;
 	navHamburgerMenu: boolean;
@@ -202,7 +188,6 @@ const PRESETS: Record<Exclude<NavArchetype, "custom">, NavToggleValues> = {
 	},
 };
 
-/** Keys whose default comes from the archetype, not from a global default table. */
 export const NAV_PRESET_KEYS = Object.keys(PRESETS.sidebar) as (keyof NavToggleValues)[];
 
 export const BOOLEAN_NAV_KEYS = NAV_PRESET_KEYS.filter(

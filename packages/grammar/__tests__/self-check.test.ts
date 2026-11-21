@@ -22,7 +22,6 @@ const read = (text: string) =>
 				String(message.args[name]),
 			),
 	});
-// Every error and warning, ordered by line then message, so extra diagnostics fail.
 const errors = (text: string) =>
 	read(text)
 		.errors.map((error) => ({ message: error.message, line: error.line }))
@@ -233,7 +232,6 @@ describe("self-check declaration through the public reader", () => {
 		" {private}",
 		" {private=true}",
 		" {private=false}",
-		// Criteria are checkbox labels, not headings, so a deep level must not clamp them.
 		" {level=6}",
 		' {width=wide name=reflection hide entrance=fade level=3 required=false deckGate=attempt visible="ready is true"}',
 	])("accepts the permitted settings %s", (settings) => {

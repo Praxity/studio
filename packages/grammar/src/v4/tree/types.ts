@@ -1,6 +1,5 @@
 import type { DiagnosticCode, TokenStream } from "../lex/index.ts";
 
-/** Half-open UTF-16 offsets and indexes into the unchanged G1 token stream. */
 export interface SourceSpan {
 	start: number;
 	end: number;
@@ -43,7 +42,6 @@ export type TreeKind =
 	| "table"
 	| "recovery";
 
-/** Editable slices within a lexical prose token. Node spans still cover whole tokens. */
 export interface BodyValue {
 	range: { start: number; end: number };
 	raw: string;
@@ -64,7 +62,6 @@ export type BodyKind =
 	| "lists"
 	| "tables";
 export interface BodyDefinition {
-	/** Authored fields are plain text, excluded from inline and glossary interpretation. */
 	literalText?: boolean;
 	body?: BodyKind;
 	items?: boolean;
@@ -82,9 +79,7 @@ export interface BodyDefinition {
 		>
 	>;
 	settingAliases?: Readonly<Record<string, string>>;
-	/** Item declarations belong to the enclosing container, not a global item vocabulary. */
 	itemDefinition?: BodyDefinition;
-	/** Schema-owned constraints run after body interpretation, before status propagation. */
 	validate?: (node: TreeNode, parent?: TreeNode) => readonly DefinitionIssue[];
 }
 export interface DefinitionIssue {
@@ -94,10 +89,8 @@ export interface DefinitionIssue {
 	severity?: "error" | "warning";
 }
 export interface AnalysisOptions {
-	/** G4/G5 supplies declarations, including page/image/divider definitions when needed. */
 	definition: (type: string) => BodyDefinition | undefined;
 	suggestType?: (type: string) => string | undefined;
-	/** G6/G5 supplies inline definitions, including prior course occurrences. */
 	glossaryDefinitions?: readonly {
 		term: string;
 		definition: string;
@@ -204,7 +197,6 @@ export type AnalysisDiagnosticCode =
 	| "unknown-page-style"
 	| "invalid-course-metadata";
 
-/** Language-neutral facts; G3 supplies MessageRef diagnostics. */
 export interface TreeDiagnostic {
 	code: TreeDiagnosticCode;
 	span: SourceSpan;
@@ -216,9 +208,7 @@ export interface TreeDiagnostic {
 }
 
 export interface TreeOptions {
-	/** G4/G5 owns part names. Unclassified named lines stay in the body. */
 	isPart?: (name: string, owner: TreeNode, parent?: TreeNode) => boolean;
-	/** Semantic pass enables schema-aware item recovery; G2 callers keep strict generic structure. */
 	allowsItems?: (owner: TreeNode) => boolean;
 }
 

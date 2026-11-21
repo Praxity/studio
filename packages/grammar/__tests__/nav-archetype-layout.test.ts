@@ -9,9 +9,6 @@ import {
 import type { NavArchetype } from "../src/types.ts";
 
 describe("navArchetypeToLayoutClass", () => {
-	// Every archetype the Design panel offers must resolve to its own layout class.
-	// The old reverse-inference collapsed `minimal` to `none` and `embedded` to
-	// `bottombar`, and downgraded anything it could not recognise to `sidebar`.
 	const cases: [NavArchetype, string][] = [
 		["sidebar", "praxity-layout-sidebar"],
 		["bottomBar", "praxity-layout-bottombar"],

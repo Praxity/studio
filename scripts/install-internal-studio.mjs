@@ -52,7 +52,6 @@ async function loadRubato(root) {
 	return { ...update, ...manifest, ...cli, ...publisher, ...tools };
 }
 
-// Subprocesses, disk admission and the reviewed Rubato checkout are external seams.
 export async function installInternalStudio(options, dependencies = {}) {
 	const home = options.home ?? homedir();
 	const cwd = options.cwd ?? process.cwd();
@@ -78,9 +77,7 @@ export async function installInternalStudio(options, dependencies = {}) {
 					),
 				),
 			);
-		} catch {
-			// A missing origin still gets explicit setup instructions, without leaking Git stderr.
-		}
+		} catch {}
 		print(`refused: ${error.message}`);
 		print(
 			derived
@@ -128,7 +125,6 @@ export async function installInternalStudio(options, dependencies = {}) {
 		try {
 			return JSON.parse(run("sh", [join(home, ".praxity/bin/praxity"), "--version"]));
 		} catch {
-			// Older installed packs expose only the original version subcommand.
 			return JSON.parse(run("sh", [join(home, ".praxity/bin/praxity"), "version"]));
 		}
 	};
@@ -137,7 +133,6 @@ export async function installInternalStudio(options, dependencies = {}) {
 		interrupted ??= signal;
 	};
 	for (const signal of ["SIGINT", "SIGTERM"]) process.on(signal, onInterrupt);
-	// Synchronous children finish their own recovery before scratch is removed.
 	const settled = async () => {
 		await setImmediate();
 		requireValue(!interrupted, "Rerun after the installer has recovered.");
@@ -537,9 +532,7 @@ export async function installInternalStudio(options, dependencies = {}) {
 		let installed = { pack: "unavailable", studioSha: "unavailable" };
 		try {
 			installed = version();
-		} catch {
-			/* The refusal still reports that version inspection failed. */
-		}
+		} catch {}
 		const message = [error.message, error.stderr?.toString()].filter(Boolean).join("\n");
 		const detail =
 			message.match(/Activation failed; rolled back[^\r\n]*/)?.[0] ??

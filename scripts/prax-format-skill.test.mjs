@@ -7,7 +7,6 @@ import {
 	admitRubatoPublisher,
 } from "../apps/desktop/scripts/admit-rubato-release.mjs";
 
-// Rubato installs docs/prax-format/ as the skill folder: SKILL.md plus its topic guides.
 const formatRoot = new URL("../docs/prax-format/", import.meta.url);
 const skills = ["SKILL.md", ...globSync("skill/*.md", { cwd: formatRoot })].map((path) => ({
 	path: posix.normalize(path.replaceAll("\\", "/")),
@@ -64,7 +63,6 @@ test("choice guidance names Rubato's assessment-writing skill instead of a host 
 			"https://github.com/Praxity/rubato/blob/main/skills/assessment-writing/SKILL.md",
 		),
 	);
-	// A relative link would leave the installed skill folder.
 	assert.doesNotMatch(guidance, /\]\(\.\.\/\.\.\//);
 });
 
@@ -76,14 +74,12 @@ test("the build order attacks choice questions before identity and marks rederiv
 		attack > 0 && attack < order.indexOf("Record identity"),
 		"probe choices before identity and export",
 	);
-	// The CLI on main accepts no rederive flag; a person decides until it ships.
 	assert.match(skill, /Rederivation is planned; the current CLI doesn't accept it\./);
 	assert.match(skill, /has never been published, stop and let the person decide\./);
 });
 
 test("skill links resolve inside the installed prax-format folder", () => {
 	for (const { path, text } of skills) {
-		// Fenced and inline code hold placeholder destinations, not documentation links.
 		const prose = text
 			.replace(/^(`{3,}|~{3,})[^\n]*\n[\s\S]*?^\1[^\n]*$/gm, "")
 			.replace(/(`+)[\s\S]*?\1/g, "");
@@ -148,7 +144,6 @@ test("publishing requires the assessment skill at the exact Rubato revision sele
 	const content = Buffer.from(
 		"---\nname: assessment-writing\ndescription: Write choices.\n---\n",
 	).toString("base64");
-	// Building and candidate packaging use only Studio source, before Rubato pins can merge.
 	assert.deepEqual(admitRelease(env, api({})), { source_ref: sha });
 	assert.ok(routes.every((route) => !route.includes("/rubato/")));
 	assert.deepEqual(admitRubatoPublisher(api({ type: "file", encoding: "base64", content })), {
@@ -190,7 +185,6 @@ function assertExportCommands(text) {
 			continue;
 		}
 		if (!fence && /^\s*(?:#{1,6}\s|(?:=+|-+)\s*$)/.test(line)) sectionInits.clear();
-		// Scan every language and prose with the same detector, including prefixed executables.
 		const commands = line.matchAll(praxityCommands);
 		for (const [, command, args] of commands) {
 			const argument = args.trim();
@@ -210,7 +204,6 @@ function assertExportCommands(text) {
 			exports++;
 		}
 	}
-	// Even an unparsed Markdown construct must not hide an export from the guard.
 	assert.equal(
 		exports,
 		[...text.matchAll(praxityCommands)].filter(([, command]) => command === "export").length,

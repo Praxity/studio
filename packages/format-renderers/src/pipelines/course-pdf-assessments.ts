@@ -17,7 +17,6 @@ import { escapeTypst } from "../renderers/typst/common.ts";
 export interface PdfAssessmentContext {
 	locale: string;
 	includeAnswers: boolean;
-	/** Journal responses get ruled writing space; other text responses retain their layout. */
 	answerLines?: boolean;
 	number: number;
 	renderBlocks: (blocks: unknown) => string;
@@ -28,7 +27,6 @@ export interface PdfAssessmentContext {
 		alt: string,
 		options?: {
 			decorative?: boolean;
-			/** Authored image size, printed at the published share of the text width. */
 			size?: unknown;
 			alignment?: unknown;
 			regions?: Array<{ shape: "rect" | "ellipse" | "polygon"; coords: number[]; label?: string }>;
@@ -80,11 +78,9 @@ function letter(index: number): string {
 		value = String.fromCharCode(65 + ((n - 1) % 26)) + value;
 	return value;
 }
-// ponytail: deterministic rotation supplies one workbook order; exam variants need a separate contract.
 const rotate = <T>(items: T[]): T[] =>
 	items.length > 1 ? [...items.slice(1), items[0]] : [...items];
 
-/** Only display fields reach body serializers. Solutions and feedback are rendered separately. */
 export function renderPdfAssessment(
 	block: PraxityBlock,
 	ctx: PdfAssessmentContext,
@@ -129,8 +125,6 @@ export function renderPdfAssessment(
 	};
 	const rationale: Array<{ html?: string; render: () => string }> = [];
 	const key: Array<() => string> = [];
-	// Compare source HTML before rich() allocates unique PDF inline placeholders.
-	// The grammar adapter wraps promoted option feedback in a single text paragraph.
 	const feedbackHtml = (html: string) => {
 		const paragraph = /^<p>([\s\S]*)<\/p>$/.exec(html);
 		return paragraph && !/<\/?p\b/i.test(paragraph[1]) ? paragraph[1] : html;
@@ -144,7 +138,6 @@ export function renderPdfAssessment(
 		if (includeAnswers && owner.feedback)
 			addRationale(
 				() => display(owner, "feedback"),
-				// Promotion uses interactive HTML; retain its block so links and definitions survive.
 				typeof owner.feedback === "string"
 					? feedbackHtml(getInlineField(owner, "feedback"))
 					: undefined,
@@ -478,7 +471,6 @@ export function renderPdfAssessment(
 		for (const blocks of [feedback.correct, feedback.general]) {
 			if (!blocks) continue;
 			const block = Array.isArray(blocks) && blocks.length === 1 ? blocks[0] : undefined;
-			// Rich collections, locale overrides and text layout settings keep their own rendering.
 			const html =
 				isRecord(block) &&
 				block.type === "text" &&

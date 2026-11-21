@@ -4,7 +4,6 @@ import { DAY_MS, DEFAULT_EXPIRY_DAYS, normalizeExpiryDays, validRelativePath } f
 import { json } from "./response";
 
 declare global {
-	// Vitest also loads DOM declarations, which hide Workers' default cache property.
 	interface CacheStorage {
 		readonly default: Cache;
 	}
@@ -70,7 +69,6 @@ async function sha256(value: string): Promise<string> {
 }
 
 function immutableFile(path: string): boolean {
-	// Match exporter fingerprints, never ordinary authored filenames or HTML.
 	return (
 		/^assets\/__praxity-[a-f0-9]{24}\.webp$/u.test(path) ||
 		/^[a-z0-9_-]+\.[a-f0-9]{12}\.css$/u.test(path) ||
@@ -143,8 +141,6 @@ async function lookupShare(
 	now = Date.now(),
 ): Promise<ShareLookup> {
 	timing.shareHash = await sha256(`review-share-log:${slug}`);
-	// KV defaults to 60 s, minimum 30 s; the explicit TTL preserves that existing window.
-	// Revocation or shortened expiry can take up to 60 s to reach this edge.
 	const stored = await measure(timing, "kvMs", () =>
 		kv.get(`${SHARE_KEY_PREFIX}${slug}`, { cacheTtl: 60 }),
 	);
@@ -202,8 +198,6 @@ async function createShare(request: Request, env: Env, timing: RequestTiming): P
 	await env.REVIEW_KV.put(`${SHARE_KEY_PREFIX}${slug}`, JSON.stringify(share));
 
 	const uploadUrl = new URL(`/api/publish/${slug}/file`, request.url).toString();
-	// Return the server-computed expiry so clients render the authoritative
-	// date rather than recomputing it (avoids build/upload clock skew).
 	return json({ slug, uploadUrl, expiresAt: share.expiresAt }, 201);
 }
 
@@ -274,7 +268,6 @@ async function serveFile(
 	const path = encodedPath === "" ? "index.html" : decodePath(encodedPath);
 	if (path === null) return json({ error: "Invalid file path" }, 400);
 
-	// Preserve R2's existing range and conditional semantics, including If-Range.
 	const conditional = [...request.headers.keys()].some((name) => name.startsWith("if-"));
 	const cacheKey =
 		ctx && immutableFile(path) && !request.headers.has("Range") && !conditional
@@ -292,7 +285,6 @@ async function serveFile(
 			timing.cacheMatchFailed = true;
 		}
 		if (cached) {
-			// Cached bytes must not bypass R2 retention or manual deletion.
 			const exists = await measure(timing, "r2Ms", () => env.REVIEW_FILES.head(`${slug}/${path}`));
 			if (exists) return cached;
 			return json({ error: "File not found" }, 404);
@@ -309,13 +301,11 @@ async function serveFile(
 		metadata = await measure(timing, "r2Ms", () => env.REVIEW_FILES.head(key));
 		if (metadata === null) return json({ error: "File not found" }, 404);
 		const ifRange = request.headers.get("If-Range");
-		// Date and weak validators cannot establish an exact representation match here.
 		if (!ifRange || ifRange === metadata.httpEtag) range = byteRange(rangeHeader, metadata.size);
 	}
 	let object = await measure(timing, "r2Ms", () =>
 		env.REVIEW_FILES.get(key, {
 			onlyIf,
-			// A minimal read lets R2 evaluate If-None-Match before a 416 response.
 			range: range === null && metadata?.size ? { offset: 0, length: 1 } : (range ?? undefined),
 		}),
 	);

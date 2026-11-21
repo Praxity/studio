@@ -22,7 +22,6 @@ function parse(path: string, source: string): ts.SourceFile {
 }
 
 function declarations(path: string, text: string): string[] {
-	// Escaped identifiers need parsing even when their decoded names are absent.
 	if (![...names].some((name) => text.includes(name)) && !text.includes("\\u")) return [];
 	const found: string[] = [];
 	function visit(node: ts.Node): void {
@@ -41,7 +40,6 @@ function declarations(path: string, text: string): string[] {
 function sentences(source: ts.Node): string[] {
 	const found: string[] = [];
 	function visit(node: ts.Node): void {
-		// Comments document the contract; string and template values can reach callers.
 		if (ts.isStringLiteralLike(node) || ts.isTemplateHead(node) || ts.isTemplateMiddle(node)) {
 			const keyPrefix =
 				ts.isTemplateHead(node) &&

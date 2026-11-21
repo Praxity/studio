@@ -1,16 +1,5 @@
 #!/usr/bin/env node
 
-// Mirrors docs/prax-format to the public github.com/Praxity/prax-format repository.
-// Studio's docs/prax-format is the only place the spec is edited; the public repo
-// receives it at release time through a PR opened by this script.
-//
-// Usage:
-//   pnpm sync:prax-format --version 0.2.1 [--ref origin/main] [--target ../prax-format] [--dry-run] [--no-push]
-//
-// Files are copied from committed blobs at --ref, so local edits in the Studio
-// checkout never leak into the mirror. docs/prax-format/scripts/ stays private, and
-// dotfiles in the public repo (for example .github/) are left alone.
-
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";

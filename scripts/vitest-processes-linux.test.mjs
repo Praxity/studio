@@ -115,7 +115,6 @@ export default { root: ${JSON.stringify(dir)}, test: { include: ["stuck.test.mjs
 		assert.match(warnings.join("\n"), new RegExp(`PID ${pid}:.*forks\\.js`));
 		t.diagnostic(warnings.join("\n"));
 	} finally {
-		// Stop only the exact fixture worker this test recorded, even if an assertion fails.
 		if (!pid && existsSync(pidFile)) pid = Number(readFileSync(pidFile, "utf8"));
 		if (pid && live(pid)) process.kill(pid, "SIGKILL");
 		if (existsSync(groups)) clearVitestProcessGroups(groups, { logger: { warn() {} } });

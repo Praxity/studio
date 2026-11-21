@@ -10,7 +10,6 @@ import {
 import { analyzeLessonTree, type TreeNode } from "@praxity/grammar/src/v4/tree/index.ts";
 import { minimalEdit } from "./ranges.ts";
 
-/** Transform authored fields, using declaration losses rather than a second conversion matrix. */
 export function conversionEdits(
 	source: string,
 	node: TreeNode,
@@ -75,7 +74,6 @@ export function conversionEdits(
 			source.slice(node.header.start, node.header.end).match(/(?:\r\n|\r|\n)$/u)?.[0] ?? "";
 		replace(node.header.start, node.header.end, header.replace(/(?:\r\n|\r|\n)$/u, ending));
 	} else {
-		// Leaf forms gain a text container without changing their literal content.
 		edits.push({ start: node.span.start, end: node.span.start, text: header });
 	}
 	if (type === "page") return edits;
@@ -89,7 +87,6 @@ export function conversionEdits(
 	}
 	const from = getDefinition(node.type ?? node.kind);
 	const visit = (child: TreeNode, parent: TreeNode) => {
-		// Nested blocks keep their own declarations and interpretation.
 		if (child.kind === "block") return;
 		if (
 			(child.kind === "part" && losses.has(`part:${child.name}`)) ||
@@ -101,7 +98,6 @@ export function conversionEdits(
 		}
 		if (child.kind === "item" && !definition.items) {
 			if (child.header) edits.push({ start: child.header.start, end: child.header.end, text: "" });
-			// Separate flattened items even if the author wrote no trivia between them.
 			if (parent.children.indexOf(child) > 0)
 				edits.push({
 					start: child.header?.end ?? child.span.start,
@@ -158,7 +154,6 @@ export function conversionEdits(
 		});
 	}
 	if (responses.length) {
-		// Existing response text is the new response list. Only schema-declared state/roles disappear.
 		let number = 0;
 		const targetBody = definition.body;
 		for (const response of responses) {
@@ -189,7 +184,6 @@ export function conversionEdits(
 				(r) => r.number !== undefined && ["rating", "matrix"].includes(node.type ?? ""),
 			)
 		) {
-			// Missing target scaffolding comes from its schema template, never interface copy here.
 			const template = analyzeLessonTree(tokenizeLesson(`# _\n${definition.insertTemplate}`), {
 				definition: getDefinition,
 			}).root.children[0]?.children[0];
@@ -227,7 +221,6 @@ export function conversionEdits(
 	return edits;
 }
 
-/** Standalone drafts must parse as exactly one block, excluding page or delimiter escapes. */
 export function replacementText(text: string, eol: string): string | null {
 	const raw = text.replace(/\r\n|\r|\n/gu, eol).replace(/[\r\n]+$/u, "") + eol;
 	const tree = analyzeLessonTree(tokenizeLesson(`# _${eol}${raw}`), { definition: getDefinition });

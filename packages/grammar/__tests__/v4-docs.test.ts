@@ -9,8 +9,6 @@ const docs = resolve(__dirname, "../../../docs/prax-format");
 const files = readdirSync(docs, { recursive: true }).filter((file) => /\.(md|prax)$/.test(file));
 const read = (file: string) => readFileSync(resolve(docs, file), "utf8");
 
-// Fences are full lessons, including a page. Error examples declare every expected
-// diagnostic as code@line:column in their fence info, in source order.
 function fences(file: string) {
 	const result: { title: string; source: string; expected: string[] }[] = [];
 	const lines = read(file).split(/\r?\n/);
@@ -64,7 +62,6 @@ describe("D1 grammar-4 documentation", () => {
 
 	const reference = files
 		.filter((file) => /^reference[\\/].*\.md$/.test(file))
-		// Example headings and tables cannot count as reference entries.
 		.map((file) => read(file).replace(/^(`{3,}|~{3,})[^\n]*\n[\s\S]*?^\1\s*$/gm, ""))
 		.join("\n");
 	const sections = [...reference.matchAll(/^## ([^\r\n]+)\r?\n([\s\S]*?)(?=^## |$(?![\s\S]))/gm)];

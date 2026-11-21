@@ -1,9 +1,7 @@
 import type { IdentityMapping } from "./types.ts";
 
-/** Reverse one survivor and restore each merge donor, without sharing identities. */
 export function invertIdentityMapping(
 	mapping: readonly IdentityMapping[],
-	/** Restore prior pending status; a newly invalid draft still undoes to active. */
 	pendingIds: ReadonlySet<string> = new Set(),
 	cutIds: ReadonlySet<string> = new Set(),
 ): IdentityMapping[] {

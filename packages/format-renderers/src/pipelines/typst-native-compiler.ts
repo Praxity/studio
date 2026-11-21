@@ -5,7 +5,6 @@ import path from "node:path";
 
 export interface CompileOptions {
 	pdfStandard?: "ua-1" | "a-2b" | "a-3b";
-	/** Host-owned parent for recoverable private compiler workspaces. */
 	temporaryRoot?: string;
 	executablePath?: string;
 	signal?: AbortSignal;
@@ -37,7 +36,6 @@ function validateOptions(options: CompileOptions): void {
 	}
 }
 
-/** Native-only entry keeps the optional legacy WASM compiler out of host bundles. */
 export async function compileTypstNative(
 	source: string,
 	options: CompileOptions & { executablePath: string },
@@ -88,7 +86,6 @@ async function compileInWorkspace(
 				{
 					timeout: 45_000,
 					signal: options.signal,
-					// The explicit engine must not inherit host Typst, font or package settings.
 					env: { LANG: "C.UTF-8" },
 				},
 				(error: Error | null, _stdout, stderr) => {

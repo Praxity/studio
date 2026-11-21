@@ -37,7 +37,6 @@ function readPath(value: unknown, path: FieldPath): unknown {
 	return value;
 }
 
-/** Legacy block data can already contain rich HTML. Sanitize at the render sink. */
 export const isInlineHtml = (value: string) =>
 	/<(?:p|span|strong|em|a|code|mark|s|del|ul|ol|br)\b/i.test(value);
 
@@ -50,7 +49,6 @@ export function formatInlineText(value: string, interactive = true, dialogue = f
 	return isInlineHtml(value) ? value : inlineMarkdown(value, { interactive });
 }
 
-/** Display HTML only. Never use this result as an answer value or accessible name. */
 export function getInlineField(owner: unknown, path: FieldPath, interactive = true): string {
 	const prepared = readPath(record(owner)?._inline, path);
 	if (typeof prepared === "string") return prepared;
@@ -62,11 +60,6 @@ export function getInlineField(owner: unknown, path: FieldPath, interactive = tr
 			: "";
 }
 
-/**
- * Prepare display fields before collectors and runtime planning inspect them.
- * Raw labels and answer values stay intact; render-only HTML lives beside them.
- * Existing content/stem child blocks already hold HTML from the grammar parser.
- */
 export function prepareInlineBlocks(blocks: PraxityBlock[]): PraxityBlock[] {
 	const prepared = structuredClone(blocks);
 	let changed = false;
@@ -188,7 +181,6 @@ export function prepareInlineBlocks(blocks: PraxityBlock[]): PraxityBlock[] {
 							response.type === "choice",
 						);
 						items(response.items, ["label", "feedback"]);
-						// Matching/categorization values also serve as answer keys. Keep them raw.
 						items(response.pairs, ["prompt", "feedback"]);
 					}
 					break;

@@ -14,8 +14,6 @@ const git = (root, ...args) =>
 		encoding: "utf8",
 	});
 
-// pnpm's package-directory link is expected. Every component *inside* its real
-// package must be an ordinary file/directory, including esbuild's helper inputs.
 async function admittedPath(packageRoot, file) {
 	const relative = path.relative(packageRoot, path.resolve(file));
 	if (
@@ -75,7 +73,6 @@ async function canonicalPackageRoot(root) {
 	return packageRoot;
 }
 
-/** Parse source and bundle installed imports without evaluating upstream code. */
 export async function inventoryLearningPatterns(root) {
 	root = await realpath(root);
 	const require = createRequire(path.join(root, "package.json"));
@@ -113,7 +110,6 @@ export async function inventoryLearningPatterns(root) {
 				resolved = createRequire(absolute).resolve(specifier);
 			} catch (error) {
 				if (namesPackage) throw error;
-				// Other workspace/type/bundler imports belong to their own gates.
 				continue;
 			}
 			if (!namesPackage && !resolved.startsWith(`${packageRoot}${path.sep}`)) continue;
@@ -149,8 +145,6 @@ export async function inventoryLearningPatterns(root) {
 					name: "admitted-package-only",
 					setup(builder) {
 						builder.onResolve({ filter: /.*/ }, async (args) => {
-							// Upstream imports are explicit relative files. Refuse unknown
-							// package/builtin imports rather than externalizing unscanned code.
 							if (args.importer && !args.path.startsWith("."))
 								throw new Error(`External learning-patterns import: ${args.path}`);
 							const resolved = args.importer
@@ -192,7 +186,6 @@ export async function inventoryLearningPatterns(root) {
 			await add(path.resolve(root, input), role);
 	}
 	await add(path.join(packageRoot, "package.json"), "legal");
-	// These are the same root notice families copied by standalone packaging.
 	const legal = async (directory) => {
 		for (const entry of await readdir(directory, { withFileTypes: true })) {
 			const file = path.join(directory, entry.name);
@@ -282,7 +275,6 @@ export async function verifyLearningPatterns(root) {
 			throw new Error(`Admission roles mismatch: ${file.path}`);
 		expected.delete(file.path);
 	}
-	// Entries seen only by a real bundle remain valid; verify their bytes too.
 	for (const file of expected.values()) {
 		if (!file.roles.some((role) => ["learner-bundle", "studio-browser", "css"].includes(role)))
 			throw new Error(`Manifest files not reached: ${file.path}`);
@@ -291,7 +283,6 @@ export async function verifyLearningPatterns(root) {
 	return manifest;
 }
 
-// Existing bounded workspace/module-loader imports. New spellings require review.
 const reviewedDynamicImports = {
 	"packages/export-pipeline/src/__tests__/learning-patterns-admission.test.ts": [
 		'import(pathToFileURL(path.join(root,"packages/export-pipeline/src/bundle-viewer.ts")).href)',
@@ -343,8 +334,6 @@ const reviewedDynamicImports = {
 function discoverImports(ts, file, source) {
 	const imports = new Set();
 	const namesPackage = (value) => /(?:^|[/])learning-patterns[/]/.test(value);
-	// JSON is data. Package dependency declarations are checked against the lock;
-	// bundler/tsconfig alias targets into the package are refused explicitly.
 	if (file.endsWith(".json")) {
 		if (!source.includes("learning-patterns")) return imports;
 		const data = JSON.parse(source);

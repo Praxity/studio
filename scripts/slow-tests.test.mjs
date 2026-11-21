@@ -183,7 +183,6 @@ test("checked-in allowlist has reasons and permits only dated additions relative
 	if (process.env.CI === "true") {
 		const base = process.env.SLOW_TESTS_BASE;
 		assert.ok(base, "CI must supply the PR base or pre-push commit for the shrink check");
-		// An absent list is the one-time bootstrap, not a reason to ignore Git errors.
 		const files = execFileSync(
 			"git",
 			["ls-tree", "--name-only", base, "--", "scripts/slow-tests.json"],
@@ -782,7 +781,6 @@ for (const [project, relativeFile, name] of [
 	],
 ]) {
 	test(`real workspace reporter confirms ${relativeFile} with intact mocks`, () => {
-		// Force only the shard diagnostic; the unchanged confirmation file measures real tests.
 		const file = resolve(root, relativeFile);
 		const projectRoot = resolve(
 			root,

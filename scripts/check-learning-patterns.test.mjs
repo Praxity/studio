@@ -340,13 +340,10 @@ test("trusted base refuses missing verifier code and failed fetches", async (t) 
 	runGit("rm", "--cached", "scripts/check-learning-patterns.mjs");
 	runGit("commit", "-qm", "missing trusted verifier");
 	await assert.rejects(verifyTrustedBase(root, "HEAD"), /Command failed/);
-	// A nonexistent child of a repository can discover its parent repository
-	// through Git's local transport. Use a sibling outside that repository.
 	runGit("remote", "set-url", "origin", `${root}-missing-origin`);
 	await assert.rejects(verifyTrustedBase(root, base), /Command failed/);
 });
 
-// R1 planted failures. Keep the real esbuild probes independent of discovery.
 test("P1-1: a symlinked CLI refuses changed admitted bytes", async (t) => {
 	const { root, put } = await fixture(t);
 	await put("installed/helper.js", "export const value = 43;\n");
@@ -612,7 +609,6 @@ test("P3: receipt digest is reproducible and installed-byte cache keys change on
 	assert.equal(result.status, 0, result.stderr);
 	assert.match(result.stdout, new RegExp(`${pin} manifest-sha256 ${admissionDigest(manifest)}`));
 	const first = await installedLearningPatternsDigest(root);
-	// SHA-256 of the fixture path + NUL + content-SHA-256 + newline records.
 	assert.equal(first, "585c6f1925b8e7dd774312eb6a5913c4a6d7c36cd3e78e11b982dcf0b54056ea");
 	await put("installed/helper.js", "export const value = 43;");
 	assert.notEqual(await installedLearningPatternsDigest(root), first);

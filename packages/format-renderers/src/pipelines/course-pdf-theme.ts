@@ -31,23 +31,17 @@ function blend(hex: string, alpha: number): string {
 	return `#${channel(1)}${channel(3)}${channel(5)}`;
 }
 
-/**
- * Print mapping of the course theme: light-mode tokens on white paper, text roles
- * re-checked for contrast, and only theme fonts that the engine directory supplies.
- */
 export function coursePdfTheme(
 	design: Record<string, unknown> | undefined,
 	availableFonts: ReadonlySet<string>,
 ): {
 	preamble: string;
 	fonts: Set<string>;
-	/** Concrete values for the published chart SVG, which Typst cannot resolve from CSS variables. */
 	chart: { vars: Record<string, string>; font: string };
 } {
 	const tokens = resolveDesignTokens((design ?? {}) as unknown as DesignVariants, "light");
 	const token = (name: string, fallback: string) =>
 		colorToHex(tokens[`--praxity-color-${name}`] ?? "") ?? fallback;
-	// Tints are printed on white, so derive them from the paper-safe accent, not a dark theme surface.
 	const tint = blend(ensureContrastAll(token("accent", "#1f4d7a"), 4.5, PAPER), 0.1);
 	const ink = ensureContrastAll(token("text", "#1a1a1a"), 7, PAPER, tint);
 	const text = (name: string) => ensureContrastAll(token(name, ink), 4.5, PAPER, tint);
@@ -79,7 +73,6 @@ export function coursePdfTheme(
 		const value = Number.parseFloat(tokens[name] ?? "");
 		return Math.min(max, Math.max(min, Number.isFinite(value) ? value : fallback));
 	};
-	// Web line heights are screen-generous; 1.6 maps to Typst's print leading of 0.7em.
 	const leading = (0.7 * scale("--praxity-line-height-base", 1.6, 1.3, 2)) / 1.6;
 	const spacing = 1.2 * scale("--praxity-block-spacing-scale", 1, 0.7, 1.6);
 	const accent = text("accent");

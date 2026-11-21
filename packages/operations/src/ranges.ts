@@ -19,7 +19,6 @@ export function locateTree(tree: AnalyzedLessonTree): LocatedNode[] {
 	return nodes;
 }
 
-/** Whole-node deletion owns one adjacent blank, while source fields exclude closers. */
 export function deletionRange(entry: LocatedNode): { start: number; end: number } {
 	const { start, end } = entry.node.span;
 	const following = entry.parent?.node.trivia.find((span) => span.start === end);
@@ -33,7 +32,6 @@ export function draftRange(node: TreeNode) {
 	return { start: node.span.start, end: node.closer?.start ?? node.span.end };
 }
 
-/** Expand admitted UTF-16 draft ranges without changing authored bytes. */
 export function draftText(
 	source: string,
 	expected: { start: number; end: number },
@@ -58,7 +56,6 @@ export function draftText(
 	};
 }
 
-/** Trim shared bytes without splitting surrogate pairs or CRLF terminators. */
 export function minimalEdit(source: string, edit: SourceEdit): SourceEdit | null {
 	const old = source.slice(edit.start, edit.end);
 	let prefix = 0;
@@ -84,12 +81,10 @@ export function minimalEdit(source: string, edit: SourceEdit): SourceEdit | null
 		text: edit.text.slice(prefix, edit.text.length - suffix),
 	};
 }
-/** Subject edges are parser whitespace; other fields retain their authored spaces. */
 export function canvasTextReplacement(field: string | undefined, text: string) {
 	return field === "subject" ? text.replace(/^[ \t]+|[ \t]+$/gu, "") : text;
 }
 
-/** Match wraps by their text boundary so removing one cannot shift later terminators. */
 export function preserveTextWraps(text: string, previous: string, file: string): string {
 	const endings = [...previous.matchAll(/\r\n|\r|\n/gu)];
 	const old = previous.replace(/\r\n|\r|\n/gu, "");
@@ -102,7 +97,6 @@ export function preserveTextWraps(text: string, previous: string, file: string):
 		if (char === "\n") positions.add(position);
 		else position += char.length;
 	}
-	// An unchanged, unique adjacent line also anchors wraps inside separate word edits.
 	const anchor = (line: string, end: boolean) => {
 		const index = next.indexOf(line);
 		if (
@@ -161,7 +155,6 @@ export function inverseEdits(source: string, edits: readonly SourceEdit[]): Sour
 		});
 }
 
-/** An insertion at a node's end remains outside that node. */
 export function translateRange(start: number, end: number, edits: readonly SourceEdit[]) {
 	let delta = 0;
 	for (const edit of edits) {
@@ -176,7 +169,6 @@ const structuralErrors = new Set([
 	"stray-item",
 	"item-before-close",
 ]);
-/** Reparse in place and compare the scopes and interpretation of every untouched node. */
 export function escapes(
 	before: AnalyzedLessonTree,
 	after: AnalyzedLessonTree,
@@ -220,7 +212,6 @@ export function escapes(
 			((old.node.kind === "page" || old.node.kind === "item") &&
 				edits.some((e) => e.start === e.end && e.start === old.node.span.end))
 		) {
-			// Ancestors may change their body, but fixed headers/closers must retain their owner.
 			for (const span of [old.node.header, old.node.closer]) {
 				if (!span) continue;
 				const next = translateRange(span.start, span.end, edits);
@@ -234,8 +225,6 @@ export function escapes(
 			}
 			continue;
 		}
-		// Appending after an unterminated EOF line gives that existing node one
-		// terminator. Its authored bytes and ownership must still match exactly.
 		const appendedEnding =
 			old.node.span.end === before.stream.source.length && !/[\r\n]$/u.test(old.node.raw)
 				? (edits

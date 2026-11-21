@@ -208,7 +208,6 @@ describe("O4 schema conversions", () => {
 							},
 						];
 			});
-			// Test one authored setting at a time, avoiding unrelated constraints such as start/end.
 			for (const setting of settings) {
 				const prefix = raw
 					.slice(0, (tree.header?.end ?? tree.span.start) - 7)
@@ -356,7 +355,6 @@ describe("O4 wrapping, merging and replacement", () => {
 						: seed % 4 === 2
 							? "wrapIn"
 							: "turnInto";
-			// Merge has its own fixed plain-paragraph fixture; other seeds cover the schema matrix.
 			const current = fixture(
 				operation === "mergeBlocks"
 					? `\uFEFF# Page${eol}Plain\r\n\nOther\n\n# Tail\r\nUntouched\n`

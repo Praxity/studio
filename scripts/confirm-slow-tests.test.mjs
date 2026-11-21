@@ -13,7 +13,6 @@ const options = { encoding: "utf8", timeout: 10000, killSignal: "SIGKILL", windo
 
 test("real Node EMFILE and ENFILE spawn failures retain their cause without stdio or a crash", () => {
 	for (const code of ["EMFILE", "ENFILE"]) {
-		// Inject only libuv's errno; Node retains its real child/stdio/error lifecycle.
 		const probe = spawnSync(
 			process.execPath,
 			[
@@ -55,7 +54,6 @@ function workerAlive(pid, read = readFileSync) {
 }
 
 async function workerExited(pid) {
-	// Leader close can precede a worker's delivery of the same group SIGKILL.
 	const deadline = performance.now() + 1000;
 	while (workerAlive(pid)) {
 		const remaining = deadline - performance.now();
@@ -275,7 +273,6 @@ setInterval(() => {}, 1000);
 				delayed
 					? {
 							killProcess: (group, signal) => {
-								// The owned leader exits first; its worker receives the same kill later.
 								process.kill(-group, signal);
 								delayedKill = sleep(100).then(() => process.kill(group, signal));
 							},
@@ -293,7 +290,6 @@ setInterval(() => {}, 1000);
 			assert.equal(exited, true, "Owned worker survived timeout");
 		} finally {
 			await delayedKill;
-			// This is the PID written by this fixture, never a process-name or parent-PID lookup.
 			if (pid && existsSync(`/proc/${pid}`)) {
 				try {
 					process.kill(pid, "SIGKILL");

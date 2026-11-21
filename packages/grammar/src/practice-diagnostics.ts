@@ -1,5 +1,3 @@
-/** Compiler/reader diagnostic copy. Kept outside learner bundles and content-free.
- * The editor's op.diagnostic entries use the same frozen EN/FR messages. */
 const messages = {
 	en: {
 		"highlight-invalid":
@@ -68,8 +66,6 @@ export function lessonRuntimeRefusalMessage(
 		: `${location}: page ${JSON.stringify(page)}, block ${diagnostic.blockType}: ${reason} Runtime support is not available.`;
 }
 
-/** Default-English field diagnostics for grammar/CLI. Runtime refusal copy lives
- * in the bilingual catalogue above; localized author UI uses op.diagnostic. */
 const practiceFieldMessages = {
 	"highlight-chunk-too-long": "Keep each passage to {max} Unicode code points or fewer.",
 	"highlight-note-too-long": "Keep each explanation to {max} Unicode code points or fewer.",

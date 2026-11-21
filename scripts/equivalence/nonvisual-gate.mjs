@@ -95,7 +95,7 @@ function playlists(bytes, require) {
 		try {
 			const configs = dom.window.document.querySelectorAll("script#praxity-config");
 			if (configs.length > 1) throw new Error(`Duplicate config: ${entry.name}`);
-			if (!configs.length) continue; // Redirect documents have no playback config.
+			if (!configs.length) continue;
 			const config = JSON.parse(configs[0].textContent);
 			result.push({
 				file: entry.name,
@@ -257,7 +257,6 @@ async function main() {
 					dereference: false,
 					filter: (file) => ![".git", "node_modules"].includes(path.basename(file)),
 				});
-				// Independently verify every copied pinned byte before any build can write scratch.
 				for (const files of Object.values(inputs.courses[course.name].files))
 					for (const [file, expected] of Object.entries(files))
 						if (hash(await readFile(path.join(project, file))) !== expected)

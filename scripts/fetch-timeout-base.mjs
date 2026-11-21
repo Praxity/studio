@@ -4,7 +4,6 @@ import { parseArgs } from "node:util";
 try {
 	const { values } = parseArgs({ options: { base: { type: "string" } } });
 	if (!/^[a-f0-9]{40}$/i.test(values.base ?? "")) throw new Error("A pinned base SHA is required");
-	// Detached maintenance can rewrite .git/shallow during the next fetch.
 	const git = (...args) =>
 		execFileSync("git", ["-c", "maintenance.auto=false", "-c", "gc.auto=0", ...args], {
 			encoding: "utf8",
@@ -30,8 +29,6 @@ try {
 			);
 		if (git("rev-parse", "--is-shallow-repository") !== "true")
 			throw new Error("Head and base have no common ancestor");
-		// A successful deepen can leave the pinned PR merge tip shallow indefinitely.
-		// Bound incremental fetches to 63 commits before requesting both full histories once.
 		if (depth > 32) {
 			console.log("Fetching full timeout comparison ancestry after bounded deepening");
 			git("fetch", "--no-tags", "--unshallow", "origin", head, values.base);

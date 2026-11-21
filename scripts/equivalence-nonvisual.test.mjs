@@ -36,7 +36,6 @@ const zip = (files) => {
 test("ZIP DOS timestamp normalization changes only parsed header timestamps", () => {
 	const original = zip({ "imsmanifest.xml": "manifest", "index.html": "PK\u0003\u0004payload" });
 	const changed = Buffer.from(original);
-	// Central offsets identify records even when a payload contains the same signature.
 	const end = changed.length - 22;
 	let offset = changed.readUInt32LE(end + 16);
 	for (let i = 0; i < changed.readUInt16LE(end + 10); i++) {
@@ -123,7 +122,6 @@ test("native PDF bytes catch figure alt changes absent from real Poppler output"
 	const bytes = await nativePdf();
 	const changed = Buffer.from(bytes);
 	const alt = "Gate figure original";
-	// Poppler 24.02 -struct-text omits the native /Alt value.
 	const position = changed.indexOf(alt);
 	assert.ok(position >= 0, "native fixture contains /Alt bytes");
 	changed[position] = changed[position] === 0x34 ? 0x35 : 0x34;
@@ -153,7 +151,6 @@ test("native PDF normalization preserves length, content, offsets and nonvolatil
 		const offset = changed.indexOf(marker) + marker.length;
 		assert.ok(offset >= marker.length);
 		const end = changed.indexOf(`<`, offset);
-		// Keep trailer IDs matched to XMP IDs.
 		if (field.includes("ID")) {
 			const value = changed.subarray(offset, end).toString();
 			let at = changed.indexOf(value);
@@ -174,7 +171,6 @@ test("native PDF normalization preserves length, content, offsets and nonvolatil
 });
 
 test("native PDF normalization accepts UTC Info dates", async () => {
-	// Same figure.typ compiled with TZ=UTC: Typst writes D:...Z instead of an offset.
 	const bytes = await readFile(new URL("./equivalence/fixtures/figure-utc.pdf", import.meta.url));
 	const changed = Buffer.from(bytes);
 	for (const field of ["/CreationDate(D:", "/ModDate(D:"]) {
@@ -262,7 +258,6 @@ test("symlinked node_modules and workspace source escaping the checkout refuse",
 		assert.match(result.stderr, /Production module resolves outside selected checkout/);
 		assert.doesNotMatch(result.stderr, /Error: ESCAPED OWNER EXECUTED/);
 
-		// Workspace requests must also reject a target whose realpath has no apps/packages segment.
 		await mkdir(path.join(root, "foreign"));
 		await writeFile(
 			path.join(root, "foreign/index.cjs"),

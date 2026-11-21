@@ -279,7 +279,6 @@ test("evidence identifies a log/report basename or an HTTP run with host and pat
 		"https://example.com/report.log",
 		"failed.log/extra",
 	]) {
-		// A report URL is valid; every other planted reference lacks the required form.
 		const expected = evidence === "https://example.com/report.log" ? 0 : 1;
 		assert.equal(
 			raised(before, `test("example", () => {}, 15000); // timeout: ${evidence}`).length,
