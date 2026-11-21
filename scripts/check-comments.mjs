@@ -109,8 +109,12 @@ function astroRanges(text, file) {
 	const bodyStart = fm ? fm[0].length : 0;
 	const out = fm ? shift(jsRanges(fm[1], `${file}.ts`), text.indexOf(fm[1])) : [];
 	const body = text.slice(bodyStart);
-	out.push(...regexRanges(body, /<!--[\s\S]*?-->/g, bodyStart));
-	out.push(...regexRanges(body, /\{\s*\/\*[\s\S]*?\*\/\s*\}/g, bodyStart));
+	const markup = body.replace(
+		/(<(script|style)\b[^>]*>)([\s\S]*?)(<\/\2>)/g,
+		(_, open, _tag, inner, close) => open + " ".repeat(inner.length) + close,
+	);
+	out.push(...regexRanges(markup, /<!--[\s\S]*?-->/g, bodyStart));
+	out.push(...regexRanges(markup, /\{\s*\/\*[\s\S]*?\*\/\s*\}/g, bodyStart));
 	for (const m of body.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)) {
 		out.push(...shift(jsRanges(m[1], `${file}.ts`), bodyStart + m.index + m[0].indexOf(m[1])));
 	}
@@ -187,6 +191,8 @@ function jsTokens(text, file) {
 		if (node.kind === ts.SyntaxKind.JsxExpression && !node.expression) return;
 		if (node.kind >= ts.SyntaxKind.FirstJSDocNode && node.kind <= ts.SyntaxKind.LastJSDocNode)
 			return;
+		if (ts.isParenthesizedExpression(node) && ts.isParenthesizedExpression(node.parent))
+			return visit(node.expression);
 		const children = node.getChildren(sf);
 		if (children.length) children.forEach(visit);
 		else if (node.kind === ts.SyntaxKind.JsxText)
@@ -196,13 +202,13 @@ function jsTokens(text, file) {
 	visit(sf);
 	const code = tokens.filter((t, i) => t && !(t === "," && CLOSERS.has(tokens[i + 1])));
 	const pragmas = commentRanges(text, file)
-		.filter(([a, b]) => isPragma(text.slice(a, b)))
-		.map(([a, b]) => text.slice(a, b));
+		.map(([a, b]) => text.slice(a, b))
+		.filter((c) => isPragma(c) && !c.startsWith("/**"));
 	return JSON.stringify([code, pragmas]);
 }
 
 const normalizedCode = (text, file) => {
-	if (/\.[mc]?[jt]sx?$/.test(file)) return jsTokens(text, file);
+	if (/\.[mc]?[jt]sx?$/.test(file)) return jsTokens(text.replace(/\r\n/g, "\n"), file);
 	let out = "";
 	let at = 0;
 	for (const [a, b] of countedRanges(text, file)) {
