@@ -197,7 +197,7 @@ HTML, previews, narration and PDF retain the complete description. Interaction r
 
 | Setting | Values | Default | Purpose |
 |---|---|---|---|
-| `download` | `txt`, `docx`, `both` | Omitted | Offer response downloads in these formats. |
+| `download` | `txt`, `docx`, `both` | Omitted | Offer response downloads in these formats, plus a Copy button that copies the question and the current answer. Copy never submits the response. |
 | `private` | `true`, `false` | Omitted | Keep the response out of LMS reporting. |
 
 | Part | Learner text |

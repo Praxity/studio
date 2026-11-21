@@ -1611,6 +1611,10 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 			...localeStrings,
 			assessmentStorageNotice: undefined,
 			assessmentSessionEndedNotice: undefined,
+			copyResponse: undefined,
+			copyResponseDone: undefined,
+			copyResponseFailed: undefined,
+			copyResponseEmpty: undefined,
 			courseScoreWithPassMark:
 				config.passingScore === undefined ? undefined : localeStrings.courseScoreWithPassMark,
 		},

@@ -330,6 +330,54 @@ test("unchecked checklist border has at least 3:1 rendered contrast", async ({ p
 	await expect(checkbox).toBeChecked();
 });
 
+test("journal Copy works from the keyboard without moving focus or submitting", async ({
+	page,
+	browserName,
+}) => {
+	test.skip(browserName !== "chromium", "Playwright grants clipboard access only in Chromium");
+	await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+	for (const [locale, copyName, done] of [
+		["en", "Copy response", "Copied the question and your answer."],
+		["fr", "Copier la réponse", "La question et votre réponse ont été copiées."],
+	]) {
+		await open(page, locale);
+		await page.evaluate(() => {
+			const events: string[] = [];
+			Object.assign(window, { learnerEvents: events });
+			for (const type of ["praxity:assessment-response", "praxity:block-interaction"])
+				document.addEventListener(type, () => events.push(type));
+		});
+		const journal = page.locator('.mantine-Card-root[data-block-id="journal"]');
+		await journal.scrollIntoViewIfNeeded();
+		const answerBox = journal.getByRole("textbox");
+		await answerBox.focus();
+		await page.keyboard.type("Première ligne\nDeuxième « ligne » 🌱");
+		const answer = await answerBox.inputValue();
+		expect(answer).toBe("Première ligne\nDeuxième « ligne » 🌱");
+		await page.evaluate(() => {
+			(window as unknown as { learnerEvents: string[] }).learnerEvents.length = 0;
+		});
+		const copy = journal.getByRole("button", { name: copyName, exact: true });
+		for (let step = 0; step < 3; step++) await page.keyboard.press("Tab");
+		await expect(copy).toBeFocused();
+		await page.keyboard.press("Enter");
+		const status = journal.getByRole("status").filter({ hasText: done });
+		await expect(status).toBeVisible();
+		await expect(copy).toBeFocused();
+		expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+			`Reflect on your response\n\n${answer}`,
+		);
+		await expect(answerBox).toHaveValue(answer);
+		await expect(journal.locator("[data-assessment-reveal]")).toHaveAttribute(
+			"data-content-reveal",
+			"closed",
+		);
+		expect(
+			await page.evaluate(() => (window as unknown as { learnerEvents: string[] }).learnerEvents),
+		).toEqual([]);
+	}
+});
+
 test("journal has localized secondary text downloads", async ({ page }) => {
 	for (const locale of ["en", "fr"]) {
 		await open(page, locale);
