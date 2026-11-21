@@ -173,12 +173,85 @@ describe("review HTML builds", () => {
 			"utf-8",
 		);
 		await writeFile(path.join(prebuiltAssetsDir, "review-comments.css"), ".review{}", "utf-8");
+		await writeFile(path.join(prebuiltAssetsDir, "course-help.js"), "window.help={};", "utf-8");
+		await writeFile(path.join(prebuiltAssetsDir, "course-help.css"), ".help{}", "utf-8");
 		await mkdir(path.join(prebuiltAssetsDir, "schemas", "scorm12"), { recursive: true });
 	});
 
 	afterEach(async () => {
 		await rm(prebuiltAssetsDir, { recursive: true, force: true });
 		vi.restoreAllMocks();
+	});
+
+	describe("course help", () => {
+		const help = {
+			endpoint: "https://help.example.org/q?course=a&b",
+			label: "Ask a tutor ($'s & $&)",
+			intro: 'Say "hi"',
+		};
+		const build = async (format: "html" | "scorm12", withHelp: boolean, reviewMode = false) => {
+			const input = desktopInput(reviewMode);
+			if (withHelp) input.config.help = help;
+			return new AdmZip(
+				(
+					await buildScormPackage(input, {
+						mode: "desktop",
+						format,
+						prebuiltAssetsDir,
+						projectDir: "/tmp/project",
+					})
+				).zip,
+			);
+		};
+		const htmlPages = (zip: AdmZip) =>
+			zip
+				.getEntries()
+				.filter((entry) => entry.entryName.endsWith(".html"))
+				.map((entry) => ({ name: entry.entryName, html: entry.getData().toString("utf-8") }));
+		const traces = (zip: AdmZip) =>
+			zip
+				.getEntries()
+				.filter((entry) =>
+					/course-help|praxity-help|help\.example/u.test(
+						entry.entryName + entry.getData().toString("utf-8"),
+					),
+				)
+				.map((entry) => entry.entryName);
+
+		it("adds one script tag per HTML page and copies the assets when help is set", async () => {
+			const zip = await build("html", true);
+			expect(zip.readAsText("course-help.js")).toBe("window.help={};");
+			expect(zip.readAsText("course-help.css")).toBe(".help{}");
+			const pages = htmlPages(zip).filter(({ html }) => html.includes("praxity-deployment-config"));
+			expect(pages.length).toBeGreaterThan(0);
+			for (const { name, html } of pages) {
+				const scripts = new JSDOM(html).window.document.querySelectorAll(
+					"script[data-praxity-course-help]",
+				);
+				expect(scripts, name).toHaveLength(1);
+				const script = scripts[0] as HTMLScriptElement;
+				expect(script.getAttribute("src")).toMatch(/^course-help\.js\?v=[a-f0-9]{12}$/u);
+				expect(script.dataset.helpEndpoint).toBe(help.endpoint);
+				expect(script.dataset.helpLabel).toBe(help.label);
+				expect(script.dataset.helpIntro).toBe(help.intro);
+				expect(script.dataset.helpLocale).toBe("en");
+				expect(script.dataset.helpPageId).toBeTruthy();
+				expect(html).not.toContain("course-help.css");
+			}
+			const page = new JSDOM(contentPage(zip)).window.document.querySelector<HTMLScriptElement>(
+				"script[data-praxity-course-help]",
+			);
+			expect(page?.dataset.helpPageTitle).toBeTruthy();
+			expect(contentPage(zip)).toContain("q?course=a&amp;b");
+		});
+
+		it("leaves no trace without help, in SCORM or in review builds", async () => {
+			expect(traces(await build("html", false))).toEqual([]);
+			expect(traces(await build("scorm12", true))).toEqual([]);
+			const review = await build("html", true, true);
+			expect(contentPage(review)).toContain("review-comments.js");
+			expect(traces(review)).toEqual([]);
+		});
 	});
 
 	it("injects the sidebar assets into review HTML but not plain HTML or SCORM", async () => {

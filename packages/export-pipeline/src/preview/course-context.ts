@@ -793,6 +793,7 @@ function normalizeDesktopCourseInput(input: DesktopExportInput): CourseExportInp
 		...(input.config.courseHomeUrl === undefined
 			? {}
 			: { courseHomeUrl: input.config.courseHomeUrl }),
+		...(input.config.help === undefined ? {} : { help: input.config.help }),
 		moduleDeck: input.config.moduleDeck,
 		title,
 		description,

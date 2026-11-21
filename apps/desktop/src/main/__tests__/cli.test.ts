@@ -28,13 +28,16 @@ afterEach(async () => {
 
 describe("Praxity CLI", () => {
 	it.each([
-		["en", "courseHomeUrl must be a relative URL or an absolute HTTPS URL."],
-		["fr", "courseHomeUrl doit être une URL relative ou une URL HTTPS absolue."],
-	])("localizes a manifest URL refusal with --lang %s", async (locale, message) => {
+		["en", "courseHomeUrl", "courseHomeUrl must be a relative URL or an absolute HTTPS URL."],
+		["fr", "courseHomeUrl", "courseHomeUrl doit être une URL relative ou une URL HTTPS absolue."],
+		["en", "help.endpoint", "help.endpoint must be a relative URL or an absolute HTTPS URL."],
+		["fr", "help.endpoint", "help.endpoint doit être une URL relative ou une URL HTTPS absolue."],
+		["fr", "help", "help doit contenir endpoint et peut contenir les textes label et intro."],
+	] as const)("localizes a manifest %s refusal of %s", async (locale, field, message) => {
 		const root = await mkdtemp(path.join(os.tmpdir(), "praxity-cli-home-"));
 		tempDirs.push(root);
 		mocks.exportProject.mockRejectedValue(
-			new Error("Invalid project", { cause: new CourseHomeUrlError() }),
+			new Error("Invalid project", { cause: new CourseHomeUrlError("en", field) }),
 		);
 		const result = await runPraxityCli(
 			[

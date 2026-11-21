@@ -115,8 +115,15 @@ export interface SelfCheckContentInput {
 export type { UnresolvedNode } from "./html-gen.ts";
 export { selfCheckContentInput } from "./self-check.ts";
 
+export interface CourseHelpConfig {
+	endpoint: string;
+	label?: string;
+	intro?: string;
+}
+
 export interface CourseExportInput {
 	courseHomeUrl?: string;
+	help?: CourseHelpConfig;
 	unresolvedNodes?: ReadonlyMap<string, UnresolvedNode>;
 	selfCheckContents?: readonly SelfCheckContentInput[];
 	writeDistractorsContents?: readonly WriteDistractorsContentInput[];
@@ -280,6 +287,7 @@ export interface DesktopExportInput {
 	frontmatter: GrammarFrontmatter;
 	config: {
 		courseHomeUrl?: string;
+		help?: CourseHelpConfig;
 		sectionPalettes?: CourseExportInput["sectionPalettes"];
 		darkSectionPalettes?: CourseExportInput["sectionPalettes"];
 		moduleDeck?: ModuleDeckOptions;
@@ -497,6 +505,7 @@ interface CompiledCourseArtifact {
 		| "moduleDeck"
 		| "passingScore"
 		| "courseHomeUrl"
+		| "help"
 	>;
 	pageCount: number;
 	options: CompileCourseOptions;
@@ -506,6 +515,7 @@ interface CompiledCourseArtifact {
 		Record<ViewerHostName, { filename: string; path: string | null }[]>
 	>;
 	reviewAssets: { js: string; css: string; iconNotice: PackageNotice | undefined } | null;
+	helpAssets: { js: string; css: string } | null;
 	activeDeployments: number;
 }
 
@@ -929,6 +939,25 @@ async function compileCourseArtifact(
 				fs.copy(reviewSourceCss, reviewAssets.css),
 			]);
 		}
+		const helpSource = {
+			js: path.join(reviewAssetDir, "course-help.js"),
+			css: path.join(reviewAssetDir, "course-help.css"),
+		};
+		const helpAssets =
+			normalizedCourse.help &&
+			(await fs.pathExists(helpSource.js)) &&
+			(await fs.pathExists(helpSource.css))
+				? {
+						js: path.join(deploymentAssetDir, "course-help.js"),
+						css: path.join(deploymentAssetDir, "course-help.css"),
+					}
+				: null;
+		if (helpAssets) {
+			await Promise.all([
+				fs.copy(helpSource.js, helpAssets.js),
+				fs.copy(helpSource.css, helpAssets.css),
+			]);
+		}
 		if (!deckCssPath || !(await fs.pathExists(deckCssPath))) {
 			throw new Error("buildScormPackage: missing deck stylesheet asset.");
 		}
@@ -1233,6 +1262,7 @@ async function compileCourseArtifact(
 			distDir,
 			course: {
 				courseHomeUrl: normalizedCourse.courseHomeUrl,
+				help: normalizedCourse.help,
 				moduleDeck: normalizedCourse.moduleDeck,
 				id: normalizedCourse.id,
 				title: normalizedCourse.title,
@@ -1253,6 +1283,7 @@ async function compileCourseArtifact(
 			hostRuntimePaths: capturedHostRuntimePaths,
 			hostRuntimeDependencies: capturedHostRuntimeDependencies,
 			reviewAssets,
+			helpAssets,
 			activeDeployments: 0,
 		};
 	} catch (error) {
@@ -1272,8 +1303,7 @@ function withDeploymentHead(
 	if (html.indexOf(DEPLOYMENT_HEAD_MARKER, slot + DEPLOYMENT_HEAD_MARKER.length) !== -1) {
 		throw new Error(`Course page has more than one deployment head slot: ${filePath}`);
 	}
-	const deployed = html.replace(
-		DEPLOYMENT_HEAD_MARKER,
+	const deployed = html.replace(DEPLOYMENT_HEAD_MARKER, () =>
 		typeof head === "string" ? head : head(filePath),
 	);
 	if (courseHomeUrl === undefined) return deployed;
@@ -1346,6 +1376,30 @@ async function applyDeploymentTarget(
 			return `<link rel="stylesheet" href="review-comments.css?v=${cssVersion}" />\n<script defer src="review-comments.js?v=${jsVersion}" data-praxity-review-comments="true" data-review-page-id="${escapeHtml(pageId)}" data-review-locale="${locale}" data-review-expires-at="${escapeHtml(expiresAt)}"></script>`;
 		};
 	}
+	const help = target.format === "html" && !target.reviewMode ? artifact.course.help : undefined;
+	let helpHead: ((filePath: string) => string) | null = null;
+	if (help) {
+		if (!artifact.helpAssets) throw new Error("Missing course help assets for course deployment.");
+		const { js, css } = artifact.helpAssets;
+		await Promise.all([
+			fs.copy(js, path.join(distDir, "course-help.js")),
+			fs.copy(css, path.join(distDir, "course-help.css")),
+		]);
+		const version = crypto
+			.createHash("sha256")
+			.update(await fs.readFile(js))
+			.update(await fs.readFile(css))
+			.digest("hex")
+			.slice(0, 12);
+		const locale = artifact.course.sourceLocale === "fr" ? "fr" : "en";
+		const pages = new Map(artifact.manifest.pages.map((page) => [`${page.slug}.html`, page]));
+		const attribute = (name: string, value: string | undefined) =>
+			value === undefined ? "" : ` data-help-${name}="${escapeHtml(value)}"`;
+		helpHead = (filePath) => {
+			const page = pages.get(filePath);
+			return `<script defer src="course-help.js?v=${version}" data-praxity-course-help="true"${attribute("endpoint", help.endpoint)}${attribute("locale", locale)}${attribute("page-id", page?.id ?? path.basename(filePath, ".html"))}${attribute("page-title", page?.title)}${attribute("label", help.label)}${attribute("intro", help.intro)}></script>`;
+		};
+	}
 	const hostName = target.format === "html" ? "standalone" : target.format;
 	const hostRuntimePath = artifact.hostRuntimePaths[hostName];
 	if (!hostRuntimePath) {
@@ -1380,7 +1434,10 @@ async function applyDeploymentTarget(
 	].join("\n");
 	await fillDeploymentHead(
 		distDir,
-		reviewHead ? (filePath) => `${hostHead}\n${reviewHead(filePath)}` : hostHead,
+		reviewHead || helpHead
+			? (filePath) =>
+					[hostHead, reviewHead?.(filePath), helpHead?.(filePath)].filter(Boolean).join("\n")
+			: hostHead,
 		contentDocumentCount(artifact),
 		artifact.course.courseHomeUrl === undefined
 			? undefined

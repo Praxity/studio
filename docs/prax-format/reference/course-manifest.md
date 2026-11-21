@@ -31,6 +31,7 @@ design:
 | description | string | Optional course description |
 | locale | string | Default language, such as en or fr |
 | courseHomeUrl | string | HTML export destination for glossary and Pages/Guided course-return actions. Defaults to `index.html`. Accepts a relative URL or an absolute HTTPS URL. |
+| help | mapping | Optional learner help button for HTML exports. See [learner help button](#learner-help-button). |
 | theme | string | Optional shared or built-in theme name |
 | moduleDeck | boolean | Guided-slide playback. Omitted means false. See [module decks](module-deck.md). |
 | narrationEnabled | boolean | Enable narration unless a lesson overrides it in the narration sidecar |
@@ -58,6 +59,29 @@ prevents the course from loading in Studio or CLI commands, including non-HTML
 exports. Correct or remove the field in `course.yaml` to load it again. CLI refusal
 messages use `--lang`, independently of the course's `locale`. Omit the field to keep
 the existing `index.html` links.
+
+## Learner help button
+
+Add `help` to put a round "?" button in the bottom corner of every page of an HTML export.
+It opens a panel where learners ask the course team a question about the current page,
+optionally quoting text they selected or a part of the page they pointed at. Each thread is
+private to the learner and the course team. Replies appear, with an unread count on the
+button, the next time the learner opens a page.
+
+```yaml
+help:
+  endpoint: help/
+  label: Ask a tutor
+  intro: Ask about anything on this page. A tutor replies within one working day.
+```
+
+`endpoint` is required: the URL of a course-help Worker that you deploy behind Cloudflare
+Access. It follows the same rules as `courseHomeUrl`, and refusals name `help.endpoint`.
+`label` and `intro` are optional nonempty text that replaces the default button label and
+panel introduction. Any other key, or a missing endpoint, is refused with a message naming
+`help`. Without `help`, the export contains no trace of the button. SCORM, xAPI, PDF,
+Studio preview and review builds ignore it. Deployment, staff replies and the HTTP protocol are described in
+the Studio repository's `packages/course-help/README.md`.
 
 ## Course cast
 

@@ -1,0 +1,22 @@
+name = "praxity-course-help"
+main = "src/worker.ts"
+compatibility_date = "2026-07-22"
+# Serve only on the route behind Access; the workers.dev hostname would sit outside it.
+workers_dev = false
+
+[vars]
+# Your Cloudflare Access team domain and the application's audience (AUD) tag.
+ACCESS_TEAM_DOMAIN = "your-team.cloudflareaccess.com"
+ACCESS_AUD = "replace-with-the-application-aud-tag"
+# Comma-separated email addresses that may read every thread and reply.
+STAFF_EMAILS = ""
+# Comma-separated course origins, only when the course is served from another origin.
+COURSE_ORIGINS = ""
+# Language of the staff page: en or fr.
+STAFF_LOCALE = "en"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "praxity-course-help"
+# Replace this placeholder with the database ID printed by Wrangler before deploying.
+database_id = "00000000-0000-0000-0000-000000000000"

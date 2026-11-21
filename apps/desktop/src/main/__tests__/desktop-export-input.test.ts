@@ -114,6 +114,23 @@ describe("buildExportInputFromProject", () => {
 		});
 		expect(input.config.courseHomeUrl).toBe("../overview/");
 	});
+	it.each(["course", "lesson"] as const)("carries help into %s input", async (scope) => {
+		await writeFile(
+			path.join(projectDir, "course.yaml"),
+			"title: Course\nhelp:\n  endpoint: help/\n  label: Ask a tutor\nlessons: [lesson-1.prax]\n",
+		);
+		await persistFixtureIdentity(projectDir);
+		const input = await buildCourseExportInput({
+			projectDir,
+			viewerVersionPath,
+			scope,
+			mode: "export",
+			completionThreshold: 0.8,
+			manifestPolicy: "read-only",
+			inheritWorkspaceSettings: false,
+		});
+		expect(input.config.help).toEqual({ endpoint: "help/", label: "Ask a tutor" });
+	});
 
 	beforeEach(async () => {
 		projectDir = await mkdtemp(path.join(os.tmpdir(), "desktop-export-input-"));
