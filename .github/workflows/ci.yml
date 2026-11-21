@@ -693,6 +693,12 @@ jobs:
           printf 'PRAXITY_TEST_ARTIFACTS=%s\n' "$scratch" >> "$GITHUB_ENV"
       - name: Browser authoring journeys
         run: pnpm --filter @praxity/desktop run e2e:browser-editor --project=${{ matrix.browser }} --shard=${{ matrix.shard }} --workers=2
+      - name: Report WebKit core dumps and I/O pressure
+        if: failure() && !cancelled() && matrix.browser == 'webkit'
+        continue-on-error: true
+        run: |
+          sudo coredumpctl list --no-pager || true
+          cat /proc/pressure/io
       - name: Upload browser authoring failure evidence
         if: failure() && !cancelled()
         continue-on-error: true

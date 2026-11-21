@@ -113,6 +113,21 @@ test("WebKit browser journeys keep Studio scratch and temp files on a bounded tm
 	assert.equal(upload.with.path, "${{ env.PRAXITY_TEST_ARTIFACTS }}/browser-editor-results/");
 });
 
+test("failed WebKit browser journeys report core dumps and I/O pressure", () => {
+	const steps = ci.jobs["browser-editor"].steps;
+	const report = steps.findIndex(
+		(step) => step.name === "Report WebKit core dumps and I/O pressure",
+	);
+	const journeys = steps.findIndex((step) => step.run?.includes("e2e:browser-editor"));
+	assert.ok(report > journeys, "The report must follow the journeys");
+	assert.equal(steps[report].if, "failure() && !cancelled() && matrix.browser == 'webkit'");
+	assert.equal(steps[report]["continue-on-error"], true);
+	assert.equal(
+		steps[report].run,
+		"sudo coredumpctl list --no-pager || true\ncat /proc/pressure/io\n",
+	);
+});
+
 test("no CI job reads the runner context in job-level env", () => {
 	for (const [name, job] of Object.entries(ci.jobs))
 		assert.doesNotMatch(JSON.stringify(job.env ?? {}), /\brunner\./, name);
