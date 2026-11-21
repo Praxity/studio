@@ -10,6 +10,8 @@ Source checks provide author guidance without rendering the course. Their result
 
 ## Decision
 
+- `packages/editor-core/src/components/audit/resolve-empty-state.ts`, `resolveAuditEmptyState`, and `packages/editor-core/src/components/a11y-audit-panel.tsx`, `A11yAuditPanel`: Return `noFilteredIssues` only when both `hasFilteredIssues` and `hasQuickStartIssue` are false. The category list excludes the issue displayed in the Start here card, so an empty category list does not mean that the results region is empty. With exactly one eligible open issue, that card holds the only result. Since the panel's empty-state branch replaces the entire results region, checking only `!hasFilteredIssues` would hide the card and make the sole issue unreachable. Sources: `resolveAuditEmptyState`'s conjunction, `A11yAuditPanel`'s `filteredIssues` calculation and empty-state render branch, and the original resolver comment at commit bed54f6.
+
 - `packages/editor-core/src/components/audit/types.ts`, `AuditIssue.sourceLine` and `NavigateToIssueRequest.sourceLine`: Source locations use zero-based lines independently of transient block IDs from later lesson reads. Keep source positions bound to the authoring snapshot when presenting audit results.
 
 - `packages/editor-core/src/lib/a11y/check-audit-staleness.ts`, `main`: Validate date format to prevent argument injection via JSON values
