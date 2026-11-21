@@ -210,13 +210,16 @@ async function clearOfControls(page: Page, step: string, flow: JSHandle<FlowSlot
 			const shadow = probe.attachShadow({ mode: "open" });
 			shadow.append(...[...root.childNodes].map((node) => node.cloneNode(true)));
 			const bodyInert = document.body.inert;
+			const scroll = { left: scrollX, top: scrollY, behavior: "instant" as const };
 			try {
 				document.body.inert = false;
 				flow.parent.insertBefore(probe, flow.next);
+				probe.scrollIntoView({ block: "center", inline: "nearest", behavior: "instant" });
 				geometry = flow.measure(probe, shadow);
 			} finally {
 				probe.remove();
 				document.body.inert = bodyInert;
+				window.scrollTo(scroll);
 			}
 		} else geometry = flow.measure(host, root);
 		const hits: string[] = [];
