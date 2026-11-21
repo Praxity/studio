@@ -281,7 +281,6 @@ test("C04 an absent reply keeps the field and checks bytes before offering retry
 }) => {
 	const observed = observe(page);
 	await open(page);
-	await page.clock.install();
 	let release: (() => void) | undefined;
 	await page.route("**/api/rpc", async (route) => {
 		if (route.request().postDataJSON().method !== "canvasTextApply") return route.continue();
@@ -292,16 +291,20 @@ test("C04 an absent reply keeps the field and checks bytes before offering retry
 	});
 	await headingEdit(page).click();
 	const field = page.getByRole("textbox", { name: "Heading text" });
-	await field.fill("Keep without a reply");
-	await page.keyboard.press("Enter");
-	await expect(field).toHaveAttribute("readonly", "");
-	await expect.poll(() => Boolean(release)).toBe(true);
-	await page.clock.fastForward(10_001);
-	await expect(page.getByRole("button", { name: "Retry save", exact: true })).toBeVisible();
-	await expect(field).toHaveValue("Keep without a reply");
-	expect(observed.saves()).toHaveLength(1);
-	expect(await readFile(file, "utf8")).toBe(source);
-	release?.();
+	try {
+		await field.fill("Keep without a reply");
+		await page.keyboard.press("Enter");
+		await expect(field).toHaveAttribute("readonly", "");
+		await expect.poll(() => Boolean(release)).toBe(true);
+		const retry = page.getByRole("button", { name: "Retry save", exact: true });
+		await retry.waitFor();
+		await expect(retry).toBeVisible();
+		await expect(field).toHaveValue("Keep without a reply");
+		expect(observed.saves()).toHaveLength(1);
+		expect(await readFile(file, "utf8")).toBe(source);
+	} finally {
+		release?.();
+	}
 });
 
 test("C04 page-title binding and French keyboard names, hint and cancellation", async ({

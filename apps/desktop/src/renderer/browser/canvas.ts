@@ -40,6 +40,12 @@ export function startStudioAuthor(
 	const fetchEvents = navigator.userAgent.includes("Firefox") ? request : undefined;
 	let documentPath = location.pathname;
 	const controller = new AbortController();
+	const followPageAbort = (target: AbortController) => {
+		const abort = () => target.abort(controller.signal.reason);
+		if (controller.signal.aborted) abort();
+		else controller.signal.addEventListener("abort", abort, { once: true });
+		return () => controller.signal.removeEventListener("abort", abort);
+	};
 	let token = "";
 	let fallbackToken: string | null = null;
 	let sessionError: unknown;
@@ -161,8 +167,9 @@ export function startStudioAuthor(
 				reservePanel();
 				if (sessionError) throw sessionError;
 				async function rpc(method: string, args: unknown, canvasPath = documentPath) {
-					const deadline = new AbortController();
-					const timer = setTimeout(() => deadline.abort(), requestTimeoutMs);
+					const requestAbort = new AbortController();
+					const unfollow = followPageAbort(requestAbort);
+					const timer = setTimeout(() => requestAbort.abort(), requestTimeoutMs);
 					try {
 						const response = await request(`${editorOrigin}/api/rpc`, {
 							method: "POST",
@@ -172,7 +179,7 @@ export function startStudioAuthor(
 								"X-Praxity-Canvas": canvasPath,
 							},
 							credentials: "omit",
-							signal: AbortSignal.any([controller.signal, deadline.signal]),
+							signal: requestAbort.signal,
 							body: JSON.stringify({ method, args }),
 						});
 						if (!response.ok) {
@@ -204,6 +211,7 @@ export function startStudioAuthor(
 						return reply.result;
 					} finally {
 						clearTimeout(timer);
+						unfollow();
 					}
 				}
 				try {
@@ -363,6 +371,7 @@ export function startStudioAuthor(
 					const requested = generation;
 					const stagedStyles: HTMLLinkElement[] = [];
 					const styleAbort = new AbortController();
+					const unfollowStyle = followPageAbort(styleAbort);
 					let styleTimer: ReturnType<typeof setTimeout> | undefined;
 					try {
 						const before = await port.snapshot();
@@ -430,7 +439,7 @@ export function startStudioAuthor(
 							() => styleAbort.abort(new Error("Saved stylesheet timed out")),
 							requestTimeoutMs,
 						);
-						const styleSignal = AbortSignal.any([controller.signal, styleAbort.signal]);
+						const styleSignal = styleAbort.signal;
 						const oldStyles = [...head.querySelectorAll('link[rel="stylesheet"]')];
 						function loadStyle(sheet: HTMLLinkElement, activate: () => void) {
 							return new Promise<void>((resolve, reject) => {
@@ -633,6 +642,7 @@ export function startStudioAuthor(
 						}
 					} finally {
 						clearTimeout(styleTimer);
+						unfollowStyle();
 						styleAbort.abort();
 						for (const sheet of stagedStyles) sheet.remove();
 						refreshing = false;
