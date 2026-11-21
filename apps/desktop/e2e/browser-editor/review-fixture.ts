@@ -15,7 +15,11 @@ import type {
 import { startStudioReadOnlyServer } from "../../src/main/studio/read-only-server";
 import { openReviewStore } from "../../src/main/studio/review-store";
 
-export async function servedReview(locale: string, deck = false) {
+export async function servedReview(
+	locale: string,
+	deck = false,
+	host: { body?: string; script?: string } = {},
+) {
 	const root = await mkdtemp(
 		join(process.env.PRAXITY_TEST_ARTIFACTS ?? tmpdir(), "review-anchors-"),
 	);
@@ -40,7 +44,7 @@ export async function servedReview(locale: string, deck = false) {
 				"utf8",
 			)
 		: "";
-	const utilities = deck
+	const deckUtilities = deck
 		? (
 				await build({
 					stdin: {
@@ -62,6 +66,7 @@ export async function servedReview(locale: string, deck = false) {
 				})
 			).outputFiles[0].text
 		: "";
+	const utilities = deckUtilities + (host.script ?? "");
 	const captured = `<!doctype html><html lang="${locale}"><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>
 		:root{${theme("light")}} html[data-praxity-mode="dark"]{${theme("dark")}} @media(prefers-color-scheme:dark){html:not([data-praxity-mode]){${theme("dark")}}}
 		${deckStyles}
@@ -75,7 +80,7 @@ export async function servedReview(locale: string, deck = false) {
 		<p data-node-id="quote" data-block-id="b-quote">${locale === "fr" ? "Un passage à relire attentivement." : "A passage to read carefully."}</p>
 		<p data-node-id="pin" data-block-id="b-pin"><a class="pin-target" href="#destination">${locale === "fr" ? "Le repère reste sur ce lien." : "The pin stays on this link."}</a></p>
 		<p data-node-id="changed" data-block-id="b-changed">${locale === "fr" ? "Le texte de ce bloc a été modifié." : "This block’s text has changed."}</p>
-		<div class="spacer"></div><p id="destination">End</p>${deck ? "</section>" : ""}</main>${deck ? '</div><nav class="deck-controls"><button>Previous</button><span>1 / 1</span><button>Next</button></nav></div><script src="review-utilities.js"></script>' : ""}</body></html>`;
+		${host.body ?? ""}<div class="spacer"></div><p id="destination">End</p>${deck ? "</section>" : ""}</main>${deck ? '</div><nav class="deck-controls"><button>Previous</button><span>1 / 1</span><button>Next</button></nav></div>' : ""}${utilities ? '<script src="review-utilities.js"></script>' : ""}</body></html>`;
 	const store = await openReviewStore(root);
 	let head: CanvasPreviewDescriptor | undefined;
 	const server = await startStudioReadOnlyServer({
@@ -113,7 +118,7 @@ export async function servedReview(locale: string, deck = false) {
 					sha256: "b".repeat(64),
 					mediaType: "text/html; charset=utf-8",
 				},
-				...(deck
+				...(utilities
 					? [
 							{
 								path: "review-utilities.js",
