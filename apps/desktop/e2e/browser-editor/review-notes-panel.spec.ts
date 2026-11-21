@@ -2,8 +2,6 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { expect, test } from "@playwright/test";
 
-// Host markup as a review host would supply it: a header button with a badge, a manual notes
-// popover and a sibling menu popover in the same space.
 const page = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Notes host</title></head><body>
 <header><button type="button" id="notes-button" popovertarget="notes">Notes <span data-notes-badge hidden></span></button>
 <button type="button" id="menu-button" popovertarget="menu">Menu</button></header>
@@ -60,13 +58,11 @@ test("notes panel closes on Escape, returns focus, closes its sibling and fills 
 	expect(await isOpen("#notes")).toBe(false);
 	await expect(button).toBeFocused();
 
-	// Escape on the header button also closes the panel.
 	await tab.keyboard.press("Enter");
 	expect(await isOpen("#notes")).toBe(true);
 	await tab.keyboard.press("Escape");
 	expect(await isOpen("#notes")).toBe(false);
 
-	// Opening either panel closes the other.
 	await tab.getByRole("button", { name: "Menu", exact: true }).click();
 	expect(await isOpen("#menu")).toBe(true);
 	await button.click();

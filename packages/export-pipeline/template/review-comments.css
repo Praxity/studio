@@ -484,7 +484,6 @@ html[data-praxity-mode="dark"] {
 	content: "";
 }
 
-/* Inside an open host popover, viewport-positioned above that popover. */
 .prx-review-marker--layer {
 	position: fixed;
 	z-index: 1;
@@ -874,8 +873,6 @@ html[data-praxity-mode="dark"] {
 	padding: 0;
 }
 
-/* Floating local controls: Pin and Comments show their icon; the label expands on hover, focus
-   and while pressed, and stays in the accessible name throughout. */
 .prx-review-sidebar--local.prx-review-sidebar--collapsed :is(.prx-review-pin, .prx-review-toggle) {
 	position: relative;
 	display: inline-flex;

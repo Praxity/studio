@@ -7,8 +7,6 @@
 		pageId: script.getAttribute("data-review-page-id") || "",
 		locale: script.getAttribute("data-review-locale") === "fr" ? "fr" : "en",
 		expiresAt: script.getAttribute("data-review-expires-at") || "",
-		// A host with stepped or hidden content names an event; Show on page fires it, with the
-		// target element as detail, before revealing and scrolling to a hidden target.
 		revealEvent: script.getAttribute("data-review-reveal-event") || "",
 	};
 	var localConfig = null;
@@ -627,8 +625,6 @@
 		return false;
 	}
 
-	// An open host popover sits in the top layer, above all review UI in the page. Review controls
-	// for content inside it move into that popover so they show above it.
 	function topLayerOf(node) {
 		try {
 			return node?.closest?.(":popover-open") || null;
@@ -640,9 +636,7 @@
 		if (node.isConnected && !topLayerOf(node))
 			try {
 				node.showPopover();
-			} catch {
-				// Not a popover in this browser, or the host removed it.
-			}
+			} catch {}
 	}
 
 	function bounded(text, max) {
@@ -1415,7 +1409,6 @@
 				else CSS.highlights.delete("prx-review-quote");
 			}
 		}
-		// Reply text saved in browser storage survives leaving; only unsaved text and retries do not.
 		function hasUnsentReplies() {
 			return [...threadViews.values()].some(
 				(entry) =>
@@ -1705,7 +1698,6 @@
 				}
 				if (restoreFocus) toggle.focus();
 			} else if (collapsed) {
-				// Local review shows an icon whose label expands; the label stays in the name.
 				if (anchors) labelAction(toggle, "message", strings.comments);
 				else toggle.append(document.createTextNode(`${strings.comments} `));
 				if (comments.length) {
@@ -1893,7 +1885,6 @@
 			field.setAttribute("aria-describedby", `${hint.id} ${failure.id}`);
 			var replyDraft = reviewTools.replyDraft;
 			var restored = replyDraft.get(thread.id);
-			// A reload during a save leaves the sent text behind; drop it once the thread shows it.
 			if (
 				restored &&
 				thread.messages.some((m) => m.body === restored && authorLabel(m.actor) === strings.you)
@@ -3024,13 +3015,10 @@
 				}
 
 				return {
-					// Reply text by thread: plain last-write-wins text through the same storage and
-					// memory fallback. Replies already freeze their own request for Retry.
 					reply: {
 						get: (threadId) => read(replyPrefix + threadId).raw || "",
 						set: (threadId, body) =>
 							body ? put(replyPrefix + threadId, body) : remove(replyPrefix + threadId, false),
-						// True only when this exact text is in browser storage, not the memory fallback.
 						saved(threadId, body) {
 							var held = read(replyPrefix + threadId);
 							return held.durable && held.raw === body;
@@ -3210,7 +3198,6 @@
 			}
 			var composerLayer = null;
 			function openComposer(anchor, opener, retained) {
-				// Opening the modal composer closes a host's light-dismiss popover; Cancel reopens it.
 				composerLayer = topLayerOf(anchors.resolve(anchor).target);
 				exitPin(false);
 				touchClick = null;

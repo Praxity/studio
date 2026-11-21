@@ -21,7 +21,6 @@ async function selectQuote(page: Page, selector = '[data-node-id="quote"]') {
 	}, selector);
 }
 
-// True when a hit test at the element's centre lands on it: nothing paints above it.
 function topmost(page: Page, selector: string) {
 	return page.locator(selector).evaluate((node) => {
 		const box = node.getBoundingClientRect();
@@ -69,7 +68,6 @@ test("text in an open host popover takes comments above it, and its comment reop
 		await expect.poll(() => popoverOpen(page, "#side-panel")).toBe(true);
 		await expect(page.locator('[data-node-id="panel"]')).toBeFocused();
 
-		// Opening the modal composer closes a light-dismiss popover; Escape reopens it.
 		await page.evaluate(() => (document.querySelector("#side-panel") as HTMLElement).hidePopover());
 		await page.evaluate(() => (document.querySelector("#menu-panel") as HTMLElement).showPopover());
 		await selectQuote(page, '[data-node-id="menu"]');

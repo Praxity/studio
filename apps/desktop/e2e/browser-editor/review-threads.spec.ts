@@ -309,7 +309,6 @@ for (const locale of ["en", "fr"] as const) {
 				await expect(first.locator("textarea")).toHaveValue("First draft");
 				await page.reload();
 				await openComments(page);
-				// Restored drafts reopen their reply forms.
 				await expect(first.locator("textarea")).toBeVisible();
 				await expect(first.locator("textarea")).toHaveValue("First draft");
 				await expect(second.locator("textarea")).toHaveValue("Second draft");
@@ -339,7 +338,6 @@ for (const locale of ["en", "fr"] as const) {
 					);
 				expect((await replyKeys()).some((key) => key.endsWith(`:${secondId}`))).toBe(false);
 				expect((await replyKeys()).some((key) => key.endsWith(`:${threadId}`))).toBe(true);
-				// A reload that lands mid-save leaves the sent text stored; the thread already shows it.
 				await page.evaluate(
 					([key]) => localStorage.setItem(key, "Second draft"),
 					[(await replyKeys())[0].replace(/[^:]+$/, secondId ?? "")],
@@ -400,7 +398,6 @@ for (const locale of ["en", "fr"] as const) {
 				).toBeFocused();
 				await expect(page).not.toHaveURL(/review-thread=/);
 				await page.unrouteAll({ behavior: "wait" });
-				// The retry was in memory and is gone; the typed text was saved and comes back.
 				await expect(first.locator("textarea")).toHaveValue("Unsent reply to keep");
 				await page
 					.locator(".prx-review-comment")
@@ -476,7 +473,6 @@ for (const locale of ["en", "fr"] as const) {
 				}) => {
 					await page.emulateMedia({ reducedMotion: "reduce" });
 					await page.goto(url);
-					// beforeEach clicked the toggle; move the pointer off it so nothing is hovered.
 					await page.mouse.move(0, 0);
 					const pin = page.getByRole("button", {
 						name: locale === "fr" ? "Repère" : "Pin",
