@@ -27,8 +27,6 @@ async function readAdmittedTree(root: string, displayRoot?: string): Promise<Fil
 		},
 		"read",
 	);
-	// Each nested project owns its journal and lock. Release this admission before
-	// entering a child's, then fill the existing tree node to retain its visibility.
 	for (const child of nested)
 		child.node.children = await readAdmittedTree(child.root, snapshot.projectRoot);
 	return snapshot.tree;

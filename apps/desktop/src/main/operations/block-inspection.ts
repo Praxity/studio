@@ -25,7 +25,6 @@ import { canvasTextBindings } from "./canvas-text-bindings";
 
 const digest = (source: string) => createHash("sha256").update(source).digest("hex");
 
-/** One complete I4 read view supplies both outline identity and exact source ranges. */
 export async function readEditorSnapshot(
 	root: string,
 	identitySession: CourseIdentitySession,
@@ -113,14 +112,12 @@ export async function readEditorSnapshot(
 	);
 }
 
-/** Source addresses are one-based tree paths, qualified by the lesson path. */
 export async function readBlockInventory(root: string, includeOperations = false) {
 	return withProjectFileTransaction(
 		root,
 		async (admitted) => {
 			const current = await resolveLessonSources(admitted);
 			const { orderedLessons } = await readCourseManifestData(admitted);
-			// Publishing allocates visible page filenames across the manifest's lesson order.
 			const exportSlugs = buildSlugMap(
 				orderedLessons.flatMap((file) => {
 					const lesson = current.lessons.get(file);
@@ -164,9 +161,6 @@ export async function readBlockInventory(root: string, includeOperations = false
 					}
 					return low || 1;
 				};
-				// Reader pages omit frontmatter and retain pages with hidden titles.
-				// Renderer blocks include generated titles/declarations and can project
-				// one source child several times. Count distinct direct source nodes.
 				const pages = new Map(
 					lesson.pages.map((page, index) => {
 						const record = lesson.nodes.get(page.id);
@@ -215,8 +209,6 @@ export async function readBlockInventory(root: string, includeOperations = false
 					const operations = new Set<string>();
 					if (includeOperations) {
 						const range = draftRange(entry.node);
-						// Probe the registry rather than duplicating its eligibility rules in the host.
-						// This first inventory covers node edits; insertion, inline and clipboard need their own targets.
 						const probes: Array<{ operation: string; args: OperationRequest["args"] }> = [
 							{ operation: "editSource", args: { text: source.slice(range.start, range.end) } },
 							{ operation: "deleteBlocks", args: {} },
@@ -287,7 +279,6 @@ export async function readBlockInventory(root: string, includeOperations = false
 							});
 						for (const probe of probes) {
 							if (operations.has(probe.operation)) continue;
-							// Probes use this admitted snapshot's IDs, even when they are provisional.
 							const probeTarget = {
 								...target,
 								ref: {
@@ -359,7 +350,6 @@ export class PageSelectionRefusal extends Error {
 	}
 }
 
-/** Resolve pages before blocks so a missing block cannot hide another matching page. */
 export function selectPageBlocks(
 	inventory: Awaited<ReturnType<typeof readBlockInventory>>,
 	selector: string,
@@ -378,7 +368,6 @@ export function selectPageBlocks(
 		}
 		if (!/^[1-9]\d*$/u.test(page) || !Number.isSafeInteger(Number(page)))
 			throw new PageSelectionRefusal("invalid-args", "pageNumber", {});
-		// Only the admitted inventory can supply a lesson; never read a selector path.
 		if (!inventory.files.some((entry) => entry.path === file))
 			throw new PageSelectionRefusal("orphaned", "lessonMissing", { file });
 	}
@@ -449,7 +438,6 @@ function inspectTextBindings(current: ResolvedCourseIdentity) {
 	);
 }
 
-/** Canvas fields need no structural-operation inventory or eligibility probes. */
 export async function inspectTextFields(root: string) {
 	return withProjectFileTransaction(
 		root,

@@ -101,7 +101,6 @@ beforeAll(async () => {
 		persistedSource.replace("# Page 0\n", "# Page 0\n\n::: note\nNew\n:::\n"),
 	);
 	mixedSnapshot = snapshotFixture(await resolveLessonSources(root));
-	// Pure transport/schema cases clone these admitted fixtures; they never edit their files.
 	simpleSnapshot = snapshotFixture(await resolveLessonSources(await course("# P\n\nText\n")));
 	responseSnapshot = snapshotFixture(
 		await resolveLessonSources(
@@ -259,7 +258,6 @@ it.each([
 });
 
 it("bounds the longest schema type, maximum offsets and escaped labels by construction", () => {
-	// This measures the current schema vocabulary, not a product type-name limit.
 	const longestType = Object.keys(BLOCK_SCHEMA).reduce(
 		(longest, type) => (type.length > longest.length ? type : longest),
 		"",

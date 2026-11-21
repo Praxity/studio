@@ -11,7 +11,6 @@ import {
 import { canvasMessages } from "../../shared/canvas-messages";
 import type { CanvasPageScope } from "../../shared/editor-session";
 
-/** Projects only admitted captured HTML. All course resources stay on the learner origin. */
 export async function serveStudioAuthorDocument(
 	request: Request,
 	html: string,
@@ -40,7 +39,6 @@ export async function serveStudioAuthorDocument(
 				/<\/script/gi,
 				"<\\/script",
 			);
-		// Capture browser APIs and erase the bearer before any course element is parsed.
 		doc.head.prepend(bridge);
 		const policy = [
 			"default-src 'none'",
@@ -74,7 +72,6 @@ export async function serveStudioAuthorDocument(
 	}
 }
 
-/** Learner scripts and content are preserved. The mode link contains no editor capability. */
 export async function addStudioReadModeLink(
 	html: string,
 	editUrl: string,
@@ -92,7 +89,6 @@ export async function addStudioReadModeLink(
 		const doc = dom.window.document;
 		const locale = doc.documentElement.lang.startsWith("fr") ? "fr" : "en";
 		const label = canvasMessages[locale].enter;
-		// The full-viewport deck must reserve a row for Studio instead of covering its header.
 		const deck = doc.querySelector('.praxity-deck[data-island="deck"]');
 		const container = deck ?? doc.body;
 		const body = dom.nodeLocation(container) as
@@ -105,12 +101,10 @@ export async function addStudioReadModeLink(
 		const offset =
 			body?.startTag?.endOffset ?? (first ? dom.nodeLocation(first)?.startOffset : undefined);
 		if (offset === undefined) throw new Error("Captured document has no body insertion boundary");
-		// Reserve a row in plain Read; the review client moves this same link into its header.
 		const link = `<style data-praxity-studio-read>.praxity-studio-read-tools{flex:0 0 64px;min-height:64px}.praxity-studio-read-tools>a{position:fixed;inset-block-start:8px;inset-inline-end:8px;z-index:10001}.praxity-studio-edit-link{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;padding:8px 12px;border:2px solid var(--praxity-color-border,#8c959f);border-radius:6px;font:inherit;color:var(--praxity-color-text,#212529);background:var(--praxity-color-background,#fff)}.praxity-studio-edit-link:focus-visible{outline:3px solid var(--praxity-color-focus,#005fcc);outline-offset:2px}@media(forced-colors:active){.praxity-studio-edit-link{color:LinkText;background:Canvas;border-color:ButtonText}.praxity-studio-edit-link:focus-visible{outline-color:Highlight}}</style><div class="praxity-studio-read-tools"><a class="praxity-studio-edit-link" href="${escapeHtml(editUrl)}" rel="noreferrer">${escapeHtml(label)}</a></div>`;
 		const linked = html.slice(0, offset) + link + html.slice(offset);
 		if (!review) return linked;
 		const scope = review.page;
-		// Hash the captured source set; the manifest does not map lesson IDs to source paths.
 		const revision = scope?.sourceRevisions
 			? createHash("sha256")
 					.update(

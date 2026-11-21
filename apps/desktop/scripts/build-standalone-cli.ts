@@ -39,7 +39,6 @@ const { version } = JSON.parse(await readFile(path.join(desktopDir, "package.jso
 const metadata = JSON.parse(await readFile(path.join(assetsDir, "viewer.version.json"), "utf8"));
 await verifyPreparedExportAssets(assetsDir, version);
 const viewerInputs: string[] = [];
-// Capture the actual viewer dependency closure; keep source evidence outside the artifact.
 await bundleViewer(assetsDir, (inputs) => viewerInputs.push(...inputs));
 const packageRoots = new Set<string>();
 const runtimePackages: { name: string; version: string; path: string }[] = [];
@@ -59,10 +58,8 @@ async function recordInput(
 	inputFiles.add(resolved);
 	const roles = inputRoles.get(resolved) ?? new Set<string>();
 	roles.add(portablePath(resolved).includes("/node_modules/") ? "third-party" : role);
-	// Preserve upstream ownership while identifying its browser contribution.
 	if (role === STUDIO_BROWSER_COMPONENT) roles.add(role);
 	inputRoles.set(resolved, roles);
-	// Use the final node_modules segment so pnpm store paths resolve to the real package.
 	const match = resolved.match(/^(.*[/\\]node_modules[/\\](?:@[^/\\]+[/\\])?[^/\\]+)/);
 	if (match) packageRoots.add(match[1]);
 }
@@ -130,7 +127,6 @@ const bundle = await build({
 		"process.env.PRAXITY_VIEWER_SOURCE_HASH": JSON.stringify(metadata.viewerSourceHash),
 	},
 });
-// Keep DOMPurify's Node dependency tree intact: jsdom loads runtime files by path.
 async function copyRuntimePackage(
 	name: string,
 	from: string,
@@ -225,7 +221,6 @@ dependencies.push(
 	},
 	{ name: "mitex", version: "0.2.7", license: "Apache-2.0", notices: ["typst/mitex/LICENSE"] },
 );
-// Keep full upstream notices as well as esbuild's retained license comments.
 for (const directory of [...packageRoots].sort()) {
 	await recordInput(path.join(directory, "package.json"), "third-party-notice-provenance");
 	const pkg = JSON.parse(await readFile(path.join(directory, "package.json"), "utf8"));

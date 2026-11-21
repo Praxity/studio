@@ -1,7 +1,5 @@
 import { writeFileSync } from "node:fs";
 
-// Vitest's JSON success flag omits unhandled errors. Recovery must retain them,
-// along with suite/hook errors that are not attached to a failed test.
 export default class AffectedReporter {
 	onInit(ctx) {
 		this.ctx = ctx;
@@ -20,8 +18,6 @@ export default class AffectedReporter {
 				.join("\n"),
 			assertionResults: [...module.children.allTests()].map((test) => ({
 				status: test.result().state,
-				// Vitest's built-in JSON reporter prefers stack over message. Timeout
-				// stacks can say STACK_TRACE_ERROR, hiding the actual timeout reason.
 				failureMessages:
 					test.result().errors?.map((error) => `${error.name}: ${error.message}`) ?? [],
 			})),

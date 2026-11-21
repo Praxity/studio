@@ -97,7 +97,6 @@ for (const inspect of [inspectProject, inspectProjectV1]) {
 for (const reader of ["export", "inspect", "inspect-v1"]) {
 	it(`T1 ${reader} holds one admission across a competing complete course write`, async () => {
 		const root = await project();
-		// An established course has a lock to hold throughout the read snapshot.
 		await withProjectFileTransaction(root, async () => {}, "write");
 		observed.path = join(root, "lesson.prax");
 		const close = DatabaseSync.prototype.close;
@@ -117,7 +116,6 @@ for (const reader of ["export", "inspect", "inspect-v1"]) {
 			done = once(child, "message").then(([message]) => {
 				expect(message).toEqual({ done: true });
 			});
-			// The reviewer used this interleaving: give the other process time to commit after release.
 			Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 700);
 		});
 		const result =

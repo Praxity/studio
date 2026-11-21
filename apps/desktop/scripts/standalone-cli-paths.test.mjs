@@ -60,7 +60,6 @@ test("privacy scan uses the real home directory when HOME is unset", () => {
 	assert.equal(result.status, 0, result.stderr);
 });
 
-// Supply verified upstream binaries for the positive checks; never commit release binaries.
 for (const target of ["aarch64-apple-darwin", "x86_64-apple-darwin"]) {
 	test(`privacy scan admits only the exact upstream Typst ${target} bytes at typst/typst`, {
 		skip: !process.env.TYPST_PATH_SCAN_FIXTURES,
@@ -69,7 +68,6 @@ for (const target of ["aarch64-apple-darwin", "x86_64-apple-darwin"]) {
 			path.join(process.env.TYPST_PATH_SCAN_FIXTURES, `${target}-typst`),
 		);
 		const repoDir = "/Users/runner/work/studio/studio";
-		// Use the matching prefix as the checkout too, so this runs on every host.
 		const upstreamHome = "/Users/runner";
 		assert.ok(bytes.includes(Buffer.from(upstreamHome)));
 		assert.doesNotThrow(() => assertNoPrivateCheckoutPath(bytes, "typst/typst", upstreamHome));

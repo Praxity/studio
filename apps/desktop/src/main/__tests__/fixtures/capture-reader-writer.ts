@@ -3,8 +3,6 @@ import { syncBuiltinESMExports } from "node:module";
 import { join } from "node:path";
 
 const [projectPath, target, content] = process.argv.slice(2);
-// Admission canonicalizes directory aliases, including macOS /var -> /private/var.
-// Match the writer's actual rename path so the capture cannot silently complete.
 const root = await fs.realpath(projectPath);
 const rename = fs.rename;
 fs.rename = async (...args) => {

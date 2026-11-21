@@ -29,8 +29,6 @@ const download = join(projectDir, "exports", "large.zip");
 await fsp.writeFile(asset, bytes);
 await fsp.writeFile(download, bytes);
 
-// Observe the filesystem adapter, including real FileHandle ownership. Never
-// catch process-level errors: an unhandled event must kill this child and fail.
 const descriptors: { fd: number; closed: boolean; closeCalls: number }[] = [];
 const open = fsp.open;
 fsp.open = async (...args) => {
@@ -101,7 +99,6 @@ const deployment: CoursePreviewDeployment = {
 		return stream;
 	},
 	dispose: async () => {
-		// The host must settle bodies before handing the deployment back for disposal.
 		assert.equal(deploymentStreams.size, 0, "Deployment disposed with a response in flight");
 		for (const stream of deploymentStreams) stream.destroy();
 		await Promise.all(

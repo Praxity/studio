@@ -3,7 +3,6 @@ import { CoursePracticeAdmissionError, practiceDiagnosticMessage } from "@praxit
 import type { PreviewCompileDiagnostic } from "@praxity/shared-blocks/course-preview-protocol";
 import { canvasMessages } from "../../shared/canvas-messages";
 
-/** Preserve localization and source metadata without copying authored operands. */
 export function previewDiagnostics(error: unknown, file?: string): PreviewCompileDiagnostic[] {
 	if (error instanceof CoursePracticeAdmissionError) return error.diagnostics;
 	return [
@@ -17,17 +16,13 @@ export function previewDiagnostics(error: unknown, file?: string): PreviewCompil
 	];
 }
 
-/** Content-free practice refusal from a canvas build: code and source position only. */
 export interface CanvasPracticeDiagnostic {
 	code: "practice-no-tracking" | "private-choice-practice-only";
-	/** Absent when only compiled output identified the violation. */
 	file?: string;
 	line?: number;
 	column?: number;
 }
 
-/** Canvas builds report only these two practice codes, as code and source position.
- * References, block IDs and upstream messages stay on the server. */
 export function canvasPracticeDiagnostics(error: unknown): CanvasPracticeDiagnostic[] | undefined {
 	const diagnostics: CanvasPracticeDiagnostic[] = [];
 	const shown = (code: string): code is CanvasPracticeDiagnostic["code"] =>
@@ -36,12 +31,10 @@ export function canvasPracticeDiagnostics(error: unknown): CanvasPracticeDiagnos
 		for (const { code, file, line, column } of error.diagnostics)
 			if (shown(code)) diagnostics.push({ code, file, line, column });
 	} else if (error instanceof PracticeAdmissionError && shown(error.code))
-		// Compiled-only refusals have no source span; never invent one.
 		diagnostics.push({ code: error.code });
 	return diagnostics.length ? diagnostics : undefined;
 }
 
-/** One line per refusal in the course language, for the canvas status. */
 export function canvasPracticeRefusalText(
 	diagnostics: readonly CanvasPracticeDiagnostic[],
 	locale: "en" | "fr",
@@ -54,7 +47,6 @@ export function canvasPracticeRefusalText(
 		.join("\n");
 }
 
-/** Shared by initial source refusals and build-time practice refusals. */
 export function canvasSourceLocation(
 	location: { file?: string; line?: number; column?: number },
 	message: string,
@@ -67,7 +59,6 @@ export function canvasSourceLocation(
 		column: String(location.column),
 		message,
 	};
-	// One pass keeps a file name such as "{line}.prax" literal.
 	return canvasMessages[locale].sourceLocation.replace(
 		/\{(file|line|column|message)\}/g,
 		(_, key: keyof typeof values) => values[key],

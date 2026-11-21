@@ -1,6 +1,5 @@
 import { normalizeLineEndings } from "@praxity/grammar/src/line-endings.ts";
 
-/** Match unchanged lines with Myers' edit path, including repeated blank lines. */
 function unchangedLines(before: string[], after: string[]): Map<number, number> {
 	const matches = new Map<number, number>();
 	let start = 0;
@@ -10,8 +9,6 @@ function unchangedLines(before: string[], after: string[]): Map<number, number> 
 	}
 	let oldEnd = before.length;
 	let newEnd = after.length;
-	// Anchor the unchanged suffix before diffing, so adjacent repeated blank lines
-	// keep their own endings when one is edited. Only the changed region needs a trace.
 	while (oldEnd > start && newEnd > start && before[oldEnd - 1] === after[newEnd - 1]) {
 		matches.set(--newEnd, --oldEnd);
 	}
@@ -57,9 +54,6 @@ function unchangedLines(before: string[], after: string[]): Map<number, number> 
 	throw new Error("Editor line edits could not be resolved");
 }
 
-/** Apply LF editor line edits to the raw baseline, retaining each line's own terminator.
- * Explicit CR bytes are already a raw replacement. The editor represents the final
- * newline as an empty final paragraph, so its presence or removal is authoritative. */
 export function preserveEditorLineEndings(
 	source: string,
 	previousSource: string | undefined,
@@ -74,7 +68,6 @@ export function preserveEditorLineEndings(
 	let oldStart = 0;
 	let newStart = 0;
 	for (const [newEnd, oldEnd] of anchors) {
-		// Pair edited lines between unchanged anchors; new lines inherit the local style.
 		for (let index = newStart; index < newEnd; index++) {
 			const oldIndex = oldStart + index - newStart;
 			if (oldIndex < oldEnd) matches.set(index, oldIndex);

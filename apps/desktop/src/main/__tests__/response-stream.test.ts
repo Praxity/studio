@@ -66,10 +66,7 @@ it.each(["body cancellation", "request abort", "completion", "owner shutdown"])(
 			abort.abort();
 			await expect(reader.read()).rejects.toMatchObject({ name: "AbortError" });
 		}
-		if (caseName === "completion")
-			while (!(await reader.read()).done) {
-				/* drain */
-			}
+		if (caseName === "completion") while (!(await reader.read()).done) {}
 		await owner.close();
 		expect(close).toHaveBeenCalledOnce();
 		expect(() => fstatSync(fd)).toThrow(expect.objectContaining({ code: "EBADF" }));

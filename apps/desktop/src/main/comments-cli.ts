@@ -22,7 +22,6 @@ import {
 const messages = { en: en.comments, fr: fr.comments };
 type Language = keyof typeof messages;
 
-// Keep statuses beside help; codes and JSON keys never depend on language.
 export const commentsExitCodes = {
 	ok: 0,
 	failed: 1,
@@ -126,12 +125,10 @@ async function courseDirectory(input: string): Promise<string> {
 
 async function textFile(path: string): Promise<string> {
 	try {
-		// A FIFO must reach the regular-file check without waiting for a writer.
 		const file = await open(path, constants.O_RDONLY | (constants.O_NONBLOCK ?? 0));
 		let bytes: Buffer;
 		try {
 			if (!(await file.stat()).isFile()) throw new CommentsRefusal("text-file-unreadable");
-			// Three UTF-8 bytes per UTF-16 unit bounds the read even if the file grows.
 			const buffer = Buffer.alloc(REVIEW_LIMITS.body * 3 + 1);
 			let length = 0;
 			while (length < buffer.length) {
@@ -145,7 +142,6 @@ async function textFile(path: string): Promise<string> {
 		} finally {
 			await file.close();
 		}
-		// UTF-8 cannot encode surrogates. Give these malformed encodings their own refusal.
 		if (
 			bytes.some(
 				(byte, i) =>
@@ -210,7 +206,6 @@ const jsonShortEscapes: Record<string, string> = {
 	"\\t": "0009",
 };
 function outputJson(value: unknown): string {
-	// Match complete JSON escapes first so a literal backslash followed by n stays literal.
 	return JSON.stringify(value).replace(
 		/\\(?:["\\/bfnrt]|u[0-9a-fA-F]{4})|[\u007f-\u009f\u061c\u200b-\u200f\u202a-\u202e\u2060\u2066-\u2069\ufeff]/gu,
 		(token) => {
@@ -372,7 +367,6 @@ async function executeCommentsCli(
 					: `${messages[language].listed.replace("{count}", "0")}\n`,
 				stderr: "",
 			};
-		// Never render raw filesystem errors, paths, causes or request arguments.
 		const detail: Record<string, string | number> =
 			error instanceof CommentsRefusal
 				? error.detail

@@ -1,10 +1,5 @@
 import { z } from "zod";
 
-/**
- * Zod schemas for validating IPC inputs in the main process.
- * Every ipcMain.handle() call validates its arguments before processing.
- */
-
 export const studioPortSchema = z.number().int().min(1).max(65_535);
 
 export const grammarSourceSchema = z
@@ -40,7 +35,6 @@ export const projectConfigSchema = z.object({
 });
 
 export const sampleCourseCreateSchema = z.object({
-	/** Omitted means "use the stored UI locale". */
 	locale: z.enum(["en", "fr"]).optional(),
 });
 
@@ -170,7 +164,6 @@ export const courseLessonSchema = z.object({
 	filename: lessonFilenameSchema,
 });
 
-/** Browser authoring admits visible lesson names without streams or control characters. */
 export const studioLessonFilenameSchema = courseLessonSchema.shape.filename.refine(
 	(filename) => !filename.startsWith(".") && !/[:\x00-\x1f]/u.test(filename),
 );
@@ -186,7 +179,6 @@ export const courseCreateLessonSchema = z.object({
 });
 
 export const exportScormSchema = z.object({
-	/** Author UI language for export advice, independent of course language. */
 	locale: z.enum(["en", "fr"]).optional(),
 	format: z.enum(["scorm-1.2", "scorm-2004", "xapi", "html", "pdf"]),
 	pageSize: z.enum(["a4", "letter"]).optional(),
@@ -207,7 +199,6 @@ export const exportScormSchema = z.object({
 	lessonFilename: lessonFilenameSchema.optional(),
 });
 
-/** Incoming request fields before the schema supplies defaults. */
 export type ExportRequest = z.input<typeof exportScormSchema>;
 export type ExportFormat = ExportRequest["format"];
 export type ExportRequestWithDestination = ExportRequest & {
@@ -215,7 +206,6 @@ export type ExportRequestWithDestination = ExportRequest & {
 	scope: NonNullable<ExportRequest["scope"]>;
 };
 
-/** Which lessons an export, review share or export estimate covers. */
 export const exportScopeSchema = z.object({
 	scope: z.enum(["lesson", "course"]).default("lesson"),
 	lessonFilename: lessonFilenameSchema.optional(),

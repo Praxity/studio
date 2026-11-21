@@ -2,7 +2,6 @@ import { readLesson } from "@praxity/grammar";
 import { expect, it } from "vitest";
 import { getMetricsFromBlocks } from "../telemetry-utils";
 
-// PDF export reports these counts in the CLI result.
 const metrics = (source: string) => getMetricsFromBlocks(readLesson(source).blocks);
 
 it("counts parsed pages without an empty implicit first page", () => {

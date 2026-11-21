@@ -48,7 +48,6 @@ afterEach(async () => {
 	await rm(root, { recursive: true, force: true });
 });
 
-// Every differential oracle runs without either retained owner, before warming it.
 const fresh = (patch: Partial<BuildCourseExportInputOptions> = {}) =>
 	buildCourseExportInput({
 		...options,
@@ -129,7 +128,6 @@ it("reads settings, workspace defaults and option changes before consulting rete
 	expect(expected.config.passingScore).toBe(75);
 	await writeFile(path.join(root, "course.yaml"), "title: Course\nlessons: [one.prax, two.prax]\n");
 	await mkdir(path.join(root, "course"));
-	// Workspace reads use the admitted parent, rather than caller-owned configuration.
 	await writeFile(path.join(root, "workspace.praxity.yaml"), "defaultLocale: fr\n");
 	const workspacePatch = { workspacePath: root, inheritWorkspaceSettings: true };
 	const inherited = await fresh(workspacePatch);

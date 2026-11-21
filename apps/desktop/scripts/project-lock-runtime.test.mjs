@@ -6,8 +6,6 @@ import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
 
-// No skip or fallback: a runtime upgrade that drops SQLite or EXCLUSIVE locking
-// must fail the gate. Run this contract on every supported Node upgrade.
 test("shipped SQLite excludes another process on an empty file and releases on close", () => {
 	const directory = mkdtempSync(join(tmpdir(), "studio-sqlite-contract-"));
 	const path = join(directory, "lock.sqlite");

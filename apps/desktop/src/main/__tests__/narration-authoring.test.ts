@@ -322,7 +322,6 @@ it.each(["en", "fr"] as const)(
 			join(root, "course.yaml"),
 			`title: Course\nlocale: ${locale}\nlessons: [lesson.prax]\nnarrationEnabled: true\n`,
 		);
-		// The durable narration target was saved while valid, before the invalid author draft.
 		await writeFile(
 			join(root, "lesson.prax"),
 			source.replace("evidence: NOT_IN_MODEL", "evidence: Paris"),

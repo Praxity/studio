@@ -6,7 +6,6 @@ import { isExportStageFilename } from "../export/save-export";
 import { readFileWithin, resolveWritablePathWithin } from "../path-security";
 import { assertProjectWritesAllowed, isProjectRecoveryPath } from "../project-file-transactions";
 
-/** Keep compiler writes outside the course; retain receipts for interrupted outputs. */
 export async function prepareStudioTemporaryOutputs(projectDir: string) {
 	assertProjectWritesAllowed();
 	const workspaceRoot = await realpath(tmpdir());
@@ -17,7 +16,6 @@ export async function prepareStudioTemporaryOutputs(projectDir: string) {
 				await readFileWithin(projectDir, path.join(directory, "workspace"), "utf8"),
 			);
 			const expected = path.join(workspaceRoot, `praxity-studio-${path.basename(directory)}`);
-			// A changed temp root or unknown receipt must not authorize arbitrary recursive deletion.
 			if (recorded !== expected) return false;
 			workspace = await resolveWritablePathWithin(workspaceRoot, expected);
 			const entry = await lstat(workspace).catch((error: NodeJS.ErrnoException) => {
@@ -37,7 +35,6 @@ export async function prepareStudioTemporaryOutputs(projectDir: string) {
 			if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
 			relative = "";
 		}
-		// Unknown receipts must not authorize deleting authored or journal recovery bytes.
 		if (relative) {
 			if (path.dirname(relative) !== "exports" || !isExportStageFilename(path.basename(relative)))
 				return false;
@@ -73,7 +70,6 @@ export async function prepareStudioTemporaryOutputs(projectDir: string) {
 			if ((error as NodeJS.ErrnoException).code === "ENOENT") continue;
 			throw error;
 		}
-		// A reused live PID delays recovery; it must never authorize deleting active outputs.
 		try {
 			process.kill(pid, 0);
 			continue;
@@ -96,7 +92,6 @@ export async function prepareStudioTemporaryOutputs(projectDir: string) {
 		throw error;
 	}
 	try {
-		// Receipts contain machine-local paths; keep them out of the course's Git history.
 		await writeFile(path.join(directory, ".gitignore"), "*\n", { flag: "wx" });
 		await writeFile(path.join(directory, "owner.pid"), `${process.pid}\n`, { flag: "wx" });
 		await writeFile(path.join(directory, "workspace"), workspace, { flag: "wx", flush: true });
@@ -115,7 +110,6 @@ export async function prepareStudioTemporaryOutputs(projectDir: string) {
 				isProjectRecoveryPath(path.relative(projectDir, file))
 			)
 				throw new Error("Invalid owned export stage");
-			// Persist before opening the stage, so even a hard exit leaves a recovery receipt.
 			await writeFile(path.join(directory, "output-stage"), relative, { flush: true });
 		},
 		async dispose() {

@@ -8,7 +8,6 @@ import { flattenLogicBlocks } from "@praxity/shared-blocks/logic/flatten-blocks"
 import type { PraxityBlock } from "@praxity/shared-blocks/types";
 import { splitBlocksIntoPages } from "@praxity/shared-blocks/viewer/split-pages";
 
-/** Resolve authored choices only after the main process overlays durable identities. */
 export function moduleDeckOptions(
 	enabled: boolean | undefined,
 	blocks: PraxityBlock[],
@@ -23,14 +22,12 @@ export function moduleDeckOptions(
 		for (const block of flattenLogicBlocks(page.blocks)) {
 			const rule = block.data.deckGate;
 			if (rule === undefined) continue;
-			// Grammar owns authored gate settings; the compiler validates resolved gates.
 			gates[block.id] = rule as (typeof gates)[string];
 		}
 	}
 	return enabled === true ? { gates, stops } : undefined;
 }
 
-/** Keep each lesson's presentation when compiling a multi-lesson course document. */
 export function deckPresentationData(
 	enabled: boolean | undefined,
 	design: Record<string, unknown>,

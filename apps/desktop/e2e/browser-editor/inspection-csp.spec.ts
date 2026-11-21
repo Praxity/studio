@@ -17,10 +17,6 @@ import { startStudioReadOnlyServer } from "../../src/main/studio/read-only-serve
 import { rawCss } from "../raw-css";
 import { installHostileMarkup } from "./fixtures/hostile-course";
 
-// Chromium 147 aborts the browser (SIGTRAP, a null CHECK in NetworkHandler::GetResponseBody)
-// when Playwright 1.59's tracing reads a response body after these specs' cross-origin
-// navigations swap the renderer. Traces stay off here until Playwright 1.64+, which detaches
-// obsolete sessions before reading bodies. Assertions are unchanged.
 test.use({ trace: "off" });
 
 const view: FrameView = {
@@ -37,7 +33,6 @@ const view: FrameView = {
 	expanded: [],
 	focus: null,
 };
-// The product's URL parameters and handshake: CourseArtifactFrame names the page over the offered port.
 const channel = "inspection-channel-0123456789abcdef";
 const attack = `window.sentinel = true;
 const key = Object.getOwnPropertyDescriptor(KeyboardEvent.prototype, 'key').get;
@@ -52,13 +47,10 @@ const planted = `<script type="module" src="planted.js"></script><script>${attac
 <iframe title="Hostile srcdoc" srcdoc="&lt;script&gt;parent.sentinel=true&lt;/script&gt;"></iframe>
 <dialog id="hostile-dialog">Authored dialog</dialog>
 <img id="course-image" src="course-image.png" alt="Course image">`;
-// A 1x1 PNG, served from the captured artifact like any course image.
 const courseImage = Buffer.from(
 	"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==",
 	"base64",
 );
-// CourseArtifactFrame's sandbox makes the inspection origin opaque from creation, unlike the CSP
-// sandbox alone. WebKit then matches 'self' against nothing, so read the course resources it gates.
 async function courseResources(frame: Frame) {
 	return frame.evaluate(async () => {
 		await document.fonts.load('16px "Source Sans 3"').catch(() => []);
@@ -187,7 +179,6 @@ window.bridge=connectPageFrame({window,frame,frameOrigin:'null',channel,pageId:'
 		}
 		files.set("planted.js", Buffer.from(attack));
 		files.set("course-image.png", courseImage);
-		// Course content that navigates on its own: a refresh, and a link the author can follow.
 		const entry = `${deployment.manifest.pages[0].slug}.html`;
 		const entryHtml = files.get(entry)?.toString();
 		if (!entryHtml) throw new Error("Missing compiled entry page");
@@ -261,7 +252,6 @@ for (const kind of ["browser"] as const)
 			const frame = document.createElement("iframe");
 			frame.title = "Second inspection";
 			frame.src = src;
-			// Deliberately over-permissive mount: the response must still isolate it.
 			frame.sandbox.add("allow-scripts", "allow-same-origin");
 			document.body.append(frame);
 		}, inspected.url());
@@ -354,9 +344,7 @@ for (const kind of ["browser"] as const)
 				return (error as DOMException).name;
 			}
 		});
-		// Chromium refuses even reading this API in an opaque document.
 		expect([0, "SecurityError"]).toContain(registrations);
-		// JSON data blocks stay for the logic overlay; they never execute.
 		await expect(frame.locator('script:not([type="application/json"])')).toHaveCount(1);
 		await expect(frame.locator('[data-island="checklist"]')).toHaveCount(1);
 		await installHostileMarkup(
@@ -393,11 +381,7 @@ for (const kind of ["browser"] as const)
 test("browser learner preview cannot install a worker on the inspection origin", async ({
 	page,
 }) => {
-	// The real planted module attempts registration. It runs here under the unchanged learner CSP.
 	await page.goto(hostOrigin);
-	// CourseArtifactFrame keys its iframe by mode, so learner preview is a new element with the
-	// browser learner sandbox. Re-pointing the inspection element instead could leave macOS
-	// Chromium's frame handle closed just after the learner page committed.
 	await page.evaluate((entry) => {
 		const frame = document.createElement("iframe");
 		frame.title = "Learner";
@@ -479,7 +463,6 @@ for (const kind of ["browser"] as const)
 		const entry = browserEntry;
 		await page.route(`${entry}?*`, async (route) => {
 			const response = await route.fetch();
-			// Model a stripping defect at the HTTP boundary. These are course bytes, never evaluate calls.
 			await route.fulfill({
 				response,
 				body: (await response.text()).replace(
@@ -509,7 +492,6 @@ for (const kind of ["browser"] as const)
 		const inspected = lens.url();
 		expect(new URL(inspected).searchParams.get("praxity-inspect")).toBe("1");
 		await lens.getByRole("link", { name: "Escape link" }).click();
-		// Positive control, after the click: the same course page refreshes a learner frame away.
 		const learnerUrl = inspected.replace(/\?.*$/, "");
 		await page.evaluate((src) => {
 			const frame = document.createElement("iframe");

@@ -35,7 +35,6 @@ function capabilityMatches(supplied: string, expected: string) {
 	);
 }
 
-/** Only media and captured compiled manifests live here. No editor API or project mount. */
 export async function startStudioReadOnlyServer(options: {
 	projectDir: string;
 	preferredPort?: number;
@@ -51,7 +50,6 @@ export async function startStudioReadOnlyServer(options: {
 }) {
 	const review =
 		options.review && createReviewHttp(options.review.store, options.review.capability);
-	// API-only callers need no browser assets. The CLI always supplies the shipped directory.
 	const reviewAssets = options.review?.assetsDir;
 	if (reviewAssets !== undefined) {
 		for (const name of ["review-comments.js", "review-comments.css"]) {
@@ -115,7 +113,6 @@ export async function startStudioReadOnlyServer(options: {
 		try {
 			if (closing) return fail(503);
 			if (review?.isRequest(req.url ?? "")) return await review.handle(req, res, origin, signal);
-			// Learner preview shares this origin. Never let it install a worker that can replace inspection responses.
 			if (req.headers["service-worker"] !== undefined) return fail(403);
 			for (const name of ["host", "origin", "authorization", "range"]) {
 				let count = 0;
@@ -126,7 +123,6 @@ export async function startStudioReadOnlyServer(options: {
 			if (req.headers.host !== new URL(origin).host) return fail(403);
 			const editorOrigin = options.getEditorOrigin();
 			const url = new URL(req.url ?? "", origin);
-			// Relative learner links keep this namespace, including their captured resources.
 			const canvas = url.pathname.startsWith("/canvas/preview/");
 			const artifactUrl = new URL(url);
 			if (canvas) artifactUrl.pathname = url.pathname.slice("/canvas".length);
@@ -137,7 +133,6 @@ export async function startStudioReadOnlyServer(options: {
 				!(req.headers.origin === "null" && url.pathname.startsWith("/preview/"))
 			)
 				return fail(403);
-			// Bearer credentials, including the editor capability, have no meaning here.
 			if (req.headers.authorization !== undefined) return fail(403);
 			if (req.method !== "GET" && req.method !== "HEAD") return fail(405);
 			if (url.origin !== origin) return fail(403);
@@ -194,7 +189,6 @@ export async function startStudioReadOnlyServer(options: {
 						))
 				)
 					return fail(403);
-				// Keep the descriptor, not the mutable path, after admission ends.
 				const { file, filePath } = await withProjectFileTransaction(
 					options.projectDir,
 					async (root) => {
@@ -217,7 +211,6 @@ export async function startStudioReadOnlyServer(options: {
 					},
 					"read",
 				).catch(async (error: unknown) => {
-					// Admission can fail during release after the descriptor was opened.
 					await closeFile?.();
 					throw error;
 				});
@@ -225,7 +218,6 @@ export async function startStudioReadOnlyServer(options: {
 					const info = await file.stat();
 					if (!info.isFile()) return fail(404);
 					if (download && info.size !== download.byteLength) return fail(404);
-					// serveOpenedFile now owns cleanup on every outcome.
 					closeFile = undefined;
 					response = await serveOpenedFile(
 						request,
@@ -244,7 +236,6 @@ export async function startStudioReadOnlyServer(options: {
 						"no-store",
 						streams,
 					);
-					// Canvas and binary asset reads get only this exact, read-only origin grant.
 					if (!download && req.headers.origin === editorOrigin) {
 						res.setHeader("Access-Control-Allow-Origin", editorOrigin);
 						res.setHeader("Vary", "Origin");
@@ -264,9 +255,7 @@ export async function startStudioReadOnlyServer(options: {
 			if ("status" in resolved) {
 				const current = canvas && currentCanvasDocument(artifactUrl.pathname);
 				if (current) {
-					// A released document's bookmark must not override its retained slide fragment.
 					if (!url.searchParams.has("praxity-resume")) url.searchParams.set("praxity-resume", "0");
-					// Omit a fragment so native navigation carries a deck's current slide.
 					res.writeHead(303, { Location: `/canvas${current}${url.search}` });
 					res.end();
 					return;
@@ -292,7 +281,6 @@ export async function startStudioReadOnlyServer(options: {
 						}
 					: undefined;
 			response = await serveCourseFile(
-				// Canvas HTML is transformed as a complete document, including on HEAD.
 				canvas && resolved.file.mediaType.startsWith("text/html")
 					? new Request(request, { method: "GET", headers: {} })
 					: request,
@@ -301,7 +289,6 @@ export async function startStudioReadOnlyServer(options: {
 				"no-store",
 				resolved.hosted.streams,
 				options.getInspectionScript,
-				// Bound at listen time; requests whose Host or URL names another origin were refused above.
 				origin,
 			);
 			if (canvas && resolved.file.mediaType.startsWith("text/html")) {
@@ -315,7 +302,6 @@ export async function startStudioReadOnlyServer(options: {
 				response.headers.delete("ETag");
 				response.headers.delete("Accept-Ranges");
 			}
-			// Author CSS/fonts remain captured learner resources, with only this exact CORS grant.
 			if (req.headers.origin === editorOrigin && !resolved.file.mediaType.startsWith("text/html")) {
 				response.headers.set("Access-Control-Allow-Origin", editorOrigin);
 				response.headers.set("Vary", "Origin");
@@ -355,7 +341,6 @@ export async function startStudioReadOnlyServer(options: {
 		},
 	);
 	server.maxHeadersCount = 0;
-	// Reject expectations explicitly so Node cannot send headerless 417 or 100 responses.
 	const rejectExpectation = (req: IncomingMessage, res: ServerResponse) => {
 		ownHttpResponse(req, res);
 		res.writeHead(417, { ...headers(), Connection: "close", "Content-Length": 0 });

@@ -398,7 +398,6 @@ it("cached stores equal independent fresh stores through randomized mutations an
 		await writeFile(join(root, snapshot[0]), step === 1 ? "{broken}" : snapshot[1]);
 		if (step === 2) cache.invalidate();
 		if (step === 3) {
-			// The other lesson's source is outside the stored validation. Resolution must still read it.
 			await writeFile(join(root, "b.prax"), sources[1].replace("equipment", `equipment ${i}`));
 		}
 		const uncached = await fresh(root).then(

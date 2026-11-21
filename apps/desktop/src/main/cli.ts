@@ -70,7 +70,6 @@ const help = (args: string[]) => {
 };
 
 interface CliRuntime {
-	/** Standalone hosts flush this notice before identity replacement. */
 	writeIdentityNotice?: (text: string) => Promise<void>;
 	openReviewStore?: typeof openReviewStore;
 	typstExecutablePath?: string;
@@ -78,7 +77,6 @@ interface CliRuntime {
 	exportAssetsDir: string;
 	expectedAppVersion?: string;
 	expectedViewerSourceHash?: string;
-	/** Only the standalone artifact supplies a browser UI build. */
 	editorAssetsDir?: string;
 }
 
@@ -427,7 +425,6 @@ export async function runPraxityCli(args: string[], runtime: CliRuntime): Promis
 	if (args[0] === "--version" || args[0] === "-v") {
 		return { exitCode: 0, stdout: `${runtime.appVersion}\n`, stderr: "" };
 	}
-	// Before language validation, use the first --lang value; absent or invalid values fall back to en.
 	const writes =
 		["init", "studio"].includes(args[0]) ||
 		(args[0] === "identity" && ["init", "merge"].includes(args[1])) ||
@@ -671,7 +668,6 @@ export async function runPraxityCli(args: string[], runtime: CliRuntime): Promis
 					);
 				}
 			}
-			// Argument refusals do not need the server or rendering runtime.
 			const { startStudioServer } = await import("./studio/server");
 			let portFallback = false;
 			let reviewPortFallback = false;
@@ -701,7 +697,6 @@ export async function runPraxityCli(args: string[], runtime: CliRuntime): Promis
 			let draftCount = 0;
 			let draftsUnavailable = false;
 			try {
-				// Optional retired-editor data cannot prevent the retained host from starting.
 				const inventory = await new LocalEditorStore(root).draftInventory();
 				draftCount = inventory.drafts.length;
 				draftsUnavailable = inventory.skippedDraftFiles.length > 0;

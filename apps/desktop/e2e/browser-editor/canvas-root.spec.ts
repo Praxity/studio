@@ -53,7 +53,6 @@ for (const deck of [false, true]) {
 		request,
 	}) => {
 		await page.addInitScript(() => {
-			// Observe admission before the learner deck writes its own slide fragment.
 			Reflect.set(window, "studioTestInitialFragment", location.hash);
 		});
 		const stop = await startJourney(
@@ -100,7 +99,6 @@ for (const deck of [false, true]) {
 			expect(await readFile(file, "utf8")).toBe(
 				original.replace("Opening slide", "Saved from the thin canvas"),
 			);
-			// Reopening the root builds saved bytes; an existing Read link identifies its immutable capture.
 			await page.goto(ready);
 			await expect(
 				page.getByRole("heading", { name: "Saved from the thin canvas", exact: true }).first(),

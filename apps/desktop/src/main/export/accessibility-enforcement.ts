@@ -57,13 +57,6 @@ export class ExportAccessibilityError extends Error {
 	}
 }
 
-/**
- * Enforce source and animated-media accessibility against the exact block set handed to the
- * packaging pipeline. This is deliberately main-process enforcement: renderer
- * pre-flight state is useful feedback, but is not an authorization boundary.
- * The enforcement decision must come from main-process-owned settings; export
- * input is intentionally never consulted for an override.
- */
 export async function assertExportAccessibility(
 	input: DesktopExportInput,
 	enforcementEnabled = true,

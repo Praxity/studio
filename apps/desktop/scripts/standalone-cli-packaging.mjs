@@ -24,7 +24,6 @@ export function assertCanvasInputs(inputs) {
 	}
 }
 
-// Inline as the first nonce-bearing script: a module script would run after course parsing.
 export function canvasBundlePlugin(entry) {
 	const api = { inputs: [] };
 	return {
@@ -52,7 +51,6 @@ export function canvasBundlePlugin(entry) {
 				fileName: "canvas.js",
 				source: result.outputFiles[0].text,
 			});
-			// Source servers use this build receipt. Packaged servers use the embedded digest.
 			this.emitFile({
 				type: "asset",
 				fileName: "canvas.sha256",
@@ -63,7 +61,6 @@ export function canvasBundlePlugin(entry) {
 }
 
 export function assertStandaloneTarget(platform, arch) {
-	// Linux Typst preparation supports CI; standalone distribution remains macOS/Windows.
 	if (platform !== "darwin" && platform !== "win32")
 		throw new Error(`Unsupported standalone CLI platform: ${platform}`);
 	selectTypstRelease(platform, arch);
@@ -81,8 +78,6 @@ export async function filesIn(directory) {
 }
 
 export async function packagePraxFormat(sourceDir, outputDir) {
-	// Rubato installs prax-format/ as the skill folder, so SKILL.md sits at its root and
-	// every relative link stays inside it. Omit the block-index generator tooling.
 	const sources = ["SKILL.md", "README.md", "inline-icons.md", "cli.md", "LICENSE"].map((file) =>
 		path.join(sourceDir, file),
 	);
@@ -100,7 +95,6 @@ export async function inventoryPayload(outputDir, repoDir, { platform, arch }) {
 	assertStandaloneTarget(platform, arch);
 	const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 	const files = [];
-	// Read sequentially: the runtime tree can exceed Windows' open-file limit.
 	for (const file of await filesIn(outputDir)) {
 		const relative = portablePath(path.relative(outputDir, file));
 		if (relative.endsWith(".map")) throw new Error(`Unexpected artifact source map: ${relative}`);
@@ -129,6 +123,5 @@ export async function inventoryPayload(outputDir, repoDir, { platform, arch }) {
 										: "studio-module",
 		});
 	}
-	// This digest covers ordered path/size/hash records. The inventory cannot hash itself.
 	return { platform, arch, payloadSha256: sha256(JSON.stringify(files)), files };
 }

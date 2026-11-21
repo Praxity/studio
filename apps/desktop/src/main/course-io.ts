@@ -61,7 +61,7 @@ async function loadCourseSnapshot(courseDir: string): Promise<CourseData> {
 		manifestSource,
 		lessons,
 		unlistedLessons,
-		workspacePath: null, // Resolved by caller
+		workspacePath: null,
 	};
 }
 

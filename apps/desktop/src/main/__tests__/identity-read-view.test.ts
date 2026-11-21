@@ -18,8 +18,6 @@ import { readBlockInventory } from "../operations/block-inspection";
 import { OperationService } from "../operations/operation-service";
 import { withProjectFileFlushes, withProjectFileTransaction } from "../project-file-transactions";
 
-// Real journal bytes, admissions and recovery remain; journal-flush tests own durability.
-// No-op syncFile also omits the default adapter's post-write path checks.
 function withCountingFlushes<Args extends unknown[]>(work: (...args: Args) => Promise<void>) {
 	return async (...args: Args) => {
 		const flushes = { syncFile: vi.fn(async () => {}), syncDirectory: vi.fn(async () => {}) };
@@ -89,7 +87,6 @@ it("keeps every transient ID of an invalid lesson through the Edit-mode identity
 	const captured = await readCourseIdentity(root, options);
 	expect(captured.lessons.get("broken.prax")?.hasErrors).toBe(true);
 	expect(captured.transientIds).toBe(true);
-	// This is the write-candidate check made by identityReview when Edit mode opens.
 	const candidate = await resolveCourseIdentity(root, options);
 	expect(candidate.identity.exportable).toBe(false);
 	const current = await readCourseIdentity(root, options);

@@ -1,24 +1,3 @@
-/**
- * Pre-bundles learner UI and host runtimes for the standalone Studio CLI.
- *
- * Outputs:
- *   resources/export-assets/viewer.css
- *   resources/export-assets/viewer-manifest.json
- *   resources/export-assets/course-shell-*.js
- *   resources/export-assets/host-*.js
- *   resources/export-assets/islands/ (recursive)
- *   resources/export-assets/styles.css
- *   resources/export-assets/styles-lite.css
- *   resources/export-assets/tabler-nodes-outline.json
- *   resources/export-assets/tabler-nodes-filled.json
- *   resources/export-assets/viewer.version.json
- *   resources/export-assets/review-comments.js
- *   resources/export-assets/review-comments.css
- *   resources/export-assets/schemas/ (recursive)
- *
- * Run via: pnpm --filter @praxity/desktop prebuild
- */
-
 import { execFileSync } from "node:child_process";
 import { realpathSync } from "node:fs";
 import { copyFile, cp, mkdir, readFile, writeFile } from "node:fs/promises";
@@ -39,7 +18,6 @@ export async function bundleInspectionFrame(
 	outputDir: string,
 	onBuildInputs?: (files: string[]) => void,
 ): Promise<void> {
-	// Studio-only bridge. Deployment manifests never include it in learner exports.
 	const inspectionBundle = await build({
 		entryPoints: [path.join(repoRoot, "apps/desktop/src/inspection-frame.ts")],
 		outfile: path.join(outputDir, "inspection-frame.js"),
@@ -64,7 +42,6 @@ export async function bundleInspectionFrame(
 			},
 		],
 	});
-	// The CSS plugin namespace names real files; include those bytes as inputs too.
 	const inputs = Object.keys(inspectionBundle.metafile.inputs).map((input) =>
 		path.resolve(input.replace(/^inspection-css:/, "")),
 	);
@@ -93,7 +70,6 @@ async function main(): Promise<void> {
 	await bundleInspectionFrame(path.resolve(__dirname, "../../.."), outputDir);
 	const sourceHash = await computeViewerSourceHash();
 
-	// 1. Bundle viewer UI, target-specific hosts, and their manifest.
 	console.log("[prebuild] Bundling viewer...");
 	const { cssPath, islandOutDir, manifestPath } = await bundleViewer(outputDir);
 	console.log(`[prebuild] viewer.css written to ${cssPath}`);
@@ -108,13 +84,10 @@ async function main(): Promise<void> {
 	console.log(`[prebuild] islands output ready at ${islandDestDir}`);
 	console.log(`[prebuild] viewer-manifest.json ready at ${manifestDestPath}`);
 
-	// 2. Build the desktop export CSS bundles
 	console.log("[prebuild] Building styles.css and styles-lite.css...");
 	await prepareDesktopExportInputs(outputDir);
 	console.log("[prebuild] styles.css and styles-lite.css written");
 
-	// 3. Write version metadata for the viewer compatibility contract.
-	//    Embedded as <meta name="praxity-viewer" content="..."> in exported HTML.
 	const packageJsonPath = path.resolve(__dirname, "../package.json");
 	const packageJson = JSON.parse(await readFile(packageJsonPath, "utf-8")) as { version: string };
 	const versionInfo = {

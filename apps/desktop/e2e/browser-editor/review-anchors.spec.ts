@@ -116,7 +116,6 @@ test("stored quote and pin follow reflow, expose keyboard names and focus their 
 				for (const width of [390, 1280]) {
 					await page.setViewportSize({ width, height: width === 390 ? 1600 : 1100 });
 					for (const theme of ["light", "dark"] as const) {
-						// Fixed course mode must win even when the OS requests the opposite.
 						await page.emulateMedia({ colorScheme: theme === "dark" ? "light" : "dark" });
 						await page.evaluate(
 							(mode) => document.documentElement.setAttribute("data-praxity-mode", mode),

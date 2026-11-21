@@ -108,7 +108,6 @@ test("an open field on another lesson saves after six revisions evict its docume
 		await expect(page.getByRole("status").filter({ hasText: /^Connected$/ })).toHaveText(
 			"Connected",
 		);
-		// C05f owns first-write identity promotion across tabs. Establish identity before opening B.
 		await save(page, "Original heading", "Established heading");
 		const other = await context.newPage();
 		await other.goto(`${origin()}/launch?canvas=1`);
@@ -161,7 +160,6 @@ test("released Read Next, Edit and author reload land on the same second page", 
 		await read.locator("a.praxity-nav-next").click();
 		await expect(read.getByRole("heading", { name: "Second page", exact: true })).toBeVisible();
 		await read.reload();
-		// Click the old document's Edit link through the actual cross-origin redirect chain.
 		await read.goto(oldSecond);
 		await read.getByRole("link", { name: "Edit text", exact: true }).click();
 		await expect(edit(read, "Other heading")).toBeVisible();
@@ -466,7 +464,6 @@ test.describe("fifty saves across three authors and two Read tabs", () => {
 					join(project(), ".praxity/studio-tmp", receipt, "workspace"),
 					"utf8",
 				);
-				// Wait for the refreshing tabs to finish deduplicating their temporary output.
 				for (const tab of authors) await expect(edit(tab, heading)).toBeVisible();
 				await expect.poll(async () => (await readdir(temporary)).length).toBeLessThanOrEqual(4);
 				if (n >= 3) expect((await readdir(temporary)).length).toBe(4);

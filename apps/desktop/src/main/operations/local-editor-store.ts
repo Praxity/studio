@@ -88,7 +88,6 @@ function sameStoredVersion(a: Draft, b: Draft) {
 	);
 }
 
-/** Fixed local paths must not alias another directory, even inside the course. */
 async function checkedLocalPath(
 	root: string,
 	relative: string,
@@ -112,7 +111,6 @@ async function optionalText(root: string, path: string): Promise<string | null> 
 	return (await readFileWithin(root, join(root, path), "utf8")) as string;
 }
 
-/** The author project may have no root ignore rule. Keep all local bytes private. */
 async function localIgnoreChange(root: string): Promise<ProjectFileChange[]> {
 	const path = `${local}/.gitignore`;
 	const source = await optionalText(root, path);
@@ -125,8 +123,6 @@ type SkippedDraftFile = {
 };
 
 async function buckets(root: string, skipped?: SkippedDraftFile[]) {
-	// Older recovery projects may use .PRAXITY without any editor storage. Keep
-	// their archive inventory available; existing draft bytes still require exact paths.
 	if ((await checkedLocalPath(root, `${local}/drafts`, true)).missing.length) return [];
 	if (!(await lstat(join(root, local, "drafts"))).isDirectory())
 		throw new DraftStorageError("unsafe-path", "Local draft storage is not a directory");
@@ -208,10 +204,8 @@ function bucketChanges(
 	];
 }
 
-/** File buckets work before identity is stored. No session capability enters storage. */
 export class LocalEditorStore {
 	constructor(private readonly root: string) {}
-	/** Diagnostic completion for persistence; legacy APIs retain their throwing contract. */
 	async draftPersist(input: unknown): Promise<DraftPersistenceOutcome> {
 		try {
 			const operation = parseEditorInput(draftPersistenceOperationSchema, input);
@@ -268,7 +262,6 @@ export class LocalEditorStore {
 			"read",
 		);
 	}
-	/** Recovery reads optional legacy files without weakening persistence's strict reader. */
 	async draftInventory() {
 		const skippedDraftFiles: SkippedDraftFile[] = [];
 		const drafts = await withProjectFileTransaction(
@@ -289,7 +282,6 @@ export class LocalEditorStore {
 				"unsafe-path",
 				"Draft exports cannot use metadata or recovery storage",
 			);
-		// A new folder and exclusive files preserve both existing exports and stored drafts.
 		await mkdir(output);
 		const files = [];
 		for (const [index, draft] of drafts.entries()) {
@@ -307,8 +299,6 @@ export class LocalEditorStore {
 				this.root,
 				async (root) => {
 					const records = await buckets(root);
-					// Ownership and generation checks run under the shared write admission,
-					// including when separate windows submit concurrently.
 					const owner = records
 						.flatMap((record) => record.bucket.drafts)
 						.find((saved) => saved.id === draft.id);
@@ -344,7 +334,6 @@ export class LocalEditorStore {
 					}
 					const existing = records.find((record) => record.bucket.file === draft.file);
 					const path = bucketPath(draft.file);
-					// Lost replies do not rewrite current buckets. Legacy retries still migrate atomically.
 					if (exactRetry && existing?.path === path) return;
 					if (!existing) {
 						assertPath(draft.file);

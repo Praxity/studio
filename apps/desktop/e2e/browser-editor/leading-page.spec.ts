@@ -45,7 +45,6 @@ test("leading page agrees across CLI inspect, HTML and PDF exports", async () =>
 	const html = new AdmZip(htmlPath)
 		.getEntries()
 		.filter((entry) => entry.entryName.endsWith(".html"));
-	// index.html and page-1.html are compatibility redirects to the authored page.
 	expect(html.map((entry) => entry.entryName)).toEqual([
 		"index.html",
 		"page-1.html",
@@ -60,7 +59,6 @@ test("leading page agrees across CLI inspect, HTML and PDF exports", async () =>
 	const pdfPath = testInfo.outputPath("welcome.pdf");
 	const result = JSON.parse(await cli(["export", root, "--format", "pdf", "--output", pdfPath]));
 	expect(result.pageCount).toBe(1);
-	// The workbook adds a cover/contents sheet to the single authored page.
 	expect((await readFile(pdfPath)).toString("latin1").match(/\/Type\s*\/Page\b/g)).toHaveLength(2);
 	await testInfo.attach("inspect", {
 		body: JSON.stringify(inspected),

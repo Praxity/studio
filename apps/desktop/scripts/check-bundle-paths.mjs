@@ -9,8 +9,7 @@ export function assertEsmBundlePaths(source, filename = "index.js") {
 	const host = ts.createCompilerHost(options);
 	host.getSourceFile = (path) =>
 		path === filename
-			? // TS binding avoids the implicit CommonJS module/exports symbols in JS files.
-				ts.createSourceFile(filename, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
+			? ts.createSourceFile(filename, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
 			: undefined;
 	const program = ts.createProgram([filename], options, host);
 	const checker = program.getTypeChecker();

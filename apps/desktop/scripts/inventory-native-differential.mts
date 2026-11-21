@@ -23,7 +23,6 @@ const firstTarget = path.join(root, "one");
 const secondTarget = path.join(root, "two");
 await writeFile(firstTarget, "first");
 await writeFile(secondTarget, "other");
-// Eight admissions per read exercise the actual #1404 parallel batch.
 for (let i = 0; i < 7; i++) await writeFile(path.join(root, "assets", `b${i}.png`), "batch");
 const writer = new Worker(new URL("./inventory-native-writer.mjs", import.meta.url));
 const pending = new Map<number, { resolve: () => void; reject: (error: Error) => void }>();
@@ -96,8 +95,6 @@ try {
 				const before = await handle.stat({ bigint: true });
 				const bytes = await handle.readFile();
 				if (!mutation && bytes.toString() === "first") {
-					// Writer thread operates while the inventory read owns its handle.
-					// Completion barrier makes the following byte verification owe current bytes.
 					mutation = mutate({ mode, target: secondTarget, restore });
 					await mutation;
 					const after = await handle.stat({ bigint: true });
@@ -124,7 +121,6 @@ try {
 			if (!mutation) throw new Error("Mutation did not run");
 			await mutation;
 			const retained = await inventory.read();
-			// Independent cold read occurs after writer completion and before another mutation.
 			const fresh = await new ProjectAssetInventory(root).read();
 			const disk = await readFile(file, "utf8");
 			const actual = raced

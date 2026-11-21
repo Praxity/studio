@@ -60,7 +60,6 @@ for (const visible of [false, true]) {
 			release();
 			await expect(page).not.toHaveURL(originalUrl);
 			await expect(page.getByRole("link", { name: "Read mode", exact: true })).toBeEnabled();
-			// Let a queued refresh focus reveal run before checking the reading position.
 			await page.evaluate(
 				() =>
 					new Promise<void>((resolve) =>
@@ -128,7 +127,6 @@ test("C09 loaded styles can wait for a paused rendering update", async ({ page }
 		await expect(updating).toHaveAttribute("aria-busy", "true");
 		expect(await oldStyle.evaluate((sheet) => sheet.isConnected)).toBe(true);
 		await expect(page.locator("html")).toHaveCSS("--swap-order", "later");
-		// Release only the first refresh frame. A one-frame plant must commit instead of waiting.
 		await page.evaluate(() => Reflect.get(window, "heldStyleFrames").shift()(performance.now()));
 		await expect
 			.poll(async () => ({
@@ -308,7 +306,6 @@ test("C09 changed source admission rejects a preloaded sheet before activation",
 		const response = await route.fetch();
 		if (change) {
 			const body = await response.json();
-			// Deliver a changed admitted source without a watcher event certifying it first.
 			body.result.fields[0].text = "Changed outside the captured build";
 			await route.fulfill({ response, json: body });
 		} else await route.fulfill({ response });
@@ -378,7 +375,6 @@ test("C09 a style deadline during admission preserves the previous styled docume
 			.poll(() => held, { message: "The pre-activation admission must be held" })
 			.toBe(true);
 		await expect(page.locator('head link[rel="preload"][as="style"]')).toHaveCount(1);
-		// Cross the style deadline while staying inside the later admission RPC's own budget.
 		await page.clock.fastForward(5_500);
 		releaseAdmission();
 		await expect(page.getByRole("status")).toHaveText(
@@ -408,7 +404,6 @@ test("C09 pagehide before the rendering wait removes the activated sheet", async
 			clear(id);
 			if (!activated) return;
 			activated = false;
-			// Inject pagehide when the completed load drops its deadline, before the frame wait.
 			Reflect.set(window, "stylePagehide", true);
 			window.requestAnimationFrame = () => 0;
 			window.dispatchEvent(new PageTransitionEvent("pagehide"));
@@ -445,7 +440,6 @@ test("C09 every sampled refresh frame stays styled with one request and no warni
 	await page.route("**/*.css", async (route) => {
 		styles.push(route.request().url());
 		const response = await route.fetch();
-		// Fault injection: expose a second CSS request instead of letting it finish between frames.
 		await new Promise((resolve) => setTimeout(resolve, 250));
 		await route.fulfill({ response });
 	});

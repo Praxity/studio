@@ -53,7 +53,6 @@ it.each(["lesson.prax", "course.yaml"])(
 			tree = readProjectTree(root).finally(() => {
 				settled = true;
 			});
-			// Attach a handler immediately, retaining any rejection for the final assertion.
 			void tree.catch(() => {});
 			let browserSettled = false;
 			browserTree = session.invoke("projectReadTree", {}).finally(() => {

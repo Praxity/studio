@@ -62,7 +62,6 @@ beforeAll(async () => {
 	const runtimeRequire = createRequire(
 		new URL("../../../../../packages/shared-blocks/package.json", import.meta.url),
 	);
-	// Keep source admission in the real CLI; a ZIP adapter avoids building viewer assets.
 	await build({
 		entryPoints: [fileURLToPath(script)],
 		outfile: cliEntry,
@@ -610,7 +609,6 @@ it("compiled-only canvas refusals keep the code without inventing a location", a
 	expect(JSON.stringify({ message: failure.message, details: failure.details })).not.toMatch(
 		/HIDDEN|pages\[0\]/,
 	);
-	// Other compiler failures keep the generic server error.
 	mocks.compileCourse.mockRejectedValue(new Error("HIDDEN upstream detail"));
 	await expect(session.invoke("canvasPreviewBuild", {})).rejects.not.toHaveProperty("status");
 });
@@ -914,7 +912,6 @@ it("compiled-only startup refusals open fenced and retain localization metadata"
 		"moduleDeck.gates.node",
 		"fr",
 	);
-	// Plant the compiled-only refusal currently masked by D02's reader fence.
 	const create = vi.spyOn(PreviewScheduler, "create").mockRejectedValueOnce(error);
 	const session = await createStudioProjectSession(root, "test");
 	sessions.push(session);

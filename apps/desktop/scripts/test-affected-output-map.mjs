@@ -1,6 +1,5 @@
 import { learnerAuthorityDirectories } from "../../../scripts/check-source-owners.mjs";
 
-// Prefix coverage includes new files and non-JS inputs, including pattern folders.
 export const publishedRuntimeRoots = learnerAuthorityDirectories;
 export const publishedCheckScripts = [
 	"scripts/check-source-owners.mjs",
@@ -11,8 +10,6 @@ export const guardsPublishedOutput = (path) =>
 	publishedRuntimeRoots.some((root) => path.startsWith(root)) ||
 	publishedCheckScripts.includes(path);
 
-// Broad renderers and shared styles own all published layouts. Keep their full
-// coverage; add narrower entries only when the file's consumers are known.
 export const outputCoverage = [
 	{
 		paths: ["packages/shared-blocks/src/viewer/deck-shell.css"],

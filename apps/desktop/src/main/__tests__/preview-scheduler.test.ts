@@ -213,7 +213,6 @@ it("T2 returns real node HTML and suppresses its duplicate in the compile patch"
 	await vi.runAllTimersAsync();
 	expect(events.at(-1)).toMatchObject({
 		type: "pageCompiled",
-		// A paragraph changes only the shell's inert config JSON, which the digest leaves out.
 		patch: { seq: 1, fragments: [], shellStale: false },
 	});
 	scheduler.close();
@@ -228,7 +227,6 @@ it("a newly selected frame receives fragments an earlier frame of its page alrea
 	);
 	scheduler.selectPage("page");
 	await vi.runAllTimersAsync();
-	// The shown frame receives the optimistic node; a remounted frame of the page did not.
 	await scheduler.refresh(input(1, "After"), {}, true);
 	scheduler.selectPage("page");
 	await vi.runAllTimersAsync();

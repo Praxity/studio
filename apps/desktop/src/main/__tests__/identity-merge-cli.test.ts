@@ -66,7 +66,6 @@ async function fixture(crlf = false, initialSource = source, template = false) {
 	if (template) {
 		await mkdir(course);
 		git("init", "-b", "base");
-		// Keep byte snapshots free of fsmonitor sockets and detached object maintenance.
 		await appendFile(
 			join(root, ".git/config"),
 			"\n[user]\nname = Identity merge fixture\nemail = fixture@example.invalid\n[core]\nautocrlf = false\nfsmonitor = false\n[gc]\nauto = 0\n[maintenance]\nauto = false\n",
@@ -96,8 +95,6 @@ async function fixture(crlf = false, initialSource = source, template = false) {
 			);
 		}
 		await writeFile(join(course, path), next);
-		// Branch edits carry the author's modify intent, so identity retention does
-		// not depend on the external-edit matcher's lexical threshold.
 		const result =
 			path !== "lesson.prax"
 				? await resolveCourseIdentity(course, { lessonPaths: [path] })
@@ -190,7 +187,6 @@ describe("identity merge CLI on real git repositories", { timeout: 60_000 }, () 
 				join(f.course, "lesson.prax"),
 				f.text.replace("clear path", "clean path").replace("before starting", "before beginning"),
 			);
-			// Merge admission sees the alias before parsing the working conflicted identity records.
 			await link(
 				join(f.course, ".praxity/identity/course.json"),
 				join(f.course, "course-alias.json"),

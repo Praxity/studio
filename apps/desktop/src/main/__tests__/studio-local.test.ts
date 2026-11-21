@@ -199,7 +199,6 @@ it("D17 drafts and clipboard survive a restart on a different port", async () =>
 		expect((await rpc(first, method, JSON.parse('{"__proto__":{}}'))).status).toBe(400);
 	}
 	expect(await bytes(root)).toEqual(before);
-	// Keep the old listener alive until the new one binds, so its port cannot be reused.
 	const second = await startStudioServer({ projectDir: root, editorAssetsDir, appVersion: "test" });
 	sessions.push(second);
 	await first.close();

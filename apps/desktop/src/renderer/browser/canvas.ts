@@ -7,7 +7,6 @@ import type {
 } from "./canvas-text";
 import type { openBrowserEventStream } from "./event-stream";
 
-/** Runs from the packaged nonce-bearing entry before any course element is parsed. */
 export function startStudioAuthor(
 	editorOrigin: string,
 	readUrl: string,
@@ -19,7 +18,6 @@ export function startStudioAuthor(
 	eventLimit: number,
 ) {
 	const fragment = location.hash;
-	// The learner base must never affect history, and cleanup precedes storage or DOM work.
 	history.replaceState(null, "", `${editorOrigin}${location.pathname}`);
 	const createElement = Document.prototype.createElement.bind(document);
 	const querySelector = Document.prototype.querySelector.bind(document);
@@ -62,7 +60,6 @@ export function startStudioAuthor(
 		},
 		{ once: true },
 	);
-	// Start in the next task after parsing. Course images must never gate author controls.
 	window.addEventListener(
 		"DOMContentLoaded",
 		async () => {
@@ -71,10 +68,8 @@ export function startStudioAuthor(
 			let toggle: HTMLButtonElement | undefined;
 			let mountedFields: ReturnType<typeof mountCanvasTextFields> | undefined;
 			try {
-				// Use the compiler's course appearance, even when Studio's system theme differs.
 				const controlStyles =
 					styles[documentRoot.dataset.praxityMode === "dark" ? "dark" : "light"];
-				// The document root remains an ancestor even of protected top-layer controls.
 				for (const [property, value] of [
 					["display", "block"],
 					["visibility", "visible"],
@@ -87,7 +82,6 @@ export function startStudioAuthor(
 					documentRoot?.style.setProperty(property, value, "important");
 				const host = createElement("div");
 				host.setAttribute("popover", "manual");
-				// Inline important geometry wins against authored layers, animations and selectors.
 				host.style.cssText =
 					"all:initial!important;display:block!important;position:absolute!important;inset:8px 8px auto 8px!important;margin:0!important;padding:0!important;border:0!important;opacity:1!important;visibility:visible!important;transform:none!important;zoom:1!important;animation:none!important;transition:none!important;pointer-events:auto!important;";
 				const shadow = host.attachShadow({ mode: "open" });
@@ -109,7 +103,6 @@ export function startStudioAuthor(
 				link.setAttribute("role", "link");
 				link.tabIndex = 0;
 				link.textContent = messages.read;
-				// Reserve the localized loading label before it can move course click targets.
 				const readSize = createElement("span");
 				readSize.className = "read-size";
 				readSize.setAttribute("aria-hidden", "true");
@@ -136,15 +129,11 @@ export function startStudioAuthor(
 				protectedRoot.append(host);
 				documentRoot?.prepend(protectedHost);
 				host.showPopover();
-				// Author panel decision, 2026-10-17: reserve a band and scroll it with the course.
-				// Floating controls covered the header; a shared status row moved the toggle.
-				// ResizeObserver alone left a frame of overlap after localized text wrapped.
 				const courseBody = querySelector("body");
 				const courseMargin = courseBody
 					? Math.max(0, Number.parseFloat(getComputedStyle(courseBody).marginTop) || 0)
 					: 0;
 				const reservePanel = () => {
-					// A body positioned out of flow still needs the author's reserved header band.
 					if (courseBody instanceof HTMLElement)
 						courseBody.style.setProperty(
 							"margin-top",
@@ -154,7 +143,6 @@ export function startStudioAuthor(
 				};
 				const panelObserver = new ResizeObserver(reservePanel);
 				panelObserver.observe(host);
-				// Text can wrap before ResizeObserver delivers; reserve it in the same microtask.
 				const panelContentObserver = new MutationObserver(reservePanel);
 				panelContentObserver.observe(controls, {
 					childList: true,
@@ -174,7 +162,6 @@ export function startStudioAuthor(
 				if (sessionError) throw sessionError;
 				async function rpc(method: string, args: unknown, canvasPath = documentPath) {
 					const deadline = new AbortController();
-					// An absent reply is unknown, never a no-write refusal or an automatic replay.
 					const timer = setTimeout(() => deadline.abort(), requestTimeoutMs);
 					try {
 						const response = await request(`${editorOrigin}/api/rpc`, {
@@ -226,7 +213,6 @@ export function startStudioAuthor(
 					token = fallbackToken;
 					await rpc("configRead", {});
 				}
-				// Authentication owns replacement. A forged fragment cannot overwrite a working session.
 				sessionStorage.setItem("praxity.studio.session", token);
 				let generation = 0;
 				let invalidate = () => {
@@ -289,7 +275,6 @@ export function startStudioAuthor(
 										console.error("[studio] Canvas event stream cleanup failed", error);
 								}
 							}
-							// Reconnection invalidates output, including changes missed in the gap.
 							await new Promise<void>((resolve) => {
 								const abort = () => {
 									clearTimeout(timer);
@@ -313,7 +298,6 @@ export function startStudioAuthor(
 				eventSeq = Math.max(eventSeq, snapshot.seq);
 				const liveStatus = status;
 				let refreshing = false;
-				// The current source or practice refusal; a later successful refresh replaces it.
 				let refusal = snapshot.sourceRefusal ?? "";
 				let editedPageId: string | undefined;
 				let refreshed = Promise.resolve();
@@ -334,7 +318,6 @@ export function startStudioAuthor(
 					reload() {
 						view.setUpdating(true);
 						liveStatus.textContent = messages.updating;
-						// Closing the discarded field already started the fresh build.
 						void refresh();
 					},
 					async destination(anchor: HTMLAnchorElement | HTMLAreaElement) {
@@ -369,12 +352,10 @@ export function startStudioAuthor(
 				async function refresh() {
 					if (refreshing || view.isOpen() || controller.signal.aborted) return;
 					refreshing = true;
-					// Removing the destination also blocks auxiliary clicks and browser link menus.
 					link.removeAttribute("href");
 					link.setAttribute("aria-busy", "true");
 					link.setAttribute("aria-disabled", "true");
 					link.textContent = messages.readUpdating;
-					// One wait spans discarded builds and refreshes deferred by an open field.
 					if (!finishRefresh)
 						refreshed = new Promise<void>((resolve) => {
 							finishRefresh = resolve;
@@ -384,7 +365,6 @@ export function startStudioAuthor(
 					const styleAbort = new AbortController();
 					let styleTimer: ReturnType<typeof setTimeout> | undefined;
 					try {
-						// Rebuild from a fresh read admission, never from an event's HTML or the old artifact.
 						const before = await port.snapshot();
 						async function readCurrent() {
 							const current = await port.snapshot();
@@ -420,9 +400,7 @@ export function startStudioAuthor(
 						if (!response.ok) throw new Error("Saved page is unavailable");
 						const html = await response.text();
 						if (requested !== generation || view.isOpen() || controller.signal.aborted) return;
-						// The response already passed the author projection; its bootstrap never executes twice.
 						const fresh = parser.parseFromString(html, "text/html");
-						// Missing Fetch Metadata can send the author-entry gate on this read.
 						if (query.call(fresh, "#review-heading")) {
 							review.hidden = false;
 							liveStatus.textContent = messages.identityReviewPending;
@@ -434,10 +412,8 @@ export function startStudioAuthor(
 						);
 						if (!remembered) editedPageId = undefined;
 						const readPage = remembered ?? page;
-						// The compiler alias owns the destination and fragment for a later deck slide.
 						const readEntry = new URL(`${encodeURIComponent(readPage.slug)}.html`, built.entryUrl);
 						const savedReadUrl = `${new URL(readUrl).origin}/canvas${readEntry.pathname}`;
-						// Firefox may resolve a connected head link before its replacement base takes effect.
 						for (const resource of queryAll.call(fresh, "link[href]"))
 							resource.setAttribute(
 								"href",
@@ -449,7 +425,6 @@ export function startStudioAuthor(
 						const freshHead = query.call(fresh, "head");
 						if (!body || !freshBody || !head || !freshHead)
 							throw new Error("Saved document unavailable");
-						// Keep the current sheets active until their revision replacements are loaded.
 						const stylesBySource = new Map<Node, HTMLLinkElement>();
 						styleTimer = setTimeout(
 							() => styleAbort.abort(new Error("Saved stylesheet timed out")),
@@ -478,10 +453,8 @@ export function startStudioAuthor(
 						await Promise.all(
 							[...freshHead.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')].map(
 								(source, index) => {
-									// Retain as through activation and reconciliation to avoid warnings and refetches.
 									source.as = "style";
 									const sheet = importNode(source, true) as HTMLLinkElement;
-									// Changing an inactive sheet's media makes WebKit fetch it again on activation.
 									sheet.rel = "preload";
 									stagedStyles.push(sheet);
 									stylesBySource.set(source, sheet);
@@ -502,10 +475,8 @@ export function startStudioAuthor(
 								}),
 							),
 						);
-						// A background tab can pause painting after its stylesheet load has completed.
 						clearTimeout(styleTimer);
 						styleTimer = undefined;
-						// Keep old CSS through WebKit's rendering update and head reconciliation.
 						await new Promise<void>((resolve, reject) => {
 							styleSignal.throwIfAborted();
 							styleSignal.addEventListener("abort", () => reject(styleSignal.reason), {
@@ -540,7 +511,6 @@ export function startStudioAuthor(
 						};
 						const normalizeHref = (href: string) =>
 							directories.reduce((value, directory) => value.replaceAll(directory, ""), href);
-						// Reuse course nodes and owned buttons. Unrelated edits must not rebuild the AT buffer.
 						function sync(target: Node, source: Node) {
 							if (target instanceof Element && source instanceof Element) {
 								for (const attribute of [...target.attributes])
@@ -567,7 +537,6 @@ export function startStudioAuthor(
 								if (match) used.add(match);
 								return match;
 							});
-							// Preserve unchanged content before IDs: a transient ID can be rebound after an insertion.
 							for (const [index, node] of next.entries()) {
 								if (pairs[index] || !key(node)) continue;
 								const match = old.find(
@@ -596,7 +565,6 @@ export function startStudioAuthor(
 								}
 								while (cursor && view.owns(cursor)) cursor = cursor.nextSibling;
 								const retained = match ?? importNode(node, true);
-								// A loaded stylesheet must stay connected while old sheets are retired.
 								if (retained !== cursor && !stylesBySource.has(node))
 									target.insertBefore(retained, cursor);
 								if (match) sync(match, node);
@@ -653,12 +621,9 @@ export function startStudioAuthor(
 							}
 						}
 					} catch (error) {
-						// A newer source revision supersedes diagnostics as well as successful builds.
 						if (requested !== generation) return;
-						// The server localizes this content-free refusal in the course language.
 						const practice = (error as { practiceRefusal?: string } | null)?.practiceRefusal;
 						if (practice && !controller.signal.aborted) {
-							// Read keeps the last good build. The polite status announces a changed refusal once.
 							refusal = practice;
 							liveStatus.style.whiteSpace = "pre-wrap";
 							if (liveStatus.textContent !== refusal) liveStatus.textContent = refusal;
@@ -690,7 +655,6 @@ export function startStudioAuthor(
 				};
 				status.style.whiteSpace = "pre-wrap";
 				status.textContent = refusal || (view.unmapped ? messages.unmapped : messages.connected);
-				// A watcher may arrive while the first reply is held. Compare fresh bytes, not its sequence alone.
 				const startupSnapshot = eventSeq > snapshot.seq ? await port.snapshot() : snapshot;
 				if (
 					startupSnapshot.servedSourceRevisions

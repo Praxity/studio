@@ -51,7 +51,6 @@ test("browser editor CI selects its source, fixtures, assets and configuration o
 	);
 });
 
-// ci-minutes.test.mjs checks which engines each event selects.
 test("browser editor CI gates the selected engines in Linux shards with prepared assets", () => {
 	const job = ci.jobs["browser-editor"];
 	assert.ok(job, "Browser authoring must have a CI job");
@@ -93,7 +92,6 @@ test("browser editor CI gates the selected engines in Linux shards with prepared
 });
 
 test("no CI job reads the runner context in job-level env", () => {
-	// GitHub rejects the whole workflow when jobs.<id>.env uses runner.*; set it per step.
 	for (const [name, job] of Object.entries(ci.jobs))
 		assert.doesNotMatch(JSON.stringify(job.env ?? {}), /\brunner\./, name);
 });

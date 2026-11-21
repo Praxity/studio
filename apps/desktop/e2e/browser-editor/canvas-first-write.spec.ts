@@ -56,7 +56,6 @@ for (const scenario of [
 		await writeFile(join(fixture, "first.prax"), "# Other lesson\n\nHeld body.\n");
 		const stop = await startJourney(context, { courseFixture: fixture });
 		try {
-			// Newly inserted headings have runtime IDs without retiring the saved page or body IDs.
 			await writeFile(join(project(), "second.prax"), a);
 			await writeFile(join(project(), "first.prax"), b);
 			if (scenario === "established") await persistFixtureIdentity(project());

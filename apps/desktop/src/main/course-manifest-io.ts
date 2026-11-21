@@ -40,7 +40,6 @@ export async function readCourseManifestData(
 	);
 }
 
-/** Change the lesson inventory without rewriting surrounding metadata. */
 function patchManifestLessons(source: string, value: string[]): string {
 	const key = "lessons";
 	const document = plainYamlDocument(source);
@@ -72,7 +71,6 @@ function patchManifestLessons(source: string, value: string[]): string {
 	return applyPlainYamlEdits(source, edits, expected, parseCourseManifest);
 }
 
-/** Change only the owned lessons value; preserve every surrounding authored byte. */
 export async function planManifestLessons(
 	root: string,
 	update: (lessons: string[]) => string[],
@@ -115,13 +113,9 @@ async function readManifestSnapshot(
 		}
 	}
 
-	// Reading must surface malformed authored YAML even when no field migration
-	// is needed. Otherwise the tolerant model parser hides it behind defaults.
 	if (manifestYaml !== undefined) plainYamlDocument(manifestYaml);
 	const manifest = parseCourseManifest(manifestYaml ?? "");
 	const entries = await readdir(courseDir, { withFileTypes: true });
-	// Symlink lessons remain unsupported, but an escape must fail at preparation
-	// rather than be hidden as an absent lesson by manifest discovery.
 	for (const entry of entries) {
 		if (entry.isSymbolicLink() && entry.name.toLowerCase().endsWith(".prax")) {
 			await resolveExistingPathWithin(courseDir, join(courseDir, entry.name));

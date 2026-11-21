@@ -42,14 +42,11 @@ import {
 import { resolvePdfAssets } from "./resolve-pdf-assets";
 
 export interface ExportProjectOptions {
-	/** Author advice language, independent of the published course locale. */
 	adviceLocale?: "en" | "fr";
 	pageSize?: "a4" | "letter";
 	includeAnswerSheet?: boolean;
-	/** Trusted host option; never accepted from renderer IPC. */
 	typstExecutablePath?: string;
 	signal?: AbortSignal;
-	/** Trusted host workspace, never renderer input. */
 	temporaryRoot?: string;
 	projectDir: string;
 	format: ExportFormat;
@@ -58,9 +55,7 @@ export interface ExportProjectOptions {
 	scope: "lesson" | "course";
 	lessonFilename?: string;
 	workspacePath?: string | null;
-	/** Trusted host policy; disable for project-rooted server sessions. */
 	inheritWorkspaceSettings?: boolean;
-	/** Read-only by default; persistence requires explicit writer admission. */
 	manifestPolicy?: "read-only" | "write";
 	completionThreshold?: number;
 	requireKnowledgeChecks?: boolean;
@@ -84,7 +79,6 @@ export interface ExportProjectResult {
 	pageCount: number;
 	blockCount: number;
 	criticalAccessibilityIssues: A11yIssue[];
-	/** Present for SCORM 1.2 exports, whose progress storage is capped. */
 	scorm12Storage?: Scorm12StorageEstimate;
 }
 export interface PdfExportProjectResult extends Omit<ExportProjectResult, "zip"> {
@@ -174,7 +168,6 @@ function pdfRefusalMessage(message: string, input: ProjectExportInput): string {
 		inspect(lesson.blocks, lesson.id);
 		for (const [block, content] of lesson.selfCheckContents ?? [])
 			inspect(content, lesson.id, block);
-		// Native answer-sheet font refusals identify the owning block without emitting Content.
 		for (const [block, content] of lesson.writeDistractorsContents ?? [])
 			inspect(content, lesson.id, block);
 	}
@@ -202,7 +195,6 @@ function toPipelineFormat(
 	return format;
 }
 
-/** Whether a full attempt at the project fits in SCORM 1.2 progress storage, before exporting. */
 export async function estimateProjectScorm12Storage(
 	options: Pick<
 		ExportProjectOptions,
@@ -214,7 +206,6 @@ export async function estimateProjectScorm12Storage(
 		| "inheritWorkspaceSettings"
 	>,
 ): Promise<Scorm12StorageEstimate> {
-	// Page IDs and assessments do not depend on completion settings or assets.
 	const input = await buildCourseExportInput({
 		projectDir: options.projectDir,
 		scope: options.scope,
@@ -256,8 +247,6 @@ export async function exportProject(
 		baseInput = await withProjectFileTransaction(
 			options.projectDir,
 			async () => {
-				// Validate the captured course before lesson projection or PDF/HTML
-				// branching. The selective admission owner decides which diagnostics refuse output.
 				const admission = await resolveLessonSources(options.projectDir);
 				const selectedLesson =
 					options.lessonFilename ??
@@ -354,8 +343,6 @@ export async function exportProject(
 			const lessons = baseInput.preparedLessons ?? [];
 			if (!pdfAssets) throw new Error("PDF assets were not prepared");
 			options.onProgress?.("pdfCompiling", 30);
-			// Flush progress before synchronous PDF source rendering, and admit
-			// pending cancellation before starting the native compiler.
 			await yieldToEventLoop();
 			options.signal?.throwIfAborted();
 			const result = await exportCoursePdf({

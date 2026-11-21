@@ -46,14 +46,12 @@ async function scaffoldHtmlProject(): Promise<string> {
 		JSON.stringify({ format: "praxity-project", completionThreshold: 0.8 }),
 		"utf-8",
 	);
-	// course.yaml manifest — required by buildExportInputFromProject
 	await writeFile(
 		join(projectDir, "course.yaml"),
 		"title: HTML Export Fidelity Test\nlessons:\n  - course.prax\n",
 		"utf-8",
 	);
 	await writeLessonSource(projectDir, "course.prax", source, source);
-	// Minimal placeholder image — asset resolution won't fail
 	await writeFile(join(projectDir, "assets", "placeholder.png"), Buffer.from("PNG-STUB"));
 	return projectDir;
 }
@@ -137,11 +135,9 @@ describe("HTML export fidelity", () => {
 			.map((e) => e.entryName)
 			.filter((name) => name.endsWith(".html") && name !== "index.html");
 		allDocs = htmlEntries.map((entry) => parseHtmlEntry(zip, entry));
-		// A real HTML export; the default 10 s hook timeout is too tight on a loaded machine.
 	}, 60_000);
 
 	it("produces multiple HTML pages (page breaks recognized)", () => {
-		// Fixture has 2 pageBreak blocks → 3 pages minimum
 		expect(htmlEntries.length).toBeGreaterThan(1);
 	});
 
@@ -150,7 +146,6 @@ describe("HTML export fidelity", () => {
 		expect(entries.some((e) => e.endsWith(".html"))).toBe(true);
 		expect(entries).not.toContain("viewer.css");
 		expect(entries.some((entry) => /^styles\.[a-f0-9]{12}\.css$/.test(entry))).toBe(true);
-		// HTML format should NOT include scorm-runtime
 		expect(entries).not.toContain("scorm-runtime.js");
 	});
 
@@ -199,9 +194,6 @@ describe("HTML export fidelity", () => {
 	it("all expected block types appear in rendered HTML across pages", () => {
 		const allTypes = new Set(allDocs.flatMap((doc) => getBlockTypes(doc)));
 
-		// All parser block types that render with data-block-type in HTML.
-		// Only pageBreak (split into separate files) and assessmentGroup
-		// (metadata wrapper) are excluded — everything else renders.
 		const expectedInHtml = [
 			"heading",
 			"text",

@@ -251,7 +251,6 @@ beforeAll(async () => {
 	alternate = join(scratch, "alternate");
 	await mkdir(alternate);
 	await git(alternate, "init", "--quiet");
-	// Give the alternate repository a readable empty index.
 	await git(alternate, "read-tree", "--empty");
 	await git(
 		alternate,

@@ -15,8 +15,6 @@ const [root, stop, fixtureSources] = process.argv.slice(2);
 const sources: string[] = fixtureSources
 	? JSON.parse(fixtureSources)
 	: ["# Café 😀\r\nOld words.\nKeep this.\rLast line", "second old"];
-// A pending Promise alone does not keep Node alive. Hold the IPC channel open
-// until the parent kills this writer at the requested fault checkpoint.
 process.on("message", () => {});
 if (stop === "identity-before-link" || stop === "protected:before-link") {
 	const link = fsp.link;
@@ -68,7 +66,6 @@ try {
 					await resolveCourseIdentity(root, { lessonPaths: ["lesson.prax"] }),
 					[],
 					{
-						// Crash fixtures exercise the confirmed writer that can retire identities.
 						retirements: "confirmed",
 						onStep: async ({ kind, index }) => {
 							if (stop === "identity-before-link") return;
@@ -219,8 +216,6 @@ try {
 		const link = fsp.link;
 		fsp.link = async (from, to) => {
 			await link(from, to);
-			// The head checkpoint follows its durable installed marker. A raw link
-			// alone is an unfinished installation under marker-based recovery.
 			if (
 				(stop === "lesson-source" && String(to).endsWith("lesson.prax")) ||
 				(stop === "lesson-head" &&

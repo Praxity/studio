@@ -148,7 +148,6 @@ for (const mode of ["pages", "deck"] as const) {
 						await play.focus();
 						await play.press(input);
 					}
-					// Keep focus in slide content while narration traverses its recorded targets.
 					await page.getByRole("main").focus();
 					await expect(page.getByRole("main")).toBeFocused();
 				}

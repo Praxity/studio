@@ -111,8 +111,6 @@ for (const strict of [false, true]) {
 		second.child.send({ start: true });
 		const competing = await second.next();
 		if (competing.admitted) {
-			// Without the outer read admission, commit the second writer before
-			// returning the captured inventory. This forces the stale read every time.
 			second.child.send({ resume: true });
 			expect(await second.next()).toEqual({ done: true });
 		}

@@ -198,7 +198,6 @@ it.each([
 		const f = await fixture();
 		const server = await startStudioServer({ ...f, appVersion: "0.3.0", locale: "fr" });
 		servers.push(server);
-		// Node's HTTP interface permits TRACE, which fetch deliberately rejects.
 		const { request } = await import("node:http");
 		const body = await new Promise<string>((resolve, reject) => {
 			const req = request(server.origin + url, { method, headers }, (res) => {

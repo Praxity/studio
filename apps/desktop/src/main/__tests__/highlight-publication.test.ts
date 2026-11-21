@@ -13,7 +13,6 @@ import { runPraxityCli } from "../cli";
 import { buildCourseExportInput } from "../export/build-export-input-from-project";
 import { exportProject } from "../export/export-project";
 
-// Parsing, identity reads, project export and both CLI owners remain real.
 let scratch: string;
 let cli: string;
 let sourceHtml: string;
@@ -94,7 +93,6 @@ beforeAll(async () => {
 		...bundleOptions,
 		entryPoints: [fileURLToPath(script)],
 		outfile: sourceCli,
-		// Keep the real script's prebuilt-asset lookup while avoiding tsx startup.
 		define: { "import.meta.dirname": JSON.stringify(fileURLToPath(new URL(".", script))) },
 	});
 	const sourceOutput = join(scratch, "source-html-output");
@@ -155,7 +153,6 @@ it.each(formats.flatMap((format) => [false, true].map((nested) => ({ format, nes
 			if (!("zip" in result)) throw new Error("Expected runtime package");
 			const zip = new AdmZip(result.zip);
 			expect(zip.getEntries().some((e) => e.entryName.endsWith(".html"))).toBe(true);
-			// Hidden practice still ships its authored baseline for public show/hide.
 			expect(
 				zip
 					.getEntries()

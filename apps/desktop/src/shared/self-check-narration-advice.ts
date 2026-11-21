@@ -11,11 +11,9 @@ import {
 
 export interface SelfCheckNarrationWarning {
 	code: "ENARRATIONSELFCHECKSPOILER";
-	/** One-based line in the lesson source, never quoted content. */
 	line: number;
 }
 
-// Eight characters avoid advice for common short words such as "answer" or "is".
 const minimumExcerptLength = 8;
 const normalize = (text: string) =>
 	normalizeNarrationScript(narrationScriptText(text))
@@ -24,7 +22,6 @@ const normalize = (text: string) =>
 		.replace(/[‘’]/gu, "'")
 		.replace(/[“”]/gu, '"');
 
-/** Only this author owner reads full Content; callers receive code and location. */
 export function selfCheckNarrationAdvice(
 	read: ReadLessonResult,
 	resolved: ReturnType<typeof resolveNarrationV2>,
@@ -67,7 +64,6 @@ export function selfCheckNarrationAdvice(
 				try {
 					content = readSelfCheckContent(read, check.id);
 				} catch (error) {
-					// Grammar already reports this draft error. Identity/accessor failures must still refuse.
 					if (error instanceof SelfCheckContentError && error.code === "self-check-content-invalid")
 						continue;
 					throw error;

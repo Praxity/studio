@@ -11,7 +11,6 @@ const field = (page: Page) => page.getByRole("textbox", { name: "Heading text" }
 const edit = (page: Page) =>
 	page.getByRole("button", { name: "Edit heading 2: Before", exact: true });
 test.beforeEach(async ({ context, browserName }, info) => {
-	// Course links are fixture content, present before the first identity admission.
 	const initialSource =
 		info.title.includes("preserves focus on a course link") || info.title.includes("content shifts")
 			? "# Page\n\n## Before\n\n[Next](#note).\n\n## Second\n"
@@ -482,7 +481,6 @@ test("C05 refresh survives course elements named after document methods", async 
 	});
 	await page.goto(`${origin}/launch?canvas=1`);
 	await page.reload();
-	// WebKit's locator engine itself uses the clobbered method. Read through the native API.
 	await expect
 		.poll(() =>
 			page.evaluate(() => {

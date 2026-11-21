@@ -147,7 +147,6 @@ for (const lang of ["en", "fr"]) {
 		expect(new Set(await names(page)).size).toBe(refreshed.length);
 		const acknowledge = async (labels: string[], editing: boolean) => {
 			const gateFrench = (await page.locator("html").getAttribute("lang")) === "fr";
-			// Only the list entry reflects the resolver's containing-block re-ID limit.
 			await expect(page.locator("main > ul > li")).toHaveText(
 				labels.map(
 					(label) =>
@@ -185,7 +184,6 @@ for (const lang of ["en", "fr"]) {
 			})
 			.click();
 		await acknowledge(["list"], true);
-		// Hold the background render so this also asserts the immediate save path.
 		let heldBuilds = 0;
 		let release = () => {};
 		const held = new Promise<void>((resolve) => {

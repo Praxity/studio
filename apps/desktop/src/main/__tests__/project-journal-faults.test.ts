@@ -13,7 +13,6 @@ const faults = vi.hoisted(() => ({
 	rootSync: "",
 	readOnlyTarget: "",
 }));
-// Exercise POSIX directory synchronization on Windows while preserving path admission semantics.
 vi.mock("node:path", async (importOriginal) => {
 	const path = await importOriginal<typeof import("node:path")>();
 	return {
@@ -24,7 +23,6 @@ vi.mock("node:path", async (importOriginal) => {
 		},
 	};
 });
-// Fail at the filesystem boundary, including a rename that completed before I/O reported failure.
 vi.mock("node:fs/promises", async (importOriginal) => {
 	const fs = await importOriginal<typeof import("node:fs/promises")>();
 	return {

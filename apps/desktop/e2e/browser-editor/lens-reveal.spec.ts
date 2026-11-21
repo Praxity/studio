@@ -27,12 +27,6 @@ import {
 	installHostileMarkup,
 } from "./fixtures/hostile-course";
 
-/**
- * P3b-3 reveal adapters. The real compiled course runs in the Page lens with course
- * scripts blocked, so interactive blocks keep their static server form. Every handle
- * stays reachable by Tab (F1): later card slides and conditional blocks are laid
- * open, and focusing a tab's handle shows its panel (F5).
- */
 const source = `# Reveal
 
 Intro paragraph.
@@ -112,7 +106,6 @@ const releases: (() => Promise<void>)[] = [];
 
 test.beforeAll(async () => {
 	const root = resolve(import.meta.dirname, "../../../..");
-	// Run `pnpm prebuild` first: this is the packaged bridge the product injects.
 	const bridge = await readFile(
 		join(root, "apps/desktop/resources/export-assets/inspection-frame.js"),
 		"utf8",
@@ -130,7 +123,6 @@ test.beforeAll(async () => {
 		session: createSession(),
 		translate: createTranslator({ locale: "en", messages }),
 	});
-	// The host stands in for the controller: a reported focus becomes the view's focus and selection.
 	const hostBundle = await build({
 		stdin: {
 			contents: `import {connectPageFrame} from './packages/editor-core/src/frame-bridge/transport.ts';
@@ -223,7 +215,6 @@ async function openLens(
 	return frame;
 }
 
-/** Real course invokers open no dialog or popover over the handles, by click or hover. */
 async function assertInvokersOpenNothing(page: Page, content: Frame) {
 	for (const id of ["hostile-modal-opener", "hostile-popover-opener", "hostile-interest"]) {
 		const opener = content.locator(`#${id}`);
@@ -234,7 +225,6 @@ async function assertInvokersOpenNothing(page: Page, content: Frame) {
 		await page.mouse.down();
 		await page.mouse.up();
 	}
-	// Interest invokers open after a hover delay; stay over the last one past it.
 	await page.waitForTimeout(1500);
 	expect(
 		await content.evaluate(() => ({
@@ -248,11 +238,6 @@ async function assertInvokersOpenNothing(page: Page, content: Frame) {
 
 const focusColour = { light: [0x1f, 0x4f, 0xd8], dark: [0x8a, 0xa8, 0xff] };
 const paperColour = { light: [0xfc, 0xfc, 0xfd], dark: [0x22, 0x27, 0x2e] };
-/**
- * Reads the painted handle: computed box-shadow and zoom report unzoomed values, so
- * this checks pixels. `ring` is the nearest distance to the focus colour 2-4px outside
- * the left edge; `glyph` the largest distance from the paper colour inside the glyph.
- */
 async function renderedHandle(page: Page, handle: Locator, theme: "light" | "dark") {
 	const box = await handle.boundingBox();
 	if (!box) throw new Error("Missing handle box");
@@ -290,7 +275,6 @@ async function renderedHandle(page: Page, handle: Locator, theme: "light" | "dar
 	return { ring, glyph };
 }
 
-/** Waits for the controller's round trip: the focused node is selected in the frame. */
 async function focusSettled(frame: FrameLocator, name: string) {
 	const handle = handleOf(frame, name);
 	await expect(handle).toBeFocused();
@@ -331,9 +315,7 @@ test("F1 Tab reaches every handle in reading order, revealing tab panels as thei
 					? (element as HTMLElement).dataset.nodeId
 					: undefined,
 			);
-		// Past the last handle, Tab leaves the frame and its last focus remains.
 		if (!id || id === reached.at(-1)) break;
-		// Text blocks and their paragraph share a name; settle by identity.
 		const handle = frame.locator(`button[data-focus-role="handle"][data-node-id="${id}"]`);
 		await expect(handle).toHaveAttribute("data-selected", "");
 		reached.push(id);
@@ -446,7 +428,6 @@ test("Tab to a hidden slide or conditional block shows it, focuses its named han
 		await expect(handle).toHaveAccessibleName(hidden);
 		const text = frame.getByText(content, { exact: true }).first();
 		await expect(text).toBeVisible();
-		// No ancestor hides the revealed content from assistive technology or opacity.
 		expect(
 			await text.evaluate((element) => {
 				for (let el: Element | null = element; el; el = el.parentElement)
@@ -459,7 +440,6 @@ test("Tab to a hidden slide or conditional block shows it, focuses its named han
 			}),
 		).toBe(true);
 	}
-	// Laid-open slides keep the learner carousel controls out of the Tab order.
 	for (const control of await frame
 		.locator("[data-card-root] button:not([data-praxity-chrome])")
 		.all())
@@ -473,7 +453,6 @@ test("F11 a keyboard-focused block handle stacks above its item-handle neighbour
 	const block = handleOf(frame, "Cards: Slide deck");
 	await handleOf(frame, "Page: Reveal").focus();
 	await focusSettled(frame, "Page: Reveal");
-	// Keyboard modality, so the ring is drawn through :focus-visible.
 	while (!(await block.evaluate((element) => element === document.activeElement)))
 		await page.keyboard.press("Tab");
 	await focusSettled(frame, "Cards: Slide deck");
@@ -481,9 +460,6 @@ test("F11 a keyboard-focused block handle stacks above its item-handle neighbour
 	const zIndex = (name: string) =>
 		handleOf(frame, name).evaluate((element) => Number(getComputedStyle(element).zIndex));
 	expect(await zIndex("Cards: Slide deck")).toBeGreaterThan(await zIndex("Card 1 of 3: Slide one"));
-	// Top-layer handles paint in the order they were shown, whatever their z-index. Find
-	// two handles whose hit extensions meet outside both buttons: whichever has focus
-	// paints on top there, so one of the two directions needs the focused handle re-shown.
 	const pair = await block.evaluate((anchor: HTMLButtonElement) => {
 		const doc = anchor.ownerDocument;
 		const reach = (button: Element, grow: number) => {
@@ -527,7 +503,6 @@ test("F11 a keyboard-focused block handle stacks above its item-handle neighbour
 			),
 		).toBe(true);
 	}
-	// The laid-open deck's learner-only controls stay out of the accessibility tree.
 	await expect(frame.locator(".praxity-card-controls")).toHaveAttribute("inert", "");
 	for (const flip of await frame.locator("[data-card-flip]").all())
 		await expect(flip).toHaveAttribute("inert", "");
@@ -555,11 +530,9 @@ for (const theme of ["light", "dark"] as const)
 			true,
 		);
 		await assertInvokersOpenNothing(page, content);
-		// Keyboard modality, so programmatic focus matches :focus-visible.
 		await handleOf(frame, "Page: Reveal").focus();
 		await page.keyboard.press("Tab");
 		expect((await assertHandlesUnobscured(content)).length).toBeGreaterThan(30);
-		// The guard's interactivity reset leaves the inert attribute working.
 		expect(
 			await content.evaluate(() => {
 				const control = document.querySelector<HTMLElement>("[inert] button");
@@ -567,8 +540,6 @@ for (const theme of ["light", "dark"] as const)
 				return !!control && document.activeElement !== control;
 			}),
 		).toBe(true);
-		// Under ancestor zoom the box is compensated but the ring and glyph must render
-		// at full size too, and course CSS cannot hide the glyph dots.
 		for (const name of ["Cards: Slide deck", "Card 1 of 3: Slide one"]) {
 			const handle = handleOf(frame, name);
 			await handle.evaluate(async (button) => {
@@ -580,7 +551,6 @@ for (const theme of ["light", "dark"] as const)
 			const rendered = await renderedHandle(page, handle, theme);
 			expect(rendered.ring, `${name} ring colour distance`).toBeLessThan(80);
 			expect(rendered.glyph, `${name} glyph contrast`).toBeGreaterThan(100);
-			// Course generated content cannot rewrite the description AT reads.
 			await expect(handle).toHaveAccessibleDescription(node(name).description);
 		}
 		const captures = process.env.PRAXITY_LENS_SCREENSHOTS;
@@ -596,16 +566,13 @@ for (const theme of ["light", "dark"] as const)
 				});
 		}
 		await page.setViewportSize({ width: 1280, height: 900 });
-		// The pointer and faded-ancestor passes do not depend on the theme.
 		if (theme === "dark") return;
-		// A real mouse click at each centre reaches the handle through the overlay.
 		await page.evaluate(() => Object.assign(window, { frameEvents: [] }));
 		const clicked: string[] = [];
 		for (const handle of await frame.locator('button[data-focus-role="handle"]').all()) {
 			const id = await handle.evaluate(async (button: HTMLButtonElement) => {
 				if (button.hidden) return null;
 				const node = button.nextElementSibling;
-				// A display:contents node (a matching pair's row) has no box to scroll to.
 				(node && getComputedStyle(node).display === "contents"
 					? node.firstElementChild
 					: node
@@ -627,13 +594,11 @@ for (const theme of ["light", "dark"] as const)
 				),
 			)
 			.toEqual(clicked);
-		// Fade every ancestor out: only the top layer can still show a handle.
 		await content.evaluate((css) => {
 			const style = document.createElement("style");
 			style.textContent = css;
 			document.head.append(style);
 		}, HOSTILE_ANCESTOR_FADE_CSS);
-		// The clicks above set pointer modality; Tab restores keyboard modality for the rings.
 		await handleOf(frame, "Page: Reveal").focus();
 		await page.keyboard.press("Tab");
 		expect((await assertHandlesUnobscured(content)).length).toBeGreaterThan(30);
@@ -646,7 +611,6 @@ for (const theme of ["light", "dark"] as const)
 			const clip = await handle.boundingBox();
 			if (!clip) throw new Error(`Missing ${name} box`);
 			const shown = await page.screenshot({ clip });
-			// Inline !important on chrome is the test's own toggle; the lens ignores chrome mutations.
 			await handle.evaluate(async (button) => {
 				button.style.setProperty("visibility", "hidden", "important");
 				await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
@@ -664,7 +628,6 @@ for (const theme of ["light", "dark"] as const)
 test("F11 in hover mode, the handle of the node under the pointer shows through a course overlay", async ({
 	page,
 }) => {
-	// Hover is the shipped default (CourseArtifactFrame).
 	const frame = await openLens(page);
 	const content = page.frames().find((candidate) => candidate.url().includes("praxity-inspect=1"));
 	if (!content) throw new Error("Missing inspection frame");
@@ -679,7 +642,6 @@ test("F11 in hover mode, the handle of the node under the pointer shows through 
 		},
 		true,
 	);
-	// A text block and its paragraph share a name; the pointer selects the innermost.
 	const innermost = (name: string) =>
 		view.nodes.filter((candidate) => candidate.name === name).at(-1)?.id ?? "";
 	const opacity = (name: string) =>
@@ -698,8 +660,6 @@ test("F11 in hover mode, the handle of the node under the pointer shows through 
 		await expect.poll(() => opacity(name)).toBe("1");
 		await expect.poll(() => opacity(other)).toBe("0");
 	}
-	// A patch re-creates the handle of the node it replaces. With the pointer still over
-	// that node, the new handle shows too.
 	await frame
 		.locator(
 			`[data-node-id="${innermost("Paragraph: Slide one body.")}"]:not([data-praxity-chrome])`,
@@ -724,8 +684,6 @@ test("F11 moving focus to a tab handle leaves its aria-expanded and other handle
 		const changes: string[] = [];
 		const toggles: string[] = [];
 		Object.assign(window, { expandedChanges: changes, popoverToggles: toggles });
-		// The neutral pass would close and re-show every open handle; focusing re-shows
-		// only the focused one, to stack it on top.
 		const bystander = button.ownerDocument.querySelector('button[data-focus-role="handle"]');
 		bystander?.addEventListener("beforetoggle", (event) =>
 			toggles.push((event as ToggleEvent).newState),
@@ -738,8 +696,6 @@ test("F11 moving focus to a tab handle leaves its aria-expanded and other handle
 			attributeFilter: ["aria-expanded"],
 		});
 	});
-	// Selecting the second tab hides the first panel with the hidden attribute. That is
-	// markup, not CSS keyed to handle state, so no neutral re-measurement runs.
 	await second.focus();
 	await focusSettled(frame, "Tab 2 of 2: Second tab");
 	await page.waitForTimeout(300);
@@ -747,7 +703,6 @@ test("F11 moving focus to a tab handle leaves its aria-expanded and other handle
 		await second.evaluate(
 			() => (window as unknown as { expandedChanges: string[] }).expandedChanges,
 		),
-		// Rewriting the same value is harmless; removing it (old value null) is not.
 	).not.toContain("null");
 	expect(
 		await second.evaluate(() => (window as unknown as { popoverToggles: string[] }).popoverToggles),
@@ -768,7 +723,6 @@ test("F11 course CSS that hides a node while its handle has state cannot break t
 		style.textContent = css;
 		document.head.append(style);
 	}, HOSTILE_STATE_CSS);
-	// Placement settles: no handle keeps flipping between shown and hidden.
 	await page.waitForTimeout(300);
 	expect(
 		await content.evaluate(async () => {
@@ -783,7 +737,6 @@ test("F11 course CSS that hides a node while its handle has state cannot break t
 			return changes;
 		}),
 	).toBe(0);
-	// The keyboard lens keeps working: each Tab lands on the next handle and stays there.
 	await handleOf(frame, "Page: Reveal").focus();
 	for (let step = 0; step < 6; step++) {
 		await page.keyboard.press("Tab");
@@ -831,14 +784,12 @@ for (const width of [1280, 390])
 		await page.setViewportSize({ width, height: 900 });
 		const frame = await openLens(page, { handles: "always" });
 		const crowded: string[] = [];
-		// The first panel shows on load; the second, with its nested conditional, on focus.
 		for (const tab of ["Tab 1 of 2: First tab", "Tab 2 of 2: Second tab"]) {
 			await handleOf(frame, tab).focus();
 			await focusSettled(frame, tab);
 			crowded.push(
 				...(await frame.locator("body").evaluate(async (_, tab) => {
 					const failures: string[] = [];
-					// Handles clamp to the viewport edges, so check every scroll position.
 					const end = document.documentElement.scrollHeight - innerHeight;
 					for (let scroll = 0; scroll < end + 50; scroll += 50) {
 						scrollTo(0, Math.min(scroll, end));
@@ -857,9 +808,6 @@ for (const width of [1280, 390])
 									undersized: box.width < 24 || box.height < 24,
 								};
 							});
-						// Targets must not overlap. A 24 px circle centred on a target must not
-						// intersect another target; circles of two undersized targets must not
-						// intersect each other. Firefox rounds fixed positions by under 0.001px.
 						const slack = 0.01;
 						const reach = (x: number, y: number, box: DOMRect) =>
 							Math.hypot(
@@ -902,9 +850,6 @@ test("handles placed while a flip card's back face animates stay beside their co
 		const frames = () =>
 			new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
 		const faces = [...document.querySelectorAll(".praxity-flashcard-face--back")];
-		// The course's back face rises in with a transform, which makes it the handles'
-		// containing block until the animation ends. Replay it slowly and place the
-		// handles mid-animation, as a render during the reveal does.
 		const style = document.createElement("style");
 		style.textContent =
 			"@keyframes lens-test-rise{from{transform:translateY(6px)}to{transform:none}}.praxity-flashcard-face--back{animation:lens-test-rise 1s !important}";
@@ -913,7 +858,6 @@ test("handles placed while a flip card's back face animates stay beside their co
 			faces.map(
 				(face) =>
 					new Promise<void>((done) =>
-						// The course's own back-face animation may still be ending; wait for this one.
 						face.addEventListener("animationend", (event) => {
 							if ((event as AnimationEvent).animationName === "lens-test-rise") done();
 						}),
@@ -945,7 +889,6 @@ test("handles placed while a flip card's back face animates stay beside their co
 	expect(misplaced).toEqual([]);
 });
 
-// Review evidence for the lead. Set PRAXITY_LENS_REVEAL_SCREENSHOTS to an external folder.
 const screenshots = process.env.PRAXITY_LENS_REVEAL_SCREENSHOTS;
 for (const theme of ["light", "dark"] as const)
 	for (const width of [1280, 390])

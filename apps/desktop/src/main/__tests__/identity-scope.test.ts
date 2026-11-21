@@ -39,7 +39,6 @@ async function fixture(parent = tmpdir()) {
 	await writeFile(join(root, paths[0]), alpha);
 	await writeFile(join(root, paths[1]), beta);
 	const seed = await resolveCourseIdentity(root, { lessonPaths: paths });
-	// Seed valid persisted bytes directly; each scenario measures admission, not journal setup.
 	await writeIdentityFixture(root, seed);
 	const identitySession = new CourseIdentitySession(root);
 	const initial = await resolveCourseIdentity(root, { lessonPaths: paths, identitySession });
@@ -154,7 +153,6 @@ it("inventory changes and watcher errors discard retained parses", async () => {
 	expect(f.identitySession.lessonReads().size).toBe(0);
 	await resolveCourseIdentity(f.root, { lessonPaths: paths, identitySession: f.identitySession });
 	expect(f.identitySession.lessonReads().size).toBe(2);
-	// A store-independent copy changes the inventory and requires the full copy rules.
 	await cp(join(f.root, "a.prax"), join(f.root, "c.prax"));
 	const added = await resolveCourseIdentity(f.root, {
 		lessonPaths: [...paths, "c.prax"],

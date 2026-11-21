@@ -16,7 +16,6 @@ let writerEntry: string;
 beforeAll(async () => {
 	writerRoot = await mkdtemp(join(tmpdir(), "lock-ownership-writer-"));
 	writerEntry = join(writerRoot, "writer.mjs");
-	// Compile once; each contender still runs the real writer in a separate process.
 	await build({
 		entryPoints: [fileURLToPath(new URL("./fixtures/os-lock-writer.ts", import.meta.url))],
 		outfile: writerEntry,
@@ -93,7 +92,6 @@ it("does not recover a live writer while staged filesystem I/O is indefinitely s
 	]);
 }, 25_000);
 
-// Two child writers: Intel Mac max 6426.2 ms, Linux CI 876 ms; allow twice the slower run.
 it("removing obsolete ownership files cannot displace a staged writer", async () => {
 	const root = await project();
 	const old = writer("rename", root);
@@ -117,7 +115,7 @@ it("removing obsolete ownership files cannot displace a staged writer", async ()
 			.map((lesson: { path: string }) => lesson.path)
 			.sort(),
 	).toEqual(["new.prax", "old.prax"]);
-}, 12_853); // timeout: docs/context/testing-strategy.md; run 38146537167
+}, 12_853);
 
 it("recovers a killed staged text writer and removes abandoned staging directories", async () => {
 	const root = await project();

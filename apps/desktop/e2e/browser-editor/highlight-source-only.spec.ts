@@ -59,7 +59,6 @@ for (const [lang, width, theme] of [
 			target.locator("[data-highlight-passage] [data-highlight-chunk]").nth(1);
 
 		test.beforeAll(async ({ browser }) => {
-			// Recovery owns a green input that the other cases cannot change.
 			for (const authored of [initial, updated]) {
 				stops.push(await startJourney(browser, { standaloneSource: authored }));
 				const origin = new URL(process.env.PRAXITY_BROWSER_READY_URL ?? "").origin;
@@ -89,7 +88,6 @@ for (const [lang, width, theme] of [
 			for (const stop of stops) await stop();
 		});
 		async function restoreSource(authored: string) {
-			// Disconnect the previous document before restoring this case's source.
 			await page.goto("about:blank");
 			if ((await readFile(file, "utf8")) !== authored) await writeFile(file, authored);
 		}

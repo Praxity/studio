@@ -134,9 +134,7 @@ it.each([204, 205, 304])(
 		request.status = status;
 		try {
 			headers();
-		} catch {
-			// A browser event handler must reject the caller instead of throwing out of band.
-		}
+		} catch {}
 		await expect(response).rejects.toBeInstanceOf(TypeError);
 		expect(request.abort).toHaveBeenCalledOnce();
 	},

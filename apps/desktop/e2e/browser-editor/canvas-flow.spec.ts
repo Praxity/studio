@@ -101,7 +101,6 @@ async function disposeFlow(flow: JSHandle<FlowSlot>) {
 }
 
 async function openField(edit: Locator) {
-	// Observe before activation, including the open-time reanchor of choices and captions.
 	const flow = await edit.evaluateHandle((button) => {
 		const host = (button.getRootNode() as ShadowRoot).host as HTMLElement;
 		if (!host.parentNode || host.parentNode === document.documentElement)
@@ -122,7 +121,6 @@ async function openField(edit: Locator) {
 					[box.right - 4, box.bottom - 4],
 				].every(
 					([x, y]) =>
-						// Ignore only the real fallback above the probe in the top layer.
 						document.elementsFromPoint(x, y).filter((el) => !topLayer || el !== host)[0] ===
 						flowHost,
 				);
@@ -152,8 +150,6 @@ async function openField(edit: Locator) {
 				cornersHit: hitsHost(label.getBoundingClientRect()) && hitsHost(box),
 			};
 		}
-		// The product's body ResizeObserver was registered first. Read its chosen flow layout,
-		// before later caret reveal or the author's own scrolling changes these inputs.
 		const geometryObserver = new ResizeObserver(() => {
 			const root = host.shadowRoot;
 			const field = root?.querySelector("textarea");
@@ -179,7 +175,6 @@ async function openField(edit: Locator) {
 		return { slot, observer, host };
 	});
 	await edit.click();
-	// Finish opening reveal and its one-time protection pass before keeping the slot.
 	await flow.evaluate(
 		() =>
 			new Promise<void>((resolve) =>
@@ -294,7 +289,6 @@ for (const lang of ["en", "fr"])
 				});
 				const prefix = lang === "fr" ? "Modifier" : "Edit";
 				const edits = page.getByRole("button", { name: new RegExp(`^${prefix} .+\\d`) });
-				// Literal indices cover heading, paragraph, leaf item, choice, caption.
 				for (const index of [0, 2, 4, 5, 8]) {
 					const edit = edits.nth(index);
 					await edit.scrollIntoViewIfNeeded();
@@ -329,7 +323,6 @@ for (const lang of ["en", "fr"])
 						return { id: host.id, y: host.getBoundingClientRect().y, scroll: scrollY };
 					});
 					const distance = origin.scroll >= 300 ? -300 : 300;
-					// One layout snapshot avoids mixing Firefox viewport reads from different frames.
 					const moved = await page.evaluate(
 						({ id, y, scroll, distance }) => {
 							const host = document.getElementById(id);
@@ -436,7 +429,6 @@ test("C09b caption controls never name the figure", async ({ page, browserName, 
 		const tree = await client.send("Accessibility.getFullAXTree");
 		const figures = tree.nodes.filter((node) => node.role?.value === "figure");
 		expect(figures).toHaveLength(1);
-		// Chromium's closed native figure name is empty. C15 owns the spoken-name check.
 		expect(figures[0].name?.value).toBe("");
 		await client.detach();
 	}
@@ -451,7 +443,6 @@ test("C09b open-time fallback recaptures a moved flow slot on reopen", async ({ 
 		"light",
 		'body.reopen-fallback:has(:is(h1,h2,h3)[style*="display: none"]){opacity:0!important}',
 	);
-	// Keep the same document while moving the sibling and reopening.
 	let builds = 0;
 	await page.route("**/api/rpc", async (route) => {
 		if (route.request().postDataJSON().method === "canvasPreviewBuild") {
@@ -584,7 +575,6 @@ test("C09b failure after mounting retires every Edit button", async ({ page }) =
 			join(process.env.PRAXITY_BROWSER_PROJECT ?? "", "second.prax"),
 			content.replace("Second paragraph.", "Changed paragraph."),
 		);
-		// Event streams deliver their ready headers before watcher invalidations.
 		await page.waitForTimeout(1500);
 		release();
 		await expect(page.getByRole("status")).toHaveText(
@@ -618,7 +608,6 @@ for (const css of ["body{position:absolute;top:0;left:0;right:0}", "body{margin-
 
 for (const edge of ["top", "bottom"])
 	test(`C09b sticky ${edge} navigation receives clicks with a field open`, async ({ page }) => {
-		// The script-free compiled top bar is hidden below 768px.
 		await page.setViewportSize({ width: edge === "top" ? 1280 : 390, height: 844 });
 		stop = await startJourney(page.context(), {
 			standaloneSource: `---\ndesign:\n  navArchetype: bottomBar\n  navTopBar: true\n---\n\n${content}\n# Later page\n\nLater paragraph.\n`,
@@ -641,7 +630,6 @@ for (const edge of ["top", "bottom"])
 		await expect(chrome).toHaveCSS("position", "sticky");
 		await expect(chrome).toBeVisible();
 		expect(await chrome.innerHTML()).toContain("Sticky destination");
-		// The probe link stays in each projection, including asynchronous saved refreshes.
 		await page
 			.getByRole("button", { name: "Edit choice label 1: Alpha", exact: true })
 			.scrollIntoViewIfNeeded();

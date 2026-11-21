@@ -9,8 +9,6 @@ const message = z
 	.strict();
 const nullableId = z.string().refine(isDisplayNodeId).nullable();
 
-/** Schema 1 omits session transaction/history IDs and executable inverses. Operation
- * vocabulary and eligibility still belong to grammar's contract and the registry. */
 export const editCliOutputSchema = z
 	.discriminatedUnion("ok", [
 		z

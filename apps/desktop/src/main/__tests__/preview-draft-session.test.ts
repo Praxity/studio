@@ -153,7 +153,6 @@ it("a renderer subscription reconnect starts a fresh draft sequence domain on ev
 				transactionId: `new-${index}`,
 			}),
 		).toMatchObject({ ok: true });
-	// A repeated unsubscribe from the old connection must not end the new epoch.
 	disconnect();
 	for (const request of requests)
 		expect(
@@ -188,7 +187,6 @@ it("a renderer reload starts its seq epoch before the previous stream has closed
 				event.render.state === "reverted",
 		),
 	).toHaveLength(1);
-	// The current renderer owns teardown even while the old stream remains open.
 	disconnectNew();
 	expect(newEvents).toMatchObject([
 		{ type: "draftRendered", render: { transactionId: "replacement", state: "draft" } },
@@ -333,7 +331,6 @@ it("queued commit refresh reads identity and manifest in one fresh admission bef
 		join(root, "course.yaml"),
 		"title: Course\nlessons:\n  - lesson.prax\n  - added.prax\n",
 	);
-	// Freeze Chokidar's 100 ms stability timer while letting the queued refresh use real I/O.
 	const deadline = Date.now() + 1000;
 	let stats: { contextSeq: number } = { contextSeq: 0 };
 	while (Date.now() < deadline) {

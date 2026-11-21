@@ -92,7 +92,6 @@ it("keeps the current head for 24 idle hours without any author session", async 
 });
 
 it("deduplicates unchanged launches without releasing their last reference", async () => {
-	// This adapter counts independent handles, as the real host does for identical files.
 	const handles: number[] = [];
 	const release = vi.fn(async () => {
 		handles.pop();

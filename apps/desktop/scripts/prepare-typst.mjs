@@ -21,7 +21,6 @@ export const MITEX_FILES = [
 	"LICENSE",
 	"typst.toml",
 ];
-// GitHub release asset digests, https://api.github.com/repos/typst/typst/releases/tags/v0.15.1
 export const TYPST_RELEASES = {
 	arm64: {
 		target: "aarch64-apple-darwin",
@@ -67,7 +66,6 @@ export function selectTypstRelease(platform, arch) {
 	return releases[arch];
 }
 
-// Keep the existing two-argument verification API scoped to Darwin.
 export function verifyArchive(bytes, arch, platform = "darwin") {
 	const release = selectTypstRelease(platform, arch);
 	if (digest(bytes) !== release.sha256) throw new Error(`Typst ${arch} archive checksum mismatch`);
@@ -110,7 +108,6 @@ export function verifyBinary(bytes, arch, platform = "darwin") {
 		throw new Error(`Typst ${arch} binary checksum mismatch`);
 }
 
-/** WOFF 1.0 is zlib-wrapped SFNT; Typst reads only the unwrapped TrueType/OpenType form. */
 export function woffToSfnt(woff) {
 	if (woff.toString("latin1", 0, 4) !== "wOFF") throw new Error("Not a WOFF font");
 	const count = woff.readUInt16BE(12);
@@ -141,7 +138,6 @@ export function woffToSfnt(woff) {
 	return Buffer.concat(chunks);
 }
 
-/** Theme fonts for PDF: the same pinned Fontsource latin files that HTML exports ship as WOFF2. */
 export async function stageThemeFonts(target) {
 	const exportPipeline = path.join(desktopDir, "../../packages/export-pipeline/package.json");
 	const require = createRequire(exportPipeline);
@@ -196,7 +192,6 @@ export async function downloadWithRetry(
 	}
 }
 
-/** Build-time only. Runtime exports never import this downloader. */
 export async function prepareTypst({
 	platform = process.platform,
 	arch = process.env.TYPST_ARCH ?? process.arch,
@@ -281,12 +276,9 @@ export async function prepareTypst({
 			await mkdir(path.dirname(target), { recursive: true });
 			await writeFile(target, content, { flag: "wx" });
 		}
-		// ZIP extraction needs a seekable file. Use the verified bytes, not a reopened input archive.
 		const zip = platform === "win32" ? path.join(staging, ".typst.zip") : undefined;
 		if (zip) await writeFile(zip, bytes, { flag: "wx" });
-		// Extract selected bytes only. No archive paths or links are created on disk.
 		for (const file of [binary, "LICENSE", "NOTICE"]) {
-			// GNU tar cannot detect compression on stdin, so name xz explicitly; bsdtar accepts -J too.
 			const content = execFileSync(tar, [zip ? "-xOf" : "-xJOf", zip ?? "-", `${name}/${file}`], {
 				input: zip ? undefined : bytes,
 				maxBuffer: 100 * 1024 * 1024,
@@ -316,7 +308,6 @@ export async function prepareTypst({
 			path.join(staging, "version.json"),
 			`${JSON.stringify({ version: TYPST_VERSION, platform, arch, archiveSha256: release.sha256, binarySha256: digest(await readFile(path.join(staging, binary))), reportedVersion: version }, null, 2)}\n`,
 		);
-		// Rename the complete generation only after all checks pass; restore on failure.
 		const previous = `${output}.${randomUUID()}.old`;
 		let moved = false;
 		try {

@@ -36,7 +36,6 @@ for (const scope of ["page", "second page", "context"] as const) {
 			stopped = true;
 		});
 		try {
-			// Keep the upstream fetch held while teardown has a chance to close its listener.
 			await page.waitForTimeout(100);
 			expect(stopped).toBe(false);
 			expect(completed).toBe(false);

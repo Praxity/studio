@@ -12,8 +12,6 @@ import { persistFixtureIdentity } from "../../test-utils/identity-fixture";
 import { exportProject } from "../export/export-project";
 import { resolveLessonSources } from "../lesson-source";
 
-// Simulate the later publication lift. Parsing, identity, projection, asset
-// preparation and the native PDF preflight stay real.
 vi.mock("@praxity/grammar", async (original) => ({
 	...(await original<typeof import("@praxity/grammar")>()),
 	assertCoursePracticeAdmission: vi.fn(),
@@ -51,8 +49,6 @@ beforeAll(async () => {
 	const runtimeRequire = createRequire(
 		new URL("../../../../../packages/shared-blocks/package.json", import.meta.url),
 	);
-	// Build the actual standalone CLI once. Only temporary publication admission
-	// is lifted in this test bundle, so native PDF must supply its own refusal.
 	await build({
 		entryPoints: [fileURLToPath(new URL("../standalone-cli.ts", import.meta.url))],
 		outfile: cli,
@@ -95,7 +91,6 @@ beforeAll(async () => {
 });
 
 async function fixture(row: FixtureCase) {
-	// Keep setup local to each case instead of charging every fixture to beforeAll.
 	const cached = fixtures.get(caseId(row));
 	if (cached) return cached;
 	const { locale } = row;

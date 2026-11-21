@@ -4,7 +4,6 @@ import { startStudioAuthor as startAuthor } from "./canvas";
 import { createCanvasTextSession, mountCanvasTextFields } from "./canvas-text";
 import { MAX_BUFFERED_EVENT_CHARACTERS, openBrowserEventStream } from "./event-stream";
 
-/** Compose the packaged bootstrap without serializing function bodies. */
 export function startStudioAuthor(editorOrigin: string, readUrl: string, messages: CanvasMessages) {
 	startAuthor(
 		editorOrigin,

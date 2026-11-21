@@ -516,7 +516,6 @@ describe("praxity inspect schema 1", () => {
 		expect(read.hasErrors).toBe(false);
 		const block = read.blocks.find((block) => block.type === "dialogue");
 		if (!block) throw new Error("Missing dialogue fixture");
-		// The renderer model still accepts unattributed legacy turns until X1d.
 		const turns = block.data.turns as Array<Record<string, unknown>>;
 		delete turns[1].speaker;
 		const dialogue = projectDialogue(

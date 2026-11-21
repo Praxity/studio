@@ -95,7 +95,6 @@ export function canvasTextBindings(current: ResolvedCourseIdentity) {
 			if (!field || !entry) return [];
 			const owners = mappings.filter((mapping) => mapping.path.join() === entry.path.join());
 			const owner = owners[0];
-			// A rendered ID and its sole authored owner must both belong to this admission.
 			if (
 				!owner ||
 				owners.length !== 1 ||
@@ -169,7 +168,6 @@ export function canvasTextSnapshotFields(current: ResolvedCourseIdentity, scope?
 		.map(({ node: _node, role: _role, target: _target, ...field }) => field);
 }
 
-/** Both authoring hosts admit the same rendered field before ordinary operation planning. */
 export function admitCanvasText(
 	current: ResolvedCourseIdentity,
 	input: {

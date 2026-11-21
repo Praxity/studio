@@ -1,4 +1,3 @@
-// Pause at the filesystem boundary after T1 has admitted a read without a lock.
 const fs = require("node:fs/promises");
 const { syncBuiltinESMExports } = require("node:module");
 const readdir = fs.readdir;

@@ -114,7 +114,6 @@ const gitRecovery: Record<ReviewGitUnavailableReason, string> = {
 	timeout: "Git did not answer in time; retry.",
 };
 
-/** Storage failures throw; expected lifecycle refusals remain C1 results. */
 export class ReviewStoreError extends Error {
 	readonly name = "ReviewStoreError";
 	constructor(
@@ -176,7 +175,6 @@ const reviewFileFlushes = {
 	syncDirectory: (path: string) => flush(() => projectFileFlushes.syncDirectory(path)),
 };
 
-/** Fixed paths refuse links and native spelling aliases, including on case-sensitive disks. */
 async function checkedPath(root: string, relative: string, writable = false): Promise<string[]> {
 	try {
 		return (await checkPrivateProjectPath(root, relative, { plain: true, writable })).missing;
@@ -264,7 +262,6 @@ async function readState(root: string, manifest: Manifest) {
 	return { state: parsed.value, source };
 }
 
-/** Called inside an existing project admission; never initializes a review. */
 export async function readReviewIdentityEvidence(root: string) {
 	const source = await optionalText(root, manifestPath);
 	const files = new Map<string, string | null>([[manifestPath, source]]);
@@ -287,7 +284,6 @@ async function checkTempFile(root: string, relative: string) {
 		throw new ReviewStoreError("unsafe-path", relative);
 }
 
-/** Only our fixed files' UUID temp siblings can be discarded after a crashed write. */
 async function removeOwnTemps(root: string, path: string) {
 	const parent = path.slice(0, path.lastIndexOf("/"));
 	if ((await checkedPath(root, parent)).length) return;
@@ -314,7 +310,6 @@ async function removeReviewTemps(root: string, manifest: Manifest) {
 
 async function writePrivateFile(root: string, path: string, content: string) {
 	await checkedPath(root, path, true);
-	// Unlike the public course writer, these bytes never enter root recovery archives.
 	await writeFileAtomicallyWithin(
 		root,
 		join(root, path),
@@ -325,7 +320,6 @@ async function writePrivateFile(root: string, path: string, content: string) {
 	);
 }
 
-/** Git also discovers git directories directly, without a containing .git entry. */
 async function containsGitMetadata(directory: string): Promise<boolean> {
 	const exists = async (name: string) => {
 		try {
@@ -343,7 +337,6 @@ async function containsGitMetadata(directory: string): Promise<boolean> {
 	return head && ((objects && refs) || common);
 }
 
-/** Only existing plain folders need probing; path admission rejects links and non-directories. */
 async function existingReviewFolders(root: string): Promise<string[]> {
 	const directories: string[] = [];
 	const manifest = await readManifest(root);
@@ -362,7 +355,6 @@ async function existingReviewFolders(root: string): Promise<string[]> {
 	return directories;
 }
 
-/** Without an index reader, every private folder and ancestor must be readable and Git-free. */
 async function requireNoRepository(root: string, reason: "no-child" | "git-missing") {
 	try {
 		const directories = await existingReviewFolders(root);
@@ -392,7 +384,6 @@ function isNoRepository(error: unknown): boolean {
 	);
 }
 
-/** Match fixed private folder names conservatively across native spelling aliases. */
 export function tracksReviewStorage(entry: string): boolean {
 	let privateFolder = false;
 	for (const component of entry.split(/[\\/]/)) {
@@ -403,7 +394,6 @@ export function tracksReviewStorage(entry: string): boolean {
 			.toUpperCase()
 			.toLowerCase()
 			.replace(/[. ]+$/, "");
-		// Hashes and collision tails need not retain either fixed folder's prefix.
 		const shortName = /~\d/.test(component);
 		if (privateFolder && (folded === "reviews" || shortName)) return true;
 		if (folded === ".praxity" || shortName) privateFolder = true;
@@ -412,14 +402,9 @@ export function tracksReviewStorage(entry: string): boolean {
 }
 
 function queryReviewGit(directory: string, timeoutMs: number, ...args: string[]) {
-	// Git can inspect metadata outside Node's fs grants. Ambient overrides must not redirect discovery.
 	const env = Object.fromEntries(
 		Object.entries(process.env).filter(([name]) => !/^GIT_/i.test(name)),
 	);
-	// Git docs checked: core.fsmonitor; core.pager/pager.*; remote.*.promisor/uploadpack,
-	// core.sshCommand/gitProxy and credential.helper (lazy fetch); core.alternateRefsCommand,
-	// filter.* and diff.* (not used by these index/path queries). Disable index hooks,
-	// paging and transports. The empty allowlist also beats protocol.<name>.allow overrides.
 	return runGit(
 		"git",
 		[
@@ -449,13 +434,11 @@ function queryReviewGit(directory: string, timeoutMs: number, ...args: string[])
 			cwd: dirname(process.execPath),
 			timeout: timeoutMs,
 			windowsHide: true,
-			// ponytail: buffered listing, refuses above ~1M entries; stream and scan if a monorepo hits it
 			maxBuffer: 64 * 1024 * 1024,
 		},
 	);
 }
 
-/** Advisory only: missing Git, child-process permission or failed discovery never blocks the CLI. */
 export async function isLinkedReviewWorktree(courseDir: string): Promise<boolean> {
 	if (process.permission && !process.permission.has("child")) return false;
 	const deadline = performance.now() + 1500;
@@ -496,7 +479,6 @@ async function refuseTrackedStorage(root: string, gitTimeoutMs: number) {
 		await requireNoRepository(root, "no-child");
 		return;
 	}
-	// Share one deadline across all enclosing indexes, below T1's five-second lock wait.
 	const deadline = performance.now() + gitTimeoutMs;
 	const query = (directory: string, ...args: string[]) => {
 		const remaining = Math.ceil(deadline - performance.now());
@@ -516,7 +498,6 @@ async function refuseTrackedStorage(root: string, gitTimeoutMs: number) {
 		if (major < minimumGit[0] || (major === minimumGit[0] && Number(version[2]) < minimumGit[1]))
 			throw new ReviewStoreError("git-unavailable", storage, undefined, "git-too-old");
 		for (const inner of await existingReviewFolders(root)) {
-			// Even an empty repository here can track comment paths without either folder name.
 			if (await containsGitMetadata(inner))
 				throw new ReviewStoreError("tracked-storage", storage, undefined, "repository-in-storage");
 		}
@@ -538,18 +519,15 @@ async function refuseTrackedStorage(root: string, gitTimeoutMs: number) {
 				const topPath = top.stdout.replace(/\r?\n$/, "");
 				if (top.stderr.length || !isAbsolute(topPath) || /[\r\n]/.test(topPath))
 					throw new ReviewStoreError("git-unavailable", storage, undefined, "git-error");
-				// A redirected worktree can give index entries without either private folder name.
 				const realTop = await realpath(topPath).catch((error) => {
 					throw new ReviewStoreError("git-unavailable", storage, error, "git-error");
 				});
-				// A skipped ceiling can discover an ancestor; its index still covers this course.
 				if (!isWithin(realTop, directory))
 					throw new ReviewStoreError("git-unavailable", storage, undefined, "git-error");
 			} catch (error) {
 				if (error instanceof ReviewStoreError) throw error;
 				if (!isNoRepository(error)) throw error;
 			}
-			// Ask at every ancestor: core.worktree must never choose where this walk ends.
 			const parent = dirname(directory);
 			if (parent === directory) return;
 			directory = parent;
@@ -569,14 +547,6 @@ async function refuseTrackedStorage(root: string, gitTimeoutMs: number) {
 	}
 }
 
-/**
- * Every acknowledgement follows fresh publication of the whole set in this admission.
- * Visible paths, matching bytes and re-flushing are not proof: Linux can mark pages clean
- * after EIO. Create/flush root -> .praxity -> reviews, publish the ignore, then create the
- * review directory, flush reviews and that directory, and publish manifest then state.
- * Ignore comes first because even unacknowledged private bytes can survive a crash.
- * Windows target flushes rely on the NTFS metadata log; FAT/exFAT remain best effort.
- */
 async function publishDurableSet(root: string, manifest: Manifest, stateBytes: string) {
 	for (const directory of await checkedPath(root, storage, true))
 		await mkdir(join(root, directory));
@@ -617,7 +587,6 @@ async function transaction<T>(
 				return await admit();
 			} catch (error) {
 				if (!(error instanceof ProjectReadAdmissionChangedError)) throw error;
-				// Only a cold read whose first lock appeared retries; a full lock deadline never does.
 				return await admit();
 			}
 		}
@@ -638,7 +607,6 @@ export type ReviewStoreCommandResult =
 	  })
 	| Extract<ReviewCommandResult, { ok: false }>;
 
-/** One durable default review per course; no state survives between admissions. */
 export async function openReviewStore(
 	courseDir: string,
 	policy: ReviewVisibilityPolicy = reviewVisibility,
@@ -646,7 +614,6 @@ export async function openReviewStore(
 ) {
 	if (options.createIfMissing !== false) assertProjectWritesAllowed();
 	const gitTimeoutMs = options.gitTimeoutMs ?? 3500;
-	// Existing reviews open read-only, without recovering or reclaiming course archives.
 	let reviewId = await transaction(courseDir, "read", gitTimeoutMs, async (root) => {
 		const manifest = await readManifest(root);
 		if (options.createIfMissing === false) {
@@ -691,8 +658,6 @@ export async function openReviewStore(
 						const entry = await lstat(join(root, storage, name));
 						if ([".DS_Store", "Thumbs.db", "desktop.ini"].includes(name) && entry.isFile())
 							continue;
-						// A crash can leave the empty directory before the first manifest. Reuse
-						// only that directory; any private bytes without a manifest must refuse.
 						if (
 							pendingId ||
 							!localUuid.safeParse(name).success ||
@@ -710,9 +675,6 @@ export async function openReviewStore(
 					localPrincipal: { id: randomUUID(), displayName: "Local user" },
 				};
 			}
-			// Only explicit false permits first-use repair. Missing flags predate this marker
-			// and count as initialized. Publish true durably before any comment is admitted;
-			// thereafter a missing state always refuses, preserving acknowledged receipts.
 			const source = await optionalText(root, statePath(manifest.reviewId));
 			if (source !== null) await readState(root, manifest);
 			await removeReviewTemps(root, manifest);
@@ -755,7 +717,6 @@ export async function openReviewStore(
 		return read("write", async (root, manifest, { state, source }) => {
 			const storedPrincipal = isManifestPrincipal(manifest, principal);
 			const admitted = parseReviewPrincipal(principal, storedPrincipal);
-			// Check visibility even for a historical retry; C1 owns new-text admission and receipt equality.
 			const parsed = parseCommandPayload(kind, payload, true);
 			if (
 				admitted.ok &&

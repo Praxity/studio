@@ -75,7 +75,6 @@ export function registerPublisherGuardTests(workflow) {
 		}
 		const curlCalls = publishStep.run.replace(/\\\n/g, " ").match(/\/usr\/bin\/curl\b[^\n]*/g);
 		assert.equal(curlCalls.length, 2);
-		// The token reaches curl on stdin, never in a process argument.
 		assert.doesNotMatch(
 			publishStep.run.replace(/^\s*.*printf 'Authorization.*$/gm, ""),
 			/GITHUB_TOKEN/,
@@ -185,7 +184,6 @@ export function registerPublisherGuardTests(workflow) {
 				for (const [name, data] of Object.entries(files)) {
 					if (data !== null && name !== scenario.remove) writeFileSync(join(handoff, name), data);
 				}
-				// A previous build could have planted a curl config in the user's home.
 				writeFileSync(join(directory, ".curlrc"), 'url = "http://127.0.0.1:1/forbidden"\n');
 				const requests = [];
 				const server = createServer(async (request, response) => {
@@ -220,8 +218,6 @@ export function registerPublisherGuardTests(workflow) {
 				await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
 				t.after(() => new Promise((resolve) => server.close(resolve)));
 				const api = `http://127.0.0.1:${server.address().port}`;
-				// Replace only platform/network adapters. Policy assertions above inspect
-				// the original script; Windows executes real Git curl and SHA-256 tools.
 				let script = publishStep.run.replace("https://uploads.github.com", api);
 				if (process.platform === "win32") {
 					script = script

@@ -398,7 +398,6 @@ for (const damage of [
 		}
 		if (damage.includes("stage")) {
 			const record = JSON.parse(await readFile(journal, "utf8"));
-			// Installed sources are consumed. Damage a completed, uninstalled source.
 			const index = damage === "missing preparation stage" ? 0 : 1;
 			const stage =
 				record.plan.stageVersion === 1

@@ -185,11 +185,6 @@ function provenanceNote(provenance: NarrationProvenance): string {
 	].join("\n");
 }
 
-/**
- * Map each synthesis-text position to its index in the provider's timed characters.
- * Soniox returns each whitespace run, such as a paragraph break or a French NBSP,
- * as one plain space, so any whitespace run matches any run, including none.
- */
 function timedPositions(synthesisText: string, characters: readonly string[]): number[] | null {
 	const sent = [...synthesisText];
 	const positions = new Array<number>(sent.length + 1);

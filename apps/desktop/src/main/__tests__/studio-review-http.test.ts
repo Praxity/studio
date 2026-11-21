@@ -110,7 +110,6 @@ it.each([true, false])(
 		if (!seeded.ok) throw new Error("Could not seed receipt fixture");
 		const payload = { ...f.payload, body: "Legacy\u009b comment" };
 		seeded.state.threads[0].messages[0].body = payload.body;
-		// Literal contract key order for this fixture's canonical create request.
 		const canonical = {
 			kind: "create",
 			payload: {
@@ -157,7 +156,6 @@ it.each([true, false])(
 
 let admissionFixture: Awaited<ReturnType<typeof running>>;
 beforeAll(async () => {
-	// Admission refusals share an empty review; mutations use separate courses below.
 	admissionFixture = await running();
 });
 afterAll(async () => {
@@ -235,7 +233,6 @@ it("without the review option every review route and ordinary HTTP method preser
 		`${reviewRoot}/drafts/${randomUUID()}`,
 		`${reviewRoot}/unknown`,
 	];
-	// CONNECT is rejected by the listener's tunnel handler before route dispatch.
 	for (const method of METHODS.filter((method) => method !== "CONNECT")) {
 		await Promise.all(
 			paths.map(async (path) => {
@@ -800,7 +797,6 @@ it.each(["aborted upload", "malformed chunked upload"])(
 			release();
 			await transaction;
 		}
-		// A broken close must fail this test without holding the suite's cleanup open.
 		servers.splice(servers.indexOf(server), 1);
 		expect(await Promise.race([server.close().then(() => true), delay(500, false)])).toBe(true);
 	},
@@ -1304,7 +1300,6 @@ describe("author listener isolation", () => {
 		});
 		expect(admitted.status).toBe(200);
 		expect(JSON.parse(admitted.text)).toMatchObject({ ok: true, threads: [] });
-		// Separate from the editor bearer, including when passed under the bearer header.
 		for (const path of ["/api/rpc", "/api/session", "/api/events"])
 			for (const credential of [
 				{ "X-Praxity-Review": capability },

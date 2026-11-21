@@ -1,7 +1,6 @@
 import { channel } from "node:diagnostics_channel";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-/** Observe server receipt without reading bodies or changing the browser transport. */
 export function captureJourneyRequests(origin: string) {
 	const port = Number(new URL(origin).port);
 	const events: Record<string, unknown>[] = [];

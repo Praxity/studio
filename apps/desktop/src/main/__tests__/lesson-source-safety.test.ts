@@ -28,8 +28,6 @@ async function project() {
 	temporaryDirectories.push(directory);
 	return directory;
 }
-// Windows maps chmod onto the read-only attribute alone: writable files report 0o666 and
-// writing a read-only file fails with EPERM rather than EACCES.
 const OWNER_ONLY_MODE = process.platform === "win32" ? 0o666 : 0o600;
 const READ_ONLY_ERROR_CODE = process.platform === "win32" ? "EPERM" : "EACCES";
 const lesson =

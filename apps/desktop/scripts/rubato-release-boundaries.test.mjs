@@ -335,7 +335,6 @@ for (const scenario of ["main", "private", "publish", "missing version", "failed
 		t.after(() => rmSync(directory, { recursive: true, force: true }));
 		const output = join(directory, "outputs"),
 			preload = join(directory, "github.mjs");
-		// Replace only the external gh process in the command's fresh Node process.
 		writeFileSync(
 			preload,
 			`import assert from 'node:assert/strict';\nimport child from 'node:child_process';\nimport { syncBuiltinESMExports } from 'node:module';\nconst sha=${JSON.stringify(sha)}, mainSha=${JSON.stringify(mainSha)};\nconst api=${api.toString()};\nchild.execFileSync=(command,args)=>{const value=JSON.parse(api(command,args));if(process.env.MOCK_FAILED_GATE==='true'&&args.at(-1).includes('/jobs?'))value.jobs[0].conclusion='failure';return JSON.stringify(value)};\nsyncBuiltinESMExports();\n`,

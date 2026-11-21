@@ -58,8 +58,6 @@ function pageKey(context: CourseContext, pageId: string): string {
 	]);
 }
 
-/** Session compiler. Admitted inputs enter here; filesystem and revision ownership
- * remain in the host and operation service. One job yields one event-loop turn. */
 export class PreviewScheduler {
 	private readonly queue: CompileQueue;
 	private visiblePageId: string;
@@ -124,7 +122,6 @@ export class PreviewScheduler {
 
 	renderDraft(
 		request: PreviewRenderDraftRequest,
-		/** Null means the latest admission removed this page; undefined uses context facts. */
 		savedPage?: PraxityPage | null,
 		admitted?: PreviewDraftIdentity,
 	): PreviewRenderDraftResult & { diagnostics?: PreviewCompileDiagnostic[] } {
@@ -151,8 +148,6 @@ export class PreviewScheduler {
 				: (savedPage ?? this.current.pages.find((page) => page.id === request.pageId));
 		const node = page?.blocks.find((block) => block.id === request.nodeId);
 		if (!page || !node) return refused("orphaned");
-		// Grammar requires a page boundary. It belongs only to this in-memory
-		// parse; a draft introducing another boundary is an escaping edit.
 		const parsed = readLesson(`# Draft\n\n${request.source}`);
 		const mapping = admitted?.admission.identity.sourceMappings.find(
 			(mapping) => mapping.id === request.nodeId,
@@ -160,8 +155,6 @@ export class PreviewScheduler {
 		const file = admitted?.files.find((file) => file.path === mapping?.file);
 		if (admitted && (!mapping || !file)) return refused("orphaned");
 		const lessons = new Map(admitted?.admission.lessons);
-		// Replace the entire source node, retaining sibling pages and real file
-		// coordinates. A field without a trailing newline must not swallow its sibling.
 		const replacement = /[\r\n]$/.test(request.source) ? request.source : `${request.source}\n`;
 		lessons.set(
 			file?.path ?? "draft",
@@ -184,9 +177,6 @@ export class PreviewScheduler {
 			return refused("invalid-args");
 		let block = blocks[0];
 		if (!block) return refused("invalid-args");
-		// Container drafts need the same child identities as editSource's durable plan.
-		// Leaf and type-changing drafts keep P3a's small parse: a new container
-		// has no previous child identities to retain. Neither path touches a file.
 		if (admitted && node.type === block.type && parsed.nodes.get(block.id)?.node.children.length) {
 			const draftNode = parsed.nodes.get(block.id)?.node;
 			if (!draftNode) return refused("invalid-args");
@@ -242,8 +232,6 @@ export class PreviewScheduler {
 				),
 			);
 		} catch {
-			// Layout regions have no standalone node fragment. The durable path
-			// and whole-page compile still handle them.
 			return refused("not-allowed");
 		}
 		const render: PreviewDraftRender = {
@@ -279,7 +267,6 @@ export class PreviewScheduler {
 		}
 	}
 
-	/** End the current renderer's drafts before reusing its per-page sequences. */
 	endDraftSubscription(): void {
 		for (const transactionId of this.drafts.keys()) this.settleDraft(transactionId, false);
 		this.draftSequences.clear();
@@ -290,8 +277,6 @@ export class PreviewScheduler {
 		return [...this.drafts.values()].some((draft) => draft.render.pageId === pageId);
 	}
 
-	/** Render changed nodes from admitted page facts. The queued refresh corrects
-	 * course dependencies, layout and document regions after the acknowledgement. */
 	renderCommitted(
 		seq: number,
 		previous: readonly PraxityPage[],
@@ -352,8 +337,6 @@ export class PreviewScheduler {
 					this.sent.set(page.id, sent);
 					this.publish({ type: "nodesRendered", render: structuredClone(render) });
 				}
-				// A suppressed event's RPC response may belong to an obsolete renderer.
-				// Keep its fragments eligible for the current subscription's page patch.
 			} catch (error) {
 				this.publishFailure(seq, page.id, error);
 			}
@@ -364,8 +347,6 @@ export class PreviewScheduler {
 		);
 	}
 
-	/** Queue full input/context preparation with page compilation. A newer complete
-	 * admitted input replaces any refresh that has not started. */
 	enqueueRefresh(seq: number, work: () => Promise<void>): void {
 		if (this.closed || seq <= Math.max(this.queuedSeq, this.current.seq)) return;
 		this.queuedSeq = seq;
@@ -411,7 +392,6 @@ export class PreviewScheduler {
 			this.publish({ type: "compileFailed", pageId, ...structuredClone(failure) });
 			return;
 		}
-		// `sent` tracks a page, not a frame: a newly selected frame may lack what an earlier one received.
 		this.sent.delete(pageId);
 		this.request([pageId], this.current.seq);
 	}
@@ -429,7 +409,6 @@ export class PreviewScheduler {
 		this.current = next;
 		this.admittedSeq = Math.max(this.admittedSeq, next.seq);
 		const pageIds = next.pages.map((page) => page.id);
-		// A patched page cannot follow a changed page list; its frame needs a new document.
 		if (JSON.stringify(pageIds) !== JSON.stringify(previous.pages.map((page) => page.id)))
 			this.publish({ type: "pagesChanged", pageIds });
 		const present = new Set(pageIds);
@@ -460,7 +439,6 @@ export class PreviewScheduler {
 			})
 			.map((page) => page.id);
 		this.failures.clear();
-		// Fence running work before sending an optimistic fragment for the new seq.
 		this.request(
 			optimistic || !invalidated.length
 				? invalidated

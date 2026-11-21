@@ -41,7 +41,6 @@ export async function scanWorkspace(dirPath: string): Promise<WorkspaceCourse[]>
 						if (!grammarFile) return null;
 						const grammarPath = join(root, grammarFile);
 						const grammarStat = await stat(grammarPath);
-						// mtime alone cannot establish freshness after same-size or restored-time writes.
 						await assertOutsideProjectLockCache(grammarPath);
 						const grammar = await readFile(grammarPath, "utf-8");
 						const { frontmatter, body } = parseFrontmatter(grammar);

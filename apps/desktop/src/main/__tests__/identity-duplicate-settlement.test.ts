@@ -37,7 +37,6 @@ const nodes = async (root: string): Promise<Record<string, IdentityNode>> =>
 	Object.assign({}, ...(await loadIdentityStore(root)).snapshots.map((s) => s.nodes));
 async function legacyPendingStore(root: string) {
 	const prior = await loadIdentityStore(root);
-	// Reproduce saved pending stores from the former open behavior, before entering transient Studio.
 	const legacy = resolveIdentity(
 		{
 			course: prior.course ?? undefined,
@@ -521,7 +520,6 @@ async function pendingTemplate() {
 	);
 	if (!original) throw new Error("Missing original repeated block");
 	await writeFile(join(root, "one.prax"), duplicate);
-	// Saved pending state comes from an author save; opening duplicates is transient.
 	const session = await createStudioProjectSession(root, "test");
 	try {
 		await session.invoke("courseWriteLesson", {
@@ -719,7 +717,6 @@ it.each(["removed", "added"])(
 	},
 );
 
-// Build each initial shape on demand once, so no hook warms every case's fixture.
 const initializedTemplates = new Map<string, string>();
 const initializedRoots: string[] = [];
 async function initializedTemplate(sources: Record<string, string>) {
@@ -783,7 +780,6 @@ it.each([
 					status: "active",
 					matchText: "Unclosed.",
 				});
-			// The legacy store made this valid paragraph durable even while its note was unclosed.
 			const grammar = anchoredSource.replace("computer,", "computre,") + retainedText;
 			await session.invoke("courseWriteLesson", {
 				courseDir: root,
@@ -818,7 +814,6 @@ it.each(["narration", "review", "retained review run"])(
 			([id, node]) => id !== donor && node.matchText === "Repeated.",
 		)?.[0];
 		if (!id) throw new Error("Missing provisional ID");
-		// Initialize review storage before resolution; its comments change afterwards.
 		const review = artifact === "review" ? await openReviewStore(root) : undefined;
 		const principal = await review?.principalFor("author", "local-preview");
 		const reviewManifest = review
@@ -896,7 +891,6 @@ it.each(["journal", "head"] as const)(
 		)?.[0];
 		if (!provisional) throw new Error("Missing provisional block");
 		const path = join(root, "narration.yaml");
-		// Existing bytes as well as absence are part of the issued durability facts.
 		await writeFile(path, `version: 2\ncourseId: ${store.course?.courseId}\nlessons: {}\n`);
 		const content = `version: 2\ncourseId: ${store.course?.courseId}\nlessons:\n  ${snapshot.lessonId}:\n    segments:\n      - target: {id: ${provisional}, role: body}\n        script: Keep this narration.\n`;
 		const savedIdentity = await projectDiskSnapshot(join(root, ".praxity/identity"));

@@ -153,7 +153,6 @@ afterEach(async () => {
 });
 
 async function seed(root: string) {
-	// Seed real resolver history without paying three unrelated durable-save costs per case.
 	for (const source of sources) {
 		const { identity } = await resolveCourseIdentity(root, {
 			lessonPaths: [filename],
@@ -165,7 +164,6 @@ async function seed(root: string) {
 		paragraphIds.set(root, paragraph.id);
 		await mkdir(join(root, ".praxity/identity/snapshots"), { recursive: true });
 		await mkdir(join(root, ".praxity/identity/lessons"), { recursive: true });
-		// The namespace stays fixed; rewriting it would invalidate the seeded history proofs.
 		if (source === sources[0])
 			await writeFile(
 				join(root, ".praxity/identity/course.json"),
@@ -219,12 +217,10 @@ async function fixture(oversized = false, retainSeededProofs = false) {
 	const historical = snapshots.find(({ text }) => JSON.parse(text).parents.length === 0);
 	if (!historical) throw new Error("Missing historical fixture snapshot");
 	if (oversized) {
-		// Valid JSON whitespace makes admitted UTF-16 payload alone exceed the 16 MiB cache.
 		await Promise.all(
 			snapshots.map(({ path, text }) => writeFile(path, `${text}${" ".repeat(3 * 1024 * 1024)}`)),
 		);
 	}
-	// Most cases start cold. Count cases retain prior proofs; the newest seeded snapshot is still cold.
 	if (!retainSeededProofs)
 		await expect(
 			loadIdentityStore(root, { expectedCourseId: "00000000-0000-4000-8000-000000000000" }),
@@ -260,7 +256,6 @@ it("rereads oversized history but validates it once in a clean public save", asy
 	});
 	expect(result).toEqual({});
 	expect(await readFile(join(root, filename), "utf8")).toBe(next);
-	// Resolution/persistence plus the two required fresh checks before archive deletion.
 	expect(io.courseReads).toBe(4);
 	expect(validation).toHaveBeenCalledTimes(3);
 	for (const path of snapshotPaths)
@@ -457,7 +452,6 @@ for (const changeTime of [
 		expect(after.nlink).toBe(before.nlink);
 		expect(await loadIdentityStore(root)).toEqual(expected);
 		expect(validation.mock.calls.length).toBeLessThanOrEqual(1);
-		// Identical bytes have the same result; changed bytes must never inherit that proof.
 		validation.mockClear();
 		const changed = `${historical.text}\n`;
 		await writeFile(historical.path, changed);
@@ -642,7 +636,6 @@ for (const throws of [false, true]) {
 					if (throws) await expect(scope).rejects.toThrow("scope failed");
 					else await scope;
 				} finally {
-					// Revoke global retention through its interface so this assertion isolates save-local evidence.
 					await expect(
 						loadIdentityStore(root, { expectedCourseId: "00000000-0000-4000-8000-000000000000" }),
 					).rejects.toThrow(/namespace mismatch/);

@@ -146,9 +146,6 @@ const editTemplates = {
 } as const satisfies Record<EditButtonKind, keyof CanvasMessages>;
 const graphemes = new Intl.Segmenter(undefined, { granularity: "grapheme" });
 
-// Naming decision, 2026-10-17: kind and ordinal precede the literal authored excerpt.
-// Rejected: collision suffixes, which authored text can copy, and replacement after text insertion.
-// EN/FR unit and browser tests cover names; NVDA/VoiceOver speech acceptance is separate.
 export function editButtonName(
 	messages: CanvasMessages,
 	kind: EditButtonKind,

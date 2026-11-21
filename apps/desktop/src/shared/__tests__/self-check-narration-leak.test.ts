@@ -181,7 +181,6 @@ describe("self-check content in narration and page output", () => {
 			enabled: true,
 			digest,
 		};
-		// The task has its own segment now; retain the older empty back-face target.
 		const sidecar = {
 			version: 2 as const,
 			courseId: "course",
@@ -267,7 +266,6 @@ describe("self-check content in narration and page output", () => {
 			const htmls = context.documents.map(
 				(document) => compileDocument(context, document.slug).html,
 			);
-			// This page's playlist is the learner-facing narration; navigation entries never carry raw segments.
 			for (const page of htmls) {
 				const json = page.match(
 					/<script id="praxity-config" type="application\/json">(.*?)<\/script>/s,
