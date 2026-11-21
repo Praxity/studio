@@ -1,11 +1,3 @@
-/**
- * Pre-bundles the React viewer into a static JS file.
- * Run via: pnpm --filter @praxity/export-pipeline prebuild:client
- *
- * Publish-time builds reuse a complete, immutable generation instead of
- * running a full bundler pass per export. Generated assets stay uncommitted.
- */
-
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import path from "node:path";
 import { bundleViewer, computeViewerSourceHash } from "./bundle-viewer";

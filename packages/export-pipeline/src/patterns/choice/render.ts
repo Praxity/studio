@@ -4,7 +4,6 @@ import { getSelfCheckHostStrings } from "@praxity/shared-blocks/i18n/self-check-
 import type { AssessmentBlockData, PraxityBlock } from "@praxity/shared-blocks/types";
 import { escapeHtml, renderInlineField } from "../../published-markup.ts";
 
-/** Only added to courses with private choices; ordinary CSS stays byte-identical. */
 export const privateChoicePrintCss =
 	"@media print { [data-practice-mode], [data-practice-restoring], [data-practice-save], [data-practice-status] { display: none !important; } }";
 
@@ -48,16 +47,6 @@ export function renderChoice(
 			return `<label data-node-id="${escapeHtml(option.id || `${block.id}-option-${index}`)}"${unknown ? " data-dont-know" : ""} class="praxity-assessment-choice-option" for="${escapeHtml(optionId)}"><input id="${escapeHtml(optionId)}" type="${inputType}" name="${escapeHtml(block.id)}" value="${escapeHtml(option.id || String(index))}" aria-labelledby="${escapeHtml(optionId)}-label" disabled />${inputType === "radio" ? '<span class="praxity-choice-key" aria-hidden="true"></span>' : ""}<span class="praxity-choice-text"><span id="${escapeHtml(optionId)}-label" class="praxity-choice-label">${label}</span></span></label>`;
 		})
 		.join("");
-	/*
-	 * Disabled, with a `<noscript>` saying why.
-	 *
-	 * This markup is the pre-hydration shell; the React viewer replaces it and
-	 * owns answering, submitting, feedback and scoring. Shipped enabled, it was a
-	 * form a learner could fill in that could never be submitted — no submit
-	 * control, no feedback, and the answers gone at the next page. A control that
-	 * accepts input it cannot act on is worse than no control, so it stays inert
-	 * until the code that can honour it arrives.
-	 */
 	const ui = getPracticeHostStrings(locale ?? "en");
 	const failure = getSelfCheckHostStrings(locale ?? "en").selfCheckNotSavedDevice.replaceAll(
 		"'",
@@ -67,6 +56,5 @@ export function renderChoice(
 		data.private === true && data.response.selectionMode === "single"
 			? `<p class="praxity-assessment-choice-hint" data-practice-mode>${escapeHtml(ui.practiceDeviceMode)}<span data-practice-shared hidden> ${escapeHtml(ui.practiceSharedDeviceScope)}</span><span data-practice-identified hidden> ${escapeHtml(ui.practiceIdentifiedScope)}</span></p><p class="praxity-assessment-choice-hint" data-practice-restoring hidden>${escapeHtml(ui.practiceRestoring)}</p><p class="praxity-text-error" data-practice-save hidden>${escapeHtml(failure)}</p><span class="praxity-sr-only" role="status" aria-live="polite" aria-atomic="true" data-practice-status></span>`
 			: "";
-	// Match the active feedback and action slots before hydration.
 	return `<form class="praxity-block-assessment praxity-assessment-choice-baseline">${header}${descriptionHtml}<fieldset class="praxity-fieldset-reset praxity-assessment-choice"${inputType === "radio" ? ` role="radiogroup"${required ? ' aria-required="true"' : ""}` : ""} aria-labelledby="${headingId}"${describedBy}><div class="praxity-assessment-choice-options">${choices}</div></fieldset><div data-assessment-feedback></div><div class="praxity-assessment-actions"></div>${notice}<noscript><p class="praxity-assessment-needs-script">${needsScript}</p></noscript></form>`;
 }

@@ -54,9 +54,7 @@ const RAW_TEXT_KEYS = new Set([
 	"yLabel",
 	"name",
 ]);
-/** URL keys that may appear as <img>/<audio>/<video> src — allow data:image/* */
 const MEDIA_URL_KEYS = new Set(["src", "source", "background", "imageSrc", "avatar"]);
-/** URL keys that appear as <a href> — block ALL data: URIs */
 const HREF_URL_KEYS = new Set(["href", "url", "sourceUrl"]);
 
 export function sanitizeUrl(url: string): string {
@@ -64,7 +62,6 @@ export function sanitizeUrl(url: string): string {
 	return isSafeMediaUrl(trimmed) ? trimmed : "#";
 }
 
-/** Stricter variant for <a href> — blocks ALL data: URIs (SVG scripts execute on navigation). */
 export function sanitizeHref(url: string): string {
 	const trimmed = url.trim();
 	return isSafeUrl(trimmed) ? trimmed : "#";
@@ -107,16 +104,12 @@ function sanitizeForJsonValue(value: unknown, key?: string): unknown {
 			block.data &&
 			typeof block.data === "object"
 		) {
-			// All authored fields are public plain text, including HTML-looking answers.
-			// Preserve them before the pattern renderer escapes them; sanitize settings only.
 			const { content, ...settings } = block.data;
 			return {
 				...block,
 				data: { ...(sanitizeForJsonValue(settings) as Record<string, unknown>), content },
 			};
 		}
-		// A logic rule's source ("variable:score", "block:q1") is a reference the runtime resolves,
-		// never a URL, so the media URL policy for the "source" key does not apply to it.
 		const logicRule = typeof (value as { comparison?: unknown }).comparison === "string";
 		const result: Record<string, unknown> = {};
 		for (const [entryKey, entryValue] of Object.entries(value)) {

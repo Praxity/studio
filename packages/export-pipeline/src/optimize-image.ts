@@ -16,7 +16,6 @@ export const IMAGE_CODEC_ASSETS = [
 const MAX_PIXELS = 25_000_000;
 const MAX_BYTES = 50_000_000;
 export const IMAGE_ENCODER_VERSION = "pipeline-1;jpeg-1.6.0;png-3.1.1;webp-1.5.0;pica-9.0.1";
-// Bump the pipeline generation for changes to decoding, eligibility or resizing.
 export const IMAGE_ENCODER_OPTIONS = { maxDimension: 1920, quality: 82 } as const;
 export interface ImageEncoderOptions {
 	maxDimension: number;
@@ -40,7 +39,6 @@ function pngSource(bytes: Uint8Array): Source | undefined {
 		const length = view.getUint32(offset);
 		if (length > bytes.length - offset - 12) return;
 		const type = Buffer.from(bytes.subarray(offset + 4, offset + 8)).toString();
-		// Keep animation and color/orientation metadata the WebP encoder drops.
 		if (["acTL", "iCCP", "eXIf", "gAMA", "cHRM"].includes(type)) return;
 		if (type === "IEND") return { format: "png", width, height };
 		offset += length + 12;
@@ -136,7 +134,6 @@ async function encode(
 	return new Uint8Array(await webpEncode(image, { quality: options.quality }));
 }
 
-/** Return a smaller WebP derivative, or leave the source asset untouched. */
 export async function optimizeImage(
 	bytes: Uint8Array,
 	codecDir?: string,

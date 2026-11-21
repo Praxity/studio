@@ -11,7 +11,6 @@ import { createRef } from "react";
 import { flushSync } from "react-dom";
 import { createRoot } from "react-dom/client";
 
-/** The deck owns access and logical slides; the shared player owns media state. */
 export function mountDeckNarration({
 	mount,
 	settingsContainer,
@@ -23,11 +22,9 @@ export function mountDeckNarration({
 }): NarrationController & { destroy(): void } {
 	const controller = createRef<NarrationController>();
 	const root = createRoot(mount);
-	// CSS owns the footer breakpoint, including framed and preview containers.
 	const isNarrow = () =>
 		!!settingsMount && getComputedStyle(settingsMount.element).display !== "none";
 	let narrow = isNarrow();
-	// Read the shell's CSS breakpoint so embedded decks use their own width.
 	const isSeekHidden = () => {
 		const position = mount.querySelector(".praxity-narration-position");
 		return position !== null && getComputedStyle(position).display === "none";

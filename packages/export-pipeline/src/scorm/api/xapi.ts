@@ -1,22 +1,5 @@
 import { applyXapiPrivatePolicy } from "../private-xapi-policy";
 
-/**
- * xAPI (Experience API / Tin Can) runtime wrapper.
- *
- * Unlike SCORM 1.2 and 2004, xAPI does not use a window-injected API object.
- * Instead, it sends JSON statements to a Learning Record Store (LRS) via HTTP.
- * The LRS endpoint and authorization credentials are configured at build time.
- * Actor identity is resolved either from LMS launch context (`actorMode: "lms"`)
- * or from build-time config (`actorMode: "manual"`).
- *
- * Local state (bookmarks, visited pages, interactions, suspend data, completion
- * and success) is kept in memory and, when a course ID is given, persisted to
- * localStorage per course and learner, because the xAPI spec does not prescribe a
- * bookmarking or suspend-data mechanism and each course page creates a new runtime.
- */
-
-// See docs/context/scorm-xapi-standards.md for spec references
-
 import { filterPrivateSuspendData } from "@praxity/shared-blocks/block-state-policy";
 import { declaredCourseActivityId, isAbsoluteIri } from "../activity-id.ts";
 import {
@@ -35,10 +18,6 @@ import {
 import { resolveLaunchAttempt } from "./device-attempt";
 import { runtimeUuid } from "./runtime-uuid";
 
-// ---------------------------------------------------------------------------
-// ADL verb registry
-// ---------------------------------------------------------------------------
-
 const ADL_VERB_BASE = "http://adlnet.gov/expapi/verbs";
 
 const VERBS = {
@@ -53,7 +32,6 @@ const VERBS = {
 
 type VerbKey = keyof typeof VERBS;
 
-/** Handle absent storage before calling; null means refused evidence. */
 export function readXapiInteractionEvidence(raw: string): InteractionEvidence[] | null {
 	try {
 		const value = JSON.parse(raw) as { interactions?: unknown } | null;
@@ -64,25 +42,16 @@ export function readXapiInteractionEvidence(raw: string): InteractionEvidence[] 
 	}
 }
 
-// ---------------------------------------------------------------------------
-// Public types
-// ---------------------------------------------------------------------------
-
 export interface XapiActor {
 	name?: string;
 	mbox: string;
 }
 
 export interface XapiConfig {
-	/** LRS endpoint URL (e.g. "https://lrs.example.com/xapi/statements"). */
 	endpoint: string;
-	/** Authorization header value (e.g. "Basic dXNlcjpwYXNz"). */
 	auth: string;
-	/** Actor (learner) identity. */
 	actor?: XapiActor;
-	/** Explicit activity base. Its course object is `${activityBase}/course`. */
 	activityBase?: string;
-	/** Actor resolution mode. "lms" resolves from launch context; "manual" requires actor in config. */
 	actorMode?: "lms" | "manual";
 }
 
@@ -128,11 +97,6 @@ export interface XapiStatement {
 	timestamp: string;
 }
 
-// ---------------------------------------------------------------------------
-// Runtime implementation
-// ---------------------------------------------------------------------------
-
-/** Some LMS frames block Web Storage; even reading the property can throw. */
 function browserStorage(name: "localStorage" | "sessionStorage"): Storage | null {
 	try {
 		return typeof window === "undefined" ? null : (window[name] ?? null);
@@ -172,7 +136,6 @@ export class XapiRuntime implements SCORMRuntime {
 	private suspendData: string | null = null;
 	private visitedPages: string[] = [];
 	private interactions: InteractionEvidence[] = [];
-	/** Statements the LRS did not accept; resent when the next page initializes. */
 	private outbox: XapiStatement[] = [];
 
 	private storage: Storage | null = null;
@@ -204,7 +167,6 @@ export class XapiRuntime implements SCORMRuntime {
 			this.actor = this.resolveLaunchActor(courseId);
 			this.sendEnabled = this.actor !== null;
 		} else if (config.actor) {
-			// Backward compatibility for direct actor-in-config usage.
 			this.actor = config.actor;
 			this.sendEnabled = true;
 		} else {
@@ -217,7 +179,6 @@ export class XapiRuntime implements SCORMRuntime {
 				"[Praxity Studio xAPI] xAPI actor not resolved from LMS launch context. Statements will not be sent.",
 			);
 		}
-		// Persist only for an identified learner so two learners never share one saved state.
 		if (courseId && this.actor) {
 			this.storage = storage ?? browserStorage("localStorage");
 			this.storageKey = `praxity-xapi:${encodeURIComponent(courseId)}:${encodeURIComponent(this.actor.mbox)}`;
@@ -225,7 +186,6 @@ export class XapiRuntime implements SCORMRuntime {
 		}
 	}
 
-	/** Restore this learner's course state; stored data is untrusted, so each field is checked. */
 	private restore(): void {
 		try {
 			const value = JSON.parse(this.storage?.getItem(this.storageKey) ?? "null") as Record<
@@ -264,12 +224,9 @@ export class XapiRuntime implements SCORMRuntime {
 						migrated = true;
 					}
 				}
-				// Save legacy IDs before a send can lose its response or the page closes.
 				if (migrated) this.persist();
 			}
-		} catch {
-			// Unreadable or blocked storage starts a fresh in-memory state.
-		}
+		} catch {}
 	}
 
 	private persist(): boolean {
@@ -290,18 +247,10 @@ export class XapiRuntime implements SCORMRuntime {
 			);
 			return true;
 		} catch {
-			// Full or blocked storage keeps the in-memory state for this page.
 			return false;
 		}
 	}
 
-	// -------------------------------------------------------------------
-	// Statement building
-	// -------------------------------------------------------------------
-
-	/**
-	 * Build a full xAPI statement with the configured actor and an ISO timestamp.
-	 */
 	buildStatement(verb: VerbKey, object: XapiObject, result?: XapiResult): XapiStatement {
 		const id = runtimeUuid();
 		const verbDef = VERBS[verb];
@@ -327,11 +276,6 @@ export class XapiRuntime implements SCORMRuntime {
 		return statement;
 	}
 
-	/**
-	 * POST a statement to the configured LRS endpoint.
-	 * Failures are logged but never thrown -- the LRS may be unreachable when
-	 * the learner is offline.
-	 */
 	async sendStatement(statement: XapiStatement): Promise<void> {
 		if (!this.sendEnabled) {
 			return;
@@ -347,21 +291,15 @@ export class XapiRuntime implements SCORMRuntime {
 				},
 				body: JSON.stringify(statement),
 			});
-			// xAPI permits 409 for an already-stored statement with the same ID.
 			if (!response.ok && !(response.status === 409 && statement.id))
 				throw new Error(`LRS responded ${response.status}`);
 		} catch (error: unknown) {
 			const message = error instanceof Error ? error.message : String(error);
 			console.warn(`[xAPI] Failed to send statement: ${message}`);
-			// ponytail: keeps the newest 50 unsent statements; a longer LRS outage drops the oldest.
 			this.outbox = [...this.outbox, statement].slice(-50);
 			this.persist();
 		}
 	}
-
-	// -------------------------------------------------------------------
-	// SCORMRuntime interface
-	// -------------------------------------------------------------------
 
 	initialize(): boolean {
 		if (this.initialized) {
@@ -444,7 +382,6 @@ export class XapiRuntime implements SCORMRuntime {
 		const language =
 			typeof options?.language === "string" && options.language ? options.language : "en-US";
 		const description = (options?.description ?? `Interaction ${id}`).replace(/\s+/gu, " ").trim();
-		// Keep ordinary-course statements unchanged when the unified host enables privacy support.
 		const reportingTextResponse =
 			Object.keys(this.blockStatePolicy).length > 0 && options?.assessmentType === "textResponse";
 		const object: XapiObject = {
@@ -507,13 +444,11 @@ export class XapiRuntime implements SCORMRuntime {
 	}
 
 	setCompletion(status: "incomplete" | "completed" | "passed" | "failed"): void {
-		// Each page reports the same status again; send a statement only when it changes.
 		if (status === this.completionStatus) return;
 		this.completionStatus = status;
 		this.persist();
 
 		if (status === "incomplete") {
-			// No statement for "incomplete" -- it just updates local state.
 			return;
 		}
 
@@ -529,7 +464,6 @@ export class XapiRuntime implements SCORMRuntime {
 		return this.completionStatus;
 	}
 
-	/** Send a passed or failed statement when the course result changes. */
 	setSuccess(status: "passed" | "failed" | "unknown"): void {
 		if (status === this.successStatus) return;
 		this.successStatus = status;
@@ -567,7 +501,6 @@ export class XapiRuntime implements SCORMRuntime {
 
 	setSuspendData(data: string): boolean {
 		this.suspendData = filterPrivateSuspendData(data, this.blockStatePolicy);
-		// Existing logic callers keep their page memory; the host reports failed durability.
 		return this.persist();
 	}
 
@@ -581,22 +514,15 @@ export class XapiRuntime implements SCORMRuntime {
 
 	commit(): boolean {
 		this.commitPreparation.prepareCommit?.();
-		// All statements are sent eagerly via sendStatement().
 		return true;
 	}
 
-	// -------------------------------------------------------------------
-	// Internal helpers
-	// -------------------------------------------------------------------
-
-	/** Build a child activity ID under the course activity. */
 	private activityId(path: string): string {
 		const base = this.courseActivityId;
 		const separator = base.endsWith("/") ? "" : "/";
 		return `${base}${separator}${path}`;
 	}
 
-	/** Return the default course-level activity object. */
 	private courseObject(): XapiObject {
 		return {
 			id: this.courseActivityId,
@@ -607,15 +533,10 @@ export class XapiRuntime implements SCORMRuntime {
 		};
 	}
 
-	/** Map a completion status string to a verb key for statement building. */
 	private statusToVerbKey(status: "completed" | "passed" | "failed"): VerbKey {
 		return status;
 	}
 
-	/**
-	 * Determine which verb to use when terminating, based on the current
-	 * completion status.
-	 */
 	private completionVerbKey(): VerbKey {
 		switch (this.completionStatus) {
 			case "passed":
@@ -629,10 +550,6 @@ export class XapiRuntime implements SCORMRuntime {
 		}
 	}
 
-	/**
-	 * The LMS passes the actor only on the launch URL; later course pages carry it
-	 * forward in this tab's sessionStorage.
-	 */
 	private resolveLaunchActor(courseId?: string): XapiActor | null {
 		if (typeof window === "undefined") return null;
 
@@ -644,9 +561,7 @@ export class XapiRuntime implements SCORMRuntime {
 		if (!actorJson) {
 			try {
 				actorJson = session?.getItem(sessionKey) ?? null;
-			} catch {
-				// Blocked storage leaves the actor unresolved.
-			}
+			} catch {}
 		}
 		if (!actorJson) return null;
 
@@ -657,7 +572,6 @@ export class XapiRuntime implements SCORMRuntime {
 				parsed.mbox &&
 				(parsed.name === undefined || typeof parsed.name === "string")
 			) {
-				// xAPI Data 2.4.2.1: the Agent name is optional; mbox identifies the learner.
 				const actor: XapiActor = {
 					mbox: parsed.mbox,
 					...(parsed.name ? { name: parsed.name } : {}),
@@ -665,9 +579,7 @@ export class XapiRuntime implements SCORMRuntime {
 				if (launched) session?.setItem(sessionKey, JSON.stringify(actor));
 				return actor;
 			}
-		} catch {
-			// Ignore malformed actor payloads and blocked storage; fail safe.
-		}
+		} catch {}
 
 		return null;
 	}
@@ -687,13 +599,11 @@ export class XapiRuntime implements SCORMRuntime {
 			}
 			if (params.has("activity_id")) session?.removeItem(key);
 		} catch {
-			// Blocked storage still permits a valid activity ID on the launch URL.
 			if (isAbsoluteIri(value)) return value;
 		}
 		return null;
 	}
 
-	/** Build a result object for completion/pass/fail statements. */
 	private buildCompletionResult(): XapiResult {
 		const result: XapiResult = {
 			completion: this.completionStatus !== "incomplete",

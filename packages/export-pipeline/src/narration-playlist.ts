@@ -14,7 +14,6 @@ interface NarrationPageConfig {
 
 export interface NarrationConfig {
 	grammarVersion?: 4;
-	/** Grammar 4 hosts resolve identities before building the published config. */
 	narrationSegments?: NarrationSegment[];
 	pageTitle?: string;
 	currentPage?: number;

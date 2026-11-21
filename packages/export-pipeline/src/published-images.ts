@@ -12,7 +12,6 @@ function bufferView(bytes: Uint8Array): Buffer {
 	return Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
 }
 
-/** Read dimensions from common Studio image formats without decoding the image. */
 export function readImageDimensions(bytes: Uint8Array): ImageDimensions | null {
 	const data = bufferView(bytes);
 	const svgTag = data.toString("utf8", 0, Math.min(data.length, 4096)).match(/<svg\b[^>]*>/i)?.[0];
@@ -118,7 +117,6 @@ function isBlock(value: Record<string, unknown>): value is Record<string, unknow
 	);
 }
 
-/** Reserve image space and prioritize the first image in each published document. */
 export async function preparePublishedImages(
 	pages: PraxityPage[],
 	assetsDir: string,
@@ -189,8 +187,6 @@ export async function preparePublishedImages(
 			if (src) pageState.hasPriorityImage = true;
 			const data = (await visit(record.data, pageState)) as Record<string, unknown>;
 			if (!imageSourceKey) return { ...record, data };
-			// ponytail: first-image priority is the fold heuristic; replace it with authored
-			// viewport metadata if Studio ever supports per-device page composition.
 			const imageDimensions = src ? await dimensionsFor(src) : null;
 			return {
 				...record,

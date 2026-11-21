@@ -36,7 +36,6 @@ export function createPrivateBlockStateRuntime(
 	if (!device && Object.values(page.blockStatePolicy ?? {}).includes("device")) {
 		try {
 			const identity = runtime.getLearnerIdentity?.();
-			// Tuple encoding keeps unidentified device state separate from real learner IDs.
 			const scope = identity?.learnerId
 				? JSON.stringify([page.courseId, identity.learnerId])
 				: JSON.stringify([page.courseId, null]);
@@ -94,7 +93,6 @@ export function createPrivateBlockStateRuntime(
 					? (blockState[blockId] as LearnerStateValue)
 					: undefined;
 			} catch {
-				// Empty-policy courses retain the ordinary host's read receipts.
 				if (hasPolicy)
 					results.set(blockId, {
 						status: "not-saved",
@@ -126,7 +124,6 @@ export function createPrivateBlockStateRuntime(
 					} else {
 						const suspendData = parseJsonRecord(runtime.getSuspendData()) ?? {};
 						const blockState = suspendData[BLOCK_STATE_KEY];
-						// Never carry a private block forward from old or untrusted suspend data.
 						const reportable = Object.fromEntries(
 							Object.entries(isRecord(blockState) ? blockState : {}).filter(
 								([id]) => policy(id) !== "device",

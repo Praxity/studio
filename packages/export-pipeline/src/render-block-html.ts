@@ -102,7 +102,6 @@ import {
 } from "./published-markup.ts";
 import { blockRequiresPageGate, getBlockIsland, type IslandName } from "./runtime-plan.ts";
 
-// Retain the existing projection import path for callers outside this module.
 export { sanitizeBlockForJson } from "./published-markup.ts";
 
 export type RenderBlockHtmlStrings = Pick<
@@ -533,9 +532,6 @@ function resolveVideoSrc(
 	const source = data.source;
 	if (source && typeof source === "object") {
 		const typed = source as { type?: string; src?: string; playbackId?: string };
-		// Mux-hosted sources are not supported in v1 exports (Praxity does not host
-		// video). Authors use a third-party embed URL or a local file packaged with
-		// the course. A stale mux source renders nothing rather than a broken frame.
 		if (typed.type === "url" && typeof typed.src === "string") {
 			const directSrc = sanitizeUrl(typed.src);
 			if (directSrc !== "#" && isDirectVideoUrl(directSrc)) {
@@ -1258,7 +1254,6 @@ function extractAssessmentQuestion(
 	return fallback;
 }
 
-/** Author-supplied supporting prose, rendered for the no-JS fallback. */
 function renderAssessmentDescription(
 	blockId: string,
 	description: PraxityBlock[] | undefined,
@@ -1302,7 +1297,6 @@ function renderSelfCheck(
 				`<button type="button" id="${escapeHtml(prefix)}-${action}" class="${action === "start-over" ? "praxity-btn" : "praxity-ag-submit-btn"}" data-praxity-js-control data-self-check-action="${action}">${escapeHtml(label)}</button>`,
 		)
 		.join("");
-	// Empty targets preserve criterion source identity without publishing authored content.
 	const parts = prompt.data.content.parts
 		.map(
 			(part, index) =>
@@ -1540,7 +1534,6 @@ function renderAssessment(
 				})
 				.join("")}</ol>`;
 		}
-		// Legacy hotspots can lack a question; keep their authored image description as the group name.
 		const groupLabel =
 			response.type === "hotspot" && !question
 				? `aria-label="${escapeHtml(typeof response.imageAlt === "string" ? response.imageAlt : "")}"`
@@ -1557,7 +1550,6 @@ function renderAssessment(
 		headingId: escapeHtml(headingId),
 		required,
 		dontKnowLabel: strings.dontKnow,
-		// One extra slot: an empty uncertainty label falls back to the next indexed label.
 		fallbackLabels: Array.from({ length: (data.response.options ?? []).length + 1 }, (_, index) =>
 			formatIndexedLabel(strings.optionLabel || DEFAULT_RENDER_STRINGS.optionLabel, index + 1),
 		),
@@ -1641,8 +1633,6 @@ function renderChecklist(block: PraxityBlock, strings: RenderBlockHtmlStrings): 
 		DEFAULT_RENDER_STRINGS.checklistLabel;
 	const items = Array.isArray(data.items) ? [...data.items] : [];
 	if (data.shuffle) {
-		// Randomizing after paint creates layout shift. A stable export-time shuffle
-		// preserves authored intent without moving choices under a learner's pointer.
 		const score = (value: string) => {
 			let hash = 2166136261;
 			for (const character of `${block.id}:${value}`) {
@@ -2075,8 +2065,6 @@ function renderSemanticContent(
 		case "logic":
 			return "";
 		case "document":
-			// A document embed is a link; without this, a page whose only special
-			// block is a document gets the static runtime and the link never renders.
 			return renderDocument(block, strings);
 		case "resourceEntry":
 			return renderResourceEntry(block, strings);
@@ -2104,7 +2092,6 @@ export function renderBlockHtml(block: PraxityBlock, options: RenderBlockHtmlOpt
 			? resolveAssessmentDontKnow([block])[0]
 			: block,
 	);
-	// Float boundaries carry source identity without learner content or layout.
 	if (safeBlock.type === "blockBreak" && safeBlock.data.close === "float")
 		return `<div data-node-id="${escapeHtml(safeBlock.id)}"></div>`;
 	if (safeBlock.type === "pageBreak" || safeBlock.type === "blockBreak") return "";

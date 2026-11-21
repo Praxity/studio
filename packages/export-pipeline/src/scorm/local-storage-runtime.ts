@@ -1,9 +1,3 @@
-/**
- * localStorage-backed SCORMRuntime fallback.
- *
- * Extracted into its own module to keep the runtime factory small.
- */
-
 import {
 	createLearnerState,
 	type LearnerStateV1,
@@ -25,12 +19,6 @@ const PREFIX = "praxity_";
 
 type RuntimeStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
-/**
- * A localStorage-backed SCORMRuntime that works without any LMS.
- * Useful for previewing courses locally or running in standalone web mode.
- * Course builds namespace data by course and attempt; direct legacy callers
- * without a course ID retain the original `praxity_` keys.
- */
 export class LocalStorageRuntime implements SCORMRuntime {
 	readonly destinations = DEVICE_DESTINATIONS;
 	private storage: RuntimeStorage;
@@ -48,8 +36,6 @@ export class LocalStorageRuntime implements SCORMRuntime {
 			storage ??= globalThis.localStorage;
 		} catch (error) {
 			if ((error as DOMException | null)?.name !== "SecurityError") throw error;
-			// Restricted browser contexts can deny the accessor itself. Keep the host
-			// operational without persistence so navigation still receives runtime-ready.
 		}
 		this.persistent = !!storage;
 		this.storage = storage ?? createNoopStorage();
@@ -197,7 +183,6 @@ export class LocalStorageRuntime implements SCORMRuntime {
 		return this.persistent;
 	}
 
-	/** Reset only this course attempt and revoke writers created before the reset. */
 	resetState(): void {
 		if (!this.courseId) return;
 		const current = this.readState();
@@ -223,7 +208,6 @@ export class LocalStorageRuntime implements SCORMRuntime {
 	}
 
 	private readState(): LearnerStateV1 {
-		// Every caller selects the scoped branch before reading learner state.
 		const identity = { courseId: this.courseId as string, attemptId: this.attemptId };
 		try {
 			const raw = this.storage.getItem(this.prefix + "state");
@@ -256,8 +240,6 @@ export class LocalStorageRuntime implements SCORMRuntime {
 		} catch (error) {
 			const name = (error as DOMException | null)?.name;
 			if (name !== "SecurityError" && name !== "QuotaExceededError") throw error;
-			// Reads and legacy migration can fail before Initialize. Start a fresh
-			// in-memory attempt; failed migration leaves the stored legacy data intact.
 			this.storage = createNoopStorage();
 			this.persistent = false;
 			this.generation = 0;
@@ -275,10 +257,7 @@ export class LocalStorageRuntime implements SCORMRuntime {
 		try {
 			this.writeState(state);
 			this.lastWriteSaved = this.persistent;
-		} catch {
-			// Learner interaction must remain usable when storage is full or the
-			// bounded state serializer rejects an oversized update.
-		}
+		} catch {}
 		return true;
 	}
 
@@ -291,7 +270,6 @@ function courseStoragePrefix(courseId: string): string {
 	return `praxity:${encodeURIComponent(courseId)}:`;
 }
 
-/** The caller supplies a private course/learner scope, never the general course store. */
 export function removeOtherLocalAttempts(
 	storage: Storage,
 	courseId: string,
@@ -314,7 +292,6 @@ export function removeOtherLocalAttempts(
 			obsolete.push(key);
 	}
 	for (const key of obsolete) storage.removeItem(key);
-	// Keep registration history without answers, even after its drafts are removed.
 	if (onlyIfUnseen) storage.setItem(`${current}seen`, "1");
 }
 
@@ -362,10 +339,6 @@ function readScore(raw: string | null): { raw: number; min: number; max: number 
 		return null;
 	}
 }
-
-// ---------------------------------------------------------------------------
-// No-op Storage for environments where localStorage is unavailable
-// ---------------------------------------------------------------------------
 
 function createNoopStorage(): RuntimeStorage {
 	const store = new Map<string, string>();

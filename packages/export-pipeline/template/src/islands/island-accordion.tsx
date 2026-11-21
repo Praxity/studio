@@ -54,7 +54,6 @@ export function attachIsland() {
 		root.addEventListener("praxity:narration-reveal", (event) => {
 			const target = event.target instanceof Element ? event.target : null;
 			if (!target) return;
-			// Each owning island reveals its item, including ancestors of nested accordions.
 			for (const [item, control] of controls) if (item.contains(target)) control.setExpanded(true);
 		});
 		root.setAttribute("data-hydrated", "");

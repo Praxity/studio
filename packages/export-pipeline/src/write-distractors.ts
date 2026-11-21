@@ -16,7 +16,6 @@ import { escapeHtml } from "./published-markup";
 
 export type WriteDistractorsAuthoredContent = Content;
 declare const capture: unique symbol;
-/** Private authored bytes cannot be serialized with a compiler context. */
 export interface WriteDistractorsRuntime {
 	readonly [capture]: true;
 }
@@ -36,7 +35,6 @@ function refuse(kind: "invalid" | "duplicate" | "orphaned" | "missing" | "revisi
 	throw Object.assign(new Error(code), { code });
 }
 
-// Inspect before copying: structuredClone would discard unknown own keys and prototypes.
 function record(value: unknown, keys: readonly string[]): asserts value is Record<string, unknown> {
 	if (
 		!value ||
@@ -114,7 +112,6 @@ export function admitWriteDistractorsRuntime(
 ): WriteDistractorsRuntime {
 	const captured = retained(runtime);
 	const { inputs } = captured;
-	// A later context cannot resurrect content refused by this capture.
 	refused = new Set([...captured.refused, ...refused]);
 	const blocks = activities(pages);
 	const ids = new Set(blocks.map((block) => block.id));
@@ -189,7 +186,6 @@ export function writeDistractorsPageAssets(
 	return writeDistractorsAssetReferences(runtime).filter((asset) => ids.has(asset.blockId));
 }
 
-/** Bind only references owned by this admitted page; full Content stays in its asset. */
 export function bindWriteDistractorsAssets(
 	html: string,
 	runtime: WriteDistractorsRuntime,

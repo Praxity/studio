@@ -4,7 +4,6 @@ import type { CourseTracker } from "../../../src/scorm/tracking";
 import type { SCORMRuntime } from "../../../src/scorm/types";
 import { readCoreCourseConfig } from "../hosts/core-course-config";
 
-/** Pages and module completion share the same result labels and score presentation. */
 export function renderCourseCompletionResult(
 	root: ParentNode,
 	strings: Record<string, string>,
@@ -48,7 +47,6 @@ export function renderCourseCompletionResult(
 	}
 }
 
-/** Completion copy reports useful reading time, without a ticking seconds counter. */
 export function formatCourseSessionTime(
 	time: { minutes: number; seconds: number },
 	locale: string,

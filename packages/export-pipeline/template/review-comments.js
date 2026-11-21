@@ -394,7 +394,6 @@
 	}
 
 	function createLocalTransport(settings) {
-		// Keep unknown outcomes until acknowledgement: the same payload reuses its receipt ID.
 		async function request(url, options) {
 			for (var attempt = 0; ; attempt++) {
 				var response = await fetch(url, {
@@ -497,7 +496,6 @@
 		if (text !== undefined) node.textContent = text;
 		return node;
 	}
-	// Tabler outline paths from the installed @tabler/icons catalog, as in published notes.
 	var actionIcons = {
 		save: "M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2M10 14a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M14 4l0 4l-6 0l0 -4",
 		close: "M18 6l-12 12M6 6l12 12",
@@ -624,7 +622,6 @@
 	}
 	function createAnchors(pageRoot, pageId) {
 		var limits = localConfig.limits;
-		// Runtime answer projections are private even when their native controls are hidden.
 		var excluded = [
 			"script,style,noscript,template,input,textarea,select,button,.praxity-button,option,output,canvas,[contenteditable],[data-disclosure-label],.praxity-disclosure-title",
 			"[data-review-ui],.prx-review-sidebar,.prx-review-overlay,.prx-review-toggle,.praxity-sr-only,.praxity-a11y-sr-only,summary,[role='tab']",
@@ -704,7 +701,6 @@
 			)
 				return null;
 			var target = root.querySelector(`:scope > ${path}`);
-			// The whole-course revision guards positional paths across re-exports.
 			return target && targetLabel(target) === anchor.context.targetLabel ? target : null;
 		}
 		function base(target, node, block) {
@@ -792,7 +788,6 @@
 			return identity ? identityLabel(identity) || null : label(target);
 		}
 		function fromBlock(target) {
-			// Identity can name controls and graphics; their text stays outside the quote stream.
 			var identityOnly = target?.closest(identitySelector);
 			while (identityOnly?.parentElement.closest(identitySelector))
 				identityOnly = identityOnly.parentElement.closest(identitySelector);
@@ -1063,7 +1058,6 @@
 			);
 		}
 		var anchors = localConfig ? createAnchors(pageRoot, () => activePageId) : null;
-		// Read-only DOM capture/resolution interface for page-level regression tests.
 		if (anchors) {
 			var { fromSelection, fromPin, fromBlock, resolve, page } = anchors;
 			window.PraxityReview = Object.freeze({ fromSelection, fromPin, fromBlock, resolve, page });
@@ -1201,7 +1195,6 @@
 				filters.append(label);
 			});
 			content.insertBefore(filters, status);
-			// Course shortcuts must not intercept editing or navigation in the review list.
 			["keydown", "keyup", "keypress"].forEach((name) =>
 				sidebar.addEventListener(name, (event) => event.stopPropagation()),
 			);
@@ -1242,13 +1235,11 @@
 							: 0,
 					);
 				}
-				// Keep the tail above glyphs, while preserving the stored point for graphics.
 				return Math.min(y, line.top + capMetrics.get(font));
 			}
 			return y;
 		}
 		function resolveEntry(entry) {
-			// A quote or node ID can occur on several pages, including inactive deck slides.
 			if (entry.thread.anchor.pageId !== activePageId) return { state: "anotherPage" };
 			if (entry.resolutionVersion !== resolutionVersion) {
 				entry.spot = anchors.resolve(entry.thread.anchor);
@@ -1278,7 +1269,6 @@
 				layoutRoot = root;
 				layoutInlineSize = undefined;
 			}
-			// Finish every DOM/style/geometry read before changing any marker or status.
 			var placements = entries.map((entry) => {
 				var spot = resolveEntry(entry);
 				if (
@@ -1315,7 +1305,6 @@
 					x = Math.max(12, Math.min(viewportRight - 12, x));
 					y = gutter >= 28 ? box.top + lineHeight / 2 + 12 : box.top - 4;
 				} else {
-					// Circle above/right; its small tail ends at the captured point.
 					x += 12;
 					y -= 12;
 				}
@@ -1327,11 +1316,9 @@
 					[x + 24, y + 12],
 				]
 					.map(([px, py]) => {
-						// A gutter hit area can extend past the viewport; test its visible edge.
 						px = Math.max(0, Math.min(viewportRight, px));
 						py = Math.max(0, Math.min(viewportBottom, py));
 						var hit = document.elementFromPoint(px, py);
-						// Visible markers participate in hit testing; inspect below our layer without writes.
 						if (hit?.closest(".prx-review-overlay"))
 							hit = document
 								.elementsFromPoint(px, py)
@@ -1353,7 +1340,6 @@
 					y > viewportBottom;
 				return { entry, spot, hidden, x, y, block };
 			});
-			// Selection UI shares this frame, after the marker geometry has been measured.
 			if (reviewTools) reviewTools.updateSelection();
 			var losingFocus = placements.find(
 				({ entry, hidden }) => hidden && document.activeElement === entry.marker,
@@ -1452,7 +1438,6 @@
 				status.textContent = strings[spot.state] || strings.notVisible;
 				return;
 			}
-			// Only activate the learner's own disclosure/tab buttons, never arbitrary authored links.
 			var ancestors = [];
 			for (var el = target; el && pageRoot().contains(el); el = el.parentElement)
 				ancestors.unshift(el);
@@ -1503,7 +1488,6 @@
 			if (typeof ResizeObserver === "function")
 				layoutObserver = new ResizeObserver((entries = []) => {
 					if (anchors && !isDeck) {
-						// Include the band's border and padding while retaining floating toolbar clearance.
 						document.documentElement.style.setProperty(
 							"--prx-review-toolbar-space",
 							`${Math.max(header.getBoundingClientRect().height + 32, collapsed ? sidebar.getBoundingClientRect().height : 0)}px`,
@@ -1543,7 +1527,6 @@
 					try {
 						rules = sheet.cssRules;
 					} catch (failure) {
-						// Browsers withhold cross-origin CSS rules; exported course sheets are same-origin.
 						if (failure.name === "SecurityError") return;
 						throw failure;
 					}
@@ -1936,7 +1919,6 @@
 				entry.field.focus();
 				return;
 			}
-			// In-memory retries freeze the full command until a durable acknowledgement or refusal.
 			if (!entry.pending)
 				entry.pending = {
 					kind,
@@ -2102,7 +2084,6 @@
 			if (!pendingJump) return;
 			var pageId = threadViews.get(pendingJump.id)?.thread.anchor.pageId || pendingJump.pageId;
 			if ((pageId && pageId !== id) || (pendingJump.activation && pendingJump.activation !== id))
-				// Deck owns the access notice; do not announce the same refusal again.
 				clearPendingJump();
 			else pendingJump.activation = id;
 		}
@@ -2114,7 +2095,6 @@
 				return;
 			}
 			if (jump?.thread.anchor.pageId !== activePageId || !deckPageActive(activePageId)) return;
-			// Deck signals after activating the slide, then finishes its own focus synchronously.
 			queueMicrotask(() => {
 				if (
 					pendingJump === intent &&
@@ -2171,7 +2151,6 @@
 						reviewTools?.refreshComposer();
 					}
 				}
-				// A mutation can supersede this list without starting a newer refresh.
 				if (refreshInFlight !== refreshVersion) schedulePoll();
 			}
 		}
@@ -2239,7 +2218,6 @@
 						?.focus({ preventScroll: true });
 					return;
 				}
-				// A deck's mobile More panel may have closed since its action opened the dialog.
 				var more = opener?.closest("#deck-more");
 				var moreToggle = more?.querySelector("#deck-more-toggle");
 				if (
@@ -2495,7 +2473,6 @@
 			function equal(a, b) {
 				return JSON.stringify(ordered(a)) === JSON.stringify(ordered(b));
 			}
-			// One owner for browser records. Storage events never change an open session.
 			var draftStore = (() => {
 				var cache = new Map(),
 					volatile = new Map(),
@@ -2637,7 +2614,6 @@
 					return false;
 				}
 				function remove(storageKey, durable = true) {
-					// Quota only blocks puts. Always attempt removal, including memory-only keys.
 					try {
 						if (!memoryOnly) storage().removeItem(storageKey);
 					} catch {
@@ -2693,7 +2669,6 @@
 					var storageKey = key("draft", session.anchor.pageId, session.draftId),
 						actual = read(storageKey),
 						result = "ok";
-					// A conflict fork must sort after the value just observed, even in the same millisecond.
 					if (actual.raw) parse(storageKey, actual.raw);
 					if (!actual.ok && actual.durable && !dirty) return "blocked";
 					if (actual.raw !== null && actual.raw !== session.lastSeen && actual.ok) {
@@ -2748,7 +2723,6 @@
 						storageKey === key("draft", session.anchor.pageId, session.draftId) &&
 						result !== "forked"
 					) {
-						// Keep the durable version until its edited successor can safely retire it.
 						volatile.delete(storageKey);
 						cache.set(storageKey, actual);
 						session.draftId = crypto.randomUUID();
@@ -2762,9 +2736,6 @@
 					return result;
 				}
 				function write(session, body) {
-					// A reload within milliseconds of an edit, or while another tab holds the draft lock,
-					// can lose that edit. Text already saved survives. The review page's CSP sandbox
-					// suppresses the leave prompt. A follow-up journal will back up queued edits.
 					var dirty = body !== session.recordedBody;
 					if (!shared && !memoryOnly)
 						return Promise.resolve(writeDraftLocked(session, body, dirty));
@@ -2885,7 +2856,6 @@
 				}
 				async function reusedSuccessor(record) {
 					var candidate = record.requestId;
-					// Keep colliding refusals convergent, without unbounded hashing of occupied slots.
 					for (var step = 0; step < 8; step++) {
 						candidate = await reusedDraftId(record, candidate);
 						var draftKey = key("draft", record.anchor.pageId, candidate),
@@ -2937,8 +2907,6 @@
 					}
 					if (!successor) return blocked();
 					if (actual.durable && successor?.durable !== true) {
-						// Refusal is not permission to trade saved text for volatile text. A failed
-						// same-value write also fences persistent storage denial before removing anything.
 						if (!persist(storageKey, actual.raw) || !remove(storageKey, true)) return blocked();
 						if (!persist(draftKey, successor.raw)) {
 							if (!persist(storageKey, actual.raw)) put(storageKey, actual.raw);
@@ -3580,7 +3548,6 @@
 				},
 				true,
 			);
-			// Let the native dialog handle Tab, Escape and editing before isolating course shortcuts.
 			["keydown", "keyup", "keypress"].forEach((name) => {
 				[composer, picker].forEach((node) =>
 					node.addEventListener(name, (event) => event.stopPropagation()),
@@ -3650,7 +3617,6 @@
 			transport
 				.post(submitted)
 				.then((saved) => {
-					// Navigation invalidates the list response, not the saved draft.
 					if (textInput.value === submittedDraft) textInput.value = "";
 					if (version !== loadVersion) return;
 					comments.push(saved);
@@ -3731,14 +3697,12 @@
 			var id = event.detail?.pageId;
 			if (typeof id !== "string" || !id) return;
 			if (deckPageActive(id)) {
-				// The owner's synchronous heading focus belongs to this arrival, not a new gesture.
 				deckOrienting = true;
 				queueMicrotask(() => {
 					deckOrienting = false;
 				});
 				if (isDeck) answerPendingJump(id);
 			}
-			// First activation can confirm the guessed initial page without changing its ID.
 			resolutionVersion++;
 			if (id !== activePageId) selectPage(id);
 			else finishPendingJump();

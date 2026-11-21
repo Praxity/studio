@@ -1,7 +1,6 @@
 import { enhanceHighlight } from "../../../src/patterns/highlight/enhance";
 import { restoreHighlightBaseline } from "../../../src/patterns/highlight/recovery";
 
-/** Own atomic attach and rollback; bootstrap only reports the local failure. */
 export function attachIsland(): () => void {
 	const instances: ReturnType<typeof enhanceHighlight>[] = [];
 	const roots = [

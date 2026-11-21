@@ -1,10 +1,3 @@
-/**
- * Vitest globalSetup — ensures prebuilt viewer assets exist before tests run,
- * and pre-builds the comprehensive grammar fixture so all published-output
- * test files share a single build (workers get their own module scope, so
- * module-level caching doesn't survive across Vitest forks).
- */
-
 import { execSync } from "node:child_process";
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
@@ -21,8 +14,6 @@ export async function setup() {
 		execSync("pnpm prebuild", { cwd: __dirname, stdio: "inherit" });
 	}
 
-	// Pre-build the comprehensive grammar fixture so all published-output
-	// test files read from disk instead of each worker rebuilding.
 	console.log("[export-pipeline] Building published-output fixture…");
 	const { loadGrammarFixture } = await import("./tests/fixtures/load-grammar-fixture");
 	const { buildScormPackage } = await import("./src/build");
@@ -40,7 +31,6 @@ export async function setup() {
 }
 
 export async function teardown() {
-	// Clean up cached fixture after test run
 	const { rm } = await import("node:fs/promises");
 	await rm(PUBLISHED_FIXTURE_PATH, { force: true });
 	await rm(AUTHORING_CATALOG_PATH, { force: true });

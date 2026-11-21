@@ -1,7 +1,5 @@
-/** Warm the current slide and its immediate neighbours, following selected tab content only. */
 export function warmPaneImages(panes: readonly HTMLElement[], activeIndex: number): void {
 	const active = panes[activeIndex];
-	// Wait until deck initialization has hidden its inactive slides.
 	if (
 		!active ||
 		active.closest('[hidden], [aria-hidden="true"], .praxity-deck:not([data-ready="true"])')
@@ -15,7 +13,6 @@ export function warmPaneImages(panes: readonly HTMLElement[], activeIndex: numbe
 
 function warmPane(pane: HTMLElement, neighbour: boolean): void {
 	const owner = pane.closest(".praxity-tabs-static");
-	// Selected tab content in the current slide keeps native loading.
 	if (!owner || neighbour) {
 		for (const image of pane.querySelectorAll<HTMLImageElement>("img[src]")) {
 			if (image.closest(".praxity-tabs-static") !== owner) continue;

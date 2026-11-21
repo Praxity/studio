@@ -11,7 +11,6 @@ export function renderDisclosureHeading(
 	level: number,
 	chevron = false,
 ): string {
-	// P27: keep a readable heading until a working button replaces the plain label.
 	const icon = chevron
 		? renderDisclosureChevron()
 		: `<svg class="praxity-disclosure-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M5 12h14"/><path class="praxity-disclosure-icon-vertical" d="M12 5v14"/></svg>`;

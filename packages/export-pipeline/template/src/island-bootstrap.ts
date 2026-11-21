@@ -109,8 +109,6 @@ if (!smallPreview) installEntranceMotionGlobal();
 			})
 			.catch((error) => {
 				if (!owned()) return;
-				// The baseline already owns one empty live region and localized failure copy.
-				// A rejected chunk cannot import its enhancer to report the failure.
 				if (name === "retrievalSheet" || name === "highlight") {
 					const pattern = name === "retrievalSheet" ? "retrieval" : name;
 					document
@@ -126,7 +124,6 @@ if (!smallPreview) installEntranceMotionGlobal();
 							status.textContent = status.getAttribute(`data-${pattern}-unavailable`) ?? "";
 						});
 				}
-				// Keep SSR fallback content when an island script fails.
 				if (name === "deck" || name === "assessment" || name === "assessmentGroup")
 					window.dispatchEvent(new CustomEvent("praxity:islands-failed"));
 				if (name === "nav") {
@@ -229,7 +226,6 @@ if (!smallPreview) installEntranceMotionGlobal();
 			);
 		};
 		window.addEventListener("praxity:runtime-ready", ready);
-		// The host can finish before this deferred script arrives. Join its captured admission.
 		if (owner?.isAdmitted()) ready();
 	} else {
 		const owned = () => true;

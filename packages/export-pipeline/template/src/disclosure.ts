@@ -1,6 +1,5 @@
 import { createContentReveal } from "@praxity/shared-blocks/content-reveal";
 
-/** P27 enhancement shared by published accordions, transcripts and deck utilities. */
 export function enhanceDisclosure(
 	button: HTMLButtonElement,
 	panel: HTMLElement,
@@ -12,8 +11,6 @@ export function enhanceDisclosure(
 	if (reveal) reveal.element.dataset.revealPrint = "expand";
 	const setExpanded = (expanded: boolean) => {
 		if (!expanded && panel.contains(document.activeElement)) button.focus();
-		// [hidden] means authored concealment to the required-activity gate. A collapsed
-		// disclosure still contains eligible activities, as native details did.
 		if (reveal) reveal.setOpen(expanded);
 		else panel.style.display = expanded ? "" : "none";
 		button.setAttribute("aria-expanded", String(expanded));
@@ -21,13 +18,11 @@ export function enhanceDisclosure(
 	};
 	const toggle = () => setExpanded(button.getAttribute("aria-expanded") !== "true");
 	button.addEventListener("click", toggle);
-	// Install the handler and populate the button before exposing or collapsing it.
 	const label = button.parentElement?.querySelector<HTMLElement>("[data-disclosure-label]");
 	if (label) button.prepend(label);
 	const labelledBy = panel.getAttribute("aria-labelledby");
 	if (labelledBy) panel.setAttribute("aria-labelledby", button.id);
 	button.hidden = false;
-	// Delayed enhancement must not interrupt a learner already using fallback content.
 	setExpanded(panel.contains(document.activeElement));
 	const revealAnchor = () => {
 		let id: string;

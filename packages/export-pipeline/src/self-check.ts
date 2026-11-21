@@ -17,7 +17,6 @@ import { blockRequiresPageGate } from "./runtime-plan";
 export type SelfCheckAuthoredContent = Content;
 
 declare const capture: unique symbol;
-/** Authored bytes live in the owner, never on a serializable compiler context. */
 export interface SelfCheckRuntime {
 	readonly [capture]: true;
 }
@@ -112,7 +111,6 @@ export function admitSelfCheckRuntime(
 ): SelfCheckRuntime {
 	const captured = retained(runtime);
 	const inputs = captured.inputs;
-	// A publishing-context rebuild cannot re-admit an activity refused at capture.
 	refused = new Set([...captured.refused, ...refused]);
 	const entries = new Map(inputs.map((input) => [input.blockId, input]));
 	const blocks = selfChecks(pages);
@@ -162,7 +160,6 @@ export async function writeSelfCheckAssets(
 ): Promise<CourseArtifactFile[]> {
 	return writeAuthoredContentAssets(retained(runtime).assets, distDir);
 }
-/** Generic compiler callers receive references, never authored bytes. */
 export function selfCheckAssetReferences(runtime: SelfCheckRuntime): SelfCheckAssetReference[] {
 	return retained(runtime).assets.map(({ blockId, contentRevision, path, sha256 }) => ({
 		blockId,
@@ -217,7 +214,6 @@ export function bindSelfCheckAssets(
 	});
 }
 
-/** The compiler supplies content-free course references, including other modules' gates. */
 export function bindSelfCheckDocument(
 	html: string,
 	runtime: SelfCheckRuntime,

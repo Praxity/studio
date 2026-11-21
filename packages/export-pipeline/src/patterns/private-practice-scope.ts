@@ -4,7 +4,6 @@ type PrivatePracticeProvider = LearnerBlockStateRuntime & {
 	getDeviceScope?(blockId: string): "identified" | "shared-device";
 };
 
-/** Private activity scope follows admitted storage, independently of a first save. */
 export function privatePracticeState(
 	provider: PrivatePracticeProvider | undefined,
 	blockId: string,

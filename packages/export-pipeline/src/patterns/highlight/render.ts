@@ -1,7 +1,3 @@
-// Adapted from learning-patterns/patterns/highlight/render.js at
-// b3f82d2415982da20dda28b61770d7e85084901b. Copyright (c) 2026 Ariel Harlap.
-// MIT licensed; see LICENSE in this folder. Studio owns this presentation.
-
 import { escapeJsonForHtml } from "@praxity/content-model/constants";
 import { normalizeHeadingLevel } from "@praxity/shared-blocks/heading-styles";
 import { getHighlightStrings } from "@praxity/shared-blocks/i18n/highlight-strings";
@@ -13,7 +9,6 @@ import { strings } from "learning-patterns/patterns/highlight/strings.js";
 import { escapeHtml } from "../../published-markup.ts";
 import { formatCount } from "./format-count.ts";
 
-/** Literal public content. The baseline has only the native Answer control. */
 export function renderHighlight(
 	content: HighlightContent,
 	{ prefix, lang, headingLevel }: { prefix: string; lang: string; headingLevel: number },
@@ -33,7 +28,6 @@ export function renderHighlight(
 				`<p>${paragraph.map((chunk) => `<span class="praxity-highlight-chunk" data-highlight-chunk="${escapeHtml(chunk.id)}">${escapeHtml(chunk.text)}</span><span class="praxity-highlight-feedback" id="${id}-feedback-${escapeHtml(chunk.id)}" data-highlight-feedback hidden></span>`).join(" ")}</p>`,
 		)
 		.join("");
-	// Both projections share labels, order and notes. Print never depends on details.open.
 	const answer = `<ul class="praxity-highlight-answer">${content.paragraphs
 		.flat()
 		.filter((chunk) => chunk.key === true || chunk.note)

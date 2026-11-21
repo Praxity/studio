@@ -2,9 +2,6 @@ import type { SCORMRuntime } from "../types";
 import { runtimeUuid } from "./runtime-uuid";
 import type { ScormSessionState } from "./session";
 
-/** SCORM has no attempt identifier. Keep an opaque token in its existing custom
- * state, shared across documents and resume; it contains no block data or flags.
- * Both adapters share this owner without adding it to the session support bundle. */
 export function deviceAttemptId(
 	runtime: SCORMRuntime,
 	session: ScormSessionState | null,
@@ -43,7 +40,6 @@ export function resolveLaunchAttempt(courseId: string, learnerId: string): strin
 			session?.setItem(key, launched);
 			return launched;
 		}
-		// An explicit launch without registration cannot inherit a previous attempt.
 		if (params.has("actor")) {
 			session?.removeItem(key);
 			return undefined;

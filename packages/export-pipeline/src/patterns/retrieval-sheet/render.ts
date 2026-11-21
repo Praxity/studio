@@ -4,7 +4,6 @@ import type { RetrievalSheetContent } from "@praxity/shared-blocks/types";
 import type { strings as patternStrings } from "learning-patterns/patterns/retrieval-sheet/strings.js";
 import { escapeHtml } from "../../published-markup.ts";
 
-/** Public, literal authored content. Dates and client controls have no server state. */
 export function renderRetrievalSheet(
 	content: RetrievalSheetContent,
 	{
@@ -23,7 +22,6 @@ export function renderRetrievalSheet(
 ): string {
 	const id = escapeHtml(prefix);
 	const headingLevel = normalizeHeadingLevel(requestedHeadingLevel, 2);
-	// Native headings stop at h6; a level-6 title and its side labels share that level.
 	const sideLevel = Math.min(6, headingLevel + 1);
 	const questions = content.questions
 		.map(

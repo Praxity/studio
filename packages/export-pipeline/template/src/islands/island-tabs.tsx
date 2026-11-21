@@ -29,8 +29,6 @@ export function attachIsland() {
 				else panel.hidden = !open;
 			}
 		};
-		// Measure the actual labels, including rich inline text and larger-text/spacing
-		// preferences. A fixed phone breakpoint would miss long labels on a laptop.
 		const measure = document.createElement("div");
 		measure.className = "praxity-tabs-measure";
 		measure.setAttribute("aria-hidden", "true");
@@ -88,7 +86,6 @@ export function attachIsland() {
 		for (const [index, tab] of tabs.entries()) {
 			tab.addEventListener("click", () => activate(tab, true));
 			tab.addEventListener("keydown", (event) => {
-				// Native disclosure buttons own Enter and Space.
 				if (disclosure) return;
 				if (event.key === "Enter" || event.key === " ") {
 					event.preventDefault();

@@ -75,8 +75,6 @@ export type SliceConsumer =
 	| "reading-script"
 	| "working-directory";
 
-/** Prefix entries apply to every lesson/speaker. Fragment consumers use the
- * page's sourceDigest and referenced cast/asset keys, rather than a whole lesson. */
 type DependencyScope =
 	| "all"
 	| "page"
@@ -112,13 +110,9 @@ export interface ContextSlice {
 	readonly digest: string;
 }
 
-/** Host-captured asset digests. No project filesystem reads happen in this slice.
- * When omitted, bytes already admitted by the host supply the digest. */
 export type AssetCache = ReadonlyMap<string, string>;
 
 export type CourseContextInput = (CourseExportInput | DesktopExportInput) & {
-	/** The operation service owns admitted sequence numbers. Standalone callers
-	 * may omit this until they have a session; refresh then advances locally. */
 	seq?: number;
 	htmlOutput?: HtmlOutputOptions;
 	unresolvedNodes?: ReadonlyMap<string, UnresolvedNode>;
@@ -147,7 +141,6 @@ export interface CourseContext extends Awaited<ReturnType<typeof prepareCourse>>
 	readonly unresolvedNodes?: ReadonlyMap<string, UnresolvedNode>;
 	readonly htmlRendering?: PreparedHtmlCourse;
 	readonly renderingOutput?: HtmlOutputOptions;
-	/** Opaque session cache owner, retained across refreshes. */
 	readonly compilerCache: object;
 	readonly slices: Partial<Record<SliceKey, ContextSlice>>;
 	readonly pages: readonly PageEntry[];
@@ -160,8 +153,6 @@ export interface CourseContextChanges {
 	assets?: readonly string[];
 }
 
-// JSON object insertion order and Map insertion order carry no authoring meaning.
-// Arrays retain order, except where a slice explicitly owns an unordered set.
 function structuralValue(value: unknown): unknown {
 	if (value instanceof Map) return structuralValue(Object.fromEntries(value));
 	if (Array.isArray(value)) return value.map(structuralValue);
@@ -197,7 +188,6 @@ function canShowGlossary(
 		: course.glossaryTabEnabled !== false;
 }
 
-// DialogueTurnData marks these fields as resolver output, never authored bytes.
 const RESOLVED_SPEAKER_FIELDS = ["name", "avatar", "voice", "side"] as const;
 
 function withoutCast(value: unknown): unknown {
@@ -227,7 +217,6 @@ function withoutCast(value: unknown): unknown {
 }
 
 function pageSource(page: PraxityPage) {
-	// Navigation metadata does not change a block fragment when a page moves.
 	const metadata = Object.fromEntries(
 		Object.entries(page.data ?? {}).filter(
 			([key]) =>
@@ -320,8 +309,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function hasVariableMention(value: unknown): boolean {
-	// readLesson projects mentions to HTML; prepared display fields can nest them
-	// inside _inline records or arrays. Other mention kinds have no static fallback.
 	if (typeof value === "string") return /\bdata-mention="variable:/.test(value);
 	if (Array.isArray(value)) return value.some(hasVariableMention);
 	if (!value || typeof value !== "object") return false;
@@ -335,9 +322,6 @@ function hasVariableMention(value: unknown): boolean {
 	);
 }
 
-/** Digests of the values a particular consumer reads. Revalidate against this
- * function on the new context: lesson/asset/narration values are page-scoped,
- * so comparing these records to the aggregate slice digest would over-invalidate. */
 export function getPageDependencies(
 	context: CourseContext,
 	pageId: string,
@@ -674,7 +658,6 @@ export async function createCourseContext(
 	};
 }
 
-/** Capture an already adapted publishing model without adapting it a second time. */
 export async function createCourseContextFromHtml(
 	config: CourseConfig &
 		Pick<CourseExportInput, "componentDefaults" | "selfCheckContents" | "writeDistractorsContents">,
@@ -847,8 +830,6 @@ function normalizeDesktopCourseInput(input: DesktopExportInput): CourseExportInp
 		imageHoverEffect: design.imageHoverEffect,
 		glossaryTabEnabled: design.glossaryTabEnabled,
 		completionMethod: "percentage",
-		// Studio stores fractions; older direct callers pass percentages.
-		// Convert only fractions so 80% cannot become an impossible 8000%.
 		completionThreshold: threshold <= 1 ? threshold * 100 : threshold,
 		requireKnowledgeChecks: input.config.requireKnowledgeChecks === true,
 		...(passingScore === undefined
@@ -883,15 +864,11 @@ function rewriteDesktopAssetUrl(
 	return resolvedAssetPaths.has(normalized) ? `${normalized}${suffix}` : undefined;
 }
 
-// Authored HTML can embed asset paths outside typed asset fields. Preserve the
-// export pipeline's existing literal-path detection for packaging and dependencies.
 interface AssetPathTrie {
 	children: Map<string, AssetPathTrie>;
 	path?: string;
 }
 
-// These inventories are owned by context preparation and never mutated. Weak keys
-// reuse the index across pages without retaining inventories from earlier refreshes.
 const assetPathIndexes = new WeakMap<
 	ReadonlySet<string>,
 	{ prefixes: RegExp; root: AssetPathTrie }
@@ -926,8 +903,6 @@ function embeddedAssetPaths(value: unknown, paths: ReadonlySet<string>): Set<str
 		const alternatives = [...prefixes].map((prefix) =>
 			prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
 		);
-		// Lookahead visits overlapping occurrences. The trie checks every terminal,
-		// including a shorter literal inside a longer one, against serialized JSON.
 		index = { prefixes: new RegExp(`(?=${alternatives.join("|") || "(?!)"})`, "g"), root };
 		assetPathIndexes.set(paths, index);
 	}
@@ -942,7 +917,6 @@ function embeddedAssetPaths(value: unknown, paths: ReadonlySet<string>): Set<str
 			if (node.path !== undefined) found.add(node.path);
 		}
 	}
-	// Packaging observes inventory order, not occurrence order in the document.
 	return new Set([...paths].filter((path) => found.has(path)));
 }
 
@@ -981,8 +955,6 @@ async function prepareCourse(
 			),
 		),
 	}));
-	// Style artwork participates in the same asset graph as page metadata. Only
-	// selected artwork needs packaging. Unused named styles remain source-only.
 	const artworkPages = isDesktopExportInput(course)
 		? splitBlocksIntoPages(
 				adaptedContent.flatMap((page) => page.blocks),
@@ -1044,7 +1016,6 @@ async function prepareCourse(
 		const missingNarrationAssets = new Set<string>();
 		const missingCaptionAssets = new Set<string>();
 		const missingAvatarAssets = new Set<string>();
-		// Rewrite while pageBreak blocks are still present; splitting moves their metadata to page data.
 		const rewritten = await traverseAssetGraph(
 			[...adaptedContent, styleCarrier],
 			{
@@ -1100,9 +1071,6 @@ async function prepareCourse(
 		normalizedCourse.content = adaptedContent;
 	}
 
-	// Glossary terms come from the inline tooltips in page content. Aggregate here
-	// (after page splitting, so entries carry the right page title/slug) rather than
-	// at each caller.
 	if (canShowGlossary(normalizedCourse)) {
 		normalizedCourse.glossaryTerms = collectGlossaryTerms(normalizedCourse.content);
 	}

@@ -289,9 +289,7 @@ export function initializeElectronPreviewHost(): boolean {
 							restoredUrl.searchParams.delete("praxity-resume");
 							try {
 								environment.history.replaceState(environment.history.state, "", restoredUrl.href);
-							} catch {
-								// A blocked history update must not prevent restored preview readiness.
-							}
+							} catch {}
 							return null;
 						}
 						const target = resolveScormResumeTarget(

@@ -17,9 +17,7 @@ export function renderQuote(block: PraxityBlock): string {
 		try {
 			const url = new URL(data.sourceUrl);
 			if (url.protocol === "https:" || url.protocol === "http:") sourceUrl = url.href;
-		} catch {
-			// Persisted quote data is untrusted; omit malformed citation URLs.
-		}
+		} catch {}
 	}
 	const source = work
 		? `<cite>${sourceUrl ? `<a href="${escapeHtml(sourceUrl)}">${escapeHtml(work)}</a>` : escapeHtml(work)}</cite>`

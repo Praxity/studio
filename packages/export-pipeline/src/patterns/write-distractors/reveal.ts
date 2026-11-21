@@ -12,7 +12,6 @@ import type {
 } from "@praxity/shared-blocks/write-distractors-session";
 import { renderDistractorComparison } from "./comparison";
 
-/** Check-only presentation: never requested to enable initial drafting or persistence. */
 export function installDistractorReveal(
 	root: HTMLElement,
 	before: HTMLElement,
@@ -213,7 +212,6 @@ export function installDistractorReveal(
 			comparison.hidden = !mount.value.shown;
 			if (mount.value.shown && result) {
 				const rendered = renderDistractorComparison(result, root.lang, ui);
-				// Keep result nodes stable across receipts, flushes and persisted return.
 				if (comparison.innerHTML !== rendered.html) comparison.innerHTML = rendered.html;
 				comparisonSpeech = rendered.announcement;
 			} else comparison.replaceChildren();

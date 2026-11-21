@@ -115,10 +115,8 @@ function redirect(config: RedirectShellConfig): void {
 	if (pageId && config.pageIdMap && Object.hasOwn(config.pageIdMap, pageId)) {
 		target = `${config.prefix ?? ""}${config.pageIdMap[pageId]}.html`;
 		params.delete("praxity-page");
-		// The stable-ID route stays in this SCO, including native GET forms.
 		params.set("praxity-resume", "0");
 	} else if (config.pageIdMap) {
-		// A bare entry may be an internal return or a genuinely new LMS launch.
 		resetScormSessions(window);
 	}
 	const url = new URL(target, location.href);
@@ -204,9 +202,7 @@ function applyBodyState(config: PageShellConfig, smallPreview = false): boolean 
 			if (localStorage.getItem(config.sidebarPreferenceKey) === "collapsed") {
 				document.body.classList.add("praxity-sidebar-collapsed");
 			}
-		} catch {
-			// Locked-down LMS frames may deny web storage.
-		}
+		} catch {}
 	}
 	return true;
 }
@@ -227,9 +223,7 @@ function installSmallPreviewPresentation(): void {
 		let requested = location.hash.slice(1);
 		try {
 			requested = decodeURIComponent(requested);
-		} catch {
-			/* Use the first slide for malformed fragments. */
-		}
+		} catch {}
 		const selected = slides.find((slide) => slide.dataset.deckSlide === requested) ?? slides[0];
 		for (const slide of slides) slide.hidden = slide !== selected;
 		document
@@ -267,7 +261,6 @@ function installSmallPreviewPresentation(): void {
 				const height = Math.ceil(main.getBoundingClientRect().height);
 				if (height === previousHeight) return;
 				previousHeight = height;
-				// Geometry only; the desktop accepts messages only from its current frame.
 				window.parent.postMessage(
 					{ type: "praxity-small-preview-height", url: location.href, height },
 					"*",
@@ -299,17 +292,13 @@ function installSmallPreviewPresentation(): void {
 		media.preload = "none";
 		try {
 			media.pause();
-		} catch {
-			// A locked-down document may not expose media controls.
-		}
+		} catch {}
 		media.addEventListener(
 			"play",
 			() => {
 				try {
 					media.pause();
-				} catch {
-					// Keep the static preview usable when pause is unavailable.
-				}
+				} catch {}
 			},
 			true,
 		);
@@ -320,9 +309,7 @@ function installSmallPreviewPresentation(): void {
 		guardMedia(target);
 		try {
 			target.pause();
-		} catch {
-			// Keep a static preview usable when media controls are unavailable.
-		}
+		} catch {}
 	};
 	const ownerDocument = document;
 	const guardCurrentMedia = () => {
@@ -343,9 +330,7 @@ function installStrings(): void {
 		const value = JSON.parse(node.textContent) as { strings?: unknown };
 		const strings = stringRecord(value.strings);
 		if (strings) window.__PRAXITY_STRINGS__ = strings;
-	} catch {
-		// The UI runtime will keep its built-in strings when config is invalid.
-	}
+	} catch {}
 }
 
 function installReadingPreferences(config: PageShellConfig): void {
@@ -508,9 +493,7 @@ function installEntranceMotion(config: PageShellConfig): void {
 				window.__PRAXITY_INIT_ENTRANCE_MOTION__(document.documentElement);
 				return;
 			}
-		} catch {
-			// Reveal content below when the optional motion runtime fails.
-		}
+		} catch {}
 		document.querySelectorAll<HTMLElement>("[data-entrance]").forEach((element) => {
 			element.dataset.entrance = "visible";
 		});
@@ -535,7 +518,6 @@ export function initializeCourseShell(): void {
 		installSmallPreviewPresentation();
 		return;
 	}
-	// The host publishes one resolved arrival per document, including static Pages.
 	const bindGlossaryLinks = () => {
 		for (const link of document.querySelectorAll<HTMLAnchorElement>(
 			'a[href="glossary.html"][target="_blank"]',
@@ -565,7 +547,6 @@ export function initializeCourseShell(): void {
 		};
 		if (window.__PRAXITY_FOCUS_SCORM_RESUME__) focus();
 		else if (!resumeScript && config.resumeFilename) {
-			// Classic scripts keep static Pages resume usable in local file exports.
 			resumeScript = document.createElement("script");
 			resumeScript.src = config.resumeFilename;
 			resumeScript.addEventListener("load", focus, { once: true });

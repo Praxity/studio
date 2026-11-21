@@ -1,10 +1,6 @@
 import { PassThrough } from "node:stream";
 import { ZipArchive } from "archiver";
 
-/**
- * Create a zip buffer from a dist directory and optional manifest XML.
- * If manifestXml is provided, imsmanifest.xml is placed at the root level.
- */
 export async function createZip(
 	distDir: string,
 	manifestXml: string | null,
@@ -21,7 +17,6 @@ export async function createZip(
 
 		archive.pipe(passthrough);
 
-		// Add manifest at root level if provided
 		if (manifestXml) {
 			archive.append(manifestXml, { name: "imsmanifest.xml" });
 		}
@@ -32,7 +27,6 @@ export async function createZip(
 			}
 		}
 
-		// Add all files from dist directory
 		archive.directory(distDir, false);
 
 		archive.finalize();

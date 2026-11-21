@@ -1,5 +1,4 @@
 #!/usr/bin/env npx tsx
-/** Build a package for the official ADL validator through the production pipeline. */
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import { buildScormPackage, type CourseExportInput } from "../src/build.ts";

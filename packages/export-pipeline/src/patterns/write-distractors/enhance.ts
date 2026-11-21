@@ -31,13 +31,11 @@ declare global {
 
 type Session = ReturnType<typeof createWriteDistractorsSession>;
 const documents = new WeakMap<Document, { release(): void; consumers: number }>();
-// A released mount leaves a native field, but its bytes still belong to that provider.
 const nativeScopes = new WeakMap<
 	HTMLElement,
 	{ provider: SelfCheckLifetime["provider"]; owned: boolean }
 >();
 
-/** Controls retain the typed adapter and existing document/provider lifetime. */
 export function attachWriteDistractors(doc: Document = document): () => void {
 	let mounted = documents.get(doc);
 	if (!mounted) {
@@ -116,8 +114,6 @@ export function attachWriteDistractors(doc: Document = document): () => void {
 			if (!activeLifetime(captured) || !owner.isAdmitted()) return;
 			const attached = session;
 			const active = attached ?? (await start(captured, command.type === "retry"));
-			// Startup captures the latest native field once, including an explicit empty edit.
-			// Replaying older input events after that capture would reorder the learner's draft.
 			if (!attached && command.type === "edit-answer") return;
 			if (active && activeLifetime(captured) && active === session) await active.dispatch(command);
 			else if (activeLifetime(captured) && (command.type === "check" || command.type === "retry"))
@@ -352,7 +348,6 @@ export function attachWriteDistractors(doc: Document = document): () => void {
 				const mount = view.mount;
 				if (!projectScope()) return;
 				notSaved.hidden = !mount.notSaved;
-				// A result gesture composes one live update after its save receipt settles.
 				if (view.announcement === "practiceNotSaved" && resultGesture === lifetime)
 					suppressedFailure = true;
 				else if (view.announcement)
@@ -370,7 +365,6 @@ export function attachWriteDistractors(doc: Document = document): () => void {
 					`${answer.id}-saved`,
 				);
 				positionNotice();
-				// Keep mounted controls and actual focus until current saved-state admission settles.
 				if (
 					(!mount.readDone && mount.restoreStatus !== "unavailable") ||
 					(mount.restoreStatus === "pending" && revealed)
@@ -479,13 +473,10 @@ export function attachWriteDistractors(doc: Document = document): () => void {
 				baseline.hidden = true;
 				const focused = doc.activeElement as HTMLElement | null;
 				if (!suspendedFocus && revealed && focused && root.contains(focused)) {
-					// Disabling a native select displaces focus. A later learner gesture
-					// retires this witness before current admission may restore it.
 					suspendedFocus = focused;
 					for (const type of ["focusin", "pointerdown", "keydown"])
 						doc.addEventListener(type, focusMoved, true);
 				}
-				// A replacement suspends the former provider's editor until its read settles.
 				if (currentView || rebindView) answer.readOnly = true;
 				if (resetIntent) {
 					wantsCheck = false;
@@ -573,12 +564,10 @@ export function attachWriteDistractors(doc: Document = document): () => void {
 				},
 			};
 		});
-		// Print reads only mounted fields. It never asks the session or asset loader for content.
 		const printNodes: HTMLElement[] = [];
 		let printFocus: HTMLElement | undefined;
 		const clearPrint = (event?: Event) => {
 			for (const node of printNodes.splice(0)) node.remove();
-			// Print CSS can blur a native field. Later focused controls keep their focus.
 			if (event?.type === "afterprint" && doc.activeElement === doc.body && printFocus?.isConnected)
 				printFocus.focus({ preventScroll: true });
 			if (event) printFocus = undefined;

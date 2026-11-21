@@ -1,7 +1,6 @@
 import type { getPracticeHostStrings } from "@praxity/shared-blocks/i18n/practice-host-strings";
 import type { DistractorRecoveryField } from "@praxity/shared-blocks/write-distractors-state";
 
-/** Only codec-extracted answer and five old text/custom pairs have display labels. */
 export function projectDistractorRecovery(
 	root: HTMLElement,
 	fields: readonly DistractorRecoveryField[],

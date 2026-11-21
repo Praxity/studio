@@ -7,7 +7,6 @@ const callbacks = new WeakMap<HTMLScriptElement, (payload: unknown) => void>();
 const installed = new WeakSet<Window>();
 const assetError = (code: string) => Object.assign(new Error(code), { code });
 
-/** Classic packaged scripts also load from file://. S7 calls this after action. */
 export function loadSelfCheckAsset(
 	reference: AssetReference,
 	doc: Document = document,

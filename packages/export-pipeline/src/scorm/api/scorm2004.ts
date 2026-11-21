@@ -1,19 +1,3 @@
-/**
- * SCORM 2004 (4th Edition) runtime wrapper.
- *
- * Communicates with the LMS via the `API_1484_11` object that the LMS injects
- * into the content frame hierarchy.  Method names follow the IEEE 1484.11.2
- * standard: Initialize, GetValue, SetValue, Commit, Terminate (no "LMS" prefix).
- *
- * Key data-model differences from SCORM 1.2:
- * - Completion is split: `cmi.completion_status` + `cmi.success_status`
- * - Scores use `cmi.score.{raw,min,max,scaled}`
- * - Bookmarks use `cmi.location` (not cmi.core.lesson_location)
- * - Interactions use `cmi.interactions.N.*` with `learner_response` (not student_response)
- */
-
-// See docs/context/scorm-xapi-standards.md for spec references
-
 import { filterPrivateSuspendData } from "@praxity/shared-blocks/block-state-policy";
 import type { LearnerBlockSaveResult } from "@praxity/shared-blocks/learner-block-state";
 import { findWindowProperty, type WindowLike } from "../api-discovery.ts";
@@ -42,7 +26,6 @@ import {
 import { sessionTime } from "./session-time.ts";
 import { SuspendDataReader } from "./suspend-data-reader";
 
-/** Retain identifiable rejected signed rows in their original order. */
 export function readScorm2004InteractionEvidence(raw: string): InteractionEvidence[] | null {
 	try {
 		const value = JSON.parse(raw) as { interactions?: unknown } | null;
@@ -62,7 +45,6 @@ function scormInteractionType(assessmentType?: string): string {
 	return assessmentType === "matching" || assessmentType === "likert" ? assessmentType : "choice";
 }
 
-/** Shape of the SCORM 2004 API_1484_11 object exposed by the LMS. */
 export interface SCORM2004API {
 	Initialize(param: string): string;
 	Terminate(param: string): string;
@@ -74,11 +56,6 @@ export interface SCORM2004API {
 	GetDiagnostic(errorCode: string): string;
 }
 
-/**
- * Minimal subset of `Window` used by the API-discovery logic.
- * Accepting this interface (instead of the global `window` directly) allows
- * the class to be unit-tested in a Node environment without jsdom.
- */
 export type { WindowLike } from "../api-discovery.ts";
 
 export class Scorm2004Runtime implements SCORMRuntime {
@@ -114,11 +91,6 @@ export class Scorm2004Runtime implements SCORMRuntime {
 	private win: WindowLike;
 	private blockStatePolicy: Readonly<Record<string, "device" | "lms">> = {};
 
-	/**
-	 * @param win - The window reference used for API discovery.  Defaults to
-	 *              the global `window` when running in a browser.  Pass a mock
-	 *              object in tests.
-	 */
 	constructor(win?: WindowLike) {
 		this.win =
 			win ??
@@ -127,23 +99,10 @@ export class Scorm2004Runtime implements SCORMRuntime {
 				: ({ parent: null as unknown as WindowLike } as WindowLike));
 	}
 
-	// -------------------------------------------------------------------
-	// API discovery
-	// -------------------------------------------------------------------
-
-	/**
-	 * Walk up the `window.parent` chain (and check `window.opener`) to locate
-	 * the `API_1484_11` object injected by the LMS.  Returns `true` when the
-	 * API is found.
-	 */
 	findAPI(): boolean {
 		this.api = (findWindowProperty(this.win, "API_1484_11") as SCORM2004API | null) ?? null;
 		return this.api !== null;
 	}
-
-	// -------------------------------------------------------------------
-	// Core SCORM methods
-	// -------------------------------------------------------------------
 
 	initialize(): boolean {
 		if (this.session?.closed) return false;
@@ -169,7 +128,6 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		this.session.startedAt ??= startedAt;
 		this.loadSuspendDataObject();
 		const completion = this.getLmsValue("cmi.completion_status") || "unknown";
-		// Initial incomplete certifies no progress, even when the saved state is unreadable.
 		if (["unknown", "not attempted"].includes(completion)) {
 			if (!this.setLmsValue("cmi.completion_status", "incomplete")) return false;
 		}
@@ -194,7 +152,6 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		)
 			return false;
 		if (!this.commitToLms()) return false;
-		// Terminate failure leaves LMS state uncertain, so no caller may retry.
 		session.closed = true;
 		session.initialized = false;
 		this.initialized = false;
@@ -248,16 +205,12 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		if (this.suspendData.unreadable) return true;
 		const pending = this.session?.pendingCompletion;
 		if (pending === undefined) return true;
-		// Keep immediate course decisions, but send status after the save's score and
-		// success values. Cornerstone locks transcript score when completion arrives.
 		if (!this.setLmsValue("cmi.completion_status", pending)) return false;
 		if (this.session?.pendingCompletion === pending) delete this.session.pendingCompletion;
 		return true;
 	}
 
 	private prepareExit(): boolean {
-		// ADL RTE: suspended exit preserves the attempt and yields entry=resume. With a pass
-		// mark, keep the attempt open until it is passed so the learner can finish or retry.
 		const finished =
 			this.getLmsValue("cmi.completion_status") === "completed" &&
 			(!this.session?.successTracked || this.getLmsValue("cmi.success_status") === "passed");
@@ -285,10 +238,6 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		return result === "true";
 	}
 
-	// -------------------------------------------------------------------
-	// Error handling
-	// -------------------------------------------------------------------
-
 	getLastError(): string {
 		if (!this.canCallLms()) {
 			return "0";
@@ -307,10 +256,6 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		}
 	}
 
-	// -------------------------------------------------------------------
-	// Page tracking (stored in cmi.suspend_data as JSON)
-	// -------------------------------------------------------------------
-
 	trackPageVisit(pageId: string): void {
 		const data = this.loadSuspendDataObject();
 		const pages: string[] = (data.visitedPages as string[]) ?? [];
@@ -325,10 +270,6 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		const data = this.loadSuspendDataObject();
 		return (data.visitedPages as string[]) ?? [];
 	}
-
-	// -------------------------------------------------------------------
-	// Interactions (cmi.interactions.N.*)
-	// -------------------------------------------------------------------
 
 	trackInteraction(
 		id: string,
@@ -347,10 +288,8 @@ export class Scorm2004Runtime implements SCORMRuntime {
 				: truncateInteractionResponse(response, SCORM2004_RESPONSE_LIMIT);
 
 		const accepted = this.setValue(`cmi.interactions.${n}.id`, id);
-		// An accepted ID consumes the row, even if a later reporting field fails.
 		if (accepted) this.interactionCount++;
 
-		// Mirror in suspend_data for offline retrieval
 		const data = this.loadSuspendDataObject();
 		data.interactions = recordInteraction((data.interactions as InteractionRecord[]) ?? [], {
 			id,
@@ -381,11 +320,7 @@ export class Scorm2004Runtime implements SCORMRuntime {
 				this.report(`cmi.interactions.${n}.weighting`, String(score));
 			}
 
-			this.report(
-				`cmi.interactions.${n}.timestamp`,
-				// RTE 4.1.1.7: a time zone designator requires fractional seconds (at most two digits).
-				new Date().toISOString().replace(/\dZ$/, "Z"),
-			);
+			this.report(`cmi.interactions.${n}.timestamp`, new Date().toISOString().replace(/\dZ$/, "Z"));
 		}
 		if (storedResponse.length < response.length)
 			options?.onResponseTruncated?.(storedResponse.length);
@@ -416,10 +351,6 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		if (this.initialized && this.canCallLms() && this.session) this.session.courseFailure = failed;
 	}
 
-	// -------------------------------------------------------------------
-	// Objectives (cmi.objectives.N.*)
-	// -------------------------------------------------------------------
-
 	trackObjective(id: string, score: number, passed: boolean): void {
 		this.loadSuspendDataObject();
 		if (this.suspendData.unreadable) return;
@@ -436,14 +367,8 @@ export class Scorm2004Runtime implements SCORMRuntime {
 			if (n === undefined) return;
 			this.setValue(`cmi.objectives.${n}.score.raw`, String(score));
 			this.setValue(`cmi.objectives.${n}.success_status`, passed ? "passed" : "failed");
-		} catch {
-			// Non-critical: LMS objectives support varies.
-		}
+		} catch {}
 	}
-
-	// -------------------------------------------------------------------
-	// Completion & success status
-	// -------------------------------------------------------------------
 
 	setCompletion(status: "incomplete" | "completed" | "passed" | "failed"): void {
 		this.loadSuspendDataObject();
@@ -466,7 +391,6 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		this.loadSuspendDataObject();
 		if (this.suspendData.unreadable) return;
 		if (!this.initialized || !this.canCallLms()) return;
-		// Success policy belongs to the launch, including legacy quiz and utility pages.
 		if (this.session) this.session.successTracked = true;
 		this.setValue("cmi.success_status", status);
 	}
@@ -475,10 +399,6 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		return this.getValue("cmi.success_status") || "unknown";
 	}
 
-	// -------------------------------------------------------------------
-	// Scores (cmi.score.raw / min / max / scaled)
-	// -------------------------------------------------------------------
-
 	setScore(raw: number, min: number, max: number): void {
 		this.loadSuspendDataObject();
 		if (this.suspendData.unreadable) return;
@@ -486,7 +406,6 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		this.setValue("cmi.score.min", String(min));
 		this.setValue("cmi.score.max", String(max));
 
-		// SCORM 2004 also supports a scaled score in [-1, 1]
 		const range = max - min;
 		if (range > 0) {
 			const scaled = Math.max(-1, Math.min(1, (raw - min) / range));
@@ -508,10 +427,6 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		};
 	}
 
-	// -------------------------------------------------------------------
-	// Bookmarks (cmi.location)
-	// -------------------------------------------------------------------
-
 	setBookmark(pageId: string): void {
 		this.setValue("cmi.location", pageId);
 	}
@@ -520,10 +435,6 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		const value = this.getValue("cmi.location");
 		return value || null;
 	}
-
-	// -------------------------------------------------------------------
-	// Suspend data (cmi.suspend_data)
-	// -------------------------------------------------------------------
 
 	setSuspendData(data: string): boolean {
 		return this.setValue("cmi.suspend_data", data);
@@ -534,10 +445,6 @@ export class Scorm2004Runtime implements SCORMRuntime {
 		const value = this.readSuspendData();
 		return value || null;
 	}
-
-	// -------------------------------------------------------------------
-	// Internal suspend-data helpers (JSON envelope)
-	// -------------------------------------------------------------------
 
 	private readSuspendData(): string | undefined {
 		if (!this.canCallLms()) return undefined;
