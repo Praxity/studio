@@ -4,7 +4,7 @@
 	"private": true,
 	"description": "Praxity Studio â€” local-first eLearning authoring",
 	"author": "Praxity",
-	"license": "SEE LICENSE IN LICENSE",
+	"license": "MIT",
 	"type": "module",
 	"imports": {
 		"#jsonc-parser": {

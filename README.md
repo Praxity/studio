@@ -16,4 +16,6 @@ The legacy browser editor and Electron application are retired. The last desktop
 
 Development checks: `pnpm typecheck`, `pnpm lint`, `pnpm test:affected`, and `pnpm test:cli` after building. See [browser canvas](docs/context/browser-editor.md) and [testing](docs/context/testing-strategy.md).
 
-Praxity-authored code uses [PolyForm Perimeter 1.0.1](LICENSE). See [NOTICE](NOTICE) for third-party and separately licensed content.
+Praxity-authored code uses the [MIT licence](LICENSE). See [NOTICE](NOTICE) for third-party and separately licensed content.
+
+Earlier versions of this repository published under PolyForm Perimeter 1.0.1 or earlier Praxity terms are also available under MIT from 2026-11-21. See [LICENSING.md](LICENSING.md).

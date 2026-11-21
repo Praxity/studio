@@ -1,5 +1,7 @@
 # Archived licence texts
 
+2026-11-21: These are past terms; current Praxity code is MIT-licensed.
+
 Each release keeps the terms it shipped with.
 
 | Files | Provenance |
