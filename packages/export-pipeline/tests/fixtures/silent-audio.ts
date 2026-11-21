@@ -1,4 +1,3 @@
-/** Local PCM silence for playback-state checks. Keep short clips for natural-end checks. */
 export function silentWav(durationSeconds: number): Buffer {
 	if (!Number.isInteger(durationSeconds) || durationSeconds <= 0) {
 		throw new Error("Silent audio duration must be a positive integer number of seconds");

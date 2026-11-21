@@ -290,7 +290,6 @@ async function textBreaks(page: Page) {
 			let box = element;
 			while (getComputedStyle(box).display === "inline" && box.parentElement)
 				box = box.parentElement;
-			// Ignore text hidden visually for screen readers, including clipped ancestors.
 			let clipped = false;
 			for (let parent: Element | null = element; parent; parent = parent.parentElement) {
 				const css = getComputedStyle(parent);
@@ -308,7 +307,6 @@ async function textBreaks(page: Page) {
 					boxCss.borderRightWidth,
 				].reduce((sum, value) => sum + parseFloat(value), 0);
 			measure.style.font = css.font;
-			// Copy longhands too: computed font shorthands can be empty when variants differ.
 			measure.style.fontFamily = css.fontFamily;
 			measure.style.fontSize = css.fontSize;
 			measure.style.fontWeight = css.fontWeight;
@@ -323,8 +321,6 @@ async function textBreaks(page: Page) {
 				const range = document.createRange();
 				range.setStart(node, match.index);
 				range.setEnd(node, match.index + match[0].length);
-				// WebKit includes an empty rect on the next line at some word boundaries.
-				// Only rectangles containing rendered glyphs establish a word break.
 				const lines = [...range.getClientRects()].filter((rect) => rect.width > 0);
 				measure.textContent = match[0];
 				const unbroken = document.createRange();
@@ -401,7 +397,6 @@ for (const width of [160, 195, 240, 320, 360])
 				expect((await footer.boundingBox())?.height).toBeLessThanOrEqual(135);
 				for (const selector of ["#deck-more-toggle", "#deck-previous", "#deck-next"]) {
 					const box = await page.locator(selector).boundingBox();
-					// Gecko's rect serialization can return 43.999992 for a 44px layout box.
 					expect(Number(box?.width.toFixed(3))).toBeGreaterThanOrEqual(44);
 					expect(Number(box?.height.toFixed(3))).toBeGreaterThanOrEqual(44);
 				}
@@ -528,7 +523,6 @@ for (const width of [160, 195, 240, 320])
 							.toBe(true);
 					}
 					await page.evaluate(() => document.fonts.ready);
-					// Hydration visits must not choose the scroll position for the static reflow check.
 					await page.evaluate(
 						(position) => scrollTo({ ...position, behavior: "instant" }),
 						entryScroll,

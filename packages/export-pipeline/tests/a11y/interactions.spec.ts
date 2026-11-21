@@ -134,7 +134,6 @@ test("keyboard checklist and media use one themed control ring", async ({ page }
 		await target.focus();
 		await page.keyboard.press("Shift+Tab");
 		await page.keyboard.press("Tab");
-		// Native media may put Tab focus on an internal player control.
 		if (keyword === "audio" || keyword === "video") await target.focus();
 		if (keyword === "choose-many") {
 			await expectFocusRing(page.locator(".praxity-assessment-choice-option").first(), 2);
@@ -177,13 +176,11 @@ for (const width of [320, 1280]) {
 						if (!title || !paragraph) throw new Error("Missing accordion title or body");
 						return title.getBoundingClientRect().left - paragraph.getBoundingClientRect().left;
 					});
-					// Section 5 places the leading 24px chevron and 8px gap before the title.
 					expect(alignment).toBeCloseTo(32, 0);
 					if (forcedColors === "active" && !(await forcedPalette(page))) {
 						await expectForcedEmulationInert(page, [summary]);
 						await expectFocusRing(summary, 2, true);
 					} else {
-						// Published buttons keep the thicker forced-color ring and native palette mapping.
 						await expectFocusRing(
 							summary,
 							forcedColors === "active" ? 3 : 2,
@@ -383,8 +380,6 @@ async function readChoiceAssessmentTargetFromConfig(
 				if (block.data?.assessmentType !== "choice") continue;
 				if (block.data.response?.type !== "choice") continue;
 				if (block.data.response?.selectionMode === "multiple") continue;
-				// data-passed/data-score only exist on graded assessments; knowledge
-				// checks deliberately omit them (AssessmentBlock.tsx:1370).
 				const gradingMode = block.data.gradingMode ?? (block.data.graded ? "exact" : "none");
 				if (gradingMode === "none") continue;
 
@@ -439,10 +434,6 @@ test.describe("interactions", () => {
 			throw new Error("Known assessment fixture is missing its single-select choice");
 		}
 
-		// The static wrapper from render-block-html.ts and the hydrated React Card
-		// share the .praxity-block-assessment class, so .first() would match the
-		// wrapper, which never carries the graded attributes. data-assessment-display
-		// is set only by the Card (AssessmentBlock.tsx:1369).
 		const block = page
 			.locator(
 				`.praxity-block-assessment[data-block-id='${target.blockId}'][data-assessment-display]`,
@@ -483,7 +474,6 @@ test.describe("interactions", () => {
 		const retry = block.getByRole("button", { name: /try again/i });
 		await expect(retry).toBeVisible();
 		await expect(retry).toBeFocused();
-		// Keep the keyboard ring check after the new submission focus assertion.
 		await page.keyboard.press("Tab");
 		await page.keyboard.press("Shift+Tab");
 		await expect(retry).toBeFocused();
@@ -602,7 +592,6 @@ test.describe("interactions", () => {
 		await expect(group.locator('[data-doodle="highlight"]')).toHaveText("Combined assessment");
 		await expect(group).not.toContainText("@highlight");
 		await expect(groupedAssessments.nth(0)).toHaveClass(/praxity-layout-wide/);
-		// The group owns one coherent width, including members with an explicit layout.
 		await expect(groupedAssessments.nth(1)).toHaveClass(/praxity-layout-wide/);
 		await expect(groupedAssessments.nth(1)).not.toHaveClass(/praxity-layout-full/);
 		await expect(groupedAssessments.nth(2)).toHaveClass(/praxity-layout-wide/);
@@ -652,7 +641,6 @@ test.describe("interactions", () => {
 
 		await textarea.pressSequentially("A response that grows the field.");
 		await expect(textarea).toHaveValue("A response that grows the field.");
-		// Let autosizing settle before checking the inline decoration.
 		await page.clock.runFor(200);
 
 		expect(
@@ -824,10 +812,6 @@ test.describe("interactions", () => {
 
 		for (let i = 1; i < pages.length; i++) {
 			const beforePath = new URL(page.url()).pathname;
-			// A page may switch its chrome off with `nav: minimal` / `nav: none`, a
-			// page-break param added after this walk was written. Those pages have no
-			// next control to click, so step over them by URL rather than assert one
-			// exists — the rest of the lifecycle is still what this test is for.
 			const layoutClass = await page.evaluate(() => document.body.className);
 			if (/praxity-layout-(minimal|none)\b/.test(layoutClass)) {
 				await page.goto(`${env.url}/${pages[i].slug}.html`, { waitUntil: "domcontentloaded" });
@@ -886,7 +870,6 @@ test.describe("interactions", () => {
 
 		for (let i = pages.length - 1; i >= 1; i--) {
 			const beforePath = new URL(page.url()).pathname;
-			// Same as the forward walk: a chromeless page has no control to click.
 			const layoutClass = await page.evaluate(() => document.body.className);
 			if (/praxity-layout-(minimal|none)\b/.test(layoutClass)) {
 				await page.goto(`${env.url}/${pages[i - 1].slug}.html`, {

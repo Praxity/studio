@@ -4,10 +4,6 @@ import type { TrackingConfig } from "../src/scorm/tracking";
 import { CourseTracker } from "../src/scorm/tracking";
 import { type InteractionRecord, LMS_DESTINATIONS, type SCORMRuntime } from "../src/scorm/types";
 
-// ---------------------------------------------------------------------------
-// Mock SCORMRuntime
-// ---------------------------------------------------------------------------
-
 interface MockRuntime extends SCORMRuntime {
 	initialize: Mock<() => boolean>;
 	terminate: Mock<() => boolean>;
@@ -46,10 +42,6 @@ function createMockRuntime(): MockRuntime {
 		commit: vi.fn().mockReturnValue(true),
 	};
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 describe("CourseTracker", () => {
 	it("neutral self-check feedback does not change the course pass mark or page count", () => {
@@ -100,8 +92,6 @@ describe("CourseTracker", () => {
 		runtime = createMockRuntime();
 	});
 
-	// ---- trackPageVisit ---------------------------------------------------
-
 	describe("trackPageVisit()", () => {
 		it("records the visit and updates the resume bookmark", () => {
 			const config: TrackingConfig = {
@@ -116,8 +106,6 @@ describe("CourseTracker", () => {
 			expect(runtime.setBookmark).toHaveBeenCalledWith("page-1");
 		});
 	});
-
-	// ---- checkCompletion: allPages ----------------------------------------
 
 	describe("checkCompletion() with allPages", () => {
 		it("does not double-count a legacy slug and its durable page ID", () => {
@@ -140,7 +128,6 @@ describe("CourseTracker", () => {
 			};
 			const tracker = new CourseTracker(runtime, config);
 
-			// Simulate 3 visited pages
 			runtime.getVisitedPages.mockReturnValue(["page-1", "page-2", "page-3"]);
 
 			tracker.trackPageVisit("page-3");
@@ -163,8 +150,6 @@ describe("CourseTracker", () => {
 		});
 	});
 
-	// ---- checkCompletion: percentage --------------------------------------
-
 	describe("checkCompletion() with percentage", () => {
 		it("sets 'completed' when visited percentage meets the threshold", () => {
 			const config: TrackingConfig = {
@@ -174,7 +159,6 @@ describe("CourseTracker", () => {
 			};
 			const tracker = new CourseTracker(runtime, config);
 
-			// 8 of 10 = 80%
 			runtime.getVisitedPages.mockReturnValue(["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"]);
 
 			tracker.trackPageVisit("p8");
@@ -190,7 +174,6 @@ describe("CourseTracker", () => {
 			};
 			const tracker = new CourseTracker(runtime, config);
 
-			// 7 of 10 = 70%, below 80%
 			runtime.getVisitedPages.mockReturnValue(["p1", "p2", "p3", "p4", "p5", "p6", "p7"]);
 
 			tracker.trackPageVisit("p7");
@@ -232,7 +215,6 @@ describe("CourseTracker", () => {
 			runtime.getVisitedPages.mockReturnValue(["p1", "p2"]);
 			tracker.checkCompletion();
 			expect(runtime.setCompletion).toHaveBeenLastCalledWith("completed");
-			// Optional surveys need no interaction; returning learners use the saved history.
 			new CourseTracker(runtime, {
 				totalPages: 2,
 				completionMethod: "allPages",
@@ -251,8 +233,6 @@ describe("CourseTracker", () => {
 		});
 	});
 
-	// ---- checkCompletion: quiz --------------------------------------------
-
 	describe("checkCompletion() with quiz", () => {
 		it("sets 'passed' when calculated score >= passMark", () => {
 			const config: TrackingConfig = {
@@ -262,7 +242,6 @@ describe("CourseTracker", () => {
 			};
 			const tracker = new CourseTracker(runtime, config);
 
-			// Interactions with average score = 80
 			const interactions: InteractionRecord[] = [
 				{ id: "q1", response: "A", correct: true, score: 80, timestamp: 1 },
 				{ id: "q2", response: "B", correct: true, score: 80, timestamp: 2 },
@@ -282,7 +261,6 @@ describe("CourseTracker", () => {
 			};
 			const tracker = new CourseTracker(runtime, config);
 
-			// Interactions with average score = 40
 			const interactions: InteractionRecord[] = [
 				{ id: "q1", response: "A", correct: false, score: 30, timestamp: 1 },
 				{ id: "q2", response: "C", correct: false, score: 50, timestamp: 2 },
@@ -294,8 +272,6 @@ describe("CourseTracker", () => {
 			expect(runtime.setCompletion).toHaveBeenCalledWith("failed");
 		});
 	});
-
-	// ---- calculateScore ---------------------------------------------------
 
 	describe("calculateScore()", () => {
 		it("uses the latest scored attempt per question after resume without changing history", () => {
@@ -332,7 +308,6 @@ describe("CourseTracker", () => {
 			];
 			runtime.getInteractions.mockReturnValue(interactions);
 
-			// (100 + 0 + 50) / 3 = 50
 			expect(tracker.calculateScore()).toBe(50);
 		});
 
@@ -357,17 +332,14 @@ describe("CourseTracker", () => {
 
 			const interactions: InteractionRecord[] = [
 				{ id: "q1", response: "A", correct: true, score: 100, timestamp: 1 },
-				{ id: "q2", response: "B", correct: true, timestamp: 2 }, // no score
+				{ id: "q2", response: "B", correct: true, timestamp: 2 },
 				{ id: "q3", response: "C", correct: false, score: 60, timestamp: 3 },
 			];
 			runtime.getInteractions.mockReturnValue(interactions);
 
-			// (100 + 60) / 2 = 80
 			expect(tracker.calculateScore()).toBe(80);
 		});
 	});
-
-	// ---- trackInteraction -------------------------------------------------
 
 	describe("trackInteraction()", () => {
 		it("replaces an incorrect answer's score on retry while retaining both attempts", () => {
@@ -434,17 +406,12 @@ describe("CourseTracker", () => {
 
 			tracker.trackInteraction("q1", "A", true, 90);
 
-			// Score should be set
 			expect(runtime.setScore).toHaveBeenCalledWith(90, 0, 100);
-			// Completion should be evaluated (90 >= 70 => passed)
 			expect(runtime.setCompletion).toHaveBeenCalledWith("passed");
 		});
 	});
 });
 
-// ---- course pass mark ------------------------------------------------------
-
-/** In-memory runtime; `separateSuccess` models SCORM 2004 and xAPI. */
 function memoryRuntime(separateSuccess: boolean) {
 	const state = {
 		visited: [] as string[],
@@ -602,7 +569,6 @@ describe("course pass mark", () => {
 		tracker.trackInteraction("q1", "a", true, 100);
 		tracker.trackInteraction("q2", "b", true, 100);
 		tracker.trackInteraction("q3", "c", false, 0);
-		// 66.666...% is below the 66.67% the manifest declares.
 		expect(state.success).toBe("failed");
 	});
 

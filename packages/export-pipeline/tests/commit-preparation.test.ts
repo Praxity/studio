@@ -310,7 +310,6 @@ describe.each(["scorm12", "scorm2004"] as const)("%s commit preparation", (forma
 		picker.click();
 		expect(win.__praxityBlockState?.get("g")).toMatchObject({ selectedMemberId: "b" });
 		lms.writes.length = 0;
-		// The installed tracker is the injection boundary, without activating evidence.
 		Object.assign(win.__praxityTracker!, {
 			prepareCommit: () => {
 				lms.writes.push(["prepare"]);

@@ -404,7 +404,6 @@ for (const locale of ["en", "fr"] as const) {
 				await expect(summary).not.toHaveAttribute(attribute);
 			await expect(summary).toHaveAccessibleName("");
 			await expect(summary.locator("+ .praxity-ag-review-links a")).toHaveCount(2);
-			// A following frame observes the post-submit save callback, including partial completion.
 			await page.evaluate(
 				() =>
 					new Promise<void>((done) =>

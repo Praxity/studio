@@ -15,7 +15,6 @@ const files = new Map<string, Buffer>();
 
 test.beforeAll(async () => {
 	test.setTimeout(120_000);
-	// This checks Follow while playing, so the clip must outlast inspection of the inadmissible cue.
 	const audio = silentWav(10);
 	let next = 0;
 	const read = readLesson(
@@ -66,7 +65,6 @@ test.beforeAll(async () => {
 				)
 			: originalFetch(input, options);
 	try {
-		// Publication remains refused. This direct compiler fixture exercises the prepared runtime.
 		const artifact = await compileCourse({
 			id: courseId,
 			title: "Practice",
@@ -154,7 +152,6 @@ test("task Follow opens the disclosure without revealing or reading a comparison
 	await expect(activity).toContainText(model);
 	await expect(activity).toContainText("HINT_SECRET");
 	await expect(transport.getByRole("button", { name: "Play", exact: true })).toBeVisible();
-	// A stale timing file must not let Follow search feedback or the learner's answer.
 	await audio.evaluate((node) => {
 		(node as HTMLAudioElement).currentTime = 1.2;
 	});

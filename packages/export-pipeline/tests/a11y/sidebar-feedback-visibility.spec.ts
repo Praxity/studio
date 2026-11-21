@@ -101,7 +101,6 @@ for (const palette of COURSE_PRESET_IDS) {
 					await expect(button).toBeVisible();
 					await page.mouse.move(700, 700);
 					await button.evaluate((node) => (node as HTMLElement).blur());
-					// Full opacity makes the computed icon/background pair the painted pair.
 					await expect(button).toHaveCSS("opacity", "1");
 					expect(await computedContrast(button.locator("svg"))).toBeGreaterThanOrEqual(3);
 					if (forcedColors === "active" && !(await forcedPalette(page))) {
@@ -266,7 +265,6 @@ async function expectControlPainted(action: Locator, ringWidth = 2, outlineOffse
 			bitmap.close();
 			const samples = points.map((pair) =>
 				pair.map(([x, y]) => {
-					// Match the geometry assertion's 1 px sub-pixel tolerance in the raster too.
 					const patch = context.getImageData(Math.floor(x) - 1, Math.floor(y) - 1, 3, 3).data;
 					const colors: string[] = [];
 					for (let index = 0; index < patch.length; index += 4) {
@@ -294,7 +292,6 @@ async function expectControlPainted(action: Locator, ringWidth = 2, outlineOffse
 	for (const [ring, gap] of pixels.samples) {
 		expect(ring, JSON.stringify({ pixels, points })).toContain(pixels.expected);
 		if (ringWidth === 3) {
-			// Forced colours paint the user's Highlight colour, which can be below 3:1.
 			expect(gap.some((color) => color !== pixels.expected)).toBe(true);
 		} else {
 			expect(
@@ -659,7 +656,6 @@ for (const locale of ["en", "fr"] as const) {
 				const submit = card.locator("[data-assessment-submit]");
 				await page.keyboard.press("Tab");
 				await expect(submit).toBeFocused();
-				// Put Check near the lower edge. The revealed result grows beyond that edge.
 				await submit.evaluate((node) => {
 					node.scrollIntoView({ block: "end", behavior: "instant" });
 				});

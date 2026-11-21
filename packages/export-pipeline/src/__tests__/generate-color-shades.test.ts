@@ -23,7 +23,6 @@ describe("generateColorShades", () => {
 
 	it("produces light-to-dark gradient (shade 0 is lightest, shade 9 is darkest)", () => {
 		const shades = generateColorShades("#228be6");
-		// Parse luminance from hex for first and last
 		const luminance = (hex: string) => {
 			const r = Number.parseInt(hex.slice(1, 3), 16);
 			const g = Number.parseInt(hex.slice(3, 5), 16);

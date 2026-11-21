@@ -1,6 +1,5 @@
 import type { ChoiceStateQuestion } from "../../../shared-blocks/src/choice-state-facts";
 
-// Independent version-4 question/signature pair, with a as the correct option.
 export const gateSignature = "s96:3w14l18FIDxpK_Py";
 export const gateQuestion: ChoiceStateQuestion = {
 	selectionMode: "single",

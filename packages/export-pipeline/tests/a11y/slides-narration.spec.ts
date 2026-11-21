@@ -165,7 +165,6 @@ test.describe("slides course published-output accessibility", () => {
 			.locator("#main-content")
 			.evaluate((element) => element.dispatchEvent(new Event("scroll")));
 		const follow = narration.getByRole("button", { name: "Follow narration", exact: true });
-		// Programmatic scroll alone must not pause speech or change the preference.
 		await expect(narration.getByRole("button", { name: "Pause", exact: true })).toBeVisible();
 		await expect(follow).toHaveAttribute("aria-pressed", "true");
 		await page.locator("#main-content").evaluate((element) => {

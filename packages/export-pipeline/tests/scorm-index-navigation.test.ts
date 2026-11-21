@@ -27,11 +27,9 @@ function launch(format: "scorm12" | "scorm2004", frozen: boolean) {
 	let readError: string | undefined;
 	const initialize = () => {
 		log.push(["initialize"]);
-		// Moodle 1.2 replays committed interaction defaults onto a missing row object.
 		if (format === "scorm12" && active && stored["cmi.interactions.0.id"]) {
 			throw new TypeError("Cannot set properties of undefined (setting 'id')");
 		}
-		// Moodle rebuilds cmi even when rejecting an already initialized call.
 		values = { ...defaults };
 		error = active ? (format === "scorm12" ? "101" : "103") : "0";
 		active = true;
@@ -57,7 +55,6 @@ function launch(format: "scorm12" | "scorm2004", frozen: boolean) {
 	const commit = () => {
 		log.push(["commit"]);
 		stored = { ...values };
-		// Moodle 1.2 updates defaults when collecting data; 2004 keeps launch defaults.
 		if (format === "scorm12") defaults = { ...values };
 		return "true";
 	};
@@ -204,7 +201,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 			const beforeIndex = lms.log.length;
 			expect(() => lms.index()).not.toThrow();
 			const indexCalls = lms.log.slice(beforeIndex);
-			// The index redirects to page one before the learner reopens page two.
 			lms.page("one").exit();
 			const two = lms.page("two");
 			expect(indexCalls).toEqual([

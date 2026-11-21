@@ -1,10 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Scorm12Runtime } from "../src/scorm/api/scorm12";
 
-// ---------------------------------------------------------------------------
-// Mock SCORM 1.2 API
-// ---------------------------------------------------------------------------
-
 interface MockSCORM12API {
 	LMSInitialize: ReturnType<typeof vi.fn>;
 	LMSFinish: ReturnType<typeof vi.fn>;
@@ -39,26 +35,17 @@ function createMockAPI(): MockSCORM12API {
 	};
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 const g = globalThis as Record<string, unknown>;
 
-/** Place the mock API on the global window object. */
 function installAPI(api: MockSCORM12API) {
 	const win = { API: api, parent: undefined as unknown, opener: undefined };
-	win.parent = win; // top-level frame
+	win.parent = win;
 	g.window = win;
 }
 
 function cleanupWindow() {
 	g.window = undefined;
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 describe("Scorm12Runtime", () => {
 	let api: MockSCORM12API;
@@ -69,8 +56,6 @@ describe("Scorm12Runtime", () => {
 		runtime = new Scorm12Runtime();
 		cleanupWindow();
 	});
-
-	// -- initialize ----------------------------------------------------------
 
 	describe("initialize", () => {
 		it("returns false when no API is found", () => {
@@ -91,8 +76,6 @@ describe("Scorm12Runtime", () => {
 		});
 	});
 
-	// -- commit --------------------------------------------------------------
-
 	describe("commit", () => {
 		beforeEach(() => {
 			installAPI(api);
@@ -106,8 +89,6 @@ describe("Scorm12Runtime", () => {
 		});
 	});
 
-	// -- terminate -----------------------------------------------------------
-
 	describe("terminate", () => {
 		beforeEach(() => {
 			installAPI(api);
@@ -120,8 +101,6 @@ describe("Scorm12Runtime", () => {
 			expect(runtime.terminate()).toBe(false);
 		});
 	});
-
-	// -- error handling ------------------------------------------------------
 
 	describe("error handling", () => {
 		beforeEach(() => {
@@ -167,8 +146,6 @@ describe("Scorm12Runtime", () => {
 		});
 	});
 
-	// -- page visit tracking -------------------------------------------------
-
 	describe("trackPageVisit / getVisitedPages", () => {
 		beforeEach(() => {
 			installAPI(api);
@@ -178,7 +155,6 @@ describe("Scorm12Runtime", () => {
 		it("adds a page to the visited list stored in suspend_data", () => {
 			runtime.trackPageVisit("page-1");
 
-			// Verify suspend_data was written
 			const setCall = api.LMSSetValue.mock.calls.find((c: string[]) => c[0] === "cmi.suspend_data");
 			expect(setCall).toBeDefined();
 			const payload = JSON.parse(setCall?.[1]);
@@ -188,7 +164,6 @@ describe("Scorm12Runtime", () => {
 		it("does not duplicate a page ID on repeated visits", () => {
 			runtime.trackPageVisit("page-1");
 
-			// Make LMSGetValue return what was previously set
 			const firstSetCall = api.LMSSetValue.mock.calls.find(
 				(c: string[]) => c[0] === "cmi.suspend_data",
 			);
@@ -223,8 +198,6 @@ describe("Scorm12Runtime", () => {
 			expect(runtime.getVisitedPages()).toEqual([]);
 		});
 	});
-
-	// -- interaction tracking ------------------------------------------------
 
 	describe("trackInteraction / getInteractions", () => {
 		it("keeps the base letter when its combining mark exceeds the response cap", () => {
@@ -372,8 +345,6 @@ describe("Scorm12Runtime", () => {
 		});
 	});
 
-	// -- completion ----------------------------------------------------------
-
 	describe("setCompletion / getCompletion", () => {
 		beforeEach(() => {
 			installAPI(api);
@@ -395,8 +366,6 @@ describe("Scorm12Runtime", () => {
 			expect(runtime.getCompletion()).toBe("passed");
 		});
 	});
-
-	// -- score ---------------------------------------------------------------
 
 	describe("setScore / getScore", () => {
 		beforeEach(() => {
@@ -427,8 +396,6 @@ describe("Scorm12Runtime", () => {
 		});
 	});
 
-	// -- bookmark ------------------------------------------------------------
-
 	describe("setBookmark / getBookmark", () => {
 		beforeEach(() => {
 			installAPI(api);
@@ -439,8 +406,6 @@ describe("Scorm12Runtime", () => {
 			expect(runtime.getBookmark()).toBeNull();
 		});
 	});
-
-	// -- suspend data (custom) -----------------------------------------------
 
 	describe("setSuspendData / getSuspendData", () => {
 		beforeEach(() => {

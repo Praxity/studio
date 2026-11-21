@@ -1,10 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { type SCORM2004API, Scorm2004Runtime, type WindowLike } from "../src/scorm/api/scorm2004";
 
-// ---------------------------------------------------------------------------
-// Mock SCORM 2004 API (API_1484_11)
-// ---------------------------------------------------------------------------
-
 function createMockAPI(): SCORM2004API & {
 	Initialize: ReturnType<typeof vi.fn>;
 	Terminate: ReturnType<typeof vi.fn>;
@@ -37,23 +33,15 @@ function createMockAPI(): SCORM2004API & {
 	};
 }
 
-/**
- * Create a fake window object whose `parent` points to itself (top-level).
- * Optionally attach an API_1484_11 mock.
- */
 function createMockWindow(api?: SCORM2004API): WindowLike {
 	const win: WindowLike = {
 		API_1484_11: api,
 		parent: null as unknown as WindowLike,
 		opener: null,
 	};
-	win.parent = win; // top-level: parent === self
+	win.parent = win;
 	return win;
 }
-
-// ---------------------------------------------------------------------------
-// Test suite
-// ---------------------------------------------------------------------------
 
 describe("Scorm2004Runtime", () => {
 	let runtime: Scorm2004Runtime;
@@ -70,9 +58,6 @@ describe("Scorm2004Runtime", () => {
 		vi.restoreAllMocks();
 	});
 
-	// -----------------------------------------------------------------------
-	// 3. initialize() calls Initialize
-	// -----------------------------------------------------------------------
 	describe("initialize()", () => {
 		it("continues a multi-page session that is already initialized", () => {
 			mockAPI.Initialize.mockReturnValue("false");
@@ -98,9 +83,6 @@ describe("Scorm2004Runtime", () => {
 		});
 	});
 
-	// -----------------------------------------------------------------------
-	// 4. getValue() returns correct values
-	// -----------------------------------------------------------------------
 	describe("getValue()", () => {
 		beforeEach(() => {
 			runtime.initialize();
@@ -115,9 +97,6 @@ describe("Scorm2004Runtime", () => {
 		});
 	});
 
-	// -----------------------------------------------------------------------
-	// 8. Error handling when GetLastError returns non-zero
-	// -----------------------------------------------------------------------
 	describe("error handling", () => {
 		beforeEach(() => {
 			runtime.initialize();
@@ -147,9 +126,6 @@ describe("Scorm2004Runtime", () => {
 		});
 	});
 
-	// -----------------------------------------------------------------------
-	// 9. trackPageVisit() stores in suspend_data
-	// -----------------------------------------------------------------------
 	describe("trackPageVisit()", () => {
 		beforeEach(() => {
 			runtime.initialize();
@@ -163,17 +139,14 @@ describe("Scorm2004Runtime", () => {
 				expect.stringContaining("page-1"),
 			);
 
-			// Verify the structure
 			const call = mockAPI.SetValue.mock.calls.find((c: string[]) => c[0] === "cmi.suspend_data");
 			const stored = JSON.parse(call?.[1]);
 			expect(stored.visitedPages).toEqual(["page-1"]);
 		});
 
 		it("does not duplicate page ids", () => {
-			// First visit writes to suspend_data
 			runtime.trackPageVisit("page-1");
 
-			// Make GetValue return what was just written for subsequent reads
 			const firstWrite = mockAPI.SetValue.mock.calls.find(
 				(c: string[]) => c[0] === "cmi.suspend_data",
 			);
@@ -186,7 +159,6 @@ describe("Scorm2004Runtime", () => {
 
 			runtime.trackPageVisit("page-1");
 
-			// Should still only have one entry
 			const lastCall = mockAPI.SetValue.mock.calls
 				.filter((c: string[]) => c[0] === "cmi.suspend_data")
 				.pop();
@@ -195,9 +167,6 @@ describe("Scorm2004Runtime", () => {
 		});
 	});
 
-	// -----------------------------------------------------------------------
-	// 10. getVisitedPages() parses from suspend_data
-	// -----------------------------------------------------------------------
 	describe("getVisitedPages()", () => {
 		beforeEach(() => {
 			runtime.initialize();
@@ -226,9 +195,6 @@ describe("Scorm2004Runtime", () => {
 		});
 	});
 
-	// -----------------------------------------------------------------------
-	// 11. trackInteraction() writes to cmi.interactions.N.* with 2004 fields
-	// -----------------------------------------------------------------------
 	describe("trackInteraction()", () => {
 		it("keeps the base letter when its combining mark exceeds the response cap", () => {
 			const expected = `${"x".repeat(3899)}e`;
@@ -294,7 +260,6 @@ describe("Scorm2004Runtime", () => {
 			);
 			expect(mockAPI.SetValue).toHaveBeenCalledWith(
 				"cmi.interactions.0.timestamp",
-				// RTE 4.1.1.7: a time zone designator requires fractional seconds.
 				expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{1,2}Z$/),
 			);
 		});
@@ -302,7 +267,6 @@ describe("Scorm2004Runtime", () => {
 		it("increments the interaction counter for subsequent calls", () => {
 			runtime.trackInteraction("q1", "a", true);
 
-			// Make suspend_data round-trip work for second call
 			const suspendCall = mockAPI.SetValue.mock.calls.find(
 				(c: string[]) => c[0] === "cmi.suspend_data",
 			);
@@ -443,9 +407,6 @@ describe("Scorm2004Runtime", () => {
 		});
 	});
 
-	// -----------------------------------------------------------------------
-	// 12. setCompletion("passed") sets both completion_status and success_status
-	// -----------------------------------------------------------------------
 	describe("setCompletion()", () => {
 		beforeEach(() => {
 			runtime.initialize();
@@ -477,9 +438,6 @@ describe("Scorm2004Runtime", () => {
 			expect(mockAPI.SetValue).toHaveBeenCalledWith("cmi.success_status", "failed");
 		});
 
-		// -------------------------------------------------------------------
-		// 13. setCompletion("incomplete") only sets completion_status
-		// -------------------------------------------------------------------
 		it('only sets completion_status for "incomplete"', () => {
 			runtime.setCompletion("incomplete");
 			expect(runtime.getCompletion()).toBe("incomplete");
@@ -499,9 +457,6 @@ describe("Scorm2004Runtime", () => {
 		});
 	});
 
-	// -----------------------------------------------------------------------
-	// 14. setScore() sets raw/min/max/scaled scores
-	// -----------------------------------------------------------------------
 	describe("setScore()", () => {
 		beforeEach(() => {
 			runtime.initialize();
@@ -519,14 +474,10 @@ describe("Scorm2004Runtime", () => {
 		it("computes scaled score correctly for non-zero min", () => {
 			runtime.setScore(75, 50, 100);
 
-			// scaled = (75 - 50) / (100 - 50) = 0.5
 			expect(mockAPI.SetValue).toHaveBeenCalledWith("cmi.score.scaled", "0.5");
 		});
 	});
 
-	// -----------------------------------------------------------------------
-	// 15. setBookmark() uses cmi.location
-	// -----------------------------------------------------------------------
 	describe("setBookmark() / getBookmark()", () => {
 		beforeEach(() => {
 			runtime.initialize();
@@ -541,9 +492,6 @@ describe("Scorm2004Runtime", () => {
 		});
 	});
 
-	// -----------------------------------------------------------------------
-	// 16. setSuspendData() and getSuspendData() use cmi.suspend_data
-	// -----------------------------------------------------------------------
 	describe("setSuspendData() / getSuspendData()", () => {
 		beforeEach(() => {
 			runtime.initialize();
@@ -577,9 +525,6 @@ describe("Scorm2004Runtime", () => {
 		});
 	});
 
-	// -----------------------------------------------------------------------
-	// getScore() / getCompletion() / getInteractions()
-	// -----------------------------------------------------------------------
 	describe("getScore()", () => {
 		beforeEach(() => {
 			runtime.initialize();

@@ -16,11 +16,9 @@ test.beforeAll(async () => {
 				: "# One\n\nRead [term]{definition}.\n\n# Two\n\nRead two.\n\n# Three\n\nRead three.\n";
 		const content = splitBlocksIntoPages(readLesson(source).blocks, "Finish");
 		if (mode === "logic") {
-			// The terminal lesson sentinel is a stored-model action, without a G4 name spelling.
 			const rule = content[0].blocks.find((block) => block.type === "logic");
 			if (!rule) throw new Error("Missing lifecycle rule");
 			rule.data.actions = [{ type: "jumpToPage", targets: ["__end_lesson__"] }];
-			// Prose ends variable parameters before the rule. Fail before export if it is swallowed.
 			expect(content[0].blocks.find((block) => block.type === "logic")?.data.actions).toEqual([
 				{ type: "jumpToPage", targets: ["__end_lesson__"] },
 			]);
@@ -110,8 +108,6 @@ async function reloadDocument(frame: Frame): Promise<void> {
 		document.documentElement.setAttribute("data-test-reloading", "");
 		location.reload();
 	});
-	// Guided's replaceState also emits framenavigated. Only a replacement document
-	// loses this marker; the outgoing document can already have reached load.
 	await frame.locator("html:not([data-test-reloading])").waitFor({ state: "attached" });
 	await frame.waitForLoadState("load");
 }
@@ -304,7 +300,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 				);
 				await frame.evaluate((destination) => {
 					const form = document.createElement("form");
-					// GET discards an action query, so use a successful form control.
 					const url = new URL(destination, location.href);
 					form.action = url.pathname;
 					for (const [name, value] of url.searchParams) {
@@ -440,8 +435,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 				await frame.waitForURL("**/away.html");
 				await page.clock.setFixedTime(start + 600_000);
 				await page.getByRole("button", { name: "Launch course" }).click();
-				// Pages resumes Two; Guided has visited every slide and starts again at One.
-				// Wait past any entry/resume redirects before advancing the new launch clock.
 				await frame.waitForURL(
 					(url) => url.pathname === (mode === "pages" ? "/course/two.html" : "/course/one.html"),
 					{ waitUntil: "load" },
@@ -505,7 +498,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 				await frame.waitForURL("**/away.html");
 				expect((await snapshot(page)).state).toBe("active");
 				expect(count(await snapshot(page), "terminate")).toBe(0);
-				// Return to a content URL without pretending the LMS started a new launch.
 				await page.evaluate((url) => {
 					const frame = document.querySelector("iframe");
 					if (frame) frame.src = url;

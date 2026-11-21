@@ -70,7 +70,6 @@ async function open(
 	reviewPageLayout(dom);
 	const { window: win } = dom;
 	Object.defineProperty(win, "TextEncoder", { value: TextEncoder });
-	// JSDOM has no SubtleCrypto. Keep native SHA-256 behind that platform seam.
 	Object.defineProperty(win.crypto, "subtle", {
 		configurable: true,
 		value: {
@@ -3490,7 +3489,6 @@ const collisionAnchor: ReviewAnchor = {
 	context: { pageTitle: "Page title", targetLabel: null },
 };
 const refusedId = "22222222-2222-4222-8222-222222222222";
-// Golden SHA-256 UUID chain for [candidate, "Kept text", collisionAnchor].
 const collisionIds = [
 	"9f84309a-6972-85c8-9225-c7b56aaa0991",
 	"4ea7b754-77eb-8d10-beba-24a823d94bba",

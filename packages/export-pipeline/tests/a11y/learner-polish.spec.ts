@@ -147,7 +147,6 @@ for (const width of [390, 768, 1280]) {
 			await member.scrollIntoViewIfNeeded();
 			await expect(member).not.toHaveAttribute("data-hydrated");
 		}
-		// The explicit group width overrides the member's authored full width.
 		expect(
 			JSON.parse((await members[1].getAttribute("data-block-json")) ?? "{}").data.layoutMode,
 		).toBe("full");
@@ -317,7 +316,6 @@ function contrast(first: Rgb, second: Rgb): number {
 	return (light + 0.05) / (dark + 0.05);
 }
 
-/** OKLab distance; about 0.02 is the smallest step people reliably see. */
 function deltaE(first: Rgb, second: Rgb): number {
 	const lab = (rgb: Rgb) => {
 		const [r, g, b] = rgb.map(linear);
@@ -339,7 +337,6 @@ function distance(first: Rgb, second: Rgb): number {
 	return Math.hypot(first[0] - second[0], first[1] - second[1], first[2] - second[2]);
 }
 
-/** Read painted pixels, so the checks see what the learner sees after the cascade. */
 async function capture(page: Page, clip: { x: number; y: number; width: number; height: number }) {
 	const png = await page.screenshot({
 		clip,
@@ -376,7 +373,6 @@ async function capture(page: Page, clip: { x: number; y: number; width: number; 
 		Math.min(height - 1, Math.max(0, Math.floor(((y - clip.y) * height) / clip.height)));
 	return {
 		at: (x: number, y: number) => pixel(column(x), row(y)),
-		/** Pixels on one row between two page x positions, inclusive. */
 		span: (fromX: number, toX: number, y: number) =>
 			Array.from({ length: column(toX) - column(fromX) + 1 }, (_, index) =>
 				pixel(column(fromX) + index, row(y)),
@@ -477,8 +473,6 @@ for (const { route, locale } of LIGHT_POLISH) {
 		});
 		expect(await painted(), "hidden at the end of the page").toBe(false);
 
-		// Playwright's WebKit Tab skips links (see WEBKIT_TAB_ORDER_SKIP), so WebKit checks the
-		// focused link's painting and activation; the other engines also prove Tab reaches it.
 		const sequentialTab = browserName !== "webkit";
 		if (sequentialTab) {
 			await page.locator(".praxity-nav-next").first().focus();
@@ -514,7 +508,6 @@ for (const { route, locale } of LIGHT_POLISH) {
 		await page.setViewportSize({ width: 390, height: 844 });
 		await openLearnerPolish(page, route);
 		await expect(page.locator("html")).toHaveAttribute("data-praxity-text-size", "large");
-		// The stem re-renders when its lazy island hydrates; measure the settled text.
 		const island = page.locator('[data-island="assessment"]').first();
 		await island.scrollIntoViewIfNeeded();
 		await expect(island).toHaveAttribute("data-hydrated", "");
@@ -531,7 +524,6 @@ for (const { route, locale } of LIGHT_POLISH) {
 				range.selectNodeContents(element);
 				const fragments = [];
 				if (isStem) {
-					// Word ranges avoid counting inline element boxes as full lines.
 					const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
 					let word = 0;
 					for (let node = walker.nextNode(); node; node = walker.nextNode()) {
@@ -607,7 +599,6 @@ for (const { route, locale } of LIGHT_POLISH) {
 				for (const width of widths.slice(0, -1)) {
 					expect(
 						width / (layout.right - layout.left),
-						// Balance split two-line stems into halves; pretty may shorten a line slightly to avoid an orphan.
 						"prose lines fill at least 60% of the stem",
 					).toBeGreaterThanOrEqual(0.6);
 				}
@@ -621,13 +612,8 @@ for (const { route, locale } of LIGHT_POLISH) {
 	});
 }
 
-/** Leaf legend parts: each swatch and each name, whatever elements draw them. */
 const LEGEND_PARTS = ".praxity-chart-legend :is(rect, text, tspan):not(:has(tspan))";
 
-/**
- * The visible chart's legend parts in its own user units. Text is measured per character because
- * WebKit reports a tspan's bounding box as its whole text run.
- */
 function legendLayout(root: Element, selector: string) {
 	const svg = [...root.querySelectorAll<SVGSVGElement>("svg.praxity-chart-visual")].find(
 		(visual) => getComputedStyle(visual).display !== "none",
@@ -646,7 +632,6 @@ function legendLayout(root: Element, selector: string) {
 }
 
 test.describe("learner polish surfaces", () => {
-	// Two device pixels per CSS pixel keep a 1px edge as a whole painted pixel.
 	test.use({ deviceScaleFactor: 2 });
 
 	for (const variant of LEARNER_POLISH_VARIANTS) {
@@ -664,14 +649,12 @@ test.describe("learner polish surfaces", () => {
 				await expect(note).toHaveAttribute("data-style", "shaded");
 				const rect = await box(note);
 				const shot = await capture(page, rect);
-				// The bottom padding holds no text: it shows the fill itself.
 				const fill = shot.at(rect.x + rect.width / 2, rect.y + rect.height - 5);
 				expect(
 					deltaE(fill, shot.at(rect.x + rect.width - 8, rect.y + rect.height / 2)),
 				).toBeLessThan(0.01);
 				fills[tone] = fill;
 				const label = note.locator(".praxity-note-label");
-				// Ordinary notes share the spoken Note label and neutral paper.
 				await expect(label).toHaveText(POLISH_COPY[variant.locale].labels[tone]);
 				for (const text of [label, note.locator(".praxity-note-body p").first()])
 					expect(contrast(await paintedColor(text, "color"), fill)).toBeGreaterThanOrEqual(4.5);
@@ -734,7 +717,6 @@ test.describe("learner polish surfaces", () => {
 			width: barBox.width + 8,
 			height: 4,
 		});
-		// The second series is the last bar in each group, so its right edge meets the plot.
 		const right = barBox.x + barBox.width;
 		const background = barShot.at(right + 3, barMiddle);
 		const edge = darkest(barShot.span(right - 2, right + 2, barMiddle));
@@ -765,7 +747,6 @@ test.describe("learner polish surfaces", () => {
 					height: Math.min(rect.height - 6, 40),
 				});
 				const background = shot.at(rect.x + rect.width - 12, rect.y + 6);
-				// Text is the pixel furthest from the field: darker on light fields, lighter on dark.
 				const ink = shot
 					.all()
 					.reduce((best, pixel) =>
@@ -795,7 +776,6 @@ const LEGEND_CASES = [
 	{ name: "a second row", series: ["North", "South", "International operations"] },
 ] as const;
 
-// Supported fonts with very different advance widths; Arial is the system baseline.
 const LEGEND_FONTS = ["Source Sans 3", "Source Serif 4", "Atkinson Hyperlegible Next"] as const;
 
 function legendFontFaces(): string {
@@ -824,7 +804,6 @@ for (const width of [720, 440, 280] as const) {
 				String,
 			),
 		);
-		// The shared stylesheet sets the chart's real text size.
 		await page.setContent(
 			`<style>${legendFontFaces()}${readFileSync(
 				resolve(import.meta.dirname, "../../../shared-blocks/src/blocks/shared-blocks.css"),
@@ -856,7 +835,6 @@ for (const width of [720, 440, 280] as const) {
 		legends.forEach((legend, index) => {
 			const { name, series } = LEGEND_CASES[index % LEGEND_CASES.length];
 			const label = `${name} in ${legend.font} at ${width}`;
-			// A swatch and a name for every series.
 			expect(legend.parts, label).toHaveLength(series.length * 2);
 			const rows = new Map<number, typeof legend.parts>();
 			for (const part of legend.parts) {

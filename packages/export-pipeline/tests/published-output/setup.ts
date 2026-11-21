@@ -4,10 +4,6 @@ import path from "node:path";
 import AdmZip from "adm-zip";
 import { JSDOM } from "jsdom";
 
-/**
- * Deterministic path for the pre-built fixture zip.
- * Written by vitest.global-setup.ts, read by each worker.
- */
 export const PUBLISHED_FIXTURE_PATH = path.join(tmpdir(), "praxity-vitest-published-fixture.zip");
 
 export const AUTHORING_CATALOG_PATH = path.join(tmpdir(), "praxity-vitest-authoring-catalog.zip");
@@ -43,11 +39,6 @@ export function stylesheetEntry(zip: AdmZip, lite = false): string {
 
 const cached = new Map<string, BuildResult>();
 
-/**
- * Load the pre-built comprehensive grammar fixture from disk.
- * The globalSetup writes the zip once; each Vitest worker reads it.
- * Falls back to building in-process if the cached file is missing.
- */
 export async function getBuild(catalog = false): Promise<BuildResult> {
 	const fixturePath = catalog ? AUTHORING_CATALOG_PATH : PUBLISHED_FIXTURE_PATH;
 	const previous = cached.get(fixturePath);
@@ -57,7 +48,6 @@ export async function getBuild(catalog = false): Promise<BuildResult> {
 	if (existsSync(fixturePath)) {
 		zip = new AdmZip(readFileSync(fixturePath));
 	} else {
-		// Fallback: build in-process (slower, but works if globalSetup didn't run)
 		const { loadGrammarFixture, loadAuthoringCatalogFixture } = await import(
 			"../fixtures/load-grammar-fixture"
 		);
@@ -125,12 +115,10 @@ export async function getBuild(catalog = false): Promise<BuildResult> {
 	return result;
 }
 
-/** Find all blocks of a given type across all pages. */
 export function blocksByType(blocks: ParsedBlock[], type: string): ParsedBlock[] {
 	return blocks.filter((b) => b.type === type);
 }
 
-/** Find the first block of a given type. */
 export function firstBlock(blocks: ParsedBlock[], type: string): ParsedBlock | undefined {
 	return blocks.find((b) => b.type === type);
 }

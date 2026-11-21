@@ -212,7 +212,6 @@ for (const format of ["html", "scorm12", "scorm2004", "file"] as const) {
 			(window as unknown as { releaseRound9(success: boolean): void }).releaseRound9(true),
 		);
 		await ready(page);
-		// A failed remote prerequisite may have routed the deck back to its owning module.
 		await open(page, "deck", format, "later");
 		await page.waitForFunction(
 			() => (window as unknown as { round9Held: unknown[] }).round9Held.length === 1,

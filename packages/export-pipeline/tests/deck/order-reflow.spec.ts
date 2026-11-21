@@ -2,7 +2,6 @@ import { expect, test } from "@playwright/test";
 import { readLesson } from "@praxity/grammar";
 import { publishedCourseServer } from "../fixtures/published-course-server";
 
-// The ordering page from the break-ui worst-case course.
 const source = `# order : نور الهدى عبد الرحمن
 
 ::: order Paramètres de confidentialité et de sécurité pour les équipes internationales de Platform Infrastructure {scored attempts=1284 points=1000000 level=3}

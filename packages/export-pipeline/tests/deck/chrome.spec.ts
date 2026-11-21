@@ -15,7 +15,6 @@ let server: Server;
 let base: string;
 const entries: Record<string, string> = {};
 const files = new Map<string, Buffer>();
-// The longest destination title in the leadership sample course.
 const longestDestination = "Distinguer les faits, opinions et interprétations";
 
 test.beforeAll(async () => {

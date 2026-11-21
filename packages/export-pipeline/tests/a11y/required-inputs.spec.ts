@@ -42,13 +42,11 @@ test("required choices stay natively valid before and after submission", async (
 	}
 	const first = questions.first();
 	await expect(first.getByRole("radiogroup")).toHaveAttribute("aria-required", "true");
-	// Keep the engine's accessibility representation as controller evidence.
 	await test.info().attach("untouched-required-choice", {
 		body: await first.ariaSnapshot(),
 		contentType: "text/plain",
 	});
 	const submit = page.locator(".praxity-ag-submit-btn");
-	// Native keyboard selection and the existing matching combobox remain usable.
 	await first.getByRole("radio", { name: "Correct answer", exact: true }).focus();
 	await page.keyboard.press("Space");
 	const matching = questions.nth(1);

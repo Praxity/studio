@@ -129,7 +129,6 @@ describe("compiled block state privacy policy", () => {
 				};
 				const publish = () => {
 					prepareHtmlCourse(cfg);
-					// This is the aggregate the group runtime emits after reading member correctness.
 					dom.window.document.dispatchEvent(
 						new dom.window.CustomEvent("praxity:assessment-group-complete", {
 							detail: { groupId: "group", score: 100, passed: true, correct: true },
@@ -463,7 +462,6 @@ describe("private choice policy", () => {
 	});
 });
 
-// Publication remains refused. Exercise the real host/transport owners directly.
 describe.each(["choice", "write-distractors"] as const)(
 	"private %s host transport proof",
 	(pattern) => {
@@ -669,7 +667,6 @@ describe.each(["choice", "write-distractors"] as const)(
 													storage,
 												)
 											: new LocalStorageRuntime(storage, "ordinary-course");
-							// Hold identity constant independently of the transport's opaque attempt token.
 							runtime.getLearnerIdentity = () =>
 								identified
 									? {
@@ -702,7 +699,6 @@ describe.each(["choice", "write-distractors"] as const)(
 							const setPolicy =
 								runtime.setBlockStatePolicy && vi.spyOn(runtime, "setBlockStatePolicy");
 							const events: string[] = [];
-							// The capture guard must suppress even consumers registered before the host.
 							dom.window.document.addEventListener("praxity:assessment-response", (event) =>
 								events.push(JSON.stringify((event as CustomEvent).detail)),
 							);
@@ -729,7 +725,6 @@ describe.each(["choice", "write-distractors"] as const)(
 							if (!state) throw new Error("Missing block state provider");
 							for (const id of ["PRIVATE-ONE", "PRIVATE-TWO"]) {
 								if (attempt === "attempt-2" && identified) expect(state.get(id)).toBeUndefined();
-								// select, submit and retry retain attempts and review history locally.
 								for (const value of stages) {
 									const beforeSave = outgoing.length;
 									const beforeSaveAdapter = adapterWrites.length;
@@ -753,8 +748,6 @@ describe.each(["choice", "write-distractors"] as const)(
 											},
 										}),
 									);
-									// Standalone has no outgoing adapter seam; its response guard is
-									// exercised above. Reporting transports also defend direct calls.
 									directProbe = true;
 									if (format !== "standalone")
 										runtime.trackInteraction(id, "PRIVATE-RESULT", false, 913);
@@ -772,10 +765,10 @@ describe.each(["choice", "write-distractors"] as const)(
 									format,
 								);
 								expect(restored.get(id)).toEqual(stages[stages.length - 1]);
-								expect(outgoing).toHaveLength(before); // passive restore never writes/reports
+								expect(outgoing).toHaveLength(before);
 								expect(deviceWrites).toHaveBeenCalledTimes(beforeDevice);
 								expect(adapterWrites).toHaveLength(beforeAdapter);
-								state.set(id, empty); // existing reset owner clears the envelope
+								state.set(id, empty);
 								expect(state.get(id)).toEqual(empty);
 							}
 							directProbe = true;
@@ -848,7 +841,6 @@ describe.each(["choice", "write-distractors"] as const)(
 									[`cmi.interactions.6.${format === "scorm12" ? "student_response" : "learner_response"}`]:
 										"ordinary-answer",
 								});
-								// The row must be at the accepted index, not merely in suspend history.
 								expect([...data].filter(([key]) => /^cmi.interactions.\d+\.id$/.test(key))).toEqual(
 									[["cmi.interactions.6.id", "public-choice"]],
 								);
@@ -1075,8 +1067,6 @@ it.each([false, true])(
 	},
 );
 
-// Pre-publication proof: real renderer/enhancer, course host and reporting adapters.
-// Never weaken publication admission to exercise a learner activity.
 const highlightHostFormats = {
 	scorm12: true,
 	scorm2004: true,
@@ -1084,7 +1074,6 @@ const highlightHostFormats = {
 	standalone: true,
 	"electron-preview": true,
 } satisfies Record<CourseHostFormat, true>;
-// A future host, including cmi5, must add a privacy proof before this typecheck passes.
 for (const format of Object.keys(highlightHostFormats) as CourseHostFormat[]) {
 	for (const identified of [false, true]) {
 		it.each([false, true])(
@@ -1308,7 +1297,7 @@ for (const format of Object.keys(highlightHostFormats) as CourseHostFormat[]) {
 							const screen = root.outerHTML;
 							if (runtime instanceof LocalStorageRuntime) runtime.resetState();
 							else runtime.setSuspendData("{}");
-							expect(root.outerHTML).toBe(screen); // A provider reset cannot clear this mounted attempt.
+							expect(root.outerHTML).toBe(screen);
 							instance.destroy();
 							const fresh = enhanceHighlight(root);
 							mounted.push(fresh);
@@ -1316,7 +1305,6 @@ for (const format of Object.keys(highlightHostFormats) as CourseHostFormat[]) {
 								true,
 							);
 						}
-						// Independent positive controls at the existing host/provider interfaces.
 						provider.set("public-choice", { answer: ["ordinary-answer"], checked: true });
 						const variables = new VariableStore(
 							[{ name: "publicFlag", dataType: "boolean", defaultValue: false }],

@@ -76,7 +76,6 @@ it.each(
 				}),
 			},
 		});
-		// Exercise the real classic loader; only its external script transport is supplied here.
 		const scripts = new dom.window.MutationObserver((records) => {
 			for (const record of records)
 				for (const node of record.addedNodes)
@@ -132,7 +131,6 @@ it.each(
 					destination: host === "file" || host === "html" ? "device" : "lms",
 				};
 			};
-			// Save-status projection may reenter; its receipt must follow the actual state write.
 			const unsubscribe = active.subscribe((ticket) => {
 				if (writes.length) ticket.call(() => provider.getSaveResult?.("check"));
 			});

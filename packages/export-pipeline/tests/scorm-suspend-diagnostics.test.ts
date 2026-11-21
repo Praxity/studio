@@ -82,7 +82,7 @@ it.each(["1.2", "2004"] as const)(
 	(version) => {
 		const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
 		const { runtime, get } = fixture(version, "");
-		runtime.getBlockSaveResult("q"); // A read before Initialize must not admit an unavailable LMS.
+		runtime.getBlockSaveResult("q");
 		expect(runtime.initialize()).toBe(true);
 		for (let i = 0; i < 3; i++) {
 			runtime.getBlockSaveResult("q");

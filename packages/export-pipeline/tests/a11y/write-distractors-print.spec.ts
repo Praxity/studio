@@ -21,7 +21,6 @@ test.beforeAll(async ({ browser }) => {
 		process.env.PRAXITY_DISTRACTORS_PRINT_HARNESS ??
 		(await mkdtemp(join(tmpdir(), "distractor-print-")));
 	if (owned) await writeDistractorsHarness(directory);
-	// A second prompt stays unrevealed while the first activity progresses.
 	for (const lang of ["en", "fr"]) {
 		const file = join(directory, `${lang}-light.html`);
 		let html = await readFile(file, "utf8");
@@ -60,7 +59,6 @@ test.beforeAll(async ({ browser }) => {
 	});
 	await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
 	url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-	// Warm the actual lazy presentation and fonts outside each case's timing budget.
 	const warm = await browser.newPage();
 	await warm.goto(`${url}/en-light.html`);
 	await warm.locator("#wd-answer").fill("A draft");
@@ -86,8 +84,6 @@ const projection = (page: Page) => first(page).locator(".praxity-distractor-prin
 async function settleAnnouncements(page: Page) {
 	await page.evaluate(async () => {
 		await document.fonts.ready;
-		// Live regions clear synchronously and deliver on the next animation frame.
-		// Drain pending announcements for both activities before taking the print baseline.
 		await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 	});
 }
@@ -96,7 +92,6 @@ async function snapshot(page: Page) {
 		const fixture = window as unknown as Fixture;
 		const copy = document.querySelector("main")?.cloneNode(true) as HTMLElement;
 		copy.querySelectorAll(".praxity-distractor-print").forEach((node) => node.remove());
-		// Playwright's caret suppression leaves empty style attributes after a capture.
 		copy.querySelectorAll('[style=""]').forEach((node) => node.removeAttribute("style"));
 		return {
 			markup: copy.innerHTML,
@@ -147,7 +142,6 @@ for (const lang of ["en", "fr"] as const) {
 			});
 		});
 		test.beforeEach(async () => {
-			// Media emulation belongs to the page and survives navigation between fixtures.
 			await page.emulateMedia({ media: "screen" });
 		});
 		test.afterAll(async () => {
@@ -155,7 +149,6 @@ for (const lang of ["en", "fr"] as const) {
 		});
 		for (const stage of ["unrevealed", "revealed", "builder", "compared", "recovery"] as const) {
 			test.describe(stage, () => {
-				// Preparing a stage is fixture setup; the timed case exercises print only.
 				test.beforeAll(async () => {
 					await page.goto(`${url}/${lang}-light.html${stage === "recovery" ? "?pending" : ""}`);
 					await expect(first(page).locator("[data-distractor-destination]")).toBeVisible();
@@ -228,7 +221,6 @@ for (const lang of ["en", "fr"] as const) {
 							lang === "en"
 								? "Correct answer: Throughout the design process."
 								: "Bonne réponse\u202f: Tout au long du processus de conception.";
-						// Preserve the actual U+202F code point; locator text matching normalizes whitespace.
 						expect(
 							await first(page)
 								.locator("[data-distractor-preview] > p:nth-child(3)")
@@ -299,7 +291,6 @@ for (const lang of ["en", "fr"] as const) {
 					await endPrint(page);
 					expect(await snapshot(page)).toEqual(before);
 					if (browserName === "chromium") {
-						// A forced screen media override also applies to printToPDF; use native print media.
 						await page.emulateMedia({ media: null });
 						const pdf = await page.pdf({
 							format: "A4",

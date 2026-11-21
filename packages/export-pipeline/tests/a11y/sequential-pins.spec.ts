@@ -107,7 +107,6 @@ for (const locale of ["en", "fr"] as const) {
 		await expect(page.getByRole("button", { name: "After graphic" })).toBeFocused();
 		await page.keyboard.press(`Shift+${tab}`);
 		await expect(pins.nth(0)).toBeFocused();
-		// A pointer event at the disabled pin and an AT-style synthetic activation stay blocked.
 		const future = await pins.nth(2).boundingBox();
 		if (!future) throw new Error("Missing future pin geometry");
 		await page.mouse.click(future.x + future.width / 2, future.y + future.height / 2);

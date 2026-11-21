@@ -436,7 +436,6 @@ for (const width of [1280, 768, 390]) {
 for (const width of [1280, 768, 390]) {
 	test(`frame controls have 44px targets and labelled Tools at ${width}px`, async ({ page }) => {
 		await open(page, width);
-		// Assertion 8 applies to frame controls independently of block activities.
 		for (const control of await page.locator(".deck-panel-heading button").all()) {
 			if (!(await control.isVisible())) continue;
 			const box = await control.boundingBox();
@@ -464,7 +463,6 @@ for (const width of [1280, 768, 390]) {
 			expect
 				.soft(box.width, (await control.getAttribute("aria-label")) ?? "control width")
 				.toBeGreaterThanOrEqual(44);
-			// Firefox's protocol quads round fractional origins; DOMRect preserves the target height.
 			const height = await control.evaluate((element) => element.getBoundingClientRect().height);
 			expect.soft(height, "control height").toBeGreaterThanOrEqual(44);
 		}

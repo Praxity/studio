@@ -252,7 +252,6 @@ describe("card island", () => {
 		document.body.innerHTML = renderBlockHtml(block, { enabledIslands: new Set(["card"]) });
 		const next = document.querySelector<HTMLButtonElement>("[data-card-next]");
 		assert(next);
-		// Model focus retained from a server facade before the enhancer resolves its boundary.
 		next.disabled = false;
 		next.focus();
 		const cleanup = initCardEnhancements();

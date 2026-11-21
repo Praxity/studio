@@ -1,6 +1,5 @@
 import { expect, type Frame, type Locator, type Page } from "@playwright/test";
 
-/** Enter through Tab, then use the browser's native radio navigation. */
 export async function arrowRadio(page: Page, first: Locator, next: Locator) {
 	await first.focus();
 	await page.keyboard.press("Shift+Tab");
@@ -83,12 +82,10 @@ export async function expectFocusRing(
 	expect(painted.color).not.toBe("rgba(0, 0, 0, 0)");
 	expect(painted.shadow).toBe("none");
 	if (painted.forcedColors && painted.supportsForcedColorAdjust) {
-		// A user-selected forced palette controls contrast; honor its system colors.
 		expect(painted.forcedColorAdjust).toBe("auto");
 		expect(painted.color).toBe(painted.resolvedSystemColor);
 		expect(painted.contrast).toBeGreaterThan(1);
 	} else {
-		// WebKit emulates the media query without replacing authored colors.
 		expect(painted.contrast).toBeGreaterThanOrEqual(3);
 	}
 	if (inset) expect(painted.offset).toBeLessThanOrEqual(-width);
@@ -103,7 +100,6 @@ export async function expectNoFocusRing(target: Locator) {
 	expect(painted.shadow).toBe("none");
 }
 
-/** Check the actual ring rectangle against every clipping ancestor. */
 export async function expectUnclippedRing(target: Locator) {
 	await expect
 		.poll(() =>
@@ -133,7 +129,6 @@ export async function expectUnclippedRing(target: Locator) {
 		.toEqual([]);
 }
 
-/** Match the shipped predicate without importing the production rule into its oracle. */
 export async function forcedPalette(page: Page | Frame): Promise<boolean> {
 	return page.evaluate(
 		() =>
@@ -141,7 +136,6 @@ export async function forcedPalette(page: Page | Frame): Promise<boolean> {
 	);
 }
 
-/** Unsupported emulation must paint the same authored theme, including pseudo-elements. */
 export async function expectForcedEmulationInert(
 	page: Page,
 	targets: (Locator | { locator: Locator; pseudo: string })[],

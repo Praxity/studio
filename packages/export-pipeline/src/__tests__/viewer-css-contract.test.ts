@@ -51,8 +51,6 @@ function ungatedForcedColors(css: string, filename = "probe.css"): string[] {
 		filename,
 		code: Buffer.from(css),
 		errorRecovery: false,
-		// Capture only: returning the AST round-trips unsupported at-rule shapes.
-		// Omit targets so nesting and grouping-rule children remain intact.
 		visitor: {
 			StyleSheet(value) {
 				sheet = value;
@@ -72,7 +70,6 @@ function ungatedForcedColors(css: string, filename = "probe.css"): string[] {
 				rules?: Rule[];
 				declarations?: unknown;
 			};
-			// Deliberately conservative: even inactive-only feature references need a gate.
 			if (!gated && /forced-colors/i.test(JSON.stringify(prelude))) violations.push(rule.type);
 			visit(
 				children ?? [],
@@ -133,7 +130,6 @@ describe("viewer stylesheet ownership", () => {
 			for (const source of Object.keys(result.metafile.inputs))
 				if (source.endsWith(".css")) sources.add(path.resolve(source));
 		}
-		// These copied/independent assets must remain in the owned build inventory.
 		expect([...sources].some((source) => source.endsWith("review-comments.css"))).toBe(true);
 		expect(
 			[...sources].some((source) =>
@@ -296,7 +292,6 @@ describe("viewer stylesheet ownership", () => {
 			target: "es2020",
 			legalComments: "none",
 		});
-		// A returning selector needs a current emitter and its own output contract first.
 		expect(result.outputFiles[0].text).not.toMatch(
 			/\.praxity-video-(?:facade(?:-play)?|gated-(?:content|link|overlay|play|text)|poster)(?![\w-])/,
 		);
@@ -525,8 +520,6 @@ describe("viewer stylesheet ownership", () => {
 		expect(blocksCss.match(/\.praxity-assessment-select-option\s*\{([^}]*)\}/s)?.[1]).toContain(
 			"white-space: normal",
 		);
-		// The matching connector is gone: adjacency in the grid is the pairing,
-		// and a 24px dash spanning nothing read as an artifact.
 		expect(blocksCss).not.toContain("praxity-matching-connector");
 	});
 

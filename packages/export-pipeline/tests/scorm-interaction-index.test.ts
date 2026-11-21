@@ -27,7 +27,6 @@ describe.each(["1.2", "2004"] as const)("SCORM %s interaction indices", (version
 				const row = /^cmi\.interactions\.(\d+)\.(.+)$/.exec(key);
 				if (row) {
 					const index = Number(row[1]);
-					// The fake requires contiguous rows and IDs before fields; Moodle's latter rule is 2004 only.
 					if (index > count || (row[2] !== "id" && !values.has(`cmi.interactions.${index}.id`))) {
 						error = version === "2004" ? "351" : "101";
 						return "false";

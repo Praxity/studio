@@ -1,10 +1,8 @@
 import { test as base } from "@playwright/test";
 
-/** Silence media on the shared desktop while preserving the playback clock. */
 export const test = base.extend<{ muteMedia: undefined }>({
 	muteMedia: [
 		async ({ context }, use) => {
-			// Third-party embeds in the catalog are examples, not a dependency of local checks.
 			await context.route("https://**", (route) => route.abort());
 			await context.addInitScript(() => {
 				document.addEventListener(

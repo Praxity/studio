@@ -23,8 +23,6 @@ const button = (source: string): PraxityBlock => {
 };
 
 function fixtureBlocks(): PraxityBlock[] {
-	// G4 inline Markdown has no new-tab option. Rich model fields retain their
-	// existing sanitizer policy; generated button targets exercise each container.
 	return [
 		text("prose"),
 		{ id: "heading", type: "heading", data: { level: 2, content: richLink("heading") } },

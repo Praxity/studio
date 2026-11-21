@@ -157,8 +157,6 @@ for (const width of [320, 1280]) {
 				baseSize: Number.parseFloat(getComputedStyle(node).fontSize),
 			};
 		});
-		// Gecko's DOMRects can report an 8px gap as 7.999969482421875px.
-		// Keep the 8px minimum exact and verify that layout preserves that margin.
 		expect(caption.margin).toBeGreaterThanOrEqual(8);
 		expect(caption.gap).toBeCloseTo(caption.margin, 4);
 		expect(caption.align).toBe("start");

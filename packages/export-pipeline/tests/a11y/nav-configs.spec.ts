@@ -23,14 +23,6 @@ interface NavPageConfig {
 	pageSlugs: string[];
 }
 
-/**
- * Derived from the fixture's own toggles, not restated here.
- *
- * The hand-written table this replaces claimed minimal shows prev/next and that
- * sidebar shows an outline, while the fixture turned the first off and the viewer
- * renders the second under a different class after hydration — four specs failed
- * for two years' worth of drift rather than any product defect.
- */
 const NAV_VARIANTS: NavVariantExpectation[] = NAV_ARCHETYPES.filter(
 	(archetype): archetype is Exclude<NavArchetype, "custom"> => archetype !== "custom",
 ).map((archetype) => {
@@ -151,7 +143,6 @@ test.describe("nav config variants", () => {
 		expect(baseUrl).toBeTruthy();
 		await page.goto(`${baseUrl}/page-2.html`);
 		await waitForHydration(page);
-		// The current-page link stays put, so its pointer focus can be inspected.
 		const link = page.locator('[data-native-outline] a[aria-current="page"]');
 		await link.click();
 		await expect(link).toHaveCSS("outline-style", "none");
@@ -174,8 +165,6 @@ test.describe("nav config variants", () => {
 
 			await expect(page.locator("body")).toHaveClass(new RegExp(`\\b${variant.layoutClass}\\b`));
 
-			// Count the SSR fallback, persistent sidebar, or drawer toggle that replaces it.
-			// viewer-entry removes the fallback the moment it hydrates.
 			const outlineVisibleCount = await visibleCount(
 				page,
 				".praxity-outline-fallback, .praxity-course-menu, .praxity-hamburger, .praxity-native-menu-toggle",
@@ -493,7 +482,6 @@ test.describe("nav config variants", () => {
 
 		expect(geometry.outlineRight).toBeCloseTo(geometry.viewportRight, 0);
 		expect(geometry.collapseInset).toBe("12px");
-		// The one-pixel inline-end sidebar border sits outside the authored inset.
 		expect(geometry.collapseEdge).toBeCloseTo(13, 0);
 		expect(Number.parseFloat(geometry.activeBorder)).toBeGreaterThanOrEqual(3);
 		expect(geometry.chevronTransform).not.toBe("none");

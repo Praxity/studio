@@ -563,7 +563,6 @@ it.each(["en", "fr"])(
 			);
 			expect(practice?.textContent).toBe("Check: Practice");
 			expect(practice?.querySelector("[data-deck-lock]")?.hasAttribute("hidden")).toBe(true);
-			// The optional assessment gets the same icon without becoming a gate.
 			expect(html).toContain(`aria-label="Reading, ${assessment}"`);
 			expect(html).not.toContain(`aria-label="Introduction, ${assessment}"`);
 			for (const [id, path] of [

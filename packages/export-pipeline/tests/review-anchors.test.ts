@@ -87,7 +87,6 @@ async function open(
 		clientWidth: { get: () => dom.window.innerWidth, configurable: true },
 		clientHeight: { get: () => dom.window.innerHeight, configurable: true },
 	});
-	// JSDOM has no layout hit testing; individual occlusion cases supply their own hit.
 	dom.window.document.elementFromPoint = () => dom.window.document.querySelector("main");
 	prepare?.(dom);
 	dom.window.eval(script);
@@ -788,8 +787,6 @@ describe("marker placement and learner controls", () => {
 			for (const mode of ["light", "dark"] as const) {
 				const tokens = resolveDesignTokens({ palette } as DesignVariants, mode);
 				const alpha = (mode === "light" ? light : dark) / 100;
-				// CSS color-mix(in srgb, …, transparent) composites encoded sRGB channels;
-				// the theme's compositeOver helper deliberately mixes linear RGB instead.
 				const fill =
 					"#" +
 					[1, 3, 5]
@@ -866,7 +863,6 @@ describe("marker placement and learner controls", () => {
 		const marker = doc.querySelector(".prx-review-marker") as HTMLElement;
 		expect(hitTest).toHaveBeenCalledTimes(5);
 		expect(marker.hidden).toBe(true);
-		// Already-visible markers must not occlude themselves on the next frame.
 		doc.elementFromPoint = () => marker;
 		doc.elementsFromPoint = () => [marker, target, doc.querySelector("main") as Element];
 		dom.window.dispatchEvent(new dom.window.Event("scroll"));
@@ -1100,7 +1096,6 @@ describe("marker placement and learner controls", () => {
 					const readStyle = dom.window.getComputedStyle.bind(dom.window);
 					vi.spyOn(dom.window, "getComputedStyle").mockImplementation((el) => {
 						const style = readStyle(el);
-						// The platform changes computed visibility without a body mutation.
 						return new Proxy(style, {
 							get: (value, key) =>
 								key === "display" && el.classList.contains("responsive")

@@ -14,7 +14,6 @@ import {
 	writeDistractorsRuntimeAssets,
 } from "../../../src/write-distractors";
 
-/** Focused presentation fixture. Built exports are covered by write-distractors-acceptance.spec.ts. */
 export async function writeDistractorsHarness(directory: string) {
 	await mkdir(directory, { recursive: true });
 	const { manifest } = await bundleViewer(directory);

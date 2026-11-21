@@ -39,7 +39,6 @@ test.skip(
 	"Built CLI acceptance runs in Chromium; focused retrieval suites cover other engines.",
 );
 
-// Build the real command once and each export once, outside test timing.
 test.beforeAll(async () => {
 	const setupStarted = Date.now();
 	root =
@@ -204,7 +203,6 @@ process.stdout.write(result.stdout); process.stderr.write(result.stderr); proces
 		.info()
 		.attach("shared-build", { body: JSON.stringify(receipt), contentType: "application/json" });
 	await save("shared-build", receipt);
-	// This stays inside the existing 45-second hook deadline. CI retains the measured receipt.
 	expect(receipt.durationMs).toBeLessThan(35_000);
 });
 function addPackage(format: string, zip: Buffer) {
@@ -269,7 +267,6 @@ test.afterAll(async ({ browser }) => {
 		await rm(root, { recursive: true, force: true });
 });
 
-// Instrument outgoing seams before the host starts. The recorder itself never writes storage.
 async function instrument(page: Page, format: string) {
 	const effects: unknown[] = [];
 	await page.exposeFunction("recordRetrievalEffect", (effect: unknown) => effects.push(effect));

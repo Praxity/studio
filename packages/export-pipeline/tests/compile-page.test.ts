@@ -14,7 +14,6 @@ import { stripChoiceStateFacts } from "./fixtures/choice-facts";
 import { compilerFixture, compilerIslandAssets } from "./fixtures/page-compiler.ts";
 import baseline from "./fixtures/page-compiler-baseline.json";
 
-// Match the full-build baseline's normalization of generated bundle URLs.
 const hash = (html: string) =>
 	createHash("sha256")
 		.update(normalizeRendererAssets(stripChoiceStateFacts(html)))
@@ -80,7 +79,6 @@ describe("P2 page compiler", () => {
 		"preserves every %s body byte and standalone fragment",
 		async (name) => {
 			const { context } = await fixture(name);
-			// Capture all standalone nodes before any page compile can populate the cache.
 			const standalone = new Map(
 				context.pages.map((page) => [
 					page.id,

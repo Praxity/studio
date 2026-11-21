@@ -7,8 +7,6 @@ test("hydration readiness waits for visible authored entrance paint", async ({ p
 	await page.addInitScript(() => {
 		document.addEventListener("DOMContentLoaded", () => {
 			const style = document.createElement("style");
-			// Keep the real entrance running long enough to expose readiness that
-			// only waits for island hydration. The test deadline stays unchanged.
 			style.textContent =
 				'[data-praxity-root][data-praxity-motion-entrance] .praxity-block[data-entrance="visible"] { transition-duration: 1s, 1s; }';
 			document.head.append(style);
@@ -54,7 +52,6 @@ for (const transition of ["fade", "slide", "zoom"]) {
 				});
 				return { time, opacity: slides.map((slide) => Number(getComputedStyle(slide).opacity)) };
 			});
-			// Keep the transitions in progress so getAnimations can seek the screenshot frames.
 			animations.forEach((animation) => {
 				animation.currentTime = 60;
 			});
@@ -68,7 +65,6 @@ for (const transition of ["fade", "slide", "zoom"]) {
 				expect.objectContaining({ duration: 120, delay: 120 }),
 			]),
 		);
-		// 10% is the readability cutoff for this regression; incoming text stays at zero until 120ms.
 		for (const frame of evidence.frames) {
 			expect(
 				frame.opacity.filter((opacity) => opacity > 0.1),
@@ -201,8 +197,6 @@ test("static loading and hotspot cues preserve text and graphic controls", async
 	await page.goto(`${readTestEnv().url}/design-layout-bounded-motion/bounded-motion.html`);
 	const dot = page.getByRole("button", { name: /First area$/ });
 	await expect(dot).toBeVisible();
-	// Hold a pending placeholder through the natural wait. LazyLoading.test.tsx
-	// checks this fallback's actual React markup and both locales.
 	const loading =
 		'<div class="praxity-block-loading" role="status" style="min-height:3em">Loading…</div>';
 	await page
@@ -413,7 +407,6 @@ for (const mode of ["small", "full"]) {
 					await expect(target).toHaveCSS("transition-duration", "0.2s, 0.2s");
 					await expect(target).toHaveCSS("opacity", "1");
 					await expect(target).toHaveCSS("transform", "none");
-					// Returning to an entered block must not re-hide or dim its text.
 					await page.locator('[data-block-type="text"]').first().scrollIntoViewIfNeeded();
 					await target.scrollIntoViewIfNeeded();
 					await expect(target).toHaveCSS("opacity", "1");

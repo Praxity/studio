@@ -49,10 +49,6 @@ test.describe("Semantic landmarks and heading structure", () => {
 				await expect(band).toHaveAccessibleName(/course controls/i);
 			}
 
-			// A page may turn its chrome off — `nav: minimal` and `nav: none` are page-break
-			// params, added after this spec was written, and the fixture uses `minimal` on
-			// one page. Those layouts navigate by keyboard arrows, swipe and progress dots,
-			// none of which is a landmark, so requiring one there asserted a bug that isn't.
 			const layoutClass = await page.evaluate(() => document.body.className);
 			const chromelessLayout = /praxity-layout-(minimal|none)\b/.test(layoutClass);
 			const pageNavCount = await page.getByRole("navigation", { name: /^pages$/i }).count();

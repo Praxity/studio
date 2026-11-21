@@ -322,7 +322,6 @@ describe("Block rendering — content blocks", () => {
 		const equations = blocksByType(build.blocks, "equation");
 		expect(equations.length).toBeGreaterThan(0);
 		for (const block of equations) {
-			// KaTeX or MathML output
 			const math = block.element.querySelector(".katex, math, .praxity-equation");
 			expect(math, `equation block ${block.id} missing math output`).toBeTruthy();
 		}
@@ -349,7 +348,6 @@ describe("Block rendering — container blocks", () => {
 			const panels = block.element.querySelectorAll("[role='tabpanel']");
 			expect(tabEls.length).toBeGreaterThan(0);
 			expect(panels.length).toBe(tabEls.length);
-			// ARIA linkage
 			for (const tab of tabEls) {
 				const controls = tab.getAttribute("aria-controls");
 				expect(controls, `tab missing aria-controls`).toBeTruthy();

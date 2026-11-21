@@ -1,6 +1,5 @@
 import type { CourseExportInput } from "../../../src/build";
 
-/** Three free-moving slide-style Pages documents plus glossary and resources pages. */
 export function buildPagesArrivalCourse(locale: "en" | "fr"): CourseExportInput {
 	const french = locale === "fr";
 	const titles = french

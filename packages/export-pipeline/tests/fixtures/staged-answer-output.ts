@@ -3,8 +3,6 @@ import { inflateSync } from "node:zlib";
 import AdmZip from "adm-zip";
 import { fullyDecodeEntities } from "../../src/html-entities";
 
-// Both staged-answer patterns share byte scanning and exact per-activity allowances.
-// Their builders and positive controls stay with each pattern's contract tests.
 export function stagedAnswerOutputInvariant(prefix: "SC" | "WD") {
 	const outputs: Array<{ name: string; bytes: Buffer; allowed: readonly string[] }> = [];
 	const runtimeOutputFiles = new Set<string>();
@@ -43,7 +41,6 @@ export function stagedAnswerOutputInvariant(prefix: "SC" | "WD") {
 			if (!ownedFiles.has(entry.entryName)) continue;
 			const offset = entry.header.offset;
 			assert.equal(bytes.readUInt32LE(offset), 0x04034b50);
-			// Only the compressed payload is owned. Names, extras, comments and trailing bytes still scan.
 			const start = offset + 30 + bytes.readUInt16LE(offset + 26) + bytes.readUInt16LE(offset + 28);
 			const end = start + entry.header.compressedSize;
 			assert.ok(end <= bytes.length);
@@ -105,12 +102,9 @@ export function stagedAnswerOutputInvariant(prefix: "SC" | "WD") {
 				);
 			}
 		}
-		// Never let another decode complete a truncated marker at either boundary.
 		checkText(text);
 		for (const [token] of text.matchAll(/[A-Za-z0-9+/_-]{12,}={0,2}/g)) {
 			if (!base64Prefixes.some((encoded) => token.includes(encoded))) continue;
-			// A digest/URL prefix can be part of the same token. Four offsets cover
-			// every base64 alignment without joining independent strings.
 			for (let offset = 0; offset < 4; offset++)
 				checkText(decode(Buffer.from(token.slice(offset), "base64url").toString("latin1")));
 		}
@@ -119,14 +113,10 @@ export function stagedAnswerOutputInvariant(prefix: "SC" | "WD") {
 	return { outputs, scan, scanHtml, scanZip, scanRuntimeAsset, unownedArchiveBytes, assertOutput };
 }
 
-/** Decode PDF metadata/outline/ActualText channels as well as compressed streams.
- * Glyph-mapped content still needs pdftotext; neither view substitutes for the other.
- */
 export function normalizePdfOutput(bytes: Uint8Array): string {
 	const raw = Buffer.from(bytes).toString("latin1");
 	const channels = [raw];
 	for (const match of raw.matchAll(/(?:\r\n|\n|\r)stream(?:\r\n|\n|\r)/g)) {
-		// DecodeParms can follow Filter, so the nearest opener may belong to a nested dictionary.
 		const endOfDictionary = raw.slice(0, match.index).trimEnd().length;
 		assert.equal(raw.slice(endOfDictionary - 2, endOfDictionary), ">>");
 		let depth = 0;

@@ -9,12 +9,10 @@ import { describe, expect, it, vi } from "vitest";
 import type { CourseExportInput, CoursePreviewDeployment } from "../src/build";
 import { selfCheckRuntimeAssets } from "../src/self-check";
 
-// Mock the asset resolver to avoid network calls
 vi.mock("../src/asset-resolver", () => ({
 	resolveAssets: vi.fn((pages: unknown[]) => Promise.resolve(pages)),
 }));
 
-// Import after mocks are set up
 const {
 	buildScormPackage,
 	compileCourse,
@@ -27,7 +25,6 @@ const minimalCourse: CourseExportInput = {
 	id: "test-course",
 	title: "Test Course",
 	sourceLocale: "en",
-	// This fixture exercises a static artifact without interactive shell controls.
 	navToggles: { navTopBar: false, showA11yPill: false },
 	content: [
 		{
@@ -550,14 +547,7 @@ describe("buildScormPackage", () => {
 		const { mkdtemp, readdir, rm } = await import("node:fs/promises");
 		const nodePath = await import("node:path");
 
-		// Isolate this test's temp dirs from concurrent test files by pointing
-		// os.tmpdir() (which reads TMPDIR/TMP each call) at a private base. Vitest
-		// isolates files into workers and runs a file's tests sequentially, so
-		// swapping TMPDIR here cannot race other tests.
 		const isolatedBase = await mkdtemp(nodePath.join(nodeOs.tmpdir(), "praxity-cleanup-test-"));
-		// Save originals so we can RESTORE exactly — including deleting keys that
-		// were unset. Assigning `undefined` stringifies to "undefined" and would
-		// poison os.tmpdir() for later tests (Linux CI leaves TMPDIR unset).
 		const keys = ["TMPDIR", "TMP", "TEMP"] as const;
 		const saved = new Map(keys.map((k) => [k, process.env[k]]));
 		const setEnv = (k: (typeof keys)[number], v: string | undefined) => {
@@ -568,7 +558,6 @@ describe("buildScormPackage", () => {
 		try {
 			await buildScormPackage(minimalCourse, { format: "scorm12" });
 
-			// Compilation and deployment use separate workspaces; neither may leak.
 			const leaked = (await readdir(isolatedBase)).filter(
 				(filename) =>
 					filename.startsWith("praxity-export-") || filename.startsWith("praxity-deployment-"),
@@ -611,7 +600,6 @@ describe("buildScormPackage", () => {
 
 		expect(result.zip).toBeInstanceOf(Buffer);
 		expect(result.format).toBe("scorm2004");
-		// ZIP magic number
 		expect(result.zip[0]).toBe(0x50);
 		expect(result.zip[1]).toBe(0x4b);
 	});

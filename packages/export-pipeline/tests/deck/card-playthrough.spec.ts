@@ -218,7 +218,6 @@ test.afterAll(async () => {
 async function open(page: Page, variant = "en") {
 	await page.clock.install({ time: new Date("2026-01-01T08:00:00Z") });
 	await page.clock.pauseAt(new Date("2026-01-01T08:01:00Z"));
-	// The transport's real state machine runs; its media clock is held still.
 	await page.addInitScript(() => {
 		HTMLMediaElement.prototype.play = async () => {};
 	});
@@ -370,7 +369,6 @@ test("Guided follows narration playback, pause, fresh resume wait, end and the T
 	const transcript = page.locator("#deck-script-toggle");
 	if (!(await transcript.isVisible())) await page.locator("#deck-more-toggle").click();
 	await transcript.click();
-	// Opening Transcript closes More, which owns the automatic-advance switch.
 	await page.locator("#deck-more-toggle").click();
 	await expect(page.locator("#deck-advance")).toBeVisible();
 	await page.locator("#deck-advance").click();

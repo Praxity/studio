@@ -1,6 +1,5 @@
 import type { HighlightContent } from "@praxity/shared-blocks/types";
 
-/** One authored-source projection for the controlled highlight fixture content. */
 export function highlightSource(
 	content: HighlightContent,
 	options: { name?: string; hide?: boolean } = {},

@@ -13,7 +13,6 @@ let server: ReturnType<typeof createServer>;
 let matrixContext: BrowserContext;
 let matrixPage: Page;
 
-// Launch the engine in shared setup, rather than charging its cold start to the first case.
 test.beforeAll(async ({ browser }) => {
 	await test.info().attach("browser-version", {
 		body: browser.version(),
@@ -43,8 +42,6 @@ test.beforeAll(async ({ browser }) => {
 	});
 	await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
 	url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-	// The read-only matrix navigates afresh for every case. Share the content process,
-	// fonts and scanner warm-up so cold engine work stays outside the per-case budget.
 	matrixContext = await browser.newContext();
 	matrixPage = await matrixContext.newPage();
 	await matrixPage.goto(`${url}/en-light-3.html`);
@@ -174,8 +171,6 @@ for (const { lang, mode, width } of [
 			expect(requested.some((request) => /retrieval-sheet\.[a-f0-9]{12}\.css$/.test(request))).toBe(
 				true,
 			);
-			// Chromium can fetch the existing shell preload with scripting disabled.
-			// No retrieval enhancer or other executable dependency is requested.
 			expect(
 				requested.filter(
 					(request) => request.endsWith(".js") && !/\/course-shell-[A-Z0-9]{8}\.js$/.test(request),

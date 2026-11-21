@@ -70,7 +70,6 @@ describe("Image effects and treatments", () => {
 		expect(document.querySelector('[data-block-id="decorative"] img')?.getAttribute("alt")).toBe(
 			"",
 		);
-		// Treatments and composable effects were retired before these React helpers were removed.
 		expect(
 			document.querySelector(
 				'[class*="praxity-image-treatment-"], .praxity-blur-clone, [data-praxity-effects]',

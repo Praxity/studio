@@ -1,20 +1,3 @@
-/**
- * Local SCORM test harness using the Rustici SCORM Driver.
- *
- * Takes a SCORM zip buffer, extracts it to a temp directory, copies the
- * appropriate driver files alongside, and starts an HTTP server. Returns
- * the URL to `scormdriver/indexAPI.html` and a cleanup function.
- *
- * Expected layout on disk (mirrors the driver's own directory convention):
- *
- *   <tmp>/
- *     scormdriver/         <- copied driver files (indexAPI.html, scormdriver.js, ...)
- *     scormcontent/        <- extracted SCORM package (index.html, welcome.html, ...)
- *
- * The driver's indexAPI.html references `../scormcontent/index.html`, which
- * resolves correctly with this layout when served from the same HTTP origin.
- */
-
 import { cp, mkdir, mkdtemp, rm, stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
@@ -26,20 +9,16 @@ import { RUSTICI_FILES, rusticiDriverDir } from "../gate-prerequisites";
 
 export type ScormFormat = "scorm12" | "scorm2004";
 
-/** Paths to the Rustici driver files, relative to this file's directory. */
 const DRIVER_DIRS: Record<ScormFormat, string> = {
 	scorm12: rusticiDriverDir("scorm12"),
 	scorm2004: rusticiDriverDir("scorm2004"),
 };
 
 export interface LocalHarness {
-	/** URL pointing to `scormdriver/indexAPI.html`. Navigate Playwright here. */
 	url: string;
-	/** Call this to stop the server and delete the temp directory. */
 	cleanup: () => Promise<void>;
 }
 
-/** A strict same-origin LMS for lifecycle journeys, independent of proprietary drivers. */
 export async function createLifecycleHarness(
 	zipBuffer: Buffer,
 	format: ScormFormat,
@@ -156,10 +135,6 @@ launch();
 	};
 }
 
-/**
- * Check whether the driver files are present on disk.
- * Returns false (and logs a hint) when they are missing so tests can skip.
- */
 export async function isDriverAvailable(
 	format: ScormFormat,
 	driverDir = DRIVER_DIRS[format],
@@ -189,19 +164,12 @@ export async function isDriverAvailable(
 	}
 }
 
-/**
- * Set up a fully self-contained local SCORM player for a given zip buffer.
- *
- * @param zipBuffer - Buffer of the SCORM zip to serve
- * @param format    - "scorm12" or "scorm2004" — selects which driver to use
- */
 export async function createLocalHarness(
 	zipBuffer: Buffer,
 	format: ScormFormat,
 ): Promise<LocalHarness> {
 	const driverDir = DRIVER_DIRS[format];
 
-	// Temp root: two sibling dirs — scormdriver/ and scormcontent/
 	const tmpRoot = await mkdtemp(resolve(tmpdir(), "praxity-scorm-local-"));
 	const scormDriverDir = join(tmpRoot, "scormdriver");
 	const scormContentDir = join(tmpRoot, "scormcontent");
@@ -209,14 +177,11 @@ export async function createLocalHarness(
 	await mkdir(scormDriverDir, { recursive: true });
 	await mkdir(scormContentDir, { recursive: true });
 
-	// Copy driver files into scormdriver/
 	await cp(driverDir, scormDriverDir, { recursive: true });
 
-	// Extract SCORM zip into scormcontent/
 	const zip = new AdmZip(zipBuffer);
-	zip.extractAllTo(scormContentDir, /* overwrite */ true);
+	zip.extractAllTo(scormContentDir, true);
 
-	// Serve the entire tmpRoot so both scormdriver/ and scormcontent/ are reachable
 	const server = createServer((req, res) => {
 		void handler(req, res, { public: tmpRoot, cleanUrls: false });
 	});

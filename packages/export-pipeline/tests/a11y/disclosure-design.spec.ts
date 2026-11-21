@@ -22,7 +22,6 @@ async function capture(block: Locator, name: string) {
 	await block.hover();
 	await expect(block).not.toHaveAttribute("data-entrance", "pending");
 	for (const video of await block.locator("video").all()) {
-		// Decode the tiny local fixture before capturing native browser controls.
 		await video.evaluate(async (element: HTMLVideoElement) => {
 			await element.play();
 			element.pause();
@@ -104,8 +103,6 @@ for (const palette of ["ink-light", "clay-dark"]) {
 		test.describe(`${palette} ${width}`, () => {
 			test.use({ viewport: { width, height: 900 } });
 			test("media uses compact audio and a usable blocked embed frame", async ({ page }) => {
-				// The thumbnail route remains deterministic under the full suite's stricter CSP.
-				// Permit its one image origin while retaining the blocked-frame policy.
 				await page.route(
 					(url) => url.pathname.endsWith(".html"),
 					async (route) => {
@@ -276,7 +273,6 @@ for (const palette of ["ink-light", "clay-dark"]) {
 					await page.keyboard.press("Enter");
 					await expect(block.getByRole("tab").nth(1)).toHaveAttribute("aria-selected", "true");
 				}
-				// Authored long labels also require disclosure at wider widths.
 				await block.locator(".praxity-tabs-tab").evaluateAll((buttons) =>
 					buttons.forEach((button, i) => {
 						const label = button.querySelector(".praxity-disclosure-title") ?? button;
@@ -294,7 +290,6 @@ for (const palette of ["ink-light", "clay-dark"]) {
 				await expect(buttons.first()).toHaveAttribute("aria-expanded", "false");
 				await expect(block.locator(".praxity-tabs-panel:visible")).toHaveCount(1);
 				await expect(buttons.nth(1)).toBeFocused();
-				// Capture resting separators after verifying keyboard focus and activation.
 				await buttons.nth(1).evaluate((button: HTMLButtonElement) => button.blur());
 				await expectDisclosureAffordance(block);
 				const openIcon = buttons.nth(1).locator("svg.praxity-disclosure-icon");

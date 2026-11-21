@@ -40,10 +40,8 @@ const xapiConfig = {
 	auth: "Basic test",
 	actorMode: "lms" as const,
 };
-// Build one real CLI and export once per format/layout, outside individual test timing.
 test.beforeAll(async () => {
-	// Shared cold CLI/package/PDF build; individual cases retain 45s.
-	test.setTimeout(120_000); // timeout: docs/context/testing-strategy.md cold CLI/package/PDF fixture; individual case limit unchanged
+	test.setTimeout(120_000);
 	const started = Date.now();
 	root =
 		process.env.PRAXITY_DISTRACTORS_BUILD ??
@@ -66,7 +64,6 @@ test.beforeAll(async () => {
 		}),
 	);
 	const runtimeRequire = createRequire(join(checkout, "packages/shared-blocks/package.json"));
-	// Scratch export assets have no adjacent compiler. Use the app's pinned native tools.
 	const typstExecutablePath =
 		process.env.PRAXITY_TEST_TYPST ||
 		join(
@@ -127,7 +124,6 @@ test.beforeAll(async () => {
 					readWriteDistractorsContent(read, id).misconceptions.map((item) => item.id),
 				),
 		);
-		// Saved options contain misconception IDs as well as the activity ID. Neither may leave the device.
 		ids.set(layout, [...activityIds, ...itemIds]);
 		for (const [format, cliFormat] of [
 			["html", "html"],
@@ -313,7 +309,6 @@ test.afterAll(async ({ browser }) => {
 							activity.locator("[data-distractor-recovery] textarea").first(),
 						).toHaveValue("Consider access throughout design.");
 					}
-					// Capture from the page origin so fixed chrome cannot cover part of a tall activity.
 					await activity.evaluate((element) => {
 						for (let parent = element.parentElement; parent; parent = parent.parentElement)
 							parent.scrollTop = 0;
@@ -415,7 +410,6 @@ for (const layout of ["pages", "deck"])
 				).toEqual([]);
 			});
 
-// Observe each transport before initialization, retaining device writes separately.
 async function instrument(page: Page, format: string) {
 	const outgoing: unknown[] = [];
 	await page.exposeFunction("recordDistractorEffect", (effect: unknown) => outgoing.push(effect));
@@ -536,7 +530,6 @@ for (const format of formats)
 			expect(bytes).toContain("cmi.suspend_data");
 			expect(bytes).not.toMatch(/cmi\.(interactions|objectives)/);
 		}
-		// A real public choice proves that the same observed host can report ordinary responses.
 		const ordinary = page.locator('[data-island="assessment"]');
 		await ordinary.getByRole("radio").first().check();
 		await ordinary.locator("[data-assessment-submit]").click();

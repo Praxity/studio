@@ -11,7 +11,6 @@ let base: string;
 const test = baseTest.extend({
 	browser: [
 		async ({ playwright, browserName, launchOptions }, use) => {
-			// Chromium's full headless browser supports BFCache; headless-shell does not.
 			const browser = await playwright[browserName].launch({
 				...launchOptions,
 				...(browserName === "chromium" ? { channel: "chromium" } : {}),
@@ -26,7 +25,6 @@ const test = baseTest.extend({
 	],
 });
 
-// Permit native BFCache; the disabled variant installs an unload listener.
 test.use({ launchOptions: { ignoreDefaultArgs: ["--disable-back-forward-cache"] } });
 
 test.beforeAll(async () => {
@@ -114,7 +112,6 @@ for (const cache of ["disabled", "enabled"] as const) {
 			await next(page, "Second");
 			const secondUrl = page.url();
 			const historyLength = await page.evaluate(() => history.length);
-			// A BFCache restore commits without another document load event.
 			await page.goBack({ waitUntil: "commit" });
 			await ready(page, "First");
 			await expect(page.locator(".praxity-resume-prefix,.praxity-resume-summary")).toHaveCount(0);
@@ -168,7 +165,6 @@ for (const selection of ["outline", "previous"] as const) {
 			)
 			.last();
 		const popupPromise = context.waitForEvent("page");
-		// Desktop WebKit needs its native new-tab modifier on macOS and Windows.
 		await link.click(
 			browserName === "webkit" && (process.platform === "darwin" || process.platform === "win32")
 				? { modifiers: [process.platform === "darwin" ? "Meta" : "Control"] }
@@ -194,8 +190,6 @@ test("standalone outline href keeps the chosen destination before context-menu a
 	const href = await link.evaluate((anchor) => (anchor as HTMLAnchorElement).href);
 	expect(new URL(href).searchParams.get("praxity-resume")).toBe("0");
 	await link.click({ button: "right" });
-	// Browser menus are outside Playwright's DOM. Follow the same native href
-	// the menu uses, without firing click or auxclick on the original link.
 	const popup = await context.newPage();
 	await popup.goto(href);
 	await ready(popup, "First");

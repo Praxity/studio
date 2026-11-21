@@ -326,7 +326,6 @@ it.each(formats)(
 			await click(button("Try again"));
 			const state = host.provider.get("q") as Record<string, unknown>;
 			expect(state.history).toBeUndefined();
-			// Main's draft literal, with only the activated signature/timestamp added.
 			expect(state).toEqual({
 				version: 1,
 				kind: "assessment",
@@ -483,7 +482,6 @@ it.each(
 		let next = launch(format, changed, first.values);
 		await mount(changed, locale);
 		const bytes = first.values.get("cmi.suspend_data");
-		// Native disabled controls and absent Submit cover the pending-review triggers.
 		await click(document.querySelectorAll<HTMLInputElement>("input")[0]);
 		expect(button(locale === "en" ? "Submit" : "Soumettre")).toBeUndefined();
 		expect(first.values.get("cmi.suspend_data")).toBe(bytes);
@@ -659,7 +657,6 @@ function exerciseCapacity({
 				),
 			}),
 		});
-		// Locate a near-full fixture in the codec, then cross the boundary through the production host.
 		let low = 0,
 			high = questions.length;
 		while (!full && low < high) {
@@ -715,7 +712,6 @@ function exerciseCapacity({
 		expect(rows.map(({ id }) => id)).toEqual([...saved.keys()]);
 		expect(rows).toHaveLength(saved.size);
 		host = launch("scorm12", data, values, false, [], config);
-		// One admitted payload checks every answer/attempt; sample the provider and shared status interface.
 		expect(JSON.parse(host.runtime.getSuspendData()!).blockState).toEqual(
 			Object.fromEntries(saved),
 		);
@@ -813,7 +809,6 @@ it.each(formats.flatMap((format) => (["all", "oneOf"] as const).map((mode) => ({
 		const rows = host.runtime.getInteractions();
 		capture(mode === "oneOf" ? "q" : null, true);
 		expect(host.runtime.getInteractions()).toEqual(rows);
-		// Reopen with changed material, then repair only the member.
 		const changed = { ...data, points: 20 };
 		host = launch(format, changed, host.values, false, ["g"], {
 			blockStatePolicy: { r: "device" },

@@ -78,7 +78,6 @@ it.each([undefined, "corrupt", "2026-02-30T14:05:00.000Z", "2026-10-08T14:05:00.
 		};
 		document.body.innerHTML =
 			renderBlockHtml(block, { enabledIslands: new Set(["assessment"]) }) + hostMarkup;
-		// The injected storage adapter keeps its provider when the host assigns one.
 		Object.defineProperty(window, "__praxityBlockState", {
 			configurable: true,
 			get: () => ({

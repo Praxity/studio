@@ -1,6 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-/** Match the published server's byte-range support so browsers can seek fixture media. */
 export function serveFixtureBytes(
 	request: IncomingMessage,
 	response: ServerResponse,

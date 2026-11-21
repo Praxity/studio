@@ -132,7 +132,6 @@ test.beforeAll(async () => {
 						/</g,
 						"\\u003c",
 					);
-					// Seed persisted bytes only; the production host supplies every capability.
 					bytes = Buffer.from(
 						html.replace(
 							"</body>",
@@ -242,8 +241,6 @@ for (const { locale, variant, presentation, theme, key } of cases) {
 			[320, 1],
 			[640, 2],
 		] as const) {
-			// Browser zoom reduces the CSS viewport. CSS `zoom` on the root
-			// does not model this consistently for WebKit's fixed deck shell.
 			await page.setViewportSize({ width: width / zoom, height: 800 / zoom });
 			await page.keyboard.press("Escape");
 			const readLayout = () =>
@@ -271,14 +268,11 @@ for (const { locale, variant, presentation, theme, key } of cases) {
 						].every(([x, y]) => button.contains(document.elementFromPoint(x, y))),
 					};
 				});
-			// Deck resize observers can move its scrolling pane after the viewport
-			// changes. Wait for a fully visible, uncovered action after native scroll.
 			try {
 				await action.evaluate((element) =>
 					element.scrollIntoView({ block: "start", inline: "nearest", behavior: "instant" }),
 				);
 				await action.hover();
-				// Leave room above the action for its focus outline in the short pane.
 				await page.mouse.wheel(0, -16);
 				await action.focus();
 				await expect(async () => {
@@ -313,7 +307,6 @@ for (const { locale, variant, presentation, theme, key } of cases) {
 		});
 		expect(await saved()).toEqual(previous[key]);
 		await expect(activity.locator('[aria-live], [role="status"], [role="alert"]')).toHaveCount(0);
-		// Opening recovery without editing preserves the original bytes on reload.
 		await page.reload();
 		await expect(action).toBeVisible();
 		expect(await saved()).toEqual(previous[key]);

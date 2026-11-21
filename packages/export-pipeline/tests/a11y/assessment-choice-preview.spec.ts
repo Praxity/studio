@@ -8,7 +8,6 @@ import { expectSubmittedReview } from "./review-assertions";
 test.use({ screenshot: { mode: "only-on-failure", fullPage: true } });
 
 test.describe(() => {
-	// Each theme owns a fresh page/context; CI can schedule complete journeys independently.
 	test.describe.configure({ mode: "parallel" });
 	for (const theme of ASSESSMENT_REVIEW_THEMES) {
 		test(`submitted review colors in ${theme.name}`, async ({ page }, testInfo) => {
@@ -17,7 +16,6 @@ test.describe(() => {
 			const islands = page.locator('[data-island="assessment"]');
 			await expect(islands).toHaveCount(6);
 			for (const island of await islands.all()) {
-				// Native scrolling triggers lazy hydration; the learner actions still check actionability.
 				await island.evaluate((element) =>
 					element.scrollIntoView({ block: "center", behavior: "instant" }),
 				);
@@ -31,7 +29,6 @@ test.describe(() => {
 						await page.getByRole("option", { name: "Right item 2", exact: true }).click();
 					}
 				} else if (await radios.count()) {
-					// Table rows each own a group; choice owns one group.
 					const rows = island.locator("tbody tr");
 					if (await rows.count())
 						for (const row of await rows.all()) await row.getByRole("radio").first().check();
@@ -66,7 +63,6 @@ test.describe(() => {
 				forcedColors: boolean;
 				islands: Awaited<ReturnType<typeof expectSubmittedReview>>;
 			}> = [];
-			// Preferences apply to the whole document. Submit once, then inspect all islands per state.
 			for (const width of [390, 1280]) {
 				await page.setViewportSize({ width, height: 900 });
 				for (const larger of [false, true]) {
@@ -78,7 +74,6 @@ test.describe(() => {
 						}
 						await expect(textSize).toHaveAttribute("aria-pressed", String(larger));
 						await waitForPaint();
-						// Element screenshots required visible, nonempty bounds; retain that guard without encoding PNGs.
 						for (const island of await islands.all()) await expect(island).toBeVisible();
 						reviewStates.push({
 							width,
@@ -98,7 +93,6 @@ test.describe(() => {
 					});
 				}
 			}
-			// Persist every measured state; the former PNGs had no image-comparison assertions.
 			await testInfo.attach("submitted-review-states", {
 				body: JSON.stringify(reviewStates, null, 2),
 				contentType: "application/json",

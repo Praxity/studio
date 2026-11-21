@@ -92,12 +92,10 @@ for (const state of ["open", "closed", "other-focus", "hidden-document"]) {
 		await page.keyboard.press("Enter");
 		if (state === "closed") await page.keyboard.press("Escape");
 		await page.evaluate(async (state) => {
-			// Keep the popover open while modelling the browser's native focus reset.
 			document.addEventListener("focusout", (event) => event.stopPropagation(), { capture: true });
 			(document.activeElement as HTMLElement)?.blur();
 			document.dispatchEvent(new Event("visibilitychange"));
 			window.dispatchEvent(new Event("focus"));
-			// Firefox restores the native target after window focus, before its late reset.
 			document
 				.querySelector<HTMLElement>(
 					state === "closed"
@@ -147,7 +145,6 @@ for (const state of ["open", "closed", "hidden", "removed", "other-focus", "hidd
 		const link = page.locator(".inline-tooltip-popover .praxity-glossary-link");
 		await expect(link).toBeVisible();
 		await link.focus();
-		// Capture activation without requiring the headless window manager to lose focus.
 		await link.evaluate((element) => {
 			element.addEventListener("click", (event) => event.preventDefault(), { once: true });
 		});

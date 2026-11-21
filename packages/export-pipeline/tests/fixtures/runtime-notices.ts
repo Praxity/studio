@@ -4,7 +4,6 @@ import { type RuntimeNotices, readPackageNotice } from "../../src/third-party-no
 
 const require = createRequire(import.meta.url);
 
-/** Empty fixture runtimes have no dependencies; generated CSS and note icons keep real terms. */
 export async function fixtureRuntimeNotices(
 	shell: string,
 	hosts: string[],

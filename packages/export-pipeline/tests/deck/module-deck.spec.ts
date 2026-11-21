@@ -41,16 +41,12 @@ let twoSlideEntry: string;
 let linksEntry: string;
 const files = new Map<string, Buffer>();
 
-// Windows WebKit exclusions: formatted transcript's exact paused-media seek.
 const WINDOWS_WEBKIT_EXCLUSIONS = [
 	"formatted transcript preserves semantic text through seeking and highlighting",
 ];
 
-// Stable-playback journeys use a separate server prefix. WebKit's media loader
-// can bypass page.route, so serve real long bytes at the fixture server itself.
 const stablePlaybackAudio = silentWav(60);
 
-// Preserve the real media clock while keeping browser checks quiet on shared hosts.
 test.beforeEach(async ({ page }) => {
 	await page.addInitScript(() => {
 		const play = HTMLMediaElement.prototype.play;
@@ -78,8 +74,6 @@ for (const width of [390, 1280]) {
 			await page.goto(base + openOutlineEntry);
 			const deck = page.locator(".praxity-deck");
 			await expect(deck).toHaveAttribute("data-ready", "true");
-			// Fresh narrow visits start lesson-first, so open the authored outline explicitly.
-			// Use the keyboard so the following focus stays :focus-visible.
 			if ((await deck.getAttribute("data-panel")) !== "outline") {
 				const toggle = page.locator("#deck-outline-toggle");
 				const more = page.locator("#deck-more-toggle");
@@ -131,8 +125,6 @@ test.beforeAll(async () => {
 		resolve(import.meta.dirname, "../../../../docs/test-fixtures/assets/sample-slide-image.webp"),
 	);
 	const originalFetch = globalThis.fetch;
-	// Outlast the 45s journey timeout. Formatted playback can also seek to the
-	// final cue at 22s, so its clock needs more time after that seek.
 	const stableAudio = silentWav(60);
 	const formattedAudio = silentWav(90);
 	const formattedTimings =
@@ -205,11 +197,9 @@ test.beforeAll(async () => {
 							);
 			if (variant === "audio" || variant === "audio-short")
 				course.cssVars = { "--praxity-font-family": "Georgia, serif" };
-			// Existing narration journeys cover the explicit opt-in; frame-regressions covers defaults.
 			course.deckDesign = {
 				...course.deckDesign,
 				autoAdvance: true,
-				// Direct-entry and cross-module redirect journeys retain their authored ordering lock.
 				...(variant === "reading" ? { sequentialLessons: true } : {}),
 			};
 			if (narrated && variant !== "audio-short")
@@ -235,8 +225,6 @@ test.beforeAll(async () => {
 				);
 			}
 			if (variant === "mixed-audio") {
-				// Assessment intentionally excluded from narration; the following slide
-				// keeps its reading script but has narration explicitly switched off.
 				const silent = course.content[1];
 				silent.data = { ...silent.data, narrationDisabled: true };
 				for (const block of silent.blocks) block.data.narrationDisabled = true;
@@ -317,7 +305,6 @@ test.beforeAll(async () => {
 				});
 				const practice = course.content[1].blocks.find((block) => block.id === "practice-gate");
 				if (!practice) throw new Error("Missing practice question");
-				// Feedback renders after submission, long after the deck has started.
 				const feedback = practice.data.feedback as {
 					correct: Array<{ data: { content: string } }>;
 					incorrect: Array<{ data: { content: string } }>;
@@ -703,7 +690,6 @@ for (const width of [1280, 390]) {
 		await page.setViewportSize({ width, height: 720 });
 		await page.goto(base + twoSlideEntry);
 		await expect(page.locator(".praxity-deck")).toHaveAttribute("data-ready", "true");
-		// Keep the next Tab within the document instead of testing browser-chrome wrapping.
 		await page.evaluate(() => {
 			const afterDeck = document.createElement("button");
 			afterDeck.id = "after-deck";
@@ -753,16 +739,12 @@ test("Guided containers expose no click action while course controls keep theirs
 	await page.goto(base + linksEntry);
 	await expect(page.locator(".praxity-deck")).toHaveAttribute("data-ready", "true");
 	await expect(page.locator('[data-island="rating"]')).toHaveAttribute("data-hydrated", "");
-	// Inline tooltips once delegated click from body, which made everything clickable.
 	const term = page.locator("[data-tooltip-content]");
 	await expect(term).toHaveAttribute("data-tooltip-enhanced", "");
 	const cdp = await page.context().newCDPSession(page);
-	// Count only course scripts. Playwright's injected scripts add their own
-	// window listeners for hit-target checks.
 	const scriptUrls = new Map<string, string>();
 	cdp.on("Debugger.scriptParsed", (script) => scriptUrls.set(script.scriptId, script.url));
 	await cdp.send("Debugger.enable");
-	// Chromium's mouse-button event list; any of these makes an element clickable.
 	const mouseButtonEvents = new Set(["click", "mousedown", "mouseup", "DOMActivate"]);
 	const mouseButtonListeners = async (expression: string) => {
 		const { result } = await cdp.send("Runtime.evaluate", { expression });
@@ -834,7 +816,6 @@ test("Guided containers expose no click action while course controls keep theirs
 	).toBe(true);
 	await page.getByRole("link", { name: "Practice question" }).click();
 	await expect(page.locator('[data-deck-slide="slide-2"]')).toBeVisible();
-	// Hydrated islands must not add container listeners either.
 	await expect(
 		page.locator('[data-deck-slide="slide-2"] [data-island="assessment"][data-hydrated]'),
 	).toHaveCount(1);
@@ -849,7 +830,6 @@ test("authored course links resolve in place while section and external links st
 	const introduction = page.locator('[data-deck-slide="slide-1"]');
 	const practice = page.locator('[data-deck-slide="slide-2"]');
 	const practiceLink = introduction.getByRole("link", { name: "Practice question" });
-	// A pointer on nested text resolves to the owning link.
 	await practiceLink.locator("strong").click();
 	await expect(practice).toBeVisible();
 	await expect(page).toHaveURL(/introduction\.html#slide-2$/);
@@ -943,7 +923,6 @@ test("transcript seek buttons respond to keyboard and focusless activation", asy
 	const segment = (index: number) => seeks.nth(index).locator("xpath=..");
 	const last = (await seeks.count()) - 1;
 	expect(last).toBeGreaterThan(0);
-	// Screen readers can activate a control without moving focus to it.
 	await seeks.nth(last).dispatchEvent("click");
 	await expect(segment(last)).toHaveAttribute("aria-current", "true");
 	await expect(seeks.nth(last)).not.toBeFocused();
@@ -961,7 +940,6 @@ test("mobile More closes on an outside pointer, Escape or focus leaving", async 
 	const outline = page.locator("#deck-outline-toggle");
 	await toggle.click();
 	await expect(toggle).toHaveAttribute("aria-expanded", "true");
-	// A pointer on the toggle itself closes once, without close-then-reopen.
 	await toggle.click();
 	await expect(toggle).toHaveAttribute("aria-expanded", "false");
 	await toggle.click();
@@ -1201,7 +1179,6 @@ test("reflow, keyboard and full reading remain accessible", async ({ page }, tes
 test("one audio node continues across sources and pauses at an interaction", async ({ page }) => {
 	await page.goto(base + shortAudioEntry);
 	await expect(page.locator(".praxity-deck")).toHaveAttribute("data-ready", "true");
-	// Start with keyboard focus so natural advancement can verify its retention.
 	await page.locator(".praxity-narration-transport button").press("Enter");
 	const originalAudio = await page.locator("[data-narration-player]").elementHandle();
 	const originalSource = await originalAudio?.getAttribute("src");
@@ -1559,7 +1536,6 @@ test("shared playback toggle and keyboard seeking preserve paused intent", async
 	await clickDeckTool(page, "#deck-script-toggle");
 	const seek = page.locator("[data-deck-seek]").first();
 	const passage = page.locator("#deck-script [data-deck-segment]").first();
-	// Keyboard browsing reveals Resume following before the seek control itself.
 	await page.locator("#deck-script-scroll").focus();
 	await expect(page.locator("#deck-resume-follow")).toBeVisible();
 	const passageBox = await passage.boundingBox();
@@ -1620,7 +1596,6 @@ test("outline open at start leaves a usable slide at 960px and becomes a drawer 
 	await expect(outline).toHaveAttribute("role", "dialog");
 	await expect(main).toBeHidden();
 	await expect(main).toHaveJSProperty("inert", true);
-	// 320 CSS px is the reflow width of a 1280px viewport at 400% browser zoom.
 	await page.setViewportSize({ width: 320, height: 700 });
 	expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 	await page.locator("#deck-outline-close").click();
@@ -1663,7 +1638,6 @@ test("left outline and right transcript share shell styling and preserve native 
 	const closed = await main.boundingBox();
 	const shell = await page.locator(".praxity-deck").boundingBox();
 	if (!closed || !shell) throw new Error("Native content and shell must have layout boxes");
-	// A closed sidebar leaves no empty track beside the centered learner content.
 	expect(closed.x + closed.width / 2).toBeCloseTo(shell.x + shell.width / 2, 0);
 
 	const measure = () =>
@@ -1910,8 +1884,6 @@ test("failed narration exposes retry feedback while reading stays available", as
 	const mediaUrl = await page
 		.locator("[data-narration-player]")
 		.evaluate((audio: HTMLAudioElement) => audio.src);
-	// WebKit media fetches also bypass page response events. Check the actual
-	// server endpoint, then retain the learner's playback and reading assertions.
 	const failedMedia = await request.get(mediaUrl);
 	expect(failedMedia.status()).toBe(503);
 	await page.locator(".praxity-narration-transport button").click();
@@ -2055,7 +2027,6 @@ for (const viewport of [
 			await page.setViewportSize(viewport);
 			await page.goto(base + entry);
 			await clickDeckTool(page, `#deck-${panel}-toggle`);
-			// Explicit arrival isolates panel preference from bookmark resume focus.
 			await page.goto(`${base}${entry}?praxity-resume=0`);
 			await expect(page.locator(".praxity-deck")).toHaveAttribute("data-ready", "true");
 			const heading = page.getByRole("heading", {
@@ -2288,8 +2259,6 @@ for (const width of [1280, 390]) {
 			"Play",
 		);
 		await page.screenshot({ path: testInfo.outputPath(`resume-follow-${width}.png`) });
-		// Observe application seeks directly: WebKit can settle its initial media
-		// clock after pause, and this fixture server does not serve byte ranges.
 		await audio.evaluate((element: HTMLAudioElement) => {
 			const descriptor = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, "currentTime");
 			if (!descriptor?.get || !descriptor.set) throw new Error("Missing media clock descriptor");
@@ -2676,7 +2645,6 @@ test("a fitting slide has one vertical boundary while long and enlarged slides s
 	await expect(page.locator(".praxity-deck")).toHaveAttribute("data-ready", "true");
 	const main = page.locator("#main-content");
 	const canvas = page.locator(".deck-slide:visible > .praxity-slide");
-	// A 600px block fits with the fixed 48px start and one footer-height end inset.
 	await canvas.evaluate((element) => {
 		element.replaceChildren(
 			Object.assign(document.createElement("div"), { textContent: "Fitting content" }),
@@ -2730,7 +2698,6 @@ for (const width of [1280, 390]) {
 		const slide = page.locator('[data-deck-slide="group-slide-2"]');
 		const context = slide.locator(".praxity-float-region[data-assessment-group-context]");
 		await expect(context).toBeVisible();
-		// Make the image taller than its companion text, as in the reported scenario.
 		await context.locator("img").evaluate((image) => {
 			image.style.height = "360px";
 			image.style.objectFit = "cover";
@@ -2870,7 +2837,6 @@ for (const width of [1280, 390]) {
 					const range = document.createRange();
 					range.selectNodeContents(walker.currentNode);
 					for (const line of range.getClientRects()) {
-						// Text outside the scrollport is clipped and cannot cover the cue.
 						const top = Math.max(line.top, stage.top);
 						const bottom = Math.min(line.bottom, stage.bottom);
 						if (
@@ -2897,7 +2863,6 @@ for (const width of [1280, 390]) {
 		await cue.click();
 		await expect.poll(() => main.evaluate((element) => element.scrollTop)).toBe(screen);
 		if (await cue.isVisible()) await assertClearBand();
-		// Scrolling reveals a lazy assessment whose hydration can move the content end.
 		const finalChoice = main.getByRole("radio", { name: "Review the script", exact: true });
 		await finalChoice.scrollIntoViewIfNeeded();
 		await expect(finalChoice).toBeEnabled();
@@ -2999,7 +2964,6 @@ type ChromeState = {
 	marker: string;
 };
 
-/** Reads each Guided toggle's resting appearance, away from hover and focus styling. */
 async function chromeStates(page: Page): Promise<ChromeState[]> {
 	await page.mouse.move(0, 0);
 	return page
@@ -3011,7 +2975,6 @@ async function chromeStates(page: Page): Promise<ChromeState[]> {
 				.filter(
 					(control) =>
 						control.checkVisibility() ||
-						// The modal hides its Transcript trigger in More; keep checking its state styling.
 						(control.id === "deck-script-toggle" &&
 							!!document.querySelector("dialog.deck-transcript-sheet:modal")),
 				)
@@ -3064,7 +3027,6 @@ for (const width of [390, 900, 1280]) {
 						),
 					larger,
 				);
-				// Chrome geometry needs a hydrated deck, not media metadata readiness.
 				await page.goto(base + (locale === "fr" ? frenchAudioEntry : audioEntry), {
 					waitUntil: "domcontentloaded",
 				});
@@ -3072,11 +3034,9 @@ for (const width of [390, 900, 1280]) {
 				await expect(page.locator(".praxity-narration-transport button")).toBeVisible();
 				const controls = page.locator("#deck-controls");
 
-				// Footer controls stay whole, separate and unobscured.
 				const footer = await controls
 					.locator("button, summary, input, #deck-position")
 					.evaluateAll((elements) => {
-						// Closed native details can retain descendant rectangles without painting them.
 						const visible = elements.filter((element) => element.checkVisibility());
 						return visible.map((element, index) => {
 							const box = element.getBoundingClientRect();
@@ -3116,7 +3076,6 @@ for (const width of [390, 900, 1280]) {
 					true,
 				);
 
-				// Playback settings share the labelled Tools disclosure at every width.
 				const disclosures = await controls
 					.locator(
 						'summary, button[aria-expanded]:not([aria-controls="deck-sidebar"], [aria-controls="deck-outline-sidebar"])',
@@ -3154,7 +3113,6 @@ for (const width of [390, 900, 1280]) {
 					await expect(more).toBeFocused();
 				}
 
-				// Toggle buttons share a dot; Auto-advance uses a labelled switch with a moving thumb.
 				const followName = locale === "fr" ? "Suivre la narration" : "Follow narration";
 				const advanceName = locale === "fr" ? "Avancer automatiquement" : "Auto-advance";
 				await clickDeckTool(page, "#deck-script-toggle");
@@ -3169,13 +3127,11 @@ for (const width of [390, 900, 1280]) {
 					).toBe(true);
 					await expect(page.locator("#deck-more-toggle")).toHaveAttribute("aria-expanded", "false");
 				}
-				// Focus moving out of More closes it, so clear focus rings by blurring instead.
 				await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
 				const states = await chromeStates(page);
 				await page.screenshot({
 					path: testInfo.outputPath(`guided-chrome-open-${width}-${locale}-${larger}.png`),
 				});
-				// More and the modal's actions are compared in their separate visible states.
 				const on = Array.from(
 					new Map(
 						[...menuStates, ...states]
@@ -3227,7 +3183,6 @@ for (const width of [390, 900, 1280]) {
 						}),
 					);
 				for (const surface of surfaces) {
-					// Computed paints can be oklch or color(), so resolve through the browser.
 					const [foreground, background] = await page.evaluate(
 						({ indicator, surface }) => {
 							const canvas = document.createElement("canvas");
@@ -3251,7 +3206,6 @@ for (const width of [390, 900, 1280]) {
 					).toBeGreaterThanOrEqual(3);
 				}
 
-				// The same control changes only by state, and forced colors keep the cue.
 				const advance = page.locator("#deck-advance");
 				if (width < 600) await page.locator("#deck-sidebar-close").click();
 				await revealDeckTool(page, advance);

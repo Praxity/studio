@@ -67,7 +67,6 @@ Code frame
 Read the next page.
 `);
 	if (parsed.hasErrors) throw new Error(JSON.stringify(parsed.errors));
-	// Grammar accepts up to ten scale labels; the renderer also accepts an eleven-key model.
 	for (const block of parsed.blocks.filter((block) => block.type === "rating")) {
 		const count = String(block.data.label).includes("Eleven") ? 11 : 10;
 		block.data = {

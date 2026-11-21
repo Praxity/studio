@@ -107,7 +107,6 @@ test.beforeAll(async () => {
 				];
 			}
 			if (variant === "deck-tabs") {
-				// Stateful output eagerly attaches all islands, including tabs before the deck chunk.
 				course.content[0].blocks.push(
 					...readLesson(
 						"::: choice Try a response {private=true scored=false required=false}\n(x) First response\n( ) Second response\n:::\n",
@@ -205,7 +204,6 @@ async function recordFirstFrame(pane: Locator) {
 			});
 		});
 		observer.observe(element, { attributes: true });
-		// A selected inner panel becomes visible when its containing slide or panel opens.
 		for (let ancestor = element.parentElement; ancestor; ancestor = ancestor.parentElement) {
 			observer.observe(ancestor, {
 				attributes: true,
@@ -239,7 +237,6 @@ for (const variant of ["en", "narrated-fr", "cards"]) {
 			elements.map((element) => Array.from(element.querySelectorAll("img"), (image) => image.src)),
 		);
 		if (variant === "cards") {
-			// Opacity transitions keep all cards rendered; Chromium already fetches all images on main.
 			for (const pane of await panes.all()) await expect.poll(() => loaded(pane)).toBe(true);
 			expect([...requested].sort()).toEqual(sources.flat().sort());
 		} else {
@@ -372,7 +369,6 @@ for (const arrival of ["deep link", "restore"]) {
 		await expect(panes.nth(3)).toBeVisible();
 		for (const index of [2, 3, 4]) await expect.poll(() => loaded(panes.nth(index))).toBe(true);
 		const expected = await Promise.all([2, 3, 4].map((index) => imageSources(panes.nth(index))));
-		// The document's static LCP image is discoverable before the runtime resolves arrival.
 		const first = (await imageSources(panes.nth(0)))[0];
 		expect(requested.size).toBe(7);
 		expect([...requested].sort()).toEqual([first, ...expected.flat()].sort());
@@ -417,7 +413,6 @@ test("tabs inside deck slides wait for deck activation and respect nested reques
 		await page.goto(`${origin}${entries.get("deck-tabs")}`, { waitUntil: "domcontentloaded" });
 		await expect(page.locator('[data-island="tabs"][data-hydrated]')).toHaveCount(6);
 		await expect(page.locator(".praxity-deck")).not.toHaveAttribute("data-ready", "true");
-		// Before deck init, static slides have no hidden attribute. Tabs must still refrain.
 		const premature = await page
 			.locator('[data-deck-slide="pane-5"] .praxity-tabs-panel img')
 			.evaluateAll((images) => images.some((image) => image.getAttribute("loading") === "eager"));

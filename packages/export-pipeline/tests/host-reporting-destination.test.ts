@@ -14,7 +14,6 @@ it.each(["standalone", "scorm12", "scorm2004", "xapi"] as const)(
 		const dom = new JSDOM("<!doctype html><html lang='en'>", { url: "https://course.example" });
 		try {
 			const local = new LocalStorageRuntime(dom.window.localStorage, "course");
-			// The LMS adapter seam has no device-storage capability. xAPI stores drafts locally.
 			const runtime =
 				format === "standalone"
 					? local

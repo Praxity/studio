@@ -10,13 +10,6 @@ import {
 } from "./helpers";
 import { applyTextSpacing, applyTwoHundredPercentZoom } from "./layout-overrides";
 
-/**
- * 200% browser zoom is emulated via `Emulation.setDeviceMetricsOverride` over the
- * Chrome DevTools Protocol, which only Chromium exposes. This is a harness limit, not
- * a WebKit or Firefox exemption -- 1.4.4 applies in every engine. The 1.4.12 text-spacing
- * mode injects CSS and runs in all three, so WebKit and Firefox reflow is covered there;
- * WebKit and Firefox zoom itself needs a manual check.
- */
 const CDP_ZOOM_SKIP = "200% zoom is emulated over the Chrome DevTools Protocol (Chromium-only)";
 
 const TEST_ARCHETYPES = new Set<NavArchetype>(["slides", "scroll", "sidebar"]);
@@ -27,10 +20,6 @@ const MODES = [
 		name: "200% browser zoom",
 		criterion: "WCAG 1.4.4",
 		apply: applyTwoHundredPercentZoom,
-		// Emulated through the Chrome DevTools Protocol, which only Chromium exposes.
-		// Not a WebKit or Firefox reflow exemption -- 1.4.4 applies in every engine;
-		// neither exposes this zoom-emulation hook. Verify zoom reflow manually.
-		// The 1.4.12 text-spacing mode below injects CSS and runs in all three engines.
 		chromiumOnly: true,
 	},
 	{
@@ -54,8 +43,6 @@ async function openWithMode(
 	});
 	await expect(page.locator(".praxity-layout-wrapper")).toBeVisible();
 
-	// This assertion walks and scrolls every text node. Load the page's deferred
-	// content islands first so React cannot replace an SSR node mid-measurement.
 	const contentIslands = page.locator("#main-content [data-island]");
 	for (let index = 0; index < (await contentIslands.count()); index += 1) {
 		await contentIslands.nth(index).scrollIntoViewIfNeeded();
@@ -172,8 +159,6 @@ async function assertNoContentLoss(page: Page, label: string): Promise<void> {
 			);
 		};
 
-		// Full-width blocks intentionally extend beyond the centered <main>. They only
-		// fail reflow when that extension reaches the page/root scrolling boundary.
 		const horizontal = [...new Set([document.documentElement, document.body, root])]
 			.filter((element) => element.scrollWidth > element.clientWidth + 1)
 			.map(describe);
@@ -259,15 +244,7 @@ async function assertNoContentLoss(page: Page, label: string): Promise<void> {
 		throw new Error(`${label} could not measure content loss: ${result.measurementError}`);
 	}
 
-	// Known content loss, recorded so this suite can gate regressions while the
-	// underlying defects are fixed separately. Anything not listed here fails.
-	// Removing an entry once fixed is the point -- do not add to this list to
-	// silence a new finding.
-	const KNOWN_CLIPPED = [
-		// Mantine Badge fixes its height per size and ellipsises its label, so the
-		// assessment status badges truncate. AssessmentBlock.tsx:1382-1397.
-		"span.m_5add502a.mantine-Badge-label",
-	];
+	const KNOWN_CLIPPED = ["span.m_5add502a.mantine-Badge-label"];
 	const unexpectedClipped = result.clipped.filter(
 		(entry) => !KNOWN_CLIPPED.some((known) => entry.startsWith(known)),
 	);

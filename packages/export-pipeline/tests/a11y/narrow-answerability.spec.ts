@@ -110,8 +110,6 @@ for (const theme of ["light", "dark"]) {
 			await screenshot(page, `${theme}-datatable-${width}`);
 			await expect(region).toHaveAttribute("role", "region");
 			await expect(region).toHaveAttribute("tabindex", "0");
-			// Windows headless Firefox resolves even a native `thin` scrollbar to `none`.
-			// Check the published declaration and compare rendering with a native control.
 			expect(
 				await region.evaluate((node) => {
 					const hasThinRule = (rules: CSSRuleList): boolean =>
@@ -139,7 +137,6 @@ for (const theme of ["light", "dark"]) {
 			expect(await region.evaluate((node) => getComputedStyle(node).backgroundImage)).toContain(
 				"gradient",
 			);
-			// Force a wide authored table to exercise the cue and native scroll path.
 			await region.locator("table").evaluate((node) => {
 				node.style.minWidth = "800px";
 			});

@@ -113,7 +113,6 @@ it("adds exactly zero HTML bytes and no stylesheet on a page without a sheet", (
 });
 
 it("emits a synchronous sheet link before shared and authored styles", () => {
-	// The sheet stylesheet must arrive before shared and author styles.
 	const runtimePlan = planPageRuntime(config, { ...page, blocks: [sheet] }, true);
 	{
 		const usedStylesheets = new Set<string>();
@@ -188,7 +187,6 @@ it("publishes with a complete planned island and synchronous stylesheet", () => 
 	expect(html).toContain('data-retrieval-side="back"');
 });
 
-// The independent R04 bundle keeps other pages out of this closure.
 it("keeps the full sheet island below the 10 KiB lightweight allowance", async () => {
 	const script = await readFile(path.join(directory, "retrieval-sheet.js"));
 	expect(gzipSync(script).byteLength).toBeLessThanOrEqual(10 * 1024);

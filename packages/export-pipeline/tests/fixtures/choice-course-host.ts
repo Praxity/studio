@@ -22,7 +22,6 @@ afterEach(() => {
 	storageKeys.clear();
 });
 
-/** Install the production host, never a provider or evidence-view substitute. */
 export function installChoiceCourseHost(
 	id: string,
 	data: AssessmentBlockData,

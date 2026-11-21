@@ -130,8 +130,6 @@ function expectScoreBeforeCompletion(state: LmsState): void {
 	expect(completionWrite).toBeGreaterThan(-1);
 	const previousCommit = operations.slice(0, completionWrite).lastIndexOf("commit");
 	expect(operations.slice(completionWrite + 1)).toContain("commit");
-	// Guided can commit its new bookmark after saving the result. Check the commit
-	// that transfers completion, which is the point at which an LMS can lock the score.
 	const writes = state.calls
 		.slice(previousCommit + 1, completionWrite + 1)
 		.filter(([operation]) => operation === "set")
@@ -233,8 +231,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 					await expect(
 						frame.getByRole("heading", { level: 1, name: new RegExp(`${cue}.*Assessment`) }),
 					).toBeVisible();
-					// Firefox can retain the LMS launch button's outer-document focus.
-					// Verify the course document's focus destination separately from that host policy.
 					await expect
 						.poll(() => frame.evaluate(() => document.activeElement?.textContent))
 						.toMatch(new RegExp(`${cue}.*Assessment`));
@@ -250,8 +246,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 						contentType: "application/json",
 					});
 					const writes = final.calls.map(([operation, key]) => (operation === "set" ? key : ""));
-					// Incomplete may already be current on the first answer. The final result changes
-					// status and must transfer after the final attempt's score in the same save.
 					expect(writes.lastIndexOf(statusKey)).toBeGreaterThan(
 						writes.lastIndexOf(`${prefix}score.raw`),
 					);
@@ -283,10 +277,8 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 									.filter((interaction) => interaction.id === assessmentId),
 							assessmentIds.get(mode),
 						);
-						// recordInteraction retains the latest scored row, not an append-only retry history.
 						expect(retained).toHaveLength(1);
 						expect(retained[0]).toMatchObject({ correct: false, score: 0 });
-						// A final failure can return empty entry with saved answers. That is not confirmed resume.
 						await page.getByRole("button", { name: "Return to LMS" }).click();
 						await frame.waitForURL("**/away.html");
 						await page.getByRole("button", { name: "Launch course" }).click();

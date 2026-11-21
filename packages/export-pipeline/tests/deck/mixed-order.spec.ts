@@ -190,7 +190,6 @@ for (const source of ["model", "real"])
 					"Continue through the earlier slides to reach this one.",
 				);
 			}
-			// A fresh browser state proves arrival uses the same policy as the outgoing outline.
 			await page.evaluate(() => {
 				sessionStorage.clear();
 				localStorage.clear();
@@ -205,7 +204,6 @@ for (const source of ["model", "real"])
 					"Continue through the earlier slides to reach this one.",
 				);
 			}
-			// Select the first slide explicitly; a bare entry now resumes the stored bookmark.
 			await page.goto(`${base}${entry.first}#${entry.firstId}`);
 			await expect(page.locator(".praxity-deck")).toHaveAttribute("data-ready", "true");
 			await expect(page.locator(`[data-deck-slide="${entry.firstId}"]`)).toBeVisible();
@@ -218,7 +216,6 @@ for (const source of ["model", "real"])
 			await expect(page.locator("#deck-status")).toHaveText(
 				courseOrder ? "" : "Continue through the earlier slides to reach this one.",
 			);
-			// Once the earlier slides have been visited, Next admits both override directions.
 			await page.goto(`${base}${entry.first}#${entry.firstId}`);
 			await expect(page.locator(".praxity-deck")).toHaveAttribute("data-ready", "true");
 			await expect(page.locator(`[data-deck-slide="${entry.firstId}"]`)).toBeVisible();
@@ -244,15 +241,11 @@ for (const source of ["model", "real"]) {
 		for (let index = 1; index < (source === "real" ? 2 : 4); index++)
 			await page.locator("#deck-next").click();
 		await expect(page.locator(`[data-deck-slide="${entry.lastFirstId}"]`)).toBeVisible();
-		// Reload retains the current slide without resume orientation.
-		// Gecko's automation reload treats history-replaced URLs as navigation.
-		// Use the same native reload as the standalone resume journeys.
 		await Promise.all([page.waitForNavigation(), page.evaluate(() => location.reload())]);
 		await expect(page.locator(".praxity-deck")).toHaveAttribute("data-ready", "true");
 		await expect(page.locator(`[data-deck-slide="${entry.lastFirstId}"]`)).toBeVisible();
 		await expect(page.locator(".praxity-resume-prefix,.praxity-resume-summary")).toHaveCount(0);
 		await expect(page.locator("body")).toBeFocused();
-		// A fresh course entry still restores the bookmark before Next shows completion.
 		await page.goto("about:blank");
 		await page.goto(base + entry.first);
 		await expect(page.locator(".praxity-deck")).toHaveAttribute("data-ready", "true");
@@ -267,7 +260,6 @@ for (const source of ["model", "real"]) {
 				(window.__praxityRuntime as SCORMRuntime | undefined)?.getBookmark(),
 			),
 		).toBe(`index.html?praxity-page=${encodeURIComponent(entry.lastFirstId)}`);
-		// Even a different module's bookmark must not redirect an active module-end action.
 		await page.evaluate((id) => {
 			const runtime = window.__praxityRuntime as SCORMRuntime | undefined;
 			if (!runtime) throw new Error("Missing runtime");

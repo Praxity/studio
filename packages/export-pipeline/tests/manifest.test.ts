@@ -4,10 +4,6 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { enumerateFiles, generateManifest } from "../src/scorm/manifest";
 
-// ---------------------------------------------------------------------------
-// generateManifest — SCORM 1.2
-// ---------------------------------------------------------------------------
-
 describe("generateManifest — SCORM 1.2", () => {
 	const files = ["index.html", "page-1.html", "_astro/styles.css"];
 
@@ -61,7 +57,7 @@ describe("generateManifest — SCORM 1.2", () => {
 	it("does not include SCORM 2004-specific elements", () => {
 		const xml = generateManifest("scorm12", "course-1", "My Course", files);
 		expect(xml).not.toContain("timeLimitAction");
-		expect(xml).not.toContain("scormType"); // capital T is 2004 only
+		expect(xml).not.toContain("scormType");
 	});
 
 	it("includes xsi:schemaLocation for SCORM 1.2", () => {
@@ -71,10 +67,6 @@ describe("generateManifest — SCORM 1.2", () => {
 		expect(xml).toContain("adlcp_rootv1p2.xsd");
 	});
 });
-
-// ---------------------------------------------------------------------------
-// generateManifest — SCORM 2004
-// ---------------------------------------------------------------------------
 
 describe("generateManifest — SCORM 2004", () => {
 	const files = ["index.html", "page-1.html", "_astro/styles.css"];
@@ -154,10 +146,6 @@ describe("generateManifest — SCORM 2004", () => {
 	});
 });
 
-// ---------------------------------------------------------------------------
-// generateManifest — xAPI
-// ---------------------------------------------------------------------------
-
 describe("generateManifest — xAPI", () => {
 	const files = ["index.html", "xapi-wrapper.js"];
 
@@ -226,10 +214,6 @@ describe("generateManifest — LOM metadata", () => {
 	});
 });
 
-// ---------------------------------------------------------------------------
-// generateManifest — XML escaping in title
-// ---------------------------------------------------------------------------
-
 describe("generateManifest — XML escaping", () => {
 	it("escapes XML-special characters in course identifier", () => {
 		const xml = generateManifest("scorm12", 'test" onload="alert(1)', "Test", ["index.html"]);
@@ -253,14 +237,9 @@ describe("generateManifest — XML escaping", () => {
 		expect(xml).toContain(
 			"Safety &amp; Health: &quot;Risks&quot; &lt;Level 1&gt; O&apos;Brien&apos;s Guide",
 		);
-		// The raw unescaped title must not appear anywhere in the output
 		expect(xml).not.toContain(`Safety & Health: "Risks" <Level 1> O'Brien's Guide`);
 	});
 });
-
-// ---------------------------------------------------------------------------
-// enumerateFiles
-// ---------------------------------------------------------------------------
 
 describe("enumerateFiles", () => {
 	const tmpDirs: string[] = [];

@@ -91,15 +91,12 @@ function chunks(root: Locator) {
 	return root.locator("[data-highlight-chunk]");
 }
 async function offlineFile(page: Page, browserName: string) {
-	// WebKit offline emulation rejects even plain file: pages. Deny every HTTP(S)
-	// request at the network seam; the other engines also expose offline state.
 	await page.route(/^https?:\/\//, (route) => route.abort());
 	if (browserName !== "webkit") await page.context().setOffline(true);
 }
 
-// One production CLI and viewer per file. Reuse retained bytes only when their source hash matches.
 test.beforeAll(async ({ browser }, info) => {
-	test.setTimeout(120_000); // timeout: docs/context/testing-strategy.md shared real CLI/export acceptance fixture
+	test.setTimeout(120_000);
 	root =
 		process.env.PRAXITY_HIGHLIGHT_ACCEPTANCE_BUILD ??
 		(await mkdtemp(join(tmpdir(), "highlight-acceptance-")));
@@ -199,8 +196,6 @@ test.beforeAll(async ({ browser }, info) => {
 			JSON.stringify({ sourceHash, inputHash, entries }, null, 2),
 		);
 	}
-	// Firefox does not expose/intercept file: requests. Preserve the real package
-	// bytes in a second directory, omitting only the two unavailable adapters.
 	const canonicalHashes: Record<string, string> = JSON.parse(
 		await readFile(join(root, "artifact-sha256.json"), "utf8"),
 	);
@@ -279,7 +274,6 @@ test.beforeAll(async ({ browser }, info) => {
 });
 
 test.beforeEach(async ({ page }) => {
-	// Isolate all external network while allowing actual local/file resources.
 	await page.route(/^https?:\/\//, (route) =>
 		route.request().url().startsWith(base) ? route.continue() : route.abort(),
 	);
@@ -598,7 +592,7 @@ for (const layout of layouts)
 		});
 
 test.afterAll(async ({ browser }, info) => {
-	test.setTimeout(120_000); // timeout: docs/context/testing-strategy.md shared real CLI/export acceptance fixture
+	test.setTimeout(120_000);
 	if (server && evidence && info.project.name === "chromium") {
 		const context = await browser.newContext({ reducedMotion: "reduce" });
 		const page = await context.newPage();
@@ -671,7 +665,6 @@ test.afterAll(async ({ browser }, info) => {
 			for (const note of copy.en.notes) expect(printed).toContain(note);
 			await writeFile(join(evidence, "browser-print.txt"), printed);
 			await page.emulateMedia({ media: "screen" });
-			// A 1280 × 900 display at 400% has a 320 × 225 CSS-pixel viewport.
 			const zoom = await browser.newContext({
 				viewport: { width: 320, height: 225 },
 				deviceScaleFactor: 4,

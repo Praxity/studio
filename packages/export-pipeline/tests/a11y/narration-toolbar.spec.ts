@@ -186,7 +186,6 @@ for (const feature of [
 			);
 			await route.fulfill({ response, body: html });
 		});
-		// Keep the playhead still while inspecting the real browser Highlight and Range.
 		await page.addInitScript(() => {
 			HTMLMediaElement.prototype.play = async () => {};
 		});
@@ -301,7 +300,6 @@ for (const feature of [
 			expect(await decorationOffset()).toEqual(before);
 			await page.getByRole("button", { name: "Pause", exact: true }).click();
 			expect(await decorationOffset()).toEqual(before);
-			// Missing timings and forced colors use the same fallback marker.
 			await page.locator('[data-block-id="highlight-list"]').evaluate((element) => {
 				element.setAttribute("data-narration-active", "true");
 			});
@@ -368,7 +366,6 @@ for (const width of [320, 360, 430, 740, 1200]) {
 			await expect(nextSentence).toBeHidden();
 			await expect(options).toBeFocused();
 		}
-		// Every control owns its hit target; wrapping must never cover a sibling.
 		const geometry = await header.evaluate((element) => {
 			const headerBox = element.getBoundingClientRect();
 			return [...element.querySelectorAll<HTMLElement>("button, input")]
@@ -389,7 +386,6 @@ for (const width of [320, 360, 430, 740, 1200]) {
 			expect(control.hit, control.label ?? "control hit target").toBe(true);
 		}
 		await listen.focus();
-		// macOS WebKit uses Option+Tab to include buttons in keyboard navigation.
 		await page.keyboard.press(
 			browserName === "webkit" && process.platform === "darwin" ? "Alt+Tab" : "Tab",
 		);
@@ -405,7 +401,6 @@ for (const width of [320, 360, 430, 740, 1200]) {
 		const selected = page.locator(".praxity-native-outline a[aria-current='page']");
 		await expect(selected).toBeVisible();
 		await expect(selected).toHaveCSS("border-radius", "0px");
-		// Switch to keyboard input before checking the focus-visible outline.
 		await page.keyboard.press(
 			browserName === "webkit" && process.platform === "darwin" ? "Alt+Tab" : "Tab",
 		);
@@ -413,7 +408,6 @@ for (const width of [320, 360, 430, 740, 1200]) {
 		await expect(selected).toHaveCSS("outline-style", "solid");
 		if (width < 768) {
 			await page.keyboard.press("Escape");
-			// Reading tools remain available when the course has no outline trigger.
 			await page.locator(".praxity-native-menu-toggle").evaluate((element) => element.remove());
 			await expect(listen).toBeVisible();
 		}

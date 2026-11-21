@@ -174,7 +174,6 @@ test("rect and polygon regions keep keyboard order and visible focus at 320 px",
 	page,
 	browserName,
 }) => {
-	// WebKit on macOS skips buttons on plain Tab unless Full Keyboard Access is on.
 	const tab = browserName === "webkit" && process.platform === "darwin" ? "Alt+Tab" : "Tab";
 	await page.setViewportSize({ width: 320, height: 700 });
 	const { rect, polygon } = await openHotspot(page);
@@ -191,7 +190,6 @@ test("rect and polygon regions keep keyboard order and visible focus at 320 px",
 	await expect(polygon.locator("..")).toHaveCSS("outline-style", "solid");
 	await page.keyboard.press("Enter");
 	await expect(polygon).toHaveAttribute("aria-pressed", "true");
-	// The selected check sits outside the clipped button, so the polygon's shape cannot hide it.
 	await expect(polygon.locator("xpath=following-sibling::span")).toHaveText("✓ 2");
 	await expect(polygon.locator("xpath=following-sibling::span")).toBeVisible();
 });

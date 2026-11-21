@@ -15,7 +15,6 @@ import { compilerIslandAssets } from "./fixtures/page-compiler";
 
 it("keeps the main glossary document bytes for escaped terms and terms inside notes", async () => {
 	const context = await choiceGlossaryContext();
-	// Captured from main before compiler-only choice trees existed.
 	const html = stripChoiceStateFacts(compileDocument(context, "glossary").html);
 	expect(html).toBe(
 		readFileSync(new URL("./fixtures/choice-glossary.txt", import.meta.url), "utf8"),

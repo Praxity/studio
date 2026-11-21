@@ -40,8 +40,6 @@ test("submission reveals a branch and retry keeps Play in authored order", async
 	await expect(calm).toBeHidden();
 	await page.getByRole("button", { name: "Play", exact: true }).click();
 	await expect(audio).toHaveAttribute("src", /tense\.wav/);
-	// A source change precedes decoded playback. Start retry only once the real
-	// clock advances, with a clip longer than this test's entire 30-second budget.
 	await expect(audio).toHaveJSProperty("duration", 60);
 	await expect
 		.poll(() =>

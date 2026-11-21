@@ -4,7 +4,6 @@ import type AdmZip from "adm-zip";
 import { JSDOM } from "jsdom";
 import type { SelfCheckContentInput } from "../../src/build";
 
-/** Positive package contract, alongside the output invariant's spoiler scan. */
 export function assertSelfCheckPackage(zip: AdmZip, expected: readonly SelfCheckContentInput[]) {
 	const assets = zip
 		.getEntries()

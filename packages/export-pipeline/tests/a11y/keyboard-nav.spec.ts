@@ -44,7 +44,6 @@ async function activateNextPage(page: Page, nextControl: Locator) {
 	const href = await nextControl.getAttribute("href");
 	expect(href, "Next page control must identify its destination").toBeTruthy();
 	const destination = new URL(href ?? "", page.url()).href;
-	// WebKit can return from press() before the new document starts loading.
 	await Promise.all([
 		page.waitForURL(destination, { waitUntil: "domcontentloaded" }),
 		nextControl.press("Enter"),
@@ -62,7 +61,6 @@ test.describe("Keyboard navigation", () => {
 		await waitForHydration(page);
 		const nextControl = page.getByRole("link", { name: "Next page: Media & Embeds" });
 		await page.route("**/media-and-embeds.html", async (route) => {
-			// Keep WebKit on the loaded source document until the destination responds.
 			await new Promise((resolve) => setTimeout(resolve, 500));
 			await route.continue();
 		});
@@ -250,9 +248,6 @@ test.describe("Keyboard navigation", () => {
 			const navReached = await pressTabUntilFocused(page, navNextControl);
 			expect(navReached, "Tab did not reach Next page control").toBe(true);
 		} else {
-			// Playwright WebKit skips native links in sequential Tab order. Real
-			// Safari needs macOS Keyboard Navigation and its "Press Tab to highlight
-			// each item on a webpage" setting. Seed focus for Enter activation below.
 			await navNextControl.focus();
 			await expect(navNextControl).toBeFocused();
 		}

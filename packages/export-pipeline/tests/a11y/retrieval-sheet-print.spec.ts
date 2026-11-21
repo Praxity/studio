@@ -12,7 +12,6 @@ let page: Page, context: BrowserContext;
 test.beforeAll(async ({ browser }) => {
 	directory = await mkdtemp(join(tmpdir(), "retrieval-print-"));
 	await writeRetrievalSheetHarness(directory, true, true);
-	// Two real rendered instances. Re-key IDs before enhancement, never clone live controls.
 	for (const lang of ["en", "fr"]) {
 		for (const rows of [1, 3, 8, "8-short"]) {
 			const file = join(directory, `${lang}-light-${rows}.html`);
@@ -72,7 +71,6 @@ async function open(lang = "en", rows: number | string = 3) {
 	await expect(page.locator("[data-retrieval-enhanced]")).toHaveCount(2);
 }
 async function enterPrint() {
-	// Observe entry before exit so Firefox cannot coalesce both emulated changes.
 	const entry = await page.evaluateHandle(() => ({
 		ready: new Promise<boolean>((done) => {
 			matchMedia("print").addEventListener("change", (event) => done(event.matches), {
@@ -85,7 +83,6 @@ async function enterPrint() {
 	await entry.dispose();
 }
 async function request() {
-	// Hidden containers cannot receive a pointer click. Exercise the same real handler.
 	await first()
 		.locator(":scope > .praxity-button")
 		.evaluate((button: HTMLButtonElement) => button.click());
@@ -103,7 +100,6 @@ async function endPrint() {
 async function screenMarkup() {
 	return page.locator("#placement").evaluate((host) => {
 		const copy = host.cloneNode(true) as HTMLElement;
-		// The contract requires one printing announcement. All other screen DOM stays exact.
 		for (const status of copy.querySelectorAll('[role="status"]')) status.textContent = "";
 		return copy.outerHTML;
 	});
@@ -172,13 +168,9 @@ for (const placement of [
 						panel.checkVisibility({ opacityProperty: true, visibilityProperty: true }),
 					),
 				);
-		// Gecko still hits MAIN under print media after observed media entry, scrolling
-		// and a frame. Its native visibility and box checks below remain required.
 		const probePrintPaint = placement === "details" && browserName !== "firefox";
 		if (placement === "details") expect(await nativePanelVisibility()).toEqual([false, false]);
 		await request();
-		// Playwright's WebKit :visible fallback rejects closed details even when
-		// print CSS exposes ::details-content. Use the browser's visibility check.
 		await expect
 			.poll(() =>
 				first()
@@ -197,7 +189,6 @@ for (const placement of [
 			)
 			.toBe(2);
 		if (probePrintPaint) {
-			// Also prove the exposed text is painted and receives hits inside the viewport.
 			const paint = await first()
 				.locator("[data-retrieval-side]")
 				.evaluateAll(async (panels) => {
@@ -367,7 +358,6 @@ test("pointer printing preserves the focus held when the request starts", async 
 	const other = second().getByRole("tab", { name: "Front", exact: true });
 	await other.focus();
 	const button = first().locator(".praxity-button");
-	// Exercise Safari's non-focusing pointer activation on every engine.
 	await button.evaluate((node) => {
 		node.addEventListener("mousedown", (event) => event.preventDefault(), { once: true });
 	});
@@ -437,7 +427,6 @@ for (const lang of ["en", "fr"] as const)
 						.locator("[data-retrieval-side=back]")
 						.evaluate((node) => getComputedStyle(node).breakInside),
 				).toBe("auto");
-				// Paper dimensions and page counts run in CI, independent of optional captures.
 				const pdf = await page.pdf({
 					format,
 					printBackground: true,
@@ -453,7 +442,6 @@ for (const lang of ["en", "fr"] as const)
 				if (rows === 8) expect(pages).toBeGreaterThan(2);
 				else expect(pages).toBe(2);
 				const paper = source.match(/\/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)\s*\]/);
-				// PDF paper sizes in points; allow Chromium's device-pixel rounding.
 				expect(Math.abs(Number(paper?.[1]) - (format === "A4" ? 595.28 : 612))).toBeLessThan(1.5);
 				expect(Math.abs(Number(paper?.[2]) - (format === "A4" ? 841.89 : 792))).toBeLessThan(1.5);
 				await page.evaluate(() => window.dispatchEvent(new Event("afterprint")));

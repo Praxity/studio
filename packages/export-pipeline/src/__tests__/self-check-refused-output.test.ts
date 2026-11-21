@@ -6,7 +6,6 @@ import { compileDocument, createCourseContext, selfCheckContentInput } from "../
 const selfCheck =
 	"::: self-check Explain <b>why</b> & how\nmodel: The hidden model answer.\n:: Secret label\nmissed: Add the secret hint.\nevidence: hidden model\n:::\n";
 
-// The native baseline and config carry only prompt content until S7.
 it.each([
 	["on a page", `# Page\n\n${selfCheck}`],
 	["inside an accordion", `# Page\n\n::: accordion\n:: Panel\n${selfCheck}:::\n`],

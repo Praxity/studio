@@ -35,7 +35,6 @@ for (const placement of ["sidebar", "header"] as const) {
 				slugMap: new Map([["intro", "intro"]]),
 				islandAssets: { loaderFilename: "loader.js", islandFilenames: { nav: "nav.js" } },
 			});
-			// Inspect the actual server-rendered chrome without loading unrelated interaction bundles.
 			await page.setContent(html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, ""));
 			await page.addStyleTag({ content: styles });
 			await page.evaluate(

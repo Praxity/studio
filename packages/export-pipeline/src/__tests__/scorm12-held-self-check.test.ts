@@ -107,7 +107,6 @@ it.each(["en", "fr"])(
 			document.body.innerHTML =
 				'<div data-self-check data-self-check-id="check" data-self-check-revision="revision" data-self-check-src="check.json"><textarea></textarea></div><nav id="praxity-page-nav"><a data-page-number="2" href="next.html">Next</a></nav><script id="praxity-config" type="application/json">{"currentPage":1}</script>';
 			const active = selfCheckRuntime(document);
-			// Storage refusal must survive the implementation becoming ready.
 			active.session.startup("ready");
 			return active;
 		};
