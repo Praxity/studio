@@ -1291,20 +1291,18 @@ test("reading geometry spaces divided items from both rules at 390px", async ({ 
 					border: Number.parseFloat(style.borderTopWidth),
 					paddingBefore: style.paddingBlockStart,
 					paddingAfter: style.paddingBlockEnd,
-					token: Number.parseFloat(style.getPropertyValue("--block-gap")),
 				};
 			}),
 		);
 	expect(items).toHaveLength(8);
 	for (const item of items) {
 		expect(item.border, "the item is separated by a rule").toBeGreaterThan(0);
-		expect(item.token, "phone reading-rhythm block gap").toBe(24);
 		expect
-			.soft(item.before, "space before the divided item")
-			.toBeGreaterThanOrEqual(item.token - LAYOUT_UNIT);
+			.soft(item.before, "space before the divided item is the phone block gap")
+			.toBeGreaterThanOrEqual(24 - LAYOUT_UNIT);
 		expect
-			.soft(item.after, "space after the divided item")
-			.toBeGreaterThanOrEqual(item.token - LAYOUT_UNIT);
+			.soft(item.after, "space after the divided item is the phone block gap")
+			.toBeGreaterThanOrEqual(24 - LAYOUT_UNIT);
 		expect.soft(item.paddingBefore, "symmetric vertical padding").toBe(item.paddingAfter);
 	}
 });

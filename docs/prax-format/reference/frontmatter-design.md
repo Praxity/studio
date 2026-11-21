@@ -247,7 +247,8 @@ edge arrows; swipe and keyboard paging remain independently configurable.
 
 Published Reading settings contain Larger text and a Reading guide. Larger text is a convenience
 for environments where browser zoom does not persist; it returns to the course default from the
-same control. The Reading guide dims top-level content blocks, keeps compound blocks such as
+same control. It raises the root text size from 16px to 20px, and the gaps between blocks and
+sections and the page margins grow in the same proportion. The Reading guide dims top-level content blocks, keeps compound blocks such as
 columns and captioned images atomic, and groups a heading with the content it introduces. It is a
 reading aid, not an accessibility remediation or efficacy claim. Contrast follows the learner's
 platform through `prefers-contrast` and `forced-colors`; there is no course-level contrast toggle.

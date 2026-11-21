@@ -560,6 +560,36 @@ $$
 		{ ...catalog.buildOptions, format: "html" },
 	);
 	new AdmZip(readingGeometry.zip).extractAllTo(resolve(distDir, "reading-geometry"), true);
+	const spacingRhythm = await buildScormPackage(
+		{
+			...catalog.course,
+			courseId: "spacing-rhythm",
+			blocks: readLesson(`# Spacing rhythm
+
+The opening paragraph introduces the page.
+
+## Before you start
+
+Body text follows the heading.
+
+Bring these items:
+
+- A notebook
+- A pen
+
+::: note {tone=note style=outline}
+Check the room before you start.
+:::
+
+::: quote
+Consistency beats speed when safety is involved.
+:::
+`).blocks,
+			frontmatter: { ...catalog.course.frontmatter, title: "Spacing rhythm" },
+		},
+		{ ...catalog.buildOptions, format: "html" },
+	);
+	new AdmZip(spacingRhythm.zip).extractAllTo(resolve(distDir, "spacing-rhythm"), true);
 	const captionedVideo = await buildScormPackage(
 		{
 			courseId: "captioned-video",

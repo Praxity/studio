@@ -295,11 +295,11 @@ for (const renderer of ["canonical"]) {
 			expect(evidence.pairs.length).toBeGreaterThan(8);
 			for (const pair of evidence.pairs) {
 				expect(pair.level, pair.text ?? "heading").toMatch(/^[1-6]$/);
-				if (pair.previousType === "heading") expect(pair.before).toBe("8px");
+				if (pair.previousType === "heading") expect(pair.before).toBe("0.5rem");
 				if (pair.previousType && pair.previousType !== "heading" && pair.level === "2")
-					expect(pair.before).toBe(width < 768 ? "48px" : "64px");
+					expect(pair.before).toBe(width < 768 ? "3rem" : "4rem");
 				if (pair.nextType && pair.nextType !== "heading" && pair.level === "2")
-					expect(pair.after).toBe(width < 768 ? "12px" : "16px");
+					expect(pair.after).toBe(width < 768 ? "0.75rem" : "1rem");
 			}
 			await test.info().attach("heading-adjacency", {
 				body: JSON.stringify(evidence),
