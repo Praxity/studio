@@ -12,7 +12,9 @@ const readWorkflow = (name) =>
 	parse(readFileSync(new URL(`../../../.github/workflows/${name}.yml`, import.meta.url), "utf8"));
 const candidate = readWorkflow("cli-release");
 const job = candidate.jobs.build;
-const step = (name) => job.steps.find((entry) => entry.name === name);
+const step = (name) =>
+	job.steps.find((entry) => entry.name === name) ??
+	candidate.jobs["browser-editor"].steps.find((entry) => entry.name === name);
 
 const sharedRun = (entry) =>
 	entry.run.replace(
@@ -185,11 +187,15 @@ test("the actual Mac TMPDIR creation refuses symlinks and permits private-direct
 test("macOS keyboard navigation is saved before journeys and restored even on failure", () => {
 	const enable = step("Enable macOS keyboard navigation");
 	const restore = step("Restore macOS keyboard navigation");
-	const build = step("Build and verify standalone CLI archives");
+	const browser = candidate.jobs["browser-editor"];
+	const build = step("Verify packaged browser journeys");
 	assert.ok(enable && restore, "The owner's keyboard preference must be job-scoped");
-	assert.ok(job.steps.indexOf(enable) < job.steps.indexOf(build));
-	assert.ok(job.steps.indexOf(restore) > job.steps.indexOf(build));
-	assert.ok(job.steps.indexOf(restore) < job.steps.indexOf(step("Hand off private CLI candidate")));
+	assert.ok(browser.steps.indexOf(enable) < browser.steps.indexOf(build));
+	assert.ok(browser.steps.indexOf(restore) > browser.steps.indexOf(build));
+	assert.ok(
+		browser.steps.indexOf(restore) <
+			browser.steps.indexOf(step("Clean browser workspace and downloads")),
+	);
 	assert.equal(enable.id, "keyboard_navigation");
 	assert.match(sharedRun(enable), /defaults read -g AppleKeyboardUIMode/);
 	assert.match(sharedRun(enable), /original_mode=absent/);
@@ -266,14 +272,11 @@ test("formal builds stay hosted, retain all browser journeys and never cancel an
 	assert.equal(job.needs, "admit");
 	assert.equal(candidate.concurrency["cancel-in-progress"], false);
 	assert.equal(candidate.jobs["rubato-publish"].environment, "rubato-release");
-	assert.match(
-		step("Build and verify standalone CLI archives").run,
-		/build-cli-archives.sh --browser-editor/,
-	);
+	assert.match(step("Build and verify standalone CLI archives").run, /build-cli-archives.sh\n$/);
 	assert.equal(step("Install headless browsers").if, undefined);
 	assert.ok(
-		job.steps.indexOf(step("Install headless browsers")) <
-			job.steps.indexOf(step("Build and verify standalone CLI archives")),
+		candidate.jobs["browser-editor"].steps.indexOf(step("Install headless browsers")) <
+			candidate.jobs["browser-editor"].steps.indexOf(step("Verify packaged browser journeys")),
 	);
 	const { default: config } = await import("../e2e/browser-editor/playwright.config.ts");
 	assert.equal(config.use.headless, true);

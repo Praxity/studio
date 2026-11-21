@@ -109,23 +109,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --store-dir "$RUNNER_TEMP/cli-candidate-$GITHUB_RUN_ID/pnpm-store"
 
-      - name: Install headless browsers
-        run: pnpm --filter @praxity/desktop exec playwright install chromium firefox webkit
-
-      # macOS WebKit skips native buttons on Tab when Keyboard navigation is off.
-      # Save the runner user's preference before changing it, including absence.
-      - name: Enable macOS keyboard navigation
-        id: keyboard_navigation
-        run: source ../workflow/apps/desktop/scripts/enable-macos-keyboard-navigation.sh
-
-      # Retain the existing archive and browser-journey budget until measured on hosted Intel.
       - name: Build and verify standalone CLI archives
         timeout-minutes: 75
         env:
           TMPDIR: /tmp/cc-${{ github.run_id }}
         run: |
           source "$GITHUB_WORKSPACE/workflow/apps/desktop/scripts/prepare-macos-tmpdir.sh"
-          bash ../workflow/apps/desktop/scripts/build-cli-archives.sh --browser-editor
+          bash ../workflow/apps/desktop/scripts/build-cli-archives.sh
 
       - name: Capture verified archive digests
         id: digests
@@ -142,14 +132,6 @@ jobs:
             printf '%s_sha256=%s\n' "$arch" "$digest" >> "$GITHUB_OUTPUT"
             wc -c "${archives[0]}"
           done
-
-      # Restore the non-admin runner account's setting even if build or tests fail.
-      - name: Restore macOS keyboard navigation
-        if: always()
-        working-directory: ${{ runner.temp }}
-        env:
-          ORIGINAL_MODE: ${{ steps.keyboard_navigation.outputs.original_mode }}
-        run: source "$GITHUB_WORKSPACE/workflow/apps/desktop/scripts/restore-macos-keyboard-navigation.sh"
 
       - name: Hand off private CLI candidate
         env:
@@ -199,9 +181,114 @@ jobs:
           done
           rm -rf -- "$HOME/.praxity-candidate-handoff/$GITHUB_RUN_ID"
 
+  browser-editor:
+    needs: [admit, build]
+    if: github.repository == (vars.STUDIO_SOURCE_REPO || github.repository)
+    runs-on: macos-15-intel
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox, webkit]
+        shard: [1/3, 2/3, 3/3]
+    defaults:
+      run:
+        shell: bash
+        working-directory: source
+    steps:
+      - name: Checkout workflow tooling
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: workflow
+          persist-credentials: false
+
+      - name: Prepare candidate workspace
+        working-directory: ${{ runner.temp }}
+        run: |
+          set -euo pipefail
+          df -k "$GITHUB_WORKSPACE" "$RUNNER_TEMP" /tmp
+          printf 'PLAYWRIGHT_BROWSERS_PATH=%s\n' "$RUNNER_TEMP/cli-browser-$GITHUB_RUN_ID/browsers" >> "$GITHUB_ENV"
+      - name: Checkout source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ needs.admit.outputs.source_ref }}
+          submodules: true
+          path: source
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          package_json_file: source/package.json
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.22.1
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --store-dir "$RUNNER_TEMP/cli-browser-$GITHUB_RUN_ID/pnpm-store"
+
+      - name: Prepare source fixture assets
+        run: pnpm --filter @praxity/desktop prebuild
+
+      - name: Download sealed CLI archives
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: cli-release-handoff
+          path: source/apps/desktop/release
+
+      - name: Verify and extract native archive
+        env:
+          ARCHIVE_NAME: ${{ needs.build.outputs.x64_name }}
+          ARCHIVE_SHA256: ${{ needs.build.outputs.x64_sha256 }}
+        run: |
+          set -euo pipefail
+          cd apps/desktop/release
+          actual="$(shasum -a 256 "$ARCHIVE_NAME")"
+          [[ "${actual%% *}" == "$ARCHIVE_SHA256" ]] || exit 1
+          mkdir -p ../../../dist
+          tar -xzf "$ARCHIVE_NAME" -C ../../../dist
+
+      - name: Install headless browsers
+        run: pnpm --filter @praxity/desktop exec playwright install "${{ matrix.browser }}"
+
+      - name: Enable macOS keyboard navigation
+        id: keyboard_navigation
+        run: source ../workflow/apps/desktop/scripts/enable-macos-keyboard-navigation.sh
+
+      - name: Verify packaged browser journeys
+        timeout-minutes: 45
+        env:
+          TMPDIR: /tmp/cc-${{ github.run_id }}
+        run: |
+          source "$GITHUB_WORKSPACE/workflow/apps/desktop/scripts/prepare-macos-tmpdir.sh"
+          PRAXITY_BROWSER_ARTIFACT="$PWD/dist/studio-cli" pnpm --filter @praxity/desktop run e2e:browser-editor --project="${{ matrix.browser }}" --shard="${{ matrix.shard }}"
+
+      - name: Restore macOS keyboard navigation
+        if: always()
+        working-directory: ${{ runner.temp }}
+        env:
+          ORIGINAL_MODE: ${{ steps.keyboard_navigation.outputs.original_mode }}
+        run: source "$GITHUB_WORKSPACE/workflow/apps/desktop/scripts/restore-macos-keyboard-navigation.sh"
+
+      - name: Clean browser workspace and downloads
+        if: always()
+        working-directory: ${{ runner.temp }}
+        run: |
+          set -euo pipefail
+          [[ -n "$GITHUB_WORKSPACE" && "$GITHUB_WORKSPACE" != / ]] || exit 1
+          [[ -n "$RUNNER_TEMP" && "$RUNNER_TEMP" != / ]] || exit 1
+          [[ "$GITHUB_RUN_ID" =~ ^[0-9]+$ ]] || exit 1
+          for path in "$GITHUB_WORKSPACE/source" "$GITHUB_WORKSPACE/workflow" "$RUNNER_TEMP/cli-browser-$GITHUB_RUN_ID" "/tmp/cc-$GITHUB_RUN_ID"; do
+            rm -rf -- "$path"
+          done
+
   publish:
     if: github.repository == (vars.STUDIO_SOURCE_REPO || github.repository)
-    needs: build
+    needs: [build, browser-editor]
     runs-on: macos-15-intel
     permissions:
       contents: write
