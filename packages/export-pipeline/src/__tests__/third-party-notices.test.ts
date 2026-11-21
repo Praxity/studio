@@ -215,28 +215,12 @@ it("retains exact upstream supplemental licence text and rejects absent licence 
 	}
 });
 
-it("preserves exact bilingual course runtime permissions in HTML and SCORM archives", async () => {
-	const sha256 = (bytes: string) => createHash("sha256").update(bytes).digest("hex");
+it("preserves the exact MIT licence for the Praxity course player in HTML and SCORM archives", async () => {
 	for (const format of ["html", "scorm12", "scorm2004"] as const) {
 		const zip = new AdmZip((await buildScormPackage(source, { format })).zip);
 		const runtime = zip.readAsText("PRAXITY-COURSE-RUNTIME-LICENSE.txt");
-		const permissions = runtime
-			.split("\n\n")
-			.filter((paragraph) =>
-				/^(Praxity grants|This permission|Praxity autorise|Cette permission)/.test(paragraph),
-			);
-		expect(permissions.map(sha256)).toEqual([
-			"6a84f9bba97e96afc14c023a60534349dd9a00fe26fdf06ec3e26fac398c200f",
-			"ad9b80a87a02166f5fdfe4206ea83c33aa5409d8b739a10a4680735689e35836",
-			"8a03d696d3086541d868397e9da98ddd245fe9a6fd2d84b98d326278336dd94e",
-			"9ad209c7112724dfc7c27d2ef510e0ea67d25daba9a08a5ac6a5c51d4db27d86",
-		]);
-		expect(runtime).toMatch(
-			/does not impose authoring terms on that content or on recipients exercising/,
+		expect(createHash("sha256").update(runtime).digest("hex")).toBe(
+			"d817c04f10efaffd1ab6dba0792a6567dce98f8ab41e86c64833a7b9cff7ecc5",
 		);
-		expect(runtime).toMatch(
-			/n'impose pas de conditions de création à ce\ncontenu ou aux destinataires/,
-		);
-		expect(runtime).not.toMatch(/ethical-use|utilisation éthique/);
 	}
 });

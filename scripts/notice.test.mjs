@@ -41,7 +41,7 @@ const mappings = [
 	["docs/prax-format/", ["docs/prax-format/LICENSE", "CC BY 4.0", "CC0 1.0", "MIT"]],
 	[
 		"packages/export-pipeline/template/COURSE-RUNTIME-LICENSE.txt",
-		["Praxity delivery runtime permissions"],
+		["MIT licence", "Praxity course player", "PRAXITY-COURSE-RUNTIME-LICENSE.txt"],
 	],
 	[
 		"packages/shared-blocks/src/blocks/shared-blocks.css",

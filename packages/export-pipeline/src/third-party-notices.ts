@@ -46,7 +46,7 @@ export function assertRuntimeLegalInputs(
 ): asserts manifest is { courseRuntimeLicense: string; thirdPartyNotices: RuntimeNotices } {
 	if (typeof manifest.courseRuntimeLicense !== "string" || !manifest.courseRuntimeLicense.trim())
 		throw new Error(
-			"Missing course runtime permission notice: viewer-manifest.json#courseRuntimeLicense. Rebuild the export assets.",
+			"Missing Praxity course player MIT licence: viewer-manifest.json#courseRuntimeLicense. Rebuild the export assets.",
 		);
 	const notices = manifest.thirdPartyNotices;
 	for (const [field, value] of [

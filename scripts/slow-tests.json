@@ -2176,7 +2176,7 @@
 	},
 	{
 		"file": "packages/export-pipeline/src/__tests__/third-party-notices.test.ts",
-		"name": "preserves exact bilingual course runtime permissions in HTML and SCORM archives",
+		"name": "preserves the exact MIT licence for the Praxity course player in HTML and SCORM archives",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4945 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
 	{
