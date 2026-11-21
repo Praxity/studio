@@ -1,4 +1,3 @@
-/** Generated French labels keep double punctuation attached to the preceding word. */
 export function labelWithSeparator(
 	label: string,
 	locale: string,

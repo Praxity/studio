@@ -26,17 +26,14 @@ export class LearnerTracker {
 	}
 
 	getMetric(metric: LearnerMetric, scope: LearnerScope): number | undefined {
-		// Page-level metrics (available in all environments)
 		if (scope === "page" && metric === "visitCount") return this.pageVisitCount;
 		if (scope === "page" && metric === "timeOn")
 			return Math.floor((Date.now() - this.pageTimeStart) / 1000);
 
-		// Course-level visit count: sum all persisted page visits
 		if (scope === "course" && metric === "visitCount") {
 			return this.getTotalVisitCount();
 		}
 
-		// Course-level SCORM metrics
 		if (scope === "course" && this.config.runtime.getValue) {
 			if (metric === "grade") {
 				const raw = this.config.runtime.getValue("cmi.core.score.raw");
@@ -53,7 +50,6 @@ export class LearnerTracker {
 			}
 		}
 
-		// Lesson-level and other unsupported metrics
 		return undefined;
 	}
 
@@ -73,7 +69,6 @@ export class LearnerTracker {
 	}
 
 	private parseScormTime(time: string): number {
-		// SCORM time format: HH:MM:SS or HH:MM:SS.SS
 		const parts = time.split(":");
 		if (parts.length < 3) return 0;
 		const hours = Number.parseInt(parts[0], 10) || 0;
@@ -91,9 +86,7 @@ export class LearnerTracker {
 			};
 			this.config.runtime.setSuspendData(JSON.stringify(existing));
 			this.config.runtime.commit();
-		} catch {
-			// Ignore persist errors
-		}
+		} catch {}
 	}
 
 	private restore(): void {
@@ -103,8 +96,6 @@ export class LearnerTracker {
 			if (pageData) {
 				this.pageVisitCount = pageData.visitCount ?? 0;
 			}
-		} catch {
-			// Ignore corrupt data
-		}
+		} catch {}
 	}
 }

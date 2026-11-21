@@ -8,7 +8,6 @@ const INSERT =
 	/<p>\s*<span data-footer-insert="true">@footer\.insert<\/span>\s*<\/p>|^<span data-footer-insert="true">@footer\.insert<\/span>$/g;
 
 function decodeSource(value: string): string {
-	// Reverse exactly the entities emitted by escapeHtml, once, ampersand last.
 	return value
 		.replace(/&lt;/g, "<")
 		.replace(/&gt;/g, ">")
@@ -17,8 +16,6 @@ function decodeSource(value: string): string {
 		.replace(/&amp;/g, "&");
 }
 
-/** Render-only preparation, shared by canonical output and page projections.
- * Never write the numbered copy back to the author's source. */
 export function preparePageFootnotes(
 	blocks: PraxityBlock[],
 	pageId: string,

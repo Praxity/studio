@@ -1,20 +1,9 @@
 @import "../reading-rhythm.css";
 
-/* The control default precedes the more specific circle, key and joined-tab roles. */
 [data-praxity-root] :is(button, input, select, textarea, [role="button"]) {
 	border-radius: var(--radius-control);
 }
 
-/* packages/shared-blocks/src/blocks/shared-blocks.css
- *
- * Shared CSS classes for published-output block renderers.
- * All colors/spacing reference --praxity-* variables so they respond
- * to reading-setting and platform-preference overrides.
- */
-
-/* ── Columns base layout ── */
-/* Flex container for column blocks. The narrow-viewport container query
-   below overrides this to flex-direction: column for stacking. */
 [data-praxity-root] .praxity-columns {
 	display: flex;
 	gap: var(--space-3);
@@ -33,11 +22,6 @@
 		font-size: var(--type-small);
 	}
 
-	/*
-	 * Stacked, the columns become sequential sections, so the row gap has to
-	 * carry the separation a heading's own top margin used to fake. 12px reads
-	 * as one continuous run of text.
-	 */
 	[data-praxity-root] .praxity-columns {
 		display: flex;
 		flex-direction: column;
@@ -59,8 +43,6 @@
 		padding: var(--space-8) var(--space-4);
 	}
 }
-
-/* --- Layout utilities --- */
 
 .praxity-layout-narrow {
 	box-sizing: border-box;
@@ -121,7 +103,6 @@
 	color: var(--praxity-color-text);
 }
 
-/* A steady tint keeps the loading message readable without a decorative loop. */
 .praxity-block-loading::before {
 	content: "";
 	position: absolute;
@@ -144,8 +125,6 @@
 	animation: none;
 }
 
-/* --- Accent badge (numbered circles in SequenceBlock, etc.) --- */
-
 .praxity-accent-badge {
 	width: 28px;
 	height: 28px;
@@ -160,14 +139,10 @@
 	font-weight: var(--weight-strong);
 	flex-shrink: 0;
 }
-/* Preview and scaled sequences retain continuous tracks. Paper behind an outlined
-   marker masks that track without adding an accent fill. */
 .praxity-block-relative .praxity-accent-badge,
 .praxity-sequence[data-distribution="scaled"] .praxity-accent-badge {
 	background: var(--paper);
 }
-
-/* --- Connector line (SequenceBlock vertical/horizontal) --- */
 
 .praxity-connector-line-v {
 	position: absolute;
@@ -183,8 +158,6 @@
 	z-index: 0;
 }
 
-/* Native published sequence. The ordered list keeps list semantics; these rules
-   only reproduce the authored visual layout without a page-wide React runtime. */
 .praxity-sequence-frame {
 	min-width: 0;
 }
@@ -202,7 +175,6 @@
 	min-width: 0;
 }
 
-/* Lists keep a reading edge even when their sequence item faces the connector. */
 .praxity-sequence-item :is(ul, ol) {
 	text-align: start;
 }
@@ -563,13 +535,11 @@
 	}
 }
 
-/* ── Shared block and item entrance motion ── */
 :root {
 	--praxity-stagger-step: 0ms;
 	--praxity-stagger-cap: 5;
 }
 
-/* Five stagger steps plus the state duration stay within the 300ms elapsed budget. */
 [data-praxity-root][data-praxity-motion-stagger="sequential"] {
 	--praxity-stagger-step: 10ms;
 }
@@ -642,7 +612,6 @@
 			.praxity-card-item,
 			.praxity-stats-item
 		)[data-entrance] {
-		/* Override the viewer's universal reduced-motion duration as well. */
 		transition: none !important;
 		transition-delay: 0ms !important;
 	}
@@ -670,17 +639,12 @@
 	transition-delay: 0ms !important;
 }
 
-/* Stale entrance states must not hide content when entrance motion is off.
-   Active modes use the pending/visible rules above and finish at full opacity,
-   unless the learner has explicitly enabled the reading guide. */
 [data-praxity-root]:not([data-praxity-motion-entrance]) .praxity-block[data-entrance],
 [data-praxity-root][data-praxity-motion-entrance="none"] .praxity-block[data-entrance] {
 	opacity: var(--praxity-reading-guide-opacity, 1);
 	transform: none;
 	transition: none;
 }
-
-/* --- Text helpers --- */
 
 .praxity-text-dimmed {
 	color: var(--praxity-color-text-light);
@@ -710,26 +674,18 @@
 }
 
 @container course-shell (width < 480px) {
-	/* Enlarged titles need a shorter measure: balancing a full phone line can
-	   strand a short first line when the next word cannot fit beside it. */
 	[data-praxity-root][data-praxity-text-size="large"] .praxity-block :is(h1, h2) {
 		max-inline-size: 17ch;
 	}
 }
 
-/* Large heading type can leave a word wider than a 320px line. Hyphenate it in the
-   document or block language first; break-word then splits only what is still too wide,
-   such as a URL. This replaces the inherited word-break: break-word, which split such
-   words without a hyphen and let a squeezed heading break words that fit. */
 [data-praxity-root] :is(h1, h2, h3, h4, h5, h6) {
 	word-break: normal;
 	overflow-wrap: break-word;
-	/* Safari before 17 reads only the prefixed property. */
 	-webkit-hyphens: manual;
 	hyphens: manual;
 }
 
-/* An inserted hyphen would change code that learners read or copy. */
 [data-praxity-root] :is(h1, h2, h3, h4, h5, h6) :is(code, kbd, samp) {
 	-webkit-hyphens: manual;
 	hyphens: manual;
@@ -755,7 +711,6 @@
 	margin-bottom: 0;
 }
 
-/* A top-level slot's gap belongs only to its child block, not to nested flows. */
 .praxity-block[data-block-type] > * {
 	--praxity-flow-gap: 0px;
 }
@@ -774,7 +729,6 @@
 	margin-top: var(--paragraph-gap);
 }
 
-/* A real formatting context bounds each authored float without changing block identities. */
 .praxity-float-region {
 	display: flow-root;
 	container-type: inline-size;
@@ -800,7 +754,6 @@
 	--praxity-image-float-margin-left: var(--praxity-space-normal);
 	--praxity-image-float-margin-right: 0;
 }
-/* Keep the marker and wrapped text together beside an authored float. */
 .praxity-float-region .praxity-block-text:has(ul, ol) {
 	display: flow-root;
 }
@@ -847,14 +800,10 @@
 	}
 }
 
-/* Unknown and future block pairs deliberately land on one line box. Slots carry
-   the same data attributes as their child and pass this inherited token through.
-   The shared submit footer ends an assessment group in the same flow. */
 :is([data-block-type], .praxity-assessment-group-submit) + [data-block-type] {
 	--praxity-flow-gap: var(--praxity-space-normal);
 }
 
-/* Button-specific pairings; button -> text uses the default gap above. */
 [data-block-type="button"] + [data-block-type="button"] {
 	--praxity-flow-gap: var(--praxity-space-tight);
 }
@@ -863,36 +812,34 @@
 	--praxity-flow-gap: var(--praxity-space-close);
 }
 
-/* Dividers are boundaries in either direction. */
 :is([data-block-type], .praxity-assessment-group-submit) + [data-block-type="divider"],
 [data-block-type="divider"] + [data-block-type] {
 	--praxity-flow-gap: var(--praxity-space-section);
 }
 
-/* Consecutive heavy blocks and note/quote blocks. */
 :is(
-	[data-block-type="table"],
-	[data-block-type="image"],
-	[data-block-type="video"],
-	[data-block-type="embed"],
-	[data-block-type="columns"],
-	[data-block-type="accordion"],
-	[data-block-type="tabs"],
-	[data-block-type="assessment"],
-	[data-block-type="assessmentGroup"],
-	.praxity-assessment-group-submit
-)
-+ :is(
-	[data-block-type="table"],
-	[data-block-type="image"],
-	[data-block-type="video"],
-	[data-block-type="embed"],
-	[data-block-type="columns"],
-	[data-block-type="accordion"],
-	[data-block-type="tabs"],
-	[data-block-type="assessment"],
-	[data-block-type="assessmentGroup"]
-) {
+		[data-block-type="table"],
+		[data-block-type="image"],
+		[data-block-type="video"],
+		[data-block-type="embed"],
+		[data-block-type="columns"],
+		[data-block-type="accordion"],
+		[data-block-type="tabs"],
+		[data-block-type="assessment"],
+		[data-block-type="assessmentGroup"],
+		.praxity-assessment-group-submit
+	)
+	+ :is(
+		[data-block-type="table"],
+		[data-block-type="image"],
+		[data-block-type="video"],
+		[data-block-type="embed"],
+		[data-block-type="columns"],
+		[data-block-type="accordion"],
+		[data-block-type="tabs"],
+		[data-block-type="assessment"],
+		[data-block-type="assessmentGroup"]
+	) {
 	--praxity-flow-gap: var(--praxity-space-section);
 }
 
@@ -901,19 +848,18 @@
 	--praxity-flow-gap: var(--praxity-space-section);
 }
 
-/* Text pairings. */
 [data-block-type="text"]
-+ :is(
-	[data-block-type="table"],
-	[data-block-type="image"],
-	[data-block-type="video"],
-	[data-block-type="embed"],
-	[data-block-type="columns"],
-	[data-block-type="accordion"],
-	[data-block-type="tabs"],
-	[data-block-type="assessment"],
-	[data-block-type="assessmentGroup"]
-),
+	+ :is(
+		[data-block-type="table"],
+		[data-block-type="image"],
+		[data-block-type="video"],
+		[data-block-type="embed"],
+		[data-block-type="columns"],
+		[data-block-type="accordion"],
+		[data-block-type="tabs"],
+		[data-block-type="assessment"],
+		[data-block-type="assessmentGroup"]
+	),
 :is(
 		[data-block-type="table"],
 		[data-block-type="image"],
@@ -945,12 +891,12 @@
 	--praxity-flow-gap: var(--praxity-space-tight);
 }
 
-/* Heading rules come last so they override heavy-block rules. */
 :is(
-	[data-block-type]:not([data-block-type="heading"]),
-	.praxity-float-region,
-	.praxity-assessment-group-submit
-) + [data-block-type="heading"][data-heading-level="1"] {
+		[data-block-type]:not([data-block-type="heading"]),
+		.praxity-float-region,
+		.praxity-assessment-group-submit
+	)
+	+ [data-block-type="heading"][data-heading-level="1"] {
 	--praxity-flow-gap: var(--praxity-space-boundary);
 }
 
@@ -1009,10 +955,6 @@
 	--praxity-flow-gap: var(--praxity-space-tight);
 }
 
-/* Container titles share standalone heading spacing. Put the gap on the next
-   content element so published heading resets and preview inline styles agree.
-   Only direct block children participate; card labels and widget headings keep
-   their own padding or layout gap. */
 .praxity-block > h1 + :not([data-block-type]) {
 	margin-block-start: var(--praxity-space-normal);
 }
@@ -1026,7 +968,6 @@
 	margin-block-start: var(--praxity-space-tight);
 }
 
-/* The same scale applies to headings generated by container components. */
 [data-praxity-root] #main-content h1 {
 	font-size: var(--type-h1);
 }
@@ -1060,13 +1001,9 @@
 	margin-top: calc(var(--praxity-spacing-xs, var(--space-2)) * 0.5);
 }
 
-/* A sub-list belongs to the item above it, so it takes the item spacing rather
-   than the block spacing that would otherwise push it away from its parent. */
 .praxity-block-text li > :is(ul, ol) {
 	margin-block: calc(var(--praxity-spacing-xs, var(--space-2)) * 0.5) 0;
 }
-
-/* --- Text highlight variants --- */
 
 [data-praxity-root] .praxity-block mark {
 	color: inherit;
@@ -1079,9 +1016,6 @@
 	padding: 0;
 }
 
-/* Marker: underline-fill style — 25% accent creates visible highlight
-   while maintaining Lc 60+ text contrast on both light and dark backgrounds.
-   OKLCH mixing preserves hue fidelity across accent colors. */
 [data-praxity-root][data-praxity-highlight-style="marker"] .praxity-block mark {
 	background: linear-gradient(
 		to top,
@@ -1090,7 +1024,6 @@
 	);
 }
 
-/* Gradient: left-to-right wash — 30%→12% provides visible start edge */
 [data-praxity-root][data-praxity-highlight-style="gradient"] .praxity-block mark {
 	background: linear-gradient(
 		90deg,
@@ -1100,7 +1033,6 @@
 	border-radius: var(--radius-mark);
 }
 
-/* Scribble: wavy underline with thicker stroke for visibility */
 [data-praxity-root][data-praxity-highlight-style="scribble"] .praxity-block mark {
 	background: none;
 	padding: 0;
@@ -1109,9 +1041,6 @@
 	text-decoration-thickness: 2px;
 }
 
-/* Dark mode (editor preview): data-mantine-color-scheme is on an ancestor
-   element, data-praxity-highlight-style is on [data-praxity-root] — use
-   descendant selector, NOT compound selector on the same element. */
 [data-mantine-color-scheme="dark"] [data-praxity-highlight-style="marker"] .praxity-block mark {
 	background: linear-gradient(
 		to top,
@@ -1128,8 +1057,6 @@
 	);
 }
 
-/* --- Video/media container --- */
-
 .praxity-media-container {
 	position: relative;
 	overflow: hidden;
@@ -1141,7 +1068,6 @@
 	aspect-ratio: 16 / 9;
 }
 
-/* Video player rounding — applies radius to all player types */
 .praxity-block-video video,
 .praxity-block-video iframe,
 .praxity-block-video mux-player {
@@ -1211,7 +1137,6 @@
 	text-align: start;
 }
 
-/* --- Code label and copy action --- */
 .praxity-code-header {
 	display: flex;
 	flex-wrap: wrap;
@@ -1251,15 +1176,12 @@
 	background: var(--paper-2);
 }
 
-/* --- Fieldset reset (assessment forms) --- */
-
 .praxity-fieldset-reset {
 	border: none;
 	margin: 0;
 	padding: 0;
 }
 
-/* Floated legends keep native group names without cutting the activity border. */
 fieldset > legend:not(.praxity-sr-only) {
 	float: inline-start;
 	inline-size: 100%;
@@ -1268,8 +1190,6 @@ fieldset > legend:not(.praxity-sr-only) {
 fieldset > legend:not(.praxity-sr-only) + * {
 	clear: both;
 }
-
-/* --- Signature block --- */
 
 .praxity-signature {
 	width: 100%;
@@ -1343,7 +1263,6 @@ fieldset > legend:not(.praxity-sr-only) + * {
 	color: var(--praxity-color-text);
 	display: block;
 	touch-action: none;
-	/* Adapted Feather v4.29.2 edit-2 (MIT); source and full terms in root NOTICE. */
 	cursor:
 		url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z' stroke='%23ffffff' stroke-width='4'/%3E%3Cpath d='M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z' stroke='%23555555' stroke-width='2'/%3E%3C/svg%3E")
 		2 22,
@@ -1440,7 +1359,6 @@ fieldset > legend:not(.praxity-sr-only) + * {
 	}
 }
 
-/* --- Code surface and syntax --- */
 .praxity-code-container {
 	position: relative;
 }
@@ -1511,8 +1429,6 @@ fieldset > legend:not(.praxity-sr-only) + * {
 	clip: rect(0, 0, 0, 0);
 	clip-path: inset(50%);
 }
-
-/* --- Image comparison block --- */
 
 .praxity-comparison-slider {
 	position: relative;
@@ -1639,8 +1555,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	right: 10px;
 }
 
-/* Shared styles for labels, handles, and dividers rendered with their comparison classes. */
-
 .praxity-comparison-label--before,
 .praxity-comparison-label--after {
 	color: var(--praxity-color-text);
@@ -1695,21 +1609,15 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	}
 }
 
-/* --- Figure reset --- */
-
 .praxity-figure-reset {
 	margin: 0;
 }
 
-/* Media titles, players and captions use the same rhythm in static output and
-   React preview, where Mantine also supplies a stack layout. */
 .praxity-block :is(.praxity-video, .praxity-audio-card, .praxity-media-stack) {
 	display: flex;
 	flex-direction: column;
 	gap: var(--praxity-space-tight);
 }
-
-/* --- Audio block --- */
 
 .praxity-audio-card {
 	padding: 0;
@@ -1737,8 +1645,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	text-decoration: underline;
 	text-underline-offset: 0.18em;
 }
-
-/* --- Card block --- */
 
 .praxity-card-outline {
 	overflow: hidden;
@@ -1775,7 +1681,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	background: transparent;
 }
 
-/* A surface belongs to every painted face, including flip faces and slide decks. */
 [data-card-root] {
 	--praxity-card-surface: transparent;
 }
@@ -1798,7 +1703,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	);
 }
 
-/* Card rows preserve label/body order and stack within their own available width. */
 [data-layout="rows"] {
 	container: cards / inline-size;
 }
@@ -1848,8 +1752,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 .praxity-card-controls {
 	justify-content: center;
 	gap: var(--space-2);
-	/* Leave one pixel above the 12px minimum: transformed faces can land on
-	   fractional device pixels in Firefox. */
 	margin-top: calc(var(--space-3) + 1px);
 }
 
@@ -1898,8 +1800,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	}
 }
 
-/* --- Chart block --- */
-
 .praxity-chart-container {
 	container: praxity-chart / inline-size;
 }
@@ -1909,7 +1809,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	font-size: var(--type-small);
 }
 
-/* Counter the SVG viewBox scaling to keep labels near 12px between layout breakpoints. */
 .praxity-chart-visual--medium {
 	display: none;
 	font-size: var(--type-body);
@@ -1947,9 +1846,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	}
 }
 
-/* Bars and legend swatches keep a same-hue edge: it holds 3:1 for pale fills without a
-   text-coloured outline on every bar. The SVG stroke attribute remains for print, which
-   drops it where the fill already contrasts with paper. */
 .praxity-chart-visual .praxity-chart-mark {
 	stroke: color-mix(in oklab, currentColor 60%, var(--praxity-color-text));
 }
@@ -1970,25 +1866,12 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	text-align: start;
 }
 
-/* --- Checklist and selection controls --- */
-
-/*
- * Option rows carry no resting border.
- *
- * A bordered row inside a bordered question inside a bordered page is three
- * boundaries for one idea, and the radio already says "choose me" — the border
- * was redundant affordance, not information. The row keeps its full-width hit
- * target (Fitts, and the 24px floor of WCAG 2.5.8); the border stays in the box
- * model as transparent so hover and selection colour it without reflowing the
- * text a pixel.
- */
 .praxity-table-scroll-region:focus-visible {
 	outline: var(--focus-width) solid var(--accent);
 	outline-offset: var(--focus-offset);
 }
 
 :where(.praxity-block-assessment, .praxity-ag-radio-row, [data-checklist-item]) {
-	/* Server and Mantine controls share the same font-relative size and target floor. */
 	--praxity-choice-control-size: max(24px, 1.25rem);
 }
 
@@ -2003,7 +1886,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	transition: none;
 }
 
-/* Let the native label activate its control from anywhere in the visual row. */
 .praxity-assessment-choice-option :is(.mantine-Radio-label, .mantine-Checkbox-label)::after,
 .praxity-ag-radio-label::after {
 	content: "";
@@ -2011,11 +1893,9 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	inset: 0;
 }
 
-/* Keep the native control directly clickable above the stretched label. */
 .praxity-assessment-choice-option :is(.mantine-Radio-inner, .mantine-Checkbox-inner) {
 	position: relative;
 	z-index: 1;
-	/* Empty space in the first-line wrapper still belongs to the stretched label. */
 	pointer-events: none;
 }
 
@@ -2023,7 +1903,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	pointer-events: auto;
 }
 
-/* Feedback links must sit above the native label's full-row click target. */
 .praxity-assessment-choice-option [data-option-feedback] {
 	position: relative;
 	z-index: 1;
@@ -2041,11 +1920,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	border-color: color-mix(in oklab, var(--praxity-color-accent) 45%, transparent);
 }
 
-/* Keep native labels and controls stationary during a press.
- * Rejected: scale(0.99), even after a test's paint wait or centered target.
- * WebKit moved pointer-up from label to input and clicked their shared div,
- * losing native activation. Color and focus feedback keep targets stationary. */
-
 .praxity-assessment-choice-option:has(input:focus-visible),
 .praxity-assessment-choice-option:has(input[type="radio"]:focus),
 .praxity-ag-radio-row:has(input[type="radio"]:focus) {
@@ -2053,8 +1927,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	outline-offset: var(--focus-offset);
 }
 
-/* The row owns focus. Native radio arrows can clear WebKit's focus-visible
-   heuristic, so keep the row ring on :focus and suppress only its inner ring. */
 .praxity-page-content .praxity-assessment-choice-option input:focus-visible,
 .praxity-assessment-choice-option input[type="radio"]:focus,
 .praxity-ag-radio-row input[type="radio"]:focus {
@@ -2062,14 +1934,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	box-shadow: none;
 }
 
-/*
- * After submitting, the options are disabled but the learner is *reading* them —
- * that is the whole point of the review state, and the feedback below refers to
- * them. A grey fill on every row plus `opacity: 0.6` made a busy wall of boxes
- * whose text dropped roughly 40% of its contrast, so the answer explanation was
- * the hardest thing on the page to read. Disabled controls are exempt from the
- * contrast minimum; content the learner still has to read is not.
- */
 .praxity-assessment-choice-option:has(input:disabled),
 .praxity-ag-radio-row:has(input:disabled) {
 	cursor: not-allowed;
@@ -2178,7 +2042,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 }
 
 .praxity-assessment-group-picker {
-	/* Native fieldset min-content sizing can exceed the group with wider fallback fonts. */
 	min-inline-size: 0;
 	border: 0;
 	margin: 0 0 var(--praxity-block-spacing, var(--space-4));
@@ -2214,8 +2077,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 .praxity-table-scroll-region,
 .praxity-block-equation .praxity-math-block,
 .praxity-code-body .praxity-code-pre {
-	/* Local covers hide each edge shadow when there is nothing left to scroll.
-	   The gutters keep the cues visible beside opaque header and striped cells. */
 	background:
 		linear-gradient(to right, var(--paper) 30%, transparent) left,
 		linear-gradient(to left, var(--paper) 30%, transparent) right,
@@ -2302,8 +2163,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 .praxity-table-scroll-region[data-overflow="none"] + .praxity-table-scroll-hint {
 	display: none;
 }
-/* Vertical sequences own marker gutters. Tables regain the reading measure on
-   either side of a track; plain sequences have no gutter to reclaim. */
 .praxity-sequence[data-orientation="vertical"]:not([data-variant="plain"])
 	.praxity-sequence-content
 	[data-block-type="table"] {
@@ -2387,7 +2246,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	cursor: pointer;
 }
 
-/* The control may look disabled; its label is still text the learner reads. */
 .praxity-ag-radio:disabled {
 	opacity: 0.65;
 	cursor: default;
@@ -2397,14 +2255,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	cursor: default;
 }
 
-/* --- Ordering block --- */
-
-/*
- * Steps are a sequence, so they get a rule between them rather than a box around
- * each: the divider says "next step" where a border would only say "thing". The
- * position number is the ordinal made explicit, so the order is readable without
- * counting rows.
- */
 .praxity-order-item {
 	position: relative;
 	padding: var(--praxity-spacing-xs, var(--space-2)) 0;
@@ -2453,7 +2303,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	flex-shrink: 0;
 }
 
-/* Ordering arrows never enter Mantine's animated loading state. */
 .praxity-block-assessment .praxity-order-controls .mantine-ActionIcon-icon {
 	transition: none;
 }
@@ -2485,7 +2334,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	cursor: grabbing;
 }
 
-/* An insertion line, not a swap highlight — it shows where the item will land. */
 .praxity-order-item[data-drop-before]::before {
 	content: "";
 	position: absolute;
@@ -2501,7 +2349,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	}
 }
 
-/* Every in-flow reveal grows its space and fades together; padding stays clipped. */
 [data-content-reveal] {
 	display: grid;
 	grid-template-rows: 0fr;
@@ -2524,12 +2371,10 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	min-block-size: 0;
 	overflow: hidden;
 }
-/* Grow the stack's feedback gap inside the clip instead of adding it in one frame. */
 [data-assessment-reveal] {
 	margin-block-start: calc(0px - var(--mantine-spacing-md, var(--space-4)));
 }
 [data-assessment-reveal] > .praxity-reveal-clip {
-	/* Reserve room for the action's outline inside the reveal clip. */
 	padding: calc(var(--focus-control-width) + var(--focus-offset));
 	margin: calc(0px - var(--focus-control-width) - var(--focus-offset));
 }
@@ -2559,7 +2404,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	}
 }
 
-/* --- Accordion and transcript disclosures --- */
 .praxity-disclosure-heading,
 [data-praxity-root] #main-content .praxity-disclosure-heading {
 	margin: 0;
@@ -2691,16 +2535,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	outline-offset: var(--focus-offset);
 }
 
-/* --- Columns block --- */
-
-/* Column flex is dynamic (calculated from width) — stays inline */
-
-/* --- Contribution/Discussion block (sr-only live regions) --- */
-
-/* uses .praxity-sr-only */
-
-/* --- Divider block --- */
-
 .praxity-divider-segment {
 	flex: 1;
 }
@@ -2723,7 +2557,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	border: none;
 }
 
-/* Static authored rules share the default line treatment with the block viewer. */
 .praxity-divider {
 	height: 2px;
 	border-radius: var(--radius-mark);
@@ -2777,8 +2610,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 		height: 36px;
 	}
 }
-
-/* --- Document block --- */
 
 .praxity-document-bookmark,
 .praxity-document-download {
@@ -2925,8 +2756,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	flex-shrink: 0;
 }
 
-/* --- Embed block --- */
-
 .praxity-embed-iframe {
 	display: block;
 	width: 100%;
@@ -2935,8 +2764,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	border-radius: var(--radius-control);
 	pointer-events: auto;
 }
-
-/* --- Flashcard block --- */
 
 #deck-script p.deck-script-item-title {
 	margin-block: var(--space-4) var(--space-1);
@@ -2989,13 +2816,9 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	margin-block-start: var(--space-3);
 }
 
-/* --- Image block --- */
-
 .praxity-block-image img {
 	border-radius: 0;
 }
-
-/* --- Hero / Cover block --- */
 
 .praxity-hero-cover {
 	position: relative;
@@ -3009,10 +2832,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	background: var(--praxity-color-text);
 }
 
-/* In slides mode the slide is already a measure-constrained, centered box with
-   its own overflow clipping. The 100vw full-bleed breakout gets clipped by the
-   slide and mis-aligns the (white) content overlay to the viewport edge, cutting
-   off the start of the title. Fit the hero to the slide box instead. */
 .praxity-layout-slides .praxity-hero-cover {
 	width: 100%;
 	margin-left: 0;
@@ -3085,7 +2904,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	text-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* Light overlay mode — dark text on white overlay */
 .praxity-hero-cover--light .praxity-hero-cover-content {
 	color: var(--praxity-color-on-light);
 }
@@ -3114,11 +2932,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 		font-size: var(--type-h2);
 	}
 }
-
-/* Image figure uses dynamic maxWidth/margin — stays inline */
-/* Image aspect-ratio: auto is kept inline (Mantine Image prop) */
-
-/* --- Labeled graphic block --- */
 
 .praxity-labeled-graphic {
 	position: relative;
@@ -3175,8 +2988,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 .praxity-labeled-graphic-body > :last-child {
 	margin-bottom: 0;
 }
-
-/* --- Assessment (Wave 3 reflection + scenario) --- */
 
 .praxity-assessment-question-header {
 	display: grid;
@@ -3249,12 +3060,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	content: "\2060*";
 }
 
-/*
- * Prompt and select sit in adjacent grid columns, which is what pairs them.
- * A 24px dashed stub used to sit between them; it spanned no distance, so it
- * read as an artifact rather than a leader, and `prefers-contrast: more`
- * darkened it into something that looked like a dash in the copy.
- */
 .praxity-matching-grid {
 	display: grid;
 	grid-template-columns: minmax(8rem, 1fr) minmax(12rem, 1fr);
@@ -3272,7 +3077,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	container-name: assessment-content;
 }
 
-/* Selects and textareas can span a reading column; update their paint instantly. */
 .praxity-block-assessment .mantine-Input-input {
 	transition: none;
 }
@@ -3337,7 +3141,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	height: 100%;
 	-webkit-text-fill-color: transparent;
 	font: inherit;
-	/* The wrapping copy owns visible text; the keyboard input must not scroll it. */
 	font-size: 0;
 	border-color: var(--praxity-color-control-border) !important;
 }
@@ -3363,8 +3166,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	font-weight: var(--weight-strong);
 }
 
-/* Author-supplied supporting prose between the question stem and the response
-   controls. Deliberately lighter than the stem so the question still leads. */
 .praxity-assessment-description {
 	font-size: var(--type-body);
 	line-height: var(--leading-body);
@@ -3403,8 +3204,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	font-size: inherit;
 	line-height: var(--leading-body);
 }
-
-/* --- Labeled graphic: reveal modes (Wave 3) --- */
 
 .praxity-labeled-graphic[data-reveal="click"],
 .praxity-labeled-graphic[data-reveal="sequential"] {
@@ -3503,7 +3302,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	}
 }
 
-/* --- Statistics --- */
 .praxity-stats {
 	margin: 0;
 }
@@ -3551,7 +3349,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	}
 }
 
-/* --- Note block --- */
 .praxity-note-base {
 	border: 0;
 	border-block-start: var(--praxity-rule-width, 1px) solid var(--line);
@@ -3642,8 +3439,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	}
 }
 
-/* --- Logic authoring overlay --- */
-
 .praxity-logic-overlay {
 	display: flex;
 	align-items: center;
@@ -3667,7 +3462,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	display: block;
 }
 
-/* --- Quote block --- */
 .praxity-quote {
 	margin: 0;
 	padding-inline-start: var(--space-4);
@@ -3710,7 +3504,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	}
 }
 
-/* Script keeps its hanging label; bubbles group the label and speech together. */
 .praxity-dialogue {
 	margin: 0;
 }
@@ -3863,8 +3656,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 		margin-block-start: calc(var(--space-2) - var(--space-4));
 	}
 }
-/* At the smallest reading width, the portrait shares the name row so speech
-   keeps the whole text column. The DOM and assistive reading order stay intact. */
 @container praxity-dialogue (width < 20rem) {
 	.praxity-dialogue[data-style="bubbles"] .praxity-dialogue-turn[data-side] {
 		inline-size: 100%;
@@ -3894,7 +3685,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 		min-block-size: 24px;
 		padding-inline-start: var(--space-8);
 	}
-	/* A flex item keeps its intrinsic minimum width; let an unbroken name wrap. */
 	.praxity-dialogue[data-style="bubbles"] .praxity-dialogue-name > bdi {
 		min-inline-size: 0;
 	}
@@ -3919,8 +3709,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 		}
 	}
 }
-
-/* --- Heading chapter marker / gradient text --- */
 
 .praxity-heading-chapter {
 	text-align: center;
@@ -3961,11 +3749,8 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	font-style: normal;
 }
 
-/* --- Assessment affordance --- */
-
 .praxity-assessment-group-card {
 	color: var(--praxity-color-text);
-	/* Mantine's preview Paper must keep the same unboxed group header. */
 	background: transparent;
 	border: 0;
 	border-radius: 0;
@@ -3991,8 +3776,6 @@ input.praxity-comparison-slider-control::-moz-range-thumb {
 	line-height: var(--leading-heading);
 }
 
-/* A group can supply the deck's authored H1. Its activity boundary starts
-   below the title, so the same stage inset places every slide heading. */
 .deck-slide .praxity-assessment-group-card:has(h1) {
 	padding: 0;
 	border: 0;
@@ -4144,7 +3927,6 @@ html.praxity-assessment-group-ready [data-group-oneof-unselected] {
 	display: none;
 }
 
-/* Keep the feedback owner mounted for focus, with no gap until it has content. */
 .mantine-Stack-root > [data-assessment-feedback]:empty,
 .praxity-assessment-choice-baseline > [data-assessment-feedback]:empty,
 [data-assessment-group] .praxity-assessment-baseline > [data-assessment-feedback]:empty {
@@ -4161,7 +3943,6 @@ html.praxity-assessment-group-ready [data-group-oneof-unselected] {
 		inline-size: 100%;
 	}
 
-	/* Keep shared-submit words whole inside the narrow group footer. */
 	.praxity-ag-submit-btn {
 		padding-inline: var(--space-1);
 	}
@@ -4227,9 +4008,7 @@ html.praxity-assessment-group-ready [data-group-oneof-unselected] {
 	line-height: inherit;
 }
 
-/* At phone-zoom widths, one outer boundary owns all horizontal decoration. */
 @container course-shell (width < 400px) {
-	/* Automatic hyphenation splits words that fit a fresh line at zoom widths. */
 	[data-praxity-root] * {
 		hyphens: manual;
 	}
@@ -4279,7 +4058,6 @@ html.praxity-assessment-group-ready [data-group-oneof-unselected] {
 	[data-praxity-root]
 		.praxity-assessment-choice-option
 		:is(.mantine-Radio-inner, .mantine-Checkbox-inner) {
-		/* The wrapper fits the control; its margin aligns with the label's first line. */
 		block-size: var(--praxity-choice-control-size);
 		margin-block-start: max(0px, calc((1lh - var(--praxity-choice-control-size)) / 2));
 	}
@@ -4294,7 +4072,6 @@ html.praxity-assessment-group-ready [data-group-oneof-unselected] {
 		margin-top: 0;
 	}
 }
-/* Keep the established language hyphenation for headings at the reflow width. */
 @container course-shell (320px <= width < 400px) {
 	[data-praxity-root] :is(h1, h2, h3, h4, h5, h6):not(.praxity-assessment-stem) {
 		hyphens: manual;
@@ -4401,8 +4178,6 @@ html.praxity-assessment-group-ready [data-group-oneof-unselected] {
 	color: var(--praxity-color-text) !important;
 }
 
-/* Inert assessment markup retains the island card surface and padding. */
-
 .praxity-assessment-baseline,
 .praxity-assessment-choice-baseline {
 	font-family: var(--praxity-font-family);
@@ -4432,7 +4207,6 @@ html.praxity-assessment-group-ready [data-group-oneof-unselected] {
 .praxity-assessment-text-input::placeholder,
 .praxity-block-assessment :is(.mantine-Textarea-input, .mantine-TextInput-input)::placeholder {
 	color: var(--praxity-color-text-muted);
-	/* The field's text fill colour would otherwise paint its placeholder at full body colour. */
 	-webkit-text-fill-color: currentColor;
 	opacity: 1;
 }
@@ -4467,7 +4241,6 @@ html.praxity-assessment-group-ready [data-group-oneof-unselected] {
 .praxity-categorize-table-wrap,
 .praxity-matrix-table-wrap {
 	overflow-x: auto;
-	/* Full activity padding consumes the card's corner radius. */
 	border-radius: 0;
 	border: 0;
 }
@@ -4493,7 +4266,6 @@ html.praxity-assessment-group-ready [data-group-oneof-unselected] {
 
 @container assessment-content (width >= 600px) {
 	.praxity-categorize-table-wrap {
-		/* The inset equals the difference between the card and control corner radii. */
 		margin-inline: calc(
 			var(--radius-box) -
 			var(--radius-control) -
@@ -4650,8 +4422,6 @@ html.praxity-assessment-group-ready [data-group-oneof-unselected] {
 		display: block;
 	}
 
-	/* Override the same baseline cell rules as Mantine's cells, so activation
-	   and inert previews keep identical row heights and borders. */
 	.praxity-block-assessment
 		:is(.praxity-categorize-table, .praxity-matrix-table)
 		tbody
@@ -4688,8 +4458,6 @@ html.praxity-assessment-group-ready [data-group-oneof-unselected] {
 	--checkbox-size: var(--praxity-choice-control-size);
 }
 
-/* Keep wrapped labels beside the first line. The body owns the font size so
- * its control wrapper and label measure that line with the same em. */
 .praxity-block-assessment .mantine-Radio-body,
 .praxity-block-assessment .mantine-Checkbox-body,
 [data-checklist-item] .mantine-Checkbox-body {
@@ -4761,8 +4529,6 @@ html.praxity-assessment-group-ready [data-group-oneof-unselected] {
 	transition: none;
 }
 
-/* Submitted answers are review information. Their mark contrasts with the
- * actual accent fill, which can differ from Mantine's generated accent shade. */
 .praxity-block-assessment :is(.mantine-Radio-radio, .mantine-Checkbox-input):checked:disabled {
 	border-color: var(--praxity-color-text);
 }
@@ -4798,8 +4564,6 @@ html.praxity-assessment-group-ready [data-group-oneof-unselected] {
 	}
 }
 
-/* Free response inputs inside assessment — remove border to avoid
-   double-line with the enclosing Card border */
 .praxity-block-assessment .mantine-Textarea-input,
 .praxity-block-assessment .mantine-TextInput-input {
 	border-bottom-width: 1px;
@@ -4875,7 +4639,6 @@ select.praxity-fill-blank-input {
 	opacity: 1;
 }
 
-/* Inline decorations follow each text fragment, including wrapped lines. */
 .praxity-doodle {
 	--doodle-color: var(--accent);
 	--doodle-stroke: var(--focus-width);
@@ -4908,7 +4671,6 @@ select.praxity-fill-blank-input {
 .praxity-doodle[data-doodle="highlight"] {
 	background-color: color-mix(in srgb, var(--doodle-color) 20%, transparent);
 }
-/* Legacy arrows retain their emphasis as an underline, without a floating mark. */
 .praxity-doodle[data-doodle="underline"],
 .praxity-doodle[data-doodle="arrow"] {
 	text-decoration-line: underline;
@@ -4961,7 +4723,6 @@ select.praxity-fill-blank-input {
 	box-shadow: none;
 }
 
-/* --- Tabs: measure labels before choosing tabs or disclosures. --- */
 .praxity-tabs-static,
 .praxity-tabs-block {
 	position: relative;
@@ -4993,7 +4754,6 @@ select.praxity-fill-blank-input {
 	text-align: start;
 	background: transparent;
 	border: 0;
-	/* The bottom edge joins its panel; the exposed corners are controls. */
 	border-radius: var(--radius-control) var(--radius-control) 0 0;
 	cursor: pointer;
 }
@@ -5028,7 +4788,6 @@ select.praxity-fill-blank-input {
 	visibility: hidden;
 	pointer-events: none;
 }
-/* Reserve the selected weight on every label so activation cannot trigger reflow. */
 .praxity-tabs-measure-label {
 	font-weight: var(--weight-strong);
 }
@@ -5044,8 +4803,6 @@ select.praxity-fill-blank-input {
 .praxity-tabs-tab[role="tab"] .praxity-disclosure-title {
 	font-weight: inherit;
 }
-
-/* --- Rating block --- */
 
 .praxity-rating {
 	min-width: 0;
@@ -5126,7 +4883,6 @@ select.praxity-fill-blank-input {
 }
 .praxity-rating-options:has(> .praxity-rating-numeric:nth-of-type(10):last-child),
 .praxity-rating-options:has(> .praxity-rating-numeric:nth-of-type(11):last-child) {
-	/* Round down so Gecko's subpixel gap rounding cannot force an early wrap. */
 	gap: round(
 		down,
 		clamp(4px, calc((100cqi - var(--rating-columns) * 44px) / (var(--rating-columns) - 1)), 8px),
@@ -5174,7 +4930,6 @@ select.praxity-fill-blank-input {
 	}
 }
 
-/* Wrap only below 44px keys + 4px gaps; preserve source order in balanced rows. */
 @container (width < 476px) {
 	.praxity-rating-options:has(> .praxity-rating-numeric:nth-of-type(10):last-child),
 	.praxity-rating-options:has(> .praxity-rating-numeric:nth-of-type(10):last-child)
@@ -5229,7 +4984,6 @@ select.praxity-fill-blank-input {
 	box-shadow: none;
 }
 
-/* Matrix has no enclosing option row; the native radio owns its indicator. */
 .praxity-matrix-table input[type="radio"]:focus {
 	outline: var(--focus-width) solid var(--accent);
 	outline-offset: var(--focus-offset);
@@ -5249,8 +5003,6 @@ select.praxity-fill-blank-input {
 	}
 }
 
-/* --- Slides block --- */
-
 .praxity-slides-grid {
 	display: grid;
 	min-height: 80px;
@@ -5265,7 +5017,6 @@ select.praxity-fill-blank-input {
 	pointer-events: none;
 }
 
-/* The server baseline keeps every card readable before enhancement. */
 html:not(.praxity-js) [data-card-root] .praxity-slides-grid {
 	display: block;
 }
@@ -5277,7 +5028,6 @@ html:not(.praxity-js) [data-card-root] .praxity-slides-item {
 	transition: none;
 }
 
-/* The button keeps a stable 24px target; ::before paints the dot or current pill. */
 .praxity-slides-dot {
 	display: inline-grid;
 	place-items: center;
@@ -5328,11 +5078,6 @@ html:not(.praxity-js) [data-card-root] .praxity-slides-item {
 	visibility: visible;
 	pointer-events: none;
 }
-/* ── Slide transitions ──
-   Opacity runs in sequence: the outgoing slide fades out over 120ms before the
-   incoming one fades in, so two slides' text never shows at once. */
-/* Authored "none" names no property, so the reduced-motion 0.01ms duration
-   policy cannot turn the visibility swap into a transition. */
 .praxity-slides-grid[data-transition="none"] .praxity-slides-item {
 	transition: none;
 }
@@ -5383,7 +5128,6 @@ html:not(.praxity-js) [data-card-root] .praxity-slides-item {
 		opacity var(--duration-press) var(--ease-out) var(--duration-press);
 }
 
-/* !important: the active and before-position rules above are more specific. */
 @media (prefers-reduced-motion: reduce) {
 	.praxity-slides-grid:is(
 			[data-transition="fade"],
@@ -5500,8 +5244,6 @@ html:not(.praxity-js) [data-card-root] .praxity-slides-item {
 	}
 }
 
-/* --- Table block --- */
-
 .praxity-footnote-ref {
 	font-size: var(--type-small);
 	line-height: var(--leading-body);
@@ -5519,9 +5261,6 @@ html:not(.praxity-js) [data-card-root] .praxity-slides-item {
 	margin-block-start: 0.5em;
 }
 
-/* Table cell styles are dynamic (conditional borders, shading) — stays inline */
-
-/* The native choice baseline uses the same card and row geometry as the island. */
 .praxity-assessment-baseline,
 .praxity-assessment-choice-baseline {
 	padding: var(--mantine-spacing-lg, var(--space-4));
@@ -5575,7 +5314,6 @@ html:not(.praxity-js) [data-card-root] .praxity-slides-item {
 	font-family: var(--praxity-font-code, monospace);
 }
 
-/* Shared rich reading text for media and course transcripts. */
 .praxity-transcript-content p {
 	margin: 0;
 	padding-block: var(--space-2) var(--space-3);
@@ -5608,7 +5346,6 @@ html:not(.praxity-js) [data-card-root] .praxity-slides-item {
 	hyphens: manual;
 }
 
-/* Optional keyboard seek links in published reading transcripts. */
 .praxity-transcript-seek {
 	position: absolute;
 	inset-inline-end: 0;
@@ -5629,18 +5366,16 @@ html:not(.praxity-js) [data-card-root] .praxity-slides-item {
 	cursor: pointer;
 }
 
-/* Retired surface props cannot add a second reading treatment. This policy
-   also wins over Mantine's inline surface variables until each block is simplified. */
 [data-praxity-root]
-:is(
-	.praxity-card,
-	.praxity-flashcard-face,
-	.praxity-audio-card,
-	.praxity-bookmark,
-	.praxity-tabs-block,
-	.praxity-chart-container,
-	.praxity-comparison-slider
-) {
+	:is(
+		.praxity-card,
+		.praxity-flashcard-face,
+		.praxity-audio-card,
+		.praxity-bookmark,
+		.praxity-tabs-block,
+		.praxity-chart-container,
+		.praxity-comparison-slider
+	) {
 	border: 0 !important;
 	border-radius: 0 !important;
 	background-color: transparent !important;
@@ -5683,7 +5418,6 @@ html:not(.praxity-js) [data-card-root] .praxity-slides-item {
 }
 
 @container course-shell (width < 400px) {
-	/* A narrow card grid becomes divided reading items; authored rows keep their own layout. */
 	[data-praxity-root]
 		[data-card-root][data-layout="grid"]
 		> .praxity-card[data-flippable="false"]
@@ -5713,12 +5447,10 @@ html:not(.praxity-js) [data-card-root] .praxity-slides-item {
 	background: var(--paper);
 	box-shadow: var(--shadow-card);
 }
-/* Group members share submission, while each activity keeps its own card. */
 .praxity-scene {
 	display: flex;
 	gap: 14px;
 	align-items: center;
-	/* Include the card rule so the band's outer curve shares the card's edges. */
 	margin-inline: calc(
 		-1 *
 		(var(--praxity-activity-padding-inline) + var(--praxity-rule-width, 1px))
@@ -5907,8 +5639,6 @@ html:not(.praxity-js) [data-card-root] .praxity-slides-item {
 }
 [data-praxity-root] .praxity-assessment-choice-option:has(input:checked) {
 	border: 2px solid var(--accent);
-	/* The stronger selection border replaces padding, so selection cannot
-	   move labels or resize the activity and its action row. */
 	padding: 9px 13px;
 	background: var(--accent-soft);
 }
@@ -5945,7 +5675,6 @@ html:not(.praxity-js) [data-card-root] .praxity-slides-item {
 	border-color: var(--accent);
 }
 [data-praxity-root] .praxity-assessment-choice-option > input[type="radio"] {
-	/* Transparent native hit targets retain their circular shape in Chromium. */
 	appearance: none;
 	position: absolute;
 	inset-inline-start: 14px;
@@ -6123,22 +5852,20 @@ html:not(.praxity-js) [data-card-root] .praxity-slides-item {
 	}
 }
 
-/* Circle shapes outrank the control default, including native radio hit targets. */
 [data-praxity-root]
-:is(
-	input[type="radio"],
-	.praxity-sequence-scroll-button,
-	.praxity-comparison-handle,
-	.praxity-edge-arrow,
-	.praxity-labeled-graphic-dot
-) {
+	:is(
+		input[type="radio"],
+		.praxity-sequence-scroll-button,
+		.praxity-comparison-handle,
+		.praxity-edge-arrow,
+		.praxity-labeled-graphic-dot
+	) {
 	border-radius: var(--radius-round);
 }
 [data-praxity-root] input[type="checkbox"] {
 	border-radius: var(--radius-key);
 }
 
-/* Labels use type roles even when a renderer uses SVG text attributes. */
 .praxity-chart-container :is(text, tspan) {
 	font-size: var(--type-small);
 	font-family: var(--praxity-font-family);
@@ -6162,8 +5889,6 @@ html:not(.praxity-js) [data-card-root] .praxity-slides-item {
 	min-height: var(--target-size);
 }
 
-/* Keep the image and its authored coordinates together in a local scroller.
-   At zoom widths, shrinking the image further would collide fixed-size targets. */
 .praxity-hotspot-scroll {
 	max-inline-size: 100%;
 	overflow-x: auto;
@@ -6179,7 +5904,6 @@ html:not(.praxity-js) [data-card-root] .praxity-slides-item {
 	}
 }
 
-/* One owner styles the inert and hydrated hotspot controls. Geometry is authored. */
 .praxity-hotspot-region {
 	position: absolute;
 	z-index: 1;
@@ -6232,7 +5956,6 @@ html:not(.praxity-js) [data-card-root] .praxity-slides-item {
 	}
 }
 
-/* Reading titles align with their own text; comparisons have one separating rule. */
 .praxity-block [data-block-type="heading"] {
 	--type-h1: var(--type-h3);
 	--type-h2: var(--type-h3);
@@ -6283,7 +6006,6 @@ html:not(.praxity-js) [data-card-root] .praxity-slides-item {
 	}
 }
 
-/* Exposed edges share one radius per role in both published CSS bundles. */
 [data-praxity-root] :is(.praxity-accordion-panel, .mantine-Accordion-panel) {
 	border-radius: var(--radius-control);
 }
@@ -6299,7 +6021,6 @@ html:not(.praxity-js) [data-card-root] .praxity-slides-item {
 	border-radius: var(--radius-mark);
 }
 
-/* A localized action must grow with its text at narrow widths and text zoom. */
 .praxity-assessment-new-attempt {
 	height: auto;
 	min-height: var(--target-size);

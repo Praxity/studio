@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 
-// Tabler outline paths, MIT. Export's third-party notice owner includes @tabler/icons.
 const paths = {
 	notebook: [
 		"M6 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-11a1 1 0 0 1 -1 -1v-14a1 1 0 0 1 1 -1m3 0v18",
@@ -42,7 +41,6 @@ export function SceneHeader({ icon, children }: { icon: SceneIcon; children: Rea
 	);
 }
 
-/** Title HTML and attributes are admitted by the renderer; preserves its existing element. */
 export function renderSceneHeader({
 	icon,
 	headingLevel,

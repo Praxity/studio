@@ -6,10 +6,6 @@ afterEach(() => {
 	cleanup();
 });
 
-/**
- * Mantine v7 requires window.matchMedia in jsdom.
- * Mock it before tests run.
- */
 Object.defineProperty(window, "matchMedia", {
 	writable: true,
 	value: (query: string) => ({
@@ -24,9 +20,6 @@ Object.defineProperty(window, "matchMedia", {
 	}),
 });
 
-/**
- * Mantine also uses ResizeObserver
- */
 class ResizeObserverMock {
 	observe() {}
 	unobserve() {}

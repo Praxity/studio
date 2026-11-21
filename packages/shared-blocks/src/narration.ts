@@ -39,7 +39,6 @@ export interface NarrationEntryV2 extends NarrationSettings {
 	timings?: string;
 	duration?: number;
 	audioFor?: NarrationAudioFor;
-	/** Explicit author acknowledgement of this script/settings; original recording provenance stays intact. */
 	acceptedFor?: NarrationAudioFor;
 }
 export interface NarrationLessonV2 {
@@ -63,7 +62,6 @@ export function narrationTargetKey(target: NarrationTarget): string {
 	return `${target.id}:${target.role}`;
 }
 
-/** Accepted retirement removes all roles on that identity, including unopened lessons. */
 export function retireNarration(
 	sidecar: NarrationSidecarV2,
 	retiredIds: readonly string[],
@@ -86,7 +84,6 @@ export function updateNarrationV2Entry(
 	target: NarrationTarget,
 	patch: Partial<Omit<NarrationEntryV2, "target">>,
 ): NarrationSidecarV2 {
-	// Targets may have moved across lessons since their recording was stored.
 	const key = narrationTargetKey(target);
 	const owners = Object.entries(sidecar.lessons).filter(([, lesson]) =>
 		lesson.segments.some((entry) => narrationTargetKey(entry.target) === key),
@@ -101,7 +98,6 @@ export function updateNarrationV2Entry(
 	);
 	const previous = index < 0 ? { target } : segments[index];
 	const next = { ...previous, ...patch };
-	// Replacing a recording may supply its new provenance in the same operation.
 	if (
 		!Object.hasOwn(patch, "audioFor") &&
 		(["script", "language", "voice", "speed"] as const).some(
@@ -121,7 +117,6 @@ export function updateNarrationV2Entry(
 	return { ...sidecar, lessons: { ...sidecar.lessons, [ownerId]: { ...lesson, segments } } };
 }
 
-/** The inputs authors accept and synthesis records use the same normalization and defaults. */
 export function narrationRecordingInputs(
 	script: string,
 	settings: NarrationSettings,
@@ -135,7 +130,6 @@ export function narrationRecordingInputs(
 	};
 }
 
-/** Approve the retained recording without claiming it was synthesized from today's script. */
 export function acceptNarrationV2Entry(
 	sidecar: NarrationSidecarV2,
 	lessonId: string,
@@ -149,8 +143,6 @@ export function acceptNarrationV2Entry(
 	});
 }
 
-/** The host supplies SHA-256, as it does for identity. No paths or positions enter revisions.
- * Identity joins precede review checks; a changed revision never detaches a recording. */
 export function resolveNarrationV2(input: {
 	courseId: string;
 	lessonId: string;
@@ -201,7 +193,6 @@ export function resolveNarrationV2(input: {
 	);
 	const seen = new Set<string>();
 	const pages = input.pages.map((page) => {
-		// V2 entries own authoring metadata; derive targets from clean renderer input.
 		const clean = (value: unknown): unknown => {
 			if (Array.isArray(value)) return value.map(clean);
 			if (!isRecord(value)) return value;
@@ -376,12 +367,9 @@ export interface NarrationSegment {
 	kind: "pageTitle" | "block";
 	blockId?: string;
 	ancestorBlockIds?: string[];
-	/** Item owner within block.data.items; omitted for a container introduction. */
 	itemIndex?: number;
 	containerPart?: "intro" | "item";
-	/** Resolved dialogue speaker name for transcripts; never spoken. */
 	speaker?: string;
-	/** Preserved whole-container recording or explicit script from older lessons. */
 	wholeContainer?: boolean;
 	blockType?: PraxityBlock["type"];
 	conditionalBlockId?: string;
@@ -393,9 +381,7 @@ export interface NarrationSegment {
 		conditionalBlockId?: string;
 	}>;
 	label: string;
-	/** Deterministic script from the current visible source, before any custom override. */
 	derivedScript: string;
-	/** Stable block source used to detect whether a preserved custom script needs review. */
 	sourceContent: string;
 	script: string;
 	custom: boolean;
@@ -417,7 +403,6 @@ export interface NarrationVttCue {
 	text: string;
 }
 
-/** Empty editor targets carry stop metadata but occupy no narration position. */
 export function hasNarrationContent(segment: NarrationSegment): boolean {
 	return Boolean(segment.script || segment.audioUrl);
 }
@@ -472,7 +457,6 @@ export function normalizeNarrationScript(value: string): string {
 	return value.replace(/[ \t\r\n\f]+/g, " ").trim();
 }
 
-/** One authored script, rendered as restrained Markdown or spoken as plain text. */
 function narrationScriptBlocks(
 	value: string,
 ): Array<{ tag: string; text: string; start?: number; depth?: number; breakBefore?: boolean }> {
@@ -513,7 +497,6 @@ function narrationInline(text: string): string {
 	return inlineMarkdown(normalizeNarrationScript(text), { emphasisOnly: true });
 }
 
-/** Escaped semantic HTML; authored HTML and non-narration syntax remain literal text. */
 export function renderNarrationScript(value: string): string {
 	const html: string[] = [];
 	const lists: string[] = [];
@@ -549,9 +532,7 @@ export function renderNarrationScript(value: string): string {
 	return html.join("\n");
 }
 
-/** Keep paragraph/list boundaries for speech without adding punctuation or changing words. */
 export function narrationScriptText(value: string): string {
-	// Speak escaped bracketed cues as words before Markdown consumes the escape.
 	return narrationScriptBlocks(value)
 		.map((block) =>
 			narrationInline(
@@ -654,11 +635,9 @@ function uniqueText(...values: unknown[]): string {
 	return joinText(values, true);
 }
 
-/** Turn paragraphs are inline Markdown; speak link text, keep delivery cues. */
 function dialogueTurnScript(paragraphs: readonly string[]): string {
 	return paragraphs
 		.map((part) => {
-			// Inline Markdown consumes escapes. Reserve markers absent from the authored text.
 			let open = "\uE000";
 			let close = "\uE001";
 			while (part.includes(open) || part.includes(close)) {
@@ -778,7 +757,6 @@ function assertHighlightNarrationInputs(
 	locale?: string,
 	targetIds?: ReadonlySet<string>,
 ): void {
-	// Validate before visibility, container scripts or v2 cleanup can hide an explicit input.
 	for (const block of flattenLogicBlocks(blocks)) {
 		if (block.type !== "highlight") continue;
 		if (
@@ -827,8 +805,6 @@ function childBlocks(value: unknown): PraxityBlock[] {
 		: [];
 }
 
-// Narration sources ship in page data. Self-check contributes only its task;
-// comparison content and private answers must never reach this channel.
 function selfCheckSourceData(data: unknown): Record<string, unknown> {
 	const content = isRecord(data) && isRecord(data.content) ? data.content : {};
 	return { content: { task: content.task } };
@@ -851,7 +827,6 @@ function writeDistractorsSourceData(data: unknown): Record<string, unknown> {
 }
 
 function sourceValue(input: unknown): unknown {
-	// A silent highlight contributes no record, even to a surrounding recording.
 	if (Array.isArray(input))
 		return input.filter((value) => !isRecord(value) || value.type !== "highlight").map(sourceValue);
 	if (!isRecord(input)) return input;
@@ -863,8 +838,6 @@ function sourceValue(input: unknown): unknown {
 				: input.type === "writeDistractors" && isRecord(input.data)
 					? { ...input, data: writeDistractorsSourceData(input.data) }
 					: input;
-	// Reader and item identity never contributes to recorded content. Grammar 4
-	// uses durable or runtime display IDs; keep authored names.
 	const itemId =
 		typeof value.id === "string" &&
 		((/^item-\d+(?:-\d+)?$/u.test(value.id) &&
@@ -891,7 +864,6 @@ function sourceValue(input: unknown): unknown {
 	);
 }
 
-/** Upgrade a saved source fingerprint without changing its content or sidecar schema. */
 export function normalizeNarrationSourceContent(source: string): string {
 	try {
 		const value: unknown = JSON.parse(source);
@@ -904,7 +876,6 @@ export function normalizeNarrationSourceContent(source: string): string {
 			return source;
 		return narrationSourceContent(value as unknown as PraxityBlock);
 	} catch {
-		// Page-title text and unknown legacy fingerprints must survive writes intact.
 		return source;
 	}
 }
@@ -1089,7 +1060,6 @@ function derivedBlockScript(
 		case "variable":
 			return { script: "" };
 		case "retrievalSheet": {
-			// Speak literal title/questions deliberately; authored answers stay on the back.
 			const content = isRecord(data.content) ? data.content : {};
 			const questions = Array.isArray(content.questions) ? content.questions : [];
 			const values = [
@@ -1110,11 +1080,9 @@ function derivedBlockScript(
 				script: typeof question === "string" ? uniqueText(`<p>${escapeHtml(question)}</p>`) : "",
 			};
 		}
-		// Highlight is silent, including its title when aggregated by a container.
 		case "highlight":
 			return { script: "" };
 		case "selfCheck": {
-			// The task is literal text; feedback narration awaits a learner-step target contract.
 			const task = isRecord(data.content) ? data.content.task : undefined;
 			return { script: typeof task === "string" ? uniqueText(`<p>${escapeHtml(task)}</p>`) : "" };
 		}
@@ -1190,14 +1158,12 @@ export function extractNarrationSegments(
 	} = {},
 ): NarrationSegment[] {
 	assertHighlightNarrationInputs(blocks, courseLocale);
-	// Standalone scripts also accept raw source blocks. Prepared blocks keep their resolved context.
 	if (
 		flattenLogicBlocks(blocks).some(
 			(block) => block.type === "assessment" && block.data._dontKnow === undefined,
 		)
 	)
 		blocks = resolveAssessmentDontKnow(blocks, options.moduleDeck);
-	// A surviving v2 target with no words still owns its attached recording.
 	const makeSegment = (...args: Parameters<typeof segmentFromData>) => {
 		const [id, kind, label, derived, data, settings, block] = args;
 		return segmentFromData(
@@ -1330,7 +1296,6 @@ export function extractNarrationSegments(
 						(part): part is string => typeof part === "string",
 					);
 					const key = typeof turn.speaker === "string" ? turn.speaker.trim() : "";
-					// Literal display text; every output escapes it.
 					const name = (typeof turn.name === "string" && turn.name.trim()) || key;
 					const turnScope = {
 						...scope,
@@ -1384,7 +1349,6 @@ export function extractNarrationSegments(
 						(typeof data.narration === "string" || typeof data.narrationAudio === "string")));
 			if (isNarrationContainer(block) && !wholeContainer) {
 				const { items: containerItems, ...introData } = data;
-				// A whole-container clip/script cannot become an introduction after splitting.
 				const introNarration =
 					splitForVisibility && data.narrationContainerSplit !== true
 						? {
@@ -1431,7 +1395,6 @@ export function extractNarrationSegments(
 						const children = back
 							? childBlocks(item.back)
 							: [...childBlocks(item.children), ...childBlocks(item.front)];
-						// Nested containers and child overrides retain their own owners and authored order.
 						const recurse = flattenLogicBlocks(children)
 							.filter((child) => child.type !== "highlight")
 							.some(
@@ -1541,16 +1504,12 @@ export function extractNarrationSegments(
 				derived,
 				effectiveData,
 				settings,
-				// Group membership uses parser IDs at runtime. Fingerprint the members'
-				// content so edits elsewhere cannot detach the group's introduction.
 				block.type === "assessmentGroup"
 					? {
 							...block,
 							data: {
 								...data,
 								memberBlockIds: undefined,
-								// Broken member references are the group validators' error to
-								// report (course PDF, editor diagnostics); narration skips them.
 								members: (Array.isArray(data.memberBlockIds) ? data.memberBlockIds : []).flatMap(
 									(id) => {
 										const member = scoped.find((candidate) => candidate.id === id);

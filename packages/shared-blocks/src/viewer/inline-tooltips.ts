@@ -11,14 +11,6 @@ import {
 import { externalLinkIndicatorHtml } from "../lib/external-link-utils";
 import { rememberGlossaryFocusReturn } from "./glossary-focus-return";
 
-/**
- * Toggletip behaviour for `[term]{definition}` triggers.
- *
- * Shared by the desktop viewer and the published tooltip island. Whichever
- * consumer initialises first claims the page, so nested renderers never bind the
- * document listeners twice.
- */
-
 const BOUND_FLAG = "__praxityInlineTooltips";
 const HIDE_DELAY_MS = 200;
 const HOVER_DELAY_MS = 300;
@@ -93,7 +85,6 @@ function sanitizeTooltipHtml(raw: string, newTabText: string): string {
 			else element.removeAttribute("target");
 		}
 	}
-	// Add owned markup after the allowlist, using the sanitized DOM's real targets.
 	for (const link of parsed.body.querySelectorAll('a[target="_blank"]')) {
 		link.insertAdjacentHTML("beforeend", externalLinkIndicatorHtml(newTabText));
 		link.lastElementChild?.setAttribute("lang", document.documentElement.lang);
@@ -101,10 +92,6 @@ function sanitizeTooltipHtml(raw: string, newTabText: string): string {
 	return parsed.body.innerHTML;
 }
 
-/**
- * Bind toggletips for the whole document. Returns a cleanup that unbinds and
- * releases the page, so a viewer unmount does not leave the flag set.
- */
 export function initInlineTooltips(
 	definitionCue: string,
 	newTabText: string,
@@ -132,8 +119,6 @@ export function initInlineTooltips(
 		clearTimers();
 		const popover = openPopover;
 		const trigger = openTrigger;
-		// Removing a focused popover fires focusout synchronously in Chromium.
-		// Clear ownership before removal so dismissal cannot re-enter and lose the trigger.
 		openTrigger = null;
 		openPopover = null;
 		pinned = false;
@@ -163,14 +148,10 @@ export function initInlineTooltips(
 		const popover = document.createElement("div");
 		popover.id = `prx-tooltip-${++popoverId}`;
 		popover.className = "inline-tooltip-popover praxity-floating-layer";
-		// Definitions can scroll at large text sizes; keyboard users need access.
 		popover.tabIndex = 0;
 		popover.setAttribute("role", "definition");
-		// The named popover describes the term; its text describes the trigger.
-		// Referring to the popover itself exposes its aria-labelledby name instead.
 		const definition = document.createElement("div");
 		definition.id = `${popover.id}-definition`;
-		// Only authored content retains the term's language; the action uses the UI language.
 		definition.lang =
 			trigger.closest("[lang]")?.getAttribute("lang") ?? document.documentElement.lang;
 		definition.innerHTML = sanitizeTooltipHtml(
@@ -195,7 +176,6 @@ export function initInlineTooltips(
 		trigger.setAttribute("aria-controls", popover.id);
 		trigger.setAttribute("aria-describedby", definition.id);
 
-		// Position above the trigger, flipping below when it would clip the top edge.
 		const rect = trigger.getBoundingClientRect();
 		const margin = 8;
 		const arrow = 6;
@@ -237,9 +217,6 @@ export function initInlineTooltips(
 			? (target.closest<HTMLElement>("[data-tooltip-content]") ?? null)
 			: null;
 
-	// Click binds to each trigger, not to body: Chromium exposes an element with a
-	// click listener as clickable, and every descendant inherits that, so NVDA said
-	// "clickable" before ordinary course content. Keyboard and hover stay delegated.
 	const onTriggerClick = (event: MouseEvent) => {
 		const trigger = event.currentTarget;
 		if (!(trigger instanceof HTMLElement) || !isTriggerButton(trigger)) return;
@@ -247,7 +224,6 @@ export function initInlineTooltips(
 		toggle(trigger);
 	};
 
-	/** A bare span is not operable; give it button semantics unless it already has some. */
 	const ensureAria = (el: Element) => {
 		el.setAttribute("data-tooltip-enhanced", "");
 		(el as HTMLElement).addEventListener("click", onTriggerClick);
@@ -266,7 +242,6 @@ export function initInlineTooltips(
 
 	for (const el of document.querySelectorAll("[data-tooltip-content]")) ensureAria(el);
 
-	// The viewer re-renders content after this runs, so watch for later triggers.
 	const releaseObserver = observeSelfCheckLifetime((current) => {
 		const observer = createSelfCheckMutationObserver(current, (mutations) => {
 			for (const mutation of mutations) {
@@ -281,7 +256,6 @@ export function initInlineTooltips(
 		return () => observer.disconnect();
 	});
 
-	// Outside dismissal uses pointerdown, which Chromium does not treat as a click action.
 	const onPointerDown = (event: PointerEvent) => {
 		if (!openPopover || closestTrigger(event.target)) return;
 		if (!(event.target as Element)?.closest?.(".inline-tooltip-popover")) hide(false);

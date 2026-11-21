@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ClipBounds, VideoPlayerState } from "./types";
 
-// Minimal YT.Player types — avoids pulling in the full @types/youtube package.
 interface YTPlayerEvents {
 	onReady?: (event: { target: YTPlayer }) => void;
 	onStateChange?: (event: { data: number }) => void;
@@ -35,12 +34,7 @@ declare global {
 	}
 }
 
-/**
- * Loads the YouTube IFrame API script if not already present.
- * Returns a promise that resolves to the YT global once ready.
- */
 function loadYouTubeAPI(): Promise<YTGlobal> {
-	// Already loaded
 	if (window.YT?.Player) return Promise.resolve(window.YT);
 
 	return new Promise<YTGlobal>((resolve, reject) => {
@@ -62,7 +56,6 @@ function loadYouTubeAPI(): Promise<YTGlobal> {
 		};
 		tag.addEventListener("error", failed, { once: true });
 
-		// Another call may have already injected the script — just wait for the callback.
 		const prev = window.onYouTubeIframeAPIReady;
 		window.onYouTubeIframeAPIReady = () => {
 			cleanup();
@@ -77,17 +70,6 @@ function loadYouTubeAPI(): Promise<YTGlobal> {
 	});
 }
 
-/**
- * Hook that drives the YouTube iframe player via the official IFrame API.
- *
- * Uses `YT.Player` wrapping the existing iframe (requires `enablejsapi=1`
- * on the embed URL, which useVideoPlayer already appends). This replaces
- * the previous raw postMessage approach which was unreliable due to
- * origin mismatches and race conditions in published output.
- *
- * We poll every 500 ms for time updates — the YouTube IFrame API does not
- * push continuous time events, only discrete state-change events.
- */
 export function useYouTubePlayer(
 	iframeRef: React.RefObject<HTMLIFrameElement | null>,
 	embedUrl: string,
@@ -150,7 +132,6 @@ export function useYouTubePlayer(
 					},
 					onStateChange: (event) => {
 						if (destroyed) return;
-						// YT.PlayerState: -1=unstarted, 0=ended, 1=playing, 2=paused, 3=buffering, 5=cued
 						if (event.data === 0) {
 							setIsEnded(true);
 						} else if (event.data === 1) {
@@ -166,7 +147,6 @@ export function useYouTubePlayer(
 				},
 			});
 
-			// Poll for time updates and clip-end enforcement (only after onReady fires)
 			pollInterval = setInterval(() => {
 				if (destroyed || !playerRef.current || !readyRef.current) return;
 				if (!isPausedRef.current) {
@@ -175,11 +155,9 @@ export function useYouTubePlayer(
 						currentTimeRef.current = t;
 						setCurrentTime(t);
 
-						// Also grab duration if we don't have it yet
 						const d = playerRef.current.getDuration();
 						if (d > 0) setDuration(d);
 
-						// End-time enforcement
 						const endTime = clipBoundsRef.current?.endTime;
 						if (endTime != null && t >= endTime) {
 							playerRef.current?.pauseVideo();
@@ -187,14 +165,10 @@ export function useYouTubePlayer(
 							setIsPaused(true);
 							setIsEnded(true);
 						}
-					} catch {
-						// Player may have been destroyed between the check and the call
-					}
+					} catch {}
 				}
 			}, 500);
 
-			// If the effect is cleaned up before onReady, destroy the player.
-			// Otherwise, onReady will set playerRef.current.
 			if (destroyed) {
 				player.destroy();
 			}
@@ -207,14 +181,11 @@ export function useYouTubePlayer(
 		return () => {
 			destroyed = true;
 			if (pollInterval) clearInterval(pollInterval);
-			// Don't call player.destroy() — it removes the iframe from the DOM.
-			// Just drop the reference; React will unmount the iframe element.
 			playerRef.current = null;
 			readyRef.current = false;
 		};
 	}, [embedUrl, iframeRef, autoplay]);
 
-	// Reset state when the video source changes.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: embedUrl is the intentional trigger; ref mutations are not deps
 	useEffect(() => {
 		setCurrentTime(0);

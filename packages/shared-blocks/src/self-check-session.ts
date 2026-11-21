@@ -11,7 +11,6 @@ export interface SelfCheckReference {
 	blockId: string;
 	contentRevision: string;
 	path: string;
-	/** This activity has no dependent page or course gate; it settles independently. */
 	independent?: boolean;
 }
 export type SelfCheckOutcome =
@@ -42,7 +41,6 @@ export interface SelfCheckSnapshot {
 	activities: readonly SelfCheckView[];
 	failures: readonly { blockId: string; code: SelfCheckFailure }[];
 }
-/** Admission keeps full authored Content inside the lazy adapter. */
 export interface SelfCheckOperations {
 	restore(value: unknown): SelfCheckStateResult;
 	edit(value: unknown, draft: SelfCheckState["draft"]): SelfCheckStateResult;
@@ -53,7 +51,6 @@ export interface SelfCheckSessionDependencies {
 	read(blockId: string): LearnerStateValue | undefined;
 	write(blockId: string, value: SelfCheckState | LearnerStateValue): void;
 	admit(reference: SelfCheckReference, retry: boolean): Promise<SelfCheckOperations>;
-	// Private state reaches only the comparison adapter, never completion subscribers.
 	project?(blockId: string, result: SelfCheckStateResult): void;
 	current?(cancelled: boolean): boolean;
 	deferStart?: boolean;
@@ -280,7 +277,6 @@ export function createSelfCheckSession(
 		}
 		entry.readDone = true;
 		if (entry.reset) return;
-		// A resumed read merges its captured provider state beneath the explicit draft.
 		if (entry.edit) value = updateSelfCheckDraftAnswer(entry.edit.answer, value);
 		entry.value = value;
 		entry.view = {
@@ -347,7 +343,6 @@ export function createSelfCheckSession(
 		initialize() {
 			if (started || disposed || !current()) return;
 			started = true;
-			// Every member has independent progress; one reentrant read cannot abandon siblings.
 			enqueue(() => {
 				for (const entry of entries.values()) effects.append(() => initializeEntry(entry));
 				commit();
@@ -451,7 +446,6 @@ export function createSelfCheckSession(
 										entry.result?.state &&
 										(entry.result.status === "empty" || entry.result.status === "valid")
 									) {
-										// Save failure does not freeze the last previously admitted draft projection.
 										entry.result = {
 											...entry.result,
 											status: "valid",
@@ -460,7 +454,6 @@ export function createSelfCheckSession(
 											response: null,
 										};
 									} else if (freshValue) {
-										// A learner-created fresh draft is safe to project even when comparison loading failed.
 										entry.result = {
 											status: "valid",
 											state: entry.value as SelfCheckState,
@@ -485,7 +478,6 @@ export function createSelfCheckSession(
 										return;
 									}
 									if (entry.view.outcome === "pending") {
-										// Existing content validates the draft while Retry's replacement admission waits.
 										entry.edit = { answer: command.answer, ticked: result.state?.draft.ticked };
 										entry.result = result;
 									} else {
@@ -523,13 +515,11 @@ export function createSelfCheckSession(
 		subscribe: effects.subscribe,
 		dispose() {
 			if (disposed) {
-				// A cancellation listener can reenter before the owner handoff finishes.
 				enqueue(() => {
 					commit();
 				});
 				return;
 			}
-			// Revocation happens at call time, even inside an injected operation.
 			disposed = true;
 			enqueue(() => {
 				startup = "cancelled";

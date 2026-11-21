@@ -23,7 +23,6 @@ function updatePageScrollPadding(doc: Document): void {
 	}
 }
 
-/** Native Tab focus and every scroll destination share the sticky chrome clearance. */
 export function observePageScrollPadding(doc: Document): () => void {
 	return observeSelfCheckLifetime((current) => {
 		const sync = () => {
@@ -51,6 +50,5 @@ export function scrollElementIntoView(
 	options: Omit<ScrollIntoViewOptions, "behavior">,
 ): void {
 	updatePageScrollPadding(element.ownerDocument);
-	// Native smooth scrolling has no duration control; learner motion must stay under 300 ms.
 	element.scrollIntoView({ ...options, behavior: "instant" });
 }

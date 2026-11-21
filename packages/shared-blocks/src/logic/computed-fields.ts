@@ -26,7 +26,7 @@ const computers: Record<string, BlockFieldComputer> = {
 			isAttempted: el.getAttribute("data-rating-value") !== null,
 			isCompleted: el.getAttribute("data-rating-value") !== null,
 			ratingScore: val,
-			value: val, // backward compat alias
+			value: val,
 		};
 	},
 	signature: (el) => {
@@ -35,7 +35,7 @@ const computers: Record<string, BlockFieldComputer> = {
 			isAttempted: s,
 			isCompleted: s,
 			isSigned: s,
-			signed: s, // backward compat alias
+			signed: s,
 		};
 	},
 	assessment: (el) => {

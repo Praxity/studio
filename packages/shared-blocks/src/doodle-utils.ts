@@ -68,11 +68,6 @@ export function resolveDoodleColor(style: CSSStyleDeclaration, mods: Set<string>
 	);
 }
 
-/**
- * Resolve highlight background color — separate from stroke color.
- * Reads --praxity-color-highlight-* CSS variables or an authored background color.
- * Falls back to the stroke color at 20% opacity if variables aren't set.
- */
 export function resolveHighlightColor(style: CSSStyleDeclaration, mods: Set<string>): string {
 	if (hasDoodleMod(mods, "yellow") || hasDoodleMod(mods, "warning")) {
 		return tokenValue(

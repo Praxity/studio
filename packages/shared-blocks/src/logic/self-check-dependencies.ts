@@ -11,7 +11,6 @@ export interface DependencyRule {
 	actions: LogicAction[];
 }
 
-/** Follow variable writers and compound operands, including originating inputs when queried. */
 export function selfCheckDependencies(
 	blocks: readonly VisibilityBlock[],
 	rules: readonly DependencyRule[],

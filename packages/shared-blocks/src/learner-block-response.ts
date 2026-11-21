@@ -1,13 +1,11 @@
 import { type LearnerBlockStateRuntime, readLearnerBlockPolicy } from "./learner-block-state";
 import { dispatchSelfCheckEvent, selfCheckEpochTicket } from "./self-check-consumers";
 
-/** Content-free detail for praxity:assessment-response-truncated. Never persisted. */
 export interface LearnerBlockResponseTruncated {
 	blockId: string;
 	responseLimit: number;
 }
 
-/** S7 and assessments use the provider's policy before creating a response event. */
 export function reportLearnerBlockResponse(
 	detail: {
 		blockId: string;

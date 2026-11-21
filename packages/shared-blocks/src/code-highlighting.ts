@@ -27,7 +27,6 @@ const PRISM_LANGUAGES: Record<string, string> = {
 	plain: "plain",
 };
 
-// Four roles, resolved by the containing course palette in either mode.
 export const LIGHT_THEME: PrismTheme = {
 	plain: { color: "var(--ink)", backgroundColor: "transparent" },
 	styles: [

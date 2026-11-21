@@ -4,27 +4,20 @@ export type A11yTextSize = "default" | "large";
 
 export interface StoredA11yPreferences {
 	textSize?: A11yTextSize;
-	/** Learner's explicit focus choice. null = never chose (page default applies). */
 	focusChoice: boolean | null;
 }
 
-// ponytail: module-level fallback is per-document only; packages launched with
-// both web stores blocked lose the choice after a full-page navigation.
 let memoryStore: string | null = null;
 
 function readRaw(): string | null {
 	let value: string | null = null;
 	try {
 		value = localStorage.getItem(STORAGE_KEY);
-	} catch {
-		// localStorage can be unavailable in locked-down LMS frames.
-	}
+	} catch {}
 	if (value !== null) return value;
 	try {
 		value = sessionStorage.getItem(STORAGE_KEY);
-	} catch {
-		// sessionStorage can be unavailable too.
-	}
+	} catch {}
 	return value ?? memoryStore;
 }
 
@@ -56,15 +49,12 @@ export function readA11yPreferences(): StoredA11yPreferences {
 export function writeA11yPreferences(preferences: StoredA11yPreferences): void {
 	const value = JSON.stringify({
 		...preferences,
-		// Older packages read focusMode. Author defaults must never be persisted.
 		focusMode: preferences.focusChoice === true,
 	});
 	try {
 		localStorage.setItem(STORAGE_KEY, value);
 		return;
-	} catch {
-		// Fall through to session storage.
-	}
+	} catch {}
 	try {
 		sessionStorage.setItem(STORAGE_KEY, value);
 		return;

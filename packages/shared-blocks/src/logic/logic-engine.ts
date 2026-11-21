@@ -71,10 +71,6 @@ export class LogicEngine {
 		this.logicBlocks.push(config);
 	}
 
-	/**
-	 * Evaluate all logic blocks on the page.
-	 * Call on page load and after any block interaction.
-	 */
 	evaluate(
 		origin: "initial" | "restore" | "interaction" = "initial",
 		current: () => boolean = () => true,
@@ -129,15 +125,12 @@ export class LogicEngine {
 		if (current()) this.restoreInactiveDomEffects();
 	}
 
-	/** Refresh predicates after hydration without replaying authored mutations or jumps. */
 	refreshVisibility(current: () => boolean = () => true): void {
-		// Attaching a display must not discard a jump from a deliberate interaction.
 		const jump = this.jumpTarget;
 		this.evaluate("restore", current);
 		if (current()) this.jumpTarget = jump;
 	}
 
-	/** Restore author-owned DOM state when this engine is replaced or unmounted. */
 	destroy(): void {
 		for (const [element, effect] of this.requiredEffects) {
 			this.restoreRequiredEffect(element, effect);
@@ -147,10 +140,6 @@ export class LogicEngine {
 		this.completionReasons = [];
 	}
 
-	/**
-	 * Get the jump target if any logic block triggered jumpToPage.
-	 * Returns null if linear navigation should proceed.
-	 */
 	getJumpTarget(): string | null {
 		return this.jumpTarget;
 	}
@@ -261,8 +250,6 @@ export class LogicEngine {
 								el.setAttribute("data-required-min", String(action.value));
 							}
 							el.style.position = "relative";
-							// TODO: Lift required indicator rendering into React state (remove direct DOM injection).
-							// Inject required indicator if not already present
 							if (!el.querySelector(".praxity-required-indicator")) {
 								const indicator = document.createElement("span");
 								indicator.className = "praxity-required-indicator";

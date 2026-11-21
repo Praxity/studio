@@ -1,4 +1,3 @@
-/** Keep naturally compact columns whole and share the rest without splitting words. */
 export function allocateTableColumns(
 	minimum: readonly number[],
 	natural: readonly number[],
@@ -17,7 +16,6 @@ export function allocateTableColumns(
 			(value, index) => !Number.isFinite(value) || value <= 0 || value > natural[index],
 		) ||
 		natural.some((value) => !Number.isFinite(value)) ||
-		// ponytail: conservative 16em per column; revisit only with broader content evidence.
 		available < count * 16 * fontSize ||
 		sum(natural) <= available ||
 		sum(minimum) >= available ||
@@ -38,7 +36,6 @@ export function allocateTableColumns(
 
 const enhanced = new WeakSet<HTMLTableElement>();
 
-/** Enhance the existing semantic table; disposal restores its native layout. */
 export function enhanceTableSizing(table: HTMLTableElement): () => void {
 	const region = table.parentElement;
 	if (!region || enhanced.has(table)) return () => {};
@@ -64,7 +61,6 @@ export function enhanceTableSizing(table: HTMLTableElement): () => void {
 			const count = table.rows[0]?.cells.length ?? 0;
 			const fontSize = Number.parseFloat(getComputedStyle(table).fontSize);
 			if (!available || available < count * 16 * fontSize || count < 2) return;
-			// Spanning/ragged authored HTML keeps the browser's native table algorithm.
 			if (
 				Array.from(table.rows).some(
 					(row) =>
@@ -93,7 +89,6 @@ export function enhanceTableSizing(table: HTMLTableElement): () => void {
 			try {
 				const measure = (width: string) => {
 					clone.style.width = width;
-					// Layout widths ignore entrance/ancestor transforms. Allow for integer rounding.
 					return Array.from(clone.rows[0].cells, (cell) => cell.offsetWidth + 1);
 				};
 				widths = allocateTableColumns(
@@ -143,7 +138,6 @@ export function enhanceTableSizing(table: HTMLTableElement): () => void {
 			schedule();
 	});
 	const ancestorObserver = new MutationObserver((mutations) => {
-		// The overflow cue belongs to this enhancer and cannot change table sizing.
 		if (
 			mutations.some(
 				({ target, attributeName }) => target !== region || attributeName !== "data-overflow",

@@ -1699,7 +1699,6 @@ describe("PreviewAssessmentBlock — choice", () => {
 
 			expect(screen.getAllByText("Correct")[0]).toBeTruthy();
 			expect(screen.getByText("Well done!")).toBeTruthy();
-			// No try again when correct
 			expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
 		});
 
@@ -1713,17 +1712,13 @@ describe("PreviewAssessmentBlock — choice", () => {
 			fireEvent.click(getRadio("Wrong answer"));
 			fireEvent.click(screen.getByRole("button", { name: "Check" }));
 
-			// Inputs disabled
 			expect(getRadio("Wrong answer").disabled).toBe(true);
 
-			// Click try again
 			fireEvent.click(screen.getByRole("button", { name: "Try again" }));
 
-			// Inputs re-enabled
 			expect(getRadio("Wrong answer").disabled).toBe(false);
 			expect(getRadio("Right answer").disabled).toBe(false);
 
-			// Check button should be gone (need to interact first)
 			expect(screen.queryByRole("button", { name: "Check" })).toBeNull();
 		});
 
@@ -1735,12 +1730,10 @@ describe("PreviewAssessmentBlock — choice", () => {
 			);
 			const card = container.querySelector("[data-block-id='q7']") as Element;
 
-			// Submit wrong answer
 			fireEvent.click(getRadio("Wrong answer"));
 			fireEvent.click(screen.getByRole("button", { name: "Check" }));
 			expect(card.getAttribute("data-completed")).toBeNull();
 
-			// Try again, submit correct answer
 			fireEvent.click(screen.getByRole("button", { name: "Try again" }));
 			fireEvent.click(getRadio("Right answer"));
 			fireEvent.click(screen.getByRole("button", { name: "Check" }));
@@ -1754,7 +1747,6 @@ describe("PreviewAssessmentBlock — choice", () => {
 				</Wrapper>,
 			);
 
-			// Submit wrong 5 times — should always get Try again
 			for (let i = 0; i < 5; i++) {
 				fireEvent.click(getRadio("Wrong answer"));
 				fireEvent.click(screen.getByRole("button", { name: "Check" }));
@@ -1773,7 +1765,6 @@ describe("PreviewAssessmentBlock — choice", () => {
 			fireEvent.click(getRadio("Wrong answer"));
 			fireEvent.click(screen.getByRole("button", { name: "Check" }));
 
-			// Should not show "Attempt X of Y"
 			expect(screen.queryByText(/Attempt \d+ of/)).toBeNull();
 		});
 	});
@@ -1833,11 +1824,9 @@ describe("PreviewAssessmentBlock — choice", () => {
 			);
 			const card = container.querySelector("[data-block-id='q10']") as Element;
 
-			// Submit wrong answer with 1 attempt (default for graded)
 			fireEvent.click(getRadio("Wrong answer"));
 			fireEvent.click(screen.getByRole("button", { name: "Submit" }));
 
-			// Should complete (out of attempts) and NOT show try again
 			expect(card.getAttribute("data-completed")).toBe("true");
 			expect(card.getAttribute("data-passed")).toBe("false");
 			expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
@@ -1856,7 +1845,6 @@ describe("PreviewAssessmentBlock — choice", () => {
 			);
 			const card = container.querySelector("[data-block-id='q11']") as Element;
 
-			// Initial state has scoring attributes
 			expect(card.getAttribute("data-score")).toBe("0");
 			expect(card.getAttribute("data-passed")).toBe("false");
 		});
@@ -2572,7 +2560,6 @@ it("private choices save selection, Check and retry through existing authority a
 	}
 });
 
-// Print media can hide a focused action before beforeprint/afterprint arrive.
 it.each([
 	"media-only",
 	"events-only",

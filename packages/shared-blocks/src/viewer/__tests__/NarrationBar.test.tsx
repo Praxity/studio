@@ -235,7 +235,7 @@ describe("NarrationBar", () => {
 	beforeEach(() => {
 		vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
 		vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => undefined);
-		HTMLElement.prototype.scrollIntoView = vi.fn(); // jsdom does not implement it
+		HTMLElement.prototype.scrollIntoView = vi.fn();
 		Object.defineProperty(Range.prototype, "getBoundingClientRect", {
 			configurable: true,
 			value: vi.fn(() => ({ top: 200, bottom: 220 })),
@@ -446,7 +446,6 @@ describe("NarrationBar", () => {
 		const slider = screen.getByRole("slider", { name: strings.seek });
 		fireEvent.change(slider, { target: { value: "0.79942168" } });
 		expect(slider).toHaveValue("0.79942168");
-		// Native decoders may settle a paused seek at a slightly different media time.
 		audio.currentTime = 0.8094216;
 		fireEvent.timeUpdate(audio);
 		expect(slider).toHaveValue("0.79942168");
@@ -722,7 +721,6 @@ describe("NarrationBar", () => {
 			await Promise.resolve();
 		});
 		expect(onFollowChange).toHaveBeenLastCalledWith(true);
-		// A delayed programmatic scroll must not look like manual scrolling.
 		fireEvent.scroll(transcript);
 		expect(onFollowChange).toHaveBeenLastCalledWith(true);
 		fireEvent.pointerDown(transcript);
@@ -795,7 +793,6 @@ describe("NarrationBar", () => {
 		} as DOMRect);
 		const scrollBy = vi.fn();
 		transcript.scrollBy = scrollBy;
-		// Keep the paragraph visible; it is the timed range that must drive scrolling.
 		vi.spyOn(transcript.firstElementChild as HTMLElement, "getBoundingClientRect").mockReturnValue({
 			top: 150,
 			bottom: 170,
@@ -1061,8 +1058,6 @@ describe("NarrationBar", () => {
 			expectExpanded(false);
 			const play = screen.getByRole("button", { name: strings.play });
 			play.focus();
-			// Pause renders before the Follow effect opens its panel. Flush the play
-			// promise and effects instead of relying on waitFor's incidental timer drain.
 			await act(async () => {
 				fireEvent.click(play);
 			});
@@ -1527,7 +1522,6 @@ describe("NarrationBar", () => {
 		fireEvent.click(screen.getByRole("button", { name: strings.listen }));
 		fireEvent.click(screen.getByRole("button", { name: strings.play }));
 		await screen.findByRole("button", { name: strings.pause });
-		// The transport can render before its startup effect notifies the host.
 		await waitFor(() => expect(onFollowActiveChange).toHaveBeenLastCalledWith(true));
 		onFollowActiveChange.mockClear();
 
@@ -2052,13 +2046,12 @@ describe("NarrationBar", () => {
 	});
 
 	it("never marks the page root as the active narration block", async () => {
-		HTMLElement.prototype.scrollIntoView = vi.fn(); // jsdom does not implement it
+		HTMLElement.prototype.scrollIntoView = vi.fn();
 		render(
 			<div className="praxity-viewer-shell">
 				<main id="main-content">
 					<p data-block-id="body">Body</p>
 				</main>
-				{/* items[0] is a page-title segment: no blockId */}
 				<NarrationBar items={[items[0]]} strings={strings} />
 			</div>,
 		);
@@ -3479,7 +3472,6 @@ describe("NarrationBar", () => {
 			if (key === "pointer release") fireEvent.pointerUp(seek);
 			else {
 				fireEvent.keyDown(seek, { key });
-				// jsdom has no native range-key action; model its value change separately.
 				if (key === "Home") fireEvent.change(seek, { target: { value: "0" } });
 				if (key === "ArrowLeft" || key === "ArrowDown")
 					fireEvent.change(seek, { target: { value: "39.6" } });

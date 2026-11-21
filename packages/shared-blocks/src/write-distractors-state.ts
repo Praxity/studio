@@ -46,7 +46,6 @@ export interface DistractorEncoding {
 }
 interface AsyncDistractorCommand {
 	generation: number;
-	/** W08 supplies the existing W06 effect ticket for provider/document authority. */
 	ticket?: ActivityEffectTicket;
 }
 export type DistractorEdit =
@@ -86,10 +85,8 @@ export interface DistractorMount {
 	notSaved: boolean;
 	error: DistractorError | null;
 	writeBlocked: DistractorWriteBlocked | null;
-	/** Only a confirmed receipt updates saved; a proposal is never durable evidence. */
 	pendingWrite: SavedWriteDistractors | null;
 	writeSequence: number;
-	/** An executed write without a receipt is not evidence of an empty store. */
 	storageUncertain?: boolean;
 }
 export interface DistractorReduction {
@@ -134,7 +131,6 @@ function array(value: unknown): value is unknown[] {
 	}
 	return true;
 }
-/** Recovery follows only named own data properties, never getters or recursive walks. */
 export function recoverWriteDistractorsText(value: unknown): DistractorRecoveryField[] {
 	const own = (parent: unknown, key: string): unknown => {
 		if (!parent || typeof parent !== "object") return undefined;
@@ -169,7 +165,6 @@ function sameReference(reference: DistractorReference, other: DistractorReferenc
 function authority(reference: DistractorReference, rules?: WriteDistractorsRules): boolean {
 	return rules !== undefined && sameReference(reference, rules);
 }
-/** Provider JSON parsing is outside the codec. Only plain records are envelopes. */
 export function decodeWriteDistractorsState(
 	value: unknown,
 	reference: DistractorReference,
@@ -234,7 +229,6 @@ export function decodeWriteDistractorsState(
 			});
 		options.push({ text: option.text, misconception: option.misconception, custom: option.custom });
 	}
-	// Old counts and IDs describe the old revision. Never test them against new Content.
 	if (value.contentRevision !== reference.contentRevision) return result("out-of-date");
 	if (options.length !== reference.count) return result("invalid");
 	const unknownId = options.findIndex(
@@ -308,7 +302,6 @@ export function createDistractorMount(reference: DistractorReference): Distracto
 		writeSequence: 0,
 	};
 }
-/** Every adapter write, including pagehide/flush, must use this guarded encoder. */
 export function encodeWriteDistractorsState(
 	mount: DistractorMount,
 	rules?: WriteDistractorsRules,
@@ -343,7 +336,6 @@ function conflicts(value: DistractorValue, command: DistractorEdit): boolean {
 		: value.options[command.index]?.[command.field] !== command.text;
 }
 
-/** Pure activity reduction. W08 owns FIFO jobs, provider effects and callback lifetime. */
 export function reduceWriteDistractors(
 	previous: DistractorMount,
 	command: DistractorCommand,
@@ -368,16 +360,12 @@ export function reduceWriteDistractors(
 	const save = () => {
 		const encoded = encodeWriteDistractorsState(mount, rules);
 		mount.writeBlocked = encoded.writeBlocked;
-		// A changed unencodable value retires the prior proposal. Its late receipt
-		// cannot certify that this newer text was saved.
 		mount.pendingWrite = encoded.state;
 		if (encoded.state) {
 			write = encoded.state;
 			writeId = ++mount.writeSequence;
 		} else if (!mount.restoreWriteHold || mount.heldEdits.length) unsaved();
 	};
-	// W06 owns external lifetime authority. This reducer only retains each
-	// activity's existing generation and the identity of its latest write request.
 	if (
 		"generation" in command &&
 		(command.generation !== mount.generation || command.ticket?.current() === false)
@@ -394,8 +382,6 @@ export function reduceWriteDistractors(
 		return finish();
 	}
 	if (command.type === "start-over") {
-		// A pending read holds writes (:462); failed admission permits the learner's
-		// explicit discard (:463 and the failed passive-restore UI row).
 		if (!mount.readDone && mount.restoreStatus !== "unavailable") return finish();
 		mount = {
 			...createDistractorMount(mount.reference),
@@ -421,8 +407,6 @@ export function reduceWriteDistractors(
 			mount.value.options.some((o) => o.text || o.custom)
 				? recoverWriteDistractorsText({ value: mount.value })
 				: mount.localRecovery;
-		// Only an observed read or confirmed write is evidence of stored bytes.
-		// Unsaved memory and proposed writes remain separately labelled local text.
 		if (mount.readDone && mount.storageUncertain) {
 			next.restoreStatus = "unavailable";
 			next.recovery = recoverWriteDistractorsText(mount.saved);
@@ -445,8 +429,6 @@ export function reduceWriteDistractors(
 		return finish();
 	}
 	if (command.type === "restore-unavailable") {
-		// A settled admission is terminal for these callbacks, including a failure
-		// carrying the same generation. Only a new provider/mount can acquire again.
 		if (!mount.restoreWriteHold || mount.restoreStatus === "conflict") return finish();
 		mount.restoreStatus = "unavailable";
 		return finish();
@@ -477,7 +459,6 @@ export function reduceWriteDistractors(
 			mount.notSaved = false;
 			mount.writeBlocked = null;
 		}
-		// No admission flush, including an empty read beneath a newer in-memory edit.
 		return finish();
 	}
 	if (command.type === "flush") {
@@ -487,8 +468,6 @@ export function reduceWriteDistractors(
 	if (command.type === "edit-answer" || command.type === "edit-option") {
 		if (mount.value.shown || (command.type === "edit-answer" && mount.checkedAnswer))
 			return finish();
-		// The option builder appears only after rating. Held/recovery states expose
-		// memory-only answer entry, never hidden option editors (table :482,:488-493).
 		if (
 			command.type === "edit-option" &&
 			(mount.restoreWriteHold ||
@@ -513,8 +492,6 @@ export function reduceWriteDistractors(
 		} else save();
 		return finish();
 	}
-	// CONTRACTS.md:475,488-493 permit no reveal, self-rating or comparison while
-	// admission is held. This also makes later progress impossible to discard.
 	if (mount.restoreWriteHold) return finish();
 	if (mount.value.shown) return finish();
 	if (command.type === "check" && mount.checkedAnswer) return finish();

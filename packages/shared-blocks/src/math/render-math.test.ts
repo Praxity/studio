@@ -32,8 +32,6 @@ describe("equation output fidelity", () => {
 				root.innerHTML = renderMath(latex, display);
 				expect(root.querySelectorAll("math")).toHaveLength(1);
 				expect(root.querySelector(".katex-html")).toBeNull();
-				// KaTeX's speech helper does not support matrices; their native MathML
-				// remains exposed, as in the existing renderer's fallback.
 				if (!latex.includes("pmatrix")) {
 					expect(root.querySelector('[role="math"]')?.getAttribute("aria-label")).toBeTruthy();
 				}

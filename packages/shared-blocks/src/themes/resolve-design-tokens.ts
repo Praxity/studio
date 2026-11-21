@@ -88,7 +88,6 @@ function deriveTextRole(values: Record<string, string>, key: string, surfaces: s
 	if (color) values[`${key}-text`] = ensureContrastAll(color, NORMAL_TEXT_RATIO, ...surfaces);
 }
 
-/** Apply the learner-facing contrast floor used by published output. */
 export function enforceDesignTokenContrast(
 	cssVars: Record<string, string>,
 ): Record<string, string> {
@@ -175,7 +174,6 @@ export function enforceDesignTokenContrast(
 
 	const focus = asHex(corrected["--praxity-color-focus"]);
 	if (focus) {
-		// Rings also appear inside activities and on selected/hovered controls.
 		const correctedFocus = ensureContrastAll(
 			focus,
 			NON_TEXT_RATIO,
@@ -213,7 +211,6 @@ export function enforceDesignTokenContrast(
 	return corrected;
 }
 
-/** Resolve normalized design variants to the complete published CSS token record. */
 export function resolveDesignTokens(
 	variants: DesignVariants,
 	effectiveMode: "light" | "dark",
@@ -266,8 +263,6 @@ export function resolveDesignTokens(
 			: statuses.success;
 	const syntaxInk = (source: string) => {
 		const [, chroma, hue] = hexToOklch(source);
-		// Pale dark-mode status inks need more chroma to separate syntax roles.
-		// Cap below 0.12 to leave room for sRGB rounding; keep the source hue.
 		const muted = oklchToHexGamutMapped(
 			effectiveMode === "dark" ? 0.75 : 0.5,
 			Math.min(SYNTAX_CHROMA_MAX, Math.max(SYNTAX_CHROMA_MIN, chroma)),

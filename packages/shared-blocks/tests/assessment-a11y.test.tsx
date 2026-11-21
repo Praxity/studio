@@ -187,7 +187,6 @@ describe("Assessment hotspot buttons", () => {
 		});
 		expect(buttons[1].parentElement).toHaveAttribute("data-shape", "polygon");
 		expect(buttons[1]).toHaveStyle({ clipPath: "polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%)" });
-		// The number sits outside the clipped button so a concave polygon cannot hide it.
 		expect(buttons[1]).toHaveTextContent("");
 		expect(buttons[1].parentElement).toHaveTextContent("2");
 		fireEvent.click(buttons[0]);
@@ -227,7 +226,6 @@ describe("Assessment hotspot buttons", () => {
 		const btn1 = screen.getByRole("button", { name: "Capital city" });
 		expect(btn1).toHaveAttribute("aria-pressed", "false");
 
-		// Fallback label when no custom label set
 		const btn2 = screen.getByRole("button", { name: "Hotspot 2" });
 		expect(btn2).toBeInTheDocument();
 	});
@@ -362,7 +360,6 @@ describe("Assessment sequence progress", () => {
 			if (!label) throw new Error("Missing move button label");
 			const button = screen.getByRole("button", { name: `Move ${label} ${direction}` });
 			button.focus();
-			// jsdom does not perform the browser's default click for Enter.
 			fireEvent.keyDown(button, { key: "Enter" });
 			fireEvent.click(button, { detail: 0 });
 			fireEvent.keyUp(button, { key: "Enter" });
@@ -401,12 +398,8 @@ describe("Assessment sequence progress", () => {
 			</Wrapper>,
 		);
 
-		// Live-announcing correctness during the attempt hands the learner the answer
-		// and fires on every move; the announcement is now the move itself.
 		expect(screen.queryByText(/in correct order/i)).not.toBeInTheDocument();
 
-		// Presentation order is shuffled, so drive whatever landed in the second row
-		// rather than assuming which item is where.
 		const secondRowLabel = screen
 			.getAllByRole("button", { name: /^Move .* up$/ })[0]
 			.getAttribute("aria-label")
@@ -622,10 +615,8 @@ describe("Assessment retry focus", () => {
 		HTMLElement.prototype,
 		"scrollIntoView",
 	);
-	// Mantine's autosizing textarea subscribes to the browser FontFaceSet.
 	beforeAll(() => {
 		Object.defineProperty(document, "fonts", { configurable: true, value: new EventTarget() });
-		// jsdom does not implement scrolling; browser specs check viewport visibility.
 		Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
 			configurable: true,
 			value: vi.fn(),
@@ -799,7 +790,6 @@ describe("Assessment retry focus", () => {
 				expect(retry).toHaveFocus();
 				const focusAtRemoval: (Element | null)[] = [];
 				const removeChild = Node.prototype.removeChild;
-				// Observe the synchronous removal itself, before effects can restore focus.
 				const removal = vi.spyOn(Node.prototype, "removeChild").mockImplementation(function <
 					T extends Node,
 				>(this: Node, child: T): T {
@@ -936,7 +926,6 @@ describe("Assessment submit button marker", () => {
 				<PreviewAssessmentBlock data={gradedChoiceData} blockId="test-submit" />
 			</Wrapper>,
 		);
-		// Select an option to make the submit button appear
 		const options = container.querySelectorAll('input[type="radio"]');
 		expect(options.length).toBeGreaterThan(0);
 		fireEvent.click(options[0]);

@@ -5,16 +5,11 @@ import type { PraxityBlock } from "./types";
 export type { PraxityBlock } from "./types";
 
 export interface ContentDensityConfig {
-	readingSpeed: 150 | 180 | 220; // WPM
+	readingSpeed: 150 | 180 | 220;
 }
 
-/**
- * Strip HTML tags and count whitespace-separated words.
- * Handles empty / undefined input gracefully.
- */
 export function countWordsInHtml(html: string | undefined | null): number {
 	if (!html) return 0;
-	// Replace tags with spaces to avoid merging adjacent text nodes
 	const text = html.replace(/<[^>]*>/g, " ").trim();
 	if (!text) return 0;
 	return text.split(/\s+/).filter(Boolean).length;
@@ -42,11 +37,6 @@ export function countDialogueWords(data: unknown): number {
 	return count;
 }
 
-// ─── Per-block time estimation ────────────────────────────────────────────────
-
-/**
- * Returns the estimated reading/engagement time in minutes for a single block.
- */
 export function estimateBlockTime(block: PraxityBlock, config: ContentDensityConfig): number {
 	const { readingSpeed } = config;
 	const d = block.data;
@@ -59,7 +49,6 @@ export function estimateBlockTime(block: PraxityBlock, config: ContentDensityCon
 			return countWordsInHtml(d.content as string) / readingSpeed;
 
 		case "quote":
-			// QuoteBlockData uses `text`, NOT `content`
 			return countWordsInHtml(d.text as string) / readingSpeed;
 
 		case "dialogue":
@@ -93,7 +82,6 @@ export function estimateBlockTime(block: PraxityBlock, config: ContentDensityCon
 
 		case "assessment": {
 			const assessmentType = d.assessmentType as string | undefined;
-			// Open-ended / recording types take longer
 			if (
 				assessmentType === "textResponse" ||
 				assessmentType === "audioRecording" ||
@@ -104,7 +92,6 @@ export function estimateBlockTime(block: PraxityBlock, config: ContentDensityCon
 			) {
 				return 2.0;
 			}
-			// Simple selection types
 			return 0.5;
 		}
 
@@ -134,7 +121,6 @@ export function estimateBlockTime(block: PraxityBlock, config: ContentDensityCon
 		case "document":
 			return 2.0;
 
-		// Zero-time blocks
 		case "divider":
 		case "pageBreak":
 		case "button":

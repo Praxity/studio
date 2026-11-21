@@ -1,6 +1,5 @@
 import type { PraxityBlock } from "./types";
 
-/** The editor uses altText; persisted parser data may use alt. */
 export function readAltText(data: { altText?: unknown; alt?: unknown } | undefined): string {
 	const altText = data?.altText ?? data?.alt;
 	return typeof altText === "string" ? altText : "";

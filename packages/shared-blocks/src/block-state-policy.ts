@@ -1,7 +1,6 @@
 import { flattenLogicBlocks } from "./logic/flatten-blocks";
 import type { PraxityBlock } from "./types";
 
-/** One compiled rule for state routing, response reporting and size estimates. */
 export function compileBlockStatePolicy(blocks: PraxityBlock[]): Record<string, "device" | "lms"> {
 	return Object.fromEntries(
 		flattenLogicBlocks(blocks).flatMap((block) => {
@@ -21,8 +20,6 @@ export function compileBlockStatePolicy(blocks: PraxityBlock[]): Record<string, 
 	);
 }
 
-/** Also protect round trips through logic/deck custom state and older suspend
- * records. Preserve unrelated bytes exactly when nothing private was removed. */
 export function filterPrivateSuspendData(
 	raw: string,
 	policy: Readonly<Record<string, "device" | "lms">>,

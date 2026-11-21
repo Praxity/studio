@@ -1,8 +1,6 @@
 import { escapeHtml } from "@praxity/content-model/constants";
 import type { ChartBlockData } from "./types";
 
-/** Static, dependency-free chart SVG shared by published HTML and print exports. */
-
 export type PublishedChartSeries = { name: string; values: Array<number | null> };
 
 export const PUBLISHED_CHART_COLORS = [
@@ -68,7 +66,6 @@ function chartYearLabelIndices(labels: string[], maximumLabels = 16): Set<number
 	)
 		return;
 	const last = labels.length - 1;
-	// Keep five-year boundaries, with fewer printed labels in narrower charts.
 	const minimumGap = Math.ceil(last / maximumLabels);
 	const indices = new Set([0, last]);
 	let previous = 0;
@@ -91,12 +88,6 @@ function chartLegend(
 	if (series.length < 2) return "";
 	const rows = Math.ceil(series.length / columns);
 	const startY = height - rows * 24 + 14;
-	// Each row is one text run anchored at the centre, so the browser or PDF renderer places the
-	// real glyphs in any font: entries cannot collide and the row stays centred. A rect swatch
-	// would need the text measured first, so the swatch is a bullet in the same run. The bullet
-	// is in every bundled font's Latin set; Typst sets a whole run in a fallback font when one
-	// glyph is missing, which a square such as U+25A0 triggers. A row wider than the chart still
-	// clips; fewer columns per row is the upgrade path if that shows up.
 	return `<g class="praxity-chart-legend" aria-hidden="true">${Array.from(
 		{ length: rows },
 		(_, row) => {
@@ -139,7 +130,6 @@ export function renderCartesianChartSvg(
 	series: PublishedChartSeries[],
 	accessibleName: string,
 	width: 720 | 440 | 280,
-	/** Converts an authored axis label to plain text; the caller owns sanitizing. */
 	chartText: (value: unknown) => string,
 ): string {
 	const effectiveType = data.chartType === "stacked" ? "bar" : data.chartType;
@@ -192,28 +182,22 @@ export function renderCartesianChartSvg(
 	const ticks = chartTicks(minimum, maximum);
 	minimum = ticks[0] ?? minimum;
 	maximum = ticks[ticks.length - 1] ?? maximum;
-	// Label extents are estimated at the 16-unit base size, since SVG text cannot be measured here.
-	// Each axis title keeps a fixed gap from the outer edge of its tick labels.
 	const character = 9.5;
 	const titleSize = 18.3;
 	const titleGap = 12;
 	const categoryWidth = Math.max(0, ...labels.map((label) => label.length)) * character;
 	const valueWidth = Math.max(...ticks.map((tick) => formatChartNumber(tick).length)) * character;
-	// A rotated title occupies its ascent (0.72em) left of the baseline and descent (0.24em) right of it.
 	const verticalTitleX = 4 + titleSize * 0.72;
 	const verticalTitleSpace = verticalAxisLabel ? verticalTitleX + titleSize * 0.24 + titleGap : 8;
-	// The cap limits the category labels only, so the title band is never overlapped.
 	const left = horizontal
 		? verticalTitleSpace +
 			Math.min(width === 720 ? 190 : width * 0.4, Math.max(56, categoryWidth)) +
 			10
 		: verticalTitleSpace + valueWidth + 10;
-	// Horizontal value labels are centred on their ticks, so the last one needs half its width.
 	const right = horizontal
 		? Math.max(20, (formatChartNumber(ticks[ticks.length - 1] ?? 0).length * character) / 2 + 4)
 		: 20;
 	const top = 20;
-	// Tick label baselines sit 22 below the plot; rotated labels drop by width × sin 35°.
 	const tickDepth = 22 + (rotateLabels ? Math.min(categoryWidth, 160) * 0.574 + 6 : 6);
 	const bottom =
 		tickDepth +

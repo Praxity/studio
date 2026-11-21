@@ -7,9 +7,6 @@ import {
 	reduceWriteDistractors,
 } from "./write-distractors-state";
 
-// Contract oracle: stage permissions come from CONTRACTS.md:475-496. Stored
-// fixtures carry their independently specified admission class. No production
-// codec, bounds helper or comparison validator supplies an expected result.
 type Value = {
 	answer: string;
 	hadIt: boolean | null;
@@ -190,7 +187,6 @@ it.each(Array.from({ length: seeds }, (_, i) => i + 1))(
 		function admission(fixture: Fixture, full: boolean): string {
 			if (fixture.raw === undefined) return "empty";
 			if (fixture.malformed || !fixture.value) return "invalid";
-			// Fixtures with old IDs/count are readable, rather than malformed.
 			const value = fixture.value;
 			if (
 				value.answer.trim().length > 2000 ||
@@ -350,7 +346,6 @@ it.each(Array.from({ length: seeds }, (_, i) => i + 1))(
 					case "check":
 					case "rate":
 					case "compare": {
-						// Table rows 475,488-493 suspend every reveal/result transition.
 						if (spec.hold || spec.value.shown) break;
 						if (c.type === "check" && spec.checked) break;
 						if (c.type !== "check" && !spec.checked) break;
@@ -401,8 +396,6 @@ it.each(Array.from({ length: seeds }, (_, i) => i + 1))(
 				action.authority === "missing"
 					? undefined
 					: rules[action.authority === "foreign" ? 1 - spec.revision : spec.revision];
-			// The oracle's read fixture is never the object supplied to production.
-			// Mutating a caller-owned read must not mutate our expected saved bytes.
 			const input =
 				c.type === "restore"
 					? { ...c, value: clone(c.value) }
@@ -461,8 +454,6 @@ it.each(Array.from({ length: seeds }, (_, i) => i + 1))(
 				response: result.response,
 				encoded,
 			};
-			// JSON compares the exact would-be stored representation as well as all view
-			// and recovery observables. Assertion values never come from a production read.
 			if (JSON.stringify(expected) !== JSON.stringify(observed))
 				throw new Error(
 					JSON.stringify({ seed, step: trace.length, trace: trace.slice(-4), expected, observed }),
@@ -533,8 +524,6 @@ it.each(Array.from({ length: seeds }, (_, i) => i + 1))(
 				undefined,
 				current,
 			);
-		// These contract witnesses ensure every seed reaches held actions, terminal
-		// admission, a superseded retry, each failure signal and a full comparison.
 		send({ type: "edit-answer", answer: "mine" });
 		send({ type: "check" });
 		send({ type: "start-over" });
@@ -576,7 +565,6 @@ it.each(Array.from({ length: seeds }, (_, i) => i + 1))(
 		send({ type: "restore-unavailable", generation: spec.generation - 1 });
 		send({ type: "revision-change", reference: references[1] });
 		send({ type: "revision-change", reference: references[0] });
-		// The stored comparison still has five recovery rows in odd-numbered seeds.
 		send({ type: "restore-unavailable", generation: spec.generation });
 		const old = spec.generation;
 		send({ type: "retry", generation: old });

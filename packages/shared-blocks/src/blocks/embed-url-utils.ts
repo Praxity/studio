@@ -45,7 +45,6 @@ const EMBED_HOSTS = [
 const EMBED_HOST_SET = new Set<string>(EMBED_HOSTS);
 const EMBED_DOMAIN_SUFFIXES = ["typeform.com", "h5p.com"] as const;
 
-/** Keep iframe CSP policy derived from the same allowlist used by the renderer. */
 export const EMBED_FRAME_CSP_SOURCES: readonly string[] = Object.freeze([
 	...EMBED_HOSTS.map((hostname) => `https://${hostname}`),
 	...EMBED_DOMAIN_SUFFIXES.flatMap((suffix) => [`https://${suffix}`, `https://*.${suffix}`]),
