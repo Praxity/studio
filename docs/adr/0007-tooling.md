@@ -84,7 +84,9 @@ Ownership guards and equivalence checks must fail closed without confusing gener
 
 ### `scripts/equivalence-nonvisual.test.mjs`
 
-- `position`: Poppler 24.02 -struct-text omits the native /Alt value.
+- Test "native PDF bytes catch figure alt changes absent from real Poppler output", local `position`: modify the native fixture's `/Alt` bytes while leaving the retained text/structure extraction unchanged. The PDF byte comparison must detect the change even when that extraction does not expose the alt text. The replaced comment attributes the omission to Poppler 24.02.
+
+  Evidence: the code comment this replaced (commit bed54f6); not independently verified.
 
 ### `scripts/equivalence/build.mjs`
 
