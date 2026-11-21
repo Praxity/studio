@@ -13,9 +13,7 @@ export interface VideoPlayer extends VideoPlayerState {
 	seekTo: (seconds: number) => void;
 	play: () => void;
 	hasError: boolean;
-	/** The normalised embed URL (without enablejsapi). Empty string for mux/direct sources. */
 	embedUrl: string;
-	/** The final URL sent to the iframe src (with enablejsapi=1 for YouTube). Empty string for mux/direct sources. */
 	finalEmbedUrl: string;
 }
 
@@ -28,17 +26,6 @@ const NOOP_STATE: VideoPlayerState = {
 	duration: 0,
 };
 
-/**
- * Unified video player hook.
- *
- * Delegates to the correct source-specific hook (YouTube / Vimeo) based on
- * the detected video source. Returns a no-op state object for manual-mode
- * sources (Loom, unknown embeds). For direct video files and Mux-hosted videos,
- * delegates to useDirectVideoPlayer (both expose HTMLMediaElement interface).
- *
- * All source-specific hooks are always called unconditionally (React rules).
- * Inactive hooks receive empty inputs so they produce no side-effects.
- */
 export function useVideoPlayer(
 	videoSource: VideoSource,
 	iframeRef: React.RefObject<HTMLIFrameElement | null>,
@@ -54,16 +41,12 @@ export function useVideoPlayer(
 	const enabled = options?.enabled !== false;
 	const { source } = useVideoSource(videoSource);
 
-	// Derive embedUrl for iframe-based sources; empty string for mux/direct
 	const embedUrl = useMemo(() => {
 		if (source === "mux" || source === "direct") return "";
 		if (videoSource.type === "url") return toEmbedUrl(videoSource.src);
 		return "";
 	}, [source, videoSource]);
 
-	// For YouTube we must append enablejsapi=1 and origin so postMessage commands work.
-	// Without origin, YouTube refuses to initialize the JS API — onReady never fires,
-	// currentTime never updates, and cue points never trigger.
 	const finalEmbedUrl = useMemo(() => {
 		if (!isYouTubeEmbed(embedUrl)) return embedUrl;
 		try {
@@ -72,7 +55,6 @@ export function useVideoPlayer(
 			u.searchParams.set("autoplay", autoplay ? "1" : "0");
 			if (typeof window !== "undefined") {
 				const pageOrigin = window.location.origin;
-				// Skip origin for file:// protocol (returns "null" string) — SCORM players
 				if (pageOrigin && pageOrigin !== "null") {
 					u.searchParams.set("origin", pageOrigin);
 				}
@@ -83,8 +65,6 @@ export function useVideoPlayer(
 		}
 	}, [embedUrl, autoplay]);
 
-	// Always call all hooks unconditionally — pass empty inputs to the
-	// inactive ones so they produce no side-effects.
 	const youtubeState = useYouTubePlayer(
 		iframeRef,
 		source === "youtube" && enabled ? finalEmbedUrl : "",
@@ -99,7 +79,6 @@ export function useVideoPlayer(
 		source === "vimeo" ? autoplay : false,
 	);
 
-	// Mux-player exposes HTMLMediaElement interface — reuse useDirectVideoPlayer.
 	const directState = useDirectVideoPlayer(
 		videoRef,
 		enabled && (source === "direct" || source === "mux"),
@@ -109,7 +88,6 @@ export function useVideoPlayer(
 
 	if (source === "youtube") {
 		if (youtubeState.hasError) {
-			// CSP can refuse the API while the cross-origin player and its native controls still work.
 			const fallback = new URL(finalEmbedUrl);
 			fallback.searchParams.delete("enablejsapi");
 			fallback.searchParams.delete("origin");
@@ -130,8 +108,6 @@ export function useVideoPlayer(
 		return { ...directState, hasError: false, embedUrl, finalEmbedUrl };
 	}
 
-	// manual-mode / unknown: caller controls the <video> element or
-	// shows a "click when ready" prompt; we expose a no-op player state.
 	return {
 		...NOOP_STATE,
 		seekTo: NOOP_SEEK,

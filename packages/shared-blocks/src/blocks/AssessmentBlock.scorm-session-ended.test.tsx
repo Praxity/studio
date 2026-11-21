@@ -41,8 +41,6 @@ const notices = {
 	fr: "Cette réponse n’a pas pu être enregistrée. Votre progression enregistrée précédemment est conservée. Pour continuer, fermez ce cours et ouvrez-le de nouveau.",
 };
 
-// Moodle 1.2 CollectData advances defaults before transport; 2004 keeps them.
-// Both versions cancel autocommit on Commit and arm it on successful SetValue.
 function moodle(format: "scorm12" | "scorm2004", stored: Record<string, string> = {}) {
 	const values = { ...stored },
 		server = { ...stored },
@@ -202,7 +200,6 @@ it.each(cases)(
 				</MantineProvider>,
 			);
 		const view = mount();
-		// The display notification cannot end a launch or write learner state itself.
 		const beforeNotification = { ...lms.values };
 		const transfers = () =>
 			lms.calls.filter((call) => call === "commit" || call === "finish" || call.startsWith("set:"));
@@ -231,7 +228,6 @@ it.each(cases)(
 		expect(document.querySelector('[data-completed="true"]')).toBeNull();
 		if (data === choice) expect(screen.getByRole("radio", { name: /Stop/ })).toBeChecked();
 		else expect(screen.getAllByRole("textbox")[0]).toHaveValue("Wet floor");
-		// Re-auth or a recovered 5xx cannot reopen this page's communication.
 		lms.fail("none");
 		fireEvent.click(submit);
 		if (data === choice) {
@@ -269,7 +265,6 @@ it.each(cases)(
 		expect(lms.values).toEqual(lms.submitted);
 		expect(lms.server).toEqual(before);
 		expect(provider.getSaveResult?.("q")?.status).toBe("not-saved");
-		// Reopen a fresh API from server bytes, never from the refused in-page model.
 		view.unmount();
 		moodle(format, lms.server);
 		const reopened = installChoiceCourseHost(

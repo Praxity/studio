@@ -34,8 +34,6 @@ describe("shared-blocks i18n strings", () => {
 		expect(fr.completed).toBe("Terminé");
 	});
 
-	// NVDA reads the resume prefix line and the title as one run of layout text. An
-	// ordinary trailing space collapses at the line end, so NVDA said "6:Build".
 	it.each(supportedLocales)("ends %s resume prefixes with a non-breaking space", (locale) => {
 		const s = getStrings(locale);
 		for (const prefix of [s.scormResumePositionPrefix, s.deckResumePositionPrefix]) {

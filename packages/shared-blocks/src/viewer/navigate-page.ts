@@ -13,9 +13,7 @@ const PAGE_NAVIGATION_FOCUS_KEY = "praxity:focus-page-content";
 export function markPageNavigationFocus(): void {
 	try {
 		sessionStorage.setItem(PAGE_NAVIGATION_FOCUS_KEY, "true");
-	} catch {
-		// Storage can be unavailable in locked-down LMS frames.
-	}
+	} catch {}
 }
 
 export function consumePageNavigationFocus(): boolean {
@@ -59,11 +57,6 @@ function isForwardProgressBlocked(): boolean {
 	return engine?.isCompletionBlocked?.() ?? false;
 }
 
-/**
- * Early shell navigation when no enhanced control is installed. Keep this path
- * independent of required-block presentation so first paint stays within the
- * shell's size budget; enhanced controls use navigatePage's full validation.
- */
 export function navigateFallbackPageHref(href: string, direction: "forward" | "backward"): boolean {
 	if (direction === "forward" && isForwardProgressBlocked()) return false;
 	if (direction === "forward" && selfCheckConsumers()?.validateForward?.() === false) return false;
@@ -71,15 +64,6 @@ export function navigateFallbackPageHref(href: string, direction: "forward" | "b
 	return true;
 }
 
-/**
- * Href for a page in the published output.
- *
- * Without a base path the link MUST stay relative: an export opened from
- * `file://` or served from a subdirectory resolves `/glossary.html` against the
- * filesystem or site root and 404s. Every control builds links through here —
- * the copies that predated it drifted, which is how the course menu shipped
- * root-absolute hrefs while Next/Previous stayed relative.
- */
 export function pageHref(slug: string, basePath?: string): string {
 	const base = basePath?.replace(/\/$/, "") ?? "";
 	return base ? `${base}/${slug}.html` : `./${slug}.html`;
@@ -106,13 +90,6 @@ export function navigateUtilityPage(targetSlug: string, basePath?: string): void
 	navigateHref(runtimePageHref(targetSlug, basePath));
 }
 
-/**
- * The one page-navigation path every learner control shares: required-block
- * validation, logic-engine jumps, visit tracking, then the href.
- *
- * Each control used to carry its own copy, which is how they drifted — a control
- * added later could silently skip the logic engine or the required-block gate.
- */
 export function navigatePage({
 	targetSlug,
 	direction,
@@ -219,7 +196,6 @@ function readPageActionConfig(rawConfig?: unknown): PageActionConfig | null {
 	};
 }
 
-/** Run a published goToPage button action through the shared navigation path. */
 export function navigatePageAction(targetPageId: string, rawConfig?: unknown): boolean {
 	if (typeof window === "undefined" || typeof document === "undefined") return false;
 	const current = selfCheckEpochTicket();

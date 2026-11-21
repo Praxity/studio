@@ -2,7 +2,6 @@ import { strings as distractorStrings } from "learning-patterns/patterns/write-d
 import { resolveLocale } from "./locale";
 import { getSelfCheckActivationStrings } from "./self-check-host-strings";
 
-/** Private practice copy shares the host i18n owner; no successful-save states. */
 export const practiceHostStrings = {
 	en: {
 		practiceDeviceMode: "Your answers stay in this browser and aren’t sent to the LMS.",
@@ -56,7 +55,6 @@ export function getPracticeHostStrings(locale: string) {
 	return practiceHostStrings[resolveLocale(locale)];
 }
 
-/** Serialize localized UI alongside the baseline so the initial island needs no catalogs. */
 export function getDistractorPresentationStrings(locale: string) {
 	const upstream = distractorStrings[resolveLocale(locale)];
 	return {

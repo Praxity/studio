@@ -12,7 +12,6 @@ import { processMathSpans } from "./math/process-math-spans";
 import { htmlToPlainText, sanitizeHtml, splitHeadingContent } from "./sanitize";
 import type { AssessmentBlockData, ChoiceResponse } from "./types";
 
-/** Promoted feedback uses the grammar's HTML, just as the learner's result does. */
 export function optionFeedbackHtml(
 	data: Pick<AssessmentBlockData, "feedback"> & {
 		_feedbackOptionIds?: { correct?: string; incorrect?: string };
@@ -25,7 +24,6 @@ export function optionFeedbackHtml(
 	return result ? blocksToText(data.feedback?.[result]) : inlineMarkdown(option.feedback ?? "");
 }
 
-/** Extract plain text from ProseMirror inline content array. */
 export function proseMirrorToText(nodes: unknown[]): string {
 	return nodes
 		.map((n) => {
@@ -38,18 +36,15 @@ export function proseMirrorToText(nodes: unknown[]): string {
 		.join("");
 }
 
-/** Extract HTML from stem/feedback — handles PraxityBlock[], ProseMirror nodes, or string. */
 export function blocksToText(blocks: unknown): string {
 	if (typeof blocks === "string") return blocks;
 	if (!Array.isArray(blocks) || blocks.length === 0) return "";
 	const first = blocks[0];
-	// PraxityBlock format: { data: { content: "<p>..." } }
 	if (first && typeof first === "object" && "data" in first) {
 		return blocks
 			.map((block: { data?: { content?: string } } | null) => block?.data?.content ?? "")
 			.join("");
 	}
-	// ProseMirror node format: { type: "paragraph", content: [{ text: "...", type: "text" }] }
 	if (first && typeof first === "object" && "type" in first && "content" in first) {
 		return blocks
 			.filter(
@@ -65,7 +60,6 @@ export function blocksToText(blocks: unknown): string {
 	return "";
 }
 
-/** Page footnotes must already be prepared at the page boundary. */
 export function prepareAssessmentContent(
 	data: Pick<AssessmentBlockData, "stem" | "description">,
 	fallbackHeading: string,
@@ -74,7 +68,6 @@ export function prepareAssessmentContent(
 	const stemContent = splitHeadingContent(sanitizeHtml(stemHtml));
 	const descriptionHtml = blocksToText(data.description);
 	return {
-		// Raw projections retain the renderer's presence checks and reporting text.
 		stemHtml,
 		stemPlainText: htmlToPlainText(stemHtml),
 		stemContent: {
@@ -89,7 +82,6 @@ export function prepareAssessmentDescriptionHtml(descriptionHtml: string): strin
 	return processMathSpans(sanitizeHtml(descriptionHtml));
 }
 
-/** Raw inline projection is also used for LMS interaction labels. */
 function optionLabelSource(option: Record<string, unknown>) {
 	const field =
 		typeof option.label === "string" && option.label
@@ -118,7 +110,6 @@ export function prepareAssessmentOptionHtml(option: Record<string, unknown>): st
 	return sanitizeHtml(optionLabelHtml(option), { interactive: false });
 }
 
-/** Legacy tree arrays have no binding: accept only an exact rendering match. */
 function fieldTrees(
 	owner: Record<string, unknown>,
 	field: string,
@@ -134,7 +125,6 @@ function fieldTrees(
 		: undefined;
 }
 
-/** Raw HTML has no compiler exclusions. Its visible text and image sources still count. */
 function htmlMaterial(html: string): ChoiceMaterialContent {
 	const root = DOMPurify.sanitize(sanitizeHtml(html), { RETURN_DOM: true }) as Element;
 	for (const paragraph of root.querySelectorAll("p")) paragraph.append(" ");

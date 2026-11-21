@@ -49,12 +49,10 @@ function scalarSetting(key: string, value: unknown): Scalar {
 	if (!definition.accepts(typeof value === "number" ? String(value) : value)) throw invalidPrompt();
 	if (numeric) return Number(value);
 	if (definition.type === "boolean") return value === true || value === "true";
-	// A future object-valued schema setting must not broaden this record.
 	if (typeof value !== "string") throw invalidPrompt();
 	return value;
 }
 
-/** Construct the closed published record. No input object is retained. */
 export function constructSelfCheckPromptBlock(input: unknown): SelfCheckPromptBlock {
 	try {
 		const block = record(input);
@@ -111,7 +109,6 @@ export function constructSelfCheckPromptBlock(input: unknown): SelfCheckPromptBl
 	}
 }
 
-/** Validate raw aliases before canonicalisation can discard them, even when overridden. */
 export function constructSelfCheckDefaults(defaults: unknown): Record<string, Scalar> | undefined {
 	if (!defaults || typeof defaults !== "object") return undefined;
 	try {

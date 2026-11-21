@@ -259,7 +259,6 @@ describe("URL parameter source", () => {
 			runtime,
 		);
 
-		// suspend_data restores AFTER URL params, so "Saved" wins
 		expect(store.get("userName")).toBe("Saved");
 	});
 });
@@ -280,7 +279,7 @@ describe("locked flag", () => {
 		);
 
 		store.set("threshold", 50);
-		expect(store.get("threshold")).toBe(70); // unchanged
+		expect(store.get("threshold")).toBe(70);
 	});
 
 	it("getDefinition returns locked state", () => {
@@ -314,6 +313,6 @@ describe("locked flag", () => {
 		expect(store.getDefinition("oldVar")?.source).toBe("computed");
 		expect(store.getDefinition("oldVar")?.locked).toBe(true);
 		store.set("oldVar", 0);
-		expect(store.get("oldVar")).toBe(99); // can't modify
+		expect(store.get("oldVar")).toBe(99);
 	});
 });

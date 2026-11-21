@@ -13,7 +13,6 @@ import { admitChoiceStateFacts, type ChoiceAssessmentFacts } from "./choice-stat
 import type { SavedAssessmentState } from "./learner-state";
 import * as learnerState from "./learner-state";
 
-// Independent version-4 compiler facts; full digests are invalid evidence.
 const full = `sha256:${"a".repeat(64)}`;
 const current = "s96:3w14l18FIDxpK_Py";
 const short = "s96:3w14l18FIDxpK_Py";

@@ -7,7 +7,6 @@ function normalizeHex(hex: string): string | null {
 	return match ? `#${match[1].toLowerCase()}` : null;
 }
 
-/** WCAG/OKLab transfer for a normalized sRGB channel; APCA uses its own curve. */
 export function srgbToLinear(channel: number): number {
 	return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
 }
@@ -91,7 +90,6 @@ export function oklchToHex(L: number, C: number, H: number): string {
 	return linearRgbToHex(...oklchToLinearRgb(L, C, H));
 }
 
-/** Convert OKLCH to an in-gamut sRGB hex fallback without clipping RGB channels. */
 export function oklchToHexGamutMapped(L: number, C: number, H: number): string {
 	const lightness = Math.min(1, Math.max(0, L));
 	const hue = ((H % 360) + 360) % 360;
@@ -109,7 +107,6 @@ export function oklchToHexGamutMapped(L: number, C: number, H: number): string {
 	return oklchToHex(lightness, low, hue);
 }
 
-/** Parse an opaque author colour; keep rejected alpha distinct from malformed input. */
 export function parseOpaqueColor(value: string): {
 	hex: string | null;
 	error: "alpha" | "invalid" | null;
@@ -138,7 +135,6 @@ export function parseOpaqueColor(value: string): {
 	return { hex: oklchToHexGamutMapped(L, C, H), error: null };
 }
 
-/** Convert opaque hex or numeric `oklch()` author colours to canonical sRGB. */
 export function colorToHex(value: string): string | null {
 	return parseOpaqueColor(value).hex;
 }
@@ -182,12 +178,6 @@ function searchLightness(
 	return { color: best, delta: Math.abs(passingL - startL) };
 }
 
-/**
- * Return the closest WCAG-safe version of a foreground by moving only OKLCH
- * lightness. Both directions are considered because a mid-tone background can
- * make the direction implied by the starting luminance impossible.
- * Black/white are a last-resort gamut fallback.
- */
 export function ensureContrast(foreground: string, background: string, minRatio: number): string {
 	if (!normalizeHex(foreground) || !normalizeHex(background) || minRatio <= 1) return foreground;
 	if (contrastRatio(foreground, background) >= minRatio) return foreground;
@@ -203,11 +193,6 @@ export function ensureContrast(foreground: string, background: string, minRatio:
 	return contrastRatio("#000000", background) >= minRatio ? "#000000" : "#ffffff";
 }
 
-/**
- * Correct a foreground against every supplied surface. Each pass rechecks the
- * current worst surface because one correction can make another surface the
- * new lowest-contrast pairing.
- */
 export function ensureContrastAll(
 	foreground: string,
 	minRatio: number,
@@ -229,12 +214,6 @@ export function ensureContrastAll(
 	return corrected;
 }
 
-/**
- * Serialize a hex colour as `oklch(L% C H)`.
- *
- * Non-hex input (`transparent`, an existing `rgba()`/`oklch()` seed) is passed
- * through untouched.
- */
 export function formatOklch(value: string, alpha = 1): string {
 	const normalized = normalizeHex(value);
 	if (!normalized) return value;
@@ -247,7 +226,6 @@ export function formatOklch(value: string, alpha = 1): string {
 	return `oklch(${l}% ${c} ${h}${a})`;
 }
 
-/** Composite a translucent foreground over an opaque background. */
 export function compositeOver(foreground: string, alpha: number, background: string): string {
 	const fg = hexToLinearRgb(foreground);
 	const bg = hexToLinearRgb(background);
@@ -261,12 +239,10 @@ export function compositeOver(foreground: string, alpha: number, background: str
 	);
 }
 
-/** Mix two hex colours by `amount` of `first` in linear RGB. */
 export function mixColors(first: string, second: string, amount: number): string {
 	return compositeOver(first, amount, second);
 }
 
-/** Pick whichever foreground candidate contrasts better with the background. */
 export function pickReadableForeground(background: string, light: string, dark: string): string {
 	return contrastRatio(light, background) >= contrastRatio(dark, background) ? light : dark;
 }

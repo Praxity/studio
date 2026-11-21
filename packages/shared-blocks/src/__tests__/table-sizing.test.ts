@@ -50,7 +50,6 @@ it("measures without duplicate IDs, updates content, and disposes idempotently w
 			measuring?.style.width === "min-content" ? 60 : this.tagName === "TH" ? 120 : 1400;
 		return width;
 	});
-	// A scaled ancestor changes visual rectangles, but must not shrink layout allocation.
 	table.parentElement?.style.setProperty("transform", "scale(.5)");
 	const visualWidth = vi
 		.spyOn(HTMLElement.prototype, "getBoundingClientRect")

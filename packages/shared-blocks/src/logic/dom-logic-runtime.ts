@@ -92,7 +92,6 @@ type LogicWindow = Window & {
 let activeRuntime: DomLogicRuntime | undefined;
 let activeInput: unknown;
 
-/** Initialize page-scoped logic without loading the React viewer. */
 export function initDomLogicRuntime(rawConfig: unknown): DomLogicRuntime | null {
 	if (activeRuntime && activeInput === rawConfig) return activeRuntime;
 	activeRuntime?.destroy();
@@ -104,7 +103,6 @@ export function initDomLogicRuntime(rawConfig: unknown): DomLogicRuntime | null 
 	const logicWindow = window as LogicWindow;
 	const fallbackRuntime = createLocalRuntime(config.courseId);
 	let destroyed = false;
-	// Non-dependency writes are synchronous behind gated entries; deferred writes need per-admission state.
 	const synchronous = () => !destroyed;
 	const hostRuntime = logicRuntime(learnerRuntime(synchronous));
 	let hasHostRuntime = !!hostRuntime;
@@ -171,7 +169,6 @@ export function initDomLogicRuntime(rawConfig: unknown): DomLogicRuntime | null 
 	const onInteraction = (event: Event) => {
 		const received = selfCheckEpochTicket(document, event);
 		if (!received()) return;
-		// The owner runs deliberate Show feedback before finalization; its existing event is publication.
 		if (hasDependencies && (event as CustomEvent).detail?.blockType === "selfCheck") return;
 		const blockId = (event as CustomEvent).detail?.blockId;
 		if (typeof blockId === "string" && blockId) pendingOrigins.add(blockId);
@@ -187,7 +184,6 @@ export function initDomLogicRuntime(rawConfig: unknown): DomLogicRuntime | null 
 		pendingFrame = requestSelfCheckFrame(() => {
 			if (!owned()) return;
 			pendingFrame = undefined;
-			// Reentrant events belong to a later frame, never this evaluation's origins.
 			const origins = pendingOrigins,
 				requiredBlock = pendingRequiredBlock;
 			pendingOrigins = new Set();
@@ -207,7 +203,6 @@ export function initDomLogicRuntime(rawConfig: unknown): DomLogicRuntime | null 
 	};
 	const onRuntimeReady = () => {
 		cancelInteraction();
-		// Provider-ready starts admission. Only its session may hydrate learner variables.
 		if (hasDependencies) return;
 		const nextRuntime = logicRuntime(learnerRuntime(synchronous));
 		if (nextRuntime && !hasHostRuntime) {
@@ -278,7 +273,6 @@ export function initDomLogicRuntime(rawConfig: unknown): DomLogicRuntime | null 
 						cancelInteraction();
 						state?.engine.destroy();
 						const generation = owner?.epoch();
-						// The store spans commands; the FIFO owner revokes the current ticket before reentry.
 						const owned = () => current() && selfCheckConsumers()?.epoch() === generation;
 						hasHostRuntime = present;
 						currentRuntime =
@@ -466,9 +460,7 @@ function createLocalRuntime(courseId: string): RuntimeLike {
 			memory = data;
 			try {
 				window.localStorage.setItem(key, data);
-			} catch {
-				// In-memory state still preserves this page session.
-			}
+			} catch {}
 		},
 		commit: () => {},
 	};

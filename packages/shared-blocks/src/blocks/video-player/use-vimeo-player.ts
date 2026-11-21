@@ -3,13 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ClipBounds, VideoPlayerState } from "./types";
 
-/**
- * Hook that drives the Vimeo iframe player via the @vimeo/player SDK.
- *
- * We dynamically import the SDK to avoid including ~15 KB in bundles that
- * don't use Vimeo. The import is guarded by `embedUrl` so it only runs when
- * the source is actually a Vimeo embed.
- */
 export function useVimeoPlayer(
 	iframeRef: React.RefObject<HTMLIFrameElement | null>,
 	embedUrl: string,
@@ -100,7 +93,6 @@ export function useVimeoPlayer(
 				if (destroyed) return;
 				const { seconds } = data as { seconds: number };
 				setCurrentTime(seconds);
-				// End-time enforcement
 				const endTime = clipBoundsRef.current?.endTime;
 				if (endTime != null && seconds >= endTime) {
 					player.pause().catch(() => {});
@@ -125,7 +117,6 @@ export function useVimeoPlayer(
 		};
 	}, [embedUrl, iframeRef, autoplay]);
 
-	// Reset state when the source changes.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: embedUrl is the intentional trigger; ref mutations are not deps
 	useEffect(() => {
 		setCurrentTime(0);

@@ -10,9 +10,7 @@ declare global {
 	}
 }
 
-/** Native new tabs do not consistently restore the originating link in Firefox. */
 export function rememberGlossaryFocusReturn(link: HTMLAnchorElement, term?: HTMLElement): void {
-	// Shell and tooltip are separate bundles; the last activation owns the return.
 	window.__praxityCancelGlossaryFocusReturn?.();
 	let frame: number | undefined;
 	let timer: ReturnType<typeof setSelfCheckTimeout> | undefined;
@@ -37,13 +35,11 @@ export function rememberGlossaryFocusReturn(link: HTMLAnchorElement, term?: HTML
 	};
 	const onReturn = () => {
 		if (!current() || restoring || document.visibilityState === "hidden") return;
-		// Popover focus changes before the tab return must not consume the request.
 		document.addEventListener("focusin", onReturn);
 		clearPending();
 		frame = requestSelfCheckFrame(() => {
 			frame = undefined;
 			restore();
-			// Firefox can reset focus to BODY after the window's return events.
 			timer = setSelfCheckTimeout(
 				() => {
 					timer = undefined;

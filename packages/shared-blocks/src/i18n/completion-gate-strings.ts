@@ -5,7 +5,6 @@ export const nextPageUnavailable = {
 	fr: "La page suivante est indisponible.",
 };
 
-/** The logic island needs this fallback without downloading the full catalog. */
 export function getNextPageUnavailable(locale: string): string {
 	return nextPageUnavailable[resolveLocale(locale)];
 }

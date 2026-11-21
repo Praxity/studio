@@ -13,7 +13,6 @@ export const promptBlockKeys = [
 	"layout",
 ];
 
-/** The shared explicit outer metadata whitelist for staged-answer prompts. */
 export function constructPromptBlockMetadata(
 	block: Record<string, unknown>,
 	invalidPrompt: () => Error,

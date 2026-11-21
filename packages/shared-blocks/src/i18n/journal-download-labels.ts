@@ -1,4 +1,3 @@
-// The journal island uses this small subset without loading every learner label.
 export const journalDownloadLabels = {
 	en: {
 		downloadResponseAs: "Download response as",

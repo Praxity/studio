@@ -47,8 +47,6 @@ const notices = {
 	fr: "Cette réponse n’a pas pu être enregistrée. Votre progression enregistrée précédemment est conservée. Pour continuer, fermez ce cours et ouvrez-le de nouveau.",
 };
 
-// Moodle 1.2 CollectData advances defaults before transport; 2004 keeps them.
-// Both versions cancel autocommit on Commit and arm it on successful SetValue.
 function moodle(format: "scorm12" | "scorm2004", stored: Record<string, string> = {}) {
 	const values = { ...stored },
 		server = { ...stored },
@@ -99,7 +97,6 @@ function moodle(format: "scorm12" | "scorm2004", stored: Record<string, string> 
 	};
 	const initialize = () => {
 		calls.push("initialize");
-		// Moodle rebuilds CMI before rejecting a second Initialize.
 		for (const key of Object.keys(values)) delete values[key];
 		Object.assign(values, defaults);
 		error = active ? (format === "scorm12" ? "101" : "103") : "0";
@@ -485,7 +482,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 							fireEvent.change(view.container.querySelectorAll("input[type=text]")[1], {
 								target: { value: "Submitted member B" },
 							});
-						// Summary leaves B unanswered; the group's own delayed Commit is first to fail.
 						act(() => submit?.click());
 						expect(status).not.toHaveTextContent(notices[locale]);
 						lms.fail("false");

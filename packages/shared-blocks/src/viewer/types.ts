@@ -69,11 +69,6 @@ export interface ViewerConfig {
 	pageIdMap: Record<string, string>;
 	navToggles: NavToggles;
 	navigationStyle: "sidebar" | "bottomBar" | "none" | string;
-	/**
-	 * Chrome-free contexts (sidebar thumbnails) force nav toggles off; per-page
-	 * overrides must not re-enable chrome there. Non-nav page params (style,
-	 * narration, duration) still apply.
-	 */
 	ignorePageNavOverrides?: boolean;
 	format: string;
 	basePath: string;
@@ -96,9 +91,7 @@ export interface ViewerConfig {
 	imageHoverEffect: string;
 	glossaryEnabled: boolean;
 	resourcesEnabled: boolean;
-	/** Resolved course/lesson narration enablement; absent is off. */
 	narrationEnabled?: boolean;
-	/** Effective lesson narration generation defaults. */
 	narrationDefaults?: Record<string, unknown>;
 	readingTimeMinutes?: number;
 	sectionCount?: number;

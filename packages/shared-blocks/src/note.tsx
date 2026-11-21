@@ -45,7 +45,6 @@ export function NoteIcon({
 		: null;
 }
 
-/** Inputs are sanitized by the rendering edge. The label reflows with the first paragraph in both renderers. */
 export function noteBodyHtml(labelHtml: string, contentHtml: string, iconHtml = ""): string {
 	const label = `${iconHtml}<strong class="praxity-note-label">${labelHtml}</strong> `;
 	const firstParagraph = /^(\s*(?:<div\b[^>]*>\s*)*<p\b[^>]*>)/i;

@@ -78,7 +78,6 @@ it.each(["en", "fr"])("keeps question-only source and reviewed fingerprints in %
 			}),
 		]);
 		expect(resolved.unresolved).toEqual([]);
-		// Plant forbidden fields even in malformed generic data, bypassing the safe reader.
 		const planted = {
 			...block,
 			data: {

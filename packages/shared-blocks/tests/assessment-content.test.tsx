@@ -125,7 +125,6 @@ describe("assessment learner HTML preparation", () => {
 		);
 		const value = question.data as unknown as AssessmentBlockData;
 		if (value.response.type !== "choice") throw new Error("Expected choice fixture");
-		// A prepared legacy option retains its math span without expanding it.
 		value.response.options.push({
 			id: "two",
 			label: `One ${math}`,

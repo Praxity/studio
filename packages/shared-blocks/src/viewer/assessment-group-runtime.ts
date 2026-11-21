@@ -298,7 +298,6 @@ function focusRequiredMember(memberEl: HTMLElement, messageId: string) {
 	};
 }
 
-/** null distinguishes a refused save from incomplete member progress. */
 function showResults(
 	group: AssessmentGroupMeta,
 	members: Array<{ id: string; el: HTMLElement }>,
@@ -468,7 +467,6 @@ function showResults(
 				dispatched && result?.status !== "not-saved" && (!staged || result?.status !== "pending")
 			);
 		};
-		// Keep reporting inside the stage so an unhandled report rolls its state back too.
 		const accepted = staged
 			? staged(
 					group.id,
@@ -540,7 +538,6 @@ function showResults(
 		link.addEventListener("click", (event) => {
 			if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
 			event.preventDefault();
-			// The stem, rather than its outer card, is the scroll and focus destination.
 			heading.style.scrollMarginTop = "var(--space-2, 8px)";
 			scrollElementIntoView(heading, { block: "start" });
 			heading.focus({ preventScroll: true });
@@ -630,7 +627,6 @@ export function initAssessmentGroups(options: {
 }
 
 type PendingSubmission = { effect: () => void; due: number; current: () => boolean };
-// React effect replacement hands committed actions to the next runtime on the same root.
 const submissionSchedulers = new WeakMap<
 	HTMLElement,
 	{
@@ -744,7 +740,6 @@ function initAssessmentGroupLifetime(
 					const el = root.querySelector<HTMLElement>(`[data-block-id="${CSS.escape(block.id)}"]`);
 					return el ? [el] : [];
 				});
-			// Frame the float's formatting context, which owns the image height and gutter.
 			const contextElements = new Set(
 				contextBlocks.map((el) => {
 					const region = el.closest<HTMLElement>(".praxity-float-region");
@@ -827,11 +822,9 @@ function initAssessmentGroupLifetime(
 				submitContainer.querySelector<HTMLElement>("[data-assessment-group-results]") ??
 				root.ownerDocument.createElement("div");
 			results.dataset.assessmentGroupResults = "";
-			// Submit announces through summary focus; review links stay outside live regions.
 			results.removeAttribute("role");
 			results.removeAttribute("aria-live");
 			results.removeAttribute("aria-atomic");
-			// Partial journal saves announce separately; review submissions leave this region empty.
 			const status =
 				submitContainer.querySelector<HTMLElement>("[data-assessment-group-status]") ??
 				root.ownerDocument.createElement("div");
@@ -1060,7 +1053,6 @@ function initAssessmentGroupLifetime(
 					if (!current()) return;
 					deferSubmission(
 						() => {
-							// A committed native action survives a React rerender within the same lifetime.
 							if (!current() || refuseEndedSession()) return;
 							if (!root.isConnected || !root.contains(member.el)) return;
 							if (
@@ -1127,7 +1119,6 @@ function initAssessmentGroupLifetime(
 				}
 
 				submitContainer.querySelector(".praxity-ag-required-error")?.remove();
-				// Incomplete groups have no summary yet; their submitted member keeps focus.
 				const focusGroupResults =
 					group.showResultsSummary && unanswered.every((member) => !requiredIds.has(member.id));
 				for (const member of members) {
@@ -1194,7 +1185,6 @@ function initAssessmentGroupLifetime(
 		disposed = true;
 		window.cancelAnimationFrame(frame);
 		for (const timer of pendingSubmissions.keys()) window.clearTimeout(timer);
-		// Only a synchronous replacement may inherit the cancelled work; unmount drops it.
 		queueMicrotask(() => {
 			if (submissionSchedulers.get(root) === scheduler) submissionSchedulers.delete(root);
 			pendingSubmissions.clear();

@@ -32,7 +32,6 @@ function toy() {
 	const dispatch = (command: Command) => {
 		effects.enqueue(() => {
 			if (!owned || disposed) return;
-			// The toy reducer owns values; the mechanism owns scheduling and effects.
 			state[command.activityId] = command.value;
 			reduced.push(command);
 			effects.commit(command, command.activityId);
@@ -141,7 +140,6 @@ describe("activity effects", () => {
 			listener.mockClear();
 			t.project.run = () => t.replace();
 			t.dispatch({ activityId: "a", value: 1 });
-			// Without subscribers, no listener guard can hide a missing post-projection check.
 			expect(t.published).toEqual([]);
 			expect(listener).not.toHaveBeenCalled();
 		},

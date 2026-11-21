@@ -42,7 +42,6 @@ function runtimeFor(kind: string) {
 			Initialize: () => "true",
 			Terminate: () => "true",
 			GetValue: (k: string) => values[k] ?? "",
-			// LMS refuses suspend_data (e.g. over its own limit); every other element is accepted.
 			SetValue: (k: string, v: string) => {
 				if (k === "cmi.suspend_data") return "false";
 				values[k] = v;
@@ -59,7 +58,6 @@ function runtimeFor(kind: string) {
 		rt.initialize();
 		return { rt, values };
 	}
-	// Standalone with full storage: every setItem throws QuotaExceededError.
 	const store = new Map<string, string>();
 	const storage = {
 		getItem: (k: string) => store.get(k) ?? null,

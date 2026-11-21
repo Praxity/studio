@@ -1,6 +1,5 @@
 import { journalDateLabels } from "./i18n/journal-download-labels";
 
-/** A journal is a private, ungraded free response with a long input. */
 export function isJournal(data: {
 	assessmentType?: unknown;
 	gradingMode?: unknown;
@@ -17,7 +16,6 @@ export function isJournal(data: {
 	);
 }
 
-/** Accept only the UTC ISO format written at save; legacy entries keep their answer. */
 export function readJournalSavedAt(value: unknown): string | null {
 	if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value))
 		return null;

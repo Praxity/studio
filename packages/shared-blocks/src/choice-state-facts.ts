@@ -7,7 +7,6 @@ export interface ChoiceMaterialContent {
 	icons: readonly string[];
 }
 
-/** Published effective facts used by controls and saved-answer admission. */
 export interface ChoiceStateQuestion {
 	selectionMode: "single" | "multiple";
 	dontKnow: boolean;
@@ -16,7 +15,6 @@ export interface ChoiceStateQuestion {
 	gradingMode: "none" | "exact" | "partial";
 	points: number;
 	required: boolean;
-	/** Zero means unlimited. */
 	maxAttempts: number;
 	correctIds: readonly string[];
 	content: ChoiceMaterialContent;
@@ -30,7 +28,6 @@ export function choiceMaterialSignature(value: unknown): string {
 		.replaceAll("/", "_")}`;
 }
 
-/** Explicit fields make property order and unrelated metadata immaterial. */
 export function choiceQuestionSignature(question: ChoiceStateQuestion): string {
 	const content = (value: ChoiceMaterialContent) => [value.text, value.images, value.icons];
 	return choiceMaterialSignature([
@@ -110,7 +107,6 @@ function isChoiceGroupMode(value: unknown): value is ChoiceStateGroup["mode"] {
 	return value === "all" || value === "oneOf";
 }
 
-/** Refuse lossy normalization; omitted mode retains the renderer's schema default. */
 export function choiceGroupDefinitionIsValid(value: unknown): boolean {
 	return (
 		isRecord(value) &&
@@ -121,7 +117,6 @@ export function choiceGroupDefinitionIsValid(value: unknown): boolean {
 	);
 }
 
-/** Group dependency rules are shared by compiled metadata and saved admission. */
 export function choiceGroupFactsAreValid(
 	group: ChoiceStateGroup | undefined,
 	groups: Readonly<Record<string, unknown>>,
@@ -139,7 +134,6 @@ export function choiceGroupFactsAreValid(
 	);
 }
 
-/** Pair consistency belongs to the facts owner, for compiled config and saved-answer admission. */
 export function isChoiceAssessmentFacts(value: unknown): value is ChoiceAssessmentFacts {
 	return (
 		isRecord(value) &&
@@ -156,12 +150,10 @@ export interface ChoiceStateFacts {
 }
 
 export interface AdmittedChoiceStateFacts extends ChoiceStateFacts {
-	/** Invalid metadata must remain history when saved admission activates. */
 	choiceStateFactsStatus: "absent" | "valid" | "invalid";
 	choiceStateInvalidIds: string[];
 }
 
-/** Both config scripts admit complete pairs independently of core course configuration. */
 export function admitChoiceStateFacts(value: Record<string, unknown>): AdmittedChoiceStateFacts {
 	const result: AdmittedChoiceStateFacts = {
 		choiceStateQuestions: Object.create(null),

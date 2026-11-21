@@ -10,7 +10,6 @@ const identity: CoursePreviewIdentity = {
 	pageId: "page-1",
 };
 
-// One runtime per document, as in a real inspection response.
 it("connects only through its offered port and owns the Page lens keys and links", async () => {
 	history.replaceState(
 		null,
@@ -56,7 +55,6 @@ it("connects only through its offered port and owns the Page lens keys and links
 			...body,
 		} as CoursePreviewCommand);
 
-	// Window messages carry no authority, and nothing answers before the host connects.
 	window.dispatchEvent(
 		new MessageEvent("message", {
 			data: { source: "praxity-studio", version: 1, action: "connect", ...identity },
@@ -97,7 +95,6 @@ it("connects only through its offered port and owns the Page lens keys and links
 		["escape", undefined],
 	]);
 
-	// No link navigates the lens. Page links ask the host, which remounts the page.
 	const activate = (id: string, type = "click") => {
 		const event = new MouseEvent(type, {
 			bubbles: true,
@@ -121,20 +118,16 @@ it("connects only through its offered port and owns the Page lens keys and links
 		["navigate", page2],
 	]);
 
-	// A <use> click retargets away from any cloned link, so every <use> click is cancelled.
 	expect(activate("use-link")).toBe(true);
 	expect(activate("use-sprite")).toBe(true);
 	expect(activate("use-icon")).toBe(true);
-	// A light-DOM link around the <use> still asks the host for its page.
 	expect(activate("use-in-link")).toBe(true);
 	await vi.waitFor(() => expect(events).toHaveLength(11));
 	expect(events.at(-1)).toMatchObject({ event: "navigate", url: page2 });
-	// Same-page links move focus in place; they neither load nor ask the host for a page.
 	expect(activate("skip")).toBe(true);
 	expect(document.activeElement?.id).toBe("main");
 	expect(activate("toc")).toBe(true);
 	expect(document.activeElement?.id).toBe("block-1");
-	// The browser decodes the fragment before it looks up the target; malformed encoding finds nothing.
 	expect(activate("accented")).toBe(true);
 	expect(document.activeElement?.id).toBe("café");
 	expect(activate("malformed")).toBe(true);
@@ -147,13 +140,11 @@ it("focuses a frame edge only when the entry left no element focused", () => {
 	document.body.innerHTML = '<a href="#main">Skip</a><main id="main"></main><button>Last</button>';
 	const [skip, last] = [...document.querySelectorAll<HTMLElement>("a,button")];
 	const focusEdge = frameEdgeFocus(window);
-	// WebKit, when Tab finds no stop inside the frame, focuses only its document.
 	window.dispatchEvent(new FocusEvent("focus"));
 	focusEdge("first");
 	expect(document.activeElement).toBe(skip);
 	focusEdge("last");
 	expect(document.activeElement).toBe(skip);
-	// Another entry, where the browser chose its own stop.
 	window.dispatchEvent(new FocusEvent("focus"));
 	last.focus();
 	focusEdge("first");

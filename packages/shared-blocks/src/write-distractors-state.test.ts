@@ -368,7 +368,6 @@ describe("distractor reductions", () => {
 			{ type: "restore", generation: 0, value: draft(value) },
 			rules,
 		).mount;
-		// Oversized live drafts are editable but cannot be admitted from storage.
 		const base = code.startsWith("long")
 			? reduceWriteDistractors(
 					reduceWriteDistractors(
@@ -473,7 +472,6 @@ describe("distractor reductions", () => {
 			expect(edited.mount.saved).toBe(saved);
 			const reset = reduceWriteDistractors(edited.mount, { type: "start-over" }, rules);
 			expect(reset.write).toEqual(draft());
-			// Reset proposes fresh bytes; only W08's confirmed receipt removes old bytes.
 			expect(reset.mount.saved).toBe(saved);
 			expect(
 				reduceWriteDistractors(reset.mount, { type: "restore", generation: 0, value: saved }, rules)

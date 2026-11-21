@@ -288,7 +288,6 @@ describe("round-one contract regressions", () => {
 		expect(edited.write?.value.options[0].text).toBe(text);
 		expect(edited.write?.value.options[0].text.length).toBe(306);
 		if (!edited.write) throw new Error("Expected a raw draft envelope");
-		// The Content owner calls the pin's validateState with trim-only copies.
 		expect(rules.validateValue(edited.write.value)).toBe(true);
 		expect(restore(edited.write).value.options[0].text).toBe(text);
 	});

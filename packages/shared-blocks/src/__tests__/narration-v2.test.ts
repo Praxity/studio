@@ -8,7 +8,6 @@ import {
 } from "../narration";
 import type { PraxityPage } from "../types";
 
-// The host owns SHA-256. This seam makes revision changes visible without Node in the UI package.
 const digest = (text: string) => text;
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const courseId = uuid(1),

@@ -1,13 +1,5 @@
 import { getNextPageUnavailable } from "../i18n/completion-gate-strings";
 
-/**
- * Continue gate, settled 2026-10-01. Presentation belongs to the DOM adapter.
- * Shipped: focusable aria-disabled controls, one reason in the visible navigation band.
- * Rejected: sibling reason became a body-grid item; the full nav hides in minimal mode.
- * Rejected: CSS-only proxy reveal still left its native hidden attribute in place.
- * Browser checks cover Chromium, WebKit and Firefox; live screen-reader speech is untested.
- * Navigation reads the engine's gate, independently of these presentation effects.
- */
 export function createCompletionEffects(currentPage: number, doc: Document = document) {
 	const selector = "[data-continue-button], a[data-page-number], #deck-next, #deck-continue";
 	const attributes = ["href", "role", "tabindex", "aria-disabled", "aria-describedby"] as const;
@@ -79,7 +71,6 @@ export function createCompletionEffects(currentPage: number, doc: Document = doc
 			for (const [control, saved] of effects) {
 				if (!controls.includes(control)) restoreControl(control, saved);
 			}
-			// Inside the nav, the reason shares its band; as a sibling it would become a layout grid item.
 			const primary =
 				(doc.body.classList.contains("praxity-minimal")
 					? doc.getElementById("praxity-embed-nav")
@@ -100,7 +91,6 @@ export function createCompletionEffects(currentPage: number, doc: Document = doc
 			}
 			for (const control of controls) {
 				if (!effects.has(control)) {
-					// Control-owned capture guards modified clicks and AT activation without making containers clickable.
 					for (const type of ["click", "auxclick", "keydown"])
 						control.addEventListener(type, guard, true);
 					effects.set(

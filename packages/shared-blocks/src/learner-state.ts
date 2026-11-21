@@ -1,4 +1,3 @@
-/** Persisted syntax must not load the material-hashing runtime. */
 export function isChoiceContentSignature(value: unknown): value is `s96:${string}` {
 	return typeof value === "string" && /^s96:[A-Za-z0-9_-]{16}$/.test(value);
 }

@@ -6,7 +6,6 @@ import { preparePageFootnotes } from "../../src/page-footnotes";
 import type { AssessmentBlockData } from "../../src/types";
 import vectors from "./choice-signature-vectors.json";
 
-// The pinned fixture exercises legacy raw-string fields accepted by the renderer.
 export const question = () =>
 	structuredClone(vectors.question.data) as unknown as AssessmentBlockData;
 export const producers = [

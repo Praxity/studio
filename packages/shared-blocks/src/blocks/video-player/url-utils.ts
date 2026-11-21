@@ -28,13 +28,11 @@ function hasSinglePathId(url: URL, prefix: string, numeric = false): boolean {
 	);
 }
 
-/** Detect VideoSource type — returns "mux" for Mux-hosted assets, or delegates to detectVideoSource for URL sources. */
 export function getVideoSourceType(source: VideoSource): VideoSourceType | "mux" {
 	if (source.type === "mux") return "mux";
 	return detectVideoSource(source.src);
 }
 
-/** Convert a video watch/share URL to an embeddable URL. */
 export function toEmbedUrl(url: string): string {
 	const u = parseHttpsUrl(url);
 	if (!u) return url;
@@ -79,7 +77,6 @@ export function getYouTubeThumbnailUrl(url: string): string | null {
 	return id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : null;
 }
 
-/** A no-JS YouTube facade. The link navigates its own iframe when activated. */
 export function getYouTubeFacadeSrcDoc(
 	url: string,
 	title: string,
@@ -107,10 +104,8 @@ export function isEmbeddableUrl(url: string): boolean {
 	return LOOM_HOSTS.has(parsed.hostname) && hasSinglePathId(parsed, "/embed/");
 }
 
-/** Detect if URL points to a direct video file (not an iframe embed). */
 export function isDirectVideoUrl(url: string): boolean {
 	try {
-		// Dummy base allows new URL() to parse relative paths (e.g. "/block-examples/sample.mp4")
 		const u = new URL(url, "https://placeholder.invalid");
 		if (!new Set(["https:", "http:", "file:", "praxity-asset:"]).has(u.protocol)) return false;
 		const path = u.pathname.toLowerCase();
@@ -127,24 +122,19 @@ export function isDirectVideoUrl(url: string): boolean {
 
 export type VideoSourceType = "youtube" | "vimeo" | "loom" | "direct" | "unknown-embed";
 
-/** Identify the video source from the original (non-embed) URL. */
 export function detectVideoSource(url: string): VideoSourceType {
 	if (!url) return "unknown-embed";
 	try {
-		// Dummy base allows new URL() to parse relative paths (e.g. "/videos/intro.mp4")
 		const u = new URL(url, "https://placeholder.invalid");
 		const isRelative = u.hostname === "placeholder.invalid";
 		if (!isRelative && YOUTUBE_HOSTS.has(u.hostname)) return "youtube";
 		if (!isRelative && VIMEO_HOSTS.has(u.hostname)) return "vimeo";
 		if (!isRelative && LOOM_HOSTS.has(u.hostname)) return "loom";
 		if (isDirectVideoUrl(url)) return "direct";
-	} catch {
-		// fall through
-	}
+	} catch {}
 	return "unknown-embed";
 }
 
-/** Map video source to its capability tier. */
 export function getSourceTier(source: VideoSourceType): VideoSourceTier {
 	switch (source) {
 		case "youtube":
@@ -157,8 +147,6 @@ export function getSourceTier(source: VideoSourceType): VideoSourceTier {
 			return "manual-mode";
 	}
 }
-/** Iframe load events do not prove a cross-origin provider rendered successfully.
- * Keep the source link visible; remove the empty frame on observable failures. */
 export function observeEmbedFailure(iframe: HTMLIFrameElement): () => void {
 	const src = iframe.dataset.embedSrc || iframe.src;
 	const view = iframe.ownerDocument.defaultView;
@@ -183,9 +171,6 @@ export function observeEmbedFailure(iframe: HTMLIFrameElement): () => void {
 	};
 	const waitForConfirmation = () => {
 		if (settled || timer !== undefined) return;
-		// A cross-origin load event also fires on network errors. If the provider
-		// sends no confirmation, offer a compact fallback and explicit recovery.
-		// Never infer failure from opaque, zero-valued Resource Timing fields.
 		timer = view.setTimeout(fail, 3000);
 	};
 	const confirm = (event: MessageEvent) => {
@@ -209,8 +194,6 @@ export function observeEmbedFailure(iframe: HTMLIFrameElement): () => void {
 	view.addEventListener("message", confirm);
 	retry?.addEventListener("click", show);
 	iframe.ownerDocument.addEventListener("securitypolicyviolation", policyFailure);
-	// Bind before navigation so even a synchronous CSP refusal is observed.
-	// Without enhancement, the source link is the complete readable fallback.
 	if (iframe.dataset.embedSrc) {
 		iframe.hidden = false;
 		iframe.src = src;

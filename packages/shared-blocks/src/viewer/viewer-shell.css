@@ -1,5 +1,3 @@
-/* Shared learner shell styles */
-
 html {
 	font-family: var(--praxity-font-family);
 	font-weight: var(--praxity-font-weight-body, 400);
@@ -9,7 +7,6 @@ html {
 	color: var(--praxity-color-text);
 }
 
-/* A published modal sheet is bounded by its owning workspace, not the viewport. */
 .praxity-dialog-sheet {
 	position: fixed;
 	margin: 0;
@@ -31,7 +28,6 @@ html {
 	border: 0;
 }
 
-/* Inactive actions must not reserve a modal sheet's limited reading space. */
 .praxity-dialog-sheet [inert][aria-hidden="true"] {
 	display: none;
 }
@@ -40,21 +36,14 @@ body {
 	margin: 0;
 	padding: 0;
 	font-size: var(--type-body);
-	/* Keep the course baseline when a page also loads Mantine's body styles. */
 	font-family: inherit;
 	line-height: inherit;
 	background-color: var(--praxity-color-background);
 	overflow-x: hidden;
 }
 
-/* Content-only previews keep the canonical document. Main's siblings are shell
-   chrome, regardless of resolved course/page navigation options. Hide wrappers
-   too, and release their grid tracks; hiding only the sidebar leaves 260px empty.
-   Keep authored navigation inside main. The desktop frame supplies `inert`. */
-/* One-page authoring previews measure natural content, not the iframe viewport.
-   Otherwise expanding the iframe can keep expanding a viewport-sized slide. */
 html[data-praxity-root][data-praxity-preview-expand="true"]
-:is(body, .praxity-layout-wrapper, #main-content, .praxity-slide) {
+	:is(body, .praxity-layout-wrapper, #main-content, .praxity-slide) {
 	height: auto !important;
 	min-height: 0 !important;
 	max-height: none !important;
@@ -108,13 +97,11 @@ html[data-praxity-root][data-praxity-mode="dark"] {
 	--praxity-color-warning: var(--praxity-color-warning-on-dark);
 }
 
-/* Mantine buttons and skip links manage their own visual affordance */
 .mantine-Button-root,
 .praxity-skip-link {
 	text-decoration: none;
 }
 
-/* Skip links */
 .praxity-skip-link {
 	position: absolute;
 	top: -100%;
@@ -131,7 +118,6 @@ html[data-praxity-root][data-praxity-mode="dark"] {
 	top: 0;
 }
 
-/* ── Scroll progress bar ── */
 .praxity-scroll-progress,
 .praxity-pages-progress {
 	position: fixed;
@@ -206,7 +192,6 @@ html[data-praxity-root][data-praxity-mode="dark"] {
 	container-name: preview-content praxity-image-float;
 }
 
-/* Shell queries also respond to an LMS or editor frame's available width. */
 .praxity-layout-wrapper,
 .praxity-viewer-shell {
 	container-type: inline-size;
@@ -252,7 +237,6 @@ h2.praxity-page-title {
 	--praxity-flow-gap: var(--praxity-space-normal);
 }
 
-/* Persistent sidebar layout — desktop only (≥768px) */
 @media (min-width: 768px) {
 	.praxity-layout-sidebar .praxity-layout-wrapper {
 		display: grid;
@@ -292,7 +276,6 @@ h2.praxity-page-title {
 	}
 }
 
-/* ── Sidebar expand button (collapsed state — aligned within the top bar) ── */
 .praxity-sidebar-expand {
 	width: 44px;
 	height: 44px;
@@ -311,7 +294,6 @@ h2.praxity-page-title {
 	padding: 0;
 }
 
-/* ── Sidebar collapse button (expanded state — inside sidebar header) ── */
 .praxity-sidebar-collapse {
 	position: absolute;
 	top: 12px;
@@ -351,20 +333,17 @@ h2.praxity-page-title {
 	transform: scale(0.95);
 }
 
-/* Desktop sidebar toggles reflow instantly, including the keyboard shortcut. */
 @media (min-width: 768px) {
 	.praxity-layout-sidebar .praxity-course-menu {
 		width: 260px;
 		min-width: 260px;
 	}
 
-	/* When sidebar collapsed: content takes full width */
 	.praxity-layout-sidebar.praxity-sidebar-collapsed .praxity-layout-wrapper {
 		grid-template-columns: 0 minmax(0, 1fr);
 	}
 }
 
-/* ── Reduced motion ── */
 @media (prefers-reduced-motion: reduce) {
 	.praxity-layout-sidebar .praxity-course-menu,
 	.praxity-layout-sidebar .praxity-layout-wrapper,
@@ -385,9 +364,6 @@ h2.praxity-page-title {
 	transition: none;
 }
 
-/* ── Bottom bar layout ── */
-/* Menu container shows a hamburger top-bar (non-sticky, scrolls with page).
-   Page nav sticks to the bottom of the viewport. */
 .praxity-layout-bottombar .praxity-layout-wrapper {
 	display: flex;
 	flex-direction: column;
@@ -408,25 +384,16 @@ h2.praxity-page-title {
 	padding-bottom: 0;
 }
 
-/* ── No-nav layout ── */
-/* Hide both menu and page-nav containers entirely */
 .praxity-layout-none #praxity-page-nav {
 	display: none;
 }
 
-/* ── No-JS navigation fallback ─────────────────────────────────
-   On static/HTML pages there is no JS nav; the fallback <nav>s ARE the
-   navigation, so they must be styled to match the course rather than render as
-   raw UA-blue underlined links. */
 .praxity-outline-fallback {
 	padding: var(--space-3);
 	background: var(--praxity-color-navigation-surface, var(--praxity-color-background));
 	border-bottom: 1px solid var(--praxity-color-border);
 }
 
-/* Once the nav island owns this mount, CourseMenu supplies its own spacing and
-   borders. Keeping the fallback padding made compact top bars narrower than the
-   page and made the desktop sidebar overflow its 260px grid track. */
 .praxity-outline-fallback[data-hydrated] {
 	padding: 0;
 	background: transparent;
@@ -496,7 +463,6 @@ h2.praxity-page-title {
 	outline-offset: var(--focus-offset);
 }
 
-/* Full-width rows meet the scrollport edge, so keep the focus ring inside it. */
 .praxity-outline-fallback a:focus-visible {
 	outline: var(--focus-width) solid var(--accent);
 	outline-offset: calc(-1 * (var(--focus-width) + var(--focus-offset)));
@@ -595,8 +561,6 @@ h2.praxity-page-title {
 	font-weight: var(--weight-strong);
 }
 
-/* Native published navigation. The HTML is complete at first paint; the small
-   nav island only adds persistence, focus transfer, gating and disclosure. */
 .praxity-native-outline,
 .praxity-native-outline[data-hydrated] {
 	padding: 0;
@@ -755,8 +719,6 @@ h2.praxity-page-title {
 	display: none;
 }
 
-/* Native outlines are drawers by default. The desktop sidebar is the sole
-   persistent variant and overrides this geometry at the larger breakpoint. */
 html.praxity-js .praxity-native-outline {
 	position: fixed;
 	inset-block: 0;
@@ -836,7 +798,6 @@ body.praxity-nav-open .praxity-native-nav-backdrop {
 	color: var(--praxity-color-button-text);
 }
 
-/* Pages pagination can use a full spacing token; deck icon controls stay 44px. */
 .praxity-native-page-nav:not(.deck-controls) :is(.praxity-nav-prev, .praxity-nav-next) {
 	min-height: var(--space-12);
 }
@@ -1163,8 +1124,6 @@ body.praxity-nav-open .praxity-native-nav-backdrop {
 	transition: none;
 }
 
-/* ── Slides layout ─────────────────────────────────────────── */
-
 body.praxity-layout-slides {
 	height: var(--praxity-slide-viewport-height, 100svh);
 	min-height: 0;
@@ -1185,14 +1144,6 @@ body.praxity-layout-slides .praxity-native-outline[data-nav-drawer] {
 	border-inline-end: 1px solid var(--praxity-color-border);
 }
 
-/* Published output mounts the viewer into #main-content, which carries the
-   reading-column width and page padding (1rem 1.5rem 3rem) that scrolling
-   layouts need. A slides shell is already sized to the viewport, so that
-   padding pushed the document 64px past the fold: the learner got a second
-   scrollbar on top of the slide's own internal one, and the narration bar's
-   bottom edge (play/pause, seek, speed, captions, "Show all") sat under it.
-   Scoped with :has() so it only fires where a viewport-owned slides/minimal
-   shell is actually mounted — the no-JS static fallback keeps its reading column. */
 #main-content:has(> .praxity-viewer-shell.praxity-layout-slides),
 #main-content:has(> .praxity-viewer-shell.praxity-layout-minimal) {
 	width: 100%;
@@ -1201,8 +1152,6 @@ body.praxity-layout-slides .praxity-native-outline[data-nav-drawer] {
 	padding: 0;
 }
 
-/* Minimal and slides reserve a solid row below their scrolling content for
-   learner controls. Nothing in the row paints over the page. */
 .praxity-viewer-shell:is(.praxity-layout-slides, .praxity-layout-minimal) {
 	display: flex;
 	flex-direction: column;
@@ -1219,13 +1168,11 @@ body.praxity-layout-slides .praxity-native-outline[data-nav-drawer] {
 	min-height: 0;
 }
 
-/* SlideNav also answers to #praxity-page-nav (the slides skip-link target). */
 .praxity-layout-slides #praxity-page-nav:not(.praxity-slide-nav) {
 	padding-bottom: 0;
 }
 
 .praxity-layout-wrapper:is(.praxity-layout-slides, .praxity-layout-minimal) #main-content {
-	/* The scrollport spans the stage so wide blocks never escape its clipped edge. */
 	max-width: none;
 	padding-inline: max(var(--page-gutter), calc((100% - var(--measure)) / 2));
 	flex: 1 1 auto;
@@ -1271,8 +1218,6 @@ body.praxity-layout-slides .praxity-native-outline[data-nav-drawer] {
 	backdrop-filter: none;
 }
 
-/* Vertical centering that still scrolls when content overflows:
-   margin:auto collapses to 0 when the slide is taller than the viewport. */
 .praxity-layout-slides .praxity-slide {
 	margin: auto;
 	width: var(--praxity-slide-width);
@@ -1280,7 +1225,6 @@ body.praxity-layout-slides .praxity-native-outline[data-nav-drawer] {
 	box-sizing: border-box;
 }
 
-/* Default feature media stays inside the slide's bounded scroll container. */
 .praxity-layout-slides .praxity-slide .praxity-block-feature-width {
 	max-width: 100%;
 	margin-inline: 0;
@@ -1301,12 +1245,6 @@ body.praxity-layout-slides .praxity-native-outline[data-nav-drawer] {
 	top: 16px;
 	inset-inline-end: 20px;
 	font-size: var(--type-small);
-	/*
-	 * `--praxity-color-text-muted`, not `--praxity-text-muted`: that name is defined
-	 * nowhere, so the counter silently fell back to a hardcoded #888 — 3.36:1 on the
-	 * default surface, and invisible to the export's contrast floor, which only
-	 * corrects tokens that actually exist.
-	 */
 	color: var(--praxity-color-text-muted);
 	z-index: 20;
 }
@@ -1472,8 +1410,6 @@ body.praxity-layout-slides .praxity-native-outline[data-nav-drawer] {
 	}
 }
 
-/* ── Additional layout modes ── */
-
 .praxity-layout-minimal .praxity-page-nav {
 	display: none;
 }
@@ -1483,7 +1419,6 @@ body.praxity-layout-none .praxity-navigation-proxy {
 	display: none;
 }
 
-/* ── Edge arrows ── */
 .praxity-edge-arrow {
 	position: fixed;
 	top: 50%;
@@ -1534,15 +1469,12 @@ body.praxity-layout-none .praxity-navigation-proxy {
 	outline-offset: var(--focus-offset);
 }
 
-/* Edge arrows obstruct narrow layouts. Touch navigation remains available
-   through the same paging handler whenever the author enables these arrows. */
 @media (max-width: 1024px) {
 	.praxity-edge-arrow-nav {
 		display: none;
 	}
 }
 
-/* ── Progress dots ── */
 .praxity-progress-dots {
 	position: fixed;
 	left: 50%;
@@ -1569,9 +1501,6 @@ body.praxity-layout-none .praxity-navigation-proxy {
 	gap: var(--space-2);
 }
 
-/* Inside SlideNav the pill chrome belongs to the nav, not to the dots. The
-   doubled class keeps this ahead of the export template's own copy of
-   `.praxity-progress-dots`, which is otherwise the same specificity. */
 .praxity-progress-dots.praxity-progress-dots--inline {
 	position: static;
 	transform: none;
@@ -1581,7 +1510,6 @@ body.praxity-layout-none .praxity-navigation-proxy {
 	backdrop-filter: none;
 }
 
-/* ── Slides bottom navigation (prev + dots + next) ── */
 .praxity-slide-nav {
 	position: fixed;
 	left: 50%;
@@ -1607,8 +1535,6 @@ body.praxity-layout-none .praxity-navigation-proxy {
 .praxity-slide-nav__tools {
 	display: flex;
 	align-items: center;
-	/* Inline narration controls must be able to shrink and wrap here rather
-	   than push the fixed nav past the viewport edge. */
 	min-width: 0;
 	padding-inline-start: var(--space-2);
 	border-inline-start: 1px solid var(--praxity-color-border);
@@ -1624,7 +1550,6 @@ body.praxity-layout-none .praxity-navigation-proxy {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	/* 44px is the touch-target floor the default theme guarantees. */
 	width: 44px;
 	height: 44px;
 	padding: 0;
@@ -1648,20 +1573,15 @@ body.praxity-layout-none .praxity-navigation-proxy {
 	outline-offset: var(--focus-offset);
 }
 
-/* Progress dots distinguish state by shape + solid color (not opacity), so
-   every state clears WCAG 1.4.11 non-text contrast (3:1) against the page
-   background. text-muted and accent tokens are contrast-validated by theme. */
 .praxity-progress-dot {
 	width: 8px;
 	height: 8px;
 	border-radius: var(--radius-round);
-	/* unvisited: hollow ring — reads as "not yet", ring color is ≥3:1 */
 	background: transparent;
 	box-shadow: none;
 }
 
 .praxity-progress-dot.is-visited {
-	/* visited: solid muted fill */
 	background: var(--praxity-color-text-muted);
 	box-shadow: none;
 }
@@ -1708,7 +1628,6 @@ body.praxity-layout-none .praxity-navigation-proxy {
 	}
 }
 
-/* Floating TOC (minimap). Owned here because viewer.css loads on every page. */
 .praxity-floating-toc {
 	position: fixed;
 	inset-inline-end: 16px;
@@ -1737,8 +1656,6 @@ body.praxity-layout-none .praxity-navigation-proxy {
 	display: none;
 }
 
-/* The element box is the >=24x24 hit target (WCAG 2.5.8); the visible tick is
-   the content box via background-clip. */
 .praxity-toc-bar {
 	position: relative;
 	display: block;
@@ -1756,8 +1673,6 @@ body.praxity-layout-none .praxity-navigation-proxy {
 	background-clip: content-box;
 }
 
-/* Widen each tick's pointer target to 44px. Vertical extension is capped at
-   half the 2px row gap so adjacent section links never overlap. */
 .praxity-toc-bar::after {
 	content: "";
 	position: absolute;
@@ -1785,7 +1700,6 @@ body.praxity-layout-none .praxity-navigation-proxy {
 	border-radius: var(--radius-control);
 }
 
-/* Preview card opens inward from the rail's inline-end edge. */
 .praxity-toc-preview {
 	position: absolute;
 	inset-inline-end: calc(100% + 12px);
@@ -1818,14 +1732,12 @@ body.praxity-layout-none .praxity-navigation-proxy {
 	transition: none;
 }
 
-/* Hide floating TOC on mobile */
 @media (max-width: 768px) {
 	.praxity-floating-toc {
 		display: none;
 	}
 }
 
-/* Course menu text follows the theme. */
 .praxity-course-menu,
 .praxity-course-menu nav {
 	color: var(--praxity-color-text);
@@ -1892,8 +1804,6 @@ body.praxity-layout-none .praxity-navigation-proxy {
 	margin-inline-start: auto;
 }
 
-/* Keep identity and disclosure controls on one row. The disclosed player has
-   its own full-width row, rather than wrapping inside three nested flexboxes. */
 .praxity-top-bar-fallback > .praxity-top-bar {
 	display: grid;
 	grid-template-columns: auto minmax(0, 1fr) minmax(0, auto) auto auto;
@@ -1975,14 +1885,6 @@ body.praxity-layout-none .praxity-navigation-proxy {
 	border-radius: var(--radius-control);
 }
 
-/* Programmatic focus targets (tabindex=-1, not keyboard-reachable) that receive
-   focus for screen readers: the inner <main id=main-content> in preview, the
-   #main-content mount in published output, and the H1-H6 headings that guided
-   navigation (Next, Previous, arrows, outline jumps) focuses on arrival. Suppress their
-   browser-default outline — otherwise published output frames every slide in a
-   blue focus ring on load. Both are tabindex=-1, so real keyboard focus rings on
-   interactive descendants are unaffected. Safari also matches :focus-visible on
-   programmatic .focus(), so suppress both pseudo-classes. */
 #main-content[tabindex="-1"],
 #main-content[tabindex="-1"]:focus,
 #main-content[tabindex="-1"]:focus-visible,
@@ -1993,14 +1895,10 @@ body.praxity-layout-none .praxity-navigation-proxy {
 	box-shadow: none !important;
 }
 
-/* Suppress Mantine's focus-on-click outline — it uses :focus (fires on mouse click)
-   instead of :focus-visible (keyboard only). Our :focus-visible rule below handles it. */
 .mantine-focus-always:focus:not(:focus-visible) {
 	outline: none;
 }
 
-/* These targets are outside the tab order. Suppress the browser's default
-   outline too when submission moves focus here after keyboard activation. */
 [data-assessment-feedback]:focus,
 [data-assessment-feedback] [tabindex="-1"]:focus,
 [data-row-summary]:focus {
@@ -2012,10 +1910,6 @@ body.praxity-layout-none .praxity-navigation-proxy {
 	outline-color: var(--praxity-color-focus);
 }
 
-/* One themed outline survives forced-colors. Programmatic feedback targets
-   announce their content without drawing another box inside the activity.
-   Scoped to interactive elements to prevent non-interactive wrappers (nav, div, main)
-   from showing focus rings when they receive programmatic or click-through focus. */
 .praxity-page-content :is(input, select, textarea):focus-visible,
 a:focus-visible,
 button:focus-visible,
@@ -2039,7 +1933,6 @@ textarea:focus-visible,
 	outline-offset: -2px;
 }
 
-/* Touch targets -- WCAG SC 2.5.8 */
 :where(.praxity-viewer-shell) button,
 :where(.praxity-viewer-shell) [role="button"],
 :where(.praxity-viewer-shell) a,
@@ -2050,13 +1943,8 @@ textarea:focus-visible,
 	min-width: 24px;
 }
 
-/* Button & document blocks — use theme colors instead of Mantine default blue.
-   Mantine v7 sets --button-bg/--button-color/etc. as inline styles on <button>,
-   so !important is required to override them from a stylesheet.
-	   --praxity-color-button-outline is contrast-corrected against course surfaces.
-   BlockRenderer wraps in div[data-block-type], separate from outer .praxity-block. */
 :is([data-block-type="button"], [data-block-type="document"], [data-block-type="assessment"])
-.mantine-Button-root,
+	.mantine-Button-root,
 .praxity-page-nav .mantine-Button-root {
 	--button-bg: var(--praxity-color-button-background) !important;
 	--button-hover: var(--praxity-color-button-background) !important;
@@ -2086,7 +1974,6 @@ textarea:focus-visible,
 	--button-bd: none !important;
 }
 
-/* Page navigation — Previous (outline) + Next (filled) use theme button colors */
 .praxity-page-nav .mantine-Button-root {
 	border-radius: var(--radius-control);
 	min-height: 44px;
@@ -2175,7 +2062,6 @@ textarea:focus-visible,
 	transform: none !important;
 }
 
-/* Required indicator — positioned badge injected by logic engine's require action */
 .praxity-block[data-required] {
 	position: relative;
 }
@@ -2194,7 +2080,6 @@ textarea:focus-visible,
 	background: color-mix(in oklab, var(--praxity-color-accent) 12%, transparent);
 }
 
-/* Required validation message — injected below incomplete blocks */
 .praxity-required-message {
 	color: var(--praxity-color-error-text, var(--praxity-color-error));
 	font-size: var(--type-small);
@@ -2202,7 +2087,6 @@ textarea:focus-visible,
 	padding: var(--space-1) 0;
 }
 
-/* Temporary highlight ring on incomplete required blocks */
 [data-required-highlight] {
 	outline: var(--focus-width) solid var(--accent);
 	outline-offset: var(--focus-offset);
@@ -2210,7 +2094,6 @@ textarea:focus-visible,
 	transition: none;
 }
 
-/* SlideNav also answers to #praxity-page-nav but owns its floating geometry. */
 /* biome-ignore lint/style/noDescendingSpecificity: base non-slide page nav follows slide-layout overrides */
 #praxity-page-nav:not(.praxity-slide-nav) {
 	scroll-margin-top: 72px;
@@ -2278,7 +2161,6 @@ textarea:focus-visible,
 	border-inline-start: 1px solid var(--praxity-color-border);
 }
 
-/* Placeholder text: muted below typed answers but still WCAG AA (Mantine's default is too light) */
 .praxity-page-content input::placeholder,
 .praxity-page-content textarea::placeholder,
 .praxity-page-content .mantine-TextInput-input::placeholder,
@@ -2288,7 +2170,6 @@ textarea:focus-visible,
 	opacity: 1;
 }
 
-/* Pages owns its reading boundary and pagination, independently of deck chrome. */
 @media (max-width: 599px) {
 	body:not(.praxity-layout-slides) #main-content,
 	body:not(.praxity-layout-slides) #main-content .praxity-section {
@@ -2380,7 +2261,6 @@ textarea:focus-visible,
 	padding-block: var(--space-2);
 }
 
-/* ===== Embed navigation — compact bar for embedded content ===== */
 .praxity-embed-nav {
 	display: none;
 	padding: var(--space-2) 0;
@@ -2431,7 +2311,6 @@ textarea:focus-visible,
 	flex: 0 0 60px;
 }
 
-/* In minimal mode, show embed nav (it replaces the hidden full nav) */
 .praxity-minimal .praxity-embed-nav {
 	display: flex !important;
 	justify-content: center;
@@ -2459,14 +2338,10 @@ body.praxity-minimal
 	display: none !important;
 }
 
-/* ── Accessibility preference overrides ── */
-
-/* Text size: large (125%) */
 :where(html, [data-praxity-root])[data-praxity-text-size="large"] {
 	--praxity-font-size-base: var(--type-body);
 }
 
-/* Nav and a11y bar: cap font size regardless of text-size preference */
 :where(html, [data-praxity-root])[data-praxity-text-size] .praxity-page-nav,
 :where(html, [data-praxity-root])[data-praxity-text-size] .praxity-a11y-pill,
 :where(html, [data-praxity-root])[data-praxity-text-size] .praxity-top-bar,
@@ -2481,17 +2356,15 @@ body.praxity-minimal
 	font-size: var(--type-small);
 }
 
-/* Reading guide: dim whole rows, including media and scrollable tables. */
 :where(html, [data-praxity-root])[data-praxity-focus-mode="true"]
-[data-focus-row][data-focus-dimmed] {
+	[data-focus-row][data-focus-dimmed] {
 	--praxity-reading-guide-opacity: 0.15;
 	opacity: 0.15;
 	transition: opacity var(--duration-state) var(--ease-out);
 }
 
-/* Keyboard and pointer users fully restore the reading row they enter. */
 :where(html, [data-praxity-root])[data-praxity-focus-mode="true"]
-[data-focus-row][data-focus-dimmed]:focus-within {
+	[data-focus-row][data-focus-dimmed]:focus-within {
 	--praxity-reading-guide-opacity: 1;
 	opacity: 1;
 }
@@ -2504,7 +2377,6 @@ body.praxity-minimal
 	}
 }
 
-/* Reduced motion: remove transition */
 @media (prefers-reduced-motion: reduce) {
 	:where(html, [data-praxity-root])[data-praxity-focus-mode="true"]
 		[data-focus-row][data-focus-dimmed] {
@@ -2534,7 +2406,6 @@ body.praxity-minimal
 	}
 }
 
-/* File and external-link indicators used by the published HTML post-processor. */
 .praxity-file-type {
 	font-size: var(--type-small);
 	opacity: 0.8;
@@ -2549,7 +2420,6 @@ body.praxity-minimal
 	opacity: 0.7;
 }
 
-/* Disabled page nav stays visible without competing with the available action. */
 .praxity-page-nav .mantine-Button-root[data-disabled],
 .praxity-page-nav .mantine-Button-root:disabled {
 	--button-bg: transparent !important;
@@ -2565,10 +2435,8 @@ body.praxity-minimal
 	opacity: 0.47 !important;
 }
 
-/* Honour the platform preference by strengthening existing boundaries and state indicators. */
 @media (prefers-contrast: more) {
 	:is(html[data-praxity-root], .praxity-viewer-shell) {
-		/* Theme tokens are inline on this element; important is required for the preference to win. */
 		--praxity-color-border: var(--praxity-color-text) !important;
 		--praxity-color-control-border: var(--praxity-color-text) !important;
 		--praxity-color-activity-border: var(--praxity-color-text) !important;
@@ -2809,8 +2677,6 @@ body.praxity-minimal
 	}
 }
 
-/* Keep the scoped single-ring policy when the system focus rules above use
-   !important. Input suppression still requires an equivalent enclosing row. */
 @media (prefers-contrast: more) {
 	.praxity-assessment-choice-option input:focus-visible,
 	.praxity-assessment-choice-option input[type="radio"]:focus,
@@ -2831,7 +2697,6 @@ body.praxity-minimal
 		outline-offset: -3px !important;
 	}
 
-	/* Higher contrast keeps the themed focus token, with Highlight as fallback. */
 	.praxity-disclosure-trigger[aria-controls]:focus-visible {
 		outline-color: var(--praxity-color-focus, Highlight) !important;
 	}
@@ -2858,14 +2723,12 @@ body.praxity-minimal
 			outline-offset: -3px !important;
 		}
 
-		/* Palette-capable engines remap this token to the system focus color. */
 		.praxity-disclosure-trigger[aria-controls]:focus-visible {
 			outline-color: var(--praxity-color-focus, Highlight) !important;
 		}
 	}
 }
 
-/* Reduced motion */
 [data-praxity-root][data-praxity-reduced-motion="true"] *,
 [data-praxity-root][data-praxity-reduced-motion="true"] *::before,
 [data-praxity-root][data-praxity-reduced-motion="true"] *::after {
@@ -2875,8 +2738,6 @@ body.praxity-minimal
 	transition-duration: 0s !important;
 	scroll-behavior: auto !important;
 }
-
-/* ── Accessibility preferences toolbar ── */
 
 #praxity-a11y-preferences {
 	position: relative;
@@ -2912,7 +2773,6 @@ html.praxity-shell-ready [data-a11y-toolbar] {
 	display: flex;
 }
 
-/* Pill buttons */
 .praxity-a11y-pill button,
 /* biome-ignore lint/style/noDescendingSpecificity: toolbar base follows text-size layout overrides */
 .praxity-narration-toggle,
@@ -2935,7 +2795,6 @@ html.praxity-shell-ready [data-a11y-toolbar] {
 	font-size: inherit;
 }
 
-/* Guided uses the shared toolbar geometry, including its transcript actions. */
 .deck-utility-items button,
 #deck-more-toggle,
 .deck-follow > button,
@@ -2971,7 +2830,6 @@ html.praxity-shell-ready [data-a11y-toolbar] {
 	outline-offset: var(--focus-offset);
 }
 
-/* Guided toolbar states share the toolbar geometry owner. */
 .deck-utility-items button[role="switch"] {
 	justify-content: space-between;
 }
@@ -2996,7 +2854,6 @@ html.praxity-shell-ready [data-a11y-toolbar] {
 	background: transparent;
 	font-size: inherit;
 }
-/* Hover */
 .praxity-a11y-pill button:hover,
 .praxity-narration-toggle:hover,
 .praxity-narration-controls button:hover {
@@ -3004,7 +2861,6 @@ html.praxity-shell-ready [data-a11y-toolbar] {
 	background: var(--praxity-color-background-alt);
 }
 
-/* Active/pressed — accent color icon */
 .praxity-a11y-pill button[data-active],
 .praxity-narration-toggle[data-active],
 .praxity-narration-controls button[data-active] {
@@ -3015,7 +2871,6 @@ html.praxity-shell-ready [data-a11y-toolbar] {
 	color: var(--ink);
 }
 
-/* Active/pressed indicator — dot below icon */
 .praxity-a11y-pill button[data-active]::after,
 .praxity-narration-toggle[data-active]::after,
 .praxity-narration-controls button[data-active]::after,
@@ -3032,13 +2887,11 @@ html.praxity-shell-ready [data-a11y-toolbar] {
 	background: var(--praxity-color-accent);
 }
 
-/* Guided dots use text contrast on both footer and transcript surfaces. */
 :is(.deck-utility-items, .deck-follow)
-button:is([aria-expanded="true"], [aria-pressed="true"])::after {
+	button:is([aria-expanded="true"], [aria-pressed="true"])::after {
 	background: currentColor;
 }
 
-/* Focus */
 .praxity-a11y-pill button:focus-visible,
 .praxity-narration-toggle:focus-visible,
 .praxity-narration-controls button:focus-visible {
@@ -3047,7 +2900,6 @@ button:is([aria-expanded="true"], [aria-pressed="true"])::after {
 	box-shadow: none;
 }
 
-/* Visually hidden labels for icon-only buttons */
 .praxity-a11y-sr-only,
 .praxity-focus-reveal:not(:focus) {
 	position: absolute;
@@ -3104,8 +2956,6 @@ button:is([aria-expanded="true"], [aria-pressed="true"])::after {
 	}
 }
 @container course-shell (width < 240px) {
-	/* At phone-zoom widths the toolbar must reflow with the document. Keeping
-	   it sticky occludes response controls when a tall activity scrolls into view. */
 	.praxity-top-bar-fallback {
 		position: static;
 	}
@@ -3144,8 +2994,6 @@ button:is([aria-expanded="true"], [aria-pressed="true"])::after {
 	outline-offset: var(--focus-offset);
 }
 
-/* ── Narration controls ────────────────────────────────────── */
-/* Disclosure first in DOM and visual order; transport groups wrap as units. */
 .praxity-narration {
 	display: flex;
 	flex-wrap: wrap;
@@ -3230,7 +3078,6 @@ button:is([aria-expanded="true"], [aria-pressed="true"])::after {
 	gap: var(--space-3);
 }
 
-/* Keep the primary playback row compact; secondary controls disclose inline. */
 .praxity-narration-controls .praxity-narration-options-toggle {
 	display: none;
 }
@@ -3275,9 +3122,6 @@ button:is([aria-expanded="true"], [aria-pressed="true"])::after {
 	background: color-mix(in srgb, currentcolor 9%, transparent);
 }
 
-/* Put the fallback marker in the reading gutter without changing block layout
-   or replacing authored shadows. Logical positioning also handles RTL. */
-/* Establish the SVG containing block before rough-notation draws its paths. */
 [data-block-id]:has([data-doodle]),
 [data-narration-active="true"] {
 	position: relative;
@@ -3302,7 +3146,6 @@ button:is([aria-expanded="true"], [aria-pressed="true"])::after {
 	}
 }
 
-/* The grid area follows the bubble, including a retained empty avatar column. */
 .praxity-dialogue[data-style="bubbles"] .praxity-dialogue-turn[aria-current="true"]::before {
 	grid-column: 2;
 	grid-row: 1;
@@ -3318,7 +3161,6 @@ button:is([aria-expanded="true"], [aria-pressed="true"])::after {
 	}
 }
 
-/* ── Declarative slide styles ─────────────────────────────── */
 .praxity-layout-slides .praxity-slide[data-slide-style] {
 	width: min(100%, var(--slide-measure));
 	min-height: 100%;
@@ -3387,8 +3229,6 @@ body.praxity-layout-slides:has(.praxity-slide[data-slide-chrome="minimal"])
 	display: none;
 }
 
-/* Inline `[term]{definition}` toggletips. Compiled previews and exports load
-   these styles through viewer.css; the runtime binds behavior only. */
 .inline-tooltip-trigger {
 	text-decoration-line: underline;
 	text-decoration-style: dotted;
@@ -3476,13 +3316,11 @@ body.praxity-layout-slides:has(.praxity-slide[data-slide-chrome="minimal"])
 	}
 }
 
-/* Keyboard-only reading links share the learner toolbar focus treatment. */
 .praxity-focus-reveal:not(:focus) {
 	min-height: 0;
 	clip-path: inset(50%);
 }
 
-/* The stage owns the gutter once. Sections stay inside the reading column. */
 #main-content.praxity-page-content {
 	width: 100%;
 	max-width: calc(var(--measure) + 2 * var(--page-gutter));
@@ -3499,8 +3337,6 @@ body.praxity-layout-slides:has(.praxity-slide[data-slide-chrome="minimal"])
 .praxity-page-content :is(.praxity-text, .praxity-text-content) > p {
 	max-inline-size: var(--measure);
 }
-/* The float's container already bounds the prose. A second measure would
-   consume the left-hand lane twice and push text beneath a left float. */
 .praxity-page-content .praxity-float-region :is(.praxity-text, .praxity-text-content) > p {
 	max-inline-size: none;
 }
@@ -3521,7 +3357,6 @@ body.praxity-layout-slides:has(.praxity-slide[data-slide-chrome="minimal"])
 }
 [data-praxity-root][data-praxity-small-preview="true"],
 [data-praxity-root][data-praxity-small-preview="true"] #main-content {
-	/* The hidden sidebar's later shell rule must not reserve its track. */
 	--praxity-container-width: 100vw !important;
 }
 .praxity-page-content .praxity-block[data-heading-level="2"] {
@@ -3547,17 +3382,13 @@ body.praxity-layout-slides:has(.praxity-slide[data-slide-chrome="minimal"])
 	min-inline-size: 44px;
 }
 
-/* Padded deck controls use the shared outer ring; an inset would merge with
-   matching borders. Only structural targets at clipping edges need an inset. */
 .praxity-deck .deck-panel-title:focus-visible {
 	outline: var(--focus-width) solid var(--accent);
 	box-shadow: none;
 }
 
-/* Keep edge targets inside clipping boundaries even when platform focus rules
-   use !important. Padded interactive controls keep their shared outer ring. */
 .praxity-deck
-:is(.deck-panel-title, #main-content, #deck-more-below, #deck-script-scroll):focus-visible {
+	:is(.deck-panel-title, #main-content, #deck-more-below, #deck-script-scroll):focus-visible {
 	outline-offset: -3px !important;
 }
 
@@ -3575,7 +3406,6 @@ body.praxity-layout-slides:has(.praxity-slide[data-slide-chrome="minimal"])
 	}
 }
 
-/* On phones and at extreme zoom, adjacent titles use the full reading column. */
 @container course-shell (width < 480px) {
 	.praxity-native-page-nav.praxity-pages-pagination .praxity-native-page-nav-inner,
 	.praxity-pages-pagination:not(.praxity-native-page-nav) {

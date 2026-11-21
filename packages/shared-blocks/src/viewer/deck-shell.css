@@ -1,4 +1,3 @@
-/* A deck adds shell controls and an optional sidebar around the native content area. */
 .praxity-deck {
 	min-width: 0;
 	container: deck-shell / inline-size;
@@ -82,7 +81,6 @@
 	height: auto;
 }
 .praxity-deck[data-ready="true"] #main-content {
-	/* Keep hidden native controls inside the scrollport that owns their visible labels. */
 	position: relative;
 	width: 100%;
 	max-inline-size: none;
@@ -102,7 +100,6 @@
 	max-inline-size: var(--measure-wide);
 	margin-inline: calc((100% - var(--_deck-width)) / 2);
 }
-/* Each slide owns its boundary once; the scrollport and inner canvas do not add another. */
 .praxity-deck[data-ready="true"] .deck-slide {
 	padding-block: var(--space-12) 0;
 }
@@ -290,9 +287,7 @@
 	line-height: var(--leading-body);
 }
 
-/* Titles appear at laptop widths; the 768px footer is one row. */
 .praxity-deck .deck-controls {
-	/* Reserve footer space during layout, before its resize observer runs. */
 	position: relative;
 	flex-shrink: 0;
 	display: flex;
@@ -493,7 +488,6 @@
 	padding: 0;
 }
 .deck-transcript-sheet .deck-panel-scroll {
-	/* Keep segment borders from painting over the scroller's inset focus ring. */
 	padding: var(--focus-control-width);
 	scrollbar-gutter: auto;
 	scrollbar-width: thin;
@@ -501,7 +495,6 @@
 dialog #deck-script [data-deck-segment] {
 	padding-inline: var(--space-4);
 }
-/* Keep every compact transport control in one row. */
 @container deck-shell (width < 360px) {
 	.praxity-deck .deck-controls {
 		display: grid;
@@ -549,7 +542,6 @@ dialog #deck-script [data-deck-segment] {
 	.praxity-deck[data-ready="true"]:is([data-panel="script"], [data-panel="outline"]) #main-content {
 		display: none;
 	}
-	/* At stacked-sidebar sizes the outline remains the course navigation. */
 	body:has(.praxity-deck) .praxity-floating-toc {
 		display: none;
 	}
@@ -574,14 +566,12 @@ dialog #deck-script [data-deck-segment] {
 	}
 }
 
-/* The readable fallback and inert small preview use normal document scrolling. */
 body:has(.praxity-deck:not([data-ready="true"])) {
 	height: auto;
 	overflow: auto;
 }
 
 @media screen {
-	/* Hide the workspace until bookmark and gate resolution, retaining fallback on failure. */
 	.praxity-shell-ready:not([data-praxity-fallback], [data-praxity-small-preview])
 		.praxity-deck:not([data-ready])
 		:is(.deck-workspace, .deck-module-links) {
@@ -589,15 +579,12 @@ body:has(.praxity-deck:not([data-ready="true"])) {
 	}
 }
 
-/* Keep the in-page minimap beside content when the transcript rail is open. */
 @media (min-width: 950px) and (min-height: 36rem) {
 	body:has(.praxity-deck[data-panel="script"]) .praxity-floating-toc {
 		inset-inline-end: calc(min(22rem, 374px) + 16px);
 	}
 }
 
-/* Guided replacing panels: align with the panel title's text and keep the
-   deck's inset ring inside the panel's clipping boundary. */
 :is(#deck-script, #deck-outline) > .praxity-resume-summary {
 	margin: 0;
 	padding: var(--space-3) var(--space-6) var(--space-1);
@@ -607,7 +594,6 @@ body:has(.praxity-deck:not([data-ready="true"])) {
 	outline-offset: -2px !important;
 }
 
-/* Keep the resume summary aligned with the sheet title. */
 .praxity-dialog-sheet #deck-script > .praxity-resume-summary {
 	padding-inline: var(--space-4);
 }

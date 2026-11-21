@@ -19,8 +19,6 @@ export type ChildRecordKind =
 	| "criterion"
 	| "image";
 
-/** A reference into renderer data, including fields such as matchId and itemIds.
- * IDs stay unknown until boundary validation, because persisted data is untrusted. */
 export interface ChildRecord {
 	readonly kind: ChildRecordKind;
 	readonly id: unknown;
@@ -32,9 +30,6 @@ type DataRecord = Record<string, unknown>;
 const record = (value: unknown): DataRecord =>
 	value && typeof value === "object" && !Array.isArray(value) ? (value as DataRecord) : {};
 
-/** Which runtime children carry identity. No allocation, matching or scoring here.
- * Consumers share this walker rather than inferring identity from labels or order.
- * Walks the canonical grammar-4 renderer data. */
 export function childRecords(block: PraxityBlock): ChildRecord[] {
 	const result: ChildRecord[] = [];
 	const add = (kind: ChildRecordKind, id: unknown, ownerId: unknown, path: string) => {
@@ -74,8 +69,6 @@ export function childRecords(block: PraxityBlock): ChildRecord[] {
 			case "card":
 				entries(data.items, "item", owner, `${location}.items`, (item, itemPath) => {
 					blocks(item.front, item.id, `${itemPath}.front`);
-					// An empty, unauthored back has no record. A supplied backId also denotes
-					// an authored empty face; populated back content always requires it.
 					if ("backId" in item || (Array.isArray(item.back) && item.back.length > 0))
 						add("back", item.backId, item.id, `${itemPath}.backId`);
 					blocks(item.back, item.backId, `${itemPath}.back`);
@@ -176,7 +169,6 @@ export function childRecords(block: PraxityBlock): ChildRecord[] {
 	return result;
 }
 
-/** Grammar-4 adapter boundary: never fill missing identities from positions. */
 export function assertChildIds(blocks: readonly PraxityBlock[]): ReadonlySet<string> {
 	const seen = new Set<string>();
 	for (const block of blocks) {
