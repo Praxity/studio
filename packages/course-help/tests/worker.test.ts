@@ -11,7 +11,6 @@ const AUD = "course-help-aud";
 const ORIGIN = "https://courses.example.org";
 const schema = readFileSync(new URL("../migrations/0001_course_help.sql", import.meta.url), "utf8");
 
-// A D1 stand-in over node:sqlite, so the tests run the real schema and SQL.
 function d1(db: DatabaseSync): D1Database {
 	const prepare = (sql: string) => {
 		let params: (string | number | null)[] = [];
@@ -368,7 +367,6 @@ describe("limits from the security review", () => {
 				).toBe(201);
 			}
 		}
-		// Tokens last 10 minutes, so sign a fresh one after each jump.
 		const fresh = () => sign(signingKey, claims("user-ana", "ana@example.org"));
 		vi.setSystemTime(start + 11 * 61_000);
 		expect((await call("/threads", { token: await fresh(), body: question })).status).toBe(429);
@@ -392,7 +390,6 @@ describe("limits from the security review", () => {
 					"2026-01-01T00:00:00Z",
 				).lastInsertRowid,
 			);
-			// Every question but the first has a staff reply, so only the first is waiting.
 			if (n > 1)
 				insert.run(`user-${n}`, `l${n}@example.org`, id, null, `A${n}`, 1, "2026-01-01T00:00:01Z");
 		}
@@ -400,10 +397,10 @@ describe("limits from the security review", () => {
 			...raw.prepare("SELECT id FROM help_messages WHERE thread_id IS NULL ORDER BY id").all(),
 		].map((r) => Number(r.id));
 		const markup = await (await call("/staff", { token: tokens.staff })).text();
-		expect(markup).toContain(`id="thread-${ids[0]}"`); // waiting, oldest
-		expect(markup).toContain(`id="thread-${ids[209]}"`); // newest
-		expect(markup).toContain(`id="thread-${ids[10]}"`); // the 200th newest
-		expect(markup).not.toContain(`id="thread-${ids[5]}"`); // answered and older than the newest 200
+		expect(markup).toContain(`id="thread-${ids[0]}"`);
+		expect(markup).toContain(`id="thread-${ids[209]}"`);
+		expect(markup).toContain(`id="thread-${ids[10]}"`);
+		expect(markup).not.toContain(`id="thread-${ids[5]}"`);
 	});
 
 	it("refuses a path starting with // rather than using it as the staff form's prefix", async () => {

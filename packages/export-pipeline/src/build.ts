@@ -115,9 +115,7 @@ export interface SelfCheckContentInput {
 export type { UnresolvedNode } from "./html-gen.ts";
 export { selfCheckContentInput } from "./self-check.ts";
 
-/** The optional learner help button. HTML package exports only; see packages/course-help/README.md. */
 export interface CourseHelpConfig {
-	/** Relative or absolute HTTPS base URL of the course-help Worker. */
 	endpoint: string;
 	label?: string;
 	intro?: string;
@@ -1305,7 +1303,6 @@ function withDeploymentHead(
 	if (html.indexOf(DEPLOYMENT_HEAD_MARKER, slot + DEPLOYMENT_HEAD_MARKER.length) !== -1) {
 		throw new Error(`Course page has more than one deployment head slot: ${filePath}`);
 	}
-	// A replacer function, so "$" in a page title or label is inserted as text, not a replacement pattern.
 	const deployed = html.replace(DEPLOYMENT_HEAD_MARKER, () =>
 		typeof head === "string" ? head : head(filePath),
 	);
@@ -1379,8 +1376,6 @@ async function applyDeploymentTarget(
 			return `<link rel="stylesheet" href="review-comments.css?v=${cssVersion}" />\n<script defer src="review-comments.js?v=${jsVersion}" data-praxity-review-comments="true" data-review-page-id="${escapeHtml(pageId)}" data-review-locale="${locale}" data-review-expires-at="${escapeHtml(expiresAt)}"></script>`;
 		};
 	}
-	// An LMS page can't vouch for the learner to a separate server, so help is HTML-only.
-	// Review builds are hosted by review-share, where no help Worker sits behind Access.
 	const help = target.format === "html" && !target.reviewMode ? artifact.course.help : undefined;
 	let helpHead: ((filePath: string) => string) | null = null;
 	if (help) {

@@ -1,13 +1,9 @@
-// Cloudflare Access sends a signed JWT with every request it admits, in Cf-Access-Jwt-Assertion.
-// https://developers.cloudflare.com/cloudflare-one/identity/authorization-cookie/validating-json/
-
 export interface AccessConfig {
 	ACCESS_TEAM_DOMAIN: string;
 	ACCESS_AUD: string;
 }
 
 export interface AccessIdentity {
-	/** Stable Access user ID; threads belong to it. */
 	sub: string;
 	email: string;
 }
@@ -17,8 +13,6 @@ interface Jwk extends JsonWebKey {
 }
 
 const KEY_CACHE_MS = 60 * 60 * 1000;
-// A token naming an unknown key refetches at most once a minute, so forged key IDs can't
-// turn every request into a fetch.
 const KEY_REFRESH_MS = 60 * 1000;
 let keyCache: { domain: string; at: number; keys: Jwk[] } | null = null;
 
@@ -47,10 +41,6 @@ function decodeJson(value: string): Record<string, unknown> {
 const finite = (value: unknown): value is number =>
 	typeof value === "number" && Number.isFinite(value);
 
-/**
- * Returns the verified identity, or null for a missing, malformed, expired, mis-addressed or
- * forged token. Throws only when Access's signing keys can't be fetched.
- */
 export async function verifyAccessJwt(
 	token: string | null,
 	config: AccessConfig,
@@ -86,7 +76,6 @@ export async function verifyAccessJwt(
 	) {
 		return null;
 	}
-	// Access rotates keys; refetch when the token names a key we haven't seen.
 	const named = (keys: Jwk[]) => keys.find((key) => key.kid === header.kid);
 	const jwk =
 		named(await accessKeys(config.ACCESS_TEAM_DOMAIN, KEY_CACHE_MS)) ??

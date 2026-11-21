@@ -186,7 +186,6 @@ describe("review HTML builds", () => {
 	describe("course help", () => {
 		const help = {
 			endpoint: "https://help.example.org/q?course=a&b",
-			// "$'" and "$&" are replacement patterns in String.replace; they must arrive as text.
 			label: "Ask a tutor ($'s & $&)",
 			intro: 'Say "hi"',
 		};
@@ -223,7 +222,6 @@ describe("review HTML builds", () => {
 			const zip = await build("html", true);
 			expect(zip.readAsText("course-help.js")).toBe("window.help={};");
 			expect(zip.readAsText("course-help.css")).toBe(".help{}");
-			// Every page with the host runtime gets help; redirect stubs have neither.
 			const pages = htmlPages(zip).filter(({ html }) => html.includes("praxity-deployment-config"));
 			expect(pages.length).toBeGreaterThan(0);
 			for (const { name, html } of pages) {

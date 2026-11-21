@@ -1,10 +1,8 @@
-/* Learner help button (course-help.js). Colours follow the course's --praxity-color-* tokens. */
 .praxity-help {
 	font-family: inherit;
 	color: var(--praxity-color-text, #212529);
 }
 
-/* Display rules below would otherwise override the hidden attribute. */
 .praxity-help [hidden] {
 	display: none !important;
 }
@@ -59,7 +57,6 @@
 	line-height: 1;
 }
 
-/* The label stays in the accessible name; it only widens into view on hover or focus. */
 .praxity-help-label {
 	max-width: 0;
 	overflow: hidden;

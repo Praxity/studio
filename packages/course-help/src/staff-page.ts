@@ -46,7 +46,6 @@ const utc = (iso: string) => iso.slice(0, 16).replace("T", " ");
 const STYLE =
 	"*{box-sizing:border-box}body{font:1rem/1.5 system-ui,sans-serif;color:#1f2328;background:#f6f8fa;margin:0;overflow-wrap:anywhere}main{max-width:52rem;margin:auto;padding:1.25rem}article{background:#fff;border:1px solid #d0d7de;border-radius:12px;padding:1.25rem;margin:1rem 0}h2{font-size:1.125rem;margin:0 0 .25rem}.meta{color:#57606a;font-size:.9375rem;margin:.25rem 0}.body{white-space:pre-wrap}blockquote{margin:.5rem 0;padding-left:.75rem;border-left:3px solid #d0d7de;color:#57606a}.reply{margin:.75rem 0 0 1rem;padding:.5rem .75rem;background:#f6f8fa;border-radius:8px}.reply.learner{background:#fff;border:1px solid #d0d7de}label{display:block;font-weight:600;margin-top:1rem}textarea{display:block;width:100%;font:inherit;padding:.5rem;border:1px solid #8c959f;border-radius:6px}button{margin-top:.5rem;min-height:2.75rem;padding:.5rem 1rem;font:inherit;font-weight:600;color:#fff;background:#0969da;border:0;border-radius:6px;cursor:pointer}:focus-visible{outline:3px solid #0969da;outline-offset:2px}";
 
-/** The staff page: every thread, open ones first, each with a reply form. */
 export function staffPage(threads: StaffThread[], prefix: string, locale: "en" | "fr"): string {
 	const t = STRINGS[locale];
 	const thread = (

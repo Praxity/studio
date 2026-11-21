@@ -1,6 +1,3 @@
-// Learner help button for standalone HTML exports. A learner asks the course team a question
-// about the current page, optionally quoting selected text or a pointed-at element. Threads are
-// private to the learner and staff. The protocol is in packages/course-help/README.md.
 (() => {
 	var script =
 		document.currentScript || document.querySelector("script[data-praxity-course-help='true']");
@@ -265,7 +262,6 @@
 		);
 	}
 
-	// A Reply button under each thread opens a small form; the follow-up joins the same thread.
 	function replyForm(id) {
 		var wrap = el("div", "praxity-help-follow");
 		var open = button("praxity-help-secondary", strings.reply);
@@ -331,7 +327,6 @@
 		aboutBox.hidden = !about;
 		aboutQuote.textContent = about || "";
 	}
-	// Text selected on the page when the panel opens becomes what the question is about.
 	function takeSelection() {
 		var selection = getSelection();
 		var text = selection && !selection.isCollapsed ? selection.toString().trim() : "";
@@ -354,7 +349,6 @@
 			render(result);
 			if (result.unread) {
 				if (hadNews) yours.focus();
-				// The New tags stay until the panel next opens.
 				paintBadge((await call("read", {})).unread);
 			}
 		} catch {
@@ -363,7 +357,7 @@
 		}
 	}
 
-	opener.addEventListener("mousedown", (event) => event.preventDefault()); // keep the page selection
+	opener.addEventListener("mousedown", (event) => event.preventDefault());
 	opener.addEventListener("click", () => openPanel(opener));
 	close.addEventListener("click", () => dialog.close());
 	dialog.addEventListener("close", () => {
@@ -410,7 +404,6 @@
 		}
 	});
 
-	// Point at part of the page: the next click, or Enter or Space on a focused element, picks it.
 	var hovered = null;
 	function hover(node) {
 		hovered?.classList.remove("praxity-help-target");
@@ -476,7 +469,6 @@
 		true,
 	);
 
-	// Guided decks keep several pages in one document and announce each change.
 	window.addEventListener("praxity:active-page-change", (event) => {
 		var id = event.detail?.pageId;
 		if (typeof id !== "string" || !id) return;
@@ -489,7 +481,6 @@
 
 	function mount() {
 		document.body.append(root);
-		// On load: show the unread count and announce it once per new reply.
 		call("threads").then(
 			(result) => {
 				paintBadge(result.unread);
@@ -507,14 +498,10 @@
 				try {
 					told = sessionStorage.getItem("praxity.help.told");
 					sessionStorage.setItem("praxity.help.told", latest);
-				} catch {
-					// Without storage, announce on every page.
-				}
+				} catch {}
 				if (result.unread && told !== latest) announce(news, strings.newReplies(result.unread));
 			},
-			() => {
-				// The panel shows the error when the learner opens it.
-			},
+			() => {},
 		);
 	}
 	if (document.readyState === "loading")

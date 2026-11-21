@@ -32,7 +32,6 @@ export interface ManifestValidation {
 
 type CourseManifestField = "courseHomeUrl" | "help" | "help.endpoint";
 
-/** A refused course.yaml field. The CLI rebuilds it in the caller's language. */
 export class CourseHomeUrlError extends Error {
 	constructor(
 		locale = "en",

@@ -17,14 +17,11 @@ export interface Env {
 	DB: D1Database;
 	ACCESS_TEAM_DOMAIN: string;
 	ACCESS_AUD: string;
-	/** Comma-separated staff email addresses. */
 	STAFF_EMAILS?: string;
-	/** Comma-separated origins of course pages served from another origin. */
 	COURSE_ORIGINS?: string;
 	STAFF_LOCALE?: string;
 }
 
-/** Largest accepted request body, in bytes. */
 export const MAX_REQUEST_BYTES = 16 * 1024;
 
 const list = (value: string | undefined) =>
@@ -61,7 +58,6 @@ function html(body: string, status = 200): Response {
 const failure = (error: Invalid) =>
 	error === "too_large" ? json({ error }, 413) : json({ error }, 400);
 
-// Reads at most MAX_REQUEST_BYTES, stopping early, so a body sent without Content-Length can't be buffered whole.
 async function readBody(request: Request): Promise<string | null> {
 	if (Number(request.headers.get("Content-Length") ?? 0) > MAX_REQUEST_BYTES) return null;
 	if (!request.body) return "";
@@ -87,11 +83,9 @@ async function readBody(request: Request): Promise<string | null> {
 	return new TextDecoder().decode(body);
 }
 
-/** Same-origin requests need no CORS headers; listed course origins get credentialed CORS. */
 function crossOrigin(request: Request, env: Env): { allowed: boolean; origin: string | null } {
 	const origin = request.headers.get("Origin");
 	if (!origin || origin === new URL(request.url).origin) return { allowed: true, origin: null };
-	// "null" is the origin of file:// pages and sandboxed frames on any site, so it is never allowed.
 	return { allowed: origin !== "null" && list(env.COURSE_ORIGINS).includes(origin), origin };
 }
 
@@ -114,7 +108,6 @@ async function learnerRoute(
 	}
 	if (request.method !== "POST")
 		return json({ error: "method_not_allowed" }, 405, { Allow: "GET, POST" });
-	// JSON writes can't come from a cross-site form, and a cross-origin script needs a CORS preflight.
 	if (!request.headers.get("Content-Type")?.startsWith("application/json")) {
 		return json({ error: "unsupported_media_type" }, 415);
 	}
@@ -182,7 +175,6 @@ async function staffRoute(
 	});
 }
 
-// The Worker can be mounted under any path, such as /help/*, so routes match the path's end.
 const ROUTES: [RegExp, (match: RegExpMatchArray) => Route][] = [
 	[/^(.*)\/staff\/?$/u, (m) => ({ kind: "staff", prefix: m[1] ?? "", threadId: null })],
 	[
@@ -202,7 +194,6 @@ type Route =
 	| { kind: "learner"; action: "threads" | "read" | "reply"; threadId?: number };
 
 function matchRoute(pathname: string): Route | null {
-	// A path starting "//" would make the route prefix a protocol-relative URL in the staff form and redirect.
 	if (pathname.startsWith("//")) return null;
 	for (const [pattern, build] of ROUTES) {
 		const match = pathname.match(pattern);
@@ -215,7 +206,6 @@ export async function handleRequest(request: Request, env: Env): Promise<Respons
 	const { allowed, origin } = crossOrigin(request, env);
 	if (!allowed) return json({ error: "forbidden" }, 403);
 	if (request.method === "OPTIONS") {
-		// Preflights carry no credentials; Access must be set to let them through.
 		return withCors(
 			new Response(null, {
 				status: 204,
@@ -228,7 +218,6 @@ export async function handleRequest(request: Request, env: Env): Promise<Respons
 			origin,
 		);
 	}
-	// Verify identity before routing, so unknown paths reveal nothing either.
 	let identity: AccessIdentity | null;
 	try {
 		identity = await verifyAccessJwt(request.headers.get("Cf-Access-Jwt-Assertion"), env);
@@ -240,7 +229,6 @@ export async function handleRequest(request: Request, env: Env): Promise<Respons
 	const route = matchRoute(new URL(request.url).pathname);
 	if (!route) return withCors(json({ error: "not_found" }, 404), origin);
 	if (route.kind === "staff") {
-		// The staff page is same-origin only and never gets CORS headers.
 		if (origin || !list(env.STAFF_EMAILS).some((email) => email.toLowerCase() === identity.email)) {
 			return json({ error: "forbidden" }, 403);
 		}

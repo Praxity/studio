@@ -60,7 +60,6 @@ async function mount(locale = "en", respond?: (call: Call) => Response) {
 			return respond?.(call) ?? Response.json(view, { status: call.method === "POST" ? 201 : 200 });
 		}),
 	});
-	// jsdom has no modal dialogs; open and close are enough here.
 	window.HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) {
 		this.open = true;
 	};

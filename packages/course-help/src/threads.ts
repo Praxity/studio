@@ -1,19 +1,12 @@
-// Learner questions and staff replies. Every learner read and write is scoped by the verified
-// Access user ID; only staff read across learners.
-
 export const LIMITS = { pageId: 200, pageTitle: 200, quote: 300, body: 2000 } as const;
-/** Learner messages (questions and replies) allowed per learner per minute. */
 export const WRITES_PER_MINUTE = 10;
-/** Learner messages allowed per learner per day, so one learner can't fill the staff page. */
 export const WRITES_PER_DAY = 100;
-/** The staff page shows every thread waiting for a reply plus this many of the newest. */
 export const STAFF_RECENT_THREADS = 200;
 
 export interface Reply {
 	id: number;
 	body: string;
 	fromStaff: boolean;
-	/** For staff replies: whether the learner has opened the panel since. */
 	read: boolean;
 	createdAt: string;
 }
@@ -61,7 +54,6 @@ export type Invalid = "invalid" | "too_large";
 const COLUMNS =
 	"id, learner_id, learner_email, thread_id, page_id, page_title, quote, body, from_staff, read_at, created_at";
 
-// Newest question first; replies oldest first under their question. Rows arrive in id order.
 function threads(rows: Row[]): StaffThread[] {
 	const replies = new Map<number, Reply[]>();
 	for (const row of rows) {
@@ -91,7 +83,6 @@ function threads(rows: Row[]): StaffThread[] {
 		}));
 }
 
-/** Trimmed text within `max` characters; undefined input passes when optional. */
 function text(value: unknown, max: number, required: boolean): string | undefined | Invalid {
 	if (value === undefined && !required) return undefined;
 	if (typeof value !== "string") return "invalid";
@@ -149,12 +140,9 @@ export async function learnerView(db: D1Database, learnerId: string): Promise<Le
 
 const sinceMinute = (now: Date) => new Date(now.getTime() - 60_000).toISOString();
 const sinceDay = (now: Date) => new Date(now.getTime() - 86_400_000).toISOString();
-// The counts and the insert are one statement, so concurrent requests can't overshoot either limit.
-// Binds: learner ID, sinceMinute, learner ID, sinceDay.
 const UNDER_LIMIT = `(SELECT COUNT(*) FROM help_messages WHERE learner_id = ? AND from_staff = 0 AND created_at > ?) < ${WRITES_PER_MINUTE}
 	AND (SELECT COUNT(*) FROM help_messages WHERE learner_id = ? AND from_staff = 0 AND created_at > ?) < ${WRITES_PER_DAY}`;
 
-/** Returns false when the learner is over the write limit. */
 export async function ask(
 	db: D1Database,
 	learner: Learner,
@@ -183,7 +171,6 @@ export async function ask(
 	return inserted !== null;
 }
 
-/** A learner's follow-up in their own thread. */
 export async function learnerReply(
 	db: D1Database,
 	learner: Learner,
@@ -231,10 +218,8 @@ export async function markRead(db: D1Database, learnerId: string, now = new Date
 		.run();
 }
 
-// A thread waits for a reply when its newest message isn't from staff.
 const WAITING = `(SELECT from_staff FROM help_messages m WHERE m.id = q.id OR m.thread_id = q.id ORDER BY m.id DESC LIMIT 1) = 0`;
 
-/** Every thread waiting for a reply, plus the newest STAFF_RECENT_THREADS, so the page stays a bounded size. */
 export async function allThreads(db: D1Database): Promise<StaffThread[]> {
 	const { results } = await db
 		.prepare(
@@ -248,7 +233,6 @@ export async function allThreads(db: D1Database): Promise<StaffThread[]> {
 	return threads(results);
 }
 
-/** Returns false when the thread doesn't exist. */
 export async function staffReply(
 	db: D1Database,
 	threadId: number,
@@ -266,5 +250,4 @@ export async function staffReply(
 	return inserted !== null;
 }
 
-/** A thread needs staff when nothing has answered the learner's last message. */
 export const needsReply = (thread: Thread): boolean => !thread.replies.at(-1)?.fromStaff;
