@@ -2,7 +2,7 @@ import { isSmallPreviewDocument } from "@praxity/shared-blocks/course-preview-pr
 import { isSelfCheckForwardBlocked } from "@praxity/shared-blocks/self-check-consumers";
 import {
 	applyA11yPreferences,
-	applyReducedMotion,
+	applyMotionPreferences,
 	readA11yPreferences,
 	writeA11yPreferences,
 } from "@praxity/shared-blocks/viewer/a11y-preferences-store";
@@ -145,8 +145,8 @@ function applyFirstPaintPreferences(config: PageShellConfig, smallPreview = fals
 		smallPreview ? false : (stored.focusChoice ?? config.pageFocusDefault),
 	);
 	const motion = window.matchMedia?.("(prefers-reduced-motion: reduce)");
-	applyReducedMotion(motion?.matches ?? false);
-	motion?.addEventListener("change", (event) => applyReducedMotion(event.matches));
+	applyMotionPreferences(motion?.matches ?? false);
+	motion?.addEventListener("change", (event) => applyMotionPreferences(event.matches));
 	applyColorMode(config.colorMode);
 	document.documentElement.classList.add("praxity-shell-ready");
 	if (document.documentElement.dataset.praxityIslands?.split(",").includes("assessmentGroup"))
@@ -346,7 +346,7 @@ function installReadingPreferences(config: PageShellConfig): void {
 		const sync = () => {
 			const focusMode = focusChoice ?? config.pageFocusDefault;
 			applyA11yPreferences(textSize, focusMode);
-			writeA11yPreferences({ textSize, focusChoice });
+			writeA11yPreferences({ ...readA11yPreferences(), textSize, focusChoice });
 			for (const [button, active] of [
 				[textButton, textSize === "large"],
 				[focusButton, focusMode],
