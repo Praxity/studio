@@ -1,0 +1,31 @@
+---
+title: Write a handover note
+description: A writing prompt with a checklist beside the answer field. The
+  learner ticks the points they judge their note covers. Ticks are their own
+  judgment; they do not submit or grade the note. Narrow screens place the
+  checklist under the answer field.
+lang: en
+---
+
+# Write a handover note
+
+You start a week of leave tomorrow. A colleague will carry on one of your tasks while you are away. Write a short note that lets them continue without contacting you.
+
+::: columns {width=wide}
+:: {weight=3}
+::: free-response Your handover note {private download=both}
+placeholder: Name the task first
+:::
+
+:: {weight=2}
+## Check your coverage
+
+Tick each point your note covers. The ticks are your own judgment. They don't submit or grade your note, and you can change them at any time.
+
+::: checklist Does your note cover these points?
+- [ ] Which task it is and where its files are
+- [ ] What is done and what is left
+- [ ] The next deadline
+- [ ] Who can help if something goes wrong
+:::
+:::

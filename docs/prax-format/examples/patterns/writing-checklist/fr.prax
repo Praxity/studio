@@ -1,0 +1,31 @@
+---
+title: Rédiger une note de passation
+description: Une consigne d’écriture avec une liste de vérification à côté du
+  champ de réponse. La personne coche les points que sa note couvre, selon son
+  propre jugement. Les cases cochées ne soumettent ni n’évaluent la note. Sur
+  un écran étroit, la liste s’affiche sous le champ de réponse.
+lang: fr
+---
+
+# Rédiger une note de passation
+
+Vous partez en congé pour une semaine demain. Une ou un collègue poursuivra l’une de vos tâches pendant votre absence. Rédigez une courte note qui lui permettra de continuer sans vous joindre.
+
+::: columns {width=wide}
+:: {weight=3}
+::: free-response Votre note de passation {private download=both}
+placeholder: Nommez d’abord la tâche
+:::
+
+:: {weight=2}
+## Vérifiez ce que couvre votre note
+
+Cochez chaque point que votre note couvre. Ces cases reflètent votre propre jugement. Elles ne soumettent pas votre note et ne l’évaluent pas. Vous pouvez les modifier à tout moment.
+
+::: checklist Votre note couvre-t-elle ces points ?
+- [ ] La tâche visée et l’emplacement de ses fichiers
+- [ ] Ce qui est fait et ce qui reste à faire
+- [ ] La prochaine échéance
+- [ ] La personne à joindre en cas de problème
+:::
+:::

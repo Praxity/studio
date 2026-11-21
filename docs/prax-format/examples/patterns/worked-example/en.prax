@@ -1,0 +1,37 @@
+---
+title: Compare unit prices
+description: A worked example beside one practice question on a single guided
+  slide. Its length fits a 1366 by 768 laptop screen with the outline and
+  transcript closed. That fit applies to this example only; longer slides
+  scroll, and narrow screens stack the practice under the example.
+lang: en
+---
+
+# Compare unit prices {deckStop}
+
+::: columns {width=wide}
+:: {weight=5}
+## Worked example
+
+A 500 g bag of rice costs $4.00. A 2 kg bag costs $12.00. Which bag costs less per kilogram?
+
+1. Use one unit for both bags: 500 g is 0.5 kg.
+2. Divide each price by its weight: $4.00 ÷ 0.5 = $8.00 per kg, and $12.00 ÷ 2 = $6.00 per kg.
+3. Compare the results: the 2 kg bag costs $2.00 less per kilogram.
+
+:: {weight=4}
+## Your turn
+
+::: choice Soap costs $3.00 for 750 mL or $7.00 for 2 L. Which bottle costs less per litre?
+( ) The 750 mL bottle
+feedback: Not quite. $3.00 ÷ 0.75 = $4.00 per litre, more than the 2 L bottle.
+(x) The 2 L bottle
+feedback: Correct. $7.00 ÷ 2 = $3.50 per litre, compared with $4.00 for 750 mL.
+( ) They cost the same per litre
+feedback: Not quite. Convert 750 mL to 0.75 L, then divide each price.
+:::
+:::
+
+# Use it next time
+
+Use the same three steps whenever you compare two package sizes: one unit, price per unit, then compare.

@@ -1,0 +1,38 @@
+---
+title: Comparer des prix unitaires
+description: Un exemple résolu à côté d’une question de pratique, sur une
+  seule diapositive guidée. Sa longueur tient sur un écran d’ordinateur
+  portable de 1366 sur 768 quand le plan et la transcription sont fermés. Cet
+  ajustement vaut pour cet exemple seulement. Une diapositive plus longue
+  défile, et un écran étroit place la pratique sous l’exemple.
+lang: fr
+---
+
+# Comparer des prix unitaires {deckStop}
+
+::: columns {width=wide}
+:: {weight=5}
+## Exemple résolu
+
+Un sac de riz de 500 g coûte 4,00 $. Un sac de 2 kg coûte 12,00 $. Quel sac coûte le moins cher au kilogramme ?
+
+1. Utilisez la même unité pour les deux sacs : 500 g font 0,5 kg.
+2. Divisez chaque prix par son poids : 4,00 $ ÷ 0,5 = 8,00 $ le kilo, et 12,00 $ ÷ 2 = 6,00 $ le kilo.
+3. Comparez les résultats : le sac de 2 kg coûte 2,00 $ de moins le kilo.
+
+:: {weight=4}
+## À vous de jouer
+
+::: choice Le savon coûte 3,00 $ les 750 mL ou 7,00 $ les 2 L. Quelle bouteille coûte le moins cher au litre ?
+( ) La bouteille de 750 mL
+feedback: Pas tout à fait. 3,00 $ ÷ 0,75 = 4,00 $ le litre, plus que la bouteille de 2 L.
+(x) La bouteille de 2 L
+feedback: Exact. 7,00 $ ÷ 2 = 3,50 $ le litre, contre 4,00 $ pour 750 mL.
+( ) Elles coûtent le même prix au litre
+feedback: Pas tout à fait. Convertissez 750 mL en 0,75 L, puis divisez chaque prix.
+:::
+:::
+
+# La prochaine fois
+
+Suivez les mêmes trois étapes pour comparer deux formats d’emballage : une seule unité, le prix par unité, puis la comparaison.
