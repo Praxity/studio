@@ -183,6 +183,7 @@ jobs:
 
   browser-editor:
     needs: [admit, build]
+    if: github.repository == (vars.STUDIO_SOURCE_REPO || github.repository)
     runs-on: macos-15-intel
     timeout-minutes: 60
     strategy:
@@ -230,8 +231,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --store-dir "$RUNNER_TEMP/cli-browser-$GITHUB_RUN_ID/pnpm-store"
 
+      - name: Prepare source fixture assets
+        run: pnpm --filter @praxity/desktop prebuild
+
       - name: Download sealed CLI archives
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: cli-release-handoff
           path: source/apps/desktop/release

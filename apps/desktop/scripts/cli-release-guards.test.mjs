@@ -121,3 +121,16 @@ test("formal release shards every packaged browser engine and gates publication 
 	);
 	assert.deepEqual(release.jobs.publish.needs, ["build", "browser-editor"]);
 });
+
+test("formal browser shards prepare source fixture assets before packaged journeys", () => {
+	const steps = release.jobs["browser-editor"].steps;
+	const prebuild = steps.find((step) => step.name === "Prepare source fixture assets");
+	assert.ok(prebuild);
+	assert.equal(prebuild.run, "pnpm --filter @praxity/desktop prebuild");
+	assert.equal(prebuild.if, undefined);
+	assert.equal(prebuild["continue-on-error"], undefined);
+	const index = (name) => steps.findIndex((step) => step.name === name);
+	assert.ok(index("Install dependencies") < steps.indexOf(prebuild));
+	assert.ok(steps.indexOf(prebuild) < index("Verify and extract native archive"));
+	assert.ok(index("Verify and extract native archive") < index("Verify packaged browser journeys"));
+});
