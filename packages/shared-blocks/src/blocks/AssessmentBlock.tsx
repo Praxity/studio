@@ -1016,31 +1016,60 @@ function TextResponsePreview({
 			: response.downloadAs
 				? [response.downloadAs]
 				: [];
+	const [copyStatus, setCopyStatus] = useState<{ value: string; message: string } | null>(null);
+	const copyResponse = async () => {
+		if (!value.trim()) {
+			setCopyStatus({ value, message: s.copyResponseEmpty });
+			return;
+		}
+		try {
+			if (!navigator.clipboard) throw new Error("Clipboard unavailable");
+			await navigator.clipboard.writeText(`${stemText || s.yourAnswer}\n\n${value}`);
+			setCopyStatus({ value, message: s.copyResponseDone });
+		} catch {
+			setCopyStatus({ value, message: s.copyResponseFailed });
+		}
+	};
 	const downloadControls =
 		downloadFormats.length > 0 ? (
 			<Stack gap="xs" className="praxity-text-response-downloads">
 				<Text component="span" size="sm" fw={600}>
 					{s.downloadResponseAs}
 				</Text>
-				<Group gap="xs" role="group" aria-label={s.downloadResponseAs}>
-					{downloadFormats.map((format) => (
-						<Button
-							key={format}
-							type="button"
-							variant="subtle"
-							size="sm"
-							aria-label={format === "txt" ? s.downloadTxt : s.downloadDocx}
-							disabled={!value.trim()}
-							onClick={() => {
-								void import("../lib/text-response-download").then(({ downloadTextResponse }) =>
-									downloadTextResponse(format, stemText || s.yourAnswer, value, savedDate),
-								);
-							}}
-						>
-							{format === "txt" ? s.downloadTxt : s.downloadDocx}
-						</Button>
-					))}
+				<Group gap="xs">
+					<Group gap="xs" role="group" aria-label={s.downloadResponseAs}>
+						{downloadFormats.map((format) => (
+							<Button
+								key={format}
+								type="button"
+								variant="subtle"
+								size="sm"
+								aria-label={format === "txt" ? s.downloadTxt : s.downloadDocx}
+								disabled={!value.trim()}
+								onClick={() => {
+									void import("../lib/text-response-download").then(({ downloadTextResponse }) =>
+										downloadTextResponse(format, stemText || s.yourAnswer, value, savedDate),
+									);
+								}}
+							>
+								{format === "txt" ? s.downloadTxt : s.downloadDocx}
+							</Button>
+						))}
+					</Group>
+					<Button
+						type="button"
+						variant="subtle"
+						size="sm"
+						onClick={() => {
+							void copyResponse();
+						}}
+					>
+						{s.copyResponse}
+					</Button>
 				</Group>
+				<Text component="p" size="sm" role="status" data-copy-response-status>
+					{copyStatus?.value === value ? copyStatus.message : ""}
+				</Text>
 			</Stack>
 		) : null;
 

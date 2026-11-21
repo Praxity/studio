@@ -76,6 +76,10 @@ export interface LearnerStrings {
 	downloadResponseAs: string;
 	downloadTxt: string;
 	downloadDocx: string;
+	copyResponse: string;
+	copyResponseDone: string;
+	copyResponseFailed: string;
+	copyResponseEmpty: string;
 	rowShouldBe: string;
 	rowsCorrect: string;
 	correct: string;
