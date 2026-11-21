@@ -264,7 +264,7 @@ jobs:
         id: lint
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         continue-on-error: true
-        run: pnpm exec biome check .
+        run: pnpm lint
       - name: Typecheck
         id: typecheck
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}

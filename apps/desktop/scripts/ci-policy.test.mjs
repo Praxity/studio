@@ -412,7 +412,7 @@ test("combined fast checks retain independent commands and failure verdicts", ()
 		"source-owners": "node scripts/check-source-owners.mjs",
 		"timeout-evidence":
 			'node scripts/fetch-timeout-base.mjs --base "$TIMEOUT_BASE"\nnode scripts/check-test-timeouts.mjs --base "$TIMEOUT_BASE"\n',
-		lint: "pnpm exec biome check .",
+		lint: "pnpm lint",
 		typecheck: "pnpm typecheck",
 	};
 	assert.equal(

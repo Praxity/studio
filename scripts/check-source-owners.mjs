@@ -10,6 +10,12 @@ import legacyWorkspaceSourceImports from "./workspace-source-imports-legacy.json
 
 // Exceptions name an expression, not a whole file. New detection still fails.
 export const sourceOwnerAllowlist = [
+	{
+		path: "scripts/check-comments.mjs",
+		expression: String.raw`/^---\r?\n([\s\S]*?)\r?\n---/`,
+		reason:
+			"The comment ratchet separates Astro frontmatter from markup to count code comments. It does not parse authored Prax source.",
+	},
 	...[
 		String.raw`/[\u0000-\u001f\u007f-\u009f\u061c\u200b-\u200f\u202a-\u202e\u2060\u2066-\u2069\ufeff]/gu`,
 		String.raw`/\\(?:["\\/bfnrt]|u[0-9a-fA-F]{4})|[\u007f-\u009f\u061c\u200b-\u200f\u202a-\u202e\u2060\u2066-\u2069\ufeff]/gu`,
