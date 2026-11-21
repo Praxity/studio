@@ -1,6 +1,6 @@
 Third-party and separately licensed content
 
-PolyForm Perimeter 1.0.1 covers Praxity-authored code only. Third-party works
+MIT covers Praxity-authored code only. Third-party works
 retain their own terms. The root LICENSE does not replace those terms.
 
 Vendored source and notices:
@@ -65,8 +65,9 @@ Other separate terms:
 
 - docs/prax-format/ -> docs/prax-format/LICENSE, CC BY 4.0 for the specification,
   CC0 1.0 for examples, MIT for skill files and code.
-- packages/export-pipeline/template/COURSE-RUNTIME-LICENSE.txt grants the
-  Praxity delivery runtime permissions included with each exported course.
+- packages/export-pipeline/template/COURSE-RUNTIME-LICENSE.txt is the MIT licence
+  for the Praxity course player, shipped in each export as
+  PRAXITY-COURSE-RUNTIME-LICENSE.txt.
 
 Installed dependencies keep the licences supplied in their packages. Generated
 CLI and course notices preserve the terms of dependencies included in each build.

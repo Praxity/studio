@@ -3,7 +3,7 @@
 	"version": "0.3.0",
 	"private": true,
 	"description": "Accessibility-first eLearning authoring tool",
-	"license": "SEE LICENSE IN LICENSE",
+	"license": "MIT",
 	"author": "Praxity",
 	"scripts": {
 		"build:cli": "pnpm --filter @praxity/desktop prebuild && pnpm exec tsx apps/desktop/scripts/build-standalone-cli.ts",

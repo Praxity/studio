@@ -19,7 +19,7 @@ SCORM 1.2 and standalone HTML remain supported. xAPI code remains experimental a
 
 ## Product model
 
-Under the September 29 decision, Studio 0.3.0 and later use the unmodified PolyForm Perimeter 1.0.1, without an Ethical Use Policy or Community Permission. Use at home and work is free; embedding or reselling the tool's function needs permission. See [LICENSING.md](../../LICENSING.md). Studio 0.2.0 keeps the terms it shipped with; Rubato host/UI remains MIT.
+From 2026-11-21, Praxity-authored Studio code, including earlier versions and the exported course player, is available under MIT. Use, embedding and resale are permitted under that licence. See [LICENSING.md](../../LICENSING.md). Rubato host/UI remains MIT.
 
 Projects stay on the author's machine as readable `.prax` files, course metadata, and assets. Authoring, preview, and export work offline. The canvas and published output use the same canonical compiler: server-rendered HTML with only the planned islands. Edit mode uses an inspection projection of that compiler output.
 

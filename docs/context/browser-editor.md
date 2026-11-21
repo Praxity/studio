@@ -690,7 +690,7 @@ headless Chromium, Firefox and WebKit in English and French. Native Mac packagin
 and assistive-technology checks require separate human evidence.
 
 The old exact-file component schedules exist only in `legal/archive/0.2.0/` and
-must stay unchanged. Current PolyForm Perimeter releases use the artifact's
+must stay unchanged. Current MIT releases use the artifact's
 checksummed `inventory.json` and the private exact-file provenance record
 `dist/studio-cli-review/build-inputs.json`. There is no current separate
 `COMPONENT-SCHEDULE.md`; reconcile any new schedule with the current licensing

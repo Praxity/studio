@@ -41,7 +41,7 @@ const mappings = [
 	["docs/prax-format/", ["docs/prax-format/LICENSE", "CC BY 4.0", "CC0 1.0", "MIT"]],
 	[
 		"packages/export-pipeline/template/COURSE-RUNTIME-LICENSE.txt",
-		["Praxity delivery runtime permissions"],
+		["MIT licence", "Praxity course player", "PRAXITY-COURSE-RUNTIME-LICENSE.txt"],
 	],
 	[
 		"packages/shared-blocks/src/blocks/shared-blocks.css",
@@ -84,7 +84,7 @@ for (const [path, terms] of mappings) {
 }
 
 test("root notice distinguishes Praxity code and is linked from README", async () => {
-	assert.match(notice, /PolyForm Perimeter[^\n]*Praxity-authored code only/);
+	assert.match(notice, /MIT covers Praxity-authored code only\./);
 	assert.match(await readFile(new URL("README.md", root), "utf8"), /\[NOTICE\]\(NOTICE\)/);
 });
 
