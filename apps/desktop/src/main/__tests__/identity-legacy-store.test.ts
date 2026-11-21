@@ -22,7 +22,6 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { runPraxityCli } from "../cli.ts";
 import { initializeCourseIdentity, loadIdentityStore } from "../identity-store.ts";
 
-// Startup import cost belongs to suite setup; the cold-store test still runs in a fresh process.
 beforeAll(async () => {
 	await import("../studio/server");
 });
@@ -39,7 +38,6 @@ afterEach(async () => {
 async function fixture(versioned = false, cleanup = roots) {
 	const legacy = versioned ? version2Fixture() : legacyFixture("reader-roles");
 	if (versioned) {
-		// Own-content refusal needs one snapshot; historical refusal has its own test.
 		legacy.snapshot.parents = [];
 		legacy.head.head = digest(serializeIdentity(legacy.snapshot));
 	}
@@ -175,7 +173,6 @@ describe("version-refusal merge", () => {
 		const git = (...args: string[]) =>
 			execFileSync("git", ["-C", root, ...args], { encoding: "utf8", stdio: "pipe" }).trim();
 		git("init", "-b", "main");
-		// Configure the synthetic repository in one write instead of six Git processes.
 		await appendFile(
 			join(root, ".git/config"),
 			"\n[user]\nname = Identity merge fixture\nemail = fixture@example.invalid\n[core]\nautocrlf = false\nfsmonitor = false\n[gc]\nauto = 0\n[maintenance]\nauto = false\n",

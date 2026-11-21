@@ -45,7 +45,6 @@ const actionlintConfig = parse(
 const checkActionlintConfig = (config) =>
 	assert.deepEqual(Object.keys(config), ["self-hosted-runner"]);
 
-// Reviewed pins that do not create Actions artifacts. New refs need a fresh review.
 const actionsWithoutUploads = new Map([
 	[
 		"actions/attest-build-provenance@43d14bc2b83dec42d39ecae14e916627a18bb661",
@@ -79,8 +78,6 @@ const actionsWithoutUploads = new Map([
 	],
 ]);
 
-// shortcut: guards accidental omissions; YAML aliases/anchors and local directories named
-// like upload-artifact@v4 can bypass detection. Harden when workflows use anchors.
 function assertArtifactRetention(root) {
 	const visited = new Set();
 	function inspect(path, composite = false) {
@@ -307,8 +304,6 @@ test("browser authoring failure traces remain available for seven days", () => {
 	assert.equal(uploads[0].with["retention-days"], 7);
 });
 
-// The engine outputs use the JS-compatible subset of Actions expressions.
-// Evaluate them so the fixtures exercise what each event actually runs.
 const engines = (output, event_name, inputs = {}) =>
 	JSON.parse(
 		workflowFunction(
@@ -490,8 +485,6 @@ test("candidate browser decision fetches full ancestry and uses the shared skip-
 	}
 });
 
-// Include the shared source owners and CLI setup helpers as well as direct suite
-// inputs, so a reference moved behind an import remains visible to this guard.
 const browserInputPaths = [
 	"packages/*/src/**/*",
 	"packages/export-pipeline/template/**/*",
@@ -501,8 +494,6 @@ const browserInputPaths = [
 	"apps/desktop/scripts/{prebuild-viewer.ts,standalone-cli-packaging.mjs,prepare-typst.mjs}",
 	"docs/test-fixtures/**/*",
 	"docs/prax-format/examples/**/*",
-	// Literal closure of the suites' shared helpers and their fixture imports.
-	// Keep these with the direct roots when adding a helper outside src/.
 	"packages/grammar/__tests__/{helpers,fixtures}/**/*",
 	"packages/export-pipeline/tests/{focus-assertions,muted-test}.ts",
 	"packages/export-pipeline/tests/scorm-cloud/learner-simulation.ts",
@@ -572,8 +563,6 @@ function browserInputViolations(config, entries) {
 			const parts = glob.split("/");
 			const segment = escapeRegex(parts.at(-2)).replaceAll("\\*", "[^/\\s\"'`]*");
 			if (parts.length === 2) return `${segment}(?:/|(?=["'\x60]))`;
-			// A docs directory can be a separate join argument. Qualify it by its
-			// parent so ordinary content fields named "context" remain valid.
 			return [
 				`${segment}/`,
 				`(?<=/)${segment}(?=["'\x60])`,
@@ -591,8 +580,6 @@ function browserInputViolations(config, entries) {
 	const reference = new RegExp(`(?<=[/"'\x60])(?:${references.join("|")})`, "g");
 	const printer = ts.createPrinter({ removeComments: true });
 	return entries.flatMap(([file, contents]) => {
-		// Parse code before removing comments: URL slashes and template literals
-		// are data, not comment delimiters. Fixture prose only has HTML comments.
 		const source = /\.[cm]?[jt]sx?$/.test(file)
 			? printer.printFile(ts.createSourceFile(file, contents, ts.ScriptTarget.Latest, true))
 			: contents.replace(/<!--[\s\S]*?-->/g, "");
@@ -617,8 +604,6 @@ const browserInputFiles = () =>
 	[...new Set(globSync(browserInputPaths, { cwd: root }))]
 		.map((file) => file.replaceAll("\\", "/"))
 		.filter((file) => statSync(new URL(file, root)).isFile())
-		// Extra shared owners contribute executable code and messages, not their
-		// unrelated unit tests or package documentation. Direct scope stays whole.
 		.filter(
 			(file) =>
 				!file.startsWith("packages/") ||
@@ -632,7 +617,6 @@ test("browser sources and fixture data never read a skip-listed path", () => {
 	assert.ok(files.includes("apps/desktop/src/inspection-frame.ts"));
 	const entries = files
 		.map((file) => [file, readFileSync(new URL(file, root))])
-		// Inspect all text fixtures regardless of extension; media bytes are not source.
 		.filter(([, bytes]) => isUtf8(bytes) && !bytes.includes(0))
 		.map(([file, bytes]) => [file, bytes.toString("utf8")]);
 	assert.deepEqual(browserInputViolations(ci, entries), []);
@@ -934,8 +918,6 @@ for (const name of ["published-output-a11y", "published-output-deck", "browser-e
 		);
 		assert.equal(steps[cache].with["restore-keys"], undefined);
 		assert.equal(steps[cache].with["fail-on-cache-miss"], undefined);
-		// The same admission on install and restore keeps apt and download recovery
-		// active on both cache hits and misses.
 		for (const index of [version, cache, browser]) assert.equal(steps[index].if, steps[install].if);
 		assert.equal(steps[browser].with.browser, "${{ matrix.browser }}");
 		assert.equal(
@@ -1072,7 +1054,6 @@ for (const [scenario, commands, status] of [
 		assert.equal(action.runs.using, "composite");
 		assert.equal(action.runs.steps.length, 1);
 		assert.equal(action.runs.steps[0].shell, "bash");
-		// External commands are the seam; execute the actual composite shell with fake apt and Poppler.
 		const prefix = `scenario=${scenario}
 available=false
 [[ $scenario != installed && $scenario != broken ]] || available=true
@@ -1127,7 +1108,6 @@ pdftotext() {
 				assert.ok(line.includes(`-o ${option}`), line);
 			assert.match(line, /(?:^| )-q(?: |$)/);
 			assert.doesNotMatch(line, /-qq/);
-			// A failed third-party source must not stop the retry install; that install and pdftotext -v fail loudly.
 			assert.doesNotMatch(line, /--error-on/);
 			if (line.includes(" install "))
 				assert.match(line, /-y -q --no-install-recommends poppler-utils$/);
@@ -1267,8 +1247,6 @@ for (const [suite, output, shards] of [
 				? "published-output-deck-${{ matrix.artifact }}"
 				: "published-output-${{ matrix.artifact }}";
 		const results = `packages/export-pipeline/test-results/${suite}`;
-		// Failed runs keep screenshots and traces; passing runs keep only timing and
-		// results, because full evidence for every run filled the artifact quota.
 		const failed = uploads.find((step) => step.if.startsWith("failure()"));
 		assert.equal(failed?.if, "failure() && !cancelled() && needs.changes.outputs.output == 'true'");
 		assert.equal(failed.with.name, name);
@@ -1282,8 +1260,6 @@ for (const [suite, output, shards] of [
 			`${results}/timestamps.txt`,
 		]);
 		assert.equal(uploads.length, 2);
-		// Failure evidence stays a week; passing timing a day. Neither upload may
-		// turn a test verdict red when the artifact store is full.
 		assert.equal(failed.with["retention-days"], 7);
 		assert.equal(passed.with["retention-days"], 1);
 		for (const upload of uploads) assert.equal(upload["continue-on-error"], true);
@@ -1299,8 +1275,6 @@ for (const [suite, output, shards] of [
 		assert.equal(config.use.trace, "on-first-retry");
 		assert.equal(config.use.headless, true);
 		const project = (name) => config.projects.find((entry) => entry.name === name);
-		// Chromium mutes by flag. Linux WebKit refuses to launch with --mute-audio,
-		// and Firefox mutes through media.default_volume (asserted below).
 		assert.ok(project("chromium").use.launchOptions.args.includes("--mute-audio"));
 		for (const name of ["webkit", "firefox"]) {
 			assert.ok(
@@ -1321,8 +1295,6 @@ for (const [suite, output, shards] of [
 	});
 }
 
-// These gates use the JS-compatible subset of Actions expressions. Evaluate
-// the workflow's expression so the fixtures exercise the actual job condition.
 const enabled = (expression, github, outputs, labels = []) =>
 	workflowFunction(
 		"github",
@@ -1339,7 +1311,6 @@ const enabled = (expression, github, outputs, labels = []) =>
 		labels,
 	);
 
-// Browser suites run only when a change can reach published output or its tests.
 for (const [name, files, expected] of [
 	["docs-only", ["docs/context/testing-strategy.md"], false],
 	[
@@ -1603,7 +1574,6 @@ test("secret findings log and summary contain only safe location fields", (t) =>
 	assert.equal(upload.if, "failure()");
 });
 
-// Replace only the external download, archive and scanner executables; execute the real step.
 function secretScanStep(
 	t,
 	status,
@@ -1874,7 +1844,6 @@ for (const event of ["pull_request", "schedule", "workflow_dispatch"]) {
 			const range = secretRange(t, event, false, merge);
 			const scan = secretScanStep(t, 0, "[]", range.options.slice("log_opts=".length));
 			assert.equal(scan.result.status, 0, scan.result.stderr);
-			// Gitleaks v8.30.1 consumes git log -p -U0. Check Git's real merge patches offline.
 			const patches = range.git("log", "-p", "-U0", ...scan.logOptions.split(" "));
 			assert.ok(scan.octopusLogOptions, "octopus pass must run for every event");
 			assert.equal(
@@ -1896,8 +1865,6 @@ for (const event of ["pull_request", "schedule", "workflow_dispatch"]) {
 	}
 }
 
-// A full gate on every merge was a fifth of the Ubicloud bill. Main gets the
-// complete integrated gate nightly instead; PR path selection still applies.
 test("nightly and manual runs run every gate; merges to main do not", () => {
 	assert.equal(ci.on.push, undefined);
 	assert.equal(ci.on.schedule[0].cron, "0 6 * * *");
@@ -1971,7 +1938,6 @@ test("fork routing policy detects a PR-reachable disjunction before a non-PR cla
 });
 
 test("browser fallback defaults to free hosted runners and never routes fork PRs to the variable", () => {
-	// GitHub sets these fields from the PR's head repository, not from anything the PR edits.
 	const runner = (event_name, head, selected) =>
 		workflowFunction(
 			"github",
@@ -2017,8 +1983,6 @@ test("slow-test allowlist checks compare the complete Git base, including JSON-o
 	assert.equal(checkout.with["fetch-depth"], 0);
 });
 
-// Self-hosted jobs allow main pushes only for candidate build-ahead. Nothing may launch the frozen
-// Electron app's QA suite (it opened Studio windows on the owner's screen).
 const allWorkflows = readdirSync(new URL("../../../.github/workflows/", import.meta.url))
 	.filter(
 		(name) =>

@@ -28,7 +28,6 @@ for (const review of [true, false]) {
 				youtubeScripts.push(request.url());
 			}
 		});
-		// Stub provider content, while exercising the real cross-origin navigation and course CSP.
 		await page.route(/^https:\/\/www\.youtube(?:-nocookie)?\.com\/embed\//, async (route) => {
 			if (route.request().resourceType() !== "document") return route.continue();
 			await route.fulfill({

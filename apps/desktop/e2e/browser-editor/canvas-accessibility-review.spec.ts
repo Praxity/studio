@@ -176,7 +176,6 @@ for (const lang of ["en", "fr"]) {
 	});
 
 	test(`C09 review copy outcome survives saved-page refresh, ${lang}`, async ({ page }) => {
-		// Delay the platform clipboard reply across explicit discard and its saved refresh.
 		await page.addInitScript(() => {
 			Object.defineProperty(navigator.clipboard, "writeText", {
 				value: () => new Promise<void>((resolve) => Reflect.set(window, "finishCopy", resolve)),
@@ -228,7 +227,6 @@ for (const lang of ["en", "fr"]) {
 	test(`C09 review open field respects author band at 320 by 240, ${lang}`, async ({ page }) => {
 		await page.setViewportSize({ width: 320, height: 240 });
 		await open(page, lang, "# Practice\n\nOriginal paragraph.\n");
-		// A compact course can place its first run beside the still-visible author band.
 		await page.addStyleTag({
 			content:
 				".praxity-native-outline{display:none}.praxity-page-content{padding-top:0!important}",
@@ -293,7 +291,6 @@ for (const lang of ["en", "fr"]) {
 				});
 			});
 			async function geometry() {
-				// One browser task measures both boxes; a save reply cannot split the observation.
 				const covered = await panel.evaluate((nav) => {
 					const bounds = nav.getBoundingClientRect();
 					return [...document.querySelectorAll("h1,.praxity-native-sidebar-header")]
@@ -328,8 +325,6 @@ for (const lang of ["en", "fr"]) {
 			});
 			try {
 				await page.getByRole("button", { name: headingName, exact: true }).click();
-				// Focus blur closes the field; keep Read Updating across the pointer gesture.
-				// Author-panel pointer blur waits for activation so flow shrink cannot move its target.
 				await toggle.focus();
 				if (!initial) throw new Error("Missing toggle");
 				await page.mouse.move(initial.x + initial.width / 2, initial.y + initial.height / 2);

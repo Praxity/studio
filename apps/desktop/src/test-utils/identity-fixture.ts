@@ -18,7 +18,6 @@ import {
 import { resolveLessonSourcesForWrite } from "../main/lesson-source";
 import { withProjectFileTransaction } from "../main/project-file-transactions";
 
-/** Test-only byte installation. Source ownership rejects production imports of test helpers. */
 export async function writeIdentityFixture(
 	root: string,
 	seed: Pick<ResolvedCourseIdentity, "identity">,
@@ -42,7 +41,6 @@ export async function writeIdentityFixture(
 	}
 }
 
-/** Reproduce former saved-pending opens before exercising today's transient Studio entry. */
 export async function persistLegacyPendingFixture(root: string) {
 	const prior = await loadIdentityStore(root);
 	const { lessonFilesOnDisk } = await readCourseManifestData(root);
@@ -65,8 +63,6 @@ export async function persistLegacyPendingFixture(root: string) {
 	await writeIdentityFixture(root, { identity });
 }
 
-/** An authored fixture replacement supplies explicit identity intent. Setup
- * installs exact bytes; learner-facing saves still preserve existing endings. */
 export async function replaceIdentityFixture(root: string, file: string, source: string) {
 	const prior = await resolveLessonSourcesForWrite(root);
 	const previous = prior.lessons.get(file);
@@ -140,8 +136,6 @@ export async function replaceIdentityFixture(root: string, file: string, source:
 	);
 }
 
-/** Establish fixture bytes before adding sidecars or recovery evidence. Setup does
- * not test durability; scenarios still use the real journal for their writes. */
 export async function persistFixtureIdentity(root: string) {
 	const { lessonFilesOnDisk } = await readCourseManifestData(root);
 	await writeIdentityFixture(
@@ -150,7 +144,6 @@ export async function persistFixtureIdentity(root: string) {
 	);
 }
 
-/** Compare complete identity bytes and follow path changes without source IDs. */
 export async function readIdentityFixture(root: string) {
 	const store = await loadIdentityStore(root);
 	const paths = [".praxity/identity/course.json"];

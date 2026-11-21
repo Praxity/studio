@@ -26,7 +26,6 @@ export async function startJourney(
 ) {
 	async function drainRoutes() {
 		const contexts = "contexts" in owner ? owner.contexts() : [owner];
-		// Route handlers can still need Studio after the test's final assertion.
 		await Promise.all(
 			contexts.flatMap((context) => [
 				context.unrouteAll({ behavior: "wait" }),
@@ -116,7 +115,6 @@ export async function startJourney(
 		typstExecutablePath: process.env.PRAXITY_TEST_TYPST,
 	});
 	process.env.PRAXITY_BROWSER_READY_URL = server.readyUrl;
-	// Retain the build and authored test files as evidence; never copy the ready URL to disk.
 	return async () => {
 		await drainRoutes();
 		await server.close();

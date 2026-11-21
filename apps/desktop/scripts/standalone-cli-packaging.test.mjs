@@ -155,7 +155,6 @@ test("format package preserves public docs, skill links, legal bytes, and comple
 		assert.equal(file.sha256, sha256(bytes));
 		assert.equal(file.component, "prax-format-documentation");
 		if (!file.path.endsWith(".md")) continue;
-		// Code examples contain placeholder link destinations, not documentation dependencies.
 		const markdown = bytes
 			.toString("utf8")
 			.replace(/^(`{3,}|~{3,})[^\n]*\n[\s\S]*?^\1[^\n]*$/gm, "")

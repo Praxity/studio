@@ -16,7 +16,6 @@ let writerEntry: string;
 beforeAll(async () => {
 	writerRoot = await mkdtemp(join(fixtureTmpdir("project-os-lock"), "os-lock-writer-"));
 	writerEntry = join(writerRoot, "writer.mjs");
-	// Match the ownership suite: compile once, keep separate real lock contenders.
 	await build({
 		entryPoints: [fileURLToPath(new URL("./fixtures/os-lock-writer.ts", import.meta.url))],
 		outfile: writerEntry,
@@ -131,7 +130,6 @@ for (const marker of [
 	'{"pid":1,"host":"another-host"}',
 	`{"pid":${process.pid},"host":"reused-pid"}`,
 ]) {
-	// Confirmation runs in another PID; retain the current-PID fixture with a stable title.
 	const label = marker.includes("reused-pid")
 		? "current process on reused host"
 		: marker || "truncated";
@@ -158,7 +156,6 @@ it("releases on SIGKILL and cleans stages for every target without an owner jour
 	expect(await readFile(join(root, "course.yaml"), "utf8")).toBe("title: Original\n");
 	const started = performance.now();
 	await writeProjectTextFile(root, "course.yaml", "title: Recovered\n", "title: Original\n");
-	// Owner decision 2026-10-12: macOS flush timings are advisory; recovery assertions still run.
 	if (process.platform !== "darwin") expect(performance.now() - started).toBeLessThan(2000);
 	expect(await readFile(join(root, "course.yaml"), "utf8")).toBe("title: Recovered\n");
 	expect(await readdir(join(root, ".praxity"))).toEqual([]);

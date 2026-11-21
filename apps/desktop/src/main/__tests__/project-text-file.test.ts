@@ -12,13 +12,11 @@ const faults = vi.hoisted(() => ({
 	renameCodes: [] as string[],
 	onRenameFailure: null as (() => Promise<void>) | null,
 }));
-// Inject storage failures at the platform boundary; retain real guarded reads and staging.
 vi.mock("node:fs/promises", async (importOriginal) => {
 	const fs = await importOriginal<typeof import("node:fs/promises")>();
 	return {
 		...fs,
 		rename: async (...args: Parameters<typeof fs.rename>) => {
-			// Sharing failures belong to the authored capture, not metadata publication.
 			const code =
 				basename(String(args[0])) === "course.yaml" && !String(args[0]).includes(".praxity-write-")
 					? faults.renameCodes.shift()

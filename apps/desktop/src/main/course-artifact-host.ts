@@ -172,7 +172,6 @@ export function createCourseArtifactHost(options: {
 		return createHostedCourseHandle(courseKey, hosted, entryUrl);
 	}
 
-	/** Retain an already-hosted revision for a secondary window. */
 	function retainHostedCourseArtifact(rawUrl: string): HostedCourseArtifact | null {
 		const resolved = resolveCourseUrl(rawUrl);
 		if ("status" in resolved) return null;

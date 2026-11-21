@@ -70,8 +70,6 @@ export interface ThemeFamily {
 }
 
 const familyOrder = [
-	// The app's own theme leads the grid; it used to sort last, below Gotham,
-	// which read as "Default is missing" to anyone who did not scroll.
 	"default",
 	"github",
 	"github-colorblind",

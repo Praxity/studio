@@ -65,7 +65,6 @@ const uuidPattern = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 function normalizedPath(root: string, target: string) {
 	return relative(root, target).replaceAll("\\", "/").replace(uuidPattern, "<uuid>") || ".";
 }
-/** Observe publication at the public flush seam: the staged inode becomes the target. */
 function flushLedger(root: string, beforeFlush?: (boundary: Boundary) => void) {
 	const entries: LedgerEntry[] = [];
 	const staged = new Map<string, { temporary: string; ino: number }>();
@@ -217,7 +216,6 @@ beforeAll(async () => {
 			js: 'import { createRequire } from "node:module"; const require = createRequire(import.meta.url);',
 		},
 	});
-	// Both independent processes wait at one barrier before the timed contention case.
 	const root = await fixture(concurrentRoots);
 	const store = await openReviewStore(root);
 	concurrent = { root, store };
@@ -284,7 +282,6 @@ beforeAll(async () => {
 	const holder = fork(probeEntry, ["hold", busyRoot], { execArgv: [], silent: true });
 	children.push(holder);
 	expect((await once(holder, "message"))[0]).toBe("locked");
-	// The real lock deadline is 5 s. Contention setup belongs outside the <2 s assertion case.
 	const busyStarted = performance.now();
 	try {
 		await openReviewStore(busyRoot);
@@ -826,7 +823,6 @@ it("keeps review bytes ignored while identity stays visible and stages with git 
 	expect(await git("ls-files")).toContain(".praxity/identity/keep.json");
 	expect(await git("ls-files")).not.toContain(".praxity/reviews/");
 	expect(await readFile(join(root, ".gitignore"), "utf8")).toBe(rootIgnore);
-	// The durable writer owns its existing recovery exclusions.
 	const addedExclusions = (await readFile(excludePath, "utf8")).slice(exclude.length);
 	expect(addedExclusions).not.toMatch(/^\/?\.praxity(?:\/|$)/m);
 	await unchanged(root);
@@ -1310,7 +1306,6 @@ it("keeps all bodies and their base64 inside reviews before Git exists and out o
 	await checkTree(root);
 	await run("git", ["init", "--quiet", root]);
 	await run("git", ["-C", root, "add", "-A"]);
-	// One Git process inventories both index names and staged content.
 	const { stdout } = await run("git", ["-C", root, "diff", "--cached", "--no-ext-diff"]);
 	for (const needle of needles) expect(stdout).not.toContain(needle);
 	expect(stdout).not.toContain(".praxity/reviews/");
@@ -1521,7 +1516,6 @@ it.each([
 			ok: false,
 			code,
 		});
-	// All three inputs lack author permission; C1 checks that before other principal fields.
 	expect(
 		await restricted.resolve(raw as unknown as ReviewPrincipal, {
 			...versioned,

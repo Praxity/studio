@@ -66,7 +66,6 @@ test("Read after two saves opens the edited non-deck page despite another page's
 		await page.locator("a.praxity-nav-next").click();
 		await expect(page.getByText("Edited body.", { exact: true })).toBeVisible();
 		await page.getByRole("link", { name: "Edit text", exact: true }).click();
-		// Save first so the bookmark belongs to the durable course identity used by later saves.
 		await page
 			.getByRole("button", { name: "Edit heading 2: Original heading", exact: true })
 			.click();

@@ -14,7 +14,6 @@ import { createStudioProjectSession } from "../studio/project-session";
 import { type StudioServer, startStudioServer } from "../studio/server";
 
 const faults = vi.hoisted(() => ({ cleanup: false, renameBusy: false }));
-// Fault the filesystem boundary after the real source replacement has committed.
 vi.mock("node:fs/promises", async (importOriginal) => {
 	const fs = await importOriginal<typeof import("node:fs/promises")>();
 	return {
@@ -62,7 +61,6 @@ async function fixture(manifest = "title: Test\nlessons: [second.prax, first.pra
 
 async function running(preview = false) {
 	const files = await fixture();
-	// HTTP scenarios use an existing course; startup tests below keep bare fixtures.
 	await persistFixtureIdentity(files.projectDir);
 	const server = await startStudioServer({
 		...files,

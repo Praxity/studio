@@ -2,7 +2,6 @@ import { formatOklch } from "@praxity/shared-blocks/color-math";
 import { defaultDarkTheme } from "../renderer/themes/default-dark";
 import { defaultLightTheme } from "../renderer/themes/default-light";
 
-/** Values come from Studio's contrast-corrected themes, never authored custom properties. */
 export const canvasStyles = Object.fromEntries(
 	[defaultLightTheme, defaultDarkTheme].map((theme) => {
 		const tokens = Object.entries(theme.colors)

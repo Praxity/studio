@@ -98,8 +98,6 @@ async function bytes(root: string, prefix = ""): Promise<Record<string, unknown>
 	const result: Record<string, unknown> = {};
 	const directory = await lstat(join(root, prefix));
 	const names = (await readdir(join(root, prefix))).sort();
-	// Access times include this helper's own reads on Windows. The timestamps
-	// below detect file replacement and directory creation, deletion or rewriting.
 	result[prefix || "."] = {
 		type: "directory",
 		names,
@@ -373,7 +371,6 @@ for (const evidence of ["recovery archives", "archived legacy identity"] as cons
 				"write",
 				false,
 			);
-			// I4 has pruned its intact-store archives. A later T1 write retains fresh evidence.
 			const coursePath = ".praxity/identity/course.json";
 			await writeProjectFiles(root, [
 				{ path: coursePath, content: `${await readFile(join(root, coursePath), "utf8")}\n` },
@@ -381,7 +378,6 @@ for (const evidence of ["recovery archives", "archived legacy identity"] as cons
 			expect(
 				(await readdir(root)).filter((name) => name.startsWith(".praxity-write-")),
 			).toHaveLength(1);
-			// Rename simulates missing metadata without deleting the evidence being tested.
 			await rename(join(root, ".praxity/identity"), join(root, "lost-identity"));
 		} else {
 			await mkdir(join(root, ".praxity/.praxity-write-content-identity.json.archive"), {
@@ -426,7 +422,6 @@ it.each([
 			roles.some((role) => node.type === `reader-role:${role}`),
 		);
 		expect(removed.length).toBeGreaterThan(0);
-		// Recreate the earlier persisted schema without changing source or any surviving ID.
 		for (const [id] of removed) delete snapshot.nodes[id];
 		const serialized = serializeIdentity(snapshot);
 		const hash = digest(serialized);
@@ -586,8 +581,6 @@ it("I4 keeps self-check criterion IDs through a reorder and never reuses one for
 	const copied = criteria(copy);
 	expect(copied.map(([label]) => label)).toEqual(["Reason", "Respect", "Respect"]);
 	expect(copied[0][1]).toBe(reasonId);
-	// As with checklist tasks, an exact source copy is ambiguous: both get new pending IDs
-	// until the author resolves it, so neither silently takes the original identity.
 	const copies = [copied[1][1], copied[2][1]];
 	expect(new Set([reasonId, respectId, ...copies]).size).toBe(4);
 	const snapshot = present(copy.identity.snapshots.at(-1));
@@ -624,7 +617,6 @@ it("I4 export refuses altered rendered content even when source bytes and IDs ar
 	const lesson = present(result.lessons.get("lesson.prax"));
 	const body = present(lesson.blocks.find((block) => block.type === "text"));
 	body.data.content = "<p>Unpersisted content.</p>";
-	// A changed parse tree must not become the publication comparison's new authority.
 	const paragraph = present(lesson.nodes.get(body.id));
 	paragraph.node.raw = "Unpersisted content.";
 	expect(() => assertIdentityExportable(result)).toThrow(/Safety at work.*body.*persist/);
@@ -1535,7 +1527,6 @@ for (const established of [false, true]) {
 						originalIds,
 					);
 			} else {
-				// No protected original and no commit: rollback never established identity.
 				expect(await readProjectRecoveryEvidence(root)).toEqual([
 					expect.objectContaining({ outcome: "rolled-back" }),
 				]);

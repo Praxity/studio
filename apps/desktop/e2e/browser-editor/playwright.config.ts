@@ -8,7 +8,6 @@ export default defineConfig({
 	globalSetup: "./global-setup.ts",
 	workers: 1,
 	retries: 0,
-	// CI's default dot reporter prints failures only at the end, so a step timeout hid them.
 	reporter: process.env.CI ? "line" : "list",
 	use: { headless: true, viewport: { width: 1280, height: 900 }, trace: "retain-on-failure" },
 	outputDir: join(process.env.PRAXITY_TEST_ARTIFACTS ?? tmpdir(), "browser-editor-results"),

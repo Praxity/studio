@@ -15,8 +15,6 @@ import { OperationService } from "../operations/operation-service";
 import { withProjectFileFlushes } from "../project-file-transactions";
 import { PreviewScheduler } from "../studio/preview-scheduler";
 
-// Real journal bytes, admissions and recovery remain; journal-flush tests own durability.
-// No-op syncFile also omits the default adapter's post-write path checks.
 function withCountingFlushes<Args extends unknown[]>(work: (...args: Args) => Promise<void>) {
 	return async (...args: Args) => {
 		const flushes = { syncFile: vi.fn(async () => {}), syncDirectory: vi.fn(async () => {}) };
@@ -255,7 +253,6 @@ it("dry-run projects a course diagnostic onto the no-store course namespace", as
 	if (!target) throw new Error("Missing first tab body");
 	const before = await bytes(root);
 	const apply = operations.applyOperation;
-	// The registry contract permits course diagnostics; current operations emit node refs.
 	vi.spyOn(operations, "applyOperation").mockImplementation((...args) => {
 		const planned = apply(...args);
 		if (planned.ok)

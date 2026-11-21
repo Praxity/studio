@@ -23,7 +23,6 @@ const runtime = { appVersion: "0.3.0", exportAssetsDir: "unused" };
 const original = "# Page\n\nSaved text.\n";
 const text = "\uFEFFUnsaved *French* text: été.\r\nSecond line.\r\n";
 beforeAll(async () => {
-	// CLI routing stays real; load its lazy server once outside the recovery scenarios.
 	await import("../studio/server");
 });
 afterEach(async () => {
@@ -75,7 +74,6 @@ it("lists and exports every retained draft as exact plain text without changing 
 		expect.objectContaining({ id: "retained-draft", file: "lesson.prax", text }),
 		expect.objectContaining({ id: "empty-draft", text: "" }),
 	]);
-	// Orphaned drafts still belong to the author after the source file disappears.
 	await unlink(join(project, "lesson.prax"));
 	const output = join(root, "recovered drafts");
 	const exported = await runPraxityCli(["recovery", "export-drafts", project, output], runtime);

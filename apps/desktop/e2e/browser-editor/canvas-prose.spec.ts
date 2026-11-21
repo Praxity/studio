@@ -258,7 +258,6 @@ for (const [ending, bom] of [
 					"choice",
 				);
 			}
-			// Captured artifact URLs are immutable. Wait for the saved-page revision before reload.
 			await expect.poll(() => new URL(page.url()).pathname).not.toBe(openingPath);
 			await page.reload({ waitUntil: "domcontentloaded" });
 			await expect(edit(page, item.name, item.visible)).toBeVisible();
@@ -443,7 +442,6 @@ for (const direction of ["Tab", "Shift+Tab"]) {
 			);
 			await expect(next).toBeFocused();
 			await expect.poll(() => observed.calls.length).toBe(1);
-			// Pending controls stay in reading order but cannot open a second field.
 			await page.keyboard.press("Enter");
 			await expect(field).toHaveValue("Leaf two!");
 			release();
@@ -492,10 +490,8 @@ test("C06b lost acknowledgement on a CRLF paragraph resolves saved bytes and per
 		);
 		await expect(field).toHaveCount(0);
 		await expect(page.getByRole("status")).toHaveText("Saved");
-		// Outside readers can see T1's capture gap until settlement, see "Durable file journal (T1)" in docs/context/architecture.md.
 		expect(await readFile(file, "utf8")).toBe(saved);
 		expect(calls).toHaveLength(1);
-		// Keep the old document until the second save proves the recovered raw baseline.
 		await expect
 			.poll(() => heldBuilds, { message: "The preview refresh hold must engage" })
 			.toBeGreaterThan(0);

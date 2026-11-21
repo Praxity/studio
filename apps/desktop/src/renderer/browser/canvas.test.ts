@@ -15,8 +15,6 @@ const built = { entryUrl: `${origin}/preview/revision/`, pages: [{ id: "page", s
 const reviewGate =
 	'<!doctype html><html><body><h1 id="review-heading">Some blocks would get new IDs</h1></body></html>';
 
-/** Mounts the canvas with a stub server: `build` answers each canvasPreviewBuild RPC
- * and `page` serves the built author document. */
 async function mountCanvas(
 	messages: CanvasMessages,
 	build: () => Response | Promise<Response>,
@@ -276,7 +274,6 @@ it("shows a practice refusal once in the status and keeps the last good page", a
 		expect(canvas.window.document.body).toBe(body);
 		expect(body.textContent).toBe("Saved course");
 		expect(canvas.view.update).not.toHaveBeenCalled();
-		// The same refusal after another outside change is not announced again.
 		const status = canvas.status() as Node;
 		let mutations = 0;
 		new canvas.window.MutationObserver(() => mutations++).observe(status, {
@@ -289,7 +286,6 @@ it("shows a practice refusal once in the status and keeps the last good page", a
 		await vi.waitFor(() => expect(canvas.readLink()?.getAttribute("aria-busy")).toBeNull());
 		expect(mutations).toBe(0);
 		expect(canvas.status()?.textContent).toBe(refusalText);
-		// A repaired course clears the refusal through the next admitted build.
 		reply = () => new Response(JSON.stringify({ ok: true, result: built }));
 		page = "<!doctype html><html><head></head><body><h1>Repaired course</h1></body></html>";
 		canvas.changeSource();
@@ -328,7 +324,6 @@ it("discards an obsolete refusal while the repaired source is still building", a
 		canvas.changeSource();
 		await vi.waitFor(() => expect(builds).toBe(1));
 		canvas.changeSource();
-		// Let the second watcher event supersede the pending request before releasing it.
 		await new Promise((resolve) => setTimeout(resolve, 0));
 		releaseFirst(practiceRefusal());
 		await vi.waitFor(() => expect(builds).toBe(2));

@@ -32,12 +32,10 @@ import { createStudioProjectSession, StudioSessionError } from "./project-sessio
 import { startStudioReadOnlyServer } from "./read-only-server";
 import { prepareStudioTemporaryOutputs } from "./temporary-outputs";
 
-// Replaced with a build-owned literal in the standalone CLI; never read from the environment.
 declare const __PRAXITY_CANVAS_SHA256__: string;
 
 const MAX_BODY_BYTES = 10_500_000;
 const MAX_QUEUED_EVENT_BYTES = 20_000_000;
-// Avoid Rubato's reserved 41700-41999 ports and their +1000 learner ports.
 const DEFAULT_PORT_START = 45000;
 const DEFAULT_PORT_COUNT = 1000;
 const RPC_ENVELOPE = z.object({ method: z.string().min(1).max(80), args: z.unknown() }).strict();
@@ -49,7 +47,6 @@ const STUDIO_IDENTITY = z
 			.min(1)
 			.max(4096)
 			.refine((value) => path.isAbsolute(value))
-			// Escape untrusted terminal controls before this value can enter any message.
 			.transform((value) =>
 				value.replace(
 					/[\p{Cc}\p{Bidi_Control}\u2028\u2029]/gu,
@@ -96,7 +93,6 @@ function reject(status: number, code: string, message: string): never {
 	throw new RequestError(status, code, message);
 }
 
-// An occupied port is untrusted. Never follow redirects or let its response stall startup.
 function identifyStudio(port: number): Promise<string | null> {
 	return new Promise((resolve) => {
 		let finished = false;
@@ -107,7 +103,6 @@ function identifyStudio(port: number): Promise<string | null> {
 			finished = true;
 			clearTimeout(timer);
 			chunks.length = 0;
-			// Close without injecting an error into a socket that Node may have detached.
 			response?.destroy();
 			req.destroy();
 			resolve(projectDir);
@@ -139,7 +134,6 @@ function identifyStudio(port: number): Promise<string | null> {
 				}
 			});
 		});
-		// A total deadline also bounds peers that keep sending bytes without ending.
 		const timer = setTimeout(() => finish(null), 1000);
 		req.once("error", () => finish(null));
 		req.once("close", () => finish(null));
@@ -185,8 +179,6 @@ async function readBody(
 		};
 		const end = () => {
 			cleanup();
-			// Drain oversized chunked uploads without retaining them. Closing while the
-			// client is still sending can reset its socket before it receives the 413.
 			if (oversized)
 				rejectBody(new RequestError(413, "body_too_large", t("serverRefusals.bodySize")));
 			else resolve(Buffer.concat(chunks));
@@ -200,7 +192,6 @@ async function readBody(
 	}
 }
 
-// Capture only trusted build output. Project files never participate in editor routing.
 async function uiFiles(editorAssetsDir: string, t: ReturnType<typeof createTranslator>) {
 	let root: string;
 	try {
@@ -251,7 +242,6 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 	} catch (cause) {
 		throw new Error(t("serverRefusals.canvasAssets"), { cause });
 	}
-	// Claim the port before identity persistence, preview compilation and watcher startup.
 	const server = createServer({
 		maxHeaderSize: 16_384,
 		requestTimeout: 15_000,
@@ -294,7 +284,6 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 	try {
 		let origin = "";
 		let preview: CoursePreviewService | undefined;
-		// Refuse linked lineage before temporary-output setup can touch the sidecar.
 		await withProjectFileTransaction(projectRoot, assertPlainIdentityStore, "write", false);
 		const readOnly = await startStudioReadOnlyServer({
 			projectDir: projectRoot,
@@ -404,7 +393,6 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 			}
 		}
 		function requireLocalLaunch(req: IncomingMessage) {
-			// Isolated Read uses another loopback port; its Edit link is a same-site navigation.
 			const sameSiteDocument =
 				req.headers["sec-fetch-site"] === "same-site" &&
 				req.headers["sec-fetch-mode"] === "navigate" &&
@@ -432,7 +420,6 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 
 		async function retryCanvasNavigation(req: IncomingMessage, res: ServerResponse) {
 			if (req.method !== "GET" || req.headers["sec-fetch-dest"] !== "document") return false;
-			// Stale document links restart admission after the active build settles.
 			await canvasBuilding;
 			res.writeHead(303, { Location: "/#" });
 			res.end();
@@ -440,7 +427,6 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 		}
 
 		function redirectCanvasDocument(res: ServerResponse, read: boolean, entry: string) {
-			// Issue author fragments only after compilation; Read clears them before changing origin.
 			res.writeHead(303, {
 				Location: read
 					? `${readOnly.origin}/canvas${entry}?praxity-resume=0#`
@@ -469,7 +455,6 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 				const route = req.url ?? "";
 				if (route === "/") {
 					if (req.method !== "GET") reject(405, "http_method", t("serverRefusals.launchGet"));
-					// An explicit empty fragment prevents the ready URL's bearer reaching learner HTML.
 					res.writeHead(303, { Location: "/launch?canvas=read#" });
 					res.end();
 					return;
@@ -496,7 +481,6 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 					let destination = `/canvas${readOnly.currentCanvasDocument(target) ?? target}#session=${token}`;
 					if (compile) {
 						expireCanvasAdmissions();
-						// Six simultaneous tabs fit without replacing each other's one-use admission.
 						if (canvasAdmissions.size >= 8) {
 							const oldest = canvasAdmissions.keys().next().value;
 							if (oldest !== undefined) canvasAdmissions.delete(oldest);
@@ -585,10 +569,7 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 					streams.add(res);
 					const send = (event: unknown) => {
 						if (res.destroyed || res.writableEnded) return;
-						// XHR progress delivers small records without fetch's WebKit padding workaround.
 						const line = `${JSON.stringify(event)}\n`;
-						// write(false) means backpressure, including a healthy large lesson. Bound
-						// queued bytes rather than dropping that lesson at the first false result.
 						if (res.writableLength + Buffer.byteLength(line) > MAX_QUEUED_EVENT_BYTES)
 							res.destroy();
 						else res.write(line);
@@ -622,7 +603,6 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 						const entry = await canvasBuilding;
 						if (!entry || signal.aborted || closing)
 							reject(503, "session_closed", t("serverRefusals.cancelled"));
-						// Share the in-flight capture so queued tabs cannot release each other's output.
 						redirectCanvasDocument(res, read, entry);
 						return;
 					}
@@ -651,7 +631,6 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 					return;
 				}
 				if (route.startsWith("/canvas/")) {
-					// Background projections are transient reads; entering an author document still reviews identity.
 					if (req.headers["sec-fetch-dest"] === "empty") requireLocalLaunch(req);
 					else if (await serveIdentityGate(req, res)) return;
 					const requested = new URL(route, origin);
@@ -681,7 +660,6 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 				reject(404, "not_found", t("serverRefusals.resource"));
 			} catch (error) {
 				const known = error instanceof RequestError || error instanceof StudioSessionError;
-				// Zod includes unrecognized input keys in its message; they cannot classify project errors.
 				const schemaError = error instanceof ZodError;
 				const fileBusy = !schemaError && isProjectFileBusyError(error);
 				const busy = !schemaError && isProjectBusyError(error);
@@ -781,9 +759,7 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 				},
 			);
 		});
-		// Keep raw headers available for duplicate checks; the byte limit still bounds parsing.
 		server.maxHeadersCount = 0;
-		// Reject expectations explicitly so Node cannot send headerless 417 or 100 responses.
 		const rejectExpectation = (req: IncomingMessage, res: ServerResponse) => {
 			ownHttpResponse(req, res);
 			res.writeHead(417, { ...privateHeaders, Connection: "close", "Content-Length": 0 });
@@ -827,15 +803,12 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 						server.close((error) => (error ? rejectClose(error) : resolve())),
 					);
 					server.closeAllConnections();
-					// HTTP's callback must not gate cancellation or owned-file cleanup.
 					const cleaned = (async () => {
-						// Existing preview leases can be released while an unrelated export is still draining.
 						const results = await Promise.allSettled([
 							session.close(),
 							readOnly.close(),
 							Promise.allSettled([...pending]),
 						]);
-						// Admitted preview builds may finish during close; release their late leases too.
 						results.push(...(await Promise.allSettled([preview?.dispose()])));
 						results.push(...(await Promise.allSettled([temporary?.dispose()])));
 						const errors = results.flatMap((result) =>

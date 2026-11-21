@@ -58,7 +58,6 @@ for (const lang of ["en", "fr"] as const) {
 		it.each([...adversarial, "", " ", "a".repeat(500)])(
 			"keeps 10,000 ordinals per kind distinct: %s",
 			(text) => {
-				// One document per adversarial text; changing text on the same run may keep its name.
 				const names = new Set<string>();
 				for (const [index, kind] of kinds.entries()) {
 					for (let n = 1; n <= 10_000; n++) {

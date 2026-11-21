@@ -67,7 +67,6 @@ it("retains both lessons when two processes add identities in five trials", asyn
 	for (const { root, results } of trials) {
 		for (const [message] of results) expect.soft(message.error).toBeUndefined();
 		const metadata = (await resolveLessonSources(root)).identity;
-		// Keep all five race trials in the failure evidence instead of stopping at the first loss.
 		expect
 			.soft(metadata.heads.map((lesson: { path: string }) => lesson.path).sort())
 			.toEqual(["lesson-0.prax", "lesson-1.prax"]);
@@ -90,7 +89,6 @@ it("refuses a hung live owner, then recovers immediately after its process crash
 	const held = once(child, "message");
 	child.send({ root, hold: true });
 	expect((await held)[0]).toEqual({ held: true });
-	// Advance only the contention clock; the child still owns the real SQLite lock.
 	const clock = vi
 		.spyOn(performance, "now")
 		.mockReturnValueOnce(0)

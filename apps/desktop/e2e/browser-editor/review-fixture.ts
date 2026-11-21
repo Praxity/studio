@@ -15,7 +15,6 @@ import type {
 import { startStudioReadOnlyServer } from "../../src/main/studio/read-only-server";
 import { openReviewStore } from "../../src/main/studio/review-store";
 
-// The C5 captured-deployment fixture exercises actual bootstrap, assets and comments routes.
 export async function servedReview(locale: string, deck = false) {
 	const root = await mkdtemp(
 		join(process.env.PRAXITY_TEST_ARTIFACTS ?? tmpdir(), "review-anchors-"),

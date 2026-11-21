@@ -7,12 +7,6 @@ import { EMBED_FRAME_CSP_SOURCES } from "@praxity/shared-blocks/embed-url-utils"
 import { stripInspectionMarkup } from "@praxity/shared-blocks/inspection-markup";
 import { ResponseStreamOwner } from "./response-stream";
 
-/**
- * `self` replaces every `'self'` source. CourseArtifactFrame's iframe sandbox makes the inspection
- * origin opaque from creation, and WebKit then matches `'self'` against nothing, refusing course
- * CSS, fonts, images and media. The server's own origin grants exactly what `'self'` grants an
- * unsandboxed document. Electron keeps `'self'`: its Chromium matches it against the URL's origin.
- */
 function courseCsp(nonce?: string, self = "'self'") {
 	return [
 		`default-src ${self}`,
@@ -26,15 +20,12 @@ function courseCsp(nonce?: string, self = "'self'") {
 		`frame-src ${EMBED_FRAME_CSP_SOURCES.join(" ")}`,
 		"object-src 'none'",
 		"base-uri 'none'",
-		// Nonces are readable by same-origin documents. Every inspection response
-		// must isolate its document, including direct navigation and popups.
 		...(nonce ? ["sandbox allow-scripts"] : []),
 	].join("; ");
 }
 
 export const COURSE_CSP = courseCsp();
 
-/** Inspection transforms captured bytes only. Learner serving retains its validators and ranges. */
 export async function serveCourseFile(
 	request: Request,
 	file: Pick<CourseArtifactFile, "byteLength" | "mediaType" | "sha256">,
@@ -42,7 +33,6 @@ export async function serveCourseFile(
 	cacheControl: string,
 	streams: ResponseStreamOwner,
 	getInspectionScript?: () => Promise<string>,
-	/** The server's bound origin, never one read from the request. Inspection names it for `'self'`. */
 	inspectionOrigin?: string,
 ): Promise<Response> {
 	const url = new URL(request.url);
@@ -53,8 +43,6 @@ export async function serveCourseFile(
 		const response = await serveFile(request, file, open, cacheControl, streams);
 		response.headers.set("Content-Security-Policy", csp);
 		response.headers.set("Vary", "Origin");
-		// Only captured artifact bytes reach this owner. Opaque inspection fonts
-		// and other CORS-mode resources need this exact, credential-free grant.
 		if (request.headers.get("origin") === "null") {
 			response.headers.set("Access-Control-Allow-Origin", "null");
 		}
@@ -68,11 +56,9 @@ export async function serveCourseFile(
 		});
 	if (!getInspectionScript) throw new Error("Inspection bridge is unavailable");
 	const script = await getInspectionScript();
-	// Learner requests do not load the HTML parser.
 	const { JSDOM } = await import("jsdom");
 	const body = await streams.body(() => open(), request.signal);
 	const html = await new Response(body).text();
-	// Use the HTML parser, including SVG and template contents. Parsing never executes course code.
 	const dom = new JSDOM(html, { runScripts: "outside-only" });
 	try {
 		const doc = dom.window.document;
@@ -209,7 +195,6 @@ export async function serveFile(
 	return new Response(body as BodyInit | null, { status: range ? 206 : 200, headers });
 }
 
-/** Transfer an admitted descriptor to the body, or close it if no body is opened. */
 export async function serveOpenedFile(
 	request: Request,
 	file: FileHandle,
@@ -231,8 +216,6 @@ export async function serveOpenedFile(
 			streams,
 		);
 	} finally {
-		// destroy() closes even an autoClose:false FileHandle stream. Giving the
-		// stream sole ownership avoids a second close, and closes only after pending IO.
 		if (!transferred) await file.close();
 	}
 }

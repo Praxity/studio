@@ -21,7 +21,6 @@ let writerEntry: string;
 beforeAll(async () => {
 	writerRoot = await mkdtemp(join(tmpdir(), "studio-cli-writer-"));
 	writerEntry = join(writerRoot, "writer.mjs");
-	// Compile once; every recovery case still kills a fresh real writer at capture.
 	await build({
 		entryPoints: [fileURLToPath(new URL("./fixtures/capture-reader-writer.ts", import.meta.url))],
 		outfile: writerEntry,
@@ -33,7 +32,6 @@ beforeAll(async () => {
 			js: 'import { createRequire } from "node:module"; const require = createRequire(import.meta.url);',
 		},
 	});
-	// Every case uses the real server; its lazy module load is file setup, not recovery work.
 	await import("../studio/server");
 });
 afterAll(async () => {
@@ -322,7 +320,6 @@ describe("studio command", () => {
 				return;
 			}
 			if (kind === "slow") {
-				// Keep delivering bytes so an inactivity timeout would never fire.
 				res.write("{");
 				const trickle = setInterval(() => res.write(" "), 100);
 				res.once("close", () => clearInterval(trickle));

@@ -56,7 +56,6 @@ function readBody(req: IncomingMessage, signal: AbortSignal): Promise<unknown> {
 			if (size > REVIEW_LIMITS.requestBodyBytes) {
 				cleanup();
 				req.pause();
-				// The refusal closes the connection, without consuming an unbounded remainder.
 				reject(new AdmissionError(413, "body_too_large"));
 			} else chunks.push(chunk);
 		};
@@ -79,7 +78,6 @@ function readBody(req: IncomingMessage, signal: AbortSignal): Promise<unknown> {
 	});
 }
 
-/** The host mints a fresh random credential for each listener; never persist it. */
 export function createReviewHttp(store: ReviewStore, capability: string) {
 	if (
 		typeof capability !== "string" ||
@@ -93,7 +91,6 @@ export function createReviewHttp(store: ReviewStore, capability: string) {
 	const expected = Buffer.from(capability);
 	return {
 		isRequest(target: string) {
-			// Inspect raw and normalized paths so dot segments cannot escape admission.
 			if (target.startsWith("/api/reviews")) return true;
 			try {
 				return new URL(target, "http://review.invalid").pathname.startsWith("/api/reviews");
@@ -146,7 +143,6 @@ export function createReviewHttp(store: ReviewStore, capability: string) {
 				if (req.headers["content-encoding"] !== undefined) refuse(415, "unsupported_media_type");
 				const target = req.url ?? "";
 				const rawPath = target.split("?")[0];
-				// Canonical UUIDs and literal separators only; never decode or normalize route identity.
 				const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}";
 				const route = new RegExp(
 					`^/api/reviews/(${uuid})/comments(?:/(${uuid})/(reply|reopen))?$`,
@@ -190,7 +186,6 @@ export function createReviewHttp(store: ReviewStore, capability: string) {
 				}
 				if (url.search) refuse(422, "invalid_input");
 				const kind = route[3] === "reply" ? "reply" : route[3] === "reopen" ? "reopen" : "create";
-				// Admit the envelope here; the store checks new text or verifies a historical receipt.
 				const parsed = parseCommandPayload(kind, await readBody(req, signal), true);
 				if (!parsed.ok) return sendRefusal(parsed);
 				if (parsed.value.reviewId !== store.reviewId) refuse(404, "not_found");

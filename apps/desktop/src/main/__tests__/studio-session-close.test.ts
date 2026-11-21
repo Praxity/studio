@@ -8,7 +8,6 @@ import { CoursePreviewService } from "../course-preview-service";
 import { CoursePreviewStateStore } from "../course-preview-state-store";
 import { createStudioProjectSession } from "../studio/project-session";
 
-// Fail at the watcher adapter, after closing the real watcher and its handles.
 vi.mock("chokidar", async (importOriginal) => {
 	const chokidar = await importOriginal<typeof import("chokidar")>();
 	return {

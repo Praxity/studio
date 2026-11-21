@@ -8,7 +8,6 @@ import { resolveExistingPathWithin } from "../path-security";
 import { createProjectAssetAdmission } from "../project-assets";
 import { withProjectFileTransaction } from "../project-file-transactions";
 
-/** Resolve only the PDF module's selected images, never feedback/hidden/unreferenced assets. */
 export async function resolvePdfAssets(
 	projectDir: string,
 	lessons: CoursePdfLesson[],

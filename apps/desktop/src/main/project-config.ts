@@ -41,10 +41,7 @@ async function readCompletionSettings(options: Parameters<typeof resolveCompleti
 	} catch (error) {
 		if (!(error instanceof SyntaxError) && (error as NodeJS.ErrnoException).code !== "ENOENT")
 			throw error;
-		// Missing or invalid project config uses the caller's fixed defaults.
 	}
-	// A pass mark decides pass/fail, so an unusable one must not silently fall back to a
-	// completion-only package (or drop the other saved completion rules with it).
 	const savedPassingScore = (rawConfig as { export?: { passingScore?: unknown } } | undefined)
 		?.export?.passingScore;
 	if (

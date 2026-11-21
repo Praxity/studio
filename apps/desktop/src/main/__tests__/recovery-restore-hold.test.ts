@@ -23,7 +23,6 @@ let writerEntry: string;
 beforeAll(async () => {
 	writerRoot = await mkdtemp(join(tmpdir(), "restore-hold-writer-"));
 	writerEntry = join(writerRoot, "writer.mjs");
-	// Compile once; the crash case still kills a fresh process after real durable publication.
 	await build({
 		entryPoints: [fileURLToPath(new URL("./fixtures/restore-hold-writer.ts", import.meta.url))],
 		outfile: writerEntry,
@@ -54,7 +53,6 @@ async function command(root: string, action: string, ...args: string[]) {
 	return JSON.parse(result.stdout);
 }
 async function persist(root: string) {
-	// Archive retention exercises the confirmed writer that can retire identities.
 	return withProjectFileTransaction(
 		root,
 		async () =>

@@ -247,7 +247,6 @@ export type EditorOperationResult =
 	  })
 	| OperationRefusal;
 
-/** Author-only admitted ranges; strings are derived when a source field opens. */
 export interface EditorDraftRanges {
 	target: Extract<DraftSeed["target"], { kind: "node" }>;
 	expected: { start: number; end: number };
@@ -255,7 +254,6 @@ export interface EditorDraftRanges {
 	scope: "node" | "file";
 }
 
-/** Decoded author outline. The plain JSON wire omits paths and derives page IDs from parents. */
 export interface EditorSnapshot {
 	schema: 1;
 	seq: number;
@@ -285,7 +283,6 @@ export interface EditorSnapshot {
 const outlineLabelByteLimit = 360;
 const snapshotMetadataEncoder = new TextEncoder();
 const byteLength = (text: string) => snapshotMetadataEncoder.encode(text).length;
-// JSON escaping (notably control characters and lone surrogates) also consumes wire bytes.
 const labelBytes = (text: string) => byteLength(JSON.stringify(text)) - 2;
 const snapshotLabelSchema = z
 	.string()
@@ -302,7 +299,6 @@ function snapshotLabel(value: string): string {
 	}
 	return `${clipped}\u2026`;
 }
-// Exhaustive against the grammar's type: adding a tree kind requires its transport bound here.
 const snapshotKinds = {
 	lesson: true,
 	frontmatter: true,
@@ -330,7 +326,6 @@ const snapshotTypes = new Set([...Object.keys(BLOCK_SCHEMA), ...Object.keys(snap
 const kindSchema = z.string().refine((kind) => Object.hasOwn(snapshotKinds, kind));
 const typeSchema = z.string().refine((type) => snapshotTypes.has(type));
 const displayIdSchema = previewRenderDraftSchema.shape.nodeId.refine((id) => labelBytes(id) <= 36);
-// Snapshot transport shares the existing IPC source ceiling and bounds offsets/indexes with it.
 const sourceLimit = grammarSourceSchema.maxLength;
 if (sourceLimit === null) throw new Error("Editor snapshot requires bounded admitted source");
 const snapshotOffset = offset.max(sourceLimit);
@@ -349,10 +344,8 @@ const snapshotNodeSchema = z
 		kind: kindSchema,
 		type: typeSchema,
 		label: snapshotLabelSchema,
-		// Preserve the outline revision and source fingerprint even when they differ.
 		revisions: z.tuple([sourceRevisionSchema, sourceRevisionSchema]),
 		target: nodeRefSchema.shape.nodeId,
-		// Expected start/end, editable start/end; the source owns UTF-16 range validation.
 		ranges: z.tuple([snapshotOffset, snapshotOffset, snapshotOffset, snapshotOffset]),
 		index: snapshotOffset,
 	})
@@ -429,7 +422,6 @@ const snapshotLessonSchema = z
 			if (seed.target.nodeId !== null && seed.target.nodeId !== id)
 				context.addIssue({ code: "custom", message: "Invalid editor snapshot target" });
 			try {
-				// The source-range owner validates containment; no derived text enters the payload.
 				draftText(lesson.source, seed.expected, seed.editable);
 			} catch (error) {
 				if (!(error instanceof RangeError)) throw error;
@@ -438,7 +430,6 @@ const snapshotLessonSchema = z
 		}
 	});
 
-/** Plain author JSON only. Both lesson and node seeds retain durable-only write targets. */
 export const editorSnapshotSchema = z
 	.object({
 		schema: z.literal(1),
@@ -448,7 +439,6 @@ export const editorSnapshotSchema = z
 	})
 	.strict();
 
-/** Plain JSON transport: local child indexes plus parent IDs replace depth-dependent paths. */
 export function prepareEditorSnapshot(
 	snapshot: EditorSnapshot,
 ): z.input<typeof editorSnapshotSchema> {
@@ -484,7 +474,6 @@ const admittedLessonReads = new WeakMap<
 	{ source: string; revision: string; bindings: string; read: ReturnType<typeof readLesson> }
 >();
 
-/** The admitted source and display bindings own the parse, never a draft or presentation. */
 function admittedLessonRead(lesson: EditorLesson) {
 	const bindings = JSON.stringify([
 		lesson.file,
@@ -511,7 +500,6 @@ function admittedLessonRead(lesson: EditorLesson) {
 	);
 	const read = readLesson(lesson.source, {
 		ids: (node, role) => {
-			// Frontmatter reader roles belong to the lesson, never to executable nodes.
 			const id =
 				node.kind === "frontmatter" && role
 					? lesson.id
@@ -529,7 +517,6 @@ function admittedLessonRead(lesson: EditorLesson) {
 	return read;
 }
 
-/** Raw reader callers own their result; projections keep the admitted parse private. */
 export function readEditorLesson(lesson: EditorLesson) {
 	return structuredClone(admittedLessonRead(lesson));
 }
@@ -541,7 +528,6 @@ export function editorLessonFrame(
 	return buildFrameView({ ...options, lesson: admittedLessonRead(lesson), file: lesson.file });
 }
 
-/** Outline names and page views use the same admitted reader as lesson dispatch. */
 export function editorLessonOutline(
 	lesson: EditorSnapshot["lessons"][number],
 	session: Session,
@@ -566,7 +552,6 @@ export function editorLessonOutline(
 	};
 }
 
-/** Dispatch projects the admitted lesson even when it has no presented document. */
 export function editorLessonProjection(
 	lesson: EditorSnapshot["lessons"][number],
 	session: Session,
@@ -595,7 +580,6 @@ export function editorLessonProjection(
 	};
 }
 
-/** Node membership binds its ranges to the admitted lesson that owns its source. */
 export function editorDraftSeed(
 	lesson: {
 		file: string;
@@ -618,8 +602,6 @@ export function editorDraftSeed(
 	};
 }
 
-// Zod can discard __proto__ while cloning. Reject it, inherited objects and
-// prototype names before a schema or YAML setter can interpret them.
 const safeJson = z.unknown().superRefine((input, context) => {
 	const visit = (value: unknown): void => {
 		if (value === null || typeof value !== "object") return;
@@ -640,9 +622,7 @@ export function parseEditorInput<S extends z.ZodTypeAny>(schema: S, input: unkno
 	return schema.parse(input);
 }
 
-/** Rooted browser editor APIs; persistence carries the controller's exact draft. */
 export interface StudioEditorBridge {
-	/** Same-revision callers share a read; newer callers share a queued refresh. Stale replies retry once. */
 	editorSnapshot(): Promise<EditorSnapshot>;
 	onEditorSnapshotChanged(receive: (change: { seq: number }) => void): () => void;
 	previewSelectPage(
@@ -676,17 +656,13 @@ export interface StudioEditorBridge {
 }
 export { seedSchema as draftSeedSchema };
 
-/** Captured compiler page identity and position, independent of course DOM markers. */
 export interface CanvasPageScope {
-	/** Detect a deleted or renamed source file; never a replacement for identity admission. */
 	file?: string;
-	/** Sequence captured before compiling this retained author artifact. */
 	editorSeq?: number;
 	pageId: string;
 	lessonId: string;
 	pageIndex: number;
 	pageIds?: readonly string[];
 	sourceRevisions?: Record<string, string>;
-	/** A captured module-deck document renders every page of this lesson. */
 	allLessonPages?: boolean;
 }

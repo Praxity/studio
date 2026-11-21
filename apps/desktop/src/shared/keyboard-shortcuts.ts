@@ -32,9 +32,6 @@ const LEGACY_SHORTCUTS = [
 	{ id: "close-tab", combo: "mod+W", actionKey: "closeTab" },
 	{ id: "close-focused-tab", combo: "Delete / Backspace", actionKey: "closeFocusedTab" },
 	{ id: "toggle-left-panel", combo: "mod+\\", actionKey: "toggleLeftPanel" },
-	// Digits follow each ribbon top-to-bottom, so the number matches what the eye
-	// counts. They used to be arbitrary — Design was 1, Accessibility 2,
-	// Compositions 3, and Blocks (the most-used panel) had no binding at all.
 	{
 		id: "sidebar-files",
 		combo: "mod+Shift+1",
@@ -109,9 +106,6 @@ const LEGACY_SHORTCUTS = [
 		accelerator: "CmdOrCtrl+0",
 		actionKey: "zoomReset",
 	},
-	// Implemented in PageCard, but absent here until now, so the only way to learn
-	// it was to read the source. A shortcut nobody can discover is not a keyboard
-	// alternative to dragging.
 	{ id: "move-page-up", combo: "Alt+Up", actionKey: "movePageUp" },
 	{ id: "move-page-down", combo: "Alt+Down", actionKey: "movePageDown" },
 ] as const;
@@ -130,7 +124,6 @@ export {
 export type KeyboardShortcutId = (typeof KEYBOARD_SHORTCUT_REGISTRY)[number]["id"];
 export type KeyboardShortcutActionKey = (typeof KEYBOARD_SHORTCUT_REGISTRY)[number]["actionKey"];
 
-// These combinations address browser tabs, windows, navigation, print, bookmarks or zoom.
 const LEGACY_BROWSER_UNAVAILABLE_SHORTCUT_IDS = new Set<string>([
 	"new-project",
 	"open-project",

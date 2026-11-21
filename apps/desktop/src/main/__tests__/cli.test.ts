@@ -18,7 +18,6 @@ const tempDirs: string[] = [];
 const runtime = { appVersion: "0.1.2", exportAssetsDir: "/studio/export-assets" };
 
 beforeAll(async () => {
-	// The first compiler refusal lazily loads the real error classes from this module.
 	await import("@praxity/export-pipeline");
 });
 

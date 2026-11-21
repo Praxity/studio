@@ -37,8 +37,6 @@ import {
 } from "../identity-store";
 import { withProjectFileFlushes, withProjectFileTransaction } from "../project-file-transactions";
 
-// Real journal bytes, admissions and recovery remain; journal-flush tests own durability.
-// No-op syncFile also omits the default adapter's post-write path checks.
 function withCountingFlushes<Args extends unknown[]>(work: (...args: Args) => Promise<void>) {
 	return async (...args: Args) => {
 		const flushes = { syncFile: vi.fn(async () => {}), syncDirectory: vi.fn(async () => {}) };
@@ -63,8 +61,6 @@ async function fixture(seedSession = true, lessonSources = sources) {
 	const root = await mkdtemp(join(tmpdir(), "identity-issued-plan-"));
 	roots.push(root);
 	await Promise.all(paths.map((path, i) => writeFile(join(root, path), lessonSources[i])));
-	// Seeding is setup, not the write under test. Keep real persistence for admission
-	// and its durable result, but avoid a second journal for the initial fixture.
 	await writeIdentityFixture(root, await resolveCourseIdentity(root, { lessonPaths: paths }));
 	const session = new CourseIdentitySession(root);
 	const current = await withProjectFileTransaction(
@@ -560,7 +556,6 @@ for (const mutation of ["snapshot", "namespace", "same-size source", "junction"]
 					await rm(join(root, ".praxity"));
 					await rename(saved, join(root, ".praxity"));
 				}
-				// Make the independent admission before reusing this resolution's private bytes.
 				const freshBase = await resolveCourseIdentity(root, { lessonPaths: paths });
 				const fresh = await resolveCourseIdentity(root, options(freshBase, plan(freshBase)));
 				expect(resolved.identity.snapshots).toEqual(fresh.identity.snapshots);
@@ -634,7 +629,6 @@ it("takes ownership of a private installed store without cloning the same record
 });
 it("an unchanged seeded admission equals a fresh admission, including mappings and status", async () => {
 	const { root, session, current } = await fixture(false);
-	// Obtain the independent resolution before this session can retain any evidence.
 	const expected = await resolveCourseIdentity(root, { lessonPaths: paths });
 	await withProjectFileTransaction(
 		root,

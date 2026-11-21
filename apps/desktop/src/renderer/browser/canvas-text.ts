@@ -74,8 +74,6 @@ export function canvasTextNeedsFallback(geometry: CanvasTextGeometry): boolean {
 	if (geometry.focusDeparted) return false;
 	if (!geometry.focused) return true;
 	const { box, scrollY, viewport } = geometry;
-	// A normal document position can leave the viewport after the author scrolls.
-	// Negative document coordinates instead indicate course positioning defeated flow.
 	if (
 		(box.top < 0 || box.bottom > viewport.height) &&
 		box.top + scrollY >= 0 &&
@@ -88,12 +86,10 @@ export function canvasTextNeedsFallback(geometry: CanvasTextGeometry): boolean {
 
 const staleRefusalCodes = ["stale", "conflict", "orphaned", "ambiguous"];
 
-// Only known saved-field recoveries bypass document admission. Other refusals may need a server page.
 export function canvasTextCanReloadInPlace(error: string): boolean {
 	return staleRefusalCodes.includes(error);
 }
 
-/** One in-memory field, no draft or render lifecycle. */
 export function createCanvasTextSession(port: CanvasTextPort, changed: () => void) {
 	type Phase = "closed" | "editing" | "saving" | "unknown" | "retry";
 	let current: {
@@ -124,7 +120,6 @@ export function createCanvasTextSession(port: CanvasTextPort, changed: () => voi
 		const ids = new Map(correspondence.map(({ runtimeId, durableId }) => [runtimeId, durableId]));
 		const opening = current.binding;
 		const range = opening?.range;
-		// The operation owns line endings. Retain its acknowledged bytes for the next edit.
 		const text =
 			opening && range && edits
 				? applyEdits(
@@ -192,7 +187,6 @@ export function createCanvasTextSession(port: CanvasTextPort, changed: () => voi
 			}
 		} catch (error) {
 			console.error("[studio] Canvas saved-byte check failed", error);
-			// A failed read is no proof that the write failed. Keep retries fenced.
 		} finally {
 			checking = false;
 		}
@@ -274,7 +268,6 @@ export function createCanvasTextSession(port: CanvasTextPort, changed: () => voi
 			return true;
 		},
 		async retry() {
-			// Reuse the immutable transaction if a lost original request arrives late.
 			if (current.phase === "retry") {
 				pending = send();
 				await pending;
@@ -288,13 +281,6 @@ export function createCanvasTextSession(port: CanvasTextPort, changed: () => voi
 	};
 }
 
-/** References admit controls; rendered IDs only locate a snapshot-admitted field. */
-// A11y decision, 2026-10-17: one polite announcer and a persistent described error.
-// Checking an unknown save changes available actions without repeating its outcome.
-// Discard confirmation is a named group; focusing Keep editing exposes its question once.
-// Caption buttons sit outside figcaption. An open field replaces its run inside it;
-// the figure keeps its captured authored name until its original name attributes return.
-// Browser journeys verify focus and markup; NVDA/VoiceOver acceptance is separate.
 export function mountCanvasTextFields(
 	fields: CanvasTextBinding[],
 	port: CanvasTextPort,
@@ -379,13 +365,11 @@ export function mountCanvasTextFields(
 				editButtonName(messages, entry.nameKind, n, entry.heading.textContent ?? ""),
 			);
 			if (entry.nameKind === "caption") {
-				// Keep controls outside the figure name while showing which run each edits.
 				entry.captionContext.textContent = entry.heading.textContent;
 			}
 		}
 	}
 	function presentation(root: Document, binding: CanvasTextBinding) {
-		// Locate compiler text children so controls and list containers keep their identity.
 		const selector =
 			binding.field === "subject"
 				? ".praxity-block[data-node-id]"
@@ -423,7 +407,6 @@ export function mountCanvasTextFields(
 	}
 	function anchor(entry: (typeof entries)[number], open = false) {
 		if (entry.binding.kind === "option" && !open) return entry.heading.closest("label");
-		// Caption controls must not become part of the figure's caption-derived name.
 		if (open) return entry.heading;
 		return entry.heading.closest(".praxity-block-caption") ?? entry.heading;
 	}
@@ -442,7 +425,6 @@ export function mountCanvasTextFields(
 	function reanchor(entry: (typeof entries)[number], open = false) {
 		const target = anchor(entry, open);
 		if (!target) return;
-		// Several caption runs share a caption, but keep their buttons in run order.
 		const previous = entries
 			.filter(
 				(other) =>
@@ -489,8 +471,6 @@ export function mountCanvasTextFields(
 		control: HTMLElement,
 		block: "nearest" | "center" = "nearest",
 	): boolean {
-		// Focus decision, 2026-10: nearest and centre alone both lost a tall field's label.
-		// Keep native host scrolling; cap the textarea so its own scroll exposes the caret.
 		const open = control === entry.field;
 		const box = control.getBoundingClientRect();
 		const x = (box.left + box.right) / 2;
@@ -506,8 +486,6 @@ export function mountCanvasTextFields(
 			const start = Math.max(0, portTop, bounds.top);
 			const end = Math.min(innerHeight, portBottom, bounds.bottom);
 			if (end <= start) continue;
-			// Behind-content chrome, including negative z-index, must not reserve space.
-			// A higher header can cover the midpoint while leaving this header's edges exposed.
 			if (
 				![start + 1, (start + end) / 2, end - 1].some((y) => {
 					const hit = Document.prototype.elementFromPoint.call(document, x, y);
@@ -524,7 +502,6 @@ export function mountCanvasTextFields(
 				element instanceof HTMLElement && element.offsetHeight
 					? bounds.height / element.offsetHeight
 					: 1;
-			// An unstuck header's flow gap scrolls away; only its box and inset can cover the port.
 			const covered =
 				style.position === "sticky" && inset.endsWith("px")
 					? Math.min(overlap, bounds.height + Math.max(0, Number.parseFloat(inset)) * scale)
@@ -535,21 +512,17 @@ export function mountCanvasTextFields(
 		const hostBox = entry.host.getBoundingClientRect();
 		const scale = entry.host.offsetHeight ? hostBox.height / entry.host.offsetHeight : 1;
 		if (open) {
-			// Let the native textarea scroll its caret while the label stays above course chrome.
 			const port = scrollPort(entry.host);
 			const height = Math.min(innerHeight, port.bottom - port.top);
 			entry.field.style.maxHeight = `${Math.max(entry.minimum.height, (height - top - bottom - 16 - (box.top - hostBox.top)) / scale)}px`;
 		}
-		// A recovery control needs its own margin; scrolling its whole panel can hide the target.
 		const target = open || control === entry.button ? entry.host : control;
 		target.style.setProperty("scroll-margin-top", `${top / scale + 8}px`, "important");
 		target.style.setProperty("scroll-margin-bottom", `${bottom / scale + 8}px`, "important");
 		const visible = () =>
 			open ? cornersHit(entry) : hitsHost(entry, control.getBoundingClientRect());
-		// Leave a visible pointer target in place until its click completes.
 		if (visible()) return true;
 		target.scrollIntoView({ block, inline: "nearest", behavior: "instant" });
-		// Nearest can uncover other sticky chrome; measure it again before the one centre pass.
 		return visible() || (block === "nearest" && revealControl(entry, control, "center"));
 	}
 	function usable(entry: (typeof entries)[number]) {
@@ -568,7 +541,6 @@ export function mountCanvasTextFields(
 		if (!hasCanvasTextSize(geometry)) return false;
 		const focused = entry.shadow.activeElement;
 		const courseFocus = Document.prototype.querySelector.call(document, ":focus");
-		// Resize can follow a legitimate departure while a save is pending.
 		geometry.focusDeparted = Boolean(
 			!focused &&
 				courseFocus &&
@@ -584,20 +556,16 @@ export function mountCanvasTextFields(
 	}
 	function protect(entry: (typeof entries)[number], covered = false) {
 		if (active !== entry || fallback || (!covered && usable(entry))) return;
-		// Native caret scrolling after a resize can leave the field under sticky course chrome.
-		// Try its normal document position before treating the course CSS as a flow failure.
 		if (revealControl(entry, entry.field) && usable(entry)) return;
 		const focused = entry.shadow.activeElement;
 		fallback = true;
 		bodyWasInert = body instanceof HTMLElement && body.inert;
-		// The panel remains outside body; nothing behind this exceptional field is actionable.
 		movingFocus = true;
 		try {
 			documentRoot.append(entry.host);
 			if (body instanceof HTMLElement) body.inert = true;
 			entry.host.setAttribute("popover", "manual");
 			const authorRoot = status.getRootNode();
-			// Keep the toggle reachable even when the author scrolls back to the header.
 			const top =
 				authorRoot instanceof ShadowRoot ? authorRoot.host.getBoundingClientRect().height + 16 : 8;
 			entry.host.style.cssText =
@@ -616,14 +584,12 @@ export function mountCanvasTextFields(
 	}
 	function sizeField(entry: (typeof entries)[number]) {
 		entry.field.rows = Math.max(2, entry.field.value.split("\n").length);
-		// scrollHeight includes soft-wrapped lines in engines without field-sizing.
 		entry.field.style.height = "auto";
 		entry.field.style.height = `${entry.field.scrollHeight + 2}px`;
 	}
 	function revealField(entry: (typeof entries)[number]) {
 		const visible = revealControl(entry, entry.field);
 		protect(entry, !visible);
-		// Opening selects the end before layout; a new height cap must expose that caret too.
 		entry.field.scrollTop = entry.field.scrollHeight;
 	}
 	function confirmDiscard(action: () => void, kind: "reload" | "leave" | "cancel") {
@@ -745,7 +711,6 @@ export function mountCanvasTextFields(
 			entry.progress.hidden = false;
 			entry.progress.textContent = messages.saving;
 			status.classList.add("announcement-only");
-			// Keep the polite region for outcomes; clear it so an identical refusal can announce again.
 			if (status.textContent) status.textContent = "";
 			entry.confirm.hidden = true;
 			discardAction = undefined;
@@ -773,7 +738,6 @@ export function mountCanvasTextFields(
 									unknown: messages.unknown,
 								} as Record<string, string>
 							)[state.error] ?? (state.error ? messages.refused : ""));
-		// Change the persistent error only on an outcome, never for typing or repeated renders.
 		if (entry.error.textContent !== text) {
 			entry.error.textContent = text;
 			if (text) {
@@ -839,7 +803,6 @@ export function mountCanvasTextFields(
 			const progress = createElement("span");
 			progress.className = "save-status";
 			progress.hidden = true;
-			// The band owns polite announcements; this adjacent text has no live role.
 			progress.style.marginInlineStart = "8px";
 			const panel = createElement("div");
 			panel.className = "field";
@@ -918,7 +881,6 @@ export function mountCanvasTextFields(
 			if (!editing) host.style.setProperty("display", "none", "important");
 			host.addEventListener("click", (event) => event.preventDefault());
 			edit.addEventListener("focus", () => {
-				// Pointer focus precedes click in Firefox; moving its target loses that click.
 				if (active || !edit.matches(":focus-visible")) return;
 				reveal(entry);
 			});
@@ -934,7 +896,6 @@ export function mountCanvasTextFields(
 						label: figure.getAttribute("aria-label"),
 						labelledby: figure.getAttribute("aria-labelledby"),
 					};
-					// The field replaces its run inside figcaption, while the figure keeps its authored name.
 					figure.setAttribute("aria-label", entry.figureName.label ?? caption.innerText);
 					figure.removeAttribute("aria-labelledby");
 				}
@@ -950,7 +911,6 @@ export function mountCanvasTextFields(
 				lifecycle?.opened();
 				session.open(binding);
 				sizeField(entry);
-				// Layout pixels survive course transforms; content may shrink back to the CSS minimum.
 				entry.minimum = {
 					width: field.offsetWidth,
 					height: Number.parseFloat(getComputedStyle(field).minHeight),
@@ -972,7 +932,6 @@ export function mountCanvasTextFields(
 				if (event.isTrusted) composing = true;
 			});
 			field.addEventListener("compositionend", () => {
-				// Chromium commits a native IME with an untrusted compositionend.
 				composing = false;
 			});
 			field.addEventListener("keydown", (event) => {
@@ -1040,7 +999,6 @@ export function mountCanvasTextFields(
 				const index = controls.indexOf(event.target as HTMLElement);
 				if (controls[index + (event.shiftKey ? -1 : 1)]) return;
 				if (confirm.hidden) void session.save("blur");
-				// Let native Tab traversal continue from the heading, including shadow roots and radios.
 				if (session.state().phase === "closed" && !event.shiftKey) focus(edit, true);
 				else {
 					host.tabIndex = -1;
@@ -1049,7 +1007,6 @@ export function mountCanvasTextFields(
 					);
 					for (const control of controls) control.tabIndex = -1;
 					focus(host, true);
-					// Keep its shadow controls out of this native traversal, then restore entry.
 					setTimeout(() => {
 						host.removeAttribute("tabindex");
 						for (const [control, value] of tabStops) {
@@ -1093,7 +1050,6 @@ export function mountCanvasTextFields(
 				if (!event.isTrusted || !discardAction) return;
 				const action = discardAction;
 				discardAction = undefined;
-				// Explicit discard also releases the unload guard for navigation/reload.
 				if (session.cancel(true)) action();
 			});
 			retry.addEventListener("click", (event) => {
@@ -1135,8 +1091,6 @@ export function mountCanvasTextFields(
 		"pointerdown",
 		(event: Event) => {
 			if (event.isTrusted)
-				// The author panel saves on activation. Closing on mousedown can shrink the
-				// document and move its toggle before the matching pointerup/click arrives.
 				pointerInside = Boolean(
 					active &&
 						(event.composedPath().includes(active.panel) ||
@@ -1221,7 +1175,6 @@ export function mountCanvasTextFields(
 		const focused = entries.find((entry) => entry.shadow.activeElement === entry.button);
 		if (focused) reveal(focused);
 	});
-	// A loaded image moves later runs without resizing their own hosts.
 	if (body) observer.observe(body);
 	update(fields);
 	function dispose() {
@@ -1265,7 +1218,6 @@ export function mountCanvasTextFields(
 		focusedBinding: () =>
 			entries.find((entry) => entry.shadow.activeElement === entry.button)?.binding,
 		focusBinding(binding: CanvasTextBinding) {
-			// An outside rename can retire a runtime ID. Source position restores focus only.
 			const entry =
 				entries.find((entry) => entry.binding.nodeId === binding.nodeId) ??
 				entries.find(

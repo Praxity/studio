@@ -2,7 +2,6 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { Readable } from "node:stream";
 import { finished, pipeline } from "node:stream/promises";
 
-/** Own pending opens and captured bodies until their underlying streams close. */
 export class ResponseStreamOwner {
 	private closing = false;
 	private readonly opening = new Set<Promise<ReadableStream<Uint8Array>>>();
@@ -21,8 +20,6 @@ export class ResponseStreamOwner {
 		if (this.closing) throw new Error("Response streams are closing");
 		signal.throwIfAborted();
 		const stream = await open();
-		// Keep a terminal handler for the stream's lifetime. Bridges can schedule
-		// another error after close, when transient pipeline listeners are gone.
 		stream.on("error", () => stream.destroy());
 		const closed = stream.closed
 			? Promise.resolve()
@@ -35,8 +32,6 @@ export class ResponseStreamOwner {
 			signal.removeEventListener("abort", abort);
 			this.active.delete(stream);
 		};
-		// The Web body delivers read errors to its consumer. Here both outcomes
-		// must wait for close, including completion on a non-auto-closing stream.
 		const done = finished(stream).then(settle, settle);
 		this.active.set(stream, done);
 		const body = Readable.toWeb(stream) as ReadableStream<Uint8Array>;
@@ -61,15 +56,12 @@ export class ResponseStreamOwner {
 	}
 }
 
-/** Attach before asynchronous routing, including buffered files and event streams. */
 export function ownHttpResponse(req: IncomingMessage, res: ServerResponse): AbortSignal {
 	const cancellation = new AbortController();
 	const abort = () => {
 		cancellation.abort();
 		res.destroy();
 	};
-	// Request-body readers may remove their own error listeners on abort. These
-	// owners remain until the objects are collected to handle later terminal errors.
 	req.on("error", abort);
 	res.on("error", abort);
 	req.once("aborted", abort);
@@ -92,8 +84,6 @@ export async function sendResponse(response: Response, res: ServerResponse): Pro
 	const source = Readable.fromWeb(
 		response.body as import("node:stream/web").ReadableStream<Uint8Array>,
 	);
-	// fromWeb's reader.closed rejection can arrive after pipeline has settled.
-	// It still belongs to this response and must never become an unhandled event.
 	source.on("error", () => res.destroy());
 	await pipeline(source, res);
 }

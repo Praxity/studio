@@ -11,7 +11,6 @@ afterEach(async () => {
 	await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
 
-// Publish each real CLI variant once in shared setup, leaving assertions under the test budget.
 const publications: {
 	format: string;
 	locale: string;

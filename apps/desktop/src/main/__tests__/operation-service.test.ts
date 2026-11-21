@@ -39,8 +39,6 @@ vi.mock("node:fs/promises", async (importOriginal) => {
 	const nativeFs = await import("node:fs");
 	return {
 		...fs,
-		// Keep native filesystem checks and real handles/bytes, without a
-		// thread-pool round trip for each small fixture read or journal step.
 		realpath: async (...args: Parameters<typeof fs.realpath>) =>
 			nativeFs.realpathSync.native(...args),
 		lstat: async (...args: Parameters<typeof fs.lstat>) => nativeFs.lstatSync(...args),
@@ -58,8 +56,6 @@ vi.mock("node:fs/promises", async (importOriginal) => {
 					nativeFs.writeFileSync(fd, ...options),
 				stat: async (...options: Parameters<Handle["stat"]>) => nativeFs.fstatSync(fd, ...options),
 				close: async () => nativeFs.closeSync(fd),
-				// These contracts exercise real bytes, admissions, journals and cleanup.
-				// The journal suites own flush ordering, failure and crash durability.
 				sync: async () => {},
 			};
 			const courseIdentity = String(args[0])
@@ -393,7 +389,6 @@ async function fixture(files: Record<string, string> = { "lesson.prax": source }
 	const root = await mkdtemp(join(tmpdir(), "s1-operation-"));
 	roots.push(root);
 	const template = fixtureTemplates.get(JSON.stringify(files));
-	// Copy persisted identities, never hard-link mutable project files or share a service.
 	if (template) await cp(template, root, { recursive: true });
 	else await buildFixture(root, files);
 	return { root, service: new OperationService(root) };
@@ -456,7 +451,6 @@ it("D10 finding 9 rebases the original ID when an identical card takes its path"
 	});
 	const input = await request(root);
 	input.args = { name: "style", value: "outline" };
-	// An outside writer records its copy and move while the first request stays open.
 	const outsideWriter = new OperationService(root);
 	const duplicate = await outsideWriter.apply({
 		...input,
@@ -1131,7 +1125,6 @@ it.each(captionStarts.flatMap((start) => [17, 29].map((seed) => ({ start, seed }
 				expect(await bytes(root)).toEqual(before);
 				continue;
 			}
-			// Edit the second equal run first, then the first run at its literal position.
 			const index = start === "two runs" ? 1 - step : 0;
 			const target = fields[1 + index];
 			if (!target) throw new Error("Missing caption binding");
@@ -1294,8 +1287,6 @@ const allOptionFeedback =
 it("C06c1 adds option records without changing existing reader IDs or learner data", () => {
 	let next = 0;
 	const lesson = readLesson(allOptionFeedback, { ids: () => `id-${next++}` });
-	// The compiler-node binding amendment keeps projection metadata compile-only.
-	// Keep the original learner-data digest and reader-ID expectations.
 	expect(
 		digest(JSON.stringify(withoutInlineProjectionMetadata(lesson.pages, { keepDisplay: true }))),
 	).toBe("67f46fbd27c19a3fc2880b7a12256e0f53711c13d0216c5b9d7f8dfe00dc1cea");
@@ -1964,7 +1955,6 @@ it.each(choiceModelStarts.flatMap((start) => [17, 29].map((seed) => ({ start, se
 			model = render();
 			expect(await readFile(join(root, "lesson.prax"), "utf8")).toBe(model);
 			const saved = await bytes(root);
-			// A first save promotes runtime IDs. Keep the old hash with the current rendered ID.
 			const current = (await service.canvasTextSnapshot()).fields.find(
 				(field) => field.kind === target.kind && field.range.start === target.range.start,
 			);
@@ -2028,7 +2018,6 @@ it.each(proseFixtures)(
 			baseRevision: digest(initial),
 		});
 		const replacement = text.replace("First *line*", "Edited **line** 🦊");
-		// Native textareas supply LF. Existing wrap terminators must survive even in mixed source.
 		expect(
 			await service.canvasTextApply({
 				...canvasInput(paragraph, replacement.replace(/\r\n|\r/g, "\n")),
@@ -2396,7 +2385,6 @@ it.each(
 			}
 			expect(result).toMatchObject({ ok: true });
 			second = `Saved ${step}.`;
-			// The spec identifies the second body in the note, never the first equal quote.
 			model = model.replace(/(?<=::: note\n)(?:Same paragraph\.|Saved \d+\.)/u, `Saved ${step}.`);
 			expect(await readFile(join(root, "lesson.prax"), "utf8")).toBe(model);
 		}

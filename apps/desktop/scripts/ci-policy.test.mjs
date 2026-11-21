@@ -184,7 +184,6 @@ for (const [label, github, inputs, expected] of events) {
 				.sort(),
 			[...expected].sort(),
 		);
-		// Even a stale true browser output cannot allocate a PR browser runner.
 		if (github.event_name === "pull_request")
 			for (const job of browserJobs)
 				assert.equal(condition(ci.jobs[job].if, github, needs, false, inputs), false);

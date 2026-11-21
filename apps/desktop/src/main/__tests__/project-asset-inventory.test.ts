@@ -50,7 +50,6 @@ vi.mock("node:fs/promises", async (importOriginal) => {
 			}
 			return info;
 		}
-		// Cache-hit fixtures need a settled fine stamp, independent of machine load.
 		const precision =
 			metadata.precisionPath && target !== metadata.precisionPath ? "fine" : metadata.precision;
 		if ("mtimeNs" in info) {
@@ -60,7 +59,6 @@ vi.mock("node:fs/promises", async (importOriginal) => {
 				precision === "fine" ||
 				precision === "recent"
 			) {
-				// Deterministic equivalent of two writes within one coarse filesystem tick.
 				info.mtimeNs =
 					precision === "seconds"
 						? 1_000_000_000n
@@ -164,7 +162,6 @@ it.each(["ahead client", "forward jump", "slow filesystem clock"])(
 			return value;
 		});
 		await cache.read();
-		// Writer is finished before this retained read. No overlap permits old bytes.
 		const retained = await cache.read();
 		const cold = await new ProjectAssetInventory(root).read();
 		expect(Buffer.from(await nativeReadFile(file())).toString()).toBe("other");
@@ -254,7 +251,6 @@ it.each(["same-size", "truncate-extend"])(
 		});
 		const overlapped = await cache.read();
 		expect(changed).toBe(true);
-		// The first verification chunk was valid before the overlapping write.
 		expect(Buffer.from(overlapped.bytes.get("assets/a.png") ?? []).toString()).toBe("first");
 		clock.mockReturnValue(Number(metadata.recentStamp / 1_000_000n) + 10_000);
 		metadata.filesystemNow = metadata.recentStamp + 10_000_000_000n;
@@ -625,7 +621,6 @@ it.each(["path stat", "open", "opened fstat", "read", "final fstat", "target sta
 			});
 		const admitted = await cache.read();
 		expect(changed).toBe(true);
-		// A write after byte verification overlaps an already valid snapshot.
 		const content = stage === "final fstat" || stage === "target stat" ? "first" : "other";
 		expect(admitted.bytes.get("assets/a.png")).toEqual(new Uint8Array(Buffer.from(content)));
 		expect(admitted.digests.get("assets/a.png")).toBe(
@@ -851,7 +846,6 @@ it("retries a concurrent batch change and agrees with fresh admission", async ()
 		try {
 			await batchReady;
 			const value = await handle.readFile();
-			// Every worker returns after the planted write, so verification must see it.
 			mutation ??= writeFile(file(), "other").then(() => cache.invalidate());
 			await mutation;
 			return value;

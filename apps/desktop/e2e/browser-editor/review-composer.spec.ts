@@ -152,7 +152,6 @@ for (const locale of ["en", "fr"] as const) {
 			context,
 		}) => {
 			const fixture = await servedReview(locale);
-			// Without Web Locks each tab persists its own copy; Duplicate tab copies that store.
 			await context.addInitScript(() =>
 				Object.defineProperty(navigator, "locks", { value: undefined }),
 			);
@@ -198,8 +197,6 @@ for (const locale of ["en", "fr"] as const) {
 				await page.locator(".prx-review-submit").click();
 				await expect(page.locator(".prx-review-comment-text")).toHaveText(originalBody);
 				expect(posts[0]).toHaveLength(1);
-				// A browser's Duplicate tab copies sessionStorage, not the shared localStorage.
-				// Restore the real tab-only snapshot after the first tab acknowledges.
 				await duplicate.addInitScript(
 					({ origin, snapshot }) => {
 						if (location.origin === origin)

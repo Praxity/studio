@@ -21,7 +21,6 @@ it("retirement keeps unknown installation-like bytes for recovery", async () => 
 		onStep: async ({ kind }) => {
 			if (kind !== "installed") return;
 			const [archive] = await listProjectRecovery(root);
-			// Forward installation never creates an attempt name, even with known bytes.
 			await writeFile(join(root, archive.stage, unknown), "Saved lesson");
 		},
 	});
@@ -57,7 +56,6 @@ for (const outcome of ["save", "rollback"] as const)
 			expect(await readFile(join(root, "lesson.prax"), "utf8")).toBe(
 				outcome === "rollback" ? "Original lesson" : "Saved lesson",
 			);
-			// Outside editors may change the visible file before another Studio admission.
 			await writeFile(join(root, "lesson.prax"), "Outside edit of the saved lesson");
 			if (edit === "remove") await rm(join(root, "lesson.prax"));
 			await withProjectFileTransaction(root, async (canonical) => {

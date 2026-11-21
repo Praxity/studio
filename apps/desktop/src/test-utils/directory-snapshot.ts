@@ -1,7 +1,6 @@
 import { readdir, readFile, readlink } from "node:fs/promises";
 import { join, relative } from "node:path";
 
-/** Include empty folders and every byte, so refused writes cannot leave hidden debris. */
 export async function directorySnapshot(root: string) {
 	const entries = await readdir(root, { recursive: true, withFileTypes: true });
 	return Promise.all(

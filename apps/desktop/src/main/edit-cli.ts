@@ -14,8 +14,6 @@ import type { OperationService } from "./operations/operation-service";
 const messages = { en: en.edit, fr: fr.edit };
 type Language = keyof typeof messages;
 
-// Keep process statuses and the help contract together; refusal JSON keeps the
-// grammar's code names so callers never have to parse localized messages.
 export const editExitCodes = {
 	ok: 0,
 	failed: 1,
@@ -37,7 +35,6 @@ export const editExitCodes = {
 } as const satisfies Record<OperationRefusalCode | "failed" | "ok", number>;
 export type EditExitCode = (typeof editExitCodes)[keyof typeof editExitCodes];
 
-/** Each process status is a refusal class, shared by JSON, text and help output. */
 export const editRefusalCatalogue = Object.fromEntries(
 	([...operationRefusalCodes, "failed"] as const).map((code) => [
 		code,
@@ -102,12 +99,9 @@ export async function runInspectBlocksCli(args: string[]): Promise<CliExecution>
 }
 
 export async function runEditCli(args: string[]): Promise<CliExecution> {
-	// Select copy before parsing: an earlier refusal must honor a later --lang.
 	const language = languageFromArgs(args);
 	const json = args.includes("--json");
 	try {
-		// Atomic multi-operation persistence needs a batch adapter in S1. Refuse
-		// before reading or applying members until that adapter exists.
 		if (args.includes("--batch")) throw new EditRefusal("not-allowed");
 		const options = new Map<string, string>();
 		const values: Record<string, unknown> = {};
@@ -148,9 +142,7 @@ export async function runEditCli(args: string[]): Promise<CliExecution> {
 				let parsed: unknown = raw;
 				try {
 					parsed = JSON.parse(raw);
-				} catch {
-					/* Unquoted arguments are strings. */
-				}
+				} catch {}
 				values[name] = parsed;
 			} else {
 				if (options.has(key)) invalid();
@@ -227,7 +219,6 @@ export async function runEditCli(args: string[]): Promise<CliExecution> {
 				candidates = candidates.filter(
 					(b) => b.file === match[1] && b.startLine <= start && b.endLine >= end,
 				);
-				// A copied block's range belongs to the deepest containing source node.
 				const depth = Math.max(...candidates.map((b) => b.path.length));
 				candidates = candidates.filter((b) => b.path.length === depth);
 			}

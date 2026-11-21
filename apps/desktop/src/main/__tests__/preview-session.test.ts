@@ -19,8 +19,6 @@ import { resolveLessonSources } from "../lesson-source";
 import { withProjectFileFlushes } from "../project-file-transactions";
 import { createStudioProjectSession, type StudioEvent } from "../studio/project-session";
 
-// Real journal bytes, admissions and recovery remain; journal-flush tests own durability.
-// No-op syncFile also omits the default adapter's post-write path checks.
 function withCountingFlushes<Args extends unknown[]>(work: (...args: Args) => Promise<void>) {
 	return async (...args: Args) => {
 		const flushes = { syncFile: vi.fn(async () => {}), syncDirectory: vi.fn(async () => {}) };
@@ -57,7 +55,6 @@ async function waitFor(events: StudioEvent[], predicate: (event: StudioEvent) =>
 	}
 	throw new Error("Preview event missed T6's 1 s deadline");
 }
-// These cases exercise commit results and rendering; journal tests cover real flushes.
 async function applyNoteTone() {
 	const { root, session } = await fixture();
 	const current = await resolveLessonSources(root);
@@ -98,7 +95,6 @@ it(
 	15_000,
 );
 
-// Two durable commits: Intel Mac max 6590.8 ms, Linux CI 335 ms; allow twice the slower run.
 it(
 	"T2 historyApply after an operation advances the render seq",
 	withCountingFlushes(async () => {
@@ -112,7 +108,7 @@ it(
 			}),
 		).toMatchObject({ ok: true, seq: 2, render: { seq: 2 } });
 	}),
-	13_182, // timeout: docs/context/testing-strategy.md; run 38146537167
+	13_182,
 );
 it("T6 watcher admits an outside revision and compiles the visible page", async () => {
 	const { root, session, events } = await fixture();
@@ -168,7 +164,6 @@ it("a newly added invalid lesson emits diagnostics when it has no prior page IDs
 	const selected = (await session.invoke("previewSelectPage", {})) as { pageId: string };
 	await waitFor(events, (event) => event.type === "pageCompiled");
 	events.length = 0;
-	// Keep lesson order stable; a changed ordinal must refresh an untitled lesson's label.
 	await writeFile(join(root, "z-broken.prax"), "# Broken\n\n::: note Unclosed\nText.\n");
 	expect(await waitFor(events, (event) => event.type === "compileFailed")).toMatchObject({
 		type: "compileFailed",

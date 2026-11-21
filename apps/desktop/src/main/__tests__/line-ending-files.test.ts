@@ -110,7 +110,6 @@ it.each(["\n", "\r\n"])(
 		expect(baseline).not.toContain("id: page-");
 		expect(baseline).not.toContain("id: block-");
 		for (const word of ["First edit.", "Second edit."]) {
-			// The editor produces LF paragraphs even when the loaded baseline is CRLF.
 			const draft = baseline
 				.replace(/\r\n/g, "\n")
 				.replace(/(?:Original words\.|First edit\.)/, word);
@@ -158,7 +157,6 @@ it.each(["course.yaml", "narration.yaml"])(
 	},
 );
 
-// Two durable commits: Intel Mac max 7120.7 ms, Linux CI 339 ms; allow twice the slower run.
 it("loads CRLF lesson metadata and preserves manifest style through ID, add and rename writes", async () => {
 	const root = await project();
 	await writeFile(join(root, "course.yaml"), "title: Course\r\nlessons: [lesson.prax]\r\n");
@@ -187,7 +185,7 @@ it("loads CRLF lesson metadata and preserves manifest style through ID, add and 
 		"lesson.prax": before.lessonIds["lesson.prax"],
 		"renamed.prax": before.lessonIds["added.prax"],
 	});
-}, 14_242); // timeout: docs/context/testing-strategy.md; run 38146537167
+}, 14_242);
 
 it("exports a CRLF course with LF-authored narration anchors and zero unlinked entries", async () => {
 	const root = await project();

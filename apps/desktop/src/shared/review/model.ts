@@ -1,6 +1,5 @@
 import { assertHash, assertId, assertPath } from "@praxity/content-identity/src/files.ts";
 
-/** Retained review formats are read only to verify protected recovery evidence. */
 export interface ReviewRunMetadata {
 	schema: 1;
 	author: string;

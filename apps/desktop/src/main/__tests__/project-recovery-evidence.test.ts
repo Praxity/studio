@@ -70,7 +70,6 @@ vi.mock("node:fs/promises", async (importOriginal) => {
 				const read = handle.readFile.bind(handle);
 				vi.spyOn(handle, "readFile").mockImplementation(async (...options) => {
 					const bytes = await read(...options);
-					// Change bytes after the initial fingerprint and orphan verification.
 					if (outsideWriter.change && ++outsideWriter.committedReads === 3)
 						await outsideWriter.change();
 					return bytes;
@@ -81,8 +80,6 @@ vi.mock("node:fs/promises", async (importOriginal) => {
 	};
 });
 
-// Real journal bytes, admissions and recovery remain; journal-flush tests own durability.
-// No-op syncFile also omits the default adapter's post-write path checks.
 function withCountingFlushes<Args extends unknown[]>(work: (...args: Args) => Promise<void>) {
 	return async (...args: Args) => {
 		const flushes = { syncFile: vi.fn(async () => {}), syncDirectory: vi.fn(async () => {}) };
@@ -163,8 +160,6 @@ async function archive(root: string, path = "settings.json") {
 	return { stage, journal };
 }
 
-// Recorded from the previous writer, with only course/checksum placeholders.
-// Do not resolve the live basename: main could install the literal short name.
 for (const path of [
 	"NARRAT~1.YAM",
 	"NADF84~1.YAM",
@@ -183,7 +178,6 @@ for (const path of [
 				process.platform === "win32" || process.platform === "darwin"
 					? canonical.toLowerCase()
 					: canonical;
-			// The second spelling is a native APFS alias of the legacy registry.
 			journal.plan.files[0].path = path;
 			journal.checksum = createHash("sha256").update(JSON.stringify(journal.plan)).digest("hex");
 			const directory = join(root, oldShortNameArchive.stage);
@@ -213,7 +207,6 @@ for (const path of [
 			expect(await snapshot(directory)).toEqual(archiveBefore);
 		});
 
-// Ordinary author paths cannot alias C01 sidecars through their later segments.
 for (const path of [
 	"assets/château.png",
 	"leçon-1.prax",
@@ -515,8 +508,6 @@ for (const platform of ["linux", "darwin"] as const)
 					},
 				]);
 				expect(await snapshot(root)).toEqual(before);
-				// Main used this same journal format. Reintroduce its active commit,
-				// which must recover before the unrelated settings write can proceed.
 				await writeFile(
 					join(root, ".praxity-transaction.json"),
 					await readFile(join(root, stage, "journal.tmp")),

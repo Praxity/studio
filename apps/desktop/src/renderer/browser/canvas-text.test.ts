@@ -331,7 +331,6 @@ it("C04 a discarded unknown check cannot replace a newly opened field", async ()
 	await next;
 });
 
-// The model is the written single-field contract, independent of production state or matching.
 for (const start of ["closed", "editing", "saving", "refused", "unknown"] as const) {
 	it(`C04 generated histories from ${start} preserve requests, field text and disk bytes`, async () => {
 		for (let seed = 1; seed <= 12; seed++) {
@@ -453,7 +452,6 @@ for (const start of ["closed", "editing", "saving", "refused", "unknown"] as con
 				f.blockRead();
 				await run("unknown");
 			}
-			// Every starting state also proves an outside edit fences an unconfirmed retry.
 			const outside = fixture();
 			outside.session.open(binding);
 			outside.outside();
@@ -466,7 +464,6 @@ for (const start of ["closed", "editing", "saving", "refused", "unknown"] as con
 			expect(outside.disk()).toBe("# Page\n\n## Before\n\nOutside.\n");
 			await outside.session.retry();
 			expect(outside.calls).toHaveLength(1);
-			// Each generator exercises both high-risk controls, even before random actions.
 			for (const action of [
 				"check",
 				"retry",
@@ -614,8 +611,6 @@ it.each([
 	expect(canvasTextCanReloadInPlace(error)).toBe(expected);
 });
 
-// jsdom has no layout or native trusted input. Adapt those browser boundaries;
-// the actual field listeners and session remain under test.
 function mountTextField(reply: Promise<CanvasTextReply>) {
 	const dom = new JSDOM(
 		'<!doctype html><html><body><h2 class="praxity-block" data-node-id="heading">Before</h2></body></html>',

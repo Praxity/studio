@@ -137,7 +137,6 @@ describe("course-io", () => {
 			const result = await loadCourse(courseDir);
 			expect(result.manifest.title).toBe("");
 			expect(result.lessons).toHaveLength(2);
-			// Alphabetical order when no manifest
 			expect(result.lessons[0].filename).toBe("alpha.prax");
 		});
 

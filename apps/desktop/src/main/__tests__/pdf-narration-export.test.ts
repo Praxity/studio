@@ -9,8 +9,6 @@ import { ProjectAssetInventory } from "../export/project-asset-inventory";
 
 const { exportCoursePdf } = vi.hoisted(() => ({ exportCoursePdf: vi.fn() }));
 
-// Keep project admission, input preparation and publication validation real.
-// Only native compilation and the web viewer installation prerequisite are replaced.
 vi.mock("@praxity/format-renderers/pipelines/course-pdf", async (importOriginal) => ({
 	...(await importOriginal<typeof import("@praxity/format-renderers/pipelines/course-pdf")>()),
 	exportCoursePdf,

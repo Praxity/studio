@@ -4,7 +4,6 @@ import { lstat, readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-/** Kill a real participating writer while its authored destination is absent. */
 export async function interruptProjectWrite(
 	root: string,
 	target: string,
@@ -27,7 +26,6 @@ export async function interruptProjectWrite(
 	child.stdout?.on("data", (chunk) => {
 		output += chunk;
 	});
-	// close follows exit and drains the diagnostic streams before reporting them.
 	const closed = once(child, "close");
 	try {
 		const [message] = await Promise.race([
@@ -45,7 +43,6 @@ export async function interruptProjectWrite(
 	}
 }
 
-/** Access times are excluded because this observation itself updates them. */
 export async function projectDiskSnapshot(root: string): Promise<Record<string, unknown>> {
 	const result: Record<string, unknown> = {};
 	async function visit(relative: string) {

@@ -26,8 +26,6 @@ import {
 	summarize,
 } from "./compile-scheduler-gate.mjs";
 
-// SOURCE is read-only; SCRATCH holds fresh run-N/course copies and evidence.
-// Usage: node --import tsx .../benchmark-compile-scheduler.mts SOURCE SCRATCH [COMMITS] [RUNS]
 const [sourceArg, scratchArg] = process.argv.slice(2);
 if (!sourceArg || !scratchArg)
 	throw new Error("Usage: benchmark-compile-scheduler.mts SOURCE SCRATCH [COMMITS] [RUNS]");
@@ -167,8 +165,6 @@ async function measure(output: string, rows: Sample[]) {
 			);
 			await writeFile(join(output, "samples.json"), JSON.stringify(rows, null, 2));
 		}
-		// A refused commit must restore the saved fragment without deleting S2's
-		// persisted draft. P3b consumes this typed event to patch and announce it.
 		const refusalIdentity = await resolveLessonSources(scratch);
 		const [refusalFile, refusalLesson] =
 			[...refusalIdentity.lessons].find(([, read]) =>
@@ -249,8 +245,6 @@ async function measure(output: string, rows: Sample[]) {
 			join(output, "refusal.json"),
 			JSON.stringify({ refused, revert, draftKept: true, sourceUnchanged: true }, null, 2),
 		);
-		// Use lesson 01, the 55-block lesson from T6, with the visible page containing
-		// its first text block. Admission is driven by the real chokidar watcher.
 		const identity = await resolveLessonSources(scratch);
 		const [file, lesson] = [...identity.lessons].find(([file]) => file.startsWith("01-")) ?? [];
 		const page = lesson?.pages.find((page) => page.blocks.some((block) => block.type === "text"));
@@ -358,7 +352,6 @@ try {
 const runs: (ReturnType<typeof evaluateRun> & { ownCpuMean?: number })[] = [];
 let measurementError: string | null = null;
 let eligibleRuns = 0;
-// Smoke runs (fewer commits) can never be eligible, so they make exactly runCount attempts.
 const attempts = samples < gateRule.commits ? runCount : gateRule.maxAttempts;
 for (let run = 1; run <= attempts && eligibleRuns < runCount; run++) {
 	let disk = await diskPreflight();
@@ -385,7 +378,6 @@ for (let run = 1; run <= attempts && eligibleRuns < runCount; run++) {
 		console.error(
 			`INELIGIBLE run ${run}: ${refusals.join("; ")}${filesystemError ? `; ${filesystemError}` : ""}. Does not count toward pass or fail.`,
 		);
-		// A missing probe will not recover; a busy disk may on the next attempt.
 		if (disk.error || !filesystem) break;
 		continue;
 	}

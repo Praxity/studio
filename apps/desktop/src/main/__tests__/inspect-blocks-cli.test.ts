@@ -246,6 +246,5 @@ it("default block inspection stays within budget for ten lessons of thirty block
 		pageNumber: 1,
 		blockNumber: 30,
 	});
-	// In-process inspection measured 83 ms; 5 s leaves shared-runner margin. Old inventory took 129 s.
 	expect(elapsed).toBeLessThan(5_000);
 });

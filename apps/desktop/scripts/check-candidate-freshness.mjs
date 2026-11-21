@@ -30,8 +30,6 @@ export function checkCandidateFreshness({ head, activity, runs, now = Date.now()
 	const history = updates.slice(index);
 	const lastBacked = history.findIndex((item) => backed.has(item.after));
 	const uncovered = lastBacked < 0 ? history : history.slice(0, lastBacked);
-	// Allow two hours from the first uncovered server push/merge, not from each new head.
-	// This covers 30 minutes capacity + 75 minutes build/setup without resetting during busy days.
 	if (!uncovered.length || now - uncovered.at(-1).time <= 2 * 60 * 60 * 1000) return sha;
 	throw new Error(
 		`Main ${sha} has no successful or in-progress CLI build-ahead since uncovered main ${uncovered.at(-1).after} at ${uncovered.at(-1).timestamp}`,

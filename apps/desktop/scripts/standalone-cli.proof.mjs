@@ -238,7 +238,6 @@ test("packaged studio refuses missing, empty and substituted canvas bytes before
 		}
 	} finally {
 		await writeFile(canvasPath, canvas);
-		// The source-build digest is never an authority for the packaged CLI.
 		await writeFile(digestPath, `${sha256(canvas)}\n`);
 		await rm(root, { recursive: true, force: true });
 	}
@@ -250,7 +249,6 @@ test("packaged studio starts with the real canvas bytes", async () => {
 	const digestPath = path.join(artifact, "editor/canvas.sha256");
 	const digest = await readFile(digestPath);
 	await writeFile(path.join(root, "lesson.prax"), "# Canvas\n\nLearner text.\n");
-	// The packaged CLI must not depend on the source server's receipt.
 	await rm(digestPath);
 	const child = spawn(
 		process.execPath,
@@ -290,7 +288,6 @@ test("packaged studio starts with the real canvas bytes", async () => {
 		await rm(root, { recursive: true, force: true });
 	}
 });
-// A valid opaque raster, generated without a native image library or private course assets.
 function rasterFixture() {
 	const chunk = (type, data) => {
 		const body = Buffer.concat([Buffer.from(type), data]);
@@ -424,15 +421,10 @@ test("browser payload carries its emitted source closure, classification and ups
 });
 
 test("portable CLI exports and preserves identities outside the checkout", async () => {
-	// fs-extra checks copy destination ancestors up to the drive root. A Windows
-	// fixture directly under that root keeps every checked directory inside the
-	// allowed tree, without granting access to Users (and therefore the checkout).
 	const tempBase = process.platform === "win32" ? path.parse(os.tmpdir()).root : os.tmpdir();
 	const root = await realpath(await mkdtemp(path.join(tempBase, "studio-cli-")));
 	const checkout = await realpath(fileURLToPath(new URL("../../../", import.meta.url)));
 	try {
-		// Course fixtures are authored through the real writer before the confined CLI
-		// reads them. Export refuses transient identities and must never allocate them.
 		const author = path.join(root, "author-fixture.mjs");
 		await build({
 			stdin: {
@@ -571,8 +563,6 @@ test("portable CLI exports and preserves identities outside the checkout", async
 			`${await readFile(lessonPath, "utf8")}\n![A colour gradient](/assets/landscape.png)\n`,
 		);
 		persistFixture(project);
-		// POSIX realpath walks ancestors. Windows can use the exact disposable root;
-		// granting its Users ancestor would also expose the checkout.
 		const tempTree =
 			process.platform === "win32"
 				? root
@@ -600,8 +590,6 @@ test("portable CLI exports and preserves identities outside the checkout", async
 					env: {
 						PATH: path.dirname(process.execPath),
 						HOME: root,
-						// Windows homedir uses USERPROFILE; keep SQLite's cache in the same
-						// confined temporary tree as the POSIX HOME setting.
 						USERPROFILE: root,
 						TMPDIR: root,
 						TMP: root,
@@ -899,8 +887,6 @@ test("portable CLI exports and preserves identities outside the checkout", async
 		);
 		const output = path.join(root, "html.zip");
 		const original = await readFile(output);
-		// Grammar 4 rejects missing image alt before accessibility checks. An empty
-		// link is valid source that reaches the same accessibility blocking gate.
 		const sourcePath = path.join(project, "lesson.prax");
 		await writeFile(sourcePath, `${await readFile(sourcePath, "utf8")}\n[](https://example.com)\n`);
 		persistFixture(project);
@@ -923,7 +909,6 @@ test("portable CLI exports and preserves identities outside the checkout", async
 		const missing = run("export", project, "--format", "html", "--output", output);
 		assert.equal(missing.status, 1);
 		assert.equal(JSON.parse(missing.stdout).error.code, "export_assets_missing");
-		// PDF must still work with the viewer unavailable, in a copied distribution.
 		const pdfProject = path.join(root, "public-quiz");
 		await mkdir(pdfProject);
 		await cp(

@@ -134,7 +134,6 @@ test.beforeAll(async () => {
 	const address = server.address();
 	if (!address || typeof address === "string") throw new Error("U3 fixture server has no address");
 	baseUrl = `http://127.0.0.1:${address.port}`;
-	// Exercise the actual preview/editor origin boundary, not a same-origin iframe.
 	courseServer = createServer(respond);
 	await new Promise<void>((resolveReady) => courseServer.listen(0, "127.0.0.1", resolveReady));
 	const courseAddress = courseServer.address();
@@ -309,7 +308,6 @@ for (const theme of ["light", "dark"])
 					"a[href],button,input,select,textarea,summary,[role=tab],[role=tabpanel]",
 				))
 					if (!chrome(control)) contentBoxes.push(control.getBoundingClientRect());
-				// A tab's handle is read before its panel and anchored to its tab.
 				const nodeOf = (button: Element) =>
 					[...document.querySelectorAll('[role="tab"]')].find(
 						(tab) => tab.getAttribute("data-node-id") === button.getAttribute("data-node-id"),
@@ -371,7 +369,6 @@ for (const theme of ["light", "dark"])
 							candidate.getAttribute("data-node-id") === button.getAttribute("data-node-id"),
 					);
 					if (!tab) return [];
-					// Read order: the handle comes directly before its tab's panel.
 					if (button.nextElementSibling?.getAttribute("role") !== "tabpanel") return [];
 					return [
 						{
@@ -475,7 +472,6 @@ test("explicit handle focus does not reactivate a frame that already owns focus"
 	await button.evaluate((element) => {
 		const win = element.ownerDocument.defaultView;
 		if (!win) throw new Error("Missing frame window");
-		// WebKit can refuse control focus while a redundant window focus transitions.
 		let reactivated = false;
 		win.focus = () => {
 			reactivated = true;
@@ -528,7 +524,6 @@ test("F6 F9 node patches and full frame swaps restore logical focus without back
 		.frames()
 		.find((candidate) => candidate.parentFrame() === page.mainFrame());
 	if (!courseFrame) throw new Error("No course frame");
-	// Keep the departing document available while the replacement response is delayed.
 	await page.route(
 		(url) => url.searchParams.get("swap") === "1",
 		async (route) => {
@@ -546,7 +541,6 @@ test("F6 F9 node patches and full frame swaps restore logical focus without back
 		next.searchParams.set("swap", "1");
 		element.src = next.href;
 	});
-	// The old document can still satisfy focus while its replacement is loading.
 	await courseFrame.waitForURL((url) => url.searchParams.get("swap") === "1");
 	await expect(button).toBeFocused();
 	await button.press("F2");

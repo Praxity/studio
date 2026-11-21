@@ -157,7 +157,6 @@ export type StudioEvent =
 	| { type: "exportEnforcement"; enforced: boolean }
 	| { type: "error"; code: "watch_failed"; message: string };
 
-// No Electron, global settings, telemetry or ancestor workspace reads in this owner.
 export async function createStudioProjectSession(
 	projectDir: string,
 	appVersion: string,
@@ -170,13 +169,9 @@ export async function createStudioProjectSession(
 		messages: messageLocale === "fr" ? cliFr : cliEn,
 	});
 	const root = await assertAllowedProjectRoot(path.resolve(projectDir));
-	// Capture the session scope before opening an admission. Deferred jobs must
-	// acquire fresh locks, never inherit a released T1 AsyncLocalStorage scope.
 	const runPreviewJob = AsyncResource.bind((job: () => void) => job());
 	const identitySession = new CourseIdentitySession(root);
 	const assetInventory = new ProjectAssetInventory(root);
-	// Exact admitted source hashes distinguish our own watcher echoes from outside
-	// writes. Events still read current bytes through the admitted lesson reader.
 	const admittedSources = new Map<string, string>();
 	const committedSources = new Map<string, string>();
 	const admittedPages = new Map<string, string[]>();
@@ -206,7 +201,6 @@ export async function createStudioProjectSession(
 			}
 		for (const [file, read] of identity.lessons) {
 			admittedSources.set(file, createHash("sha256").update(lessonSourceText(read)).digest("hex"));
-			// A contained-invalid commit is still admitted source; suppress its own watcher echo.
 			if (read.hasErrors || refusedFiles.has(file)) continue;
 			goodLessons.set(file, structuredClone(read));
 			admittedPages.set(
@@ -304,8 +298,6 @@ export async function createStudioProjectSession(
 		);
 	}
 
-	// Opening the editor admits a writer before any authored-file discovery.
-	// Subsequent snapshots and previews remain strict readers.
 	let scheduler: PreviewScheduler;
 	let locale: "en" | "fr" = "en";
 	async function identityReview(
@@ -325,8 +317,6 @@ export async function createStudioProjectSession(
 					line: problem.line,
 					message: sourceErrorMessage(locale, problem),
 				};
-				// Opaque invalid lessons must not prevent entry to valid lessons.
-				// Confirmation still validates the whole graph it would persist.
 				if (sourceError && purpose === "confirmation")
 					throw new StudioSessionError(422, sourceError.code, sourceError.message);
 				const duplicate = result.identity.unresolved.find((node) => node.reason === "duplicate");
@@ -376,14 +366,10 @@ export async function createStudioProjectSession(
 		const measuredAt = performance.now();
 		if (!fencedFiles)
 			assertCoursePracticeAdmission([...identity.lessons].map(([path, read]) => ({ path, read })));
-		// Preview consumers retain the last valid lesson slice. Identity admission
-		// and diagnostics still describe the current disk revision.
 		const lessons = new Map(identity.lessons);
 		for (const [file, read] of lessons) {
 			const good = goodLessons.get(file);
 			if (fencedFiles?.has(file)) {
-				// This reader contains no authored source or content. Fence both
-				// the compiler projection and its source-admission tree.
 				const empty = parseLesson("");
 				empty.frontmatter = read.frontmatter;
 				lessons.set(file, empty);
@@ -420,12 +406,10 @@ export async function createStudioProjectSession(
 			[...identity.lessons].map(([path, read]) => ({ path, read })),
 		);
 		if (practiceDiagnostics.length) {
-			// Fence the entire retained course: references may cross lessons.
 			scheduler.fail(seq, practiceDiagnostics);
 			return undefined;
 		}
 		const input = await previewInput(identity, seq);
-		// Without watcher hints, any asset may have changed before this admission.
 		const render = await scheduler.refresh(
 			input,
 			changed ?? { assets: [...input.resolvedAssets.keys()] },
@@ -449,8 +433,6 @@ export async function createStudioProjectSession(
 			);
 			if (affectedPages.length) scheduler.fail(seq, diagnostics, affectedPages);
 			else {
-				// An invalid unlisted lesson has no preview page. Report its
-				// diagnostics on the retained course without blocking valid jobs.
 				for (const page of scheduler.context().pages)
 					publish({
 						type: "compileFailed",
@@ -474,7 +456,6 @@ export async function createStudioProjectSession(
 				!valid ||
 				candidate.identity.unresolved.length > 0 ||
 				identityWriteRetirements(candidate).length > 0;
-			// Writers keep invalid lessons opaque; preview still needs their transient read identities.
 			const identity = pending
 				? await resolveLessonSources(root, {}, { identitySession })
 				: await persistCourseIdentity(root, candidate);
@@ -483,8 +464,6 @@ export async function createStudioProjectSession(
 			let diagnostics: PreviewCompileDiagnostic[] = practiceAdmissionDiagnostics(
 				[...identity.lessons].map(([path, read]) => ({ path, read })),
 			);
-			// Fence the whole course: a cross-lesson refusal may name only the
-			// reader file while its private target still has D02's runtime refusal.
 			const fencedFiles = diagnostics.length ? new Set(identity.lessons.keys()) : undefined;
 			try {
 				scheduler = await PreviewScheduler.create(
@@ -536,14 +515,10 @@ export async function createStudioProjectSession(
 					previousPages,
 					files.flatMap((file) => identity.lessons.get(file)?.pages ?? []),
 				);
-				// Metadata, assets and the complete context belong to the scheduler.
-				// Its read admission starts after this durable write releases the lock.
 				scheduler.enqueueRefresh(result.seq, async () => {
 					await withProjectFileTransaction(
 						root,
 						async () => {
-							// The queued job owns a new admission. Its identity must be
-							// issued here too, since outside edits can precede their watcher.
 							const current = await resolveLessonSources(root, {}, { identitySession });
 							await refreshPreview(current, result.seq, undefined, false);
 							rememberSources(current);
@@ -553,8 +528,6 @@ export async function createStudioProjectSession(
 				});
 				return render;
 			} catch (error) {
-				// The durable write succeeded. Report preview failure without turning its
-				// acknowledgement into a failed save that the client might retry.
 				scheduler.fail(result.seq, previewDiagnostics(error));
 				return undefined;
 			}
@@ -574,7 +547,6 @@ export async function createStudioProjectSession(
 				completion: Promise<DraftPersistenceReceipt>;
 		  }
 		| { state: "terminal"; operation: DraftPersistenceOperation; receipt: DraftPersistenceReceipt };
-	// Keep late-arrival tombstones for this lifetime; bound receipts containing author payloads.
 	const draftAttempts = new Map<string, DraftAttempt>();
 	const terminalAttempts: string[] = [];
 	const terminalReceiptLimit = 128;
@@ -610,8 +582,6 @@ export async function createStudioProjectSession(
 				withProjectFileTransaction(
 					root,
 					async () => {
-						// Authorization reads the manifest. Admit the save before that read so
-						// this authorized write can recover an interrupted previous save.
 						await authorizeLesson(filename);
 						return writeLessonSource(root, filename, source, expectedSource);
 					},
@@ -672,12 +642,10 @@ export async function createStudioProjectSession(
 		[
 			"projectReadTextFile",
 			async (args) => {
-				// Only the editor's metadata baselines are admitted. Plaintext editing is deferred.
 				const { relativePath } = z
 					.object({
 						relativePath: z
 							.string()
-							// The shared draft owner passes absolute paths. Keep metadata admission here.
 							.transform((filename) =>
 								path.isAbsolute(filename) ? path.relative(root, filename) : filename,
 							)
@@ -772,8 +740,6 @@ export async function createStudioProjectSession(
 	});
 	methods.set("previewRenderDraft", async (args) => {
 		const request = parseEditorInput(previewRenderDraftSchema, args);
-		// Saved pages were admitted at open/commit/watcher time. This path never
-		// opens T1, a file, or a lock, and does not mutate the persisted draft.
 		const page = [...goodLessons.values()]
 			.flatMap((read) => read.pages)
 			.find((page) => page.id === request.pageId);
@@ -882,7 +848,6 @@ export async function createStudioProjectSession(
 			} satisfies DraftPersistenceReceipt;
 		const prior = draftAttempts.get(attemptId);
 		if (!prior) {
-			// An empty lookup alone cannot prove that an authenticated request will not arrive later.
 			draftAttempts.set(attemptId, { state: "fenced" });
 			return { ...identity, state: "fenced" } satisfies DraftPersistenceReceipt;
 		}
@@ -1051,7 +1016,6 @@ export async function createStudioProjectSession(
 			event.endsWith("Dir")
 		)
 			identitySession.invalidate();
-		// Chokidar reports renames as unlink/add, including directory moves.
 		preview?.invalidateAssets(file);
 		assetInventory.invalidate(file);
 		pendingChanges = pendingChanges
@@ -1059,8 +1023,6 @@ export async function createStudioProjectSession(
 				if (closed) return;
 				const filename = path.relative(root, file).replaceAll("\\", "/");
 				try {
-					// Source, identity and context belong to one admitted revision. A
-					// saved operation's watcher echo has identical input and is ignored.
 					if (
 						filename.endsWith(".prax") ||
 						filename === "course.yaml" ||
@@ -1074,15 +1036,11 @@ export async function createStudioProjectSession(
 								root,
 								async () => {
 									const admittedAt = performance.now();
-									// T1 replacements can outlast Chokidar's atomic window. Wait for
-									// that transaction before treating its unlink echo as deletion.
 									if (!event.endsWith("Dir") && filename.endsWith(".prax")) {
 										if (await optionalInput(filename)) {
 											const source = await readLessonSource(root, filename);
 											const hash = createHash("sha256").update(source).digest("hex");
 											if (hash === admittedSources.get(filename)) {
-												// A queued refresh may already know real outside bytes.
-												// Only the commit's own bytes suppress grammarChanged.
 												sourceEcho = hash === committedSources.get(filename);
 												return;
 											}
@@ -1110,8 +1068,6 @@ export async function createStudioProjectSession(
 							);
 							if (sourceEcho) return;
 						} catch (error) {
-							// Decoder, path and configuration errors may throw before the
-							// parser returns diagnostics. Fence output and preserve the error.
 							const failureSeq = previewSeq ?? operations.admitOutsideChange();
 							if (previewSeq === undefined) publish({ type: "editorChanged", seq: failureSeq });
 							scheduler.fail(
@@ -1122,7 +1078,6 @@ export async function createStudioProjectSession(
 							throw error;
 						}
 					}
-					// An unlink echo may already have replacement bytes to publish.
 					if (
 						!event.endsWith("Dir") &&
 						path.extname(filename).toLowerCase() === ".prax" &&
@@ -1186,7 +1141,6 @@ export async function createStudioProjectSession(
 						rememberSources(identity);
 						await refreshPreview(identity, seq, undefined, false);
 					} catch (error) {
-						// A preview failure cannot turn an acknowledged identity write into a failed save.
 						scheduler.fail(seq, previewDiagnostics(error));
 					}
 					return result;
@@ -1256,8 +1210,6 @@ export async function createStudioProjectSession(
 			}
 		},
 		subscribe(listener: (event: StudioEvent) => void) {
-			// Reload may open its stream before the old socket closes. The newest
-			// subscription owns the draft epoch; older closes cannot reset it.
 			scheduler.endDraftSubscription();
 			const epoch = ++draftSubscriptionEpoch;
 			listeners.add(listener);
@@ -1273,8 +1225,6 @@ export async function createStudioProjectSession(
 			scheduler.close();
 			closed = true;
 			listeners.clear();
-			// Drain scheduled compiles before disposing the preview they render into;
-			// collect every cleanup failure rather than stopping at the first.
 			const results = [
 				...(await Promise.allSettled([watcher.close(), pendingChanges])),
 				...(await Promise.allSettled([

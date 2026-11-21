@@ -142,8 +142,6 @@ try {
 				},
 			},
 		);
-	// B1 moves capture reclamation to a later admission; keep the deletion-death
-	// checkpoint there, with the same byte assertions in the parent.
 	if (stop === "stage-remove-before")
 		await tx.withProjectFileTransaction(root, async () => {}, "write");
 	process.send({ done: true });

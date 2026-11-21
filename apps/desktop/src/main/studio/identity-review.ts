@@ -49,11 +49,8 @@ export const identityReviewMessages = {
 	},
 };
 
-// These grammar messages name what to use instead and never quote the source, so the band
-// shows them in place of the general repair sentence.
 const URL_REFUSALS = ["svg-data-url", "unsafe-media-url", "unsafe-link-url"] as const;
 
-/** The located repair sentence for a source error, in the course language. */
 export function sourceErrorMessage(
 	locale: "en" | "fr",
 	error: { code: "bad_yaml" | "source_invalid"; diagnostic?: string },
@@ -77,7 +74,6 @@ export interface StudioIdentityReview {
 	retirements: ReturnType<typeof identityRetirements>;
 }
 
-/** This page contains only escaped diagnostics, never authored HTML. */
 export function renderIdentityReview(review: StudioIdentityReview, token: string) {
 	const messages = identityReviewMessages[review.locale];
 	const nonce = randomBytes(32).toString("base64");

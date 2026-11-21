@@ -100,7 +100,6 @@ for (const mode of ["forward", "recovery"]) {
 			await handle.sync();
 			const list = await listProjectRecovery(root);
 			expect(list).toHaveLength(1);
-			// Ordinary admission discovers changed archived bytes; inspection never discards archives.
 			await withProjectFileTransaction(root, async () => {}, "write");
 			expect((await listProjectRecovery(root))[0].status).toBe("conflict");
 			const output = join(root, "extracted");
@@ -231,8 +230,6 @@ for (const mode of ["forward", "recovery", "abort"]) {
 			).toEqual(committed ? ["A new", "B new", "H new"] : ["A old", "B old", "H old"]);
 			const inventory = await listProjectRecovery(root);
 			if (stop === "temp-partial") {
-				// The fixture writes differing bytes, not a planned prefix. Keep them
-				// even before readiness; empty/planned-prefix deaths leave no archive.
 				expect(inventory).toHaveLength(1);
 				expect(inventory[0].status).toBe("unverified");
 				const output = join(root, "extracted");

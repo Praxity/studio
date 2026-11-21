@@ -4,7 +4,6 @@ import type { ReadLessonResult } from "@praxity/grammar";
 import { assessmentShuffle } from "@praxity/shared-blocks/assessment-choice";
 import { createProjectAssetAdmission } from "../project-assets";
 
-/** Both inspect schemas must refuse descriptions their projection cannot preserve. */
 export function refuseUnsupportedDescriptions(read: ReadLessonResult, file: string): void {
 	const error = read.errors.find(
 		(error) =>
@@ -35,7 +34,6 @@ export interface InspectionAsset {
 	sha256: string | null;
 }
 
-/** Only explicitly referenced project files are read. External URLs are never fetched. */
 export function assetInspector(projectDir: string) {
 	const admission = createProjectAssetAdmission(projectDir);
 	const assets = new Map<string, InspectionAsset>();
@@ -51,7 +49,6 @@ export function assetInspector(projectDir: string) {
 			result.availability = "blocked";
 		else {
 			try {
-				// Leading slash is Studio's project-root asset syntax, not a host absolute path.
 				const relative = decodeURIComponent(uri.replace(/^\/+/, "").split(/[?#]/, 1)[0]);
 				const target = path.resolve(projectDir, relative);
 				if (
@@ -238,7 +235,6 @@ export function assessmentEvidence(data: Record<string, unknown>, ref: string): 
 				value: number(v.value),
 				label: text(v.label),
 			}));
-			// The supported matrix is a survey, without runtime answer checking.
 			result.correctness = "open";
 			break;
 		case "textResponse":

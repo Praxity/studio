@@ -173,7 +173,6 @@ it("I4 a write refreshes saved display identity after an unread outside source c
 	const { root, service, view } = await fixture(a);
 	expect(view.readView?.runtimeIds).toEqual([]);
 	await writeFile(join(root, "a.prax"), inserted);
-	// The watcher has not admitted A; B's write must admit the current saved sources itself.
 	const result = await service.apply(await edit(root, "b.prax", "Text", "Changed\n"));
 	if (!result.ok) throw new Error(result.code);
 	const durable = await resolveLessonSources(root);

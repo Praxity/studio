@@ -18,7 +18,6 @@ vi.mock("node:fs/promises", async (importOriginal) => {
 	const fs = await importOriginal<typeof import("node:fs/promises")>();
 	return {
 		...fs,
-		// Model JS realpath retaining the caller's spelling, as in the review probe.
 		realpath: async (...args: Parameters<typeof fs.realpath>) =>
 			filesystem.callerCase ? String(args[0]) : fs.realpath(...args),
 		open: async (...args: Parameters<typeof fs.open>) => {
@@ -70,7 +69,6 @@ it("D6 resolves an admitted case alias to the native filesystem spelling", async
 		return undefined;
 	});
 	filesystem.callerCase = Boolean(exists);
-	// Linux/case-sensitive APFS still checks native canonical admission of its existing name.
 	expect(await assertAllowedProjectRoot(exists ? alias : root)).toBe(native);
 });
 it("D6 folds Darwin lock keys and durable course binding together", async () => {
@@ -93,7 +91,6 @@ it("D6 recovers a dead writer's legacy Darwin journal with a mixed-case course b
 	await killJournalWriter(root, "design:staged:1");
 	const journal = JSON.parse(await readFile(join(root, ".praxity-transaction.json"), "utf8"));
 	const stage = join(root, journal.plan.stage);
-	// Recreate main's pre-D6 Darwin binding and directory layout at this death point.
 	journal.plan.course = await promisify(fsRealpath.native)(root);
 	journal.plan.captureVersion = 1;
 	delete journal.plan.stageVersion;

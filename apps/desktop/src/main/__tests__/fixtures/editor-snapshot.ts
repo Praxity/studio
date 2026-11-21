@@ -7,10 +7,8 @@ import { isRuntimeNodeId } from "@praxity/shared-blocks/types";
 import type { EditorSnapshot } from "../../../shared/editor-session";
 import type { ResolvedCourseIdentity } from "../../identity-store";
 
-// Size caps don't block working features (owner rule): covers the longest schema type (`write-distractors`) plus margin; tighten during final size work.
 export const nodeMetadataBudget = 832;
 
-/** Test adapter only. Production snapshot assembly belongs to the service slice. */
 export function snapshotFixture(current: ResolvedCourseIdentity): EditorSnapshot {
 	const records = new Map(current.identity.snapshots.flatMap((s) => Object.entries(s.nodes)));
 	return {
@@ -77,9 +75,7 @@ export function snapshotFixture(current: ResolvedCourseIdentity): EditorSnapshot
 	};
 }
 
-/** Transport stress data uses grammar ranges and literal opaque metadata, without an I4 setup benchmark. */
 export function largeSnapshotFixture(source: string): EditorSnapshot {
-	// Transport fixtures need the admitted grammar tree, without rendering every block.
 	const tree = analyzeLessonTree(tokenizeLesson(source), {
 		definition: getDefinition,
 		suggestType,

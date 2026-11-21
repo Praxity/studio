@@ -26,7 +26,6 @@ vi.mock("node:fs/promises", async (importOriginal) => {
 });
 
 const watchers = vi.hoisted(() => [] as import("node:events").EventEmitter[]);
-// Admission is tested before and after explicit watcher delivery, never against its timer.
 vi.mock("chokidar", async () => {
 	const { EventEmitter } = await import("node:events");
 	return {
@@ -252,7 +251,6 @@ it("C05f captured sibling page IDs survive collection without sibling fields", a
 		};
 	})();
 	expect(scope.pageIds).toHaveLength(3);
-	// Only the middle page has admitted fields; the captured last page has none.
 	expect(
 		(await service.canvasTextSnapshot(scope)).fields.every((f) => f.pageId === scope.pageId),
 	).toBe(true);
@@ -318,10 +316,8 @@ async function fixture(stored: boolean, rpc: boolean) {
 	await writeFile(join(root, "course.yaml"), "title: First write\nlessons: [a.prax, b.prax]\n");
 	await writeFile(join(root, "a.prax"), rpc ? a.replace(/##[^\n]*\n(?:\n)?/g, "") : a);
 	await writeFile(join(root, "b.prax"), rpc ? b.replace("## Same heading\r\n\r\n", "") : b);
-	// canvas-first-write-watch.test.ts covers opening without identity; seed this RPC setup.
 	if (stored || rpc) await persistFixtureIdentity(root);
 	const session = rpc ? await createStudioProjectSession(root, "test") : undefined;
-	// Studio opens existing courses before the agent supplies these unpersisted nodes.
 	if (rpc) {
 		const bodies = (current: Awaited<ReturnType<typeof resolveLessonSources>>) =>
 			[...current.lessons].flatMap(([file, lesson]) =>
@@ -458,7 +454,6 @@ for (const change of [
 						}
 					});
 				});
-				// A replacement's unlink echo still leaves a changed field, so it must be stale.
 				watcher.emit("all", "unlink", join(root, "b.prax"));
 				await delivered;
 			}
@@ -468,7 +463,6 @@ for (const change of [
 			const input = request(change === "cross-page" ? foreign : held);
 			if (change === "forged-id") input.nodeId = first.nodeId;
 			if (change === "expected-text") input.expectedText = "Forged baseline";
-			// Fresh file hash isolates scope checks from the earlier save's revision change.
 			if (change === "cross-page")
 				input.baseRevision = (await snapshot()).sourceRevisions["a.prax"];
 			expect(

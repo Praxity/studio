@@ -137,7 +137,6 @@ export async function runIdentityMergeCli(args: string[]): Promise<CliExecution>
 			});
 			return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(stdout);
 		};
-		// Resolve immutable object IDs once. No command changes git's working tree or index.
 		const root = (await git("rev-parse", "--show-toplevel")).trim();
 		let theirs: string;
 		try {
@@ -163,7 +162,6 @@ export async function runIdentityMergeCli(args: string[]): Promise<CliExecution>
 		const prefix = path ? `${path}/` : "";
 		const revision = async (ref: string) => {
 			const files = new Map<string, string>();
-			// git show on a tree lists its immediate children. Identity filenames are owned by the store.
 			const list = async (directory: string) => {
 				const tree = await git("show", `${ref}:${prefix}${directory}`);
 				const separator = tree.indexOf("\n\n");
@@ -219,7 +217,6 @@ export async function runIdentityMergeCli(args: string[]): Promise<CliExecution>
 					.map((locale) => projectPlainStoreMessage(path, locale as "en" | "fr"))
 					.join("\n"),
 			);
-		// The pure identity owner rejects source markers before it can return a merge result.
 		if (error instanceof Error && error.message === "Identity: source conflict markers")
 			return result(3, "identity_conflicts", bilingual("sourceConflicts"));
 		return result(

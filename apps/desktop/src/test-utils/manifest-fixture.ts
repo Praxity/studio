@@ -4,7 +4,6 @@ import {
 	withProjectFileTransaction,
 } from "../main/project-file-transactions";
 
-/** Exercise the authored inventory writer, preserving unrelated YAML bytes. */
 export async function writeManifestFixtureLessons(root: string) {
 	await withProjectFileTransaction(
 		root,

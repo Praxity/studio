@@ -44,13 +44,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** Missing sidecars have a display-only empty view, including before the first identity save. */
 export function emptyNarrationReadView(courseId: string): NarrationSidecarV2 {
 	if (!isDisplayNodeId(courseId)) throw new Error("Invalid narration read course identity");
 	return { version: 2, courseId, lessons: {} };
 }
 
-/** V2 refuses lossy reads: unknown fields, duplicate targets and malformed entries are errors. */
 export function parseNarrationSidecarV2(source: string, courseId?: string): NarrationSidecarV2 {
 	const fail = (reason: string): never => {
 		throw new Error(`Invalid narration.yaml v2: ${reason}`);
@@ -261,7 +259,6 @@ export interface NarrationPanelItem {
 	ownerLessonId?: string;
 	entryIndex?: number;
 }
-/** Revisions come from the admitted host snapshot. UI edits only change sidecar fields. */
 export function resolveNarrationPanel(
 	document: NarrationPanelDocument,
 	sidecar: NarrationSidecarV2,

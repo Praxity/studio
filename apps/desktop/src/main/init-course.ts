@@ -39,7 +39,6 @@ function property(object: Node, name: string): Node | undefined {
 	return matches[0]?.children?.[1];
 }
 
-/** Insert only: existing comments, values, whitespace and line endings keep their bytes. */
 function insertProperties(text: string, object: Node, entries: string[]): string {
 	if (!entries.length) return text;
 	const eol = text.includes("\r\n") ? "\r\n" : text.includes("\r") ? "\r" : "\n";
@@ -72,10 +71,8 @@ function insertProperties(text: string, object: Node, entries: string[]): string
 }
 
 function matchesHiddenName(pattern: string, name: string): boolean {
-	// Folder spellings also express an author's choice for the folder's contents.
 	const folder = pattern.replace(/(?:\/\*\*)?\/?$/, "");
 	const matches = picomatch(folder, { dot: true });
-	// A recovery wildcard denotes every suffix. Preserve uncertain intersections too.
 	const relativePattern = folder.replace(/^(?:\*\*\/)+/, "");
 	const literalPrefix = relativePattern.split(/[*?{[\]\\]/)[0];
 	return (

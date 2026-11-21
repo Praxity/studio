@@ -46,32 +46,7 @@ import {
 } from "./path-security";
 import { classifyIdentityLineagePath, isIdentityLineagePath } from "./project-protected-paths";
 
-// Admission precedes realpath, preserving the order of successive saves in this process.
-// Outside-writer limits, also listed in architecture.md:
-// - Only participating Studio processes for this user/machine take the lock;
-//   other writers/readers can enter capture gaps and observe mixed plans.
-// - Old handles can write a displaced inode after its last verification/unlink,
-//   or after explicit archive resolution. Future writes cannot be archived.
-// - A writer can change a publication inode after quarantine verification, then
-//   detach its live name before source unlink, or edit the quarantine name itself.
-//   Node has no atomic content-and-inode conditional unlink or mandatory lock.
-// - Edits after the final durable installation are subsequent outside writes;
-//   committed recovery leaves all targets alone and never rolls back peers.
-// - Edits between an uncommitted crash and admission are retained/reported when
-//   distinguishable; identical bytes on the same inode cannot identify a writer.
-// Unpublished Studio temporaries holding only planned prefixes are crash debris,
-// not outside edits. Unknown/differing bytes are retained. Admission isolates all
-// retained entries, including interrupted isolation copies, before retiring a journal.
-// Windows flushes each marker after rename as well as before it. Node cannot
-// flush directories there; power loss can still undo namespace changes after
-// acknowledgement. Hardware/filesystem flush support bounds durability on all hosts.
-// Case aliases use native realpath plus Darwin/Windows folding. Case-sensitive
-// Darwin directories differing only by case deliberately share an advisory lock.
-// Hard-link refusal is specific; sharing contention after publication still retries.
 let pendingIdentityOperation: Promise<void> = Promise.resolve();
-// Only archives isolated and verified by this process qualify. Directory identity
-// detects replacement and added entries; byte edits stay retained until reclaim,
-// which always repeats isolation and every orphan/quarantine check.
 const isolatedCommittedArchives = new Map<string, string>();
 const MAX_ISOLATED_ARCHIVES = 256;
 async function archiveDirectoryIdentity(path: string): Promise<string | undefined> {
@@ -109,7 +84,6 @@ const transactions = new AsyncLocalStorage<{
 	finalizers: Set<() => void>;
 }>();
 
-/** Issuance belongs to this admission, including its nested transactions. */
 export function bindProjectWriteLifetime(root: string, revoke: () => void): () => boolean {
 	const admission = transactions.getStore();
 	if (!admission?.active || admission.root !== root || admission.mode !== "write")
@@ -132,7 +106,6 @@ export async function acknowledgeProjectWrite(work: Promise<unknown>): Promise<P
 	return cleanupError === undefined ? {} : { cleanupError };
 }
 
-/** A cleanup failure cannot turn a committed domain result into a failed save. */
 export async function acknowledgeProjectResult<T>(
 	work: Promise<T>,
 ): Promise<{ result: T } & ProjectWriteResult> {
@@ -170,13 +143,6 @@ export function assertProjectFileTransactionOwnership(root: string): void {
 	transaction.assertOwnership();
 }
 
-// BEGIN EXCLUSIVE uses SQLite's OS advisory locks, released on close or process death.
-// The lock database stores no owner record. The course's file journal is separate.
-// This private cache file must never be unlinked/replaced: Unix locks belong to its inode.
-// Keeping it outside the project keeps authoring
-// file APIs from opening/closing its inode, which would drop POSIX process locks.
-// node:sqlite ships in our Node 24 and Electron runtimes; no native addon is needed.
-// See https://www.sqlite.org/lockingv3.html. Close older Studio versions before upgrading.
 function projectLockPath(root: string): string {
 	const key = createHash("sha256").update(courseKey(root)).digest("hex");
 	return join(projectLockCacheDirectory(), `${key}.sqlite`);
@@ -184,7 +150,6 @@ function projectLockPath(root: string): string {
 async function acquireProjectLock(root: string, mode: "read" | "write") {
 	const directory = projectLockCacheDirectory();
 	if (mode === "write") await mkdir(directory, { recursive: true, mode: 0o700 });
-	// Only SQLite opens cache files. Generic guarded APIs must refuse this path.
 	const path = projectLockPath(root);
 	const entry = await lstat(path).catch((error: NodeJS.ErrnoException) => {
 		if (error.code !== "ENOENT") throw error;
@@ -192,8 +157,6 @@ async function acquireProjectLock(root: string, mode: "read" | "write") {
 	});
 	if (entry?.isSymbolicLink())
 		throw new Error("Symbolic links are not allowed in the private lock cache");
-	// A first read cannot create a lock. Its final absence check detects the first
-	// cross-process writer, whose cache file remains for this course's lifetime.
 	if (!entry && mode === "read") return null;
 	const database = new DatabaseSync(path, { timeout: 0, readOnly: mode === "read" });
 	const deadline = performance.now() + 5000;
@@ -202,8 +165,6 @@ async function acquireProjectLock(root: string, mode: "read" | "write") {
 			try {
 				if (mode === "write") database.exec("BEGIN EXCLUSIVE");
 				else {
-					// BEGIN alone is deferred. Reading the schema takes a shared OS lock
-					// that excludes participating writers without updating the database.
 					database.exec("BEGIN; PRAGMA schema_version;");
 				}
 				break;
@@ -212,7 +173,6 @@ async function acquireProjectLock(root: string, mode: "read" | "write") {
 				const code = (error as { errcode?: number }).errcode;
 				if (code === undefined || (code & 0xff) !== 5) throw error;
 				if (performance.now() >= deadline) throw new ProjectBusyError();
-				// Yield while contending; SQLite's synchronous busy timeout would freeze Electron.
 				await delay(Math.min(50, Math.max(1, deadline - performance.now())));
 			}
 		}
@@ -241,8 +201,6 @@ async function acquireProjectLock(root: string, mode: "read" | "write") {
 }
 
 export async function isNestedProjectDirectory(directory: string): Promise<boolean> {
-	// Check the journal last: it is published before capture, so a temporarily
-	// absent course.yaml still identifies the child's separate admission.
 	let found = false;
 	for (const marker of ["course.yaml", ".praxity", "praxity.json", JOURNAL]) {
 		try {
@@ -268,13 +226,6 @@ async function assertReadAdmission(root: string, locked: boolean): Promise<void>
 }
 
 async function removeAbandonedStages(root: string, directory = root): Promise<void> {
-	// Only this project's participating writer can own a stage. After admission its existing
-	// stage is abandoned, including a crash before its first byte or owner publication.
-	// The .praxity-write- directory prefix is reserved for this writer.
-	// A nested course or Studio project has a separate lock, including manifest-free
-	// projects marked by .praxity. Its live stages and recovery bytes belong to it.
-	// Path lookup uses this directory's filesystem name semantics; enumeration preserves
-	// casing even when the authoring reader can open COURSE.YAML as course.yaml.
 	if (directory !== root && (await isNestedProjectDirectory(directory))) return;
 	const entries = await readdir(directory, { withFileTypes: true });
 	for (const entry of entries) {
@@ -296,7 +247,6 @@ async function removeAbandonedStages(root: string, directory = root): Promise<vo
 					continue;
 				isolatedCommittedArchives.delete(path);
 			}
-			// The legacy identity filename identifies this root's former staging owner.
 			if (
 				(directory === root ||
 					(directory === join(root, ".praxity") &&
@@ -318,7 +268,6 @@ async function removeAbandonedStages(root: string, directory = root): Promise<vo
 	}
 }
 
-/** Node's Permission Model denies fsync even with full filesystem grants. */
 export function assertProjectWritesAllowed(): void {
 	if (process.permission) throw new ProjectPermissionError();
 }
@@ -452,8 +401,6 @@ async function archiveEvidence(root: string, path: string): Promise<ProjectRecov
 		const before = await stageFingerprint(root, stage);
 		const journal = await verifiedOrphan(root, stage);
 		if (typeof journal !== "object") return unknown;
-		// Older lexical basenames can be short names or Unicode filesystem aliases.
-		// The live spelling cannot prove their historical canonical ownership.
 		if (journal.plan.files.some((file) => classifyIdentityLineagePath(file.path) === "unknown"))
 			return unknown;
 		const marker = async (name: string) => (await currentBytes(root, join(stage, name))) !== null;
@@ -467,7 +414,6 @@ async function archiveEvidence(root: string, path: string): Promise<ProjectRecov
 			installationStarted ||= installed[index] || (await marker(`installed-${index}.tmp`));
 		}
 		const ready = await marker("ready");
-		// No publication or installation decision means this preparation changed no live file.
 		const unpublished =
 			!ready &&
 			!committed &&
@@ -493,12 +439,10 @@ async function archiveEvidence(root: string, path: string): Promise<ProjectRecov
 			})),
 		};
 	} catch {
-		// Unreadable, replaced or unsafe archive bytes cannot establish recovery facts.
 		return unknown;
 	}
 }
 
-/** Observational T1 facts: no recovery, isolation, conflict marking or archive-cache trust. */
 export async function readProjectRecoveryEvidence(
 	courseDir: string,
 ): Promise<readonly ProjectRecoveryEvidence[]> {
@@ -515,7 +459,6 @@ export async function readProjectRecoveryEvidence(
 		});
 	} catch (error) {
 		if (!(error instanceof ProjectRecoveryRequiredError)) throw error;
-		// Active journals refuse read admission. Only enumerate names; certify no files.
 		const entries = await recoveryEntries(await assertAllowedProjectRoot(courseDir));
 		if (!entries.some(({ path }) => path === JOURNAL))
 			entries.push({ path: JOURNAL, archive: false });
@@ -527,7 +470,6 @@ function touchesProtectedPaths(files: readonly { readonly path: string }[]): boo
 	return files.some((file) => classifyIdentityLineagePath(file.path) !== "ordinary");
 }
 
-/** I4 owns the decision to keep protected recovery evidence, within its write admission. */
 export async function reclaimProtectedArchives(
 	root: string,
 	keep: (paths: readonly string[]) => Promise<boolean>,
@@ -535,25 +477,21 @@ export async function reclaimProtectedArchives(
 	assertProjectFileTransactionOwnership(root);
 	assertProjectWritesAllowed();
 	try {
-		// A committed save can acknowledge failed journal retirement. Recovery still needs its stage.
 		if ((await currentBytes(root, join(root, JOURNAL))) !== null) return;
 		let remaining = 3;
 		for (const { path, archive } of await recoveryEntries(root)) {
 			if (!archive) continue;
 			if ((await currentBytes(root, join(root, path, "held"))) !== null) continue;
-			// Two fresh live-store proofs per candidate must not scale with the archive backlog.
 			if (remaining-- === 0) break;
 			const evidence = await archiveEvidence(root, path);
 			if (evidence.outcome === "unknown" || !touchesProtectedPaths(evidence.files)) continue;
 			await reclaimStage(root, join(root, path), false, false, keep);
 		}
 	} catch (error) {
-		// I4 has already committed. Preserve T1's acknowledged cleanup-warning result.
 		throw new ProjectFileCleanupError(undefined, [error]);
 	}
 }
 
-/** Opening needs notices for unknown or conflicting bytes; inspection includes intact captures. */
 export async function projectRecoveryArchives(
 	root: string,
 	includeVerified = false,
@@ -589,9 +527,7 @@ async function readRecoveryArchive(
 	let journal: Journal | undefined;
 	try {
 		if (source !== null) journal = validateJournal(JSON.parse(source.toString("utf8")), root);
-	} catch {
-		/* Unknown copies can still be extracted and explicitly resolved. */
-	}
+	} catch {}
 	if (journal && !archiveMatches(journal.plan.stage, stage)) journal = undefined;
 	let status: RecoveryArchive["status"] = "unverified";
 	if ((await currentBytes(root, join(path, "conflict"))) !== null) status = "conflict";
@@ -602,9 +538,7 @@ async function readRecoveryArchive(
 				(await verifiedOrphan(root, path))
 			)
 				status = "held";
-		} catch {
-			// Unreadable or nonregular hold metadata cannot certify a hold; keep inspection available.
-		}
+		} catch {}
 	}
 	return {
 		journal,
@@ -624,7 +558,6 @@ async function withRecovery<T>(
 	try {
 		return await withProjectFileTransaction(courseDir, work, mode, false);
 	} catch (error) {
-		// Conflict recovery retires the journal. The command can now inspect the archive.
 		if (projectReadErrorKey(error) !== "projectRecoveryConflict") throw error;
 		return withProjectFileTransaction(courseDir, work, mode, false);
 	}
@@ -650,7 +583,6 @@ export function extractProjectRecovery(
 			const output = resolve(destination);
 			if (isProjectRecoveryPath(output))
 				throw new Error("Extraction destination cannot be a recovery archive");
-			// Exclusive creation refuses every existing destination; never replace an author's file.
 			await mkdir(output);
 			async function emit(path: string, bytes: Uint8Array) {
 				await mkdir(dirname(join(output, path)), { recursive: true });
@@ -690,7 +622,6 @@ export class ProjectRecoveryRestoreHeldError extends Error {
 	}
 }
 
-/** Restore an explicitly chosen journal copy through T1; retain both the archive and displaced bytes. */
 export function restoreProjectRecovery(
 	courseDir: string,
 	stage: string,
@@ -741,7 +672,6 @@ export function resolveProjectRecovery(courseDir: string, stage: string): Promis
 	);
 }
 
-/** Course-scoped Git exclusions, shared by init and recovery publication. */
 export async function excludeProjectFilesFromGit(
 	root: string,
 	mode: "append" | "check" | "replace" = "append",
@@ -751,9 +681,6 @@ export async function excludeProjectFilesFromGit(
 	let gitDirectory: string | undefined;
 	for (;;) {
 		const gitPath = join(repository, ".git");
-		// An enclosing checkout is optional and may be outside a CLI host's grants.
-		// Stop discovery at that boundary; metadata found inside it must still pass
-		// every read/write guard before recovery bytes are published.
 		if (repository !== root && process.permission && !process.permission.has("fs.read", gitPath))
 			return "not-git";
 		const entry = await lstat(gitPath).catch((error: NodeJS.ErrnoException) => {
@@ -774,7 +701,6 @@ export async function excludeProjectFilesFromGit(
 		if (parent === repository) return "not-git";
 		repository = parent;
 	}
-	// Linked worktrees keep info/exclude in the common Git directory.
 	const common = await readFile(join(gitDirectory, "commondir"), "utf8").catch(
 		(error: NodeJS.ErrnoException) => {
 			if (error.code !== "ENOENT") throw error;
@@ -784,7 +710,6 @@ export async function excludeProjectFilesFromGit(
 	const metadata = await realpath(
 		common === undefined ? gitDirectory : resolve(gitDirectory, common.trim()),
 	);
-	// Courses in a repository have different locks but share this policy file.
 	const ownership = await acquireProjectLock(metadata, "write");
 	if (!ownership) throw new ProjectFileConflictError();
 	try {
@@ -819,14 +744,12 @@ export async function excludeProjectFilesFromGit(
 			await syncDirectory(info);
 			return "updated";
 		}
-		// O_APPEND preserves edits by authors who do not take our metadata lock.
 		const file = await open(
 			await resolveWritablePathWithin(metadata, exclude),
 			constants.O_WRONLY | constants.O_CREAT | constants.O_APPEND | constants.O_NOFOLLOW,
 			entry ? entry.mode & 0o777 : 0o600,
 		);
 		try {
-			// The author may have appended a non-terminated line after our EOF observation.
 			await file.writeFile(`\n${missing.join("\n")}\n`);
 			await file.sync();
 		} finally {
@@ -853,8 +776,6 @@ async function verifiedOrphan(
 	try {
 		journal = validateJournal(JSON.parse(bytes?.toString("utf8") ?? ""), root);
 	} catch {
-		// No publication or source can exist yet in a journal-only preparation.
-		// Reserved names alone are insufficient: unknown bytes remain inspectable.
 		if ((await currentBytes(root, join(root, JOURNAL))) !== null) return false;
 		const entries = await readdir(stage, { withFileTypes: true });
 		if (!entries.length) return false;
@@ -870,7 +791,7 @@ async function verifiedOrphan(
 				return false;
 		}
 		return true;
-	} // Unverified recovery bytes must be kept for manual inspection.
+	}
 	if (!archiveMatches(journal.plan.stage, basename(stage))) return false;
 	const expected = new Map<string, Buffer | null>([["journal.tmp", bytes]]);
 	expected.set("journal.retired", bytes);
@@ -891,8 +812,6 @@ async function verifiedOrphan(
 		let verified = true;
 		for (const entry of await readdir(directory, { withFileTypes: true })) {
 			const actualName = prefix + entry.name;
-			// Isolation and source consumption can die after either rename. These
-			// names inherit the base file's byte rule; isolation copies may be incomplete.
 			const name = actualName.replace(/(?:\.(?:independent|reclaim)-[0-9a-f-]+)+$/, "");
 			const candidate = entry.isFile()
 				? await currentBytes(root, join(directory, entry.name))
@@ -911,8 +830,6 @@ async function verifiedOrphan(
 				const replacement = (captured[1] === "install") === Boolean(cleanupCapture);
 				expected.set(name, decode(replacement ? file.to : file.from));
 				if (!matchesPlannedBytes(candidate, expected.get(name), partial)) {
-					// Archive inspection is observational. Only admitted cleanup marks
-					// changed captures, so a read cannot modify retained recovery bytes.
 					if (markConflicts) await publishMarker(root, join(stage, "conflict"), journal.checksum);
 					return false;
 				}
@@ -995,7 +912,6 @@ function unpublishedJournalPrefix(bytes: Buffer, root: string, stage: string): b
 		)
 			return false;
 	}
-	// Both flat and legacy writers serialize this header before any planned bytes.
 	const originalStage = stage.replace(/(?:\.reclaim-[0-9a-f-]+)+$/, "");
 	return [root, courseKey(root)].some((course) =>
 		[
@@ -1027,20 +943,15 @@ function installationIdentityPrefix(bytes: Buffer, checksum: string): boolean {
 }
 
 export interface ProjectFileChange {
-	/** Relative path; its parent directory must already exist. */
 	path: string;
-	/** Exact UTF-8 or binary bytes. Null deletes a file. */
 	content: string | Uint8Array | null;
-	/** Null requires absence; undefined captures the current bytes under the lock. */
 	expectedContent?: string | Uint8Array | null;
 	head?: boolean;
 	conflictMessage?: string;
 }
 
 export interface ProjectFilePlanOptions {
-	/** Absent destination directories, published only after their recovery plan. */
 	createDirectories?: readonly string[];
-	/** An awaited storage checkpoint, also used by process-death tests. */
 	onStep?: (step: {
 		kind: "journal" | "staged" | "installed" | "head";
 		index?: number;
@@ -1126,7 +1037,6 @@ export const defaultProjectFileFlushes: Readonly<ProjectFileFlushes> = Object.fr
 });
 const fileFlushes = new AsyncLocalStorage<ProjectFileFlushes>();
 
-/** Scope storage flushes across admissions, including queued and nested CLI work. */
 export function withProjectFileFlushes<T>(flushes: ProjectFileFlushes, work: () => T): T {
 	return fileFlushes.run(flushes, work);
 }
@@ -1138,10 +1048,8 @@ function syncDirectory(path: string): Promise<void> {
 	return (fileFlushes.getStore() ?? defaultProjectFileFlushes).syncDirectory(path);
 }
 
-/** Durable private writes share the same flush boundary as journaled project writes. */
 export const projectFileFlushes: ProjectFileFlushes = { syncFile, syncDirectory };
 
-// A file's bytes reach durable storage before its name or readiness is published.
 async function defaultSyncFile(root: string, path: string): Promise<void> {
 	const target = await resolveWritablePathWithin(root, path);
 	const handle = await open(target, constants.O_RDWR | constants.O_NOFOLLOW);
@@ -1153,7 +1061,6 @@ async function defaultSyncFile(root: string, path: string): Promise<void> {
 	}
 }
 async function defaultSyncDirectory(path: string): Promise<void> {
-	// Windows does not expose directory fsync through Node. File flushes still precede rename.
 	if (process.platform === "win32") return;
 	const handle = await open(path, constants.O_RDONLY | constants.O_NOFOLLOW);
 	try {
@@ -1173,8 +1080,6 @@ async function completeFileWork(work: readonly Promise<void>[]): Promise<void> {
 	await Promise.allSettled(
 		work.map((item) =>
 			item.catch((reason: unknown) => {
-				// Preserve the initiating error when peers fail as a consequence. Drain
-				// every writer before rollback can touch their files or retire the journal.
 				failure ??= { reason };
 				throw reason;
 			}),
@@ -1206,7 +1111,6 @@ function validateJournal(value: unknown, root: string): Journal {
 		(plan.captureVersion !== undefined && ![1, 2].includes(plan.captureVersion)) ||
 		(plan.stageVersion !== undefined && (plan.stageVersion !== 1 || plan.captureVersion !== 2)) ||
 		typeof plan.course !== "string" ||
-		// Older Darwin journals retain native casing; compare without rewriting their checksum input.
 		courseKey(plan.course) !== courseKey(root) ||
 		typeof plan.stage !== "string" ||
 		!/^\.praxity-write-[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(
@@ -1263,8 +1167,6 @@ function archiveMatches(stage: string, name: string): boolean {
 	);
 }
 
-// Rename first, then verify in quarantine. A path writer can no longer reach the
-// candidate by its old name. Preopened descriptors remain outside this contract.
 async function stageFingerprint(root: string, directory: string): Promise<string> {
 	const entries: string[] = [];
 	for (const entry of (await readdir(directory, { withFileTypes: true })).sort((a, b) =>
@@ -1367,8 +1269,6 @@ async function consumePublication(
 	await syncDirectory(dirname(source));
 }
 
-// A death between link and source retirement can leave an alias. Replace only
-// the archive name with a flushed independent copy, never the committed target.
 async function isolateStage(root: string, stage: string): Promise<void> {
 	for (const entry of await readdir(stage, { withFileTypes: true })) {
 		const path = join(stage, entry.name);
@@ -1415,8 +1315,6 @@ async function readInstallationIdentity(root: string, path: string, checksum: st
 	try {
 		return parseInstallationIdentity(bytes, checksum);
 	} catch {
-		// A torn legacy identity cannot prove ownership. Recovery keeps the target
-		// as a conflict instead of blocking admission and archive commands forever.
 		return undefined;
 	}
 }
@@ -1442,8 +1340,6 @@ async function cleanupJournal(
 		await syncDirectory(stage);
 	}
 	if (preserveStage) return;
-	// Displaced inodes can still receive outside writes after this save returns.
-	// They are recovery archives, even when their bytes currently match the plan.
 	if (touchesProtectedPaths(plan.files) || (await hasCaptures(stage))) {
 		transactions.getStore()?.retainedStages.add(stage);
 		return;
@@ -1480,8 +1376,6 @@ async function installFile(
 	checksum?: string,
 ): Promise<void> {
 	const target = await resolveWritablePathWithin(root, join(root, file.path));
-	// A previous rollback copy may still be linked to a target or open in an outside editor.
-	// Each recovery attempt writes a fresh inode, retaining all displaced inodes.
 	if (basename(temporary).startsWith("rollback-")) temporary += `.attempt-${randomUUID()}`;
 	if (bytes !== null && !forwardSource) {
 		await durableWrite(root, temporary, bytes);
@@ -1519,7 +1413,6 @@ async function installFile(
 				await rename(to, await resolveWritablePathWithin(root, capture));
 				await syncDirectory(dirname(to));
 				await syncDirectory(dirname(capture));
-				// Read the displaced inode, not a path another author can replace.
 				if (byteHash(await currentBytes(root, capture)) !== expectedHash) {
 					await restoreCapture(root, capture, to);
 					throw new ProjectTargetConflictError(
@@ -1545,7 +1438,6 @@ async function installFile(
 			return;
 		} catch (error) {
 			const code = (error as NodeJS.ErrnoException).code;
-			// A failed or uncertain capture/link keeps its inode for recovery.
 			if ((await currentBytes(root, capture)) !== null) {
 				await restoreCapture(root, capture, target);
 			}
@@ -1562,7 +1454,6 @@ async function installFile(
 }
 
 async function restoreCapture(root: string, capture: string, target: string): Promise<void> {
-	// Preserve the displaced inode for stale handles; publish a different inode.
 	const copy = `${capture}.restore-${randomUUID()}`;
 	await durableWrite(root, copy, (await currentBytes(root, capture)) as Buffer);
 	await chmod(copy, (await lstat(capture)).mode & 0o7777);
@@ -1586,7 +1477,6 @@ async function restoreCapture(root: string, capture: string, target: string): Pr
 	);
 }
 
-// Capture filenames describe attempted installation/restoration, even if it died before publication.
 async function reconcileCaptures(
 	root: string,
 	plan: JournalPlan,
@@ -1616,7 +1506,6 @@ async function reconcileCaptures(
 			file.from !== null &&
 			file.to !== null
 		) {
-			// A crash in the absent-name interval must restore bytes before admission.
 			const incomplete =
 				match[1] === "rollback"
 					? (await currentBytes(root, `${capture}.completed`)) === null
@@ -1652,7 +1541,6 @@ async function reconcileCaptures(
 								return undefined;
 							});
 			const visible = await lstat(await resolveWritablePathWithin(root, target), { bigint: true });
-			// Equal hashes do not prove ownership. Our successful hard link does.
 			if (
 				!installation ||
 				installation.ino !== visible.ino.toString() ||
@@ -1664,8 +1552,6 @@ async function reconcileCaptures(
 	return conflicts;
 }
 
-/** An intent names the displacement before rename; completion belongs to that attempt,
- * not the forward installed marker. Restore the original before any reader can enter. */
 async function resumeRollbackCaptures(root: string, plan: JournalPlan): Promise<void> {
 	const stage = join(root, plan.stage),
 		checksum = hash(JSON.stringify(plan));
@@ -1724,7 +1610,6 @@ async function recoverProjectFileJournal(root: string, assertOwnership: () => vo
 		throw new Error("Project transaction journal refused", { cause: error });
 	}
 	const { plan } = journal;
-	// Validate every path, permission and recovery artifact before touching any target.
 	const stage = await resolveWritablePathWithin(root, join(root, plan.stage));
 	const ready = await currentBytes(root, join(stage, "ready"));
 	const aborted = await currentBytes(root, join(stage, "abort"));
@@ -1756,16 +1641,11 @@ async function recoverProjectFileJournal(root: string, assertOwnership: () => vo
 			const consumed =
 				plan.captureVersion === 2 &&
 				staged === null &&
-				// Even a damaged identity records a possibly consumed source. Target
-				// ownership still requires a parsed identity in reconcileCaptures;
-				// refusing here would strand both admission and archive commands.
 				(await currentBytes(root, join(stage, `install-${index}.identity`))) !== null;
 			if (!consumed && (staged === null || byteHash(staged) !== file.toHash))
 				throw new Error("Project transaction staged file missing or corrupt");
 		}
 	}
-	// The final installed marker is already a durable commit decision, including a
-	// death before publishing committed. Live bytes cannot undo that decision.
 	if (aborted === null && (committed !== null || (ready !== null && allInstalled))) {
 		await cleanupJournal(root, plan);
 		return;
@@ -1778,7 +1658,6 @@ async function recoverProjectFileJournal(root: string, assertOwnership: () => vo
 		(ready === null ? !plan.files.every((file, index) => observed[index] === file.fromHash) : true)
 	) {
 		if (aborted === null) await publishMarker(root, join(stage, "abort"), journal.checksum);
-		// Restore only bytes installed by this plan. Unknown hashes belong to another writer.
 		const conflicts: string[] = [...captureConflicts];
 		for (const [index, file] of plan.files.entries()) {
 			if (
@@ -1829,17 +1708,12 @@ async function recoverProjectFileJournal(root: string, assertOwnership: () => vo
 		}
 		await removePlannedDirectories(root, plan);
 	} else if (aborted === null) {
-		// A retained capture-free preparation needs a durable rollback outcome too.
 		await publishMarker(root, join(stage, "abort"), journal.checksum);
 	}
-	// Preparation can create planned directories before the ready marker. With every
-	// target still original, the rollback branch above is unnecessary, but these empty
-	// directories still belong to the interrupted plan and must be removed.
 	if (ready === null) await removePlannedDirectories(root, plan);
 	await cleanupJournal(root, plan);
 }
 
-/** Apply one complete plan inside an admitted write transaction. Never normalizes bytes. */
 export async function applyProjectFilePlan(
 	root: string,
 	changes: readonly ProjectFileChange[],
@@ -1869,7 +1743,6 @@ export async function applyProjectFilePlan(
 	async function plannedTarget(path: string): Promise<string> {
 		try {
 			const writable = await resolveWritablePathWithin(root, path);
-			// Resolve existing native basenames too, including Windows 8.3 aliases.
 			try {
 				return await resolveExistingPathWithin(root, writable);
 			} catch (error) {
@@ -1915,7 +1788,6 @@ export async function applyProjectFilePlan(
 					return undefined;
 				},
 			);
-			// Writable-path admission refuses file links before canonicalization; retain the author message.
 			if (entry?.isSymbolicLink()) throw await plainStoreError(lexical);
 		}
 		const target = await plannedTarget(resolve(root, change.path));
@@ -1962,7 +1834,6 @@ export async function applyProjectFilePlan(
 	try {
 		const temporaryJournal = join(stage, "journal.tmp");
 		const publication = join(stage, "journal.publish");
-		// Both independent copies reach durable storage, with private modes, before linking.
 		await completeFileWork(
 			[temporaryJournal, publication].map(async (path) => {
 				await durableWrite(root, path, JSON.stringify(journal));
@@ -2001,12 +1872,10 @@ export async function applyProjectFilePlan(
 					await publishMarker(root, join(stage, `staged-${index}`), journal.checksum);
 				}),
 			);
-			// Checkpoints stay ordered, and caller guards run with no active staged writer.
 			for (let item = 0; item < batch.length; item++)
 				await options.onStep?.({ kind: "staged", index: offset + item });
 		}
 		await publishMarker(root, join(stage, "ready"), journal.checksum);
-		// A stale later file refuses the entire plan, including writes to its earlier peers.
 		for (const [index, file] of files.entries()) {
 			if (byteHash(await currentBytes(root, join(root, file.path))) !== file.fromHash) {
 				if (file.from === null)
@@ -2025,8 +1894,6 @@ export async function applyProjectFilePlan(
 				file.to === null ? null : await currentBytes(root, stagedPath(root, plan, index));
 			if (byteHash(staged) !== file.toHash)
 				throw new Error("Project transaction staged file missing or corrupt");
-			// A filesystem operation may replace the target and then report an I/O error.
-			// Record the attempt first; rollback decides from the observed bytes.
 			installed.push(index);
 			await installFile(
 				root,
@@ -2047,8 +1914,6 @@ export async function applyProjectFilePlan(
 		await publishMarker(root, join(stage, "committed"), journal.checksum);
 	} catch (error) {
 		if (committed) {
-			// All installed markers already made the commit durable. A redundant
-			// committed marker's I/O failure is cleanup, never a rollback trigger.
 			cleanupErrors.push(error);
 			try {
 				await cleanupJournal(root, plan);
@@ -2066,8 +1931,6 @@ export async function applyProjectFilePlan(
 				else if (!visible.equals(Buffer.from(JSON.stringify(journal))))
 					throw new Error("Journal publication ownership is uncertain; recovery copies retained");
 			}
-			// Record refusal before undo: recovery must finish rollback even if all targets
-			// still match 'to' when another process death interrupts this error path.
 			if (published) await publishMarker(root, join(stage, "abort"), journal.checksum);
 			conflicts.push(...(await reconcileCaptures(root, plan)));
 			for (const [index, file] of files.entries()) {
@@ -2084,8 +1947,6 @@ export async function applyProjectFilePlan(
 				const file = files[index];
 				const observed = byteHash(await currentBytes(root, join(root, file.path)));
 				if (observed === file.fromHash) continue;
-				// Atomic replacement installs only the checked staged bytes. A third hash
-				// belongs to an outside editor; preserve it while refusing this plan.
 				if (observed !== file.toHash || conflicts.includes(file.path)) {
 					conflicts.push(file.path);
 					continue;
@@ -2157,7 +2018,6 @@ export async function applyProjectFilePlan(
 	}
 }
 
-/** Compare every file before staging; install one recoverable course change under the OS lock. */
 export function writeProjectFiles(
 	projectDir: string,
 	changes: readonly ProjectFileChange[],
@@ -2191,14 +2051,12 @@ export async function replaceSourceAtomically(
 	]);
 }
 
-/** Frozen editor callers emit LF. Only uniform baselines need style adaptation; mixed bytes are literal. */
 export function projectTextReplacement(content: string, previous: string | undefined): string {
 	const endings = previous?.match(/\r\n|\r|\n/g);
 	if (!endings?.length || endings.some((ending) => ending !== endings[0])) return content;
 	return preserveEditorLineEndings(content, previous);
 }
 
-/** Compare and replace under the same lock as identity and course transactions. */
 export function writeProjectTextFile(
 	projectDir: string,
 	relativePath: string,

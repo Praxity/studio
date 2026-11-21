@@ -99,7 +99,6 @@ test("X1 preview, export and Check/Trace inspection preserve saved source bytes 
 	expect(hash(await readFile(join(root, "lesson.prax")))).toBe(before);
 }, 15_000);
 
-// Two durable commits: Intel Mac max 7265.8 ms, Linux CI 944 ms; allow twice the slower run.
 test("X1 rename keeps sidecar identities and exact source; deletion retires them atomically", async () => {
 	const root = await mkdtemp(join(tmpdir(), "x1-rename-"));
 	roots.push(root);
@@ -117,4 +116,4 @@ test("X1 rename keeps sidecar identities and exact source; deletion retires them
 	await deleteLessonSource(root, "renamed.prax");
 	await expect(readFile(join(root, "renamed.prax"))).rejects.toMatchObject({ code: "ENOENT" });
 	expect(await readFile(join(root, "course.yaml"), "utf8")).toContain("[]");
-}, 14_532); // timeout: docs/context/testing-strategy.md; run 38146537167
+}, 14_532);

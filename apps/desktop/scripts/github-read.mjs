@@ -1,6 +1,5 @@
 import { execFileSync } from "node:child_process";
 
-// Keep large commit patches out of single responses; list reads follow every Link page.
 export function githubRead(execute = execFileSync) {
 	const request = (route, flags) =>
 		JSON.parse(

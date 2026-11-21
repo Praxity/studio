@@ -38,7 +38,6 @@ async function project() {
 
 async function inProject(work: (root: string) => Promise<void>) {
 	const root = await project();
-	// Seed retained archives after T1's eager reclamation. Slice 4 owns retention.
 	return withProjectFileTransaction(root, work, "write", false);
 }
 
@@ -88,8 +87,6 @@ async function archive(
 	else await saving;
 	let stage = (await readdir(root)).find((name) => name.startsWith(".praxity-write-"));
 	if (!stage && checkpoint) {
-		// Current cleanup drops stages without captures. Retain the real checkpoint
-		// as an older writer/crash would, including its durable retirement decision.
 		stage = checkpoint.stage;
 		await mkdir(join(root, stage));
 		for (const [name, bytes] of checkpoint.files) await writeFile(join(root, stage, name), bytes);
@@ -97,7 +94,6 @@ async function archive(
 		await writeFile(join(root, stage, options.rollback ? "abort" : "committed"), journal.checksum);
 	}
 	if (!stage) throw new Error("Missing retained archive");
-	// Remove live lineage so only the archive can fence a new namespace.
 	if (path.startsWith(".praxity/")) await rm(join(root, ".praxity"), { recursive: true });
 	else if (path !== "lesson.prax") await rm(join(root, path), { force: true });
 	return stage;
@@ -134,7 +130,6 @@ async function admission(root: string, refuses: boolean) {
 	);
 }
 
-// Literal policy cases from the C03c split, independent of T1's path predicate.
 for (const path of [
 	"settings.json",
 	"lesson.prax",
