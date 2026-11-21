@@ -67,7 +67,6 @@ describe("buildSlugMap", () => {
 		const map = buildSlugMap(pages);
 		expect(map.get("p1")).toBe("key-concepts");
 		expect(map.get("p2")).toBe("key-concepts-2");
-		// "key-concepts-2" is taken, so this gets -2 suffix on its own slug
 		expect(map.get("p3")).toBe("key-concepts-2-2");
 	});
 

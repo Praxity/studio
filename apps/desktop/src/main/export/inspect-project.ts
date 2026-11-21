@@ -21,16 +21,11 @@ import { type AuthorWarning, lessonTitleWarnings } from "./accessibility-enforce
 import { readNarrationSidecar } from "./build-export-input-from-project";
 import { refuseUnsupportedDescriptions } from "./inspection-evidence";
 
-/**
- * Experimental: block `data` mirrors the parsed grammar and may change between
- * Studio versions. Consumers pin `schema` and treat unknown fields as opaque.
- */
 export const INSPECT_SCHEMA = "praxity-inspect/0";
 
 export interface InspectedBlock {
 	id: string;
 	type: string;
-	/** 1-based line where the block starts in the lesson file; null for generated blocks. */
 	line: number | null;
 	data: Record<string, unknown>;
 }
@@ -71,11 +66,6 @@ export interface CourseInspection {
 	lessons: InspectedLesson[];
 }
 
-/**
- * Reads a project without writing to it. Export may add IDs and migrate identity
- * sidecars; inspect uses preview identities instead, so a project that Studio has
- * never saved gets fresh block IDs on each run while its line numbers stay stable.
- */
 export async function inspectProject(
 	projectDir: string,
 	studioVersion: string,

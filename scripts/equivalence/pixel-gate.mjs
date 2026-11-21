@@ -93,7 +93,7 @@ async function main() {
 			throw new Error("Output must be outside checkouts, course inputs and existing builds");
 	}
 	await mkdir(path.dirname(out), { recursive: true });
-	await mkdir(out); // Refuse reuse: stale PNGs must never satisfy a failed capture.
+	await mkdir(out);
 	const started = performance.now();
 	const summary = { pass: false, courses: [] };
 	try {

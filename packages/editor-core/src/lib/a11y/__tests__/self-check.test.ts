@@ -8,7 +8,6 @@ import { RULE_METADATA } from "../rule-metadata";
 const selfCheck =
 	"::: self-check Explain the [delay](https://example.com).\nmodel: The data arrived late.\n:: Reason\nmissed: Explain the cause.\n:::\n";
 
-// A self-check's content is structured, not HTML; the literal task holds no link.
 it.each([
 	["on a page", `# Page\n\n${selfCheck}`, []],
 	[
@@ -85,7 +84,6 @@ describe("self-check author advice through the checker", () => {
 		],
 		[
 			"self-check-criterion-length",
-			// Advice retains its existing UTF-16 metric: 61 code points, 122 units.
 			valid.replace(":: Reason", `:: ${"😀".repeat(61)}`),
 			"cantTell",
 		],

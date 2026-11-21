@@ -62,7 +62,6 @@ export interface ParseWarning {
 }
 
 export interface ReadLessonOptions {
-	/** Omit only for read-only inspection or preview. Supplied IDs must be unique and nonempty. */
 	ids?: LessonIdAllocator;
 	formatMessage?: (message: MessageRef) => string;
 }
@@ -73,7 +72,6 @@ export interface LessonReadError extends ValidationError {
 	end: number;
 }
 
-// Only the identity index is cached. Authored content stays in the source tree.
 const nodeIds = new WeakMap<BlockAdapterResult["nodes"], ReadonlyMap<TreeNode, string>>();
 function indexNodeIds(nodes: BlockAdapterResult["nodes"]) {
 	let index = nodeIds.get(nodes);
@@ -100,8 +98,6 @@ export class SelfCheckContentError extends Error {
 	}
 }
 
-/** Author-only Content from this read's source and allocated identities.
- * Invalid drafts remain available through the tree. */
 export function readSelfCheckContent(read: ReadLessonResult, blockId: string): SelfCheckContent {
 	const owner = read.nodes.get(blockId);
 	if (!owner || owner.role || owner.node.kind !== "block" || owner.node.type !== "self-check")
@@ -128,7 +124,6 @@ export function readSelfCheckContent(read: ReadLessonResult, blockId: string): S
 	try {
 		validateContent(content);
 	} catch {
-		// Crash reporting forwards errors; never attach library errors or authored text.
 		throw new SelfCheckContentError("self-check-content-invalid");
 	}
 	return content;
@@ -146,7 +141,6 @@ export class HighlightContentError extends Error {
 	}
 }
 
-/** Fresh public content from this read's AST and identity index, never its projection. */
 export function readHighlightContent(read: ReadLessonResult, blockId: string): HighlightContent {
 	const owner = read.nodes.get(blockId);
 	if (
@@ -167,9 +161,6 @@ export function readHighlightContent(read: ReadLessonResult, blockId: string): H
 		...owner.node.children.filter((child) => child.kind === "item"),
 	]);
 	const ids = new Map<TreeNode, string>();
-	// skipped: shared identity checks for self-check, retrieval and distractors; align all four when the next reader changes.
-	// Do not cache a mutable identity index. Ambiguous aliases and detached records
-	// must still refuse after an earlier successful read.
 	for (const [key, record] of read.nodes) {
 		if (record.role !== undefined || !required.has(record.node)) continue;
 		if (!reachable.has(record.node) || key !== record.id || !key || ids.has(record.node))
@@ -201,7 +192,6 @@ export function readHighlightContent(read: ReadLessonResult, blockId: string): H
 	try {
 		validateHighlightContent(content);
 	} catch {
-		// Never forward authored text or upstream exceptions to crash reporting.
 		throw new HighlightContentError("highlight-content-invalid");
 	}
 	return content;
@@ -219,7 +209,6 @@ export class RetrievalSheetContentError extends Error {
 	}
 }
 
-/** Author content from this read's source and identities, independent of editor projections. */
 export function readRetrievalSheetContent(
 	read: ReadLessonResult,
 	blockId: string,
@@ -250,7 +239,6 @@ export function readRetrievalSheetContent(
 	try {
 		validateRetrievalSheetContent(content);
 	} catch {
-		// Never forward authored text or upstream exceptions to crash reporting.
 		throw new RetrievalSheetContentError("retrieval-sheet-content-invalid");
 	}
 	return content;
@@ -268,7 +256,6 @@ export class WriteDistractorsContentError extends Error {
 	}
 }
 
-/** Author content from this read's source and identities, independent of editor projections. */
 export function readWriteDistractorsContent(
 	read: ReadLessonResult,
 	blockId: string,
@@ -296,7 +283,6 @@ export function readWriteDistractorsContent(
 		read.diagnostics.some(
 			(d) =>
 				d.severity === "error" &&
-				// Runtime availability does not invalidate author content.
 				d.code !== "unsupported-runtime" &&
 				d.span.start >= owner.node.span.start &&
 				d.span.end <= owner.node.span.end,
@@ -306,15 +292,11 @@ export function readWriteDistractorsContent(
 	try {
 		validateWriteDistractorsContent(content);
 	} catch {
-		// Never forward authored text or upstream exceptions to crash reporting.
 		throw new WriteDistractorsContentError("write-distractors-content-invalid");
 	}
 	return content;
 }
 
-/** Grammar 4 reader. Invalid drafts return their source tree and diagnostics;
- * publication callers must refuse when hasErrors is true. Course checks remain
- * validateCourse's responsibility, with the host's complete cast/glossary/context. */
 export function readLesson(source: string, options: ReadLessonOptions = {}) {
 	const tree = analyzeLessonTree(tokenizeLesson(source), {
 		definition: getDefinition,
@@ -487,9 +469,6 @@ export class LessonRuntimeError extends Error {
 	}
 }
 
-/** Temporary source publication gate. Authoring reads retain typed practice prompts and
- * their source diagnostics; publishing owners must refuse them until runtime support
- * exists. Compiled admission independently checks each practice reader type. */
 export function refuseUnavailableLessonRuntime(read: ReadLessonResult, path: string): void {
 	const error = read.errors.find(
 		(error) =>
@@ -509,14 +488,10 @@ export function refuseUnavailableLessonRuntime(read: ReadLessonResult, path: str
 	}
 }
 
-/** Authoring hosts may use exact source for revision admission and hashing;
- * learner output must use the reader projections instead. */
 export function lessonSourceText(read: ReadLessonResult): string {
 	return read.tree.stream.source;
 }
 
-/** Preview and output callers may select projected page content without its
- * generated title; raw author nodes and full self-check Content stay private. */
 export function lessonPageBodyBlocks(read: ReadLessonResult, pageId: string): PraxityBlock[] {
 	return (
 		read.pages
@@ -525,7 +500,6 @@ export function lessonPageBodyBlocks(read: ReadLessonResult, pageId: string): Pr
 	);
 }
 
-/** Rebuild ID-bearing projections from an existing parse after identity resolution. */
 export function withLessonIds(read: ReadLessonResult, ids: LessonIdAllocator): ReadLessonResult {
 	const messages = new Map(read.errors.map((error) => [error.messageRef, error.message]));
 	return projectLesson(read.tree, read.frontmatter, {
@@ -534,7 +508,6 @@ export function withLessonIds(read: ReadLessonResult, ids: LessonIdAllocator): R
 	});
 }
 
-/** Innermost semantic block containing a whole-file source line. */
 export function lessonNodeAtLine(read: ReadLessonResult, line: number) {
 	const position = read.tree.stream.lines[line]?.start;
 	if (position === undefined) return undefined;

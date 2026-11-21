@@ -4,12 +4,10 @@ import { cpus } from "node:os";
 import { setTimeout as delay } from "node:timers/promises";
 import { promisify } from "node:util";
 
-// Owner decision 2026-10-07. T2a retains both its first-20 and all-30 checks.
 export const gateRule = Object.freeze({
 	commits: 30,
 	gateCommits: 20,
 	runs: 3,
-	// Keep attempting after ineligible runs, but stop rather than wait indefinitely on a busy machine.
 	maxAttempts: 6,
 	preflightTries: 12,
 	t2aMs: 100,
@@ -118,7 +116,6 @@ export function processCpuShare(usage, durationMs, processors = cpus().length) {
 		processors <= 0
 	)
 		throw new Error("CPU duration or whole-machine processor inventory unavailable");
-	// Affinity limits availableParallelism(), but PDH _Total still covers every processor.
 	return (100 * (usage.user + usage.system)) / 1000 / durationMs / processors;
 }
 
@@ -250,7 +247,6 @@ export async function monitorWindowsCpu({ start = spawn, now = Date.now } = {}) 
 		timer = setTimeout(() => finish(new Error("PDH CPU sampling gap or unavailable probe")), ms);
 	};
 	try {
-		// Processor Utility can exceed 100% with turbo. Processor Time matches the bounded gate.
 		child = start("typeperf", ["\\Processor(_Total)\\% Processor Time", "-si", "1"], {
 			windowsHide: true,
 		});
@@ -362,9 +358,6 @@ export function linuxDiskQueues(before, after, devices, durationMs) {
 	return queue;
 }
 
-// IOBlockStorageDriver's "Total Time" counters accumulate nanoseconds spent on completed
-// reads and writes. Their summed delta over elapsed time is the mean queue length (Little's
-// law), the same measure as Linux's weighted milliseconds. macOS exposes no in-flight count.
 export function darwinDiskQueue(before, after, durationMs) {
 	const parse = (text) =>
 		[...text.matchAll(/"Total Time \((?:Read|Write)\)"=(\d+)/g)].map((match) => BigInt(match[1]));

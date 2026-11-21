@@ -17,19 +17,9 @@ interface NavA11yExpectation {
 	hasPrevNext: boolean;
 }
 
-/**
- * Derived from the fixture's toggles rather than restated.
- *
- * The table this replaces expected a visible nav landmark for every archetype but
- * `none` — including `minimal`, whose whole point is that it hides the outline and
- * prev/next. Only the outline and prev/next render as `<nav>`; edge arrows and the
- * hamburger are buttons, so they do not add a landmark.
- */
 const NAV_VARIANTS: NavA11yExpectation[] = NAV_ARCHETYPES.filter(
 	(archetype): archetype is Exclude<NavArchetype, "custom"> => archetype !== "custom",
 ).map((archetype) => {
-	// What the learner actually gets: the archetype's preset, with the fixture's
-	// overrides on top — the same merge the viewer performs.
 	const effective = {
 		...getNavPreset(archetype),
 		...(NAV_TOGGLES[archetype as keyof typeof NAV_TOGGLES] ?? {}),
@@ -39,10 +29,6 @@ const NAV_VARIANTS: NavA11yExpectation[] = NAV_ARCHETYPES.filter(
 	return {
 		archetype,
 		name: archetype.toLowerCase(),
-		// Only the outline, prev/next and the slides layout's own slide-nav render as
-		// `<nav>`. Edge arrows, the hamburger and the progress dots are buttons, so
-		// they navigate without adding a landmark — which is why `minimal` correctly
-		// exposes none.
 		hasVisibleNav: hasOutline || hasPrevNext || archetype === "slides",
 		hasPrevNext: hasPrevNext || effective.navEdgeArrows === true,
 	};
@@ -50,8 +36,6 @@ const NAV_VARIANTS: NavA11yExpectation[] = NAV_ARCHETYPES.filter(
 
 const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"];
 
-// Windows WebKit exclusions: native link Tab traversal in sidebar, bottombar,
-// slides, scroll and embedded. Skip-link activation remains covered elsewhere.
 const WINDOWS_WEBKIT_LINK_TRAVERSAL = ["sidebar", "bottombar", "slides", "scroll", "embedded"];
 
 test.describe("outline visit status", () => {
@@ -62,8 +46,6 @@ test.describe("outline visit status", () => {
 			const activityTitle = french ? "Vérifiez votre compréhension" : "Check your understanding";
 			const visitedName = `${activityTitle}, ${french ? "Consultée" : "Visited"}`;
 			const moduleName = french ? "Module de pratique, Consulté" : "Practice module, Visited";
-			// Chromium may add a space at the hidden marker's boundary; the text itself has none.
-			// These names are plain words, so they need no regex escaping.
 			const spokenAs = (name: string) => new RegExp(`^${name.replace(", ", " ?, ")}$`);
 			test(`${route}: unanswered, wrong, retry and right retain visit meaning on HTML return`, async ({
 				page,
@@ -334,7 +316,6 @@ test.describe("nav a11y variants", () => {
 	}
 });
 
-// Records every non-empty text the shared live region receives in each document.
 async function recordLiveWrites(page: Page): Promise<void> {
 	await page.addInitScript(() => {
 		const writes: string[] = [];
@@ -350,7 +331,6 @@ async function recordLiveWrites(page: Page): Promise<void> {
 }
 
 async function liveWrites(page: Page): Promise<string[]> {
-	// Arrival writes ran in an animation frame after hydration; wait well past it.
 	await page.waitForTimeout(500);
 	return page.evaluate(
 		() => (window as unknown as { praxityLiveWrites: string[] }).praxityLiveWrites,
@@ -379,7 +359,6 @@ test.describe("Pages arrival orientation", () => {
 
 		async function expectCounter(page: Page, current: number): Promise<void> {
 			const counter = page.locator(".praxity-slide-counter");
-			// Each page is a full document, so its counter is static text, not a status.
 			await expect(counter).not.toHaveAttribute("role", /./);
 			await expect(counter).not.toHaveAttribute("aria-live", /./);
 			await expect(counter).not.toHaveAttribute("aria-label", /./);
@@ -441,14 +420,12 @@ test.describe("Pages arrival orientation", () => {
 
 		test(`${locale} utility pages keep their existing arrival messages`, async ({ page }) => {
 			await recordLiveWrites(page);
-			// Resources stays in the course tab and keeps its title-only message.
 			await page.goto(`${base()}/resources.html`);
 			await waitForHydration(page);
 			const title = await page.title();
 			expect(title).toBeTruthy();
 			expect(await liveWrites(page)).toEqual([title]);
 			await expect(page.locator(".praxity-slide-counter")).toHaveCount(0);
-			// The glossary opens in its own tab without the navigation island.
 			await page.goto(`${base()}/glossary.html`);
 			await expect(page.locator('[data-island="nav"]')).toHaveCount(0);
 			expect(await liveWrites(page)).toEqual([]);

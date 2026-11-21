@@ -1,11 +1,3 @@
-/**
- * Shared viewer bundle logic.
- *
- * Used by:
- *   - prebuild-client.ts (manual `pnpm prebuild:client`)
- *   - build.ts (auto-rebuild at publish time when source is stale)
- */
-
 import crypto from "node:crypto";
 import { existsSync } from "node:fs";
 import { access, lstat, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
@@ -52,7 +44,6 @@ const SCORM_SRC = path.resolve(__dirname, "scorm");
 export const PATTERNS_SRC = path.resolve(__dirname, "patterns");
 
 const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".css"]);
-// Code, literal data and browser assets. Machine/editor debris is never an input.
 const PATTERN_EXTENSIONS = new Set([
 	".ts",
 	".tsx",
@@ -150,12 +141,9 @@ const GENERATED_ISLAND_ENTRY = new RegExp(
 const GENERATED_HOST_ENTRY =
 	/^(?:course-(?:bootstrap|shell|resume)|scorm-support|host-(?:standalone|electron-preview|scorm12|scorm2004|xapi)(?:-private)?|privacy-(?:bootstrap|support)|private-choice-bootstrap)-[A-Z0-9]{8}(?:\.classic)?\.(?:js|map)$/;
 
-// Owner 2026-10-11: 58 KiB while S9b gets working; the startup split will tighten it.
-// owner 2026-10-11: raised for S9b; size optimisation at the end
 export const SELF_CHECK_INITIAL_RAW_CEILING = 59_392;
 
 export interface ViewerBundleManifest {
-	/** Packaged separately; loaded only after Check or when saved state exists. */
 	selfCheckSupport?: string[];
 	writeDistractorsSupport?: string[];
 	selfCheckDocument?: string;
@@ -178,11 +166,6 @@ export interface ViewerBundleManifest {
 	islandDependencies: Record<IslandManifestEntryName, string[]>;
 }
 
-/**
- * Every file a viewer manifest references, relative to the assets directory with
- * forward slashes. Copy and verify through this list so a new asset field
- * (as `resume` was) cannot be missed by one consumer.
- */
 export function viewerManifestAssetPaths(manifest: ViewerBundleManifest): string[] {
 	return [
 		...new Set([
@@ -524,7 +507,6 @@ async function collectSourceFiles(
 			files.push(...(await collectSourceFiles(full, extensions, patternTree)));
 		} else if (
 			extensions.has(path.extname(entry.name)) ||
-			// Copied legal text contributes to prepared runtime notices and their cache key.
 			(patternTree && /^(?:LICENSE|NOTICE|COPYING)(?:[._-]|$)/i.test(entry.name))
 		) {
 			files.push(full);
@@ -533,8 +515,6 @@ async function collectSourceFiles(
 	return files;
 }
 
-/** Conservative input inventory, never an entry registry. Include literal data and
- * test-named code too, so moving a bundled input cannot silently retain old assets. */
 export async function patternSourceFiles(): Promise<string[]> {
 	try {
 		await access(PATTERNS_SRC);
@@ -574,7 +554,6 @@ function getBundleResolutionPaths(): { entryPoint: string; extraNodePaths: strin
 	return { entryPoint, extraNodePaths };
 }
 
-/** Exact hash inventory, exposed so bundle-input coverage can guard future imports. */
 export async function viewerSourceFiles(): Promise<string[]> {
 	const [sharedFiles, grammarFiles, contentModelFiles, templateFiles, scormFiles, patternFiles] =
 		await Promise.all([
@@ -673,7 +652,6 @@ async function cleanGeneratedIslandFiles(islandOutDir: string): Promise<void> {
 	);
 }
 
-/** CSS build entries used by publishing and source-level contract checks. */
 export function viewerStylesheetBuilds(
 	outDir: string,
 ): Record<string, BuildOptions & { metafile: true }> {
@@ -775,9 +753,6 @@ export async function bundleViewer(
 		treeShaking: true,
 		target: "es2020",
 		jsx: "automatic",
-		// viewer.css is built explicitly and loaded by every page.
-		// Treat component CSS imports as empty here so they do not keep unrelated
-		// block modules alive in the island graph or emit duplicate CSS bundles.
 		loader: { ".css": "empty" },
 		define: {
 			"process.env.NODE_ENV": '"production"',
@@ -909,7 +884,6 @@ export async function bundleViewer(
 		.createHash("sha256")
 		.update(await readFile(path.join(islandOutDir, selfCheckDocumentFilename)))
 		.digest("hex");
-	// Both launch modes use this same classic core. ESM statically imports its IIFE.
 	const selfCheckCore = await build({
 		...islandOptions,
 		entryPoints: [path.join(ISLANDS_DIR, "self-check-classic.ts")],
@@ -985,7 +959,6 @@ export async function bundleViewer(
 			},
 		],
 	});
-	// Keep this closure free of shared chunks retaining unrelated island exports.
 	const assessmentGroupResult = await build({
 		...islandOptions,
 		entryPoints: { "island-assessment-group": ISLAND_ENTRY_POINTS["island-assessment-group"] },
@@ -994,8 +967,6 @@ export async function bundleViewer(
 		...islandOptions,
 		entryPoints: { "island-nav": ISLAND_ENTRY_POINTS["island-nav"] },
 	});
-	// A new entry in the shared split graph changes existing chunk fingerprints.
-	// Keep retrieval independent so courses without sheets retain exact assets.
 	const retrievalSheetResult = await build({
 		...islandOptions,
 		entryPoints: { "island-retrieval-sheet": ISLAND_ENTRY_POINTS["island-retrieval-sheet"] },
@@ -1139,8 +1110,6 @@ export async function bundleViewer(
 		metafile: true,
 	});
 	const rootRuntimeResult = await build({ ...rootRuntimeOptions, metafile: true });
-	// Only SCORM hosts import the shared classic asset. Other hosts and the shell
-	// retain normal imports, so their output has no SCORM dependency or guard.
 	const scormHostOptions: BuildOptions = {
 		...rootRuntimeOptions,
 		metafile: true,
@@ -1220,7 +1189,6 @@ export const { getSessionState, readSessionState, commitScormSession, writeSessi
 			throw new Error(`bundleViewer: missing output for island entry ${entryName}`);
 		}
 	}
-	// Chromium file:// refuses module imports. Keep the same island entries in classic bundles.
 	const classicFilenames: Partial<Record<IslandEntryName, string>> = {};
 	const classicResults = [];
 	classicFilenames["island-self-check"] = selfCheckCoreFilename;

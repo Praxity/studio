@@ -20,17 +20,13 @@ export type LearnerBlockSaveResult =
 	  };
 
 export interface LearnerBlockStateRuntime {
-	/** The host binds current rows and state before consumers restore choices. */
 	getChoiceDependencyView?(): ChoiceDependencyEvidence | undefined;
 	get(blockId: string): LearnerStateValue | undefined;
 	set(blockId: string, value: LearnerStateValue): void;
-	/** Accept state provisionally; a bounded host commits it with the following interaction. */
 	stageSubmission?(blockId: string, write: () => boolean): boolean;
 	getSaveResult?(blockId: string): LearnerBlockSaveResult | undefined;
 	getPolicy?(blockId: string): "device" | "lms";
-	/** Effective reporting destination, independent of where drafts are stored. */
 	getReportingDestination?(blockId: string): "device" | "lms";
-	/** The session owner calls this after variables and gate effects finalize. */
 	finalizeLearner?(ticket: SelfCheckTicket): void;
 }
 
@@ -55,7 +51,6 @@ declare global {
 	}
 }
 
-/** Reads pass through; writes retain the ticket of their cause. */
 export function learnerRuntime(
 	current: () => boolean,
 	doc: Document | undefined = globalThis.document,
@@ -84,7 +79,6 @@ export function finishLearnerCourse(
 	return current();
 }
 
-/** Tracker state and reporting methods retain their admitted adapter and refuse revocation. */
 export function withLearnerStateAuthority<T extends object>(
 	provider: T,
 	current: () => boolean,
@@ -105,7 +99,6 @@ export function readLearnerBlockState(blockId: string): LearnerStateValue | unde
 	return typeof window === "undefined" ? undefined : window.__praxityBlockState?.get(blockId);
 }
 
-/** All learner writes retain the caller's authority, including across reentrant callbacks. */
 export function writeLearnerBlockState(
 	blockId: string,
 	value: LearnerStateValue,
@@ -130,7 +123,6 @@ export function readLearnerBlockPolicy(blockId: string): "device" | "lms" | unde
 		: window.__praxityBlockState?.getPolicy?.(blockId);
 }
 
-/** A session retains one admitted provider. Replacement can never redirect its writes. */
 export function captureLearnerBlockState(
 	provider: LearnerBlockStateRuntime | undefined,
 	lifetime: () => boolean,
@@ -144,9 +136,6 @@ export function captureLearnerBlockState(
 			const value = provider.get(blockId);
 			if (!lifetime() || !ticket.current()) throw new Error("EACTIVITYPROVIDER");
 			const result = provider.getSaveResult?.(blockId);
-			// An absent device store reports unavailable before get. The host also
-			// catches failed reads and reports unavailable afterward; that transition
-			// cannot establish an empty store or authorize overwriting unread bytes.
 			if (
 				value === undefined &&
 				result?.status === "not-saved" &&
@@ -158,8 +147,6 @@ export function captureLearnerBlockState(
 		write(blockId: string, value: LearnerStateValue, ticket: { current(): boolean }) {
 			if (!lifetime() || !ticket.current() || !provider) return undefined;
 			provider.set(blockId, value);
-			// A saved receipt is also evidence of stored bytes, even if an injected set
-			// queued a newer edit. The session must not certify that newer draft with it.
 			return lifetime() ? provider.getSaveResult?.(blockId) : undefined;
 		},
 	};

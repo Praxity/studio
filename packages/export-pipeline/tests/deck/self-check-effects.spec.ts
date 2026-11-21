@@ -745,7 +745,6 @@ for (const action of actions) {
 			};
 			const pending = window.__praxitySelfCheckSession;
 			armed = true;
-			// Keep the pending work in the page so CDP never awaits across provider replacement.
 			void (async () => {
 				await pending?.session.ready;
 				await successor;
@@ -1604,7 +1603,6 @@ for (const format of ["html", "scorm12", "scorm2004", "file"] as const) {
 		await page.addInitScript(() => {
 			const urls: string[] = [];
 			Object.assign(window, { insertedSelfCheckScripts: urls });
-			// Gecko can omit a cached file request from its protocol events; DOM load still records it.
 			document.addEventListener(
 				"load",
 				(event) => {

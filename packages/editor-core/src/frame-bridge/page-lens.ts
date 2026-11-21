@@ -36,8 +36,6 @@ import { mountSourceField, sourceFieldGuardCss } from "./source-field";
 
 const LEARNER_CONTROLS =
 	'a[href],button,input,select,textarea,summary,iframe,embed,object,[role="button"],[tabindex],[contenteditable],audio[controls],video[controls]';
-// Carousel and flip controls do nothing without course scripts, and laid-open
-// slides would otherwise expose them; they still occupy the page (V5).
 const LEARNER_ONLY = ".praxity-card-controls,[data-card-flip]";
 let lensNumber = 0;
 const MIN_INSPECTION_GUTTER = 60;
@@ -47,12 +45,6 @@ interface HandleBox {
 	top: number;
 	size: number;
 }
-/**
- * Handles never overlap, and keep WCAG 2.5.8 spacing: a 24px circle centred on
- * either handle misses the other's box, and two undersized (item) handles'
- * circles miss each other. Touching 24px handles pass; the 390px gutter has no
- * room for a gap.
- */
 function crowds(a: HandleBox, b: HandleBox) {
 	const reach = (from: HandleBox, to: HandleBox) =>
 		Math.hypot(
@@ -77,7 +69,6 @@ function crowds(a: HandleBox, b: HandleBox) {
 	);
 }
 
-/** DOM adapter for the controller view. refresh is the P3 patch/remount boundary. */
 export function mountPageLens(options: {
 	document: Document;
 	view: FrameView;
@@ -103,12 +94,7 @@ export function mountPageLens(options: {
 		throw new Error("Page lens requires inspection mode");
 	let view = options.view;
 	if (!isFrameView(view)) throw new Error("Invalid frame view");
-	// A read-only page view (preview inspection) receives patches and feedback only.
-	// It keeps the learner's Tab stops, clicks and served hidden state; it has no handles.
 	const readOnly = view.readOnly === true;
-	// Unpredictable per mount: a course element with a guessed id placed earlier in the
-	// document would win the handle's aria-describedby and rewrite what AT reads. The
-	// renderer's own ids (praxity-ag-question-…, praxity-config) stay untouched.
 	const nonce = [...win.crypto.getRandomValues(new Uint32Array(2))]
 		.map((n) => n.toString(36))
 		.join("");
@@ -133,7 +119,6 @@ export function mountPageLens(options: {
 	let sourceSelection: readonly [number, number] = [0, 0];
 	const retiredChrome = new Set<HTMLElement>();
 	const geometryProbes = new Map<Element | null, HTMLElement>();
-	// Any frame node removal ends Chromium's typing group; close is the safe boundary.
 	let deferredStructure: (() => string[])[] = [];
 	function retireChrome(element: HTMLElement) {
 		if (!sourceField) {
@@ -184,7 +169,6 @@ export function mountPageLens(options: {
 	let presentationGeneration = 0;
 	let latestFeedback: RenderFeedback | null = null;
 	let scheduled = false;
-	// Rendered node boxes from the last placement pass, for pointer hover.
 	let hoverBoxes: { id: string; element: HTMLElement; box: DOMRect }[] = [];
 	const bodyPadding = doc.body.style.paddingInlineStart;
 	let gutterReserved = false;
@@ -193,16 +177,12 @@ export function mountPageLens(options: {
 	style.dataset.praxityChrome = "style";
 	style.textContent = tokenSheet + PAGE_LENS_CSS;
 	doc.head.append(style);
-	// F11: handles live in the top layer, above any course stacking context, overlay or
-	// clipping ancestor, while staying beside their node in the DOM for reading and Tab
-	// order. An engine without the Popover API keeps fixed-position handles.
 	const topLayer = !readOnly && typeof win.HTMLElement.prototype.showPopover === "function";
 	const hitClip = `--praxity-hit-clip-${nonce}`;
 	const guard = doc.createElement("style");
 	ownedChrome.add(guard);
 	guard.dataset.praxityChrome = "style";
 	guard.textContent = handleGuardCss(nonce);
-	// First in tree order, so its layer precedes every course layer.
 	if (!readOnly) doc.head.prepend(guard);
 	function setOwned(element: Element, key: string, value: string | null) {
 		let originals = ownedAttributes.get(element);
@@ -217,12 +197,10 @@ export function mountPageLens(options: {
 	}
 	function describeHandle(button: HTMLButtonElement | undefined, detail: string) {
 		const text = button?.querySelector("span")?.firstChild;
-		// Removing even an unrelated text node splits Chromium's native typing group.
 		if (text && text.nodeValue !== detail) text.nodeValue = detail;
 	}
 	let chromeTheme: "light" | "dark" = "light";
 	function syncChromeTheme() {
-		// Transparent ancestors contribute no colour.
 		const backgrounds = [doc.body, doc.documentElement].map(
 			(el) => win.getComputedStyle(el).backgroundColor,
 		);
@@ -242,12 +220,10 @@ export function mountPageLens(options: {
 				: null);
 		if (!hex) throw new Error(`Unsupported page background: ${background}`);
 		chromeTheme = luminance(hex) > 0.179 ? "light" : "dark";
-		// Keep the spec's public marker; only the private marker selects chrome tokens.
 		setOwned(doc.documentElement, "data-chrome", chromeTheme);
 		setOwned(doc.documentElement, "data-praxity-chrome-theme", chromeTheme);
 	}
 	syncChromeTheme();
-	// The private handshake can finish before an exported stylesheet loads in Gecko.
 	win.addEventListener("load", syncChromeTheme);
 	function elements(id: string, root: ParentNode = doc) {
 		return [...root.querySelectorAll<HTMLElement>("[data-node-id]")].filter(
@@ -257,7 +233,6 @@ export function mountPageLens(options: {
 	function admitFragment(id: string, element: HTMLElement) {
 		const previous = admittedFragments.get(id);
 		admittedFragments.set(id, element);
-		// Only a patcher-admitted subtree can replace a retained descendant's identity.
 		if (!previous) return;
 		for (const [childId, child] of admittedFragments) {
 			if (childId === id || !previous.contains(child)) continue;
@@ -290,7 +265,6 @@ export function mountPageLens(options: {
 			}
 			return undefined;
 		}
-		// Once admitted, authored mutation cannot redirect a patch to a duplicate marker.
 		if (admittedFragments.has(id)) return undefined;
 		const node = view.nodes.find((node) => node.id === id);
 		const element = node
@@ -302,7 +276,6 @@ export function mountPageLens(options: {
 	function readFragment(fragment: PreviewHtmlFragment): HTMLElement | null {
 		const template = doc.createElement("template");
 		template.innerHTML = fragment.html;
-		// Patches pass the same strip as the served inspection document.
 		stripInspectionMarkup(template.content);
 		const root = template.content.firstElementChild;
 		if (!(root instanceof win.HTMLElement) || template.content.children.length !== 1) return null;
@@ -491,8 +464,6 @@ export function mountPageLens(options: {
 			}
 		}
 		const layoutRoot = template.content.firstElementChild;
-		// Deck order includes its slide boundary. Reconcile that boundary with
-		// the existing slide rather than creating a nested, duplicate page ID.
 		arrange(
 			parent,
 			layoutRoot?.id === parent.id && layoutRoot.tagName === parent.tagName
@@ -530,7 +501,6 @@ export function mountPageLens(options: {
 			matches[0]
 		);
 	}
-	// A display:contents node (a matching pair's row) has no box; its contents do.
 	function boxOf(element: HTMLElement) {
 		if (win.getComputedStyle(element).display !== "contents")
 			return element.getBoundingClientRect();
@@ -591,7 +561,6 @@ export function mountPageLens(options: {
 			if (element?.isConnected && target) live.push([element, target]);
 			else {
 				controlRefs.delete(ref);
-				// Detached controls still supply their final native caret during replacement.
 				if (element) indexedControls.delete(element);
 			}
 		}
@@ -616,13 +585,9 @@ export function mountPageLens(options: {
 		}
 		const control = focusControl(target);
 		if (!control) return false;
-		// A settlement command can arrive after native focus moved, before its report reaches the host.
 		if (options.preserveFocus && (!doc.hasFocus() || !hasNativeFocus(control))) return false;
-		// A focused native field owns its caret; the host selection can lag typing.
 		if (target.selection && control instanceof win.HTMLTextAreaElement && !hasNativeFocus(control))
 			control.setSelectionRange(target.selection[0], target.selection[1]);
-		// Gecko keeps focus on the frame body unless its browsing context owns
-		// focus before an explicit cross-document control focus command.
 		if (win !== win.top && !doc.hasFocus()) win.focus();
 		if (!hasNativeFocus(control)) control.focus();
 		const applied = hasNativeFocus(control);
@@ -630,17 +595,12 @@ export function mountPageLens(options: {
 		return applied;
 	}
 	function reveal() {
-		// Without course scripts, later card slides and conditional blocks keep their
-		// hidden server form. Neither has a visible anchor for its handle, as a tab
-		// does, so the lens lays them open to keep every handle in the Tab order (F1).
 		for (const slide of doc.querySelectorAll<HTMLElement>("[data-slide-position]")) {
 			if (chrome(slide)) continue;
 			setOwned(slide, "data-slide-position", "active");
 			setOwned(slide, "data-active", "true");
 			setOwned(slide, "aria-hidden", null);
 			setOwned(slide, "inert", null);
-			// Slides share one grid cell; stack them instead. Record the original
-			// inline style, then add to it so its custom properties survive.
 			setOwned(slide, "style", slide.getAttribute("style"));
 			if (slide.style.getPropertyValue("grid-area") !== "auto")
 				slide.style.setProperty("grid-area", "auto");
@@ -676,14 +636,6 @@ export function mountPageLens(options: {
 			node = view.nodes.find((parent) => parent.id === node?.parentId);
 		}
 	}
-	// Course CSS can key a node's visibility to its handle's state, because the handle is
-	// its preceding sibling: `:popover-open + *`, `[data-selected] + *`, `:focus + *` or
-	// the same through `:has()`. Showing a handle would then hide its node, and hiding the
-	// handle show it again. When a node with an open or focused handle has no box, every
-	// handle is measured again in a neutral state: closed, without its state attributes.
-	// Focus and pointer hover cannot be neutralized, so such a handle keeps its node's last
-	// box. Course selectors can always see a sibling's pseudo-classes and aria-expanded, so
-	// the lens neutralizes state for measurement rather than hiding it from selectors.
 	const QUIET_STATE_ATTRIBUTES = ["data-hovered", "data-selected"];
 	const STATE_ATTRIBUTES = [...QUIET_STATE_ATTRIBUTES, "aria-expanded"];
 	let lastBoxes = new Map<string, DOMRect>();
@@ -697,9 +649,6 @@ export function mountPageLens(options: {
 		};
 		let boxes = measure();
 		let reshown = false;
-		// Only CSS can key a node to handle state. A node the lens or course hides with
-		// markup (a tab panel's hidden attribute on every Tab to a tab) is simply hidden, so
-		// legitimate flows never run the neutral pass.
 		const lost = [...rendered].some(([id, element]) => {
 			const button = handles.get(id);
 			return (
@@ -711,9 +660,6 @@ export function mountPageLens(options: {
 			);
 		});
 		if (lost) {
-			// The focused handle keeps its aria-expanded: removing and restoring it in one
-			// task can still reach assistive technology. Its other state is neutralized like
-			// any handle's, or CSS keyed to it would hide its node's descendants too.
 			const focused = doc.activeElement;
 			const open = [...handles.values()]
 				.filter((button) => button.matches(":popover-open"))
@@ -752,9 +698,6 @@ export function mountPageLens(options: {
 			)
 				boxes.set(element, last);
 		}
-		// Remember each node's last box, also while it has none, so the fallback above can
-		// use it once that node's handle has focus or hover. Nodes that are rendered always
-		// use their current box: the fallback applies only to a node with no box.
 		lastBoxes = new Map(
 			[...rendered].flatMap(([id, element]) => {
 				const box = (element && boxes.get(element)) ?? lastBoxes.get(id);
@@ -794,8 +737,6 @@ export function mountPageLens(options: {
 		}
 		const { boxes } = measured;
 		const renderedBoxes = [...boxes].map(([element, box]) => ({ element, box }));
-		// A focusable container (main's skip-link target, a carousel, a tab panel)
-		// holds the nodes themselves; only controls beside the content are kept clear.
 		const controlBoxes = [...doc.querySelectorAll<HTMLElement>(LEARNER_CONTROLS)]
 			.filter((element) => {
 				if (chrome(element) || renderedBoxes.some((rendered) => element.contains(rendered.element)))
@@ -812,14 +753,9 @@ export function mountPageLens(options: {
 			const box = element && boxes.get(element);
 			return element && box ? [{ id, element, box }] : [];
 		});
-		// Reserve the tight leaf boxes before choosing positions for taller items.
 		const ordered = [...view.nodes].sort(
 			(a, b) => Number(a.kind === "item") - Number(b.kind === "item"),
 		);
-		// One write pass before any measurement, so engines lay out once (WebKit pays
-		// for each show interleaved with reads). At first mount this order paints item
-		// handles above block handles (z-index 11 over 10); later re-shows append, and
-		// raise() reorders only the focused handle and L3 popups.
 		let shown = measured.reshown;
 		for (const node of ordered) {
 			const button = handles.get(node.id);
@@ -831,7 +767,6 @@ export function mountPageLens(options: {
 			if (button.hidden) {
 				if (button.matches(":popover-open")) button.hidePopover();
 			} else if (!button.matches(":popover-open")) {
-				// Inserting or moving a handle (a patch replacing its node) closes it.
 				button.showPopover();
 				topHandle = button;
 				shown = true;
@@ -845,14 +780,6 @@ export function mountPageLens(options: {
 			const button = handles.get(node.id);
 			return button && !button.hidden && renderedElements.get(node.id) ? [button] : [];
 		});
-		// Course CSS can hide a probe or its parent (`:has(> probe)`, `probe ~ *`), which also
-		// collapses the page and resets its scroll while the probe is there. A handle
-		// cannot be restyled, so top-layer handles avoid probes where they can. Their
-		// containing block is the viewport, so in Chromium and Firefox the only scale is
-		// the inherited CSS zoom that currentCSSZoom reports. WebKit lacks it and offsets
-		// top-layer handles by a transformed ancestor, so a placed handle is its own probe:
-		// its rendered box against its inline translation yields the origin and scale. Only a
-		// handle never placed needs a probe there.
 		const zoomOnly = topLayer && "currentCSSZoom" in win.Element.prototype;
 		const selfMeasured = new Map<HTMLButtonElement, DOMRect>();
 		if (topLayer && !zoomOnly)
@@ -882,8 +809,6 @@ export function mountPageLens(options: {
 			if (!parent) continue;
 			const self = selfMeasured.get(button);
 			const last = lastOrigins.get(parent);
-			// Rendered boxes snap to layout units, so a self-measured origin wobbles by a
-			// fraction of a pixel; keep the last exact origin while it agrees.
 			if (self && !origins.has(parent))
 				origins.set(
 					parent,
@@ -894,14 +819,10 @@ export function mountPageLens(options: {
 						? last
 						: self,
 				);
-			// A probe that measured nothing leaves the parent's last good origin, else the
-			// viewport's, so every handle is still placed.
 			const origin = origins.get(parent);
 			if (origin && origin.width > 0 && origin.height > 0) lastOrigins.set(parent, origin);
 			else origins.set(parent, last ?? new win.DOMRect(0, 0, 100, 100));
 		}
-		// Read every anchor before writing handle geometry. A style write invalidates
-		// the following getComputedStyle/offsetHeight even when no content moved.
 		const anchors = new Map(
 			ordered.flatMap((node) => {
 				const element = renderedElements.get(node.id);
@@ -946,17 +867,11 @@ export function mountPageLens(options: {
 					child.parentId === node.id ? renderedElements.get(child.id) : undefined;
 				return childElement && element.contains(childElement) && boxes.has(childElement);
 			});
-			// A horizontal tab's local left edge is between labels. All its item
-			// handles use the tab list's gutter, in source order, within the tab row.
-			// Fixed-position coordinates are quantized separately from DOM rectangles
-			// in WebKit/Firefox. Keep centres just inside the measured boundaries.
 			const inset = Math.min(0.25, rect.height / 2);
 			const inViewport = rect.bottom > 0 && rect.top < win.innerHeight;
 			const minimum = inViewport
 				? Math.min(win.innerHeight - size / 2, Math.max(rect.top + inset, size / 2))
 				: rect.top + inset;
-			// After its first line scrolls away, use the remaining node box. This
-			// keeps visible controls apart instead of stacking them on the viewport edge.
 			const nodeMaximum =
 				(tabList || (inViewport && rect.top < 0)
 					? rect.bottom
@@ -983,8 +898,6 @@ export function mountPageLens(options: {
 			const candidates = centres
 				.filter((y) => y >= minimum && y <= maximum)
 				.sort((a, b) => Math.abs(a - preferred) - Math.abs(b - preferred));
-			// The 54px container lane leaves a 2px gap before a child in the 28px lane
-			// wherever the gutter is wide enough; at 390px both clamp and touch.
 			const starts = [
 				Math.max(
 					8,
@@ -998,8 +911,6 @@ export function mountPageLens(options: {
 				Math.max(8, pageStart - 54),
 				Math.max(8, pageStart - size - 4),
 			];
-			// A local column gutter can be inside its neighbour's content box.
-			// Protect peers as well as controls, including after their text reflows.
 			const protectedBoxes = [
 				...controlBoxes,
 				...renderedBoxes
@@ -1021,14 +932,9 @@ export function mountPageLens(options: {
 						candidate.top >= box.bottom ||
 						candidate.top + size <= box.top,
 				);
-			// Containers stay on their own first line. Adjacent gutter lanes keep
-			// short child boxes reachable without moving handles below their nodes.
 			const free = (candidate: { start: number; left: number; top: number }) =>
 				clear(candidate) &&
 				occupied.every((box) => !crowds({ left: candidate.left, top: candidate.top, size }, box));
-			// Nested nodes clamped to a viewport edge, or a one-line container and its
-			// child, can fill every lane beside the node. The nearest free slot beyond
-			// it still points at the node; a shared slot would hide one handle.
 			const beyond = () => {
 				const low = inViewport ? size / 2 : preferred - win.innerHeight;
 				const high = inViewport ? win.innerHeight - size / 2 : preferred + win.innerHeight;
@@ -1044,11 +950,7 @@ export function mountPageLens(options: {
 								if (free(candidate)) return candidate;
 							}
 			};
-			// A gutter full for the whole viewport height is the only way to reach the
-			// last fallback; it still keeps content clear (V5).
 			const placement = placements.find(free) ?? beyond() ?? placements.find(clear);
-			// Never throw from placement: a failed pass would leave every handle stale. A
-			// focused handle keeps its last place; any other handle waits for the next pass.
 			if (!placement) {
 				if (button !== doc.activeElement) {
 					button.hidden = true;
@@ -1060,8 +962,6 @@ export function mountPageLens(options: {
 			occupied.push({ button, left, top, size, item });
 			positionFixed(button, { left, top, width: size, height: size }, admitGeometry, rtl, origins);
 		}
-		// Expanded targets may share the gutter, but must never steal another
-		// handle's visible button. Keep the 44px extent and cut out those boxes.
 		for (const box of occupied) {
 			const originX = box.left - 10;
 			const originY = box.top - (box.item ? 12 : 10);
@@ -1085,9 +985,6 @@ export function mountPageLens(options: {
 			shown,
 		);
 	}
-	// Top-layer chrome paints in the order it was shown, so z-index no longer orders it.
-	// Re-showing the focused handle keeps F11's focused-handle stacking above its
-	// neighbours; re-showing open L3 popups then keeps every handle beneath them.
 	let topHandle: HTMLButtonElement | null = null;
 	const l3Popups = new Set<HTMLElement>();
 	function raise(handle: HTMLButtonElement | null, popups: boolean) {
@@ -1143,7 +1040,6 @@ export function mountPageLens(options: {
 		if (!presenting) return mutate();
 		const active = activeElement();
 		const hadFocus = active instanceof win.HTMLElement && chrome(active) && doc.hasFocus();
-		// The next view can already omit this node; its admitted control still owns the removal.
 		const owner = hadFocus ? controls.get(active) : undefined;
 		const field =
 			active instanceof win.HTMLTextAreaElement || active instanceof win.HTMLInputElement;
@@ -1155,9 +1051,6 @@ export function mountPageLens(options: {
 						active.selectionDirection ?? "none",
 					] as const)
 				: null;
-		// A read-only page view has no chrome: the author's focus sits on a course control.
-		// Remember it by each admitted node that holds it, innermost first, with its position
-		// there, and the page's nodes in document order in case the patch removes them all.
 		let content: { id: string; index: number }[] = [];
 		let pageOrder: string[] = [];
 		if (
@@ -1188,7 +1081,6 @@ export function mountPageLens(options: {
 				target = focusables(root)[index] ?? root;
 				break;
 			}
-			// The patch removed the focused node: go to the next surviving node, else the previous.
 			const at = pageOrder.indexOf(content.at(-1)?.id ?? "");
 			for (const id of target
 				? []
@@ -1196,12 +1088,10 @@ export function mountPageLens(options: {
 				target = fragmentElement(id);
 				if (target) break;
 			}
-			// A node root is not a control; make it focusable without adding a tab stop.
 			if (target && target !== active && !target.matches(LEARNER_CONTROLS))
 				setOwned(target, "tabindex", "-1");
 			target?.focus({ preventScroll: true });
 		}
-		// Moving a retained control with insertBefore drops native focus in all engines.
 		if (
 			hadFocus &&
 			active instanceof win.HTMLElement &&
@@ -1216,7 +1106,6 @@ export function mountPageLens(options: {
 	}
 	function refresh() {
 		retainFocus(refreshContent);
-		// This refresh already reconciled these mutations, including its own reveal writes.
 		observer.takeRecords();
 	}
 	function refreshContent() {
@@ -1225,26 +1114,19 @@ export function mountPageLens(options: {
 		for (const element of ownedAttributes.keys())
 			if (!element.isConnected) ownedAttributes.delete(element);
 		for (const element of tabStops.keys()) if (!element.isConnected) tabStops.delete(element);
-		// A retained source must not rebind to an authored duplicate after a miss.
 		for (const [id, element] of admittedFragments)
 			if (!element.isConnected && sourceNodeId !== id) admittedFragments.delete(id);
-		// The course's learner announcements are inactive while authors inspect it.
 		for (const element of readOnly
 			? []
 			: doc.querySelectorAll(
 					'[aria-live],output,[role~="log"],[role~="status"],[role~="alert"],[role~="marquee"],[role~="timer"]',
 				)) {
 			if (chrome(element)) continue;
-			// Explicit off overrides implicit live roles, including native output.
 			setOwned(element, "aria-live", "off");
 			setOwned(element, "aria-atomic", null);
 			setOwned(element, "aria-relevant", null);
 		}
-		// A detached source control still holds the caret at the instant of the patch.
-		// The controller view may still be in transit; never save a DOM node in session state.
 		const restoreTarget = targetOf(observedControl) ?? observedFocus;
-		// Compiler node IDs remain intact. Authored chrome claims confer no trust
-		// and must not activate the chrome CSS or masquerade as compiler nodes.
 		for (const element of doc.querySelectorAll<HTMLElement>(
 			"[data-praxity-chrome],[data-focus-role]",
 		))
@@ -1255,11 +1137,9 @@ export function mountPageLens(options: {
 				if (!tabStops.has(element)) tabStops.set(element, element.getAttribute("tabindex"));
 				if (element.tabIndex !== -1) element.tabIndex = -1;
 			}
-		// Invokers could open course dialogs or popovers over the handles.
 		for (const name of readOnly ? [] : INSPECTION_INVOKER_ATTRIBUTES)
 			for (const element of doc.querySelectorAll(`[${name}]`))
 				if (!chrome(element)) setOwned(element, name, null);
-		// Document hygiene still runs on retained patches; presentation reconciliation waits.
 		if (!presenting) return;
 		setOwned(
 			doc.documentElement,
@@ -1312,7 +1192,6 @@ export function mountPageLens(options: {
 						circle.setAttribute("cy", String(y));
 						circle.setAttribute("r", "1");
 						circle.setAttribute("fill", "currentColor");
-						// Where geometry is CSS, inline !important keeps course CSS from moving the dots.
 						circle.style.cssText = `cx:${x}px!important;cy:${y}px!important;r:1px!important`;
 						svg.append(circle);
 					}
@@ -1325,8 +1204,6 @@ export function mountPageLens(options: {
 				if (topLayer) button.setAttribute("popover", "manual");
 				handles.set(node.id, button);
 			}
-			// A tab's handle is placed on its tab but read before its panel, so Tab
-			// passes through each panel's children before the next tab (F1).
 			const content =
 				(node.kind === "item" &&
 					element.getAttribute("role") === "tab" &&
@@ -1358,7 +1235,6 @@ export function mountPageLens(options: {
 		}
 		for (const element of readOnly ? [] : doc.querySelectorAll<HTMLElement>(LEARNER_CONTROLS))
 			if (!chrome(element)) {
-				// Learner card semantics must not contain editor buttons during inspection.
 				if (
 					element.getAttribute("role") === "button" &&
 					[...handles.values()].some((handle) => element.contains(handle))
@@ -1370,7 +1246,6 @@ export function mountPageLens(options: {
 				if (!tabStops.has(element)) tabStops.set(element, element.getAttribute("tabindex"));
 				if (element.tabIndex !== -1) element.tabIndex = -1;
 				if (element.matches("iframe,embed,object")) {
-					// Inert only the embed wrapper, never the owning block or its handle.
 					const wrapper = element.parentElement;
 					const boundary = wrapper?.hasAttribute("data-node-id") || wrapper === doc.body;
 					setOwned(wrapper && !boundary ? wrapper : element, "inert", "");
@@ -1400,7 +1275,6 @@ export function mountPageLens(options: {
 	}
 	function focused(event: FocusEvent) {
 		if (!presenting) return;
-		// The owning root reports its control; document focusin sees only its host.
 		if ([...inputRoots.keys()].some((root) => root.host === event.target)) return;
 		observedControl = controlOf(event.target as Element | null);
 		const target = targetOf(observedControl);
@@ -1418,7 +1292,6 @@ export function mountPageLens(options: {
 			return;
 		const element = event.target as Element | null;
 		const target = targetOf(element);
-		// Gecko can keep native focus on body after a retained iframe resumes.
 		if (target?.role === "source") {
 			if (!element || !hasNativeFocus(element))
 				focus({ file: target.file, nodeId: target.nodeId, role: "source" });
@@ -1435,7 +1308,6 @@ export function mountPageLens(options: {
 		}
 		event.preventDefault();
 		event.stopImmediatePropagation();
-		// Keep the source's native owner until the click's queued select is delivered.
 		if (event.type === "pointerdown") return;
 		onEvent({
 			event: "select",
@@ -1470,7 +1342,6 @@ export function mountPageLens(options: {
 			caretChanged();
 			return;
 		}
-		// Trusted input can arrive after the author has already moved native focus.
 		const target = targetOf(sourceField.field);
 		if (target?.selection && sourceDraftId) {
 			sourceSelection = target.selection;
@@ -1528,7 +1399,6 @@ export function mountPageLens(options: {
 				) {
 					event.preventDefault();
 					event.stopImmediatePropagation();
-					// Native Tab moves now; the controller keeps main's field lifetime until save replies.
 					focus(next[1]);
 					if (target.nodeId === sourceNodeId && next[1].nodeId !== sourceNodeId)
 						onEvent({ event: "select", focus: next[1], mode: "single" });
@@ -1568,7 +1438,6 @@ export function mountPageLens(options: {
 				target?.role !== "source"
 			)
 				return;
-			// Native undo/redo owns dirty text. Only its base boundary is an editor action.
 			if (entry.action === "redoSource" || (entry.action === "undoSource" && !sourceField.atBase()))
 				return;
 			event.preventDefault();
@@ -1616,15 +1485,9 @@ export function mountPageLens(options: {
 		};
 		invokeEditorShortcut(entry, handlers);
 	}
-	// Course CSS can cover the page or switch off its pointer events, so the event
-	// target says nothing about the node under the pointer. Hit-test the node boxes
-	// measured by the last placement pass instead; the hit that contains no other hit
-	// is the innermost node, as the event target's closest node was. A handle under the pointer names its own node. Each placement
-	// pass hit-tests the last pointer position again, since scrolling moves the boxes.
 	let pointerAt: { x: number; y: number; handle?: string } | null = null;
 	function hover(event: PointerEvent) {
 		if (!presenting) return;
-		// Only leaving the document ends hover; moving between elements changes nothing.
 		if (event.type === "pointerout") {
 			if (event.relatedTarget) return;
 			pointerAt = null;
@@ -1655,8 +1518,6 @@ export function mountPageLens(options: {
 					(hit) => !hits.some((other) => other !== hit && hit.element.contains(other.element)),
 				)?.id)
 			: undefined;
-		// Compare per button, not against a cached id: a patch re-creates handles, and the
-		// new handle of the hovered node needs the attribute too. Unchanged values write nothing.
 		for (const [nodeId, button] of handles)
 			if (button.hasAttribute("data-hovered") !== (nodeId === id))
 				button.toggleAttribute("data-hovered", nodeId === id);
@@ -1718,10 +1579,6 @@ export function mountPageLens(options: {
 			(target.contains(anchor) ||
 				sourceGeometryAncestors().some((peer) => !peer.contains(anchor) && peer.contains(target))),
 	});
-	// A handle sits in its content, so a transformed ancestor is its containing
-	// block. A course animation or transition (a flip card's back face rising in)
-	// can end that transform without resizing anything; measure again then.
-	// Handles' own transitions move nothing.
 	const settled = (event: Event) => {
 		if (!chrome(event.target as Element)) geometry.schedule();
 	};
@@ -1798,7 +1655,6 @@ export function mountPageLens(options: {
 			}
 			if (!previous) return false;
 			return retainFocus(() => {
-				// Editor controls belong to their adapter, even when mounted within course content.
 				for (const element of previous.querySelectorAll<HTMLElement>("*"))
 					if (ownedChrome.has(element) && !chrome(element.parentElement ?? previous))
 						previous.before(element);
@@ -1819,9 +1675,7 @@ export function mountPageLens(options: {
 			latestFeedback = feedback;
 			if (!presenting) return;
 			const copy = view.language === "fr" ? frenchFeedback : englishFeedback;
-			// The host has already localized grammar diagnostics (preview.ts).
 			const message = feedback.failure?.map((d) => d.message).join(" ") ?? "";
-			// A function replacer keeps `$&` and similar patterns in diagnostics literal.
 			failureDescription = message ? copy.pageFailed.replace("{message}", () => message) : "";
 			for (const node of view.nodes)
 				describeHandle(
@@ -1837,8 +1691,6 @@ export function mountPageLens(options: {
 					if (!badge.isConnected) badges.delete(id);
 				}
 			for (const [id, state] of Object.entries(feedback.nodes)) {
-				// Page diagnostics do not identify an offending node. The banner and
-				// descriptions carry that failure without obscuring every node's text.
 				if (state.state === "failed" && feedback.failure?.length) continue;
 				let badge = badges.get(id);
 				if (!badge?.isConnected) {
@@ -1895,7 +1747,6 @@ export function mountPageLens(options: {
 				throw new Error("Invalid frame view");
 			view = next;
 			presenting = true;
-			// Reconcile latest data without capturing or replaying the old native focus.
 			refreshContent();
 			sourceField?.setPresenting(true);
 			observer.takeRecords();
@@ -2006,12 +1857,9 @@ export function mountPageLens(options: {
 	function registerChrome(element: Element, kind?: "popup" | "geometry") {
 		if (disposed || element.ownerDocument !== doc) throw new Error("Invalid chrome registration");
 		ownedChrome.add(element);
-		// Caller-owned chrome keeps its markers. In particular, the learner
-		// restoration map must not retain detached measurement probes.
 		if (kind) element.setAttribute("data-praxity-chrome", kind);
 		if (kind === "popup" && element instanceof win.HTMLElement) l3Popups.add(element);
 	}
-	// U6/U12 adapters admit controls by reference. Markup is never admission.
 	function registerControl(element: HTMLElement, target: FrameFocus) {
 		if (
 			disposed ||
@@ -2053,7 +1901,6 @@ export function mountPageLens(options: {
 	}
 }
 
-// Frame chrome takes the course's scheme, independently of the editor shell.
 const PAGE_LENS_CSS = `
 [data-praxity-chrome="render-badge"] { all:initial; position:fixed; z-index:13; box-sizing:border-box; max-width:calc(100vw - 16px); padding:3px 7px; border:1px solid var(--edge); border-radius:4px; background:var(--panel); color:var(--ink-2); font:12px/1.5 var(--chrome-font); pointer-events:none; }
 [data-praxity-chrome="render-badge"][data-state="failed"] { color:var(--warn); }
@@ -2063,7 +1910,6 @@ const PAGE_LENS_CSS = `
 `;
 
 const HANDLE = 'button[data-praxity-chrome="handle"]';
-/** Literal values: a course can override or re-register a custom property, never a literal. */
 function chromeToken(theme: "light" | "dark", name: string) {
 	const block = tokenSheet
 		.split(`:root[data-praxity-chrome-theme="${theme}"] [data-praxity-chrome] {`)[1]
@@ -2072,14 +1918,6 @@ function chromeToken(theme: "light" | "dark", name: string) {
 	if (!value) throw new Error(`Missing ${theme} chrome token ${name}`);
 	return value;
 }
-/**
- * Course CSS shares the frame document and knows this markup. Every handle declaration
- * is !important inside a layer that the lens declares before any course stylesheet:
- * important declarations in the earliest layer outrank all later author CSS, layered or
- * not, including pseudo-elements and states that inline styles cannot reach. The
- * per-mount name stops a course joining the layer or registering the hit-clip property.
- * positionFixed's inline !important geometry still outranks the layer.
- */
 function handleGuardCss(nonce: string) {
 	const themes = (["light", "dark"] as const).map((theme) => {
 		const token = (name: string) => chromeToken(theme, name);
@@ -2115,6 +1953,5 @@ ${HANDLE} > [data-praxity-chrome="description"]::before, ${HANDLE} > [data-praxi
 ${themes.join("\n")}
 ${sourceFieldGuardCss()}
 @media(prefers-reduced-motion:reduce) { ${HANDLE} { transition:none; } }`;
-	// Every declaration ends in a semicolon; none contains one.
 	return `@layer praxity-${nonce} {\n${rules.replaceAll(";", " !important;")}\n}`;
 }

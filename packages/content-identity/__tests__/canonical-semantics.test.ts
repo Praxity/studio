@@ -6,7 +6,6 @@ it("preserves pre-memo lesson metadata and complete root revisions", () => {
 	const source =
 		"---\ntitle: Safety\nlang: en\nvariables:\n  ready: false\n---\n# One\n\nAlpha.\n\n# Two\n\nBravo.\n";
 	const root = describeDocument({ path: "lesson.prax", tree: readLesson(source).tree })[0];
-	// Literal outputs from canonical.ts at 49089c1b4, before semantic memoisation.
 	expect(root.revisionContent).toBe(
 		'{"children":[{"body":[{"kind":"text","value":"--- title: Safety lang: en variables: ready: false ---"}],"children":[],"kind":"frontmatter","settings":{},"type":"frontmatter"},{"children":[{"body":[{"kind":"text","value":"Alpha."}],"children":[],"kind":"body","settings":{},"type":"body"}],"headingLevel":1,"kind":"page","settings":{},"subject":[{"kind":"text","value":"One"}],"type":"page"},{"children":[{"body":[{"kind":"text","value":"Bravo."}],"children":[],"kind":"body","settings":{},"type":"body"}],"headingLevel":1,"kind":"page","settings":{},"subject":[{"kind":"text","value":"Two"}],"type":"page"}],"kind":"lesson","settings":{},"type":"lesson"}',
 	);

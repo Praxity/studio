@@ -15,6 +15,8 @@ Scripts live in the root `package.json`. Use pnpm, never npm or yarn.
 
 ## Working method
 
+- No code comments. Record non-obvious decisions in `docs/adr/` and known shortcuts as backlog items. `node scripts/check-comments.mjs` enforces this with a ratchet (`--update` after deleting comments).
+
 - Reproduce a bug or identify its root cause before changing code.
 - Build the smallest verifiable vertical slice.
 - For browser-test worker iteration, use the affected-file selection and complete-gate rules in `docs/context/testing-strategy.md`.

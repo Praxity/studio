@@ -53,16 +53,12 @@ export interface NarrationStrings {
 export interface NarrationPlaylistItem {
 	id: string;
 	src: string;
-	/** Explicit Play skips unrecorded targets within this logical page. */
 	pageId?: string;
-	/** Authored silence, not missing or failed audio. */
 	silent?: boolean;
 	timingsSrc?: string;
 	blockId?: string;
 	ancestorBlockIds?: string[];
-	/** Actual slide content owner when blockId identifies a separate transcript passage. */
 	sourceBlockId?: string;
-	/** Dialogue turn in the source block; marked current while it plays. */
 	turnIndex?: number;
 	duration?: number;
 	pauseAfter?: boolean;
@@ -86,31 +82,22 @@ export interface NarrationBarProps {
 	eligibleIds?: ReadonlySet<string>;
 	stopAfter?: ReadonlySet<number>;
 	strings: NarrationStrings;
-	/** Published islands pass their server-rendered main element directly. */
 	contentRoot?: HTMLElement | null;
-	/** Keep the shared transport open when its surrounding shell owns disclosure. */
 	alwaysExpanded?: boolean;
-	/** Omit controls supplied by an integrating course shell. */
 	showSentenceControls?: boolean;
 	showFollowControl?: boolean;
-	/** The integrating shell can place secondary playback settings in its disclosure. */
 	settingsMount?: { element: HTMLElement; timeLabel: string; speedLabel: string } | null;
-	/** Keep seeking reachable when the shell hides its inline timeline. */
 	seekMount?: HTMLElement | null;
 	controllerRef?: Ref<NarrationController>;
-	/** A shell-owned opening-slide location for the shared playback command. */
 	openingControl?: { mount: HTMLElement; play: string; pause: string; firstPlayable: number };
 	beforeSelect?: (index: number, reason: NarrationSelectionReason, localTime?: number) => boolean;
 	onActiveSegment?: (index: number) => void;
 	onPlaybackError?: () => void;
-	/** Playback state, independent of Follow and its temporary suspension. */
 	onPlaybackChange?: (playing: boolean) => void;
-	/** The learner's preference, independent of temporary reading/scroll suspension. */
 	onFollowChange?: (following: boolean) => void;
 	onFollowSuspendedChange?: (suspended: boolean) => void;
 	mediaRoot?: HTMLElement | null;
 	scrollContainer?: HTMLElement | null;
-	/** An authored pause boundary was reached, before selecting the next item. */
 	onStop?: () => void;
 	onEnded?: () => void;
 	defaultRate?: number;
@@ -135,7 +122,6 @@ function initialRate(defaultRate: number | undefined): number {
 		: 1;
 }
 
-// Persisted durations can be cue end times; browser metadata is authoritative.
 function estimatedDuration(item: NarrationPlaylistItem): number {
 	return item.src &&
 		typeof item.duration === "number" &&
@@ -178,7 +164,6 @@ function textRange(root: Element, text: string): Range | null {
 			node.parentElement?.closest(
 				"p, li, dt, dd, h1, h2, h3, h4, h5, h6, td, th, div, section, article, blockquote, figcaption",
 			) ?? root;
-		// Inline spans stay adjacent; block boundaries and line breaks separate words.
 		if (
 			normalized &&
 			(lineBreak || (previousBlock && block !== previousBlock)) &&
@@ -196,11 +181,7 @@ function textRange(root: Element, text: string): Range | null {
 			positions.push({ node, offset });
 		}
 	}
-	// Keep normalized character positions tied to original DOM offsets, including
-	// collapsed whitespace. Case-insensitive matching must not change their length.
 	let match = new RegExp(needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "iu").exec(normalized);
-	// Spoken headings may add sentence punctuation absent from the visible text.
-	// Only relax an entire block match, never a phrase inside other content.
 	if (!match) {
 		const withoutEnding = needle.replace(/[.!?]+$/u, "");
 		if (withoutEnding && withoutEnding !== needle)
@@ -243,8 +224,6 @@ function revealTarget(root: Element, text: string, range: Range | null): HTMLEle
 }
 
 function revealNarratedTarget(target: HTMLElement, cardTarget?: NarrationCardTarget): void {
-	// Older content can still wrap narrated blocks in native disclosures. Open
-	// their ancestors without moving focus; enhanced panels remain island-owned.
 	for (
 		let details = target.closest("details");
 		details;
@@ -279,9 +258,6 @@ function highlightConstructor(): (new (...ranges: Range[]) => unknown) | null {
 	);
 }
 
-// Returns null when the playlist item has no real block (page-title segments):
-// callers that only need a search scope fall back to root, but the visual
-// active-block marker must never land on root and stripe the whole page.
 function closestBlock(root: HTMLElement, blockId: string | undefined): HTMLElement | null {
 	if (!blockId) return null;
 	return root.querySelector<HTMLElement>(`[data-block-id="${CSS.escape(blockId)}"]`);
@@ -296,7 +272,6 @@ function cardContainer(root: HTMLElement, blockId: string): HTMLElement | null {
 
 function narrationScope(root: HTMLElement, item: NarrationPlaylistItem): HTMLElement {
 	const block = closestBlock(root, item.blockId);
-	// A task clip cannot follow model/hint cues or the learner's rendered answer.
 	if (block?.dataset.blockType === "selfCheck")
 		return block.querySelector<HTMLElement>(".praxity-assessment-stem") ?? block;
 	const turn =
@@ -635,7 +610,6 @@ export function NarrationBar({
 				setRevealRequest((value) => value + 1);
 			}
 			shouldPlay = shouldPlay && Boolean(items[index]?.src);
-			// Keep the chosen paused position while the native decoder settles its clock.
 			pausedSeekRef.current = !shouldPlay;
 			const nextIndex = Math.max(0, Math.min(index, items.length - 1));
 			const nextLocal = Math.max(0, nextLocalTime);
@@ -769,8 +743,6 @@ export function NarrationBar({
 
 		let cancelled = false;
 		setMedia(null);
-		// ponytail: Narration clips are small; drop this copy when Electron fixes
-		// protocol.handle() streaming for local media.
 		void fetch(source)
 			.then((response) => {
 				if (!response.ok) throw new Error(`Audio request failed with ${response.status}`);
@@ -1060,8 +1032,6 @@ export function NarrationBar({
 					: block;
 			let frame: number | null = null;
 			const highlightAndScroll = () => {
-				// A timing file can contain a short silence between cues. Keep the
-				// document neutral there instead of flashing the block fallback marker.
 				if (!activeCue && hasTimedCues) return;
 				const range = activeCue ? textRange(scope, activeCue.text) : null;
 				const forcedColors = forcedPalette();
@@ -1075,8 +1045,6 @@ export function NarrationBar({
 				if (followSuspended) return;
 				const rect = range?.getBoundingClientRect() ?? scope.getBoundingClientRect();
 				const selection = window.getSelection();
-				// A bounded transcript suspends on focus; an explicit seek resumes it
-				// while leaving focus on the seek control.
 				if (
 					(selection && !selection.isCollapsed) ||
 					(!scrollContainer &&
@@ -1094,8 +1062,6 @@ export function NarrationBar({
 				if (scrollContainer && scrollportRect) {
 					const height = scrollContainer.clientHeight;
 					const top = scrollportRect.top + scrollContainer.clientTop;
-					// Without finer timing, follow the beginning of a passage that cannot
-					// fit in the reading band. Do not invent progress through its lines.
 					const bottom = rect.height > height * 0.6 ? rect.top : rect.bottom;
 					if (
 						rect.top >= top + height * 0.15 &&
@@ -1103,7 +1069,6 @@ export function NarrationBar({
 						(rect.height > height || rect.bottom <= top + height)
 					)
 						return;
-					// The browser clamps to the real start/end without extra blank space.
 					const target =
 						rect.height <= height ? Math.min(height / 3, height - rect.height) : height / 3;
 					browseUntilRef.current = 0;
@@ -1294,7 +1259,6 @@ export function NarrationBar({
 			if (inSlideContent(event.target) && performance.now() < mediaBrowseUntilRef.current)
 				setFollowSuspended(true);
 		};
-		// Slide content can scroll inside main or its workspace ancestor after reflow.
 		for (const type of ["wheel", "touchmove", "pointerdown", "keydown"])
 			document.addEventListener(type, onInput);
 		document.addEventListener("scroll", onScroll, true);
@@ -1335,8 +1299,6 @@ export function NarrationBar({
 		],
 	);
 
-	// ponytail: Numeric page-time points cannot disambiguate partially loaded durations;
-	// use structured { pageTime, itemIndex, localTime } points if that navigation must work.
 	const sentencePoints = useMemo(() => {
 		const points: number[] = [];
 		for (let index = 0; index < items.length; index += 1) {
@@ -1534,22 +1496,6 @@ export function NarrationBar({
 		onRateChange?.(next);
 	}, [onRateChange, playbackRate]);
 
-	/*
-	 * Narration disclosure — settled 2026-08-31
-	 * SHIPPED: reading-tools icon before grouped transport controls in the same
-	 * bar; playback-only highlighting. DOM order matches the responsive visual
-	 * order: Listen, play, position, then options. On narrow screens, an inline
-	 * disclosure keeps secondary controls out of the primary playback row.
-	 * Guided chrome, 2026-10-01: its shell supplies sentence/follow controls, so
-	 * speed stays inline and the shell retains the only options disclosure.
-	 * Opening Play and transport Play retain their existing shared command and
-	 * reading-protection stops. Pages retains Listen and inline narration options.
-	 * REJECTED: floating popover card; hidden slab after main; full script in a
-	 * live region; a status note for missing cue timings; controls before the
-	 * Listen toggle (the narrow layout splits the player into header and row).
-	 * VERIFIED: published Chromium and WebKit accessibility tests.
-	 */
-
 	const timeDisplay = (
 		<span
 			role="timer"
@@ -1568,7 +1514,6 @@ export function NarrationBar({
 			value={durationKnown ? Math.min(pageTime, totalDuration) : 0}
 			disabled={!durationKnown}
 			onChange={(event) => seekPage(Number(event.currentTarget.value))}
-			// Native range controls emit no change at an unchanged boundary.
 			onKeyUp={(event) => {
 				if (
 					!eligible(currentIndex) &&

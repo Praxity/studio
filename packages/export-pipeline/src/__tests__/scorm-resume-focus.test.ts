@@ -222,7 +222,6 @@ describe("SCORM resume cue", () => {
 		expect(heading.firstChild).toBe(authoredTitle);
 		expect(main.querySelector("span")?.textContent).toBe("Author content");
 		expect(resumeFocusTarget(main)).toBe(heading);
-		// Ordinary navigation can return to the original heading without a resume cue.
 		resumeFocusTarget(main).focus();
 		expect(document.activeElement?.textContent).toBe("Build from a composition");
 	});

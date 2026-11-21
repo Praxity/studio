@@ -1,4 +1,3 @@
-/** C01 sidecar paths whose recovery archives must not be discarded automatically. */
 export const IDENTITY_LINEAGE_PATHS = [
 	".praxity",
 	".praxity/identity",
@@ -16,11 +15,9 @@ export function isIdentityLineagePath(path: string): boolean {
 	);
 }
 
-/** Unknown historical names must retain the same protection during facts and reclamation. */
 export function classifyIdentityLineagePath(path: string): "lineage" | "ordinary" | "unknown" {
 	const [root, ...children] = path.split("/");
 	const ambiguous = (segment: string) => /~\d|[^\x20-\x7e]/u.test(segment);
-	// Only root names that could spell a protected name need historical alias protection.
 	const folded = root.normalize("NFKC").toUpperCase().toLowerCase();
 	const short = /^([^~.]{1,6})~([1-9]\d*)(?:\.([^.]+))?$/u.exec(root.toUpperCase());
 	const protectedShort =

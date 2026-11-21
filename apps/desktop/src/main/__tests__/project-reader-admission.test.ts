@@ -34,7 +34,6 @@ vi.mock("node:fs", async (original) => {
 		...fs,
 		realpath: Object.assign((...args: Parameters<typeof fs.realpath>) => fs.realpath(...args), {
 			native: (...args: Parameters<typeof fs.realpath.native>) => {
-				// Stop at the same final authorization path check through native resolution.
 				if (String(args[0]) === pathRead.target && ++pathRead.calls === 3) {
 					pathRead.arrived();
 					void pathRead.gate.then(() => fs.realpath.native(...args));
@@ -78,7 +77,6 @@ it.each(["browser"] as const)(
 	"closes the %s media descriptor when admission cleanup fails",
 	async (host) => {
 		const { root } = await fixture();
-		// Strict first reads create no lock. Establish one before faulting its release.
 		await withProjectFileTransaction(root, async () => {}, "write");
 		const server = await startStudioReadOnlyServer({
 			projectDir: root,
@@ -181,8 +179,6 @@ async function fixture() {
 	return { root, parent };
 }
 
-// Hold the real capture operation open. The product reader must wait, retain its
-// value, and resume after installation. No filesystem read is mocked.
 async function duringCapture(
 	root: string,
 	target: string,
@@ -290,7 +286,6 @@ it("stress polls authored files through the reader interfaces while saving", asy
 			await delay(1);
 		}
 	});
-	// Extend the actual filesystem interval, without substituting authored reads.
 	capture.holdMs = 10;
 	try {
 		for (let index = 0; index < Number(process.env.PRAXITY_READER_STRESS_SAVES ?? 3); index++) {

@@ -86,7 +86,6 @@ test.beforeAll(async () => {
 		entries.deck = `deck/${deckArtifact.manifest.pages[0].slug}.html`;
 		const zip = new AdmZip((await deployCourse(deckArtifact, { format: "html" })).zip);
 		zip.extractAllTo(join(root, "deck"));
-		// S9 owns gate admission. Exercise S7's local contract through this bypass fixture.
 		const path = join(root, entries.deck);
 		const html = (await readFile(path, "utf8")).replace(
 			/(<script[^>]*id="praxity-config"[^>]*>)([\s\S]*?)(<\/script>)/,
@@ -364,7 +363,6 @@ test("lifecycle: provider replacement cancels held admission and rebinds mounted
 		};
 		return old.session.read(id)?.outcome;
 	});
-	// Replacement itself cancels, without calling an island API or manually disposing.
 	expect(cancelled).toBe("cancelled");
 	release();
 	await page.evaluate(() => window.__praxitySelfCheckSession?.session.ready);
@@ -383,7 +381,6 @@ test("lifecycle: provider replacement cancels held admission and rebinds mounted
 	);
 	expect(saved).toMatchObject({ submitted: { answer: "Replacement provider draft" } });
 	await page.unroute("**/self-check/*.js");
-	// Repeat after mounting: old comparison and handlers must leave with their session.
 	await page.evaluate(() => {
 		const provider = window.__praxityBlockState;
 		window.__praxityBlockState = { ...provider, get: () => undefined, set() {} };
@@ -539,7 +536,6 @@ test("lifecycle: concurrent ESM consumers share one implementation, controls and
 			document.baseURI,
 		).href;
 		const [a, b] = await Promise.all([import(`${url}?consumer=a`), import(`${url}?consumer=b`)]);
-		// Import caches code. Each current consumer explicitly attaches its scope.
 		a.initSelfCheckEnhancements();
 		b.initSelfCheckEnhancements();
 		return a.initSelfCheckEnhancements === b.initSelfCheckEnhancements;
@@ -1680,7 +1676,6 @@ for (const phase of ["before-admission", "before-mount"] as const) {
 							if (root === document.querySelector("[data-self-check]")) {
 								const provider = window.__praxityBlockState;
 								if (provider) {
-									// Fail writes at the storage seam without starting another document session.
 									provider.set = () => {};
 									provider.getSaveResult = () => ({
 										status: "not-saved",

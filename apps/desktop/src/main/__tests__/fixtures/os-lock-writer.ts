@@ -8,7 +8,6 @@ import { withProjectFileTransaction, writeProjectTextFile } from "../../project-
 
 const [mode, root, platform] = process.argv.slice(2);
 if (platform === "darwin" && process.platform === "win32") {
-	// Exercise Darwin identity policy on Windows without changing path lookup semantics.
 	const relative = path.relative;
 	path.relative = (...args) => relative(...args).replaceAll("\\", "/");
 }

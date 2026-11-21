@@ -58,7 +58,6 @@ test.beforeAll(async ({ browser }) => {
 			for (const mode of ["key", "evidence"] as const) {
 				const file = join(directory, `${mode}-${lang}-${theme}.html`);
 				let html = await readFile(file, "utf8");
-				// Preserve all four outcomes, target and unmarked notes, and literal punctuation.
 				const content = highlightHarnessContent(lang, mode);
 				content.maxMarks = 2;
 				content.paragraphs[0][1].key = true;
@@ -211,7 +210,6 @@ test.beforeEach(async ({ page }) => {
 			get: () => refuse("window.name"),
 			set: () => refuse("window.name"),
 		});
-		// Location.hash is non-configurable, so observe fragment writes instead.
 		window.addEventListener("hashchange", () => accesses.push("location.hash"));
 		for (const key of ["localStorage", "sessionStorage", "indexedDB", "caches"])
 			Object.defineProperty(window, key, {
@@ -313,7 +311,6 @@ for (const mode of ["key", "evidence"] as const)
 					await items.nth(2).click();
 				}
 				await items.first().focus();
-				// A successful deliberate Check transfers focus even when Check did not own it.
 				await ui(page, "check").evaluate((button: HTMLButtonElement) => button.click());
 				await expect(ui(page, "restart")).toBeFocused();
 				await expect(ui(page, "status")).toHaveText("");

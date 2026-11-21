@@ -1,4 +1,3 @@
-/** Nine alternating black/white 1px frames; delay is in hundredths of a second. */
 export function signalGif(
 	delay: number | readonly number[],
 	options: { frames?: number; loop?: number } = {},

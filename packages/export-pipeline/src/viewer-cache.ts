@@ -10,7 +10,6 @@ export const VIEWER_CACHE_DIR = path.resolve(import.meta.dirname, "../prebuilt")
 
 const generationDir = (root: string, hash: string) => path.join(root, "viewer-cache", hash);
 
-/** Published generations stay immutable while exports copy their selected assets. */
 export async function readCachedViewer(root: string, hash: string) {
 	for (const directory of [generationDir(root, hash), root]) {
 		try {
@@ -28,9 +27,7 @@ export async function readCachedViewer(root: string, hash: string) {
 				).every(Boolean)
 			)
 				return { directory, manifest };
-		} catch {
-			// A missing, stale or incomplete cache is rebuilt from source.
-		}
+		} catch {}
 	}
 	return null;
 }
@@ -51,7 +48,6 @@ export async function cacheViewerBundle(
 		try {
 			await fs.rename(stage, directory);
 		} catch (error) {
-			// Another process may publish this same complete generation first.
 			const winner = await readCachedViewer(root, hash);
 			if (winner?.directory !== directory) throw error;
 		}

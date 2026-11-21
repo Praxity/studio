@@ -12,7 +12,6 @@ let file = "";
 test.beforeEach(async ({ context, browserName }) => {
 	stop = await startJourney(context, { standaloneSource: source });
 	file = join(process.env.PRAXITY_BROWSER_PROJECT ?? "", "second.prax");
-	// Fulfilled document fixtures have no remote IP; Chromium otherwise blocks loopback assets.
 	if (browserName === "chromium")
 		await context.grantPermissions(["local-network-access"], {
 			origin: new URL(process.env.PRAXITY_BROWSER_READY_URL ?? "").origin,
@@ -45,7 +44,6 @@ async function project(page: Page, transform: (html: string) => string, gateSour
 		)
 			return route.continue();
 		const headers = await route.request().allHeaders();
-		// Playwright routing doesn't expose browser-added Fetch Metadata.
 		if (route.request().resourceType() === "fetch")
 			Object.assign(headers, {
 				"sec-fetch-dest": "empty",
@@ -132,7 +130,6 @@ for (const action of ["Read mode", "course link", "Escape"] as const)
 				Object.assign(window, { recoveryUnhandledRejections: rejections });
 				addEventListener("unhandledrejection", (event) => rejections.push(String(event.reason)));
 			});
-			// Keep an admitted author document: entering again after the loss must gate.
 			await open(admitted);
 		}
 		await project(
@@ -441,7 +438,6 @@ for (const unknown of [false, true])
 		expect(calls).toHaveLength(1);
 	});
 
-// Both independent round-2 repros: corrected kept text must survive Studio's focus move.
 for (const refusal of ["empty-input", "stale"])
 	test(`C04 recovery r2 Escape never saves corrected ${refusal} text`, async ({ page }) => {
 		const calls = saves(page);
@@ -491,7 +487,6 @@ test("C04 recovery r2 confirmation exposes its question once with focus inside t
 	await expect(group.locator('[role="alert"],[role="status"],[aria-live]')).toHaveCount(0);
 });
 
-// The model drives real trusted focus events, including the mount layer's own blur.
 for (const refusal of ["empty-input", "stale"])
 	test(`C04 recovery r2 generated focus histories from ${refusal} keep requests and literal bytes`, async ({
 		page,
@@ -509,7 +504,6 @@ for (const refusal of ["empty-input", "stale"])
 		await page.keyboard.press("Enter");
 		await expect(page.locator("#error:visible")).toBeVisible();
 		await expect(field(page)).toBeEditable();
-		// Merely leaving the unchanged refused value cannot resend it.
 		await page.getByRole("link", { name: "Read mode", exact: true }).focus();
 		expect(calls).toHaveLength(model.calls);
 		let random = 421;
@@ -547,7 +541,6 @@ for (const backwards of [false, true])
 			page,
 		}) => {
 			const calls = saves(page);
-			// Keep the test's course controls in every saved-page projection too.
 			await project(page, (html) => {
 				const dom = new JSDOM(html);
 				try {

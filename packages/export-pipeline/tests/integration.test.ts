@@ -2,13 +2,11 @@ import AdmZip from "adm-zip";
 import { JSDOM } from "jsdom";
 import { describe, expect, it, vi } from "vitest";
 
-// Mock asset downloads
 vi.mock("../src/asset-resolver", async (importOriginal) => {
 	const original = await importOriginal<typeof import("../src/asset-resolver")>();
 	return {
 		...original,
 		resolveAssets: vi.fn().mockImplementation((pages) => {
-			// Return pages unchanged (no actual downloads)
 			return Promise.resolve(pages);
 		}),
 	};
@@ -17,8 +15,6 @@ vi.mock("../src/asset-resolver", async (importOriginal) => {
 import type { PraxityPage } from "@praxity/shared-blocks";
 import { buildScormPackage, type CourseExportInput, type DesktopExportInput } from "../src/build";
 import { XapiRuntime } from "../src/scorm/api/xapi";
-
-// ---------- Test Data ----------
 
 function createRealisticCourse(overrides?: Partial<CourseExportInput>): CourseExportInput {
 	return {
@@ -119,8 +115,6 @@ function createRealisticCourse(overrides?: Partial<CourseExportInput>): CourseEx
 	};
 }
 
-// ---------- Tests ----------
-
 describe("Integration: buildScormPackage", () => {
 	it("packages an xAPI launch with the selected LRS host", async () => {
 		const xapiConfig = {
@@ -137,7 +131,6 @@ describe("Integration: buildScormPackage", () => {
 		const launchPath = tincan.querySelector("launch")?.textContent;
 		expect(launchPath).toBe("index.html");
 		expect(zip.getEntry(launchPath ?? "")).toBeTruthy();
-		// The launch file redirects to the first page, which carries the deployment config.
 		const refresh = new JSDOM(zip.readAsText(launchPath ?? "")).window.document
 			.querySelector('meta[http-equiv="refresh"]')
 			?.getAttribute("content");
@@ -259,7 +252,6 @@ describe("Integration: buildScormPackage", () => {
 			],
 		});
 
-		// Should not throw
 		const result = await buildScormPackage(specialChars, { format: "scorm12" });
 		expect(result.zip).toBeInstanceOf(Buffer);
 	});

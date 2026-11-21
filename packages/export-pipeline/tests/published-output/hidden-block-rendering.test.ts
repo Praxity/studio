@@ -3,8 +3,6 @@ import { describe, expect, test } from "vitest";
 import { renderBlockHtml } from "../../src/render-block-html";
 import { EXPORTABLE_HIDDEN_BLOCK_TYPES, HIDDEN_BLOCKS } from "../a11y/fixtures/lightweight-fixture";
 
-// Every parser-reachable hidden type must carry its learner content in server
-// HTML. An island may enhance that baseline, never substitute for it.
 const STATIC_SEMANTIC_SELECTORS: Record<string, string> = {
 	chart: "table.praxity-chart-data",
 	code: "pre code",

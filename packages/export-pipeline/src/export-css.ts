@@ -47,14 +47,12 @@ function baseCssSources(sourceDir?: string | null): Record<string, string> {
 	};
 }
 
-/** The preparation inventory also defines the complete selectable offline catalog. */
 export async function desktopCssInputs(): Promise<DesktopCssInput[]> {
 	const inputs = Object.entries(baseCssSources()).map(([name, source]) => ({
 		source,
 		assetPath: `${CSS_SOURCES_DIR}/${name}`,
 		minify: true,
 	}));
-	// Retain production pattern CSS as source inventory; assembly does not read this copy.
 	for (const source of await patternSourceFiles()) {
 		const relative = path.relative(PATTERNS_SRC, source);
 		if (
@@ -79,7 +77,6 @@ export async function desktopCssInputs(): Promise<DesktopCssInput[]> {
 		for (const weight of fontWeights(entry)) {
 			for (const style of FONT_STYLES) {
 				const source = resolveOptional(fontCssSpecifier(fontPackage, entry, weight, style));
-				// Some upstream families have no italic or intermediate weight.
 				if (!source) continue;
 				inputs.push({ source, assetPath: `${catalog}/${weight}-${style}.css`, minify: true });
 				for (const [, relative] of fontUrls(keepWoff2Only(await readFile(source, "utf8")))) {
@@ -99,7 +96,6 @@ function fontUrls(css: string): RegExpMatchArray[] {
 	return [...css.matchAll(/url\(["']?(\.[^"')]+\.woff2)["']?\)/g)];
 }
 
-/** Default bundles are shipped with their resolved font references. */
 export async function desktopCssAssetPaths(outputDir: string): Promise<string[]> {
 	const paths = (await desktopCssInputs()).map((input) => input.assetPath);
 	for (const filename of ["styles.css", "styles-lite.css"]) {
@@ -272,7 +268,6 @@ async function minifyCss(css: string): Promise<string> {
 	return (await transform(css, { loader: "css", minify: true })).code;
 }
 
-/** Build full and Mantine-free stylesheets plus selected local fonts for every export path. */
 export async function buildExportCssBundle(
 	outputDir: string,
 	typography?: TypographyVariants,
@@ -287,8 +282,6 @@ export async function buildExportCssBundle(
 	const globalPath = baseSources["global.css"];
 	const printPath = baseSources["print.css"];
 
-	// Both bundles share selected fonts, global, print, and brand CSS. Only the
-	// full bundle includes Mantine for pages that mount React-owned UI.
 	const sharedCssParts: string[] = [];
 	const normalizedTypography = normalizeTypography(typography, DEFAULT_TYPOGRAPHY);
 	for (const request of collectTypographyFontFaces(normalizedTypography)) {
@@ -333,7 +326,6 @@ export async function buildExportCssBundle(
 	);
 }
 
-/** Prepare offline CSS/font inputs that the packaged desktop app can select from. */
 export async function prepareDesktopCssAssets(outputDir: string): Promise<void> {
 	const sourceDir = path.join(outputDir, CSS_SOURCES_DIR);
 	await rm(sourceDir, { recursive: true, force: true });

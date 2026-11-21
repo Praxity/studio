@@ -3,15 +3,10 @@ import type { PraxityBlock } from "../types";
 import { buildSlugMap, decodeHtmlEntities, pageSlug } from "./page-slug";
 
 export interface PageData {
-	/** 1-based page number. */
 	pageNumber: number;
-	/** Page id for config references. */
 	id: string;
-	/** Display title from pageBreak data or fallback. */
 	title: string;
-	/** URL-safe slug derived from title. */
 	slug: string;
-	/** Metadata from the pageBreak that starts this page. */
 	data: Record<string, unknown>;
 	lessonTitle?: string;
 	lessonTitleIsFallback?: boolean;
@@ -22,11 +17,9 @@ export interface PageData {
 	isFirstPageOfLesson?: boolean;
 	narrationEnabled?: boolean;
 	narrationDefaults?: Record<string, unknown>;
-	/** Blocks for this page (excludes the pageBreak itself). */
 	blocks: PraxityBlock[];
 }
 
-/** Navigation label from the grammar 4 page boundary. */
 function explicitPageTitle(data: Record<string, unknown>): string | undefined {
 	const maybeTitle = data.title ?? data.label;
 	if (typeof maybeTitle === "string" && maybeTitle.trim()) {
@@ -36,8 +29,6 @@ function explicitPageTitle(data: Record<string, unknown>): string | undefined {
 }
 
 function headingPageTitle(blocks: PraxityBlock[]): string | undefined {
-	// An assessment group's name is the authored `##` heading the parser
-	// swallowed, so it counts as the page's first heading.
 	const source = blocks.find(
 		(block) =>
 			(block.type === "heading" && typeof block.data.content === "string") ||
@@ -53,11 +44,6 @@ function headingPageTitle(blocks: PraxityBlock[]): string | undefined {
 	);
 }
 
-/**
- * Split a flat block array into per-page arrays at pageBreak boundaries.
- * An implicit first page exists only when blocks precede the first pageBreak.
- * Each pageBreak starts a new page; the pageBreak block itself is excluded.
- */
 export function splitBlocksIntoPages(
 	blocks: PraxityBlock[],
 	_courseTitle: string,
@@ -140,7 +126,6 @@ export function splitBlocksIntoPages(
 		});
 	};
 
-	// Lesson metadata belongs to the lesson even when it has no implicit page.
 	const lessonData = Object.fromEntries(
 		Object.entries(initialPageData).filter(([key]) =>
 			[

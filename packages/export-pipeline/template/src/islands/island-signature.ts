@@ -206,7 +206,6 @@ function enhanceSignatureRoot(root: HTMLElement): () => void {
 			if (!next) return;
 			event.preventDefault();
 			if (signed) {
-				// Inspect locked methods without selecting a different panel or saving state.
 				focusMethod = next;
 				syncSignedState();
 				tabs[next === "draw" ? 0 : 1].focus();
@@ -316,7 +315,6 @@ function enhanceSignatureRoot(root: HTMLElement): () => void {
 	cleanups.push(() => input.removeEventListener("input", inputChanged));
 	cleanups.push(() => clearButtons.forEach((button) => button.removeEventListener("click", clear)));
 
-	// Restore the selected panel before applying its signed lock.
 	const restoredSigned = signed;
 	signed = false;
 	selectMethod(activeMethod);

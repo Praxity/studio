@@ -1,5 +1,3 @@
-/** ASCII punctuation is the grammar policy. Unknown escapes remain literal. */
-// Preserve formatting and answer values until those callers adopt the published ASCII rule.
 const LEGACY_RESERVED = new Set(Array.from("\\*~=`[]{}@|:;_#->!()+/$.?"));
 
 const ASCII_PUNCTUATION = new Set(Array.from("!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~"));
@@ -26,7 +24,6 @@ export function escapeGrammarText(text: string, punctuation?: string): string {
 	).join("");
 }
 
-/** Find syntax before decoding so literal delimiters never become syntax. */
 export function findUnescaped(text: string, delimiter: string, start = 0): number {
 	for (let index = start; index < text.length; index++) {
 		if (escapeLength(text, index)) {

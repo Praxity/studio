@@ -5,7 +5,6 @@ import { sanitizeHtml } from "../src/sanitize";
 vi.mock("isomorphic-dompurify", async (importOriginal) => {
 	const original = await importOriginal<typeof import("isomorphic-dompurify")>();
 	const purifier = original.default(window);
-	// Match the browser adapter: named exports bind methods at module load.
 	return {
 		default: purifier,
 		setConfig: purifier.setConfig.bind(purifier),

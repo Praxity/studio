@@ -36,8 +36,6 @@ export function checkEditorSource(path, source) {
 	const trust = trustEditor.test(path);
 	const listenerOwner = path === "packages/editor-core/src/frame-bridge/listeners.ts";
 	const registryOwner = path === "packages/editor-core/src/frame-bridge/page-lens.ts";
-	// Indirect names fail closed. Following local identifiers without a type
-	// checker would miss reassignment and shadowing, allowing marker reads back in.
 	const literal = (node) => (node && ts.isStringLiteralLike(node) ? node.text : null);
 	function visit(node) {
 		const binding = ts.isBindingElement(node)
@@ -79,7 +77,6 @@ export function checkEditorSource(path, source) {
 					fail(node, "T2: resolve trust markers through the page-lens WeakSet registry");
 			}
 		}
-		// Keep M2/A1's original scope; T1/T2 also cover shortcuts and course-map.
 		if (!newEditor.test(path)) {
 			ts.forEachChild(node, visit);
 			return;

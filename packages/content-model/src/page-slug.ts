@@ -25,26 +25,17 @@ function slugify(title: string): string {
 	return slug || "course";
 }
 
-/**
- * Generate a page slug from its title and 0-based index.
- * Empty titles fall back to "page-{N}" (1-indexed).
- */
 export function pageSlug(title: string, index: number): string {
 	const trimmed = decodeHtmlEntities(title).trim();
 	if (!trimmed) return `page-${index + 1}`;
 	return slugify(trimmed);
 }
 
-/**
- * Build a Map<pageId, slug> for all pages in a course.
- * Handles collisions (append -2, -3) and reserves publishing utility documents.
- */
 export function buildSlugMap(
 	pages: Array<{ id: string; title: string }>,
 	reserved: Iterable<string> = [],
 ): Map<string, string> {
 	const slugMap = new Map<string, string>();
-	// Keep content, glossary links and utility documents on distinct URLs in every caller.
 	const usedFinalSlugs = new Set<string>(["index", "glossary", "resources", ...reserved]);
 	const baseCounts = new Map<string, number>();
 	baseCounts.set("index", 1);

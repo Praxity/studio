@@ -196,7 +196,6 @@ for (const variant of ["single", "grid", "deck"] as const) {
 		page,
 	}) => {
 		await page.clock.install();
-		// Hold playback still; advance using the actual media ended event.
 		await page.addInitScript(() => {
 			HTMLMediaElement.prototype.play = async () => {};
 		});
@@ -220,7 +219,6 @@ for (const variant of ["single", "grid", "deck"] as const) {
 		await expect(first.locator('[data-card-side="front"]')).toBeVisible();
 		await expect(first.locator('[data-card-side="back"]')).toBeHidden();
 		if (variant !== "grid") await expect(root).toHaveAttribute("data-completed", "false");
-		// Authored autoplay stays retired after narration stops.
 		await page.clock.runFor(1200);
 		await expect(first).toBeVisible();
 		await expect(first).toHaveAttribute("data-flipped", "false");
@@ -252,7 +250,6 @@ for (const variant of ["single", "grid", "deck"] as const) {
 		await expect(transport).toHaveAttribute("aria-label", "Pause");
 		await transport.click();
 		await expect(root).not.toHaveAttribute("data-narration-playing", "true");
-		// Paused reverse seeking reveals the front without restarting audio.
 		const seek = page.getByRole("slider", { name: "Position in narration" });
 		await seek.focus();
 		await page.keyboard.press("Home");

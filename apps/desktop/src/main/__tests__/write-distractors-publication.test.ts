@@ -265,8 +265,6 @@ for (const mode of ["export", "preview"] as const)
 	}
 
 const distractors = sheet;
-// Author snapshots retain source and source-outline labels; generic blocks/data
-// have no snapshot channel. Inspection is a separate prompt-only projection.
 it("allows author source/outline labels in snapshots, excludes generic data, and keeps inspect prompt-only", async () => {
 	const { root, session } = await authoringFixture();
 	const snapshot = (await session.invoke("editorSnapshot", {})) as {

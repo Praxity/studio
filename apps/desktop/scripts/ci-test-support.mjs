@@ -18,7 +18,6 @@ const bash =
 			)
 		: "/bin/bash";
 
-// Workflow fixtures run before cutover unless they explicitly supply repository variables.
 export function workflowFunction(...parameters) {
 	const body = parameters.pop();
 	const defaults = `${parameters.includes("vars") ? "" : "const vars = {};"}${parameters.includes("github") ? "" : 'const github = { repository: "fixture/studio" };'}`;
@@ -103,7 +102,6 @@ export function nodePartitionFixture(t) {
 		.split(/\s+/)
 		.filter(Boolean);
 	const neighbour = "apps/desktop/scripts/x-standalone-cli-lifecycle.test.mjs";
-	// A listed extension makes the neighbour a prefix, exposing a lost end boundary.
 	const fixtureSerial = [...listed, `${neighbour}-extra.test.mjs`];
 	return retentionFixture(t, {
 		"scripts/serial-node-tests.txt": `${fixtureSerial.join("\n")}\n`,
@@ -138,9 +136,7 @@ export function couldBeSelfHosted(value, matrix) {
 		];
 		return !values.length || values.some((item) => couldBeSelfHosted(item, matrix));
 	}
-	// Only the reviewed browser expression may select a repository-variable runner.
 	if (value === browserRunner) return false;
-	// Unknown expressions/labels cannot establish that a PR stays on hosted runners.
 	return !/^(?:ubicloud-[\w.-]+|ubuntu-(?:latest|22\.04|24\.04)(?:-arm)?|windows-(?:latest|2022|2025)|macos-(?:latest|13|14|15|26)(?:-intel|-large|-xlarge)?)$/.test(
 		value,
 	);

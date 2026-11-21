@@ -1,4 +1,3 @@
-// Review C05 Opus probes. Each asserts the expected behaviour; red means a finding.
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -18,7 +17,6 @@ let courseFixture: string | undefined;
 const multi = (title: string) =>
 	title.includes("cross-page") || title.includes("unrelated outside edit");
 test.beforeEach(async ({ context, browserName }, info) => {
-	// Establish each focus/trust fixture before Studio allocates its first IDs.
 	if (multi(info.title)) {
 		courseFixture = await mkdtemp(
 			join(process.env.PRAXITY_TEST_ARTIFACTS ?? tmpdir(), "refresh-course-"),
@@ -87,7 +85,6 @@ async function projectWith(page: Page, transform: (html: string, url: string) =>
 		)
 			return route.continue();
 		const headers = await route.request().allHeaders();
-		// Playwright routing doesn't expose browser-added Fetch Metadata.
 		if (route.request().resourceType() === "fetch")
 			Object.assign(headers, {
 				"sec-fetch-dest": "empty",
@@ -112,7 +109,6 @@ async function projectWith(page: Page, transform: (html: string, url: string) =>
 }
 const append = (markup: string) => (html: string) => html.replace("</body>", `${markup}</body>`);
 
-// O1: course HTML clobbers document.documentElement, where the open field's host is appended.
 for (const markup of [
 	'<form name="documentElement" inert></form>',
 	'<form name="documentElement" hidden></form>',
@@ -138,7 +134,6 @@ for (const markup of [
 		expect(await readFile(file, "utf8")).toBe(source);
 	});
 
-// O1d: the clobbered host parent can hide the field later, after the author has typed.
 test("C05-r1 O1d typed text stays visible and recoverable with a delayed course hide", async ({
 	page,
 }) => {
@@ -167,7 +162,6 @@ test("C05-r1 O1d typed text stays visible and recoverable with a delayed course 
 	expect(await readFile(file, "utf8")).toBe(source);
 });
 
-// O2: course HTML clobbers document.body / document.activeElement used by refresh.
 for (const name of ["body", "head"])
 	test(`C05-r1 O2a saved page refreshes with a form named ${name}`, async ({ page }) => {
 		await projectWith(page, append(`<form name="${name}"></form>`));
@@ -205,7 +199,6 @@ for (const markup of ['<img name="activeElement" alt="">', ""])
 		await expect(
 			page.getByRole("heading", { name: "Blur saved", exact: true }).locator("strong"),
 		).toHaveText("saved");
-		// Read focus through the native getter; Playwright's own check may see the clobbered name.
 		await expect
 			.poll(() =>
 				page.evaluate(
@@ -221,11 +214,9 @@ for (const markup of ['<img name="activeElement" alt="">', ""])
 		expect(await headingId(page, "Blur saved")).toBe(id);
 	});
 
-// O4: one failed refresh leaves its failure message after a later successful refresh.
 test("C05-r1 O4 status reflects the latest refresh outcome", async ({ page }) => {
 	await open(page);
 	let failed = false;
-	// Own-save invalidations may request another build before the outage is observed.
 	let failRefresh = true;
 	await page.route("**/api/rpc", async (route) => {
 		if (route.request().postDataJSON().method !== "canvasPreviewBuild" || !failRefresh)
@@ -248,8 +239,6 @@ test("C05-r1 O4 status reflects the latest refresh outcome", async ({ page }) =>
 	);
 });
 
-// O5: a slow course resource holds the window load event, so the canvas stays Connecting.
-// O6: focus moved to a course control without id or href survives an outside insertion.
 for (const outside of [
 	"# Page\n\n## Before\n\nInserted.\n\nBody.\n\n## Second\n",
 	"# Page\n\n## Before\n\nBody.\n\n## Second Inserted.\n",
@@ -454,7 +443,6 @@ test("C05-r1 Enter keeps the owning button through compiled refresh", async ({ p
 	await held?.evaluate((button) => {
 		const w = window as unknown as { focusEvents: number };
 		w.focusEvents = 0;
-		// Field and button now share a shadow root; document focus events are retargeted.
 		button.addEventListener("focus", () => w.focusEvents++);
 	});
 	await page.keyboard.press("Enter");

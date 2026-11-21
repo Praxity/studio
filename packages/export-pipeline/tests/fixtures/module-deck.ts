@@ -24,7 +24,6 @@ export function moduleDeckFixture(audio?: string, locale = "en"): CourseExportIn
 				narrationAudio: audio.replace("fixture.mp3", `${index}-title.mp3`),
 			};
 			for (const block of page.blocks) {
-				// N2 will migrate authored narration flags; preserve this fixture's two silent section headings at the model interface.
 				if (index === 3 && block.type === "heading" && block.data.level === 2)
 					block.data.narrationDisabled = true;
 				if (block.type === "heading" && plainNarrationText(block.data.content) === page.title)

@@ -147,7 +147,6 @@ it("does not inherit an ancestor workspace when explicitly disabled", async () =
 	const { root, options } = await fixture();
 	await writeFile(join(root, "..", "workspace.praxity.yaml"), "defaultLocale: fr\n");
 	expect((await buildCourseExportInput(options)).locale).toBe("fr");
-	// The server supplies this trusted option; null alone preserves desktop behavior.
 	expect(
 		(
 			await buildCourseExportInput({

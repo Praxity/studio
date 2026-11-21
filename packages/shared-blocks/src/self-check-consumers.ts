@@ -2,7 +2,6 @@ import type { SelfCheckCommand, SelfCheckTicket, SelfCheckView } from "./self-ch
 
 const eventTicketKey = Symbol.for("praxity.self-check.event-ticket");
 
-/** The first dispatch stamp survives owner disposal and separately bundled publishers. */
 export function captureSelfCheckEvent(event: Event, current: () => boolean): void {
 	if (!(eventTicketKey in event)) Object.defineProperty(event, eventTicketKey, { value: current });
 }
@@ -11,7 +10,6 @@ export function selfCheckEventTicket(event: Event): (() => boolean) | undefined 
 	return (event as Event & { [eventTicketKey]?: () => boolean })[eventTicketKey];
 }
 
-/** Content-free handoff from the permanent document owner to its consumers. */
 export interface SelfCheckConsumers {
 	read(blockId: string): (SelfCheckView & { ready: boolean }) | undefined;
 	forwardReady(): boolean;
@@ -43,7 +41,6 @@ export function isSelfCheckForwardBlocked(doc: Document = document): boolean {
 	);
 }
 
-/** Deferred display work retains the document/provider authority that scheduled it. */
 export function selfCheckEpochTicket(
 	doc: Document | undefined = typeof document === "undefined" ? undefined : document,
 	event?: Event,
@@ -72,7 +69,6 @@ export function selfCheckEpochTicket(
 		doc.defaultView?.__praxityBlockState === provider;
 }
 
-/** A reentrant listener cannot turn an old dispatch into a fresh learner effect. */
 export function dispatchSelfCheckEvent(
 	event: Event,
 	current: () => boolean,
@@ -80,7 +76,6 @@ export function dispatchSelfCheckEvent(
 	target: EventTarget = doc,
 	cancellation?: () => boolean,
 ): boolean {
-	// Cancellation still notifies UI observers, with a revoked write stamp.
 	const cancelling = () =>
 		cancellation?.() === true &&
 		event.type === "praxity:self-check-completion" &&
@@ -103,7 +98,6 @@ export function dispatchSelfCheckEvent(
 	return current() && dispatched() && accepted;
 }
 
-/** Scheduling captures authority once; callback delivery cannot borrow a later lifetime. */
 export function requestSelfCheckFrame(
 	effect: FrameRequestCallback,
 	current: () => boolean,
@@ -151,7 +145,6 @@ export function createSelfCheckIntersectionObserver(
 	}, options);
 }
 
-/** Observers are recreated per lifetime; a retained delivery never acquires successor authority. */
 export function observeSelfCheckLifetime(
 	attach: (current: () => boolean) => () => void,
 	doc: Document = document,
@@ -190,7 +183,6 @@ export function observeSelfCheckLifetime(
 	};
 }
 
-/** Completion is known only after admission; self-check has no correctness or score fields. */
 export function readSelfCheckField(
 	owner: Pick<SelfCheckConsumers, "read"> | undefined,
 	id: string,
@@ -204,7 +196,6 @@ export function readSelfCheckField(
 		: undefined;
 }
 
-/** Self-check artifacts attach through their captured bootstrap, including after owner disposal. */
 export function shouldAttachIslandAutomatically(): boolean {
 	return (
 		!(window as Window & { __praxitySelfCheckDocument?: unknown }).__praxitySelfCheckDocument &&

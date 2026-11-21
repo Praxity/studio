@@ -3,7 +3,6 @@ import css from "./blocks/shared-blocks.css?raw";
 import { initializeEntranceMotion } from "./motion";
 
 describe("owned decorative motion policy", () => {
-	// DESIGN-DECISIONS §13: motion never loops or decorates; the old pulses became static cues.
 	it("declares no looping or pulse animation", () => {
 		expect(css).not.toMatch(/animation[^;]*infinite/);
 		expect(css).not.toMatch(/@keyframes praxity-(block-)?pulse/);

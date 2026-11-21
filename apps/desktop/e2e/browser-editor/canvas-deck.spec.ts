@@ -8,7 +8,6 @@ import { startJourney } from "./global-setup";
 const leadership = process.env.PRAXITY_CANVAS_DECK_COURSE;
 const firstTitle = leadership ? "Conversations difficiles au travail" : "Opening slide";
 const secondTitle = leadership ? "Naviguer dans le parcours" : "Second slide";
-// The leadership fixture has three authored headings in its opening accordion.
 const secondHeadingPosition = leadership ? 5 : 3;
 const editLabel = leadership ? "Modifier le texte" : "Edit text";
 let stop: (() => Promise<void>) | undefined;
@@ -19,7 +18,6 @@ async function projectBytes(root: string): Promise<Record<string, string>> {
 	for (const entry of await readdir(root, { withFileTypes: true })) {
 		const path = join(root, entry.name);
 		if (entry.isDirectory()) {
-			// Captured compiler outputs are disposable, outside the author's records.
 			if (entry.name === "cache" || entry.name === "locks") continue;
 			for (const [key, digest] of Object.entries(await projectBytes(path)))
 				files[`${entry.name}/${key}`] = digest;
@@ -153,7 +151,6 @@ test("top-level learner deck is ready, navigates and keeps isolated browser stat
 	await expect(deck).toHaveAttribute("data-ready", "true");
 	await expect(
 		page.locator(".deck-slide").getByRole("heading", {
-			// The learner host can prefix a resumed heading with its position cue.
 			name: leadership ? /Naviguer dans le parcours$/ : /Second slide$/,
 		}),
 	).toBeVisible();

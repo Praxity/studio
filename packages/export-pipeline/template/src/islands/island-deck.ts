@@ -66,7 +66,6 @@ const narrationMoveReason = {
 	advance: MoveReason.AutomaticAdvance,
 };
 
-/** Deck access never uses listening time. */
 export function gateSatisfied(
 	rule: "attempt" | "pass",
 	correct: boolean | undefined,
@@ -132,18 +131,14 @@ export function initDeck(): (() => void) | undefined {
 		try {
 			const value = localStorage.getItem(panelPreferenceKey);
 			if (value === "script" || value === "outline" || value === "closed") return value;
-		} catch {
-			// Locked-down LMS frames may deny web storage.
-		}
+		} catch {}
 		return null;
 	};
 	const savePanelPreference = (panel: "script" | "outline" | null) => {
 		if (!panelPreferenceKey) return;
 		try {
 			localStorage.setItem(panelPreferenceKey, panel ?? "closed");
-		} catch {
-			// Keep the panel usable when storage is unavailable.
-		}
+		} catch {}
 	};
 	const inspection = new URL(location.href).searchParams.get("praxity-inspect") === "1";
 	const resume = inspection ? undefined : window.__praxityResume;
@@ -207,7 +202,6 @@ export function initDeck(): (() => void) | undefined {
 			if (selfCheckConsumers()?.read(gate.id)) selfCheckIds.add(gate.id);
 	const canPersistGate = (id: string) => {
 		const policy = readLearnerBlockPolicy(id);
-		// Self-check reporting requires explicit host permission, including missing-provider paths.
 		return policy !== "device" && (!selfCheckIds.has(id) || policy === "lms");
 	};
 	try {
@@ -215,22 +209,18 @@ export function initDeck(): (() => void) | undefined {
 		if (Array.isArray(saved?.deck?.released))
 			for (const id of saved.deck.released)
 				if (typeof id === "string" && validGates.has(id) && canPersistGate(id)) released.add(id);
-	} catch {
-		/* Invalid saved state starts with locked gates. */
-	}
+	} catch {}
 	const visited = new Set(
 		(learnerRuntime(mount)?.getVisitedPages?.() ?? []).filter((id) =>
 			pages.some((page) => page.id === id),
 		),
 	);
-	// Existing recorded responses can restore earned access without inventing attempts.
 	for (const response of (learnerRuntime(mount) as SCORMRuntime | undefined)?.getInteractions() ??
 		[]) {
 		const gate = pages.flatMap((page) => page.gates).find((item) => item.id === response.id);
 		if (gate && canPersistGate(gate.id) && gateSatisfied(gate.rule, response.correct))
 			released.add(gate.id);
 	}
-	// The self-check asset can restore before this chunk installs its listener.
 	for (const block of root.querySelectorAll<HTMLElement>(
 		'[data-block-type="selfCheck"][data-completed="true"]',
 	)) {
@@ -242,8 +232,6 @@ export function initDeck(): (() => void) | undefined {
 	let current = firstLocal;
 	let completing = false;
 	const completion = root.querySelector<HTMLElement>("#deck-completion");
-	// A group can own the authored H1. The frame puts it in the same title row
-	// while retaining its ID and the activity's aria-labelledby relationship.
 	for (const slide of slides) {
 		const title = slide.querySelector<HTMLElement>(".praxity-assessment-group-card h1");
 		if (title) {
@@ -319,7 +307,6 @@ export function initDeck(): (() => void) | undefined {
 			}
 		}
 	};
-	// Persist the state before lazy card activation, then notify already active cards.
 	syncCardPlayback();
 	const listeners = new AbortController();
 	let frameEpoch = 0;
@@ -332,7 +319,6 @@ export function initDeck(): (() => void) | undefined {
 	};
 	const on = (target: EventTarget, event: string, handler: EventListener) =>
 		target.addEventListener(event, handler, { signal: listeners.signal });
-	// Module links and browser history leave the document without a local slide move.
 	on(window, "pagehide", () => removeScormResumeCue(root));
 	const gateReleased = (gate: DeckPage["gates"][number]) => {
 		const id = gate.id;
@@ -521,7 +507,6 @@ export function initDeck(): (() => void) | undefined {
 			const locked =
 				destination > reachLimit(destination) ||
 				(destination > current && isSelfCheckForwardBlocked());
-			// Module links represent a whole module; a slide visit cannot mark it visited.
 			const wasVisited =
 				link.closest("#deck-outline") !== null &&
 				!link.classList.contains("deck-module-link") &&
@@ -600,17 +585,13 @@ export function initDeck(): (() => void) | undefined {
 			active instanceof HTMLElement &&
 			active.matches(".praxity-resume-summary") &&
 			!leaving?.contains(active);
-		// Capture focus before removing a summary that may own it. The cue belongs
-		// to the restored slide, including any replacing panel.
 		if (changedSlide) {
-			// Group feedback describes this action only while its slide is visible.
 			find("next").removeAttribute("aria-describedby");
 			removeScormResumeCue(root);
 		}
 		for (const media of leaving?.querySelectorAll<HTMLMediaElement>("audio,video") ?? [])
 			media.pause();
 		current = index;
-		// Compiler-owned, decoded slide titles use the same pattern as static Pages.
 		document.title = target.title;
 		completing = false;
 		if (completion) completion.hidden = true;
@@ -657,7 +638,6 @@ export function initDeck(): (() => void) | undefined {
 			});
 		if (replace) history.replaceState(null, "", address());
 		else history.pushState(null, "", address());
-		// Heading focus speaks the named position region and title; do not also announce.
 		if (!focusedHeading) {
 			find("announcement").textContent =
 				reason === MoveReason.Restore ? "" : `${slidePosition(target)}: ${target.title}`;
@@ -812,15 +792,9 @@ export function initDeck(): (() => void) | undefined {
 				moreDisclosure.setExpanded(false);
 			}
 		};
-		// Chromium attributes document click listeners to the document element and
-		// exposes the whole course as clickable; pointerdown is not a mouse-button
-		// event there. Keyboard users leave More by moving focus, so focusout
-		// replaces the keyboard clicks the old listener also caught. Escape remains.
 		on(document, "pointerdown", (event) => collapseMore(event.target));
 		on(more, "focusout", (event) => {
 			const next = (event as FocusEvent).relatedTarget;
-			// WebKit does not focus a pressed button; it focuses the nearest focusable
-			// ancestor, here the controls landmark. pointerdown owns pointer dismissal.
 			if (next instanceof Node && next.contains(more)) return;
 			collapseMore(next);
 		});
@@ -849,7 +823,6 @@ export function initDeck(): (() => void) | undefined {
 		const stageObserver = createSelfCheckResizeObserver(current, () => {
 			if (current()) scheduleStage();
 		});
-		// Feedback, media and text preferences can resize content without a slide change.
 		stageObserver.observe(controls);
 		if (main) {
 			stageObserver.observe(main);
@@ -878,17 +851,14 @@ export function initDeck(): (() => void) | undefined {
 		focusInMain = !!main?.contains(document.activeElement);
 	});
 	const syncPanelLayout = () => {
-		// Printed workspace bounds describe the full document, not the screen sheet.
 		if (printLayout.matches) return;
 		const bounds = workspace?.getBoundingClientRect();
-		// The title and footer can grow without changing the outer shell's size.
 		if (morePanel)
 			morePanel.style.maxHeight =
 				compactTools && bounds ? `${Math.max(44, bounds.height - 8)}px` : "";
 		const modal = sheetLayout && root.dataset.panel === "script";
 		if (modal && sidebar) {
 			if (sidebar.parentElement !== sheet) sheet.append(sidebar);
-			// Resume is a reading action: let it scroll with the text in a short sheet.
 			if (resumeRow.parentElement !== scrollContainer) scrollContainer.prepend(resumeRow);
 			sidebar.removeAttribute("role");
 			if (bounds) {
@@ -991,8 +961,6 @@ export function initDeck(): (() => void) | undefined {
 		const target = pendingSheetFocus;
 		pendingSheetFocus = null;
 		if (!target) return;
-		// WebKit can finish native focus restoration after close() returns. More
-		// also hides the trigger while the sheet is open. Wait for close and layout.
 		const restoreFocus = () => {
 			if (listeners.signal.aborted || sheet.open || root.dataset.panel) return;
 			if (compactTools && more?.contains(target)) moreDisclosure?.setExpanded(true);
@@ -1139,7 +1107,6 @@ export function initDeck(): (() => void) | undefined {
 				url.pathname === new URL(`${page.slug}.html`, location.href).pathname ||
 				url.pathname === new URL(`${page.moduleSlug}.html`, location.href).pathname,
 		);
-		// Resolve fragments within their module; leave section anchors to the browser.
 		const target = link.dataset.deckPage
 			? pages.findIndex((page) => page.id === link.dataset.deckPage)
 			: url.hash
@@ -1158,8 +1125,6 @@ export function initDeck(): (() => void) | undefined {
 			move(target, MoveReason.Navigation);
 		}
 	};
-	// A click can reach both a control's own listener and its React root's
-	// delegation; nested controls also bubble through each other. Act once.
 	const activated = new WeakSet<Event>();
 	const activateControl: DeckControlActivation = (control, event) => {
 		if (activated.has(event)) return;
@@ -1224,7 +1189,7 @@ export function initDeck(): (() => void) | undefined {
 		if (!owned()) return;
 		if (inspection) return;
 		const detail = (event as CustomEvent).detail;
-		player?.pause(); // Feedback remains until explicit continuation, including refusal.
+		player?.pause();
 		if (event.defaultPrevented) return;
 		const gate = pages[current].gates.find((item) => item.id === detail?.blockId);
 		const exhausted =
@@ -1260,8 +1225,6 @@ export function initDeck(): (() => void) | undefined {
 		element.hidden = false;
 	if (outlineToggle) outlineToggle.hidden = !hasOutline;
 	const preferredPanel = readPanelPreference();
-	// Fresh replacing layouts expose the lesson. Only an explicit learner choice
-	// opens a panel here; leave storage untouched so wide visits keep authored defaults.
 	const initialPanel =
 		preferredPanel === "closed" || (preferredPanel === null && drawerLayout.matches)
 			? null
@@ -1307,8 +1270,6 @@ export function initDeck(): (() => void) | undefined {
 	if (localDestination && notice) showAccessNotice(notice);
 	if (localDestination && resuming) {
 		const slide = slides.find((element) => element.dataset.deckSlide === pages[current].id);
-		// Honor an intentionally opened replacing panel. Set arrival focus once,
-		// after the restored slide and its transcript have both been resolved.
 		const content = main?.inert
 			? find(root.dataset.panel === "script" ? "script" : "outline")
 			: slide;
@@ -1327,8 +1288,6 @@ export function initDeck(): (() => void) | undefined {
 				summary: interpolate(window.__PRAXITY_STRINGS__?.deckResumeAnnouncement ?? "", position),
 			});
 			target.tabIndex = -1;
-			// Open the initial modal directly on the restored cue, preserving one
-			// arrival focus instead of visiting Close and the heading first.
 			sheetFocusTarget = target;
 			initialSheetPending = false;
 			syncPanelLayout();

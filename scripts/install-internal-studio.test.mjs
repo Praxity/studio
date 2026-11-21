@@ -59,7 +59,6 @@ for (const variable of ["STUDIO_SOURCE_REPO", "STUDIO_CANDIDATE_REPO"])
 			assert.match(message, /same until the go-public cutover/);
 			assert.match(message, /candidate repo is the private CI repo/);
 			assert.match(message, /scripts\/install-internal-studio\.md/);
-			// Any concrete repository in the message must come from origin, never a baked-in default.
 			assert.deepEqual(
 				[...message.matchAll(/\b[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\b/g)]
 					.map((match) => match[0])
@@ -671,7 +670,6 @@ test("cleanup rechecks owned draft before deletion", async (t) => {
 			draft: true,
 			prerelease: true,
 		});
-	// getters expose the listed object unchanged, but mutate a freshly fetched release.
 	const oldFind = f.releases.find.bind(f.releases);
 	let reads = 0;
 	f.releases.find = (cb) => {
@@ -884,7 +882,6 @@ test("owned cleanup skips an old draft built for a different SHA", async (t) => 
 test("installer stack reports its Error reason", async (t) => {
 	const f = fixture(t);
 	f.state.activationFailure = true;
-	// Replace the external failure with the Node-style diagnostic seen in review.
 	f.state.stackFailure = true;
 	assert.equal(await f.run(), 1);
 	assert.match(f.output.at(-1), /different manifest/);

@@ -23,7 +23,6 @@ const captures = new Map<
 		data: ReturnType<typeof preparedIconQuestion>;
 	}
 >();
-// Compile/export are shared fixture setup; failures here fail the whole interface suite.
 beforeAll(async () => {
 	for (const producer of ["grammar", "display"] as const) {
 		const data = preparedIconQuestion(producer, "stem", "Then @icon{mail}", {
@@ -85,7 +84,6 @@ for (const producer of ["grammar", "display"] as const) {
 	it(`${producer} compiles and exports mixed raw and compiler icons with exact main learner bytes`, () => {
 		const capture = captures.get(producer);
 		if (!capture) throw new Error("Missing compiled/exported capture");
-		// Pinned from the display owners at the recorded main revision, with no signature call.
 		expect(capture.compiledHtml).toBe(baseline[producer].compiledHtml);
 		expect(capture.exportedQuestionHtml).toBe(baseline[producer].exportedQuestionHtml);
 		expect(capture.pageCount).toBe(1);

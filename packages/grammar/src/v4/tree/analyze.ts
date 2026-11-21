@@ -18,7 +18,6 @@ import type {
 	TreeNode,
 } from "./types.ts";
 
-/** An item's declaration is its enclosing block's itemDefinition; other nodes use their type or kind. */
 export function definitionOf<D extends BodyDefinition & { itemDefinition?: D }>(
 	node: TreeNode,
 	parent: TreeNode | undefined,
@@ -55,7 +54,6 @@ function legacyDeclaration(stream: TokenStream, options: AnalysisOptions): Token
 			continue;
 		}
 		if (options.definition(owners.at(-1) ?? "")?.literalText) continue;
-		// G4's lexical partition shields fences, math, quotes, escapes and frontmatter.
 		if (!["part", "prose", "diagnostic", "divider"].includes(line.kind)) continue;
 		const raw = stream.source.slice(line.start, line.contentEnd);
 		const chars = raw.split("");
@@ -67,8 +65,6 @@ function legacyDeclaration(stream: TokenStream, options: AnalysisOptions): Token
 		};
 		maskCode(tokenizeInline(raw).children);
 		const text = chars.join("").trim();
-		// Distinct G3 productions from the archived parser. Shared Markdown, bare
-		// dividers and headings cannot distinguish the formats. `if:` is also a G4 rule part.
 		if (
 			/^(?:as|close):\s*\S/.test(text) ||
 			/^card:\s*back$/.test(text) ||
@@ -85,7 +81,6 @@ function legacyDeclaration(stream: TokenStream, options: AnalysisOptions): Token
 	return undefined;
 }
 
-/** G3 semantics over the unchanged lexical partition, with G4/G5 declarations injected. */
 export function analyzeLessonTree(
 	stream: TokenStream,
 	options: AnalysisOptions,
@@ -101,7 +96,6 @@ export function analyzeLessonTree(
 			message: { key: `grammar.v4.${code}`, args: { ...position, ...args } },
 		});
 	};
-	// Lexical classifications shield code, math, quotes, escaped lines and frontmatter.
 	const legacy = legacyDeclaration(stream, options);
 	if (legacy) {
 		const root = bodyNode(stream, "lesson", 0, stream.tokens.length);
@@ -115,8 +109,6 @@ export function analyzeLessonTree(
 	const tree = buildLessonTree(stream, {
 		isPart: (name, owner, parent) => {
 			const definition = definitionOf(owner, parent, options.definition);
-			// After the first option, feedback belongs to the body interpreter. It
-			// enforces adjacency instead of treating detached lines as question parts.
 			if (
 				definition?.body === "options" &&
 				["feedback", "correct", "incorrect"].includes(name) &&
@@ -182,7 +174,6 @@ export function analyzeLessonTree(
 		const definition = definitions.get(node);
 		const valid = [];
 		for (const setting of node.settings) {
-			// Level is a tree rule; declared item settings can exclude it.
 			if (
 				setting.name === "level" &&
 				(node.kind !== "item" ||
@@ -229,7 +220,6 @@ export function analyzeLessonTree(
 				typeof setting.value.value === "string" &&
 				linkUrlRefusal(setting.value.value)
 			) {
-				// Name the allowed link forms; never echo the refused URL.
 				report("unsafe-link-url", setting.span, {
 					type: node.type ?? node.kind,
 					name: setting.name,
@@ -255,7 +245,6 @@ export function analyzeLessonTree(
 	for (const node of nodes)
 		for (const issue of definitions.get(node)?.validate?.(node, parents.get(node)) ?? [])
 			report(issue.code, issue.span ?? node.header ?? node.span, issue.args, issue.severity);
-	// Inline/course owners can supply definitions; the local fallback recognizes literal terms only.
 	const glossaryDefinitions =
 		options.glossaryDefinitions ?? localDefinitions(stream, tree.root, definitions);
 	const first = new Map<string, (typeof glossaryDefinitions)[number]>();
@@ -272,15 +261,12 @@ export function analyzeLessonTree(
 			);
 		} else if (!prior) first.set(definition.term, definition);
 	}
-	// Errors invalidate their smallest containing node, then propagate through ancestors.
 	const finalNodes = [tree.root];
 	for (let index = 0; index < finalNodes.length; index++)
 		finalNodes.push(...finalNodes[index].children);
 	for (const diagnostic of diagnostics)
 		if (
 			diagnostic.severity === "error" &&
-			// Valid practice declarations still have durable authoring identities
-			// while publication waits for its runtime. All structural errors propagate.
 			!(
 				diagnostic.code === "unsupported-runtime" &&
 				diagnostic.message.args.type === "write-distractors"
@@ -338,7 +324,6 @@ function localDefinitions(
 				)
 			)
 				continue;
-			// G6 replaces this fallback with its inline tree for formatted/nested terms.
 			const start = line.start + (match.index ?? 0);
 			if (start >= root.span.start)
 				result.push({

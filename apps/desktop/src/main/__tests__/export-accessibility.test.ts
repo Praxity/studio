@@ -118,7 +118,6 @@ describe("export accessibility contract", () => {
 				"packages/editor-core/src/lib/a11y/__tests__/fixtures/gif-flash/oversized-canvas.gif",
 			),
 		);
-		// The export interface must keep this recording publishable, with an actionable warning.
 		const warnings: AuthorWarning[] = [];
 		await expect(
 			assertExportAccessibility(course, true, undefined, [], { authorWarnings: warnings }),
@@ -210,7 +209,6 @@ describe("export accessibility contract", () => {
 	);
 	it("reports excessive frame-pixel work before decoding", async () => {
 		const bytes = signalGif(5, { frames: 801 });
-		// Valid descriptors request 200.25M frame pixels; compressed payload is never decoded.
 		bytes.set([244, 1, 244, 1], 6);
 		for (let i = 0; i < 801; i++) bytes.set([244, 1, 244, 1], 32 + i * 23);
 		const course = input([block("image", { src: "/assets/signal.gif", altText: "Signal" })]);

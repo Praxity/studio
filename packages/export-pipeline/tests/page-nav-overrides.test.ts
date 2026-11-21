@@ -57,7 +57,6 @@ function shellConfig(html: string): Record<string, unknown> {
 describe("per-page nav overrides in export", () => {
 	it("uses native navigation and the matching body class for per-key overrides", () => {
 		const [plain, overridden] = renderCourse([undefined, { navOutline: false }]);
-		// navOutline:false + navPrevNext:true (sidebar default) infers "embedded".
 		expect(overridden).toContain('<body class="praxity-layout-embedded">');
 		expect(overridden).toContain('<main id="main-content"');
 		expect(overridden).toContain('data-praxity-islands="nav"');

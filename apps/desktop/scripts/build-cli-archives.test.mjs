@@ -19,8 +19,6 @@ const bash =
 			)
 		: "bash";
 
-// pnpm is the build/test boundary. Use real tar and hashing against architecture-
-// specific fixture bytes so ordering and payload replacement affect the result.
 const fixture = `
 node() {
   if [[ "$*" == '-p process.arch' ]]; then printf '%s\\n' "$NATIVE_ARCH"; else command node "$@"; fi

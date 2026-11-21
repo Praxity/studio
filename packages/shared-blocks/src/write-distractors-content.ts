@@ -32,10 +32,7 @@ export interface WriteDistractorsAssetReference {
 	readonly sha256: string;
 }
 
-/** Only this owner reads authored Content. Reducers receive validation authority,
- * never an answer-bearing projection or a prompt cast to Content. */
 export function createWriteDistractorsRules(content: Content) {
-	// Capture private copies so later caller mutation cannot change the authority.
 	validateContent(content);
 	const captured: Content = {
 		question: content.question,
@@ -53,7 +50,6 @@ export function createWriteDistractorsRules(content: Content) {
 	return Object.freeze({
 		contentRevision: writeDistractorsContentRevision(captured),
 		count: captured.count,
-		/** Deliberate Check exposes only first-half presentation, never author options. */
 		firstHalf() {
 			return {
 				answer: captured.rightAnswer,
@@ -62,15 +58,11 @@ export function createWriteDistractorsRules(content: Content) {
 		},
 		itemIds: Object.freeze(captured.misconceptions.map((item) => item.id)),
 		validateValue(value: LearnerState): boolean {
-			// shortcut: the pin counts raw option/custom length. CONTRACTS.md:458-459
-			// retains draft text and counts after trim. Remove these trim copies once
-			// W00's aligned pin lands; never normalise or truncate the stored draft.
 			return validateState(captured, { ...value, options: trimmedOptions(value.options) }) !== null;
 		},
 		compare(options: LearnerOption[]) {
 			return validateOptions(captured, trimmedOptions(options));
 		},
-		/** Only a shown result requests this projection; overlap compares labels alone. */
 		comparison(options: LearnerOption[]) {
 			const checked = validateOptions(captured, trimmedOptions(options));
 			if (!checked.ok) throw new Error("EWRITEDISTRACTORSCOMPARISON");
@@ -94,7 +86,6 @@ export function createWriteDistractorsRules(content: Content) {
 }
 export type WriteDistractorsRules = ReturnType<typeof createWriteDistractorsRules>;
 
-/** Exact decoded text and authored order determine comparison compatibility. */
 export function writeDistractorsContentRevision(content: Content): string {
 	try {
 		validateContent(content);
@@ -116,7 +107,6 @@ export function writeDistractorsContentRevision(content: Content): string {
 	return `sha256:${Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
 }
 
-/** Asset admission owns Content and its digest; generic presentation receives only rules. */
 export function admitWriteDistractorsAsset(
 	payload: unknown,
 	reference: { blockId: string; contentRevision: string },
@@ -175,7 +165,6 @@ export function copyWriteDistractorsContent(value: unknown): Content {
 		for (const item of value.misconceptions) record(item, ["id", "label"]);
 		for (const option of value.authorOptions) record(option, ["text", "misconception"]);
 		validateContent(value);
-		// Studio's source subset pairs one option with each ordered misconception.
 		if (
 			!value.question.trim() ||
 			!value.rightAnswer.trim() ||

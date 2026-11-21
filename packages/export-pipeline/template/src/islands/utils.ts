@@ -39,7 +39,6 @@ export function parseBlockJson(el: HTMLElement): PraxityBlock | null {
 export function renderIsland(el: HTMLElement, content: ReactNode): () => void {
 	const root = createRoot(el);
 	flushSync(() => root.render(content));
-	// Rendered authored content can link to course slides inside a Guided deck.
 	delegateDeckControls(el);
 	el.setAttribute("data-hydrated", "");
 	return () => root.unmount();

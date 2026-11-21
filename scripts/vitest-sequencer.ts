@@ -50,7 +50,6 @@ export default class DurationSequencer extends BaseSequencer {
 	}
 }
 
-// JSON lines in the ordinary CI log let timing refreshes survive artifact quotas.
 export class FileTimingReporter {
 	private ctx: Vitest | undefined;
 

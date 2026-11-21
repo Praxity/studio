@@ -1,9 +1,7 @@
-/* Native controls reuse Studio's existing field/button tokens. */
 .praxity-write-distractors {
 	min-inline-size: 0;
 	overflow-wrap: anywhere;
 }
-/* Published pages reset paragraph margins. The activity owns its reading rhythm. */
 .praxity-write-distractors p:not([role="status"]) {
 	margin-block: var(--space-2);
 }
@@ -44,7 +42,6 @@
 	font-weight: var(--weight-strong);
 }
 
-/* The inert matching baseline suppresses the arrow. Active native selects retain it. */
 .praxity-write-distractors[data-write-distractors] select.praxity-assessment-select-input {
 	appearance: auto;
 	padding-inline-end: var(--space-8);
@@ -134,7 +131,6 @@
 }
 
 @media print {
-	/* The selected rating is already text in the DOM; remove its control chrome. */
 	.praxity-write-distractors button[aria-pressed="true"] {
 		display: inline !important;
 		appearance: none;

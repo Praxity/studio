@@ -41,7 +41,6 @@ async function fixture(source = defaultSource, cleanup = roots) {
 }
 const templates: string[] = [];
 const initialized = new Map<string, string>();
-// One initialization per hook keeps setup bounded; cases mutate independent copies.
 function prepareInitialized(source: string) {
 	beforeAll(async () => {
 		const root = await fixture(source, templates);

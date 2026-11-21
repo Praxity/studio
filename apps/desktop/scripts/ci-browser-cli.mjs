@@ -4,7 +4,6 @@ import { browserRequired, candidateDiff } from "./ci-browser.mjs";
 let browser = true;
 let candidateBase = "";
 try {
-	// GitHub passes the sole skip-list from this revision's workflow as JSON.
 	browser = browserRequired(
 		JSON.parse(process.env.BROWSER_SKIP),
 		process.argv.includes("--candidate")

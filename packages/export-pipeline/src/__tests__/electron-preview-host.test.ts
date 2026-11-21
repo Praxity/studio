@@ -712,7 +712,6 @@ describe("Electron preview course host", () => {
 			...identity,
 		});
 		await vi.waitFor(() => expect(dom.window.document.activeElement).toBe(last));
-		// Tab enters the frame again: its window takes focus before the host asks for an edge.
 		dom.window.dispatchEvent(new dom.window.FocusEvent("focus"));
 		channel.port1.postMessage({
 			source: "praxity-studio",
@@ -1044,7 +1043,6 @@ it.each(["en", "fr"] as const)(
 				const screen = [...dom.window.document.querySelectorAll("[data-highlight]")].map(
 					(root) => root.outerHTML,
 				);
-				// Preview has no reset protocol command. Exercise its actual mutable runtime reset.
 				active.resetState();
 				expect(JSON.stringify(calls)).not.toMatch(
 					/HL-PRIVATE|HL-one|HL-two|HL-wrong|data-highlight|marked|shown/,

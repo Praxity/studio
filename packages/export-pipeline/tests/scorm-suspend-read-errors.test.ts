@@ -176,7 +176,6 @@ for (const version of ["1.2", "2004"] as const)
 					status: "not-saved",
 					code: "unreadable-state",
 				});
-				// A subsequent host read could succeed, but this adapter must hold the refusal.
 				expect(runtime.setSuspendData('{"replacement":true}')).toBe(false);
 				runtime.setCompletion("passed");
 				runtime.setScore(100, 0, 100);

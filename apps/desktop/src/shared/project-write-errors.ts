@@ -1,4 +1,3 @@
-/** One recovery message for CLI and canvas. Commands dereference links, including hidden children. */
 export function projectPlainStoreMessage(path: string, locale: "en" | "fr"): string {
 	const backup = ".praxity-linked-backup";
 	const copy = ".praxity-plain-copy";
@@ -18,7 +17,6 @@ export function projectPlainStorePath(error: unknown): string | undefined {
 		: undefined;
 }
 
-/** Shared by I4 admission and T1 planning without importing identity formats into T1. */
 export class ProjectPlainStoreError extends Error {
 	readonly code = "EIDENTITY";
 	readonly messageRef;
@@ -28,7 +26,6 @@ export class ProjectPlainStoreError extends Error {
 	}
 }
 
-/** The recovery steps also apply when the only remaining identity is in a T1 archive. */
 export function projectIdentityRecoveryMessage(locale: "en" | "fr"): string {
 	return locale === "fr"
 		? "Studio ne trouve pas .praxity/identity/course.json pour un cours existant. Pour conserver les identifiants des blocs, restaurez les fichiers manquants ou corrompus. Restaurez le dossier complet .praxity/identity/ depuis une sauvegarde, puis rouvrez le cours. Les dossiers .praxity-write-* peuvent contenir des copies : utilisez praxity recovery list <project-dir>, puis praxity recovery extract <project-dir> <archive> <new-directory> pour les examiner et les conserver. Pour chaque fichier choisi, utilisez praxity recovery restore <project-dir> <archive> original <path> pour restaurer la copie originale, ou remplacez original par replacement pour la copie de remplacement. La restauration conserve l'archive et sauvegarde les octets remplacés. Une archive peut ne pas contenir tous les fichiers nécessaires. Les fichiers existants dans .praxity/review sont conserv\u00e9s ; les modifications n'en \u00e9crivent plus. Si narration.yaml, .praxity/review ou .praxity/content-identity.json existe sans course.json, restaurez aussi les fichiers d'identité correspondants. Supprimer une archive avec praxity recovery resolve <project-dir> <archive> ne restaure aucun fichier et ne supprime pas ces obstacles. Nouvelle identité volontaire : copiez course.yaml, les sources .prax et les ressources dans un nouveau dossier, sans .praxity/, narration.yaml ni les dossiers .praxity-write-*. Les identifiants des blocs seront nouveaux. Conservez le dossier original. Dans le dossier original, n'utilisez resolve qu'après restauration ou si aucune identité conservée n'est nécessaire. Réessayer sans fichiers d'identité ni obstacles crée de nouveaux identifiants de blocs."
@@ -71,7 +68,6 @@ export class ProjectFileBusyError extends Error {
 	}
 }
 
-/** Electron can preserve only the message across invoke. */
 export function isProjectFileBusyError(error: unknown): boolean {
 	return (
 		(error as { code?: string } | null)?.code === "EFILEBUSY" ||
@@ -100,7 +96,6 @@ export class ProjectBusyError extends Error {
 	}
 }
 
-/** An unlocked read must restart after the first writer creates its lock database. */
 export class ProjectReadAdmissionChangedError extends ProjectBusyError {}
 
 export class ProjectFilesystemUnsupportedError extends Error {
@@ -122,7 +117,6 @@ export class ProjectRecoveryRequiredError extends Error {
 	}
 }
 
-/** Electron invoke preserves the message, but can omit custom error properties. */
 export function isProjectBusyError(error: unknown): boolean {
 	return (
 		(error as { code?: string } | null)?.code === "EPROJECTBUSY" ||
@@ -181,7 +175,6 @@ export function projectReadErrorKey(
 	return isProjectBusyError(error) ? "projectBusy" : "projectReadError";
 }
 
-/** Refused writes reject. A returned result acknowledges the committed bytes. */
 export interface ProjectWriteResult {
 	cleanupError?: string;
 }

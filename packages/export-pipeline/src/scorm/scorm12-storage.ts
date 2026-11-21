@@ -15,35 +15,18 @@ import {
 import { SCORM2004_RESPONSE_LIMIT } from "./api/scorm2004.ts";
 import { serializeScorm12CompactSuspendData } from "./scorm12-suspend-data";
 
-/**
- * Room left for block state, variables and deck progress, which share the
- * `custom` field. Their size depends on what the learner does, so this is a
- * fixed allowance rather than a computed value.
- */
 const BLOCK_STATE_ALLOWANCE = 512;
 
-/**
- * Each submission stores the learner's response text, up to 250 characters.
- * The estimate assumes one short answer per question; open answers can use more.
- */
 const ESTIMATED_RESPONSE_LENGTH = 32;
-/** A 13-digit `Date.now()` value, the length the adapter writes for years to come. */
 const ESTIMATED_TIMESTAMP = 1_800_000_000_000;
 
 export interface Scorm12StorageEstimate {
 	atRisk: boolean;
-	/** Characters a learner who visits every page and answers every question would store. */
 	estimatedLength: number;
 	limit: number;
 	reportingSelfCheckCount: number;
 }
 
-/**
- * Estimate whether SCORM 1.2 suspend_data can hold a full attempt at this
- * course. The adapter stores every visited page ID and the latest assessment
- * rows there. Lossless compression shares repeated metadata; varied open
- * answers and UUIDs can still exceed SCORM 1.2's 4,096-character limit.
- */
 export function estimateScorm12Storage(course: { blocks: PraxityBlock[] }): Scorm12StorageEstimate {
 	const pages = splitBlocksIntoPages(course.blocks, "");
 	const policy = compileBlockStatePolicy(course.blocks);
@@ -69,7 +52,6 @@ export function estimateScorm12Storage(course: { blocks: PraxityBlock[] }): Scor
 	);
 	const interactionIds = pages.flatMap((page) =>
 		flattenLogicBlocks(page.blocks).flatMap((block) =>
-			// Course hosts record each submitted question and each completed group.
 			(block.type === "assessment" && block.data.private !== true) ||
 			(block.type === "selfCheck" && policy[block.id] === "lms") ||
 			block.type === "assessmentGroup"
@@ -90,8 +72,6 @@ export function estimateScorm12Storage(course: { blocks: PraxityBlock[] }): Scor
 		})),
 	};
 	if (checks.length || choices.length) {
-		// Self-check has no answer limit. Reserve the 2004 report length per
-		// snapshot as a warning estimate, plus ticks and the comparison revision.
 		fullAttempt.custom = JSON.stringify({
 			blockState: Object.fromEntries([
 				...checks.map((block) => {
@@ -143,8 +123,6 @@ export function estimateScorm12Storage(course: { blocks: PraxityBlock[] }): Scor
 			]),
 		});
 	}
-	// Reserve room before choosing the codec, so the allowance cannot trigger a
-	// false overflow immediately below the runtime's compression threshold.
 	let estimatedLength: number;
 	try {
 		estimatedLength =
@@ -156,8 +134,6 @@ export function estimateScorm12Storage(course: { blocks: PraxityBlock[] }): Scor
 		if (!(error instanceof Error) || !error.message.includes("ESCORM12STORAGE")) throw error;
 		estimatedLength = SCORM12_SUSPEND_DATA_LIMIT + 1;
 	}
-	// Repeated placeholder text compresses far more than a learner's open answer.
-	// Keep the existing non-choice warning budget when choices enable compression.
 	if (choices.length && interactionIds.some((id) => !choices.some((block) => block.id === id))) {
 		const choiceIds = new Set(choices.map((block) => block.id));
 		const otherState = fullAttempt.custom ? JSON.parse(fullAttempt.custom).blockState : undefined;

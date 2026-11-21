@@ -53,11 +53,6 @@ const request = (field: Field, text: string) => ({
 const A = "# A page\n\n## A heading\n\nBody A.\n";
 const B = "# B page\n\n## B heading\n\nBody B.\n";
 
-/**
- * Real read-only host plus the real operation and identity owners. Canvas launches now retain the
- * previous build in the project ring. Force an early artifact release to also exercise the captured
- * page index: a request during rebuilding must still resolve the held tab's original scope.
- */
 async function launchGap(gapRequest: boolean) {
 	const root = await mkdtemp(join(tmpdir(), "review-c05f-r2-"));
 	cleanup.push(() => rm(root, { recursive: true, force: true }));
@@ -71,7 +66,6 @@ async function launchGap(gapRequest: boolean) {
 		getEditorOrigin: () => "http://127.0.0.1:9000",
 	});
 	cleanup.push(() => server.close());
-	// Learn the transient page IDs a real build would embed; keep only strings.
 	const pages = await (async () => {
 		const initial = await service.canvasTextSnapshot();
 		return ["a.prax", "b.prax"].map((file) => {
@@ -127,7 +121,6 @@ async function launchGap(gapRequest: boolean) {
 		editorSeq: 1,
 		sourceRevisions: undefined,
 	};
-	// Tab B opens first and holds its heading. Only the request (strings) stays in the tab.
 	const held = await (async () => {
 		const scope = server.canvasPageScope(docB);
 		if (!scope) throw new Error("B document not admitted");
@@ -137,7 +130,6 @@ async function launchGap(gapRequest: boolean) {
 		expect(field.nodeId.startsWith("rt-")).toBe(true);
 		return request(field, "Held B saved");
 	})();
-	// Stress scope retention even if the old artifact is released before Tab A's rebuild.
 	await first.release();
 	if (gapRequest) {
 		const during = server.canvasPageScope(docB);
@@ -145,7 +137,6 @@ async function launchGap(gapRequest: boolean) {
 	}
 	const rebuilt = await server.hostCourseArtifact(deployment());
 	cleanup.push(() => rebuilt.release());
-	// Tab A bootstraps on the rebuilt document and makes the course's first durable write.
 	const promote = await (async () => {
 		const scope = server.canvasPageScope(docA);
 		if (!scope) throw new Error("A document not admitted");

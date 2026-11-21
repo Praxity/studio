@@ -134,7 +134,6 @@ describe("P1 course context", () => {
 			if (typeof value.id === "string" && value.id.startsWith("scan-page-"))
 				scans.set(value.id, (scans.get(value.id) ?? 0) + 1);
 		};
-		// Count full-string searches at the platform seam, across both implementations.
 		const includes = String.prototype.includes;
 		const matchAll = String.prototype.matchAll;
 		const includesSpy = vi.spyOn(String.prototype, "includes").mockImplementation(function (
@@ -416,7 +415,6 @@ describe("P1 course context", () => {
 			imageStyle: "grayscale",
 		} as DesktopExportInput["frontmatter"]["design"];
 		const next = await refreshCourseContext(previous, course, { manifest: true });
-		// Course design decisions section 10 retires treatments; authored images stay unchanged.
 		expect(changedDigests(previous, next)).toEqual([]);
 	});
 

@@ -83,7 +83,6 @@ function request(field: Field, text: string) {
 }
 
 async function fixture() {
-	// T1 and Chokidar use canonical paths, including hosts whose temp directory is a symlink.
 	const root = await realpath(await mkdtemp(join(tmpdir(), "canvas-first-write-watch-")));
 	roots.push(root);
 	await writeFile(join(root, "course.yaml"), "title: Watcher admission\nlessons: []\n");
@@ -93,7 +92,6 @@ async function fixture() {
 	const session = await createStudioProjectSession(root, "test");
 	sessions.push(session);
 	expect((await stat(join(root, ".praxity", "identity"))).isDirectory()).toBe(true);
-	// New headings have runtime IDs; the real watcher admits their outside source revision.
 	for (const file of ["a.prax", "b.prax"]) {
 		const originalBody = ((await session.invoke("canvasTextSnapshot", {})) as Snapshot).fields.find(
 			(field) => field.file === file && field.kind === "body",
@@ -120,7 +118,6 @@ async function fixture() {
 let unlinkFixture: Awaited<ReturnType<typeof fixture>>;
 let orphanFixture: Awaited<ReturnType<typeof fixture>>;
 beforeAll(async () => {
-	// Each case keeps a fresh project; initial watcher admission is fixture setup.
 	unlinkFixture = await fixture();
 	orphanFixture = await fixture();
 });
@@ -137,7 +134,6 @@ it("a real watcher preserves a held field after the session's first save emits u
 		resume = resolve;
 	});
 	releases.push(resume);
-	// Observe actual Chokidar delivery without replacing watch() or synthesizing an event.
 	const emit = EventEmitter.prototype.emit;
 	vi.spyOn(FSWatcher.prototype, "emit").mockImplementation(function (
 		this: FSWatcher,
@@ -155,7 +151,6 @@ it("a real watcher preserves a held field after the session's first save emits u
 	const saving = session.invoke("canvasTextApply", request(first, "Saved A"));
 	writes.push(saving);
 	try {
-		// Keep T1's live-name gap open until the real atomic window expires and unlink arrives.
 		await unlink;
 		resume();
 		expect(await saving).toMatchObject({ ok: true });
@@ -174,7 +169,6 @@ it("a real watcher preserves a held field after the session's first save emits u
 
 it("a real watcher reports orphaned after the held field's lesson is deleted", async () => {
 	const { root, session, first, held } = orphanFixture;
-	// Main suppresses grammarChanged for committed echoes, but still completes the tree event.
 	const saved = nextEvent(session, (event) => event.type === "treeChanged");
 	expect(await session.invoke("canvasTextApply", request(first, "Saved A"))).toMatchObject({
 		ok: true,
@@ -197,7 +191,6 @@ it("a real watcher reports orphaned after the held field's lesson is deleted", a
 	const restored = nextSourceAdmission(session, "b.prax");
 	await writeFile(join(root, "b.prax"), "# b.prax\n\n## Held heading\n\nBody.\n");
 	await restored;
-	// Recreating identical bytes cannot resurrect evidence revoked by a real deletion.
 	expect(await session.invoke("canvasTextApply", request(held, "Must still refuse"))).toMatchObject(
 		{
 			ok: false,

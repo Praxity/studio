@@ -9,7 +9,6 @@ const below = (a: readonly number[], b: readonly number[]) =>
 	a.length >= b.length && b.every((v, i) => a[i] === v);
 const samePath = (a: readonly number[], b: readonly number[]) =>
 	a.length === b.length && below(a, b);
-/** Parser and descriptor diagnostics share one representation for forward and inverse results. */
 export function sourceDiagnostics(
 	documents: readonly ParsedDocument[],
 	identity: IdentityResolution,
@@ -33,7 +32,6 @@ export function sourceDiagnostics(
 		}),
 	);
 	for (const document of documents) {
-		// Reader projections have no source node and never replace syntax diagnostics.
 		const invalid = descriptors.filter(
 			(d) => d.file === document.path && !d.valid && !d.type.startsWith("reader-role:"),
 		);

@@ -65,8 +65,6 @@ async function waitForCourseLoad(coursePage: Page, timeoutMs = 30_000): Promise<
 }
 
 async function waitForHydration(coursePage: Page): Promise<void> {
-	// 30s timeout — resume sessions restore suspend data from the SCORM API
-	// which can take longer than a fresh launch.
 	const deadline = Date.now() + 30_000;
 	while (Date.now() < deadline) {
 		try {
@@ -76,9 +74,7 @@ async function waitForHydration(coursePage: Page): Promise<void> {
 				return rt != null;
 			});
 			if (ready) return;
-		} catch {
-			// Page may be navigating
-		}
+		} catch {}
 		await coursePage.waitForTimeout(300);
 	}
 	throw new Error(`Course runtime did not initialize after 30s. Page: ${coursePage.url()}`);
@@ -108,9 +104,7 @@ async function readConfig(coursePage: Page): Promise<PraxityConfig> {
 				};
 			});
 			if (config) return config as PraxityConfig;
-		} catch {
-			// Page may still be navigating
-		}
+		} catch {}
 		await coursePage.waitForTimeout(300);
 	}
 	const debug = await coursePage
@@ -125,19 +119,6 @@ async function readConfig(coursePage: Page): Promise<PraxityConfig> {
 	);
 }
 
-// --- Assessment answering helpers ---
-
-/**
- * Reorder sequence items using the up/down ActionIcon buttons rendered by SequencePreview.
- *
- * Strategy: bubble-sort the current DOM order toward the target order.
- * For each position (left to right), find which item belongs there and
- * click "move up" until it reaches that position. This is O(n²) clicks
- * but reliable — no drag-and-drop required.
- *
- * When answerCorrectly=false we trigger a single button click to set hasInteracted
- * (so the submit button appears), then submit in the shuffled order for a wrong answer.
- */
 export async function answerSequenceBlock(
 	coursePage: Page | Frame,
 	blockId: string,
@@ -149,8 +130,6 @@ export async function answerSequenceBlock(
 	);
 
 	if (!answerCorrectly) {
-		// Submitting the shuffled order gives a wrong answer for sequences.
-		// Trigger hasInteracted by clicking the first down-arrow button.
 		const firstDown = container
 			.locator("button[aria-label*='down'], button[aria-label*='bas']")
 			.first();
@@ -160,14 +139,10 @@ export async function answerSequenceBlock(
 		return;
 	}
 
-	// Build target order: correctPosition=0 is first, 1 is second, etc.
 	const sortedByCorrect = [...items].sort((a, b) => a.correctPosition - b.correctPosition);
 	const targetIds = sortedByCorrect.map((item) => item.id);
 	const n = targetIds.length;
 
-	/**
-	 * Item identities survive hydration and distinguish duplicate or overlapping labels.
-	 */
 	async function readCurrentOrder(): Promise<string[]> {
 		return container.evaluate((el) =>
 			Array.from(el.querySelectorAll(".praxity-order-item")).map((row) => {
@@ -178,11 +153,6 @@ export async function answerSequenceBlock(
 		);
 	}
 
-	/**
-	 * Click the "move up" button for the item currently at DOM position `index`.
-	 * Index 0 has no up-button; up-buttons exist for indices 1..n-1.
-	 * The nth up-button (0-based) corresponds to the item at list position (n+1).
-	 */
 	async function clickMoveUp(index: number): Promise<void> {
 		const rows = container.locator(".praxity-order-item");
 		const id = await rows.nth(index).getAttribute("data-node-id");
@@ -191,7 +161,6 @@ export async function answerSequenceBlock(
 		await expect(rows.nth(index - 1)).toHaveAttribute("data-node-id", id as string);
 	}
 
-	// Bubble-sort approach: for each target position, bring the right item there.
 	let moved = false;
 	for (let targetPos = 0; targetPos < n; targetPos++) {
 		const wantedId = targetIds[targetPos];
@@ -242,7 +211,6 @@ async function answerChoiceBlock(
 			const shouldCheck = answerCorrectly ? opt.isCorrect === true : opt.isCorrect !== true;
 			if (shouldCheck) {
 				const label = opt.label || opt.text || opt.id;
-				// Mantine Checkbox doesn't render a value attribute — find by label text
 				const checkbox = container
 					.locator(".praxity-assessment-choice-option")
 					.filter({ hasText: label })
@@ -293,10 +261,6 @@ async function answerTextResponseBlock(coursePage: Page, blockId: string): Promi
 	await textarea.fill("Test response for automated SCORM validation.");
 }
 
-/**
- * Answer an individual assessment block (without clicking submit).
- * Returns true if the assessment type was automatable.
- */
 async function answerAssessment(
 	coursePage: Page,
 	block: { id: string; data: AssessmentBlockData },
@@ -344,9 +308,6 @@ async function answerAssessment(
 	return true;
 }
 
-/**
- * Submit a standalone assessment (not a group member) and wait for completion.
- */
 async function submitStandaloneAssessment(coursePage: Page, blockId: string): Promise<boolean> {
 	const container = coursePage.locator(
 		`.praxity-block[data-block-type="assessment"][data-block-id="${blockId}"]`,
@@ -373,8 +334,6 @@ async function completeRequiredChecklist(coursePage: Page): Promise<void> {
 	}
 }
 
-// --- Assessment group helpers ---
-
 async function handleAssessmentGroup(
 	coursePage: Page,
 	group: { id: string; data: AssessmentGroupData },
@@ -389,7 +348,6 @@ async function handleAssessmentGroup(
 	if (members.length === 0) return 0;
 
 	if (group.data.mode === "oneOf") {
-		// Select the first radio option in the picker, then answer that assessment
 		const firstRadio = coursePage.locator(`.praxity-ag-radio`).first();
 		if ((await firstRadio.count()) > 0) {
 			await firstRadio.check({ force: true });
@@ -398,29 +356,22 @@ async function handleAssessmentGroup(
 		const wasAutomatable = await answerAssessment(coursePage, member, answerCorrectly);
 		if (wasAutomatable) answered++;
 	} else {
-		// Mode "all": answer every member
 		for (const member of members) {
 			const wasAutomatable = await answerAssessment(coursePage, member, answerCorrectly);
 			if (wasAutomatable) answered++;
 		}
 	}
 
-	// Brief wait for the group script to detect hydration and inject the submit button.
-	// The script uses requestAnimationFrame internally, so a short pause is sufficient.
 	await coursePage.waitForTimeout(500);
 
-	// Click the group-level submit button (injected by the assessment group script).
-	// The button text is "Submit All" or "Submit Selected" depending on mode.
 	const submitText = group.data.mode === "oneOf" ? "Submit Selected" : "Submit All";
 	const groupLabel = group.data.groupName ?? group.id;
 	let submitted = false;
 
-	// Resolve the submit button: primary selector first, then text-based fallback.
 	let groupSubmit = coursePage.locator(`button.praxity-ag-submit-btn`);
 	try {
 		await groupSubmit.waitFor({ timeout: 8_000 });
 	} catch {
-		// Primary selector timed out — fall back to button text
 		const fallback = coursePage.locator(`button:has-text("${submitText}")`);
 		if ((await fallback.count()) > 0) {
 			groupSubmit = fallback;
@@ -430,8 +381,6 @@ async function handleAssessmentGroup(
 		}
 	}
 
-	// If the button is disabled, poll until it becomes enabled (the group
-	// script enables it after its hydration check completes).
 	if (await groupSubmit.isDisabled()) {
 		console.log(`[learner-sim]   ⏳ Group submit disabled — waiting for enable…`);
 		const deadline = Date.now() + 3_000;
@@ -446,12 +395,10 @@ async function handleAssessmentGroup(
 
 	await groupSubmit.click();
 
-	// Wait for group results to appear, indicating the submission was processed.
 	try {
 		await coursePage.locator(`.praxity-ag-results`).waitFor({ state: "visible", timeout: 8_000 });
 		submitted = true;
 	} catch {
-		// .praxity-ag-results may not always render; treat the click itself as success.
 		submitted = true;
 	}
 
@@ -462,16 +409,11 @@ async function handleAssessmentGroup(
 	return answered;
 }
 
-// --- Navigation ---
-
 async function navigateToNextPage(coursePage: Page): Promise<boolean> {
-	// Try an explicit control first, then the keyboard navigation floor used by
-	// minimal layouts with no visible navigation.
 	let nextBtn = coursePage.locator("[data-continue-button]:visible").first();
 	try {
 		await nextBtn.waitFor({ state: "attached", timeout: 3_000 });
 	} catch {
-		// Fall back to the static HTML nav link
 		const fallbackLink = coursePage.locator(".praxity-page-nav-fallback a").last();
 		if ((await fallbackLink.count()) > 0) {
 			const text = await fallbackLink.textContent();
@@ -531,8 +473,6 @@ async function navigateToNextPage(coursePage: Page): Promise<boolean> {
 
 	return true;
 }
-
-// --- Main simulation ---
 
 export async function simulateLearner(
 	browser: Browser,
@@ -594,20 +534,17 @@ export async function simulateLearner(
 				`[learner-sim] Page ${pageIndex + 1}/${totalPages}: ${config.pages[config.currentPage - 1]?.slug ?? "unknown"}`,
 			);
 
-			// Identify assessment groups and their members on this page
 			const groups = config.blocks
 				.filter((b) => b.type === "assessmentGroup")
 				.map((b) => ({ id: b.id, data: b.data as unknown as AssessmentGroupData }));
 			const groupMemberIds = new Set(groups.flatMap((g) => g.data.memberBlockIds ?? []));
 
-			// Build a map of assessment blocks for group lookup
 			const assessmentBlocks = new Map(
 				config.blocks
 					.filter((b) => b.type === "assessment")
 					.map((b) => [b.id, { id: b.id, data: b.data as unknown as AssessmentBlockData }]),
 			);
 
-			// Handle standalone assessments (not in any group)
 			const standaloneAssessments = config.blocks.filter(
 				(b) => b.type === "assessment" && !groupMemberIds.has(b.id),
 			);
@@ -640,7 +577,6 @@ export async function simulateLearner(
 				}
 			}
 
-			// Handle assessment groups
 			for (const group of groups) {
 				console.log(
 					`[learner-sim]   Group "${group.data.groupName ?? group.id}" (mode: ${group.data.mode}, members: ${group.data.memberBlockIds?.length ?? 0})`,
@@ -658,12 +594,10 @@ export async function simulateLearner(
 
 			await completeRequiredChecklist(coursePage);
 
-			// Stop early if requested
 			if (opts?.stopAfterPage != null && pagesVisited >= opts.stopAfterPage) {
 				break;
 			}
 
-			// Navigate to next page
 			if (pageIndex < totalPages - 1) {
 				const navigated = await navigateToNextPage(coursePage);
 				if (!navigated) {
@@ -673,7 +607,6 @@ export async function simulateLearner(
 			}
 		}
 
-		// Flush SCORM data before closing
 		const commitResult = await coursePage.evaluate(() => {
 			const runtime = (window as unknown as { __praxityRuntime?: { commit?: () => boolean } })
 				.__praxityRuntime;
@@ -685,7 +618,6 @@ export async function simulateLearner(
 		await coursePage.close({ runBeforeUnload: true });
 		await page.waitForTimeout(4000);
 	} catch {
-		// Playwright navigation errors may include bearer launch URLs.
 		throw new Error("SCORM Cloud learner simulation failed; see the preceding simulation steps.");
 	} finally {
 		await context.close();

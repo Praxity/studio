@@ -29,8 +29,6 @@ function field(name: (typeof limits)[number][0], text: string): Content {
 	if (name === "task" || name === "model") value[name] = text;
 	else if (name === "id" || name === "label" || name === "missed" || name === "evidence") {
 		value.parts[0][name] = text;
-		// Keep the model admissible when evidence overflows: isolate the field's
-		// length error rather than failing the earlier model check.
 		if (name === "evidence") value.model = text === "x".repeat(1500) ? text : "Model";
 	} else value.context = { to: "A", initials: "AB", subject: "Subject", [name]: text };
 	return value;

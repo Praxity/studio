@@ -24,7 +24,6 @@ function excerpt(source: string, literalText = false): string {
 	const prefix = text.slice(0, 40);
 	if (/\s/u.test(text[40])) return prefix;
 	const boundary = prefix.lastIndexOf(" ");
-	// A single word longer than the limit has no permitted word boundary.
 	return boundary < 0 ? "" : prefix.slice(0, boundary);
 }
 function textOf(node: TreeNode): string {
@@ -52,8 +51,6 @@ function nameOf(
 		node.kind === "part"
 			? parent && definitionOf(parent, grandparent, getDefinition)?.partLabels[node.name ?? ""]
 			: definition?.labelKey;
-	// Schema labels include parent and child keys, such as categorize and categorize.item.
-	// Encode dots inside a leaf key so ICU catalog branches never collide with a label.
 	const label = translate(
 		labelKey ? `session.labels.${labelKey.replaceAll(".", "_")}` : `session.names.${node.kind}`,
 	);
@@ -93,7 +90,6 @@ function nameOf(
 	return text ? translate("session.names.withExcerpt", { label, excerpt: text }) : label;
 }
 
-/** Names use the schema's label keys. Identical siblings receive a position. */
 export function nodeNames(
 	root: TreeNode,
 	translate: Translate,

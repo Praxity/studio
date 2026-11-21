@@ -37,7 +37,7 @@ describe("mergePageNavToggles", () => {
 	it("layers individual boolean keys over the archetype preset", () => {
 		const merged = mergePageNavToggles(base, { nav: "minimal", navKeyboardArrows: false });
 		expect(merged.navKeyboardArrows).toBe(false);
-		expect(merged.navOutline).toBe(false); // from preset
+		expect(merged.navOutline).toBe(false);
 	});
 
 	it("applies individual keys without an archetype", () => {
@@ -84,8 +84,6 @@ describe("pageHasNavOverrides", () => {
 	it("is false for pages with no params or only title/duration/style params", () => {
 		expect(pageHasNavOverrides(undefined)).toBe(false);
 		expect(pageHasNavOverrides({ title: "Intro" })).toBe(false);
-		// duration predates this mechanism and renders viewer-side only; it must
-		// not flip existing static pages to the full viewer.
 		expect(pageHasNavOverrides({ duration: "show" })).toBe(false);
 		expect(pageHasNavOverrides({ style: "hero" })).toBe(false);
 	});
@@ -103,7 +101,6 @@ describe("pageHasNavOverrides", () => {
 });
 
 describe("inferNavStyleFromToggles", () => {
-	// Mirrors the chain previously inlined at CourseViewer.tsx:194-202.
 	it("reproduces the CourseViewer inference chain", () => {
 		expect(inferNavStyleFromToggles({ navFloatingToc: true }, "sidebar")).toBe("scroll");
 		expect(inferNavStyleFromToggles({ navBottomArrows: true, navOutline: false }, "sidebar")).toBe(

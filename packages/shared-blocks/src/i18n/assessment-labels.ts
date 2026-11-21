@@ -19,7 +19,6 @@ export function assessmentPointsLabel(
 	strings: Pick<LearnerStrings, "assessmentPoint" | "assessmentPoints"> = getStrings(locale),
 ): string {
 	return interpolate(points === 1 ? strings.assessmentPoint : strings.assessmentPoints, {
-		// Binary arithmetic tails are display noise; scoring retains the original number.
 		points: new Intl.NumberFormat(locale, { maximumSignificantDigits: 15 }).format(points),
 	});
 }

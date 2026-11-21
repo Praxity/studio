@@ -1,4 +1,3 @@
-// Pinned dictionary/shape vectors. Tag 9 stores big-endian UTF-16 code units.
 export default [
 	{
 		name: "expanded state and ordered rows",

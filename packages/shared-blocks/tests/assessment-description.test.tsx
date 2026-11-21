@@ -162,7 +162,6 @@ describe("AssessmentBlock — description rendering", () => {
 		expect(description?.textContent).toContain("You arrive at a live site.");
 		expect(description?.querySelector("strong")).not.toBeNull();
 
-		// Adjacency is not association — the fieldset must point at it.
 		const fieldset = container.querySelector("fieldset");
 		expect(fieldset?.getAttribute("aria-describedby")).toBe("assessment-description-blk1");
 	});
@@ -194,8 +193,6 @@ describe("AssessmentBlock — placeholder override", () => {
 			stem: [{ id: "s1", type: "text", data: { content: "Describe three improvements." } }],
 			description: [{ id: "d1", type: "text", data: { content: "<p>Be specific.</p>" } }],
 			response: {
-				// "short" rather than "long": Mantine's autosize Textarea needs layout
-				// APIs jsdom does not provide. Both paths share the placeholder logic.
 				type: "textResponse",
 				inputType: "short",
 				...(placeholder ? { placeholder } : {}),
@@ -215,7 +212,6 @@ describe("AssessmentBlock — placeholder override", () => {
 		const input = screen.getByRole("textbox");
 		expect(input).toHaveAttribute("placeholder", "Type your three ideas here");
 		expect(input).toHaveAttribute("aria-describedby", "assessment-description-blk2");
-		// A placeholder is not a label: it must never become the accessible name.
 		expect(input.getAttribute("aria-label")).not.toBe("Type your three ideas here");
 		expect(input.getAttribute("aria-label")).toBeTruthy();
 	});

@@ -49,7 +49,6 @@ afterEach(() => {
 });
 
 const variants = ["single", "multiple", "dontKnow"] as const;
-// Independent short claims for the revised fixture, so a return to full saved or event evidence fails.
 const revisedClaims = {
 	single: "s96:BiNK_Ru_Zk68lN0e",
 	multiple: "s96:fNrX0lOic7nXT_j6",
@@ -164,7 +163,6 @@ it.each(
 		for (const input of screen.getAllByRole(role)) expect(input).toBeEnabled();
 		expect(runtime.getBlockState("question")).toEqual(previous);
 		expect(storedBytes()).toEqual(bytes);
-		// Merely opening recovery is not a draft. A remount still offers recovery.
 		cleanup();
 		const mount = () =>
 			render(
@@ -348,7 +346,6 @@ it.each(["en", "fr"] as const)(
 	},
 );
 
-// A component without an admitted host never restores a submitted choice.
 it.each([false, true])(
 	"no submitted choice restores with an empty capability: %s",
 	(emptyCapability) => {

@@ -2,7 +2,6 @@ import { expect, test } from "@playwright/test";
 import { readLesson } from "@praxity/grammar";
 import { publishedCourseServer } from "../fixtures/published-course-server";
 
-// The checklist page and 60-item case from the break-ui worst-case course.
 const labels = [
 	"bartholomew.fitzgerald@northwind-industries-holdings.example.com",
 	"Paramètres de confidentialité et de sécurité pour les équipes internationales de Platform Infrastructure",

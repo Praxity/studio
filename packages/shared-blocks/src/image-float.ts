@@ -9,7 +9,6 @@ export function getImageFloatSide(block: PraxityBlock): ImageFloat | null {
 	return block.data.float;
 }
 
-/** Keep block identities flat; only presentation groups the explicitly bounded flow. */
 export function imageFloatRegions(blocks: readonly PraxityBlock[]): Array<{
 	blocks: PraxityBlock[];
 	float: ImageFloat | null;
@@ -19,8 +18,6 @@ export function imageFloatRegions(blocks: readonly PraxityBlock[]): Array<{
 	let active: (typeof regions)[number] | undefined;
 	for (const block of blocks) {
 		if (block.type === "blockBreak" && block.data.close === "float") {
-			// The closing boundary owns the grammar-4 float's source identity.
-			// Carry it on the region rather than adding an empty layout item.
 			const region = active ?? regions.at(-1);
 			if (region && !region.nodeId) region.nodeId = block.id;
 			else regions.push({ blocks: [], float: null, nodeId: block.id });

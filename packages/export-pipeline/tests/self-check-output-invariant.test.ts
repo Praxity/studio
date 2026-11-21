@@ -103,7 +103,6 @@ ${activity(locale, "BACK")}:::
 const { outputs, scan, scanHtml, scanZip, scanRuntimeAsset, unownedArchiveBytes, assertOutput } =
 	stagedAnswerOutputInvariant("SC");
 
-// Build the shared course once; retain every emitted byte for the invariant below.
 beforeAll(async () => {
 	const root = await mkdtemp(join(tmpdir(), "self-check-output-invariant-"));
 	const runtime = {
@@ -148,7 +147,6 @@ beforeAll(async () => {
 				if (!value || typeof value !== "object") return;
 				if ("type" in value && value.type === "selfCheck") {
 					selfChecks.push(value as PraxityBlock);
-					// Verify the markers really exist behind the author-only boundary.
 					const content = readSelfCheckContent(read, (value as PraxityBlock).id);
 					selfCheckContents.push(selfCheckContentInput((value as PraxityBlock).id, content));
 					expect(content.model).toContain(`SC_${locale}_`);
@@ -202,7 +200,6 @@ beforeAll(async () => {
 			title: "Output invariant",
 			sourceLocale: "en",
 			content: pages,
-			// An old caller's answer-bearing utility data must be discarded.
 			glossaryTerms: [
 				{ term: hidden[1], definition: hidden[2], lessonTitle: "Old", lessonSlug: "old" },
 			],
@@ -337,7 +334,6 @@ beforeAll(async () => {
 		});
 		scan("quoted-diagnostic/refusal", String(diagnostic));
 
-		// The host uses the same per-activity allowance as the direct compiler below.
 		const hostOwned = new Map(
 			selfCheckRuntimeAssets(fresh.selfCheckRuntime).map((asset) => [
 				asset.path,
@@ -389,7 +385,6 @@ beforeAll(async () => {
 			expect(refusal).toMatchObject({ reason: "Self-check can’t be exported to PDF yet." });
 			scan(`pdf/answer-sheet-${includeAnswerSheet}/refusal`, String(refusal));
 		}
-		// All downstream builders share this same output invariant.
 		for (const [layout, course] of [
 			["pages", input],
 			["deck", deckInput],
@@ -483,7 +478,6 @@ beforeAll(async () => {
 			}
 		}
 
-		// The only intentional publication exception is the author's explicit script.
 		const first = narration[0].items.find(({ segment }) => segment.blockId === selfChecks[0].id);
 		if (!first) throw new Error("Missing explicit-override target");
 		const authoredScript = `${marker("en", "TOP", "MODEL")} ${marker("en", "TOP", "EVIDENCE")}`;

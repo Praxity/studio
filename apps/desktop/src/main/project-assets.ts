@@ -15,8 +15,6 @@ function refuseAsset(root: string, path: string, code: string): never {
 type InternalPath = { path: string; scan: boolean };
 async function internalPaths(root: string): Promise<InternalPath[]> {
 	const paths = new Map<string, boolean>();
-	// Check canonical children too: an outside writer can move a store into assets
-	// and replace its original name with a contained directory link.
 	const names = [
 		...IDENTITY_LINEAGE_PATHS,
 		".praxity/local",
@@ -29,7 +27,6 @@ async function internalPaths(root: string): Promise<InternalPath[]> {
 	for (const name of names) {
 		try {
 			const path = await resolveExistingPathWithin(root, join(root, name));
-			// A store alias wins over an optional dependency/git directory at the same path.
 			paths.set(path, paths.get(path) === true || ![".git", "node_modules"].includes(name));
 		} catch (error) {
 			if (name === ".praxity" || name.startsWith(`.praxity/`) || name.startsWith(`.praxity\\`)) {
@@ -63,8 +60,6 @@ async function protectedFileIdentities(
 			if (!internal && [".git", "node_modules", ".praxity"].includes(entry.name)) continue;
 			const file = join(canonical, entry.name);
 			const owned = internal || isProjectRecoveryPath(entry.name);
-			// Authored directory links are not lesson inventories. Internal links
-			// still name owned bytes and must be checked through containment.
 			if (entry.isDirectory() || (owned && entry.isSymbolicLink())) {
 				let target: string;
 				try {
@@ -95,7 +90,6 @@ async function protectedFileIdentities(
 	return identities;
 }
 
-/** One read owns the canonical stores and lazily shared protected identities. */
 export function createProjectAssetAdmission(root: string) {
 	let paths: Promise<InternalPath[]> | undefined;
 	let canonical: Promise<string> | undefined;
@@ -105,7 +99,6 @@ export function createProjectAssetAdmission(root: string) {
 	const stores = () => (paths ??= canonicalRoot().then(internalPaths));
 	async function assertIdentity(path: string, info: BigIntStats): Promise<void> {
 		if (!info.isFile() || info.nlink <= 1n) return;
-		// Bigint dev/ino preserve the Windows file ID without number rounding.
 		if (info.ino === 0n) refuseAsset(root, path, "asset-identity-unavailable");
 		let protectedCode: string | undefined;
 		try {
@@ -119,7 +112,6 @@ export function createProjectAssetAdmission(root: string) {
 		if (protectedCode) refuseAsset(root, path, protectedCode);
 		admitted.set(`${info.dev}:${info.ino}`, path);
 	}
-	/** Bulk readers call this after their last byte read, before publishing any result. */
 	async function finish(): Promise<void> {
 		const firstPath = admitted.values().next().value;
 		if (firstPath === undefined) return;
@@ -167,7 +159,6 @@ export function createProjectAssetAdmission(root: string) {
 		return safePath;
 	}
 
-	/** The caller owns the handle; admission checks the opened inode before any byte read. */
 	async function openAsset(path: string): Promise<FileHandle> {
 		const safePath = await resolve(path);
 		const file = await open(
@@ -190,12 +181,10 @@ export function createProjectAssetAdmission(root: string) {
 	return { resolve, open: openAsset, finish };
 }
 
-/** Admit public resources by canonical path and file identity, never by their text. */
 export async function resolveProjectAsset(root: string, path: string): Promise<string> {
 	return createProjectAssetAdmission(root).resolve(path);
 }
 
-/** The caller owns the handle; admission checks the opened inode before any byte read. */
 export async function openProjectAsset(root: string, path: string): Promise<FileHandle> {
 	return createProjectAssetAdmission(root).open(path);
 }

@@ -774,7 +774,6 @@ it("gates a captured author document without Fetch Metadata while background rea
 		paragraph.replace("Alpha paragraph about safety.\n\n", ""),
 	);
 	const original = await bytes(join(files.projectDir, ".praxity/identity"));
-	// Raw HTTP sends no Sec-Fetch-* headers; absence cannot bypass author-entry review.
 	const gated = await documentRequest(authorUrl);
 	expect(gated.status).toBe(200);
 	expect(gated.html).toContain('id="review-heading"');

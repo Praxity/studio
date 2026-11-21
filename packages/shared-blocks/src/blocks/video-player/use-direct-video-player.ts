@@ -3,13 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ClipBounds, VideoPlayerState } from "./types";
 
-/**
- * Hook that drives a native <video> element for direct video sources
- * (e.g. .mp4, .webm, .ogg files).
- *
- * Listens to timeupdate / play / pause / loadedmetadata events and enforces
- * authored clip bounds.
- */
 export function useDirectVideoPlayer(
 	videoRef: React.RefObject<HTMLVideoElement | null>,
 	active: boolean,
@@ -45,7 +38,6 @@ export function useDirectVideoPlayer(
 		const onTimeUpdate = () => {
 			const time = video.currentTime;
 			setCurrentTime(time);
-			// End-time enforcement
 			const endTime = clipBoundsRef.current?.endTime;
 			if (endTime != null && time >= endTime) {
 				video.pause();
@@ -77,7 +69,6 @@ export function useDirectVideoPlayer(
 		video.addEventListener("loadedmetadata", onLoadedMetadata);
 		video.addEventListener("durationchange", onDurationChange);
 
-		// If already loaded, grab the duration immediately.
 		if (video.duration) setDuration(video.duration);
 
 		return () => {
@@ -90,7 +81,6 @@ export function useDirectVideoPlayer(
 		};
 	}, [videoRef, active, autoplay]);
 
-	// Reset state when active changes (source switch).
 	useEffect(() => {
 		if (!active) return;
 		setCurrentTime(0);

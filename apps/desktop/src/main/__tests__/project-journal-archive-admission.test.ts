@@ -26,7 +26,6 @@ async function committed(source: (typeof archiveSources)[number]) {
 	roots.push(root);
 	await writeFile(join(root, "a.prax"), "A0");
 	if (source === "live") {
-		// Successful saves populate the archive cache; recovered crashes do not.
 		await writeProjectFiles(root, [{ path: "a.prax", content: "A1" }]);
 	} else {
 		await killCommittedJournal(root, [{ path: "a.prax", content: "A1" }]);

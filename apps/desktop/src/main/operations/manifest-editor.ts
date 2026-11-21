@@ -19,7 +19,6 @@ import {
 } from "../project-file-transactions";
 
 const digest = (text: string) => createHash("sha256").update(text).digest("hex");
-/** Metadata edits bind to exact source bytes, then use the owning YAML setters. */
 export async function editManifest(root: string, input: unknown): Promise<ManifestEditResult> {
 	const request = parseEditorInput(manifestEditSchema, input);
 	let result: ManifestEditResult | undefined;

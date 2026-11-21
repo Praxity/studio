@@ -274,7 +274,6 @@ describe.each([
 						expect(runtime.terminate(false)).toBe(true);
 					} else aggregate(80);
 					logs[state] = log;
-					// Release each document before the next launch and keep its complete raw writes.
 					delete win.__praxityFinishCourse;
 				}
 				expect(JSON.stringify(logs, null, 2)).toMatchSnapshot();
@@ -304,7 +303,6 @@ describe.each([
 	});
 });
 
-// Generated on main before restoring the refactor. Calls and return values share one log.
 describe.each(["standalone", "xapi"] as const)("%s Finish caller authority", (format) => {
 	it.each(["caller", "provider"] as const)("revoked %s during completion", (revoked) => {
 		const { runtime, win } = launch(format, "tracker");

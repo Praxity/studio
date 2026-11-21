@@ -98,11 +98,6 @@ function initializePageFocus(): void {
 		return;
 	}
 	if (consumePageNavigationFocus()) scheduleNavigationFrame(focusPageContent);
-	// A content page writes nothing on arrival. Its focused heading names the page,
-	// and the counter and outline expose position. A separate position-plus-title
-	// message repeated the heading and competed with focus (NVDA dropped it on one
-	// of three arrivals); see "Pages arrival orientation" in
-	// docs/context/published-output-runtime.md. Utility pages keep their title.
 	if (config.pageRole !== "glossary" && config.pageRole !== "resources") return;
 	const title = config.pageTitle ?? "";
 	scheduleNavigationFrame(() => announcePreference(title));
@@ -345,9 +340,7 @@ function initializeMenu(): void {
 		try {
 			collapsed =
 				localStorage.getItem(`praxity-sidebar-${config.courseTitle ?? ""}`) === "collapsed";
-		} catch {
-			// Storage can be unavailable in LMS frames.
-		}
+		} catch {}
 	}
 	const isPersistentDesktop = () =>
 		desktop.matches &&
@@ -413,9 +406,7 @@ function initializeMenu(): void {
 				`praxity-sidebar-${config.courseTitle ?? ""}`,
 				collapsed ? "collapsed" : "expanded",
 			);
-		} catch {
-			// Storage can be unavailable in LMS frames.
-		}
+		} catch {}
 		sync();
 		if (moveFocus || (collapsed && focusWasInsideSidebar)) {
 			(collapsed ? expand : collapse)?.focus();
@@ -499,7 +490,6 @@ export function initNavigationIsland(): void {
 		: []) {
 		document.addEventListener(type, (event) => {
 			const current = selfCheckEpochTicket(document, event);
-			// Assessment effects save final answer state after the submission dispatch.
 			if (current())
 				scheduleNavigationFrame(() => {
 					if (current()) updateCompletion();

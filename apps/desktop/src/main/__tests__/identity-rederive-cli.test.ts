@@ -294,7 +294,6 @@ describe("saved source lines", () => {
 		expect(result.exitCode, result.stderr).toBe(0);
 		expect(JSON.parse(result.stdout).retired).toEqual(
 			expect.arrayContaining([
-				// The saved and current source hashes differ, so the old line is unknown.
 				expect.objectContaining({ label: "Repeated.", line: null, span: { start: 9, end: 19 } }),
 			]),
 		);
@@ -302,7 +301,6 @@ describe("saved source lines", () => {
 	});
 });
 
-// Follow-up slice: container additions need an approach review before changing subtree canonical matching.
 describe.each([
 	[
 		"accordion",

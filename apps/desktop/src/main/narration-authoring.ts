@@ -74,7 +74,6 @@ async function snapshot(root: string, drafts: Readonly<Record<string, string>> =
 			};
 		}),
 	);
-	// An entry stored under its old lesson may now resolve in a different lesson.
 	const keys = new Set(
 		documents.flatMap((doc) => doc.items.map((item) => narrationTargetKey(item.segment.target))),
 	);
@@ -116,7 +115,6 @@ export function readNarrationAuthoring(
 	);
 }
 
-/** Existing files only, rooted before any sidecar mutation, including Windows and link aliases. */
 export async function validateNarrationAsset(root: string, asset: string): Promise<void> {
 	if (
 		!/^assets\/(?!.*(?:^|\/)\.\.?\/)[^\\:\x00-\x1f]+$/u.test(asset) ||
@@ -136,7 +134,6 @@ async function optionalSidecarSource(root: string) {
 	}
 }
 
-/** The command owns one target entry. Other entries, comments and line endings stay byte-identical. */
 function targetReplacement(
 	source: string | null,
 	next: NarrationSidecarV2,
@@ -329,7 +326,6 @@ export async function narrationAuthoringStatus(root: string) {
 	};
 }
 
-/** Only reserved generated pairs can be retired; the committed sidecar always wins over a draft. */
 export function cleanupNarrationRecordings(root: string, paths: string[], currentSource: string) {
 	return withProjectFileTransaction(
 		root,

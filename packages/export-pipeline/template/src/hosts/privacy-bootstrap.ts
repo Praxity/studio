@@ -7,7 +7,6 @@ import { readJsonElement } from "./host-json";
 import type { privacySupport } from "./privacy-support";
 import { blockReportingDestination, createPrivateBlockStateRuntime } from "./private-block-state";
 
-/** Install a closed provider synchronously. Persistence can arrive after islands start. */
 export function bufferPrivateBlockState(
 	args: Parameters<typeof privacySupport.createPrivateBlockStateRuntime>,
 	loaded: Promise<typeof privacySupport>,
@@ -50,7 +49,6 @@ export function bufferPrivateBlockState(
 		}
 		void loaded
 			.then((support) => {
-				// Immutable code can finish caching while the requesting lifetime is suspended.
 				cachedSupport = support;
 				adopt(support, lifetime);
 			})
@@ -115,10 +113,6 @@ if (script) {
 			if (!support) throw new Error("EPRIVACYLOAD");
 			return support;
 		});
-		// Existing islands restore their state once, at runtime-ready. Hold that
-		// event until the loaded provider has flushed; otherwise mixed courses
-		// would initialize ordinary blocks from an empty buffer.
-		// Electron owns the pending state only after admitting its parent session.
 		if (readJsonElement(document, "praxity-deployment-config")?.format !== "electron-preview")
 			document.documentElement.dataset.praxityLearnerState = "pending";
 		window.addEventListener(
@@ -129,7 +123,6 @@ if (script) {
 			() => {},
 			() => {},
 		);
-		// Handle rejection even if a host fails before asking for a provider.
 		void loaded.catch(() => console.error("EPRIVACYLOAD"));
 		window.__praxityPrivacyBootstrap = (...args) => bufferPrivateBlockState(args, loaded);
 	}

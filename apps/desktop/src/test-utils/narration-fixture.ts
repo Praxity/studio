@@ -6,8 +6,6 @@ import { parseLessonSource, resolveLessonSources } from "../main/lesson-source";
 import { resolveLessonNarration } from "../shared/narration-sidecar";
 import { persistFixtureIdentity } from "./identity-fixture";
 
-/** Fixture setup pins identity before sidecars exist. Target roles come from the
- * same public resolver used by host preview, export and inspection. */
 export async function narrationFixture(
 	root: string,
 	filename: string,

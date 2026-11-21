@@ -14,8 +14,6 @@ export function applyXapiPrivatePolicy(
 	return {
 		interactions: interactions.filter((entry) => policy[entry.id] !== "device"),
 		suspendData: suspendData ? filterPrivateSuspendData(suspendData, policy) : suspendData,
-		// The persisted queue spans launches with different activity_id prefixes.
-		// XapiRuntime produces interactions, not objective statements.
 		outbox: outbox.filter(
 			(statement) =>
 				!privateActivities.some(

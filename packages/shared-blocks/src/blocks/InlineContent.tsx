@@ -2,7 +2,6 @@ import { getInlineField } from "../inline-markdown";
 import { processMathSpans } from "../math/process-math-spans";
 import { sanitizeHtml } from "../sanitize";
 
-/** Display prepared rich text without changing its underlying authored value. */
 export function InlineContent({
 	owner,
 	field,

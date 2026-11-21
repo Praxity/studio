@@ -87,7 +87,6 @@ describe.each(sourceEditCorpus)("byte contract: $name", (entry) => {
 					...f.dependencies,
 				}),
 			).toMatchObject({ ok: false, code: "stale" });
-			// Recorded inverses are another source-edit entry point. Check exact bytes through it.
 			const undo = applyOperation(
 				[{ path: "lesson.prax", source: next }],
 				{

@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MentionResolver } from "./mention-resolver";
 import { VariableStore } from "./variable-store";
 
-// Mock HTMLElement
 class MockHTMLElement {
 	style: Record<string, string> = {};
 	attributes: Record<string, string> = {};
@@ -72,10 +71,8 @@ describe("MentionResolver", () => {
 		const runtime = createMockRuntime();
 		const store = new VariableStore([], runtime);
 
-		// Mock the rating block element in the DOM
 		const ratingEl = new MockHTMLElement();
 		ratingEl.attributes["data-rating-value"] = "4";
-		// Add querySelectorAll for computed-fields compatibility
 		(ratingEl as unknown as Record<string, unknown>).querySelectorAll = () => [];
 		mockElements.set("rating-1", ratingEl);
 

@@ -238,7 +238,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 	});
 	it(`${format} verifies the candidate against repaired members before objective-first reporting`, () => {
 		const { provider, runtime, view, order } = launch(format, true);
-		// The previous aggregate remains history while the host verifies its replacement.
 		window.__praxityTracker = new CourseTracker(runtime, {
 			totalPages: 1,
 			completionMethod: "allPages",

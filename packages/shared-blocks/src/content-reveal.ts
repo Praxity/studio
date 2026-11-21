@@ -3,7 +3,6 @@ function focusedContent(content: HTMLElement) {
 	return content.contains(active) ? (active as HTMLElement) : undefined;
 }
 
-/** Keep content padding and margins inside the growing space. No authored [hidden]. */
 export function createContentReveal(content: HTMLElement, open?: boolean) {
 	const focused = focusedContent(content);
 	const element = content.ownerDocument.createElement("div");
@@ -13,7 +12,6 @@ export function createContentReveal(content: HTMLElement, open?: boolean) {
 	content.before(element);
 	element.append(clip);
 	clip.append(content);
-	// Restored content and focused fallbacks start visible without replaying a reveal.
 	if (open || focused) {
 		element.style.transition = "none";
 		focused?.focus({ preventScroll: true });

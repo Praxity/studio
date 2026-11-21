@@ -3,8 +3,6 @@ import { performance } from "node:perf_hooks";
 import { assertViewerAssetsReady } from "@praxity/export-pipeline/bundle-viewer";
 import { buildCourseExportInput } from "../src/main/export/build-export-input-from-project.ts";
 
-// Run with pnpm exec tsx apps/desktop/scripts/benchmark-preview.mts PROJECT [CALLS].
-// Mirrors the service's build phases without Electron hosting or opening an iframe.
 const projectDir = path.resolve(process.argv[2]);
 const exportAssetsDir = path.resolve("apps/desktop/resources/export-assets");
 for (let call = 0; call < Number(process.argv[3] ?? 1); call++) {

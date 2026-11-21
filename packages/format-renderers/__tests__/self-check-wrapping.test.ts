@@ -12,8 +12,6 @@ import {
 	exportCoursePdf,
 } from "../src/pipelines/course-pdf.ts";
 
-// This suite also tests formatting beyond authored admission limits. Keep the real
-// validator everywhere except the explicitly scoped lower-level formatting calls.
 vi.mock("learning-patterns/patterns/self-check/logic.js", async (importOriginal) => {
 	const library =
 		await importOriginal<typeof import("learning-patterns/patterns/self-check/logic.js")>();
@@ -24,8 +22,6 @@ async function formattingOnly<T>(run: () => Promise<T>): Promise<T> {
 		await vi.importActual<typeof import("learning-patterns/patterns/self-check/logic.js")>(
 			"learning-patterns/patterns/self-check/logic.js",
 		);
-	// Only task/label maxima are bypassed at this test boundary; all actual PDF
-	// text, geometry, evidence, identity, and copy checks still use the originals.
 	vi.mocked(validateContent).mockImplementation((value: unknown) => {
 		const content = value as import("learning-patterns/patterns/self-check/logic.js").Content;
 		library.validateContent({
@@ -125,7 +121,6 @@ async function copiedWorkbook(
 				);
 			}
 		}
-		// These characters must never be added to an authored text layer.
 		expect(text).not.toMatch(/[\u200b\u00ad\ufeff]/u);
 		if (
 			![...input.lessons].some((lesson) =>
@@ -275,7 +270,6 @@ it.skipIf(!process.env.PRAXITY_TEST_TYPST).each(["\u00a0", "\u202f", "\u2007", "
 		const text = await copiedWorkbook(
 			workbook(model, [{}], "Explain.", separator === "\u202f" ? "fr" : "en"),
 		);
-		// Poppler normalizes no-break spaces and omits word joiners, including on main.
 		expect(text.replace(/[ \u00a0\u202f\u2007\u2060]/g, "")).toContain(
 			sentence.replaceAll(" ", ""),
 		);
@@ -400,7 +394,6 @@ it.skipIf(!process.env.PRAXITY_TEST_TYPST)(
 		const arabic = "معرفنهاية";
 		const text = await copiedWorkbook(workbook(`معرف${"Identifier".repeat(6)}نهاية`, [{}]));
 		expect(text).toContain("Identifier".repeat(6));
-		// Poppler reverses RTL text; compare the Arabic character inventory separately.
 		expect([...text].filter((char) => /\p{Script=Arabic}/u.test(char)).sort()).toEqual(
 			[...arabic].sort(),
 		);
@@ -493,7 +486,6 @@ it.each(["\u00a0", "\u202f", "\u2007"])(
 		const source = buildCoursePdfSource(
 			workbook(Array(15).fill("elephant").join(separator), [{}]),
 		).typstSource;
-		// Removing only the separator break must violate the generated-source contract.
 		expect(source).toContain(`${separator}"; if wrap0 { box(width: 0pt) }`);
 	},
 );
@@ -525,7 +517,6 @@ it.skipIf(!process.env.PRAXITY_TEST_TYPST)(
 				...page.matchAll(/<word xMin="[\d.]+" yMin="[\d.]+" xMax="([\d.]+)"[^>]*>(W+)<\/word>/g),
 			];
 			expect(words.length).toBeGreaterThan(0);
-			// 22 mm left page margin plus the normal 120 mm slide text block.
 			for (const word of words) expect(Number(word[1])).toBeLessThanOrEqual(403.52);
 		});
 	},
@@ -642,7 +633,6 @@ it.skipIf(!process.env.PRAXITY_TEST_TYPST).each(["en", "fr"])(
 	},
 );
 
-// Original authored stress inputs remain intact and now explicitly refuse.
 it.each(["en", "fr"])("refuses the original 671-code-point %s task and label", (locale) => {
 	const phrase = "Pourquoi ? Exemple : voici ! Oui ; non. \u00ab mot \u00bb";
 	const prose = Array(14).fill(phrase).join(" ");

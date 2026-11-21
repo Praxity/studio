@@ -39,7 +39,6 @@ export function assertPackageNotice(
 		);
 }
 
-/** Shared by export consumption and complete prepared-asset verification. */
 export function assertRuntimeLegalInputs(
 	manifest: { courseRuntimeLicense?: string; thirdPartyNotices?: RuntimeNotices },
 	assetPaths: string[],
@@ -76,7 +75,6 @@ export function assertRuntimeLegalInputs(
 		);
 }
 
-/** Packages selected later by CSS generation and server-rendered markup. */
 export async function selectableRuntimeNoticeInputs(): Promise<string[]> {
 	const manifest = JSON.parse(
 		await readFile(path.resolve(repoRoot, "packages/export-pipeline/package.json"), "utf8"),
@@ -95,7 +93,6 @@ export async function selectableRuntimeNoticeInputs(): Promise<string[]> {
 	];
 }
 
-/** Read upstream text verbatim. Never substitute a licence identifier for its terms. */
 export async function readPackageNotice(input: string): Promise<PackageNotice> {
 	let directory = path.dirname(path.resolve(input));
 	let metadata: { name: string; version: string } | undefined;
@@ -106,7 +103,6 @@ export async function readPackageNotice(input: string): Promise<PackageNotice> {
 			if (typeof parsed.name === "string" && typeof parsed.version === "string") metadata = parsed;
 			else if (parsed.name !== undefined || parsed.version !== undefined)
 				throw new Error(`Invalid package metadata for notice: ${input}`);
-			// A nested {type:"module"} file sets module scope, not package ownership.
 		}
 		if (metadata) break;
 		const parent = path.dirname(directory);
@@ -141,7 +137,6 @@ export async function readPackageNotice(input: string): Promise<PackageNotice> {
 	return { name, version, texts };
 }
 
-/** The metadata travels with prebuilt assets; export never needs installed dependencies. */
 export async function collectRuntimeNotices(
 	metafiles: Metafile[],
 	outDir: string,
@@ -161,7 +156,6 @@ export async function collectRuntimeNotices(
 						path.resolve(input) ===
 						path.join(repoRoot, "packages/shared-blocks/src/blocks/shared-blocks.css")
 					) {
-						// The embedded signature cursor contributes artwork outside node_modules.
 						notice = {
 							name: "feather-icons",
 							version: "4.29.2",
@@ -180,7 +174,6 @@ export async function collectRuntimeNotices(
 							path.join(repoRoot, "packages/export-pipeline/src/patterns/highlight") &&
 						["render.ts", "enhance.ts", "style.css"].includes(path.basename(input))
 					) {
-						// Copied presentation needs MIT attribution even without an upstream JS import.
 						notice = {
 							name: "learning-patterns",
 							version: "0.1.0",

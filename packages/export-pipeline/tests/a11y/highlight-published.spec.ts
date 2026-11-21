@@ -38,8 +38,6 @@ test.beforeAll(async () => {
 	});
 	files.set("/public-variable.js", Buffer.from(variable.outputFiles[0].contents));
 });
-// Put the locale under test first. Fresh deck launches must honor earlier
-// ordinary gates; this exercises each locale without bypassing those gates.
 for (const deck of [false, true])
 	for (const lang of ["en", "fr"] as const)
 		test.beforeAll(async () => {
@@ -228,7 +226,6 @@ async function spyRuntime(page: Page) {
 async function reportOrdinaryAnswer(page: Page) {
 	await page.getByRole("radio", { name: "Ordinary answer", exact: true }).check();
 	await page.locator("[data-assessment-submit]").click();
-	// The real choice reports after its asynchronous save, especially in Firefox.
 	await expect
 		.poll(() =>
 			page.evaluate(() => (Reflect.get(window, "highlightProbe") as Probe).responses.length),
@@ -335,8 +332,6 @@ for (const format of formats)
 					),
 				).toHaveCount(0);
 				await reportOrdinaryAnswer(page);
-				// Module decks refuse authored variables/logic. Their separate API control
-				// remains explicit; ordinary pages use only the authored rule above.
 				if (deck) {
 					await page.addScriptTag({ url: base + "/public-variable.js" });
 					await page.evaluate(() =>

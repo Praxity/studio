@@ -1,6 +1,5 @@
 import { type SelfCheckConsumers, selfCheckConsumers } from "./self-check-consumers";
 
-/** Provider-ready starts the islands. Tracking joins the current owner's finalization. */
 export function afterSelfCheckFinalization(
 	doc: Document,
 	effect: Parameters<SelfCheckConsumers["subscribe"]>[0],

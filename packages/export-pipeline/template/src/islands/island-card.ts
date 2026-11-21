@@ -289,7 +289,6 @@ function enhanceCardRoot(root: HTMLElement): () => void {
 		const back =
 			(detail?.side ?? target?.closest<HTMLElement>("[data-card-side]")?.dataset.cardSide) ===
 			"back";
-		// Narration may follow an answer already committed by the learner, never reveal it.
 		if (back && card.dataset.flipped !== "true") return;
 		if (single) goTo(index, false);
 		setFlipped(card, back, index);
@@ -414,7 +413,6 @@ function enhanceCardRoot(root: HTMLElement): () => void {
 			timer = setSelfCheckTimeout(
 				() => {
 					if (!owned() || !playing) return;
-					// Never hide focused content or disable its focused navigation control.
 					if (
 						root.closest("[hidden], [inert]") ||
 						slides[current].contains(document.activeElement) ||

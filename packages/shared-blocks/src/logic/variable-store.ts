@@ -25,12 +25,9 @@ export class VariableStore {
 			getValue?: (key: string) => string | null | undefined;
 		},
 	) {
-		// Compact key for SCORM 1.2 suspend_data headroom.
 		this.persistKey = "v";
 
-		// Initialize from definitions
 		for (const def of defs) {
-			// Backward compat: "author" source is now "computed" + locked
 			if ((def as unknown as Record<string, unknown>).source === "author") {
 				def.source = "computed";
 				def.locked = true;
@@ -41,7 +38,6 @@ export class VariableStore {
 			this.variables.set(def.name, defaultVal);
 		}
 
-		// Initialize from URL parameters (before restore, so suspend_data takes precedence)
 		this.initUrlParams();
 		for (const def of this.definitions.values()) {
 			if (def.source !== "lms" || !def.lmsField) continue;
@@ -51,7 +47,6 @@ export class VariableStore {
 			else if (def.lmsFallback !== undefined) this.variables.set(def.name, def.lmsFallback);
 		}
 
-		// Restore from suspend_data
 		this.restore();
 	}
 
@@ -69,7 +64,7 @@ export class VariableStore {
 
 	set(name: string, value: string | number | boolean): boolean | undefined {
 		const def = this.getDefinition(name);
-		if (def?.locked) return; // Locked variables cannot be modified
+		if (def?.locked) return;
 		this.variables.set(name, value);
 		return this.persist();
 	}
@@ -90,7 +85,7 @@ export class VariableStore {
 	}
 
 	private initUrlParams(): void {
-		if (typeof window === "undefined") return; // SSR safety
+		if (typeof window === "undefined") return;
 		try {
 			const params = new URLSearchParams(window.location.search);
 			for (const [, def] of this.definitions) {
@@ -103,9 +98,7 @@ export class VariableStore {
 					}
 				}
 			}
-		} catch {
-			// Ignore URL parsing errors
-		}
+		} catch {}
 	}
 
 	private coerce(value: string, dataType: string): string | number | boolean {
@@ -136,7 +129,6 @@ export class VariableStore {
 					`[logic] Variable suspend_data payload is ${serialized.length} chars; SCORM 1.2 limit is 4096.`,
 				);
 			}
-			// A refused save must not certify progress or retry with the other keys removed.
 			if (this.runtime.setSuspendData(serialized) === false) return false;
 			return this.runtime.commit() !== false;
 		} catch (error) {
@@ -156,9 +148,7 @@ export class VariableStore {
 					}
 				}
 			}
-		} catch {
-			// Ignore corrupt data
-		}
+		} catch {}
 	}
 
 	private getPersistableVariables(): Record<string, string | number | boolean> {

@@ -28,7 +28,6 @@ beforeAll(async () => {
 	writerRoot = await mkdtemp(join(tmpdir(), "retention-writers-"));
 	journalWriter = join(writerRoot, "journal-writer.mjs");
 	captureWriter = join(writerRoot, "capture-reader-writer.mjs");
-	// Bundle code only; every crash still writes its own store and journal receipts.
 	await build({
 		entryPoints: ["journal-writer", "capture-reader-writer"].map((name) =>
 			fileURLToPath(new URL(`./fixtures/${name}.ts`, import.meta.url)),
@@ -43,7 +42,6 @@ beforeAll(async () => {
 			js: 'import { createRequire } from "node:module"; const require = createRequire(import.meta.url);',
 		},
 	});
-	// Prepare only the candidate-budget fixture here; generated histories keep independent setup.
 	budgetRoot = join(writerRoot, "candidate-budget");
 	await mkdir(budgetRoot);
 	await writeFile(join(budgetRoot, "lesson.prax"), "# Original\n");
@@ -51,7 +49,6 @@ beforeAll(async () => {
 		{ syncFile: async () => {}, syncDirectory: async () => {} },
 		async () => {
 			await persist(budgetRoot);
-			// Four seeded archives plus the save's own archive exceed one three-candidate pass.
 			for (let index = 0; index < 4; index++) await seedHeadArchive(budgetRoot);
 		},
 	);
@@ -59,7 +56,6 @@ beforeAll(async () => {
 afterAll(async () => {
 	if (writerRoot) await rm(writerRoot, { recursive: true, force: true });
 });
-// Retention uses real filesystem changes; project-journal-flush-dependency tests durability.
 aroundEach((run) =>
 	withProjectFileFlushes({ syncFile: async () => {}, syncDirectory: async () => {} }, run),
 );
@@ -152,7 +148,6 @@ async function project() {
 	return root;
 }
 async function persist(root: string) {
-	// Archive retention exercises the confirmed writer that can retire identities.
 	return withProjectFileTransaction(
 		root,
 		async () =>
@@ -391,7 +386,6 @@ it("a failed root journal link retains protected preparation bytes", async () =>
 });
 
 it("I4 examines at most three recovery archives per save", async () => {
-	// Exercise real archive bytes and pruning without hardware flush latency.
 	const flushes = { syncFile: vi.fn(async () => {}), syncDirectory: vi.fn(async () => {}) };
 	await withProjectFileFlushes(flushes, async () => {
 		const root = budgetRoot;
@@ -424,7 +418,6 @@ it("pruning examines at most three protected archives even when all must be kept
 			await withProjectFileTransaction(
 				root,
 				async (canonical) => {
-					// Observe archive-byte examinations even if an extra candidate is never pruned.
 					pruneFault.candidates = before.map((name) => resolve(canonical, name));
 					await reclaimProtectedArchives(canonical, keep);
 					pruneFault.candidates = [];
@@ -662,7 +655,6 @@ it("a real first identity crash between installs recovers and initializes on fre
 		"write",
 		false,
 	);
-	// Rolled-back installations hold no original identity that needs a live replacement.
 	expect(await archives(root)).toEqual([]);
 });
 
@@ -728,12 +720,10 @@ const generatedStarts = [
 	"corrupt course",
 ] as const;
 
-// The model tracks domain events and surviving copies, never production predicates.
 for (const [seed, start] of generatedStarts.entries()) {
 	it(`generated real-store retention history from ${start}`, async () => {
 		const flushes = { syncFile: vi.fn(async () => {}), syncDirectory: vi.fn(async () => {}) };
 		await withProjectFileFlushes(flushes, async () => {
-			// Journal receipts belong to their original files, so prepare independent roots rather than copies.
 			const root = await project();
 			let retainedEvidence = false;
 			let courseId = "11111111-1111-4111-8111-111111111111";
@@ -755,14 +745,11 @@ for (const [seed, start] of generatedStarts.entries()) {
 					await writeFile(join(root, ".praxity/identity/course.json"), "{broken");
 			}
 			await mkdir(join(root, ".praxity/review"), { recursive: true });
-			// Match clearMocks after the former beforeAll, so setup flushes cannot satisfy assertions.
 			flushes.syncFile.mockClear();
 			flushes.syncDirectory.mockClear();
-			// Keep real histories and child-process crashes; durability is covered by the flush suite.
 			let randomState = seed + 17;
 			const next = () => (randomState = (Math.imul(randomState, 1664525) + 1013904223) >>> 0);
 			const events = ["ordinary", "protected", "crash"];
-			// Shuffle real writes and admissions; each seed also chooses a durable interruption point.
 			for (let index = events.length - 1; index > 0; index--) {
 				const other = next() % (index + 1);
 				[events[index], events[other]] = [events[other], events[index]];
@@ -797,11 +784,9 @@ for (const [seed, start] of generatedStarts.entries()) {
 						undefined,
 						journalWriter,
 					);
-					// An interrupted first write has no committed namespace. Originals fence identity.
 					retainedEvidence ||= protectedBytes;
 				}
 				await reclaim(root);
-				// All protected journals survive T1, even an interrupted first preparation.
 				if (retainedEvidence) expect((await archives(root)).length).toBeGreaterThan(0);
 			}
 			if (start === "intact") {

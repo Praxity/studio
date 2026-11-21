@@ -12,7 +12,6 @@ export function webkitFailureSummary({ runId, sha }, execute = execFileSync) {
 	try {
 		const api = githubRead(execute);
 		const { source, candidate: repo } = studioRepositories();
-		// One page bounds job lookups while failures accumulate after cutover.
 		const { workflow_runs: runs, total_count: totalCount } = api(
 			`repos/${repo}/actions/workflows/cli-candidate.yml/runs?branch=main&per_page=${recentRunLimit}`,
 		);

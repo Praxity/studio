@@ -19,20 +19,14 @@ interface AdmittedAsset {
 }
 
 const ASSET_ADMISSION_BATCH_SIZE = 8;
-// Fractional timestamps can still repeat within a filesystem clock tick.
-// Two seconds covers FAT's write tick as well as shorter NTFS clock ticks.
 const ASSET_TIMESTAMP_SETTLE_NS = 2_000_000_000n;
 
 function stamp(file: string, info: BigIntStats): string {
 	if (!info.isFile()) throw new Error("Asset is not a regular file");
-	// ctime and inode also catch same-size replacements with a restored mtime.
 	return `${file}:${info.dev}:${info.ino}:${info.size}:${info.mtimeNs}:${info.ctimeNs}`;
 }
 
 function canReuse(info: BigIntStats, filesystemNow: BigIntStats | undefined): boolean {
-	// Zero/missing inode IDs and unknown timestamp precision cannot establish freshness.
-	// Require observed sub-millisecond precision per file. This also bypasses FAT/exFAT
-	// stamps that have fractional seconds but still cannot distinguish rapid writes.
 	return (
 		filesystemNow !== undefined &&
 		filesystemNow.dev === info.dev &&
@@ -65,7 +59,6 @@ async function sampleFilesystemTime(projectDir: string): Promise<BigIntStats | u
 			}
 		}
 	} catch (error) {
-		// Read-only projects still admit assets, but cannot prove timestamp freshness.
 		if (isReadOnlyProbeError(error)) return undefined;
 		throw error;
 	}
@@ -85,7 +78,6 @@ async function sampleFilesystemTime(projectDir: string): Promise<BigIntStats | u
 		try {
 			await handle.writeFile("x");
 		} finally {
-			// Windows may defer timestamp updates until the writer handle closes.
 			await handle.close();
 		}
 		try {
@@ -122,7 +114,6 @@ async function matchesBytes(file: FileHandle, expected: Uint8Array): Promise<boo
 	return (await file.read(buffer, 0, 1, offset)).bytesRead === 0;
 }
 
-/** One project host owns this inventory; all reads retain the path admission. */
 export class ProjectAssetInventory {
 	private entries = new Map<string, AdmittedAsset>();
 	private generation = 0;
@@ -180,17 +171,12 @@ export class ProjectAssetInventory {
 						try {
 							const openedInfo = await handle.stat({ bigint: true });
 							const opened = stamp(openedPath, openedInfo);
-							// Capture this before reading. An unsafe snapshot must never become
-							// reusable just because its timestamp ages after a missed write.
 							const reusable = canReuse(openedInfo, filesystemNow);
 							const value = Uint8Array.from(await this.readBytes(handle));
-							// A completed overwrite can leave even fractional stamps unchanged.
-							// Verify from offset zero on the same admitted inode in that window.
 							const verified = reusable || (await matchesBytes(handle, value));
 							const after = stamp(openedPath, await handle.stat({ bigint: true }));
 							const target = await resolveExistingPathWithin(this.projectDir, file);
 							const current = stamp(target, await stat(target, { bigint: true }));
-							// Bind bytes to the opened inode, then check the link still names it.
 							if (verified && opened === after && after === current) {
 								admitted = {
 									stamp: after,
@@ -210,10 +196,7 @@ export class ProjectAssetInventory {
 				return { relative, admitted };
 			};
 			for (let offset = 0; offset < listing.length; offset += ASSET_ADMISSION_BATCH_SIZE) {
-				// A fresh write samples this filesystem's clock before any batch admission.
-				// Never compare asset timestamps with the reader's wall clock.
 				const filesystemNow = await sampleFilesystemTime(this.projectDir);
-				// Drain failures before invalidating. No worker may outlive this admission.
 				const results = await Promise.allSettled(
 					listing
 						.slice(offset, offset + ASSET_ADMISSION_BATCH_SIZE)
@@ -223,8 +206,6 @@ export class ProjectAssetInventory {
 				for (const result of results) {
 					if (result.status !== "fulfilled" || !result.value) continue;
 					const entry = result.value;
-					// Descend after the batch settles to keep the cap global across directories.
-					// Publish in traversal order, regardless of filesystem completion order.
 					if (entry.directory !== undefined) await walk(entry.directory, nextAncestors);
 					else {
 						next.set(entry.relative, entry.admitted);
@@ -245,7 +226,6 @@ export class ProjectAssetInventory {
 		try {
 			await walk(assetsDir);
 			await admission.finish();
-			// An event during a read must not repopulate an invalidated inventory.
 			if (generation === this.generation) this.entries = next;
 		} catch (error) {
 			this.invalidate();

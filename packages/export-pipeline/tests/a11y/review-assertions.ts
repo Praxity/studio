@@ -8,7 +8,6 @@ type ColorQuery = {
 	mark?: boolean;
 };
 
-/** One browser round trip, with the same painted-background composition for every pair. */
 function readReviewColors(rootOrRoots: Element | Element[], queries: ColorQuery[]) {
 	const roots = Array.isArray(rootOrRoots) ? rootOrRoots : [rootOrRoots];
 	const canvas = document.createElement("canvas");
@@ -33,15 +32,12 @@ function readReviewColors(rootOrRoots: Element | Element[], queries: ColorQuery[
 			context.fillStyle = getComputedStyle(node).backgroundColor;
 			context.fillRect(0, 0, 1, 1);
 		}
-		// Mantine paints its mark over the adjacent input's fill.
 		const svg = element.closest("svg");
 		if (svg?.previousElementSibling?.matches("input")) {
 			context.fillStyle = getComputedStyle(svg.previousElementSibling).backgroundColor;
 			context.fillRect(0, 0, 1, 1);
 		}
 		const background = hex();
-		// Matching keeps semantic state on its input and paints the full answer
-		// in a wrapping sibling. Measure that visible copy over the input's fill.
 		const copy =
 			foreground === "-webkit-text-fill-color"
 				? element.closest(".praxity-matching-control")?.querySelector(".praxity-matching-value")
@@ -84,7 +80,6 @@ function readReviewColors(rootOrRoots: Element | Element[], queries: ColorQuery[
 						return measure(key, { foreground: "color" });
 					if (getComputedStyle(element).appearance === "auto")
 						return measure(element, { foreground: "color" });
-					// The checkbox tick is a CSS border, painted over its input's fill.
 					const tick = getComputedStyle(element, "::after");
 					const pair = measure(element, { foreground: "background-color" });
 					context.fillStyle = tick.borderTopColor;
@@ -108,13 +103,11 @@ function measuredContrast(pair: ColorPair) {
 	return contrastRatio(pair.foreground, pair.background);
 }
 
-/** Composite the actual CSS colors over their painted ancestor backgrounds. */
 export async function reviewContrast(target: Locator, foreground = "color", ownBackground = true) {
 	const [result] = await target.evaluate(readReviewColors, [{ foreground, ownBackground }]);
 	return measuredContrast(result.colors[0][0]);
 }
 
-/** Check all six submitted islands in the current viewport/text/forced-color state. */
 export async function expectSubmittedReview(islands: Locator) {
 	const evidence = await islands.evaluateAll(readReviewColors, [
 		{ selector: "input:checked", foreground: "border-top-color", ownBackground: false },
@@ -123,7 +116,6 @@ export async function expectSubmittedReview(islands: Locator) {
 		{ selector: 'select, [role="combobox"]', foreground: "-webkit-text-fill-color" },
 		{ selector: 'button[aria-pressed="true"] + span', foreground: "color" },
 	]);
-	// Literal fixture inventory prevents a missing control from turning into an empty pass.
 	expect(
 		evidence.map(({ colors }) => [colors[0].length, colors[3].length, colors[4].length]),
 	).toEqual([
@@ -141,7 +133,6 @@ export async function expectSubmittedReview(islands: Locator) {
 		for (const [index, boundary] of boundaries.entries()) {
 			expect(boundary.disabled, `${blockId}: submitted input disabled`).toBe(true);
 			expect(boundary.checked, `${blockId}: submitted input checked`).toBe(true);
-			// Either the border or fill identifies the control; the mark has its own threshold.
 			expect(
 				Math.max(measuredContrast(boundary), measuredContrast(fills[index])),
 				`${blockId}: submitted control boundary against its row`,

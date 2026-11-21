@@ -1,4 +1,3 @@
-/** Source positions survive filtering so narration and identity keep their targets. */
 export function dialogueTurns<
 	T extends { speaker?: unknown; side?: unknown; paragraphs?: unknown },
 >(value: unknown) {

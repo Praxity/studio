@@ -4,7 +4,6 @@ import { expect, type Locator, type Page, test } from "@playwright/test";
 import { serveStudioAuthorDocument } from "../../src/main/studio/author-document";
 import { startJourney } from "./global-setup";
 
-// The approach probe's 16 controls, traversed in both directions through the real adapter.
 const source = `# Practice\n\n${Array.from({ length: 15 }, (_, i) => `Paragraph ${i + 1}.`).join("\n\n")}\n`;
 let stop: (() => Promise<void>) | undefined;
 test.afterEach(async ({ page }) => {
@@ -112,7 +111,6 @@ async function traverse(page: Page) {
 	const buttons = page.locator("button.edit");
 	await expect(buttons).toHaveCount(16);
 	await page.getByRole("button", { name: /^(Edit text|Modifier le texte)$/u }).focus();
-	// Course skip links and the main scrollport can precede the first Edit control.
 	for (let i = 0; i < 10; i++) {
 		await page.keyboard.press("Tab");
 		if (await buttons.first().evaluate((el) => el.matches(":focus"))) break;
@@ -168,7 +166,6 @@ main{zoom:${zoom};height:350px!important;min-height:0!important;overflow:auto!im
 `,
 		);
 		await traverse(page);
-		// 230 course pixels of chrome plus the specified 8px host margin at every zoom.
 		expect(
 			await page
 				.locator("button.edit")
@@ -221,7 +218,6 @@ main{height:350px!important;min-height:0!important;overflow:auto!important;posit
 				(el as HTMLElement).style.setProperty("scroll-behavior", "smooth", "important"),
 			);
 		await expect(page.locator("main")).toHaveCSS("scroll-behavior", "smooth");
-		// Record the platform contract while retaining the real engine's scrolling.
 		await page.evaluate(() => {
 			const scroll = Element.prototype.scrollIntoView;
 			Element.prototype.scrollIntoView = function (
@@ -238,7 +234,6 @@ main{height:350px!important;min-height:0!important;overflow:auto!important;posit
 				scroll.call(this, options);
 			};
 		});
-		// Capture visibility in the focus event, before any animation frame can settle scrolling.
 		await page.locator("button.edit").evaluateAll((buttons) => {
 			for (const button of buttons)
 				button.addEventListener("focus", () => {
@@ -382,7 +377,6 @@ test("native reveal recovery controls clear the bottom bar after an unknown save
 	await expect(field).toBeFocused();
 	await frame(page);
 	await page.route("**/api/rpc", async (route) => {
-		// Keep the outcome unknown so Check saved bytes stays available after the automatic check.
 		if (["canvasTextApply", "canvasTextSnapshot"].includes(route.request().postDataJSON().method))
 			return route.abort();
 		await route.continue();
@@ -417,7 +411,6 @@ test("native reveal preserves the first pointer click on a partly covered Edit b
 	if (!box) throw new Error("Missing Edit button");
 	expect(await hits(button)).toEqual([false, false, true]);
 	await recordScrolls(page);
-	// Observe mousedown separately: focus must leave the pointer's click target in place.
 	await page.mouse.move(box.x + box.width / 2, box.y + box.height - 4);
 	await page.mouse.down();
 	expect(await scrolls(button)).toEqual([]);
@@ -504,7 +497,6 @@ for (const [name, css, sentences, minimumHeight, maximumHeight] of [
 		await page.keyboard.press("Enter");
 		const field = page.getByRole("textbox");
 		await expect(field).toBeFocused();
-		// Include the focusin re-cap on the next frame before measuring the opening caret.
 		await frame(page);
 		await expect(page.locator("body")).not.toHaveAttribute("inert");
 		await expect(page.locator("[popover]:popover-open")).toHaveCount(1);
@@ -578,7 +570,6 @@ test("native reveal clears bottom chrome with nearest alone", async ({ page }) =
 	await button.evaluate((el) => {
 		const main = document.querySelector("main");
 		if (!main) throw new Error("Missing course scrollport");
-		// Use whole pixels so native window-scroll rounding cannot consume the 8px gap.
 		const bottom = el.getBoundingClientRect().bottom;
 		main.style.setProperty("padding-top", `${Math.ceil(bottom) - bottom}px`, "important");
 		window.scrollBy(0, el.getBoundingClientRect().bottom - 880);

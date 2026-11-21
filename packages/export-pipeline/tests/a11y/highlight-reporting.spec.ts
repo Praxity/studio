@@ -127,7 +127,6 @@ const highlightHostFormats = {
 	standalone: true,
 	"electron-preview": true,
 } satisfies Record<CourseHostFormat, true>;
-// A future host, including cmi5, must add a privacy proof before this typecheck passes.
 for (const format of Object.keys(highlightHostFormats) as CourseHostFormat[])
 	for (const identified of [false, true]) {
 		test.describe(`${format}, identified=${identified}`, () => {

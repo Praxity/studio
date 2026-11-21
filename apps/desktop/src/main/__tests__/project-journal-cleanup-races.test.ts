@@ -93,9 +93,6 @@ for (const outcome of ["save", "rollback"] as const)
 				if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
 				await exited;
 			}
-			// Admission after a real death must preserve and report the unique outside bytes.
-			// A death during source retirement now precedes installed-N. It reports
-			// the preserved outside bytes before the next admission can proceed.
 			if (death === "after-unlink")
 				await expect(
 					withProjectFileTransaction(root, async () => {}, "write", false),
@@ -121,7 +118,6 @@ for (const outcome of ["save", "rollback"] as const)
 			const extracted = join(root, "extracted");
 			await extractProjectRecovery(root, archives[0].stage, extracted);
 			if (edit === "detach-known") {
-				// A matching hash alone must not delete the detached inode's archive copy.
 				const expected = outcome === "save" ? "Saved lesson" : "Original lesson";
 				expect(
 					(await contents(extracted)).filter((bytes) => bytes === expected).length,

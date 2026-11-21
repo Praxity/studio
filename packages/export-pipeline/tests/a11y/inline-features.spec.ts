@@ -123,8 +123,6 @@ test("code Copy preserves source or leaves the readable fallback when clipboard 
 		expect(
 			await page.evaluate(() => (window as Window & { clipboardSource?: string }).clipboardSource),
 		).toBe(source);
-		// Windows converts newlines in the native clipboard. Verify the API input
-		// exactly, then compare native read-back with only CRLF conversion removed.
 		const copied = await page.evaluate(() => navigator.clipboard.readText());
 		expect(copied.replace(/\r\n/g, "\n")).toBe(source);
 	} else {

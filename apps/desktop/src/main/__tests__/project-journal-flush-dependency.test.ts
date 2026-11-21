@@ -149,7 +149,6 @@ it.each(["write", "restore"])(
 		const source = join(stage, "install-0");
 		const firstFlush = io.events.findIndex(({ kind, path }) => kind === "file" && path === source);
 		expect(firstFlush).toBeGreaterThanOrEqual(0);
-		// One data flush and one marker flush, each followed by its directory before publication.
 		expect(io.events.slice(firstFlush, io.events.indexOf(publication) + 1)).toEqual([
 			{ kind: "file", path: source },
 			{ kind: "directory", path: stage },

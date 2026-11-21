@@ -54,14 +54,9 @@ export function tabbableElements(doc: Document): HTMLElement[] {
 	});
 }
 
-/**
- * The host asks for an edge whenever Tab enters the frame. A stop the browser chose for this
- * entry stays. WebKit chooses none when Tab skips links: it focuses the document instead.
- */
 export function frameEdgeFocus(win: Window): (edge: "first" | "last") => void {
 	const doc = win.document;
 	let browserStop = false;
-	// The window's focus event precedes the focus of any element in the same entry.
 	win.addEventListener("focus", () => {
 		browserStop = false;
 	});
@@ -75,7 +70,6 @@ export function frameEdgeFocus(win: Window): (edge: "first" | "last") => void {
 	};
 }
 
-/** Keys the editor takes over from a preview frame. Cancels the ones it handles itself. */
 export function coursePreviewKeyEvent(
 	event: KeyboardEvent,
 	doc: Document,
@@ -175,11 +169,6 @@ export function renderLogicAnnotations(enabled: boolean, doc: Document = documen
 
 const XLINK = "http://www.w3.org/1999/xlink";
 
-/**
- * The Page lens runtime: the only script an inspection response runs, under its nonce.
- * It owns every course-preview duty there. The lens never navigates itself: the host
- * remounts any page a link asks for, so no learner document can load in the lens.
- */
 export function startInspectionPreview(
 	win: Window,
 	onConnect?: (identity: CoursePreviewIdentity, parentOrigin: string) => void,
@@ -203,7 +192,6 @@ export function startInspectionPreview(
 	};
 	port.onmessage = ({ data }: MessageEvent<unknown>) => {
 		if (!identity) {
-			// Only the host holds the other end of this port, so the page it names is authoritative.
 			const named = (data ?? {}) as Partial<Record<keyof CoursePreviewIdentity, unknown>>;
 			const expected = {
 				channel,
@@ -242,9 +230,6 @@ export function startInspectionPreview(
 				link = node;
 				break;
 			}
-			// A <use> instance is a closed shadow tree, so a cloned link retargets its click to
-			// <use>. Never resolve the reference (chained, percent-encoded and SMIL-animated ones
-			// all differ from the attribute): cancel, and send only a light-DOM link to the host.
 			if (node.localName === "use") event.preventDefault();
 		}
 		if (!link) return;
@@ -261,10 +246,6 @@ export function startInspectionPreview(
 		}
 		const [target, ...fragment] = url.href.split("#");
 		if (fragment.length > 0 && target === win.location.href.split("#")[0]) {
-			// Skip links and contents links move focus here, without navigating: WebKit fires the
-			// frame's load event for a fragment navigation, and the host remounts on a second load.
-			// Like the browser, try the fragment as written, then percent-decoded (`#café` is
-			// `#caf%C3%A9` here). Malformed encoding matches nothing.
 			const raw = url.hash.slice(1);
 			let element = doc.getElementById(raw);
 			try {
@@ -279,7 +260,6 @@ export function startInspectionPreview(
 			if (url.pathname.endsWith(".html")) send({ event: "navigate", state: "", url: url.href });
 		} else if (isSafeExternalUrl(url.href)) send({ event: "open-external", url: url.href });
 	};
-	// Capture runs before any target listener. Middle clicks and keyboard activation dispatch these too.
 	doc.addEventListener("click", follow, true);
 	doc.addEventListener("auxclick", follow, true);
 	win.addEventListener("pagehide", () => port.close(), { once: true });

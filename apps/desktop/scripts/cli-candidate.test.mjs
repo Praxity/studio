@@ -74,7 +74,6 @@ function assertMacTmpdirs(workflow) {
 			if (tmpdir === undefined) continue;
 			checked++;
 			assert.equal(typeof entry.run, "string", `${name}: TMPDIR tools need a guarded run step`);
-			// Reserve 20 digits for the numeric run ID; unknown contexts have no safe bound.
 			const longest = tmpdir.replaceAll("${{ github.run_id }}", "9".repeat(20));
 			assert.match(longest, /^\/[A-Za-z0-9/_-]+$/, `${name}: TMPDIR must have a known bound`);
 			assert.ok(longest.length + 60 < 104, `${name}: TMPDIR plus 60 must be below 104`);
@@ -152,7 +151,6 @@ test("the actual Mac TMPDIR creation refuses symlinks and permits private-direct
 	t.after(() => rmSync(directory, { recursive: true }));
 	mkdirSync(join(directory, "target"));
 	const script = sharedRun(step("Build and verify standalone CLI archives"));
-	// MSYS cannot chmod this Windows temp volume; assert the requested mode below.
 	const mkdir = process.platform === "win32" ? 'command mkdir -p "$TMPDIR"' : 'command mkdir "$@"';
 	const run = (tmpdir, prefix = "") =>
 		spawnSync(
@@ -217,7 +215,6 @@ for (const original of ["absent", "0", "1", "2", "3"]) {
 	test(`keyboard cleanup restores the original preference: ${original}`, (t) => {
 		const directory = mkdtempSync(join(tmpdir(), "cli-keyboard-"));
 		t.after(() => rmSync(directory, { recursive: true, force: true }));
-		// The workflow owns the shell logic; mock only the macOS defaults command.
 		const result = spawnSync(
 			bash,
 			[

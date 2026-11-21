@@ -22,7 +22,6 @@ const source =
 const roots: string[] = [];
 const sessions: { close(): Promise<void> }[] = [];
 const digest = (text: string) => createHash("sha256").update(text).digest("hex");
-// Journal flush tests own durability; these scenarios keep real bytes, admission and watchers.
 function withCountingFlushes<Args extends unknown[]>(work: (...args: Args) => Promise<void>) {
 	return async (...args: Args) => {
 		const flushes = { syncFile: vi.fn(async () => {}), syncDirectory: vi.fn(async () => {}) };
@@ -76,7 +75,6 @@ it("D1 D2 I4 admits exact CRLF node and whole-file seeds through the rooted RPC"
 		join(ui, "canvas.sha256"),
 		"4f56045c295617d094843daf46a0b666472d5613d232b9fe302224248ed4d362\n",
 	);
-	// Journal tests own durability; real HTTP callbacks retain this server's flush scope.
 	const flushes = { syncFile: vi.fn(async () => {}), syncDirectory: vi.fn(async () => {}) };
 	const server = await withProjectFileFlushes(flushes, () =>
 		startStudioServer({ projectDir: root, editorAssetsDir: ui, appVersion: "test" }),
@@ -350,7 +348,6 @@ it(
 );
 
 it("D10 F8 refreshes after admitted outside edits and stale paths cannot redirect a seed", async () => {
-	// Journal tests own durability; watcher callbacks retain this session's flush scope.
 	const flushes = { syncFile: vi.fn(async () => {}), syncDirectory: vi.fn(async () => {}) };
 	const { root, session } = await withProjectFileFlushes(flushes, fixture);
 	const initial = await snapshot(session);

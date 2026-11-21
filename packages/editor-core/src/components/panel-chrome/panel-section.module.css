@@ -9,7 +9,6 @@
 	margin-block: var(--panel-section-gap);
 }
 
-/* Only expand into padding owned by the shared panel containers. */
 :global([data-panel-content="padded"]) > .root > .divider {
 	margin-inline: calc(-1 * var(--panel-padding));
 }

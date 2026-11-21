@@ -62,8 +62,6 @@ describe("muted text", () => {
 						)
 						.toBeGreaterThanOrEqual(4.5);
 					expect.soft(muted, `${label} on ${surface}`).toBeGreaterThanOrEqual(4.5);
-					// A 75% cap conflicts with Lc75 in dark presets. 80% keeps the visual step
-					// while the editor palette tests retain the absolute Lc75 reading floor.
 					expect
 						.soft(muted, `${label} on ${surface}`)
 						.toBeLessThanOrEqual(ratio("--praxity-color-text", surface) * 0.8);

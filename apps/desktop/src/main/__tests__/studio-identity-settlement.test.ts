@@ -50,7 +50,6 @@ async function fixture(locale = "en", cleanup = roots) {
 }
 const templates: string[] = [];
 const initialized = new Map<string, Awaited<ReturnType<typeof fixture>>>();
-// Each locale has a bounded setup hook; every case owns its source, store and history.
 for (const locale of ["en", "fr"]) {
 	beforeAll(async () => {
 		initialized.set(locale, await fixture(locale, templates));
@@ -127,7 +126,6 @@ it.each(["removed", "reworded"])(
 	async (change) => {
 		const { root, donor } = await initializedFixture();
 		let prior = await loadIdentityStore(root);
-		// Omitting history preserves the former resolver contract, including minting on repeated opens.
 		for (let opening = 0; opening < 3; opening++) {
 			const legacy = resolveIdentity(
 				{

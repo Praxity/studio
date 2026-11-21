@@ -169,7 +169,6 @@ const SUPPORTED_BLOCK_TYPES = new Set<PraxityBlock["type"]>([
 	"selfCheck",
 	"retrievalSheet",
 	"highlight",
-	// Declared prompt-only practice block; publication admission refuses it.
 	"writeDistractors",
 	"pageBreak",
 	"blockBreak",
@@ -381,8 +380,6 @@ export function planPageRuntime(
 		if (blockRequiresPageGate(block)) needsGateAwareNavigation = true;
 		const visible = (block.data as Record<string, unknown>)?.visible;
 		if (typeof visible === "string" && visible.trim().length > 0) islands.add("logic");
-		// These DOM enhancers keep their server-rendered descendants composable.
-		// React-owned islands render their own subtree, so do not plan it twice.
 		return island === undefined || island === "card" || island === "accordion" || island === "tabs";
 	});
 	const hasNarration = getPageNarrationSegments(config, page).length > 0;
@@ -414,7 +411,6 @@ export function planPageRuntime(
 	return { mode: "islands", islands: [...islands].sort(), legacyReasons: [] };
 }
 
-/** A module keeps one deck player and the content capabilities of all its logical slides. */
 export function planModuleRuntime(
 	config: RuntimePlanningConfig,
 	pages: readonly PraxityPage[],

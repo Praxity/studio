@@ -198,7 +198,6 @@ async function open(
 		doc,
 		refresh: async () => {
 			dom.window.dispatchEvent(new dom.window.Event("focus"));
-			// Native Response bodies need an event-loop turn, not just microtask draining.
 			await responseRead;
 			await settle();
 		},
@@ -373,7 +372,6 @@ it.each(
 			window.dispatchEvent(
 				new window.CustomEvent("praxity:active-page-change", { detail: { pageId: "page" } }),
 			);
-			// Deck's owner finishes orientation after dispatching its activation signal.
 			window.document.querySelector<HTMLElement>("[data-deck-slide] h2")!.focus();
 		}
 		const opening = open(
@@ -1054,7 +1052,6 @@ it.each(["en", "fr"])(
 		expect(dialog.open).toBe(false);
 		expect(doc.activeElement).toBe(show);
 		expect(field.value).toBe("Keep me");
-		// A frozen request still needs protection after the reply box is closed and empty.
 		server.fetch.mockRejectedValue(new Error("offline"));
 		click(doc, ".prx-review-reply-send");
 		await settle();

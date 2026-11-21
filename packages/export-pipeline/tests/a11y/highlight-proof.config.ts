@@ -1,7 +1,6 @@
 import { defineConfig } from "@playwright/test";
 import base from "./playwright.config";
 
-// Focused highlight publication, reporting and print checks.
 export default defineConfig({
 	...base,
 	globalSetup: undefined,

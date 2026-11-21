@@ -118,9 +118,6 @@ function resolveNavigationStyle(
 	const raw =
 		(rawNavArchetype === "custom" ? rawNavArchetypeBase : rawNavArchetype) ??
 		(rawLegacyLayout ? (LEGACY_NAV_LAYOUT_MAP[rawLegacyLayout] ?? "sidebar") : undefined);
-	// Pass the archetype through instead of collapsing it to sidebar/bottomBar/none.
-	// The old three-way narrowing meant `slides` — the default for a new project —
-	// reached the exporter as `sidebar`.
 	return toNavArchetype(raw);
 }
 
@@ -137,13 +134,6 @@ function resolveDesignObject(frontmatter: GrammarFrontmatter): Record<string, un
 				? (LEGACY_NAV_LAYOUT_MAP[asString(design.navLayout) ?? ""] ?? "sidebar")
 				: undefined),
 	);
-	// Nav defaults come from the archetype's preset, never from the export fallbacks.
-	// Merging sidebar defaults over the archetype meant every
-	// unset nav key reached the exporter already "set" to the sidebar answer, so a
-	// course whose only nav setting was `navArchetype: slides` published with
-	// navOutline on and navEdgeArrows / navHamburgerMenu / navSlideCounter off:
-	// the slides layout class with sidebar navigation, and no slide chrome at all.
-	// Explicit author toggles still win — they are spread last.
 	const merged: Record<string, unknown> = {
 		...DEFAULT_EXPORT_DESIGN,
 		...getNavPreset(archetype),
@@ -267,8 +257,6 @@ export function extractDesktopDesignFromFrontmatter(
 		theme,
 		typography,
 		navToggles: useNavigationToggles ? navToggles : undefined,
-		// Author-facing key is `design.glossaryPage`; the published config calls it
-		// `glossaryTabEnabled`, which is what html-gen reads.
 		glossaryTabEnabled: asBoolean(design.glossaryPage, DEFAULT_EXPORT_DESIGN.glossaryPage),
 		navigationStyle: resolveNavigationStyle(design),
 		defaultImageTreatment: "none",

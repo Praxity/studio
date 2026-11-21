@@ -66,11 +66,9 @@ export function highlightHarnessContent(
 	};
 }
 
-/** Direct presentation fixture. Course publication remains refused by admission. */
 export async function writeHighlightHarness(directory: string, delivery = false): Promise<void> {
 	await mkdir(directory, { recursive: true });
 	await buildExportCssBundle(directory);
-	// Build the real shared CSS once. This fixture needs no viewer or learner bundle.
 	const shared = await build({
 		entryPoints: [
 			join(import.meta.dirname, "../../../../shared-blocks/src/blocks/shared-blocks.css"),

@@ -26,7 +26,6 @@ describe("LearnerTracker", () => {
 	it("returns page timeOn in seconds", () => {
 		const runtime = createMockRuntime();
 		const tracker = new LearnerTracker({ pageId: "p1", runtime });
-		// timeOn should be >= 0 (just created)
 		const time = tracker.getMetric("timeOn", "page");
 		expect(time).toBeDefined();
 		expect(time).toBeGreaterThanOrEqual(0);
@@ -38,7 +37,6 @@ describe("LearnerTracker", () => {
 		tracker1.recordPageVisit();
 		tracker1.recordPageVisit();
 
-		// Create a new tracker with same runtime (simulating page revisit)
 		const tracker2 = new LearnerTracker({ pageId: "p1", runtime });
 		expect(tracker2.getMetric("visitCount", "page")).toBe(2);
 	});
@@ -76,20 +74,17 @@ describe("LearnerTracker", () => {
 
 	it("returns undefined for course metrics without getValue", () => {
 		const runtime = createMockRuntime();
-		// runtime.getValue is undefined (non-SCORM)
 		const tracker = new LearnerTracker({ pageId: "p1", runtime });
 		expect(tracker.getMetric("grade", "course")).toBeUndefined();
 	});
 
 	it("returns course visitCount as sum of all page visits", () => {
 		const runtime = createMockRuntime();
-		// Simulate visits across two pages
 		const t1 = new LearnerTracker({ pageId: "p1", runtime });
 		t1.recordPageVisit();
 		t1.recordPageVisit();
 		const t2 = new LearnerTracker({ pageId: "p2", runtime });
 		t2.recordPageVisit();
-		// course:visitCount should sum all persisted pages
 		expect(t2.getMetric("visitCount", "course")).toBe(3);
 	});
 
@@ -98,6 +93,6 @@ describe("LearnerTracker", () => {
 			"cmi.core.session_time": "01:30:45",
 		});
 		const tracker = new LearnerTracker({ pageId: "p1", runtime });
-		expect(tracker.getMetric("timeOn", "course")).toBe(5445); // 1*3600 + 30*60 + 45
+		expect(tracker.getMetric("timeOn", "course")).toBe(5445);
 	});
 });

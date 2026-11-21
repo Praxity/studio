@@ -201,15 +201,12 @@ test("hostile author response cannot execute or impersonate reference-owned cont
 			readUrl,
 			await readFile(join(process.env.PRAXITY_BROWSER_EDITOR_ASSETS ?? "", "canvas.js"), "utf8"),
 		);
-		// Plant a missed-strip control in the real response. Browser CSP, never evaluate, must stop it.
 		const body = (await response.text()).replace(
 			"</body>",
 			'<script>window.courseRan=true</script><img src="missing" onerror="window.courseRan=true"></body>',
 		);
 		await route.fulfill({ status: 200, headers: Object.fromEntries(response.headers), body });
 	});
-	// Route interception applies to the first URL of a redirect chain. Admit first,
-	// then navigate to the captured document so the hostile response is exercised.
 	const referrers: Array<string | undefined> = [];
 	await page.route("https://referrer.test/**", async (route) => {
 		referrers.push(route.request().headers().referer);
@@ -333,7 +330,6 @@ test("an injected fragment cannot replace the stored session", async ({ page, re
 			authentication.push(response.status());
 	});
 	url.hash = `session=${"x".repeat(43)}`;
-	// A fresh navigation retains tab-scoped storage without Firefox's same-document reload race.
 	await page.goto("about:blank");
 	await page.goto(url.href, { waitUntil: "domcontentloaded" });
 	await expect.poll(() => Boolean(release)).toBe(true);

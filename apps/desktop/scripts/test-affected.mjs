@@ -73,7 +73,6 @@ export function buildVitestPlan(paths, context, options = {}) {
 		if (
 			paths.some((path) => {
 				const file = path.replaceAll("\\", "/");
-				// Format docs select the grammar project below; context prose has no Vitest owner.
 				const documentation =
 					file.endsWith(".md") &&
 					(file.startsWith("docs/context/") ||
@@ -184,7 +183,6 @@ export function changedFiles(root, base) {
 		execFileSync("git", args, { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
 			.split("\0")
 			.filter(Boolean);
-	// --no-renames retains both the removed and added path for moves across owners.
 	return unique([
 		...git("diff", "--name-only", "--no-renames", "-z", `${base}...HEAD`, "--"),
 		...git("diff", "--name-only", "--no-renames", "-z", "HEAD", "--"),
@@ -225,11 +223,8 @@ export function buildPlan(
 	if (!["chromium", "all"].includes(engines)) throw new Error("--engines must be chromium or all");
 	const paths = unique(changed.map((path) => path.replaceAll("\\", "/")));
 	const filters = matchedFilters(paths, context);
-	// A new published file must never disappear through either selection layer.
 	for (const path of paths.filter(guardsPublishedOutput)) {
 		const entry = outputMap.find((entry) => matches(path, entry.paths));
-		// Existing narrow mappings continue to follow the workflow's output filter.
-		// Future files admitted by the exhaustive fallback must be admitted by CI too.
 		if ((!entry || entry.exhaustive) && !matchedFilters([path], context).output)
 			throw new Error(`${path}: published runtime/check requires the CI output filter`);
 		if (!entry?.a11y?.length || !entry.deck?.length)
@@ -276,8 +271,6 @@ export function buildPlan(
 	for (const path of paths.filter(scriptPath)) {
 		if (nodeTest(path)) nodeTests.add(path);
 		else {
-			// Script tests also spawn scripts and inspect their text. Static imports
-			// cannot capture those consumers; the small sibling suite is the safe gate.
 			for (const candidate of context.scriptTests.filter((candidate) =>
 				candidate.startsWith(path.startsWith("scripts/") ? "scripts/" : "apps/desktop/scripts/"),
 			))
@@ -301,8 +294,6 @@ export function buildPlan(
 
 	const css = paths.some((path) => path.endsWith(".css"));
 	const direct = unique([...paths.filter(vitestTest), ...(css ? cssBudgetTests : [])]);
-	// Full export coverage supplements related tests across every workspace
-	// project, including desktop consumers of export-pipeline source.
 	const sources = paths.filter(sourcePath);
 	const allTests =
 		paths.some((path) => matches(path, fullVitestConfigGlobs)) ||
@@ -387,8 +378,6 @@ export function buildPlan(
 }
 
 export async function runPlan(steps, execute) {
-	// Tests mkdtemp inside tmpdir() and PRAXITY_TEST_ARTIFACTS. Workers often point both at folders
-	// that don't exist yet, and wrappers call runPlan without main(), so create them here.
 	mkdirSync(tmpdir(), { recursive: true });
 	if (process.env.PRAXITY_TEST_ARTIFACTS)
 		mkdirSync(process.env.PRAXITY_TEST_ARTIFACTS, { recursive: true });
@@ -405,8 +394,6 @@ export async function runPlan(steps, execute) {
 
 export function execute(step, root, pnpmEntry = process.env.npm_execpath) {
 	return new Promise((resolveResult, reject) => {
-		// Invoke pnpm's JS entry point instead of a .cmd file or shell. Arguments
-		// remain literal on Windows, including filenames containing shell syntax.
 		if (step.executable === "pnpm" && !pnpmEntry)
 			throw new Error("Run this command through pnpm test:affected");
 		const args = step.executable === "pnpm" ? [pnpmEntry, ...step.args] : step.args;
@@ -464,8 +451,6 @@ export async function executeVitest(step, root, options = {}) {
 		const { files, hardFailure } = classifyTimeouts(JSON.parse(readFileSync(reportPath, "utf8")));
 		let failed = hardFailure;
 		for (const file of files) {
-			// Rebuild the command, so related/source selectors cannot broaden this retry.
-			// Vitest matches filename prefixes, including foo.test.tsx for foo.test.ts.
 			const longerPaths = `${file.replaceAll("\\", "/").replace(/([?*[\]{}()!])/g, "\\$1")}?*`;
 			const alone = await run({
 				...step,
@@ -525,8 +510,6 @@ async function main() {
 	}
 	const timeoutCheck = steps.find((step) => step.id === "timeout-evidence");
 	if (timeoutCheck) timeoutCheck.args.push("--base", values.base);
-	// Deleted files still select their owners and related tests, but cannot be linted
-	// or passed directly to a test runner. Their surviving consumers stay selected.
 	for (const step of steps) {
 		if (["lint", "node", "vitest-direct"].includes(step.id))
 			step.args = step.args.filter((arg) => !deleted.includes(arg));

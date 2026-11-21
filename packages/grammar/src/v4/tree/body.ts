@@ -31,7 +31,6 @@ export function interpretBodies(
 				continue;
 			}
 			let end = child.span.tokenEnd;
-			// A semantic run may bridge blank trivia, but never a structural sibling.
 			while (owner.children[index + 1]?.kind === "body")
 				end = owner.children[++index].span.tokenEnd;
 			const first = lineIndex.get(child.span.tokenStart);
@@ -49,7 +48,6 @@ export function interpretBodies(
 			children.push(...run);
 		}
 		owner.children = children;
-		// Only blanks now enclosed by a semantic child change owners.
 		owner.trivia = owner.trivia.filter(
 			(gap) =>
 				!children.some((child) => child.span.start <= gap.start && child.span.end >= gap.end),
@@ -82,7 +80,6 @@ function interpretRun(
 	let pending: TokenLine[] = [];
 	const raw = (line: TokenLine) => stream.source.slice(line.start, line.contentEnd);
 	const flush = () => {
-		// Unconsumed gaps remain on the original owner; interpretBodies removes owned gaps.
 		pending = [];
 	};
 	const leaf = (line: TokenLine, nodeKind: "body" | "recovery" = "body") => {
@@ -111,7 +108,6 @@ function interpretRun(
 			pending.push(line);
 			continue;
 		}
-		// Protected lexical lines remain protected in the body interpreter too.
 		const protectedLine = ["code", "code-fence", "math", "math-fence", "quote"].includes(line.kind);
 		const named = protectedLine ? null : /^([A-Za-z][A-Za-z0-9]*)([ \t\u00a0\u202f]*):/.exec(text);
 		if (
@@ -276,7 +272,6 @@ function interpretRun(
 				continue;
 			}
 			if (frame && indent > frame.indent && indent !== frame.content) {
-				// A short continuation is literal prose, never a flattened nested item.
 				frames.length = 0;
 				active = undefined;
 				flush();
@@ -329,7 +324,6 @@ function interpretRun(
 			continuation(active, line);
 			continue;
 		}
-		// Code inside a list is lexically protected even when its raw indentation is zero.
 		if (frame && protectedLine && ["code", "code-fence"].includes(line.kind)) {
 			continuation(frame.entry, line);
 			continue;

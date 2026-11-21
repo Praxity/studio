@@ -141,7 +141,6 @@ const learner = (page: Page) => page.frame({ name: "learner" }) ?? page;
 const activity = (page: Page) => learner(page).locator("[data-self-check]");
 const action = (root: Locator, name: string) => root.locator(`[data-self-check-action="${name}"]`);
 async function tabTo(page: Page, target: Locator, key = "Tab") {
-	// Native Tab traversal, including the course shell, never programmatic focus.
 	if (await target.evaluate((node) => node === document.activeElement && document.hasFocus()))
 		return;
 	const history = [];
@@ -328,7 +327,6 @@ for (const locale of ["en", "fr"] as const) {
 			);
 			await compare(page, locale);
 			await privateInLms();
-			// Scan last: axe's helper document disturbs Gecko's frame focus.
 			await axe(page);
 		});
 	}
@@ -418,7 +416,6 @@ for (const locale of ["en", "fr"] as const) {
 			browser,
 			page: defaultPage,
 		}) => {
-			// 400% zoom geometry: 1280x960 physical pixels, 320x240 CSS pixels at scale 4.
 			const zoomContext =
 				condition === "400%"
 					? await browser.newContext({

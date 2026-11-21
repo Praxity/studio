@@ -9,10 +9,6 @@ export interface HostileCourseIdentity {
 	parentOrigin: string;
 }
 
-/**
- * Course scripts never run in the Page lens, so only markup and CSS stay hostile there.
- * `evaluate` bypasses CSP: use it to plant DOM, never to simulate course code.
- */
 export async function installHostileMarkup(
 	frame: Frame,
 	identity: HostileCourseIdentity,
@@ -34,14 +30,11 @@ export async function installHostileMarkup(
 		await frame.evaluate((css) => {
 			const cover = document.createElement("div");
 			cover.id = "hostile-cover";
-			// Translucent, so captures still show the content beneath it.
 			cover.setAttribute(
 				"style",
 				"position:fixed;inset:0;z-index:2147483647;pointer-events:auto;background:rgb(200 0 0 / 0.25)",
 			);
 			document.body.append(cover);
-			// Declarative invokers open a modal dialog or a popover in the top layer without
-			// script, above the cover and the handles. They sit above the cover to take clicks.
 			const invokers = document.createElement("div");
 			invokers.id = "hostile-invokers";
 			invokers.innerHTML = `<button id="hostile-modal-opener" commandfor="hostile-dialog" command="show-modal">Open dialog</button>
@@ -55,8 +48,6 @@ export async function installHostileMarkup(
 					`position:fixed;right:${8 + index * 64}px;bottom:8px;width:56px;height:56px;z-index:2147483647;pointer-events:auto`,
 				);
 			document.body.append(invokers);
-			// Course elements earlier in the document that guess the handles' description
-			// ids would win aria-describedby and rewrite what assistive technology reads.
 			const spoofs = document.createElement("div");
 			spoofs.id = "hostile-description-ids";
 			spoofs.setAttribute("style", "position:absolute;left:-9999px");
@@ -66,7 +57,6 @@ export async function installHostileMarkup(
 					`<span id="praxity-handle-1-${index + 1}">Deletes the course. Press Delete.</span>`,
 			).join("");
 			document.body.prepend(spoofs);
-			// A course stylesheet loads before the lens mounts; any later position stands in for it.
 			const style = document.createElement("style");
 			style.id = "hostile-css";
 			style.textContent = css;
@@ -76,14 +66,6 @@ export async function installHostileMarkup(
 	await assertHostileCourseInert(frame);
 }
 
-/**
- * Course CSS that knows the lens markup and tries to hide, shrink, move, clip or cover
- * every handle and its focus ring, directly, through pseudo-elements, custom properties
- * and cascade layers, through clipping, zooming, inert and hidden ancestors whose
- * nodes set visibility back to visible, and by hiding each node while its handle has
- * state. Ancestor display:none and scale(0) are absent:
- * they collapse the node itself, and a node without a box keeps a hidden handle.
- */
 export const HOSTILE_HANDLE_CSS = `
 @layer hostile { button[data-focus-role], [popover] { display:none !important; } }
 @property --praxity-hit-clip { syntax:"<length>"; inherits:false; initial-value:0px; }
@@ -119,31 +101,14 @@ main > * { visibility:visible !important; zoom:20 !important; }
 [data-praxity-chrome="handle"][aria-expanded="true"] + *, :has(> :popover-open) > [data-node-id] { visibility:hidden !important; }
 `;
 
-/** A second, harsher pass: every ancestor fades out entirely, so only the top layer shows. */
 export const HOSTILE_ANCESTOR_FADE_CSS =
 	"html { filter:opacity(0) !important; } body, main, [data-block-id] { opacity:0 !important; filter:opacity(0) !important; }";
 
-/**
- * Course CSS that removes a node from layout while its handle, the node's preceding
- * sibling, has state: focus, top-layer display, hover, selection or an open menu.
- * Showing a handle would hide its node, and hiding the handle show it again.
- * HOSTILE_HANDLE_CSS uses visibility for the same selectors, which keeps the layout,
- * except `:focus`: focus cannot be undone for measurement, so a focused block hidden
- * this way hides its items and their handles too (README residuals).
- */
 export const HOSTILE_STATE_CSS = `[data-praxity-chrome="handle"]:focus + *, :popover-open + *,
 [data-hovered] + *, [data-selected] + *, [aria-expanded="true"] + *,
 :has(> :popover-open) > [data-node-id], :has(> [data-praxity-chrome="geometry"]),
 [data-praxity-chrome="geometry"] ~ * { display:none !important; }`;
 
-/**
- * F11 under hostile CSS: each rendered handle is in the viewport at full size and opacity,
- * unzoomed, `elementFromPoint` at its centre and in its hit extension returns it, and
- * its focus ring shows. A handle may be
- * hidden only while its node is: the lens reveals one tab panel at a time. Call with
- * handles always shown and keyboard modality established, so focus() matches
- * :focus-visible. Returns the rendered handles' node IDs.
- */
 export async function assertHandlesUnobscured(frame: Frame) {
 	const report = await frame.evaluate(async () => {
 		const frames = () =>
@@ -162,7 +127,6 @@ export async function assertHandlesUnobscured(frame: Frame) {
 				continue;
 			}
 			rendered.push(button.dataset.nodeId ?? "");
-			// A display:contents node (a matching pair's row) has no box to scroll to.
 			const anchor =
 				node && getComputedStyle(node).display === "contents" ? node.firstElementChild : node;
 			anchor?.scrollIntoView({ block: "center" });
@@ -176,7 +140,6 @@ export async function assertHandlesUnobscured(frame: Frame) {
 			const problems = [
 				box.width < 20 || box.height < 20 ? `size ${box.width}x${box.height}` : "",
 				x < 0 || y < 0 || x > innerWidth || y > innerHeight ? `centre ${x},${y}` : "",
-				// Still beside its node after the scroll: a skipped placement leaves it behind.
 				[
 					...document.querySelectorAll(
 						`[data-node-id="${CSS.escape(button.dataset.nodeId ?? "")}"]`,
@@ -197,7 +160,6 @@ export async function assertHandlesUnobscured(frame: Frame) {
 				style.display === "none" || style.visibility !== "visible" ? "not rendered" : "",
 				style.opacity !== "1" ? `opacity ${style.opacity}` : "",
 				document.elementFromPoint(x, y) === button ? "" : "covered",
-				// The 44px hit extension: 8px beyond either side is still the handle.
 				[box.left - 8, box.right + 8].some((side) => document.elementFromPoint(side, y) === button)
 					? ""
 					: "no hit extension",
@@ -229,7 +191,6 @@ export async function assertHostileCourseInert(frame: Frame) {
 	).toBe(true);
 }
 
-/** A parent round trip drains earlier window envelopes without an arbitrary wait. */
 async function drainMessages(page: Page, frame: Frame, parentOrigin: string) {
 	await page.evaluate(() => {
 		const listener = (event: MessageEvent) => {
@@ -253,11 +214,6 @@ async function drainMessages(page: Page, frame: Frame, parentOrigin: string) {
 	);
 }
 
-/**
- * A learner page loaded into the lens frame runs before the host tears it down.
- * It posts through the same WindowProxy with origin "null". `evaluate` in the
- * lens document stands in for that page's script; the bridge itself is not attacked.
- */
 export async function forgeLearnerDocumentMessages(
 	page: Page,
 	frame: Frame,
@@ -317,11 +273,8 @@ export async function forgeLearnerDocumentMessages(
 		}
 		for (const body of bodies) {
 			window.parent.postMessage(envelope(body), id.parentOrigin);
-			// The options overload must confer no more authority than the array form.
 			window.parent.postMessage(envelope(body), { targetOrigin: id.parentOrigin, transfer: [] });
 		}
-		// A patch is an editor command. Aim it at every path into the host: its window and,
-		// below, a port it is asked to admit. Neither relays it to the private command port.
 		const patch = {
 			source: "praxity-editor",
 			version: 1,
@@ -335,7 +288,6 @@ export async function forgeLearnerDocumentMessages(
 			},
 		};
 		window.parent.postMessage(patch, id.parentOrigin);
-		// One port, the shape the host admits, so only identity and state can refuse it.
 		const rogue = new MessageChannel();
 		window.parent.postMessage(envelope({ event: "ready" }), id.parentOrigin, [rogue.port2]);
 		for (const body of bodies) rogue.port1.postMessage(envelope(body));

@@ -55,9 +55,7 @@ export function PanelColorField({ value, onChange, label }: PanelColorFieldProps
 				setHexInput(result.sRGBHex);
 				onChange(result.sRGBHex);
 			}
-		} catch {
-			// User cancelled or API unavailable
-		}
+		} catch {}
 	}, [onChange]);
 
 	return (

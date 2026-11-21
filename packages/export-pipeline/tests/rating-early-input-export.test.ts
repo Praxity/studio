@@ -16,7 +16,6 @@ function ratingOwner(document: Document) {
 	);
 	expect(owners).toHaveLength(1);
 	const owner = owners[0];
-	// Capture must start before the parser exposes native rating controls.
 	expect(owner.parentElement).toBe(document.head);
 	expect(owner.defer).toBe(false);
 	expect(owner.async).toBeFalsy();

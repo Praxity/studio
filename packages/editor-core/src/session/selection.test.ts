@@ -67,7 +67,6 @@ function harness(language: "en" | "fr" = "en") {
 	const send = (command: Command) => {
 		const result = dispatch(state, command, deps);
 		state = result.state;
-		// Model the successful native adapter before checking post-focus selection.
 		const focus = result.effects.filter((effect) => effect.type === "focus").at(-1);
 		if (focus?.type === "focus" && focus.requestId)
 			state = dispatch(
@@ -108,7 +107,6 @@ function harness(language: "en" | "fr" = "en") {
 			diagnostics: [],
 			focus: focus(target),
 		};
-		// Every reply in this fixture is an own write; outside edits use outsideChange explicitly.
 		const effects = send({ type: "operationReply", result });
 		expect(state.epoch).toBe(beforeEpoch);
 		expect(

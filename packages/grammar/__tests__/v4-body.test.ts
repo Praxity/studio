@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import { tokenizeLesson } from "../src/v4/lex";
 import { analyzeLessonTree, type BodyDefinition, type TreeNode } from "../src/v4/tree";
 
-// Literal declarations stand in for G4/G5. The tree owns no block/setting vocabulary.
 const definitions: Record<string, BodyDefinition> = {
 	note: {
 		settings: { tone: { values: ["note", "info", "tip", "success", "warning"] }, icon: {} },
@@ -247,8 +246,6 @@ describe("G3 scoped headings", () => {
 			expect(
 				walk(tree.root)
 					.filter((n) => {
-						// C2's page-boundary-metadata allowance: a folded H1 group
-						// retains its title while its page also has explicit metadata.
 						const first = n.children.find((child) => child.kind === "block");
 						const repeatedBoundary =
 							n.kind === "page" &&

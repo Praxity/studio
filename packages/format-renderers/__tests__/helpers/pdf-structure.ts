@@ -8,7 +8,6 @@ export interface PdfStructureNode {
 	children: PdfStructureNode[];
 }
 
-/** Poppler's two-space nesting is stable; 24.02 omits the newer inline alt field. */
 export function parsePdfStructure(output: string): PdfStructureNode {
 	const stack: PdfStructureNode[] = [];
 	let root: PdfStructureNode | undefined;
@@ -44,7 +43,6 @@ export function parsePdfStructure(output: string): PdfStructureNode {
 				tag: element[1],
 				...(element[2] !== undefined ? { id: element[2] } : {}),
 				...(element[3] !== undefined ? { title: element[3] } : {}),
-				// Windows Poppler adds one terminal NUL; keep any authored internal NUL.
 				...(element[4] !== undefined ? { alt: element[4].replace(/\u0000$/, "") } : {}),
 				children: [],
 			};

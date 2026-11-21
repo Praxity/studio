@@ -46,7 +46,6 @@ export async function admit(
 		throw new Error("ESELFCHECKREVISION");
 	return {
 		restore: (value) => {
-			// Only the current generation calls restore; late asset loads stay private.
 			const values = admitted.get(doc) ?? new Map<string, Content>();
 			values.set(reference.blockId, content);
 			admitted.set(doc, values);
@@ -344,7 +343,6 @@ export function enhance(
 	};
 	const enhancement = { cleanup, check: checkAnswer, project, finish };
 	mounted.set(root, enhancement);
-	// Install handlers before exposing controls; preserve a region containing focus.
 	for (const control of [check, show, reset]) control.removeAttribute("data-praxity-js-control");
 	setHidden(show, !result.completed);
 	setHidden(parts, !result.completed);

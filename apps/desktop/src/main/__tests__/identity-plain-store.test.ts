@@ -211,7 +211,6 @@ it("I4 merge refuses a hard-linked working store before resolving identities", a
 		if (path.startsWith(".praxity/identity/") && path.endsWith(".json"))
 			files.set(path, Buffer.from(content, "base64").toString("utf8"));
 	await link(join(root, ".praxity/identity/course.json"), join(root, "saved-course.json"));
-	// Admission must refuse before the merge resolver inspects even a conflicted source.
 	await writeFile(
 		join(root, "a.prax"),
 		"<<<<<<< ours\n# Ours\n=======\n# Theirs\n>>>>>>> theirs\n",
@@ -239,7 +238,6 @@ it("T1 isolates a leftover publication alias before I4's next write admission", 
 	);
 	const stage = (await readdir(root)).find((name) => name.startsWith(".praxity-write-"));
 	if (!stage) throw new Error("Missing committed archive");
-	// Recreate the namespace left by death between link() and publication retirement.
 	await link(live, join(root, stage, "install-0"));
 	expect((await lstat(live)).nlink).toBe(2);
 	expect((await readCourseIdentity(root, options)).identity.course).toEqual(expected.course);

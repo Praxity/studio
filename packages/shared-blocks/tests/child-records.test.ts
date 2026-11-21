@@ -220,7 +220,6 @@ describe("G8 child identity through the public adapter", () => {
 			{ kind: "criterion", id: "n-42", ownerId: "n-4", path: "block.data.content.parts[0].id" },
 			{ kind: "criterion", id: "n-82", ownerId: "n-4", path: "block.data.content.parts[1].id" },
 		]);
-		// Each record leads back to its criterion's source node.
 		expect(
 			childRecords(block).map((child) => lesson.nodes.get(String(child.id))?.node.subject?.value),
 		).toEqual(["First", "Second"]);
@@ -354,7 +353,6 @@ describe("G8 child identity through the public adapter", () => {
 		const [, original, records] = cases[field === "matchId" ? 0 : 7];
 		const broken = structuredClone(original);
 		delete records(broken)[0][field];
-		// An authored back remains a face even if its content is empty.
 		if (field === "backId")
 			records(broken)[0].back = [{ id: "back-text", type: "text", data: { content: "Back" } }];
 		expect(() => strict([broken])).toThrow(/Missing child ID/);

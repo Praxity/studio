@@ -17,7 +17,6 @@ type ViewOptions = {
 	suggestions?: ReadonlyMap<string, number>;
 };
 
-/** Pure page-node projection: identity from readLesson/I4, names from A3, state from U1/U2. */
 export function buildPageNodes(options: ViewOptions): FrameNode[] {
 	return projectPageNodes(options).nodes;
 }
@@ -90,7 +89,6 @@ function projectPageNodes(options: ViewOptions) {
 	return { nodes, positions };
 }
 
-/** Host presentation uses the same page-node projection as lesson dispatch. */
 export function buildFrameView(options: ViewOptions): FrameView {
 	const { file, pageId, session } = options;
 	const { nodes, positions } = projectPageNodes(options);
@@ -103,7 +101,6 @@ export function buildFrameView(options: ViewOptions): FrameView {
 			(draft.target.kind === "node" ? draft.target.nodeId : undefined));
 	const sourceNode = nodes.find((node) => node.id === sourceId);
 	const sourceRecord = sourceId ? options.lesson.nodes.get(sourceId) : undefined;
-	// The context already carries the view's position, so omit the name's duplicate suffix.
 	const contextName =
 		sourceRecord &&
 		nodeNames(options.lesson.tree.root, options.translate, { positions: false }).get(

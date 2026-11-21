@@ -93,7 +93,6 @@ function isSlideStyleDef(value: unknown): value is SlideStyleDef {
 	return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** A CSS image accepts local assets or HTTPS, never executable schemes or raw CSS. */
 function cornerImageUrl(value: unknown): string | undefined {
 	if (typeof value !== "string") return;
 	const url = value.trim();
@@ -130,7 +129,6 @@ export function resolveSlideStyle(
 	};
 
 	const cornerImage = cornerImageUrl(definition.cornerImage);
-	// Preserve the prior inherited colours when persisted background data is invalid.
 	const {
 		"--slide-muted": mutedColor = "var(--praxity-color-text-light)",
 		...backgroundVariables
@@ -151,7 +149,6 @@ export function resolveSlideStyle(
 	};
 }
 
-/** Page metadata wins; only an opening top-level H1 may supply a page style. */
 export function resolvePageSlideStyle(
 	page: {
 		data?: Record<string, unknown>;

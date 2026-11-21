@@ -16,7 +16,6 @@ import { PracticeAdmissionError } from "./practice-admission";
 
 export interface ModuleDeckOptions {
 	gates?: Record<string, "attempt" | "pass">;
-	/** Pause after these stable slide IDs. */
 	stops?: string[];
 }
 

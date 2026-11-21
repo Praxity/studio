@@ -2,7 +2,6 @@ import { readFileSync } from "node:fs";
 import { readLesson, readSelfCheckContent } from "@praxity/grammar";
 import { selfCheckContentInput } from "../../src/build";
 
-// Literal release expectations, independent of renderer and library output.
 export const releaseExpected = {
 	en: {
 		task: "Explain why the report needs another day.",

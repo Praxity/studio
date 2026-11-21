@@ -24,7 +24,6 @@ function validChoiceIds(question: ChoiceStateQuestion, answer: unknown): answer 
 	);
 }
 
-/** Saved data is admitted here; restore and dependency status use the same decision. */
 function admitChoiceAssessmentState(
 	value: unknown,
 	facts: ChoiceAssessmentFacts,
@@ -48,7 +47,6 @@ function admitChoiceAssessmentState(
 		return null;
 	const signed = value.contentSignature !== undefined;
 	if (question.selectionMode === "single" && value.answer.length > 1) return null;
-	// Only a never-submitted draft can omit material evidence.
 	if ((signed || hasSubmittedChoice(value)) && value.contentSignature !== facts.signature)
 		return null;
 	if (value.checked && (!value.answer.length || value.attemptCount === 0)) return null;
@@ -91,7 +89,6 @@ export function restoreChoiceAssessmentState(
 	};
 }
 
-/** Only a deliberate write can sign state or archive a preceding submitted answer. */
 export function prepareChoiceAssessmentState(
 	previous: unknown,
 	next: SavedAssessmentState,
@@ -124,10 +121,8 @@ export interface ChoiceDependencyView {
 	readState: (id: string) => unknown;
 }
 
-/** Readers receive the status owner with the evidence, without importing admission code. */
 export interface ChoiceDependencyEvidence extends ChoiceDependencyView {
 	status(id: string, candidate?: ChoiceDependencyView): ReturnType<typeof choiceDependencyStatus>;
-	/** Group consumers reach admission through the host's bound evidence view. */
 	prepareGroupSubmission?(
 		id: string,
 		candidate: ChoiceDependencyView,
@@ -144,7 +139,6 @@ export interface ChoiceDependencyEvidence extends ChoiceDependencyView {
 	): ChoiceDependencyEvidence | null;
 }
 
-/** Bind group operations beside the shared submitted-material status owner. */
 export function bindChoiceDependencyView(view: ChoiceDependencyView): ChoiceDependencyEvidence {
 	const bound: ChoiceDependencyEvidence = {
 		...view,
@@ -199,7 +193,6 @@ function prepareChoiceGroupState(
 	return snapshot !== undefined && JSON.stringify(previous) === JSON.stringify(next) ? null : next;
 }
 
-/** Construction never admits, signs or writes an answer. */
 export function createChoiceDependencyView(
 	facts: AdmittedChoiceStateFacts,
 	evidence: {
@@ -218,7 +211,6 @@ export function createChoiceDependencyView(
 	});
 }
 
-/** References retained member material, never copies of answers or editable selection. */
 export interface ChoiceGroupPayload {
 	mode: "all" | "oneOf";
 	selectedMemberId: string | null;
@@ -246,7 +238,6 @@ function hasSubmittedChoice(value: unknown): boolean {
 	);
 }
 
-// Members and aggregate references consume the same admitted submitted evidence.
 type SubmittedChoiceResolution =
 	| {
 			status: "current";
@@ -254,7 +245,6 @@ type SubmittedChoiceResolution =
 	  }
 	| { status: "unanswered" | "history"; evidence: null };
 
-/** Restoration and recovery share one submitted-material status. */
 export function choiceDependencyStatus(
 	id: string,
 	view: ChoiceDependencyView,
@@ -269,7 +259,6 @@ export function choiceDependencyStatus(
 	return resolveMember(id, view).status;
 }
 
-/** Draft signatures never stand in for a submission; only the latest checked answer counts. */
 function resolveSubmittedChoice(
 	state: unknown,
 	facts: ChoiceAssessmentFacts,
@@ -281,7 +270,6 @@ function resolveSubmittedChoice(
 	const submissions = [...history, state].filter(
 		(entry) => isRecord(entry) && entry.checked === true,
 	);
-	// Resolve a captured reference independently of the newest reporting row.
 	const submitted = reference
 		? submissions.find((entry) => entry.contentSignature === reference.signature)
 		: submissions.at(-1);
@@ -314,7 +302,6 @@ function savedGroupSelection(state: unknown, group: ChoiceStateGroup): string | 
 	return group.memberIds.find((member) => member === state.selectedMemberId) ?? null;
 }
 
-/** Includes private submitted members; optional fresh selections contribute nothing. */
 export function choiceGroupDependencyIds(id: string, view: ChoiceDependencyView): string[] {
 	const group = dependencyGroup(id, view);
 	if (!group) return [];
@@ -352,7 +339,6 @@ function isGroupPayload(value: unknown): value is ChoiceGroupPayload {
 				value.selectedMemberId === value.dependencies[0][0];
 }
 
-/** The digest verifies the captured payload, not a reconstruction from today's drafts. */
 export function choiceGroupSignature(payload: ChoiceGroupPayload): string {
 	if (!isGroupPayload(payload)) throw new TypeError("Invalid group submission payload");
 	return choiceMaterialSignature([
@@ -364,7 +350,6 @@ export function choiceGroupSignature(payload: ChoiceGroupPayload): string {
 	]);
 }
 
-/** Called only for a deliberate aggregate submission, after all dependencies admit. */
 export function prepareChoiceGroupSubmission(
 	id: string,
 	view: ChoiceDependencyView,
@@ -418,13 +403,11 @@ function groupDependencyStatus(
 	const state = view.readState(id);
 	const row = latestChoiceRow(id, view);
 	const submitted = isRecord(state) ? state.submitted : undefined;
-	// A selection alone does not claim an aggregate result. Signed private snapshots do.
 	if (!row && submitted === undefined) return "unanswered";
 	const group = dependencyGroup(id, view);
 	const ids = choiceGroupDependencyIds(id, view);
 	if (!group || !ids.length) return "history";
 	if (isRecord(state) && state.mode !== undefined && state.mode !== group.mode) return "history";
-	// Any supplied row witness must agree with the captured dependency set.
 	if (
 		row?.memberIds !== undefined &&
 		(!Array.isArray(row.memberIds) ||
@@ -443,7 +426,6 @@ function groupDependencyStatus(
 		submitted.contentSignature !== choiceGroupSignature(submitted.payload) ||
 		(row && row.contentSignature !== submitted.contentSignature) ||
 		submitted.payload.mode !== group.mode ||
-		// Valid oneOf payloads select their sole dependency, so this also checks selection.
 		JSON.stringify(submitted.payload.dependencies.map(([member]) => member)) !== JSON.stringify(ids)
 	)
 		return "history";

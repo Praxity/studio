@@ -23,7 +23,6 @@ export interface HostedCourseArtifact {
 	release(): Promise<void>;
 }
 
-/** Host-only freshness metadata, never part of the learner manifest. */
 export type HostedCourseDeployment = CoursePreviewDeployment & {
 	lessonFiles?: Record<string, string>;
 	editorSeq?: number;
@@ -189,8 +188,6 @@ export class CoursePreviewService {
 				courseId: artifact.manifest.courseId,
 				coreRevision: artifact.manifest.revision,
 				responseRevision: deployment.manifest.revision,
-				// Guided slides share the lesson's first HTML document. Small previews
-				// select a slide by its ID fragment instead of loading redirect aliases.
 				pages: artifact.manifest.pages.map(({ id, slug }) => ({
 					id,
 					slug: request && input.config.moduleDeck ? artifact.manifest.pages[0].slug : slug,
@@ -206,7 +203,6 @@ export class CoursePreviewService {
 					const { leaseId: _leaseId, ...canvasDescriptor } = descriptor;
 					this.canvas.set(key, { start: canvasStart, leaseId, descriptor: canvasDescriptor });
 				}
-				// Hosting owns the build even if the requester never receives its reply.
 				const oldest = [...this.canvas.entries()].sort((a, b) => a[1].start - b[1].start);
 				for (const [key, entry] of oldest.slice(0, Math.max(0, oldest.length - 4))) {
 					this.canvas.delete(key);

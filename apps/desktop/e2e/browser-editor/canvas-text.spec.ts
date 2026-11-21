@@ -309,7 +309,6 @@ test("C04 page-title binding and French keyboard names, hint and cancellation", 
 	browserName,
 	context,
 }) => {
-	// Fulfilled document fixtures lack an IP address for Chromium's loopback check.
 	if (browserName === "chromium")
 		await context.grantPermissions(["local-network-access"], {
 			origin: new URL(process.env.PRAXITY_BROWSER_READY_URL ?? "").origin,
@@ -401,7 +400,6 @@ for (const hostile of [false, true])
 				await stop?.();
 				stop = await startJourney(context, { standaloneSource: themedSource });
 				file = join(process.env.PRAXITY_BROWSER_PROJECT ?? "", "second.prax");
-				// Fulfilled document fixtures lack an IP address for Chromium's loopback check.
 				if (hostile && browserName === "chromium")
 					await context.grantPermissions(["local-network-access"], {
 						origin: new URL(process.env.PRAXITY_BROWSER_READY_URL ?? "").origin,
@@ -444,7 +442,6 @@ for (const hostile of [false, true])
 						});
 					});
 				await open(page);
-				// Redirect-chain routing is engine-specific; navigate directly after admission for the fixture.
 				await page.reload();
 				await expect(page.getByRole("status")).toHaveText("Connected");
 				const paragraphId = await page

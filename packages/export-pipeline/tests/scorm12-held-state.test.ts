@@ -56,7 +56,7 @@ it.each(compactVectors)(
 	"holds the damaged $name compact vector without replacement writes",
 	({ wire }) => {
 		const envelope = JSON.parse(wire);
-		envelope[4] = (envelope[4] + 1) >>> 0; // Damage the decoded CRC, retaining a valid envelope.
+		envelope[4] = (envelope[4] + 1) >>> 0;
 		const damaged = JSON.stringify(envelope);
 		const { values, writes, dom } = fixture("passed", damaged);
 		try {

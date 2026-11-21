@@ -58,7 +58,6 @@ function damagedSourceWords(text: string, path = "messages.ts"): string[] {
 		}
 		ts.forEachChild(node, visit);
 	};
-	// Parse literals so regex syntax and TypeScript optional markers are not treated as copy.
 	visit(ts.createSourceFile(path, text, ts.ScriptTarget.Latest));
 	return words;
 }

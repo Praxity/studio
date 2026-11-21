@@ -48,7 +48,6 @@ it("a paragraph edit leaves the shell digest alone; a page rename changes it", a
 		},
 		{},
 	);
-	// Only the inert config JSON differs, and no inspection script needs it swapped in.
 	expect(compileDocumentFrame(changed, slug).shellDigest).toBe(
 		compileDocumentFrame(context, slug).shellDigest,
 	);

@@ -10,12 +10,9 @@ async function pause(label: string, path?: string) {
 	await new Promise<void>((resolve) => process.once("message", resolve));
 }
 
-// Pause at the filesystem adapter, after the owner's checks and before the unlink.
 const rename = fs.rename;
 let raced = false;
 fs.rename = async (...args: Parameters<typeof fs.rename>) => {
-	// Source retirement now renames before checking/removing it. Race the old
-	// publication name, then kill after that name disappears, as in #1338.
 	const phase = outcome === "rollback" ? "rollback" : "install";
 	const target = new RegExp(`^${phase}-0(?:\\.attempt-[0-9a-f-]+)?\\.cleanup\\.capture-`).test(
 		basename(String(args[1])),

@@ -17,8 +17,6 @@ import {
 	resolveSourceValue,
 } from "./evaluate";
 
-// ─── DataProvider helpers ────────────────────────────────────────────────────
-
 function makeProvider(opts?: {
 	blockFields?: Record<string, Record<string, string | number | boolean>>;
 	variables?: Record<string, string | number | boolean>;
@@ -36,8 +34,6 @@ function makeProvider(opts?: {
 		},
 	};
 }
-
-// ─── compareValues ────────────────────────────────────────────────────────────
 
 describe("compareValues", () => {
 	describe("is", () => {
@@ -252,8 +248,6 @@ describe("compareValues", () => {
 	});
 });
 
-// ─── resolveSourceValue ───────────────────────────────────────────────────────
-
 describe("resolveSourceValue", () => {
 	it("resolves block field", () => {
 		const provider = makeProvider({
@@ -325,8 +319,6 @@ describe("resolveSourceValue", () => {
 	});
 });
 
-// ─── evaluateRule ─────────────────────────────────────────────────────────────
-
 describe("evaluateRule", () => {
 	it("evaluates a variable rule correctly", () => {
 		const provider = makeProvider({ variables: { score: 80 } });
@@ -353,8 +345,6 @@ describe("evaluateRule", () => {
 		expect(evaluateRule(rule, provider)).toBe(true);
 	});
 });
-
-// ─── evaluateConditions ───────────────────────────────────────────────────────
 
 describe("evaluateConditions", () => {
 	it("returns false for empty rules array", () => {
@@ -412,8 +402,6 @@ describe("evaluateConditions", () => {
 	});
 });
 
-// ─── resolveOperand ───────────────────────────────────────────────────────────
-
 describe("resolveOperand", () => {
 	it("returns literal number directly", () => {
 		const provider = makeProvider();
@@ -443,8 +431,6 @@ describe("resolveOperand", () => {
 	});
 });
 
-// ─── isCompoundOperation ──────────────────────────────────────────────────────
-
 describe("isCompoundOperation", () => {
 	it("returns true for compound operation objects", () => {
 		expect(isCompoundOperation({ operation: "add", operand: 1 })).toBe(true);
@@ -458,8 +444,6 @@ describe("isCompoundOperation", () => {
 	});
 });
 
-// ─── applyCompoundOperation ───────────────────────────────────────────────────
-
 describe("applyCompoundOperation", () => {
 	it("assign — returns the operand value", () => {
 		const provider = makeProvider();
@@ -468,7 +452,6 @@ describe("applyCompoundOperation", () => {
 
 	it("assign — defaults operand to 0 if undefined", () => {
 		const provider = makeProvider({ variables: { missing: undefined as unknown as string } });
-		// operand is a ref that resolves to undefined
 		expect(
 			applyCompoundOperation(
 				10,
@@ -531,8 +514,6 @@ describe("applyCompoundOperation", () => {
 		);
 	});
 });
-
-// ─── normalizeAction ──────────────────────────────────────────────────────────
 
 describe("normalizeAction", () => {
 	it("returns null for seekTo action", () => {

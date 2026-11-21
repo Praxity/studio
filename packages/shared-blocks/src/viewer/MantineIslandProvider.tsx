@@ -10,14 +10,12 @@ import type { ReactNode } from "react";
 
 const canvasResolver: CSSVariablesResolver = (theme) => ({
 	variables: {
-		// Core
 		"--mantine-color-body": "var(--praxity-color-background)",
 		"--mantine-color-text": "var(--praxity-color-text)",
 		"--mantine-color-anchor": "var(--praxity-color-accent-text, var(--praxity-color-accent))",
 		"--mantine-color-dimmed": "var(--praxity-color-text-light)",
 		"--mantine-color-error": "var(--praxity-color-error-text, var(--praxity-color-error))",
 
-		// Primary color (accent)
 		"--mantine-primary-color-filled": "var(--praxity-color-accent)",
 		"--mantine-primary-color-filled-hover": "var(--praxity-color-accent-hover)",
 		"--mantine-primary-color-light": "var(--praxity-color-accent-light)",
@@ -29,19 +27,16 @@ const canvasResolver: CSSVariablesResolver = (theme) => ({
 		"--mantine-color-accent-light-color":
 			"var(--praxity-color-accent-text, var(--praxity-color-accent))",
 
-		// Default variant (cards, inputs)
 		"--mantine-color-default": "var(--praxity-color-surface)",
 		"--mantine-color-default-border":
 			"var(--praxity-color-control-border, var(--praxity-color-text-light, #596673))",
 		"--mantine-color-default-hover": "var(--praxity-color-background-alt)",
 
-		// Gray scale (mapped to theme-derived values)
 		"--mantine-color-gray-0": "var(--praxity-color-background-alt)",
 		"--mantine-color-gray-1": "var(--praxity-color-background-alt)",
 		"--mantine-color-gray-2": "var(--praxity-color-border)",
 		"--mantine-color-gray-3": "var(--praxity-color-border)",
 
-		// Font
 		"--mantine-font-family": "var(--praxity-font-family)",
 		"--mantine-font-family-headings": "var(--praxity-font-heading, var(--praxity-font-family))",
 	},
@@ -60,9 +55,6 @@ interface MantineIslandProviderProps {
 }
 
 export function MantineIslandProvider({ children, colorShades }: MantineIslandProviderProps) {
-	// Always provide an accent color tuple so primaryColor: "accent" is valid.
-	// Fall back to a blue scale if colorShades.accent is not provided (e.g. CourseMenu
-	// island which doesn't receive colorShades).
 	const fallbackAccent = [
 		"#ebf0ff",
 		"#d3defb",
@@ -76,9 +68,6 @@ export function MantineIslandProvider({ children, colorShades }: MantineIslandPr
 		"#002dad",
 	];
 
-	// Semantic colors must ALWAYS be registered: blocks use color="success" etc.,
-	// and an unregistered name makes Mantine variants degenerate (white-on-light
-	// badge text, caught by axe). Shade 6+ is dark enough for AA text on shade 0.
 	const fallbackSuccess = [
 		"#e9f6ee",
 		"#d3eedd",

@@ -146,7 +146,6 @@ describe("initDomLogicRuntime", () => {
 		await Promise.resolve();
 		expect(savedCount()).toBe(1);
 
-		// The island restores durable results into its renderer after logic has started.
 		block("gate").innerHTML =
 			'<div data-block-id="gate" data-passed="true" data-score="100"></div>';
 		const changed = vi.fn();

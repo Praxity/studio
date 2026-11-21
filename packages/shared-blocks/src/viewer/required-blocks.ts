@@ -17,7 +17,6 @@ let _ownedAria:
 	  }
 	| undefined;
 
-/** Contextual validation messages by block type. */
 const REQUIRED_MESSAGES: Record<string, string> = {
 	assessment: "Please attempt this question",
 	checklist: "Please complete this checklist",
@@ -36,18 +35,11 @@ export function getActiveRequiredValidationBlock(): HTMLElement | null {
 	return _activeRequiredValidationBlock;
 }
 
-/**
- * Check whether an attribute is "true" on the element itself OR any descendant.
- * This is necessary because `data-required` is set on the `.praxity-block` wrapper
- * by the logic engine, but React components set completion attributes (like
- * `data-completed`) on inner elements (Card, section, div).
- */
 function hasAttrTrue(el: HTMLElement, attr: string): boolean {
 	if (el.getAttribute(attr) === "true") return true;
 	return el.querySelector(`[${attr}="true"]`) !== null;
 }
 
-/** Read a numeric attribute from the element or any descendant. */
 function readNumericAttr(el: HTMLElement, attr: string): number {
 	const val = el.getAttribute(attr);
 	if (val !== null) return Number(val);
@@ -83,13 +75,6 @@ export function isRequiredBlockComplete(el: HTMLElement): boolean {
 	return false;
 }
 
-/** Check if all [data-required] blocks have been completed.
- *
- * Uses `data-completed` as the primary signal, plus the block-specific
- * `data-signed` and `data-paid` completion signals. Does NOT use `data-attempted`
- * — a graded assessment that has been attempted but not completed (e.g.
- * wrong answer, attempts remaining) should still block forward navigation.
- */
 export function checkRequiredBlocks(): RequiredBlocksResult {
 	if (typeof document === "undefined")
 		return { valid: true, firstIncomplete: null, blockType: null };
@@ -105,7 +90,6 @@ export function checkRequiredBlocks(): RequiredBlocksResult {
 	return { valid: true, firstIncomplete: null, blockType: null };
 }
 
-/** Remove any existing validation messages and highlight rings. */
 export function clearRequiredValidation(): void {
 	if (typeof document === "undefined") return;
 	clearTimeout(_highlightTimer);
@@ -156,10 +140,6 @@ function findFirstInvalidTarget(root: HTMLElement): HTMLElement | null {
 	);
 }
 
-/** Show validation UI for the first incomplete required block.
- *  Injects a contextual message, applies a highlight ring (2s), and scrolls to it.
- *  Returns true if validation failed (blocked), false if all clear.
- */
 export function showRequiredValidation(): boolean {
 	clearRequiredValidation();
 	const result = checkRequiredBlocks();
@@ -209,7 +189,6 @@ export function showRequiredValidation(): boolean {
 	);
 
 	scrollElementIntoView(invalidTarget, { block: "center" });
-	// Ensure keyboard/screen-reader users land on actionable control.
 	if (!invalidTarget.matches("input, select, textarea, button, [tabindex], a")) {
 		invalidTarget.setAttribute("tabindex", "-1");
 	}

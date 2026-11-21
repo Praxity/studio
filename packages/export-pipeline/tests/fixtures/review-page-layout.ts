@@ -4,7 +4,6 @@ import { afterEach, expect } from "vitest";
 const callbackErrors: unknown[] = [];
 afterEach(() => expect(callbackErrors.splice(0)).toEqual([]));
 
-/** JSDOM has no layout. Keep concealment and contents behavior at the browser seam. */
 export function reviewPageLayout(dom: JSDOM) {
 	const win = dom.window;
 	const computedStyle = win.getComputedStyle.bind(win);
@@ -46,7 +45,6 @@ export function reviewPageLayout(dom: JSDOM) {
 			)
 			.map((node) => {
 				const box = node.parentElement!.getBoundingClientRect();
-				// Default text still renders when a test does not need measured coordinates.
 				return box.width || box.height
 					? box
 					: { left: 0, top: 0, right: 1, bottom: 1, width: 1, height: 1 };

@@ -8,8 +8,6 @@ import DOMPurify, { type Config, type HookName } from "isomorphic-dompurify";
 type HeadingContent = { heading: string; body: string };
 type SanitizedContent = string | HeadingContent;
 
-// These policies contain only data. Reject mutable RegExps and callbacks rather
-// than freezing them: Object.freeze does not prevent RegExp.compile mutations.
 function freezePolicy<T extends Config>(policy: T): T {
 	function freeze(value: unknown) {
 		if (typeof value === "function" || value instanceof RegExp) {
@@ -35,7 +33,6 @@ const HEADING_POLICY = freezePolicy({
 const HTML_POLICY = freezePolicy({
 	USE_PROFILES: { html: true },
 	FORBID_TAGS: ["script", "style", "iframe", "form", "input", "textarea", "select"],
-	// USE_PROFILES already strips on* handlers. This is supplementary protection.
 	FORBID_ATTR: ["onerror", "onload", "onclick", "onmouseover", "onfocus", "onblur"],
 } satisfies Config);
 const TOOLTIP_TEXT_POLICY = freezePolicy({ ALLOWED_TAGS: [], ALLOWED_ATTR: [] } satisfies Config);
@@ -51,8 +48,6 @@ const NONINTERACTIVE_POLICY = freezePolicy({
 	],
 } satisfies Config);
 
-// One LRU across all three helpers: at most 256 entries and 4 MiB of UTF-16
-// input/output strings. Cache strings only, never DOM nodes or caller-owned objects.
 const MAX_MEMO_ENTRIES = 256;
 const MAX_MEMO_BYTES = 4 * 1024 * 1024;
 const memo = new Map<string, { value: SanitizedContent; bytes: number }>();
@@ -77,7 +72,6 @@ function clearMemo() {
 }
 
 function hasHooks(): boolean {
-	// Peek and restore the last hook in each stack without running any callbacks.
 	const removeHook = DOMPurify.removeHook as (name: HookName) => unknown;
 	const addHook = DOMPurify.addHook as (name: HookName, hook: unknown) => void;
 	return HOOK_NAMES.some((name) => {
@@ -89,15 +83,10 @@ function hasHooks(): boolean {
 }
 
 function usesOwnedPolicies(): boolean {
-	// The DOMPurify patch exposes persistent policies, including captured setters
-	// and retained Trusted Types callbacks. Without it, bypass caching. Probing
-	// by sanitizing would execute caller callbacks extra times.
 	return Reflect.get(DOMPurify, "hasPersistentConfig") === false && !hasHooks();
 }
 
 function memoized<T extends SanitizedContent>(key: string, compute: () => T): T {
-	// External sanitization or clearWindow replaces this public array. Discard
-	// old results before considering a cache hit.
 	if (DOMPurify.removed !== lastRemoved) {
 		clearMemo();
 	}
@@ -157,7 +146,6 @@ function* descendants(root: Element): Generator<Element> {
 	}
 }
 
-/** Plain DOM text for React children and labels. Escape only when emitting HTML. */
 export function htmlToPlainText(html: string): string {
 	return memoized(`text:${html}`, () => plainText(html));
 }
@@ -166,8 +154,6 @@ function plainText(html: string): string {
 	const sanitized = DOMPurify.sanitize(html, PLAIN_TEXT_POLICY);
 	if (sanitized.nodeType !== 1) throw new Error("Expected sanitized HTML element");
 	const root = sanitized as Element;
-	// Preserve the spacing formerly supplied by stripped tags without serializing
-	// entities back into text. French non-breaking spaces remain authored characters.
 	for (const element of descendants(root)) {
 		element.before(" ");
 		element.after(" ");
@@ -193,24 +179,10 @@ function preserveInlineIconSvg(html: string): string {
 	});
 }
 
-/**
- * Sanitize HTML content for safe rendering with dangerouslySetInnerHTML.
- * Strips scripts, iframes, forms, and dangerous event handlers.
- * Build-generated inline-icon markers are reconstructed only after DOMPurify
- * has removed authored SVG and other unsafe markup. Pass
- * `{ renderInlineIcons: false }` when preserving markers in inert JSON.
- *
- * Note: `data-tooltip-content` attributes carry user-authored HTML (from the
- * inline tooltip TipTap mark). The attribute value passes through DOMPurify
- * here because data-* attributes are allowed by default. The shared tooltip
- * enhancer applies a narrow element and attribute allowlist before injecting it
- * into the DOM.
- */
 export function sanitizeHtml(
 	html: string,
 	options?: { renderInlineIcons?: boolean; interactive?: boolean },
 ): string {
-	// Caller objects may have getters or mutate while sanitization runs.
 	if (options !== undefined) return sanitizedHtml(html, options);
 	return memoized(`html:${html}`, () => sanitizedHtml(html));
 }
@@ -222,8 +194,6 @@ function sanitizedHtml(
 	const sanitized = DOMPurify.sanitize(preserveInlineIconSvg(html), HTML_POLICY);
 	let withTooltipFallbacks = addTooltipFallbacks(sanitized);
 	if (options?.interactive === false) {
-		// Labels inside controls cannot contain another focus target. Keep tooltip
-		// definitions as ordinary text, including legacy HTML and prepared caches.
 		withTooltipFallbacks = DOMPurify.sanitize(withTooltipFallbacks, NONINTERACTIVE_POLICY);
 	}
 	return options?.renderInlineIcons === false
@@ -244,7 +214,6 @@ function containsBlock(root: Element): boolean {
 	return false;
 }
 
-/** Split a rich question into a phrasing-only heading and its supporting blocks. */
 export function splitHeadingContent(html: string): HeadingContent {
 	return memoized(`heading:${html}`, () => headingContent(html));
 }

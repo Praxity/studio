@@ -4,7 +4,6 @@ import { fileURLToPath } from "node:url";
 import type { StudioServer } from "./studio/server";
 
 const args = process.argv.slice(2);
-// This identity belongs to this spawn, not to browser/export subprocesses.
 const expectedParent = process.env.PRAXITY_PARENT_PID;
 delete process.env.PRAXITY_PARENT_PID;
 let server: StudioServer | undefined;
@@ -37,7 +36,6 @@ function stop(signal: "SIGINT" | "SIGTERM" | "SIGHUP" | "SIGQUIT") {
 	if (exitCode !== undefined) return;
 	exitCode = 128 + { SIGHUP: 1, SIGINT: 2, SIGQUIT: 3, SIGTERM: 15 }[signal];
 	clearInterval(parentWatch);
-	// Includes stuck startup; a hung filesystem operation can still exceed this allowance.
 	forcedExit = setTimeout(() => {
 		process.stderr.write(
 			"Praxity studio shutdown timed out.\nLe délai d'arrêt de Praxity studio est dépassé.\n",
@@ -51,12 +49,10 @@ if (args[0] === "studio" && !args.includes("--help") && !args.includes("-h")) {
 	for (const signal of ["SIGINT", "SIGTERM", "SIGHUP", "SIGQUIT"] as const) {
 		process.on(signal, () => stop(signal));
 	}
-	// IPC retains EOF even if the launcher dies before this bootstrap runs.
 	if (process.connected !== undefined) {
 		process.on("disconnect", parentDisconnected);
 		if (!process.connected) stop("SIGHUP");
 	}
-	// An expected PID covers early Unix reparenting; IPC EOF identifies the launcher on Windows.
 	if (expectedParent !== undefined && !/^[1-9]\d*$/.test(expectedParent)) {
 		throw new Error("PRAXITY_PARENT_PID must be a positive integer");
 	}
@@ -68,8 +64,6 @@ if (args[0] === "studio" && !args.includes("--help") && !args.includes("-h")) {
 				if (process.ppid !== parentPid) stop("SIGHUP");
 				return;
 			}
-			// shortcut: PID-only Windows launchers are best effort because IDs can be reused.
-			// Launch with an IPC channel for reliable EOF, or hold an OS handle if that is unavailable.
 			try {
 				process.kill(parentPid, 0);
 			} catch (error) {
@@ -84,7 +78,6 @@ if (args[0] === "studio" && !args.includes("--help") && !args.includes("-h")) {
 }
 
 if (exitCode !== undefined) process.exit(exitCode);
-// Keep expensive imports outside the bootstrap, including in the packaged artifact.
 const { runPraxityCli } = await import("./cli");
 if (exitCode !== undefined) process.exit(exitCode);
 const result = await runPraxityCli(args, {

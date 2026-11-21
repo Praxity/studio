@@ -98,7 +98,6 @@ for (const width of [1280, 390]) {
 	test(`card boundary navigation preserves focus and Tab order at ${width}px`, async ({ page }) => {
 		await page.setViewportSize({ width, height: 900 });
 		await page.goto(`${readTestEnv().url}/design-container-surfaces-light/container-surfaces.html`);
-		// The enabled SSR button can receive Enter before its lazy card handler is installed.
 		const island = page.locator('[data-island="card"]').filter({ hasText: "Boundary card one" });
 		await island.scrollIntoViewIfNeeded();
 		await expect(island).toHaveAttribute("data-hydrated", "");
@@ -197,7 +196,6 @@ for (const appearance of ["light", "dark"]) {
 				const back = root.locator('[data-card-side="back"]');
 				await expect(front).toBeVisible();
 				if (mode === "small") {
-					// Small previews omit the card runtime; both passages remain readable.
 					await expect(toggle).toBeHidden();
 					await expect(back).toBeVisible();
 					continue;

@@ -18,15 +18,14 @@ export interface CourseManifest {
 	design: Record<string, unknown>;
 	pronunciation?: PronunciationConfig;
 	cast?: DialogueCast;
-	/** Authored YAML value, kept so rewrites retain invalid cast entries. */
 	castRaw?: unknown;
 	castWarnings?: string[];
 }
 
 export interface ManifestValidation {
-	missingFiles: string[]; // in lessons: but not on disk
-	unlistedFiles: string[]; // on disk but not in lessons:
-	duplicates: string[]; // duplicate entries in lessons:
+	missingFiles: string[];
+	unlistedFiles: string[];
+	duplicates: string[];
 }
 
 export class CourseHomeUrlError extends Error {
@@ -54,9 +53,7 @@ function parseCourseHomeUrl(value: unknown, locale: string): string | undefined 
 	try {
 		const url = new URL(value, "https://course.invalid/");
 		if (url.protocol === "https:" && (!hasScheme || /^https:\/\//iu.test(value))) return value;
-	} catch {
-		// Report malformed URLs with the same field-specific refusal as unsafe schemes.
-	}
+	} catch {}
 	throw new CourseHomeUrlError(locale);
 }
 
@@ -67,9 +64,7 @@ export function parseCourseManifest(yamlContent: string, locale = "en"): CourseM
 		if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
 			raw = parsed as Record<string, unknown>;
 		}
-	} catch {
-		// Invalid YAML — return defaults
-	}
+	} catch {}
 
 	if (raw.moduleDeck !== undefined && typeof raw.moduleDeck !== "boolean") {
 		throw new Error("moduleDeck must be a boolean");
@@ -79,7 +74,6 @@ export function parseCourseManifest(yamlContent: string, locale = "en"): CourseM
 		typeof raw.locale === "string" ? raw.locale : "en",
 	);
 
-	// Retired persisted `badge` values are intentionally omitted from normalized state.
 	return {
 		title: typeof raw.title === "string" ? raw.title : "",
 		description: typeof raw.description === "string" ? raw.description : undefined,

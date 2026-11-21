@@ -1,5 +1,3 @@
-/** Dependency-free fence ownership for the lexer, metadata reader and source editor.
- * Raw offsets include one optional leading BOM and the authored line endings. */
 export function findFrontmatterRange(source: string) {
 	const lines = source.match(/[^\r\n]*(?:\r\n|\r|\n|$)/g) ?? [];
 	const first = lines[0];

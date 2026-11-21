@@ -20,7 +20,6 @@ export {
 } from "./choice-state-facts";
 export { DONT_KNOW };
 
-/** Choice settings override component defaults, including an explicit false. */
 export function assessmentShuffle(data: { shuffle?: unknown; response?: unknown }): boolean {
 	const response = data.response;
 	if (
@@ -35,7 +34,6 @@ export function assessmentShuffle(data: { shuffle?: unknown; response?: unknown 
 	return data.shuffle === true;
 }
 
-/** Studio grades sets and surveys, rather than the library's authored quiz/points shape. */
 export function choiceAnswerResult(response: ChoiceResponse, selected: readonly string[]) {
 	if (!selected.length) return "unanswered";
 	if (response.selectionMode === "single" && selected.length === 1 && selected[0] === DONT_KNOW)
@@ -46,7 +44,6 @@ export function choiceAnswerResult(response: ChoiceResponse, selected: readonly 
 		: "incorrect";
 }
 
-/** Allocate stable readable IDs for the whole question, before choosing a subset. */
 export function choiceInteractionReport(
 	options: readonly { id: string; label: string }[],
 	selected: ReadonlySet<string>,
@@ -87,7 +84,6 @@ export function choiceInteractionReport(
 		.map(([, value]) => value)
 		.join(limit < String(options.length).length + 2 ? "," : "[,]");
 	if (limit < String(options.length).length + 2 && responseText.length > (responseLimit ?? 255)) {
-		// SCORM 1.2 only: hex digits encode four positions each, low bit first.
 		responseText =
 			"positions-hex:" +
 			Array.from({ length: Math.ceil(options.length / 4) }, (_, index) =>
@@ -114,14 +110,12 @@ export function choiceInteractionReport(
 	};
 }
 
-/** The same effective policy drives controls and the saved-answer signature. */
 export function choiceStatePolicy(data: AssessmentBlockData) {
 	const response = data.response as ChoiceResponse;
 	const canAutoScore = response.options.some((option) => option.isCorrect === true);
 	return { canAutoScore, ...assessmentStatePolicy(data, canAutoScore) };
 }
 
-/** Provenance is recorded by inline producers, never inferred from authored classes. */
 export function choiceStateQuestion(
 	data: AssessmentBlockData,
 	dontKnow: boolean,

@@ -38,11 +38,6 @@ export function enforceThemeTextContrast(theme: Record<string, string>): Record<
 	return result;
 }
 
-/**
- * Mantine resolves semantic text to shade 6 in light mode and shade 4 in dark
- * mode. Correct those roles only; changing all ten shades would turn decorative
- * fills and tints into a high-contrast, visually flat palette.
- */
 export function enforceColorShadeTextContrast(
 	shades: ColorShades,
 	background: string,
@@ -61,9 +56,6 @@ export function enforceColorShadeTextContrast(
 			const shade = asHex(next[index]);
 			if (!shade) continue;
 			const surfaces = [background];
-			// Assessment feedback puts semantic text on a pale tint of the same
-			// status color. Shade 0 is the generated palette's conservative
-			// approximation of that tint, and is harder than the plain surface.
 			if (role !== "accent" && luminance(background) > 0.5) {
 				const tint = asHex(next[0]);
 				if (tint) surfaces.push(tint);

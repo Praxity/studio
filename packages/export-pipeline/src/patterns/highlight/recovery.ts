@@ -1,4 +1,3 @@
-/** Attributes added to chunks, owned here for reset, destroy and failed-attach recovery. */
 export const HIGHLIGHT_RESULT_ATTRIBUTES = [
 	"aria-disabled",
 	"aria-describedby",
@@ -11,7 +10,6 @@ export const HIGHLIGHT_ADDED_ATTRIBUTES = [
 	...HIGHLIGHT_RESULT_ATTRIBUTES,
 ] as const;
 
-/** Restore the baseline, using focus captured before instance teardown when supplied. */
 export function restoreHighlightBaseline(
 	root: HTMLElement,
 	active: Element | null = root.contains(root.ownerDocument.activeElement)
@@ -50,6 +48,5 @@ export function restoreHighlightBaseline(
 		answer.hidden = false;
 		answer.open = false;
 	}
-	// Removing a chunk's injected focusability needs the same recovery as hiding a flow control.
 	if (active && (hiddenFocus || !active.isConnected)) answer?.querySelector("summary")?.focus();
 }

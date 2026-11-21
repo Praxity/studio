@@ -36,7 +36,6 @@ it.each([0, 1])(
 		check(source("Task", "x".repeat(1500 + overflow)), allowed);
 		check(source("Task", "Model", "x".repeat(120 + overflow)), allowed);
 		check(source("Task", "Model", "Label", "x".repeat(1500 + overflow)), allowed);
-		// Model stays at 1500 when evidence exceeds 1500; do not mask its error.
 		check(
 			source("Task", "x".repeat(1500), "Label", "Hint", "x".repeat(1500 + overflow)),
 			allowed,

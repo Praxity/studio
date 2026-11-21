@@ -133,7 +133,6 @@ it.each([false, true])(
 		saved.state.receipts[0].actorId = actor.id;
 		const payload = { ...createPayload(), body: "Legacy\u009b comment" };
 		saved.state.threads[0].messages[0].body = payload.body;
-		// SHA-256 of the canonical pre-upgrade create payload, including the legacy body.
 		saved.state.receipts[0].digest =
 			"608d034f8438686c14499d5cc57a3d5e4ac5721889079adab6cc05cb757412de";
 		const replayed = success(await create(saved.state, actor, payload, deps(10)));
@@ -1461,7 +1460,6 @@ describe("snapshot listing", () => {
 		};
 		const page = await listThreads(data.state, reviewer, { limit: 1 }, firstPolicy);
 		if ("ok" in page || !page.nextCursor) throw new Error("Missing cursor");
-		// Same number visible, different membership: offsets cannot be shared.
 		expect(
 			await listThreads(data.state, reviewer, { cursor: page.nextCursor }, secondPolicy),
 		).toEqual({ ok: false, code: "invalid_cursor", detail: {} });

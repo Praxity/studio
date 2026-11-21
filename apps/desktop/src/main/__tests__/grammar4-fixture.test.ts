@@ -5,7 +5,6 @@ import { beforeAll, expect, it } from "vitest";
 import { runPraxityCli } from "../cli";
 
 beforeAll(async () => {
-	// Keep the host reader real without charging its cold import to the format assertions.
 	await import("../export/inspect-project");
 });
 

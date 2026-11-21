@@ -18,7 +18,6 @@ interface ThemePreviewThumbnailProps {
 	mode?: "light" | "dark";
 }
 
-/** Decorative miniature of the course chrome and page. */
 export function ThemePreviewThumbnail({ preset, overrides, mode }: ThemePreviewThumbnailProps) {
 	const resolved = useMemo(() => {
 		const presetKey = resolveCoursePresetId(preset);

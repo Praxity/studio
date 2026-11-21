@@ -247,7 +247,6 @@ test("report-only forks termination warns only after a confirmation timeout in t
 				});
 				await reporter.onTestRunEnd();
 			}
-			// Vitest sets failure status before onTestRunEnd; no warning may clear it.
 			if (["failure", "test timeout", "infrastructure"].includes(scenario)) process.exitCode = 1;
 			if (scenario === "next run") reporter.onTestRunStart();
 			if (scenario === "extra error") logger.error(hang, new Error("other infrastructure"));

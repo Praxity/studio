@@ -13,8 +13,6 @@ import {
 } from "yaml";
 import { PlainYamlRequiredError } from "../shared/project-write-errors";
 
-/** These legacy edits are retired by X1. Refuse syntax we cannot preserve exactly
- * instead of introducing a general YAML editor for the old formats. */
 export function plainYamlDocument(source: string) {
 	return parsePlainYaml(source).document;
 }
@@ -47,7 +45,6 @@ function parsePlainYaml(source: string) {
 				if (item.key) check(item.key, end.offset);
 				if (item.value) check(item.value, end.offset);
 			}
-			// A nested collection's trailing comments are still inside its parent's flow.
 			for (const part of token.end) check(part, flowEnd ?? end.offset);
 		} else if (token.type === "block-map" || token.type === "block-seq") {
 			for (const item of token.items) {
@@ -75,9 +72,6 @@ export interface YamlEdit {
 	text: string;
 }
 
-/** Match comments to their nodes, not just equal text elsewhere in the file.
- * Standalone comments between entries belong to the collection: their ownership
- * is ambiguous, so deleting an adjacent entry cannot authorize their removal. */
 function requirePreservedComments(
 	source: string,
 	original: ReturnType<typeof parsePlainYaml>,
@@ -121,7 +115,6 @@ function requirePreservedComments(
 			const onlyDeletes =
 				isSeq(after) && next.length < before.items.length && matches.size === next.length;
 			for (const [index, item] of before.items.entries()) {
-				// Duplicate values do not identify which authored entry was removed.
 				const unique = before.items.filter((other) => equal(item, other)).length === 1;
 				match(item, matches.get(index), deleted || (onlyDeletes && unique && !matches.has(index)));
 			}
@@ -149,8 +142,6 @@ function requirePreservedComments(
 					text.lastIndexOf("\r", token.offset - 1),
 				) + 1;
 			if (/^[ \t]*$/.test(text.slice(lineStart, token.offset))) {
-				// Removing the first entry can leave a gap comment before the
-				// collection's AST range. It still belongs to that collection.
 				const leading = nodes.find(
 					(node) =>
 						(isMap(node) || isSeq(node)) &&
@@ -189,8 +180,6 @@ function requirePreservedComments(
 	}
 }
 
-/** A candidate must preserve the byte partition outside the declared edits and
- * both its complete resolved data and the owning reader's interpretation. */
 export function applyPlainYamlEdits<T>(
 	source: string,
 	edits: YamlEdit[],

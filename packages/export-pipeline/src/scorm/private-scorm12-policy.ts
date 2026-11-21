@@ -2,7 +2,6 @@ import type { ScormSessionState } from "./api/session";
 
 type PrivateScorm12Session = ScormSessionState & { interactionNextIndex?: number };
 
-/** Device filtering can shrink history; accepted IDs own a shared launch high water. */
 export function appendPrivateScorm12Interaction(
 	session: PrivateScorm12Session | null,
 	get: (key: string) => string,
@@ -13,9 +12,7 @@ export function appendPrivateScorm12Interaction(
 	let raw = "";
 	try {
 		raw = get("cmi.interactions._count");
-	} catch {
-		// Optional LMS count support must not suppress ordinary self-check-course rows.
-	}
+	} catch {}
 	if (raw && (!/^\d+$/.test(raw) || !Number.isSafeInteger(Number(raw)))) return;
 	const index = Math.max(raw ? Number(raw) : historyIndex, session?.interactionNextIndex ?? 0);
 	if (!Number.isSafeInteger(index) || !set(`cmi.interactions.${index}.id`, id)) return;

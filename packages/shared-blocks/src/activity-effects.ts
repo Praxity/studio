@@ -14,7 +14,6 @@ interface ActivityEffectsDependencies<State> {
 	published(state: State): void;
 }
 
-/** FIFO turns and effects; the caller owns activity state, reductions and lifetime. */
 export function createActivityEffects<Command, State>(
 	dependencies: ActivityEffectsDependencies<State>,
 ) {
@@ -27,8 +26,6 @@ export function createActivityEffects<Command, State>(
 		intent = 0,
 		changed = false,
 		lastCommand: Command | undefined;
-	// Async admissions retain their activity generation; synchronous turns retain
-	// revision/intent. Both use this owner's external lifetime authority.
 	const ticket = (): ActivityEffectTicket => {
 		const r = revision,
 			i = intent;
@@ -55,7 +52,6 @@ export function createActivityEffects<Command, State>(
 	const publish = () => {
 		const pass = ticket();
 		if (!pass.current()) return;
-		// Visit activity order, rather than dirty-insertion order, on every resumed pass.
 		for (const activityId of dependencies.activities()) {
 			if (dependencies.disposed() || !dirty.has(activityId)) continue;
 			dirty.delete(activityId);
@@ -91,12 +87,10 @@ export function createActivityEffects<Command, State>(
 			while (jobs.length || changed) {
 				while (jobs.length) jobs.shift()?.();
 				if (changed) publish();
-				// Local cancellation and receipts settle even after external ownership is lost.
 				if (!dependencies.current() && !jobs.length) break;
 			}
 		} finally {
 			draining = false;
-			// Receipts observe the entire synchronous command/effect turn.
 			for (const settle of settlements.splice(0)) settle();
 		}
 	};
@@ -115,7 +109,6 @@ export function createActivityEffects<Command, State>(
 		},
 		commit,
 		enqueue,
-		// Internal continuations join the FIFO without invalidating their originating turn.
 		append(job: () => void) {
 			jobs.push(job);
 		},

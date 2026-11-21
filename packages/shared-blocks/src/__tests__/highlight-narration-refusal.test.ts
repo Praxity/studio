@@ -32,7 +32,6 @@ const message = (locale: string) =>
 
 it.each(["en", "fr-CA"])("refuses every compiled highlight narration field in %s", (locale) => {
 	for (const field of NARRATION_BLOCK_FIELDS) {
-		// Presence is unsupported, including an empty script or a false disabled flag.
 		const blocks = [nested(highlight({ [field]: field === "narrationDisabled" ? false : "" }))];
 		const expected = expect.objectContaining({
 			code: "highlight-narration-unsupported",
@@ -42,7 +41,6 @@ it.each(["en", "fr-CA"])("refuses every compiled highlight narration field in %s
 			message: `highlight: ${message(locale)}`,
 		});
 		expect(() => extractNarrationSegments("", {}, blocks, {}, locale)).toThrowError(expected);
-		// V2 must refuse before stripping legacy narration fields from compiled input.
 		expect(() =>
 			resolveNarrationV2({
 				courseId: "course",
@@ -70,7 +68,6 @@ it.each(["en", "fr-CA"])("refuses explicit highlight and chunk sidecar targets i
 						version: 2,
 						courseId: "course",
 						lessons: {
-							// A moved target is refused even if its old lesson owns the entry.
 							previous: {
 								segments: [{ target: { id, role }, audio: "unspoken.mp3", disabled: true }],
 							},

@@ -47,7 +47,6 @@ it("validated records retain the original canonical serialization and its hash",
 	expect(record.canonical).toBe(canonical);
 	expect(record.hash).toBe(expectedHash);
 	expect(inputs.filter((text) => text === canonical)).toHaveLength(1);
-	// Hash validation and head binding use the same namespace rule without another digest.
 	assertIdentitySnapshotNamespace(record.snapshot, options);
 	expect(inputs.filter((text) => text === canonical)).toHaveLength(1);
 });

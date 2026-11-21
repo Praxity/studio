@@ -2,9 +2,7 @@ import type { MessageRef } from "@praxity/grammar";
 import { LEARNER_STATE_MAX_BYTES } from "./learner-state";
 
 export const COURSE_PREVIEW_PROTOCOL_VERSION = 1;
-// Bound both a frame's freeze reply and the host's checkpoint save.
 export const COURSE_PREVIEW_STATE_FLUSH_TIMEOUT_MS = 3_000;
-// A literal lets query-only browser imports omit the unused URL limit.
 export const COURSE_PREVIEW_URL_MAX_BYTES = 8_192;
 
 export interface PreviewHtmlFragment {
@@ -17,8 +15,6 @@ export interface PreviewNodeRender {
 	pageId: string;
 	fragments: PreviewHtmlFragment[];
 }
-/** Per-page draft sequences are independent of admitted operation revisions.
- * A transaction settles only its own latest draft, never a newer gesture. */
 export interface PreviewDraftRender extends PreviewNodeRender {
 	transactionId: string;
 	state: "draft" | "saved" | "reverted";
@@ -38,7 +34,6 @@ export type PreviewRenderEvent =
 	| { type: "nodesRendered"; render: PreviewNodeRender }
 	| { type: "draftRendered"; render: PreviewDraftRender }
 	| { type: "compileFailed"; seq: number; pageId: string; diagnostics: PreviewCompileDiagnostic[] }
-	/** The course's pages changed: added, removed, reordered or given new identities. */
 	| { type: "pagesChanged"; pageIds: string[] };
 
 export type CoursePreviewFatalCode = "invalid-state" | "runtime-start";
@@ -135,10 +130,6 @@ export type CoursePreviewEvent =
 				code: CoursePreviewFatalCode;
 			});
 
-/**
- * An inspection frame's origin is opaque, so no postMessage target can name it.
- * The frame offers its own private port instead, and the host never posts to its window.
- */
 export interface CoursePreviewInspectionOffer {
 	source: "praxity-course";
 	version: 1;
@@ -155,7 +146,6 @@ export function readCoursePreviewChannel(search: string): string | null {
 	return channel && /^[A-Za-z0-9_-]{32,128}$/.test(channel) ? channel : null;
 }
 
-/** `"null"` names a file renderer, which has no exact postMessage target. */
 export function readCoursePreviewParentOrigin(search: string): string | null {
 	return new URLSearchParams(search).get("praxity-parent-origin");
 }
@@ -336,6 +326,4 @@ function hasExactKeys(value: Record<string, unknown>, messageKeys: readonly stri
 	);
 }
 
-// Source diagnostics extend this transport through a type-only edge. Keeping
-// author metadata outside this runtime module preserves learner bundle bytes.
 import type {} from "./course-preview-diagnostics";

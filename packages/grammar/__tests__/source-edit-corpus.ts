@@ -43,7 +43,6 @@ const lines = [
 	"",
 ];
 
-/** Every adapter receives the same source bytes, including deliberately invalid metadata. */
 export const sourceEditCorpus = [
 	{ name: "BOM", source: `\uFEFF${lines.join("\n")}` },
 	{ name: "CRLF", source: lines.join("\r\n") },
@@ -133,7 +132,6 @@ type Fixture = ReturnType<typeof operationFixture>;
 export interface CorpusOperation {
 	targets: OperationTarget[];
 	args: Record<string, unknown>;
-	/** Independent authorization bounds, not the edits returned by the planner. */
 	range: { start: number; end: number };
 	readOnly?: boolean;
 }

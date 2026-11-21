@@ -1,29 +1,8 @@
-/**
- * Local SCORM integration tests using the Rustici SCORM Driver.
- *
- * These tests are self-contained — no internet access, no SCORM Cloud account.
- * They require the Rustici driver files to be present in:
- *   tests/scorm-local/drivers/scorm12/
- *   tests/scorm-local/drivers/scorm2004/
- *
- * If either driver directory is absent the corresponding tests are skipped.
- *
- * The player uses a <frameset>. The SCO runs inside the frame named
- * "scormdriver_content". Playwright accesses it via page.frame().
- * The SCORM API (window.API for 1.2 / window.API_1484_11 for 2004) is
- * exposed on the top-level page (the frameset owner), which is where the
- * driver JS runs.
- */
-
 import type { Frame, Page } from "@playwright/test";
 import { chromium, expect, test } from "@playwright/test";
 import { buildScormCloudFixtures } from "../scorm-cloud/fixture";
 import { answerSequenceBlock } from "../scorm-cloud/learner-simulation";
 import { createLocalHarness, isDriverAvailable, type ScormFormat } from "./local-harness";
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
 
 interface PraxityConfig {
 	totalPages: number;
@@ -55,18 +34,13 @@ interface AssessmentGroupData {
 }
 
 interface ScormState {
-	lessonStatus: string; // "passed" | "failed" | "completed" | "incomplete" | ...
+	lessonStatus: string;
 	suspendData: string;
 	score: string;
-	/** SCORM 2004 only: cmi.success_status ("passed" | "failed" | "unknown") */
 	successStatus?: string;
 }
 
 type ScormDataStore = Record<string, string>;
-
-// ---------------------------------------------------------------------------
-// Frame-aware simulation helpers
-// ---------------------------------------------------------------------------
 
 const AUTOMATABLE_TYPES = new Set(["choice", "matching", "textResponse", "sequence"]);
 
@@ -80,9 +54,7 @@ async function waitForFrameHydration(frame: Frame): Promise<void> {
 				return rt != null;
 			});
 			if (ready) return;
-		} catch {
-			// Frame may be navigating
-		}
+		} catch {}
 		await frame.waitForTimeout(300);
 	}
 	throw new Error(`Course runtime did not initialize in SCO frame after 15 s: ${frame.url()}`);
@@ -112,25 +84,12 @@ async function readFrameConfig(frame: Frame): Promise<PraxityConfig> {
 				};
 			});
 			if (config) return config as PraxityConfig;
-		} catch {
-			// Frame may be navigating
-		}
+		} catch {}
 		await frame.waitForTimeout(300);
 	}
 	throw new Error("Missing #praxity-host-config in SCO frame after 15 s");
 }
 
-/**
- * Reorder sequence items using the up/down ActionIcon buttons rendered by SequencePreview.
- *
- * Strategy: bubble-sort the current DOM order toward the target order.
- * For each position (left to right), find which item belongs there and
- * click "move up" until it reaches that position. This is O(n²) clicks
- * but reliable — no drag-and-drop required.
- *
- * When answerCorrectly=false we skip reordering entirely (submit the shuffled
- * order the component rendered on mount).
- */
 async function answerChoiceInFrame(
 	frame: Frame,
 	blockId: string,
@@ -287,7 +246,6 @@ async function handleAssessmentGroupInFrame(
 
 	try {
 		if (group.data.mode === "oneOf") {
-			// Select the first radio option in the picker, then answer that member.
 			const firstRadio = frame.locator(".praxity-ag-radio").first();
 			if ((await firstRadio.count()) > 0) {
 				await firstRadio.evaluate((el) => (el as HTMLInputElement).click());
@@ -296,7 +254,6 @@ async function handleAssessmentGroupInFrame(
 			const wasAutomatable = await answerAssessmentInFrame(frame, member, answerCorrectly);
 			if (wasAutomatable) answered++;
 		} else {
-			// Mode "all": answer every member.
 			for (const member of members) {
 				const wasAutomatable = await answerAssessmentInFrame(frame, member, answerCorrectly);
 				if (wasAutomatable) answered++;
@@ -309,7 +266,6 @@ async function handleAssessmentGroupInFrame(
 		return answered;
 	}
 
-	// Brief pause for the group script's requestAnimationFrame hydration check.
 	await frame.waitForTimeout(500);
 
 	const submitText = group.data.mode === "oneOf" ? "Submit Selected" : "Submit All";
@@ -328,7 +284,6 @@ async function handleAssessmentGroupInFrame(
 		}
 	}
 
-	// Wait for the button to become enabled.
 	if (await groupSubmit.isDisabled()) {
 		const deadline = Date.now() + 3_000;
 		while (Date.now() < deadline && (await groupSubmit.isDisabled())) {
@@ -344,9 +299,7 @@ async function handleAssessmentGroupInFrame(
 
 	try {
 		await frame.locator(".praxity-ag-results").waitFor({ state: "visible", timeout: 8_000 });
-	} catch {
-		// Results element may not always render; treat click as success.
-	}
+	} catch {}
 
 	console.log(`[local-sim]   ✓ Group "${groupLabel}" submitted`);
 	return answered;
@@ -421,46 +374,19 @@ async function navigateFrameToNextPage(frame: Frame): Promise<boolean> {
 	return true;
 }
 
-// ---------------------------------------------------------------------------
-// SCORM mock API injector
-// ---------------------------------------------------------------------------
-
-/**
- * Inject a lightweight in-memory SCORM API mock into the page BEFORE navigation.
- *
- * Only the API for the given format is injected:
- *  - scorm12  → window.API  (SCORM 1.2)
- *  - scorm2004 → window.API_1484_11  (SCORM 2004)
- *
- * Injecting both simultaneously causes the runtime auto-detector to always
- * pick SCORM 2004 (it checks API_1484_11 first), so a SCORM 1.2 package would
- * use the wrong runtime and write to the wrong CMI fields.
- *
- * The mock stores data in `window.__scormStore` so we can read it back later.
- * Uses `page.addInitScript` so it runs before any frame content loads.
- */
 async function injectScormApiMocks(
 	page: Page,
 	format: ScormFormat,
 	initialStore?: ScormDataStore,
 ): Promise<void> {
-	// Only inject on the TOP-LEVEL frame (indexAPI.html).
-	// Child frames also receive addInitScript, which would create separate store
-	// closures.  The guard `window.frameElement === null` skips injection in
-	// child frames so that our content's findAPI() walks up to the parent and
-	// uses the single shared store.
 	await page.addInitScript(
 		({ fmt, seededStore }) => {
-			// Skip injection in child frames — only the top-level frameset page
-			// should host the API objects.
 			if (window.frameElement !== null) return;
 
 			const store: Record<string, string> = { ...(seededStore ?? {}) };
 			(window as unknown as Record<string, unknown>).__scormStore = store;
 
 			if (fmt === "scorm12") {
-				// SCORM 1.2 API only — do NOT inject API_1484_11 or the runtime
-				// auto-detector will pick SCORM 2004 instead.
 				(window as unknown as Record<string, unknown>).API = {
 					LMSInitialize: (_: string) => "true",
 					LMSFinish: (_: string) => "true",
@@ -475,7 +401,6 @@ async function injectScormApiMocks(
 					LMSGetDiagnostic: (_: string) => "",
 				};
 			} else {
-				// SCORM 2004 API only
 				(window as unknown as Record<string, unknown>).API_1484_11 = {
 					Initialize: (_: string) => "true",
 					Terminate: (_: string) => "true",
@@ -503,13 +428,6 @@ async function readScormStore(page: Page): Promise<ScormDataStore> {
 	});
 }
 
-// ---------------------------------------------------------------------------
-// SCORM state reader — reads from the injected mock store
-// ---------------------------------------------------------------------------
-
-/**
- * Read CMI data from the injected mock API store on the top-level page.
- */
 async function readScormState(page: Page, format: ScormFormat): Promise<ScormState> {
 	return page.evaluate((fmt) => {
 		const store = (window as unknown as { __scormStore?: Record<string, string> }).__scormStore;
@@ -523,7 +441,6 @@ async function readScormState(page: Page, format: ScormFormat): Promise<ScormSta
 			};
 		}
 
-		// scorm2004
 		return {
 			lessonStatus: store["cmi.completion_status"] ?? "",
 			suspendData: store["cmi.suspend_data"] ?? "",
@@ -533,9 +450,6 @@ async function readScormState(page: Page, format: ScormFormat): Promise<ScormSta
 	}, format);
 }
 
-/**
- * Ask the SCO's runtime to commit data, then read back state from the mock store.
- */
 async function commitAndReadState(
 	scoFrame: Frame,
 	page: Page,
@@ -549,10 +463,6 @@ async function commitAndReadState(
 	expect(committed).toBe(true);
 	return readScormState(page, format);
 }
-
-// ---------------------------------------------------------------------------
-// Full simulation over a frame
-// ---------------------------------------------------------------------------
 
 interface SimulationResult {
 	pagesVisited: number;
@@ -568,7 +478,6 @@ async function simulateInFrame(
 	let questionsAnswered = 0;
 	let groupsCompleted = 0;
 
-	// Wait for first page load and hydration
 	await waitForFrameHydration(frame);
 	let config = await readFrameConfig(frame);
 	const totalPages = config.totalPages;
@@ -589,20 +498,17 @@ async function simulateInFrame(
 			`[local-sim] Page ${pageIndex + 1}/${totalPages}: "${config.pages[config.currentPage - 1]?.slug ?? "unknown"}"`,
 		);
 
-		// Identify assessment groups and their member IDs on this page.
 		const groups = config.blocks
 			.filter((b) => b.type === "assessmentGroup")
 			.map((b) => ({ id: b.id, data: b.data as unknown as AssessmentGroupData }));
 		const groupMemberIds = new Set(groups.flatMap((g) => g.data.memberBlockIds ?? []));
 
-		// Build a lookup map for assessment blocks (used by group handler).
 		const assessmentBlockMap = new Map(
 			config.blocks
 				.filter((b) => b.type === "assessment")
 				.map((b) => [b.id, { id: b.id, data: b.data as unknown as AssessmentBlockData }]),
 		);
 
-		// Handle standalone assessments (not members of any group).
 		const standaloneAssessments = config.blocks.filter(
 			(b) => b.type === "assessment" && !groupMemberIds.has(b.id),
 		);
@@ -633,7 +539,6 @@ async function simulateInFrame(
 			}
 		}
 
-		// Handle assessment groups.
 		for (const group of groups) {
 			console.log(
 				`[local-sim]   Group "${group.data.groupName ?? group.id}" (mode: ${group.data.mode}, members: ${group.data.memberBlockIds?.length ?? 0})`,
@@ -664,19 +569,12 @@ async function simulateInFrame(
 	return { pagesVisited, questionsAnswered, groupsCompleted };
 }
 
-// ---------------------------------------------------------------------------
-// Helper: get or skip the frame
-// ---------------------------------------------------------------------------
-
 async function getContentFrame(page: Page): Promise<Frame> {
-	// The frameset loads blank.html initially; wait for the driver to navigate
-	// the content frame to the SCO's first page.
 	const deadline = Date.now() + 20_000;
 	while (Date.now() < deadline) {
 		const frame = page.frame("scormdriver_content");
 		if (frame) {
 			const url = frame.url();
-			// Wait until it's no longer blank.html (driver is still initialising)
 			if (url && !url.includes("blank.html") && !url.includes("about:blank")) {
 				return frame;
 			}
@@ -688,15 +586,6 @@ async function getContentFrame(page: Page): Promise<Frame> {
 			"Check that the HTTP server is running and scormcontent/index.html exists.",
 	);
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Comprehensive fixture tests — full grammar fixture is slow, so keep this
-// coverage focused on one happy-path traversal per SCORM version.
-// ---------------------------------------------------------------------------
 
 for (const format of ["scorm12", "scorm2004"] as const) {
 	test.describe(`Local SCORM driver: ${format} — comprehensive fixture`, () => {
@@ -710,8 +599,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 			driverAvailable = await isDriverAvailable(format);
 			if (!driverAvailable) return;
 
-			// Build once and share across all tests in this describe block.
-			// { full: true } loads the grammar fixture (all pages and block types).
 			const fixtures = await buildScormCloudFixtures({ full: true });
 			fullZip = format === "scorm12" ? fixtures.scorm12Zip : fixtures.scorm2004Zip;
 			fullPageCount = fixtures.pageCount;
@@ -739,11 +626,8 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 				const result = await simulateInFrame(contentFrame, { answerCorrectly: true });
 				console.log(`[local] ${format} comprehensive fixture result:`, result);
 
-				// All pages must be visited.
 				expect(result.pagesVisited).toBe(fullPageCount);
 
-				// At least some automatable questions should have been answered
-				// (choice + matching + textResponse exist in the full fixture).
 				expect(result.questionsAnswered).toBeGreaterThan(0);
 
 				const state = await commitAndReadState(contentFrame, page, format);
@@ -755,8 +639,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 					expect(state.lessonStatus).toBe("completed");
 				}
 
-				// Score should be greater than 0 — some questions are automatable even
-				// though non-automatable types (hotspot, ordering, categorize, etc.) exist.
 				if (state.score !== "") {
 					expect(parseFloat(state.score)).toBeGreaterThan(0);
 				}
@@ -789,13 +671,8 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 				const result = await simulateInFrame(contentFrame, { answerCorrectly: true });
 				console.log(`[local] ${format} assessment groups result:`, result);
 
-				// All pages visited.
 				expect(result.pagesVisited).toBe(fullPageCount);
 
-				// The full fixture contains two assessment groups on the "Assessment Blocks"
-				// page. If the group submit button appeared and was clicked, groupsCompleted
-				// should reflect that. If the rAF timing causes the button not to render in
-				// this headless context, we log a warning and accept 0 as a soft pass.
 				if (result.groupsCompleted > 0) {
 					console.log(`[local] Groups completed: ${result.groupsCompleted}`);
 					expect(result.groupsCompleted).toBeGreaterThan(0);
@@ -818,7 +695,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 	test.describe(`Local SCORM driver: ${format}`, () => {
 		test.describe.configure({ mode: "serial" });
 
-		// Build fixtures once for the whole describe block.
 		let scorm12Zip: Buffer;
 		let scorm2004Zip: Buffer;
 		let pageCount: number;
@@ -869,12 +745,10 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 					expect(state.lessonStatus).toBe("completed");
 				}
 
-				// Suspend data should contain visited-pages record
 				const sd = JSON.parse(state.suspendData) as { visitedPages?: unknown };
 				expect(Array.isArray(sd.visitedPages)).toBe(true);
 				expect((sd.visitedPages as unknown[]).length).toBe(pageCount);
 
-				// Score should be set for courses with graded questions
 				if (scoredQuestionCount > 0) {
 					expect(state.score).not.toBe("");
 					const scoreNum = parseFloat(state.score);
@@ -898,7 +772,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 
 			const zipBuffer = format === "scorm12" ? scorm12Zip : scorm2004Zip;
 
-			// Session 1: visit first 2 pages only
 			const harness1 = await createLocalHarness(zipBuffer, format);
 			const browser1 = await chromium.launch({ headless: true });
 			const context1 = await browser1.newContext();
@@ -919,7 +792,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 				await harness1.cleanup();
 			}
 
-			// suspend_data should contain 2 visited pages
 			const sd = JSON.parse(suspendDataAfterSession1) as { visitedPages?: unknown };
 			expect(Array.isArray(sd.visitedPages)).toBe(true);
 			expect((sd.visitedPages as unknown[]).length).toBe(2);
@@ -956,10 +828,8 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 				expect(state.score).not.toBe("");
 				const score = parseFloat(state.score);
 				if (format === "scorm12") {
-					// Raw score out of 100 — incorrect answers should be < 100
 					expect(score).toBeLessThan(100);
 				} else {
-					// Scaled score 0–1
 					expect(score).toBeLessThan(1);
 				}
 			} finally {
@@ -991,7 +861,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 				await page.goto(harness.url);
 				const contentFrame = await getContentFrame(page);
 
-				// Answer the required assessment correctly — all 3 pages should be reachable.
 				const result = await simulateInFrame(contentFrame, { answerCorrectly: true });
 				console.log(`[local] Required blocks result:`, result);
 
@@ -1034,7 +903,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 				await page.goto(harness.url);
 				const contentFrame = await getContentFrame(page);
 
-				// Answer all questions correctly — score = 100%, should pass.
 				const result = await simulateInFrame(contentFrame, { answerCorrectly: true });
 				console.log(`[local] Quiz pass result:`, result);
 
@@ -1050,13 +918,11 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 						expect(parseFloat(state.score)).toBe(100);
 					}
 				} else {
-					// SCORM 2004: completion_status = "completed", success_status = "passed"
 					expect(state.lessonStatus).toBe("completed");
 					if (state.successStatus) {
 						expect(state.successStatus).toBe("passed");
 					}
 					if (state.score !== "") {
-						// Scaled score 0–1; 100% correct = 1
 						expect(parseFloat(state.score)).toBeCloseTo(1, 1);
 					}
 				}
@@ -1088,7 +954,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 				await page.goto(harness.url);
 				const contentFrame = await getContentFrame(page);
 
-				// Answer all questions incorrectly — score = 0%, well below the 80% threshold.
 				const result = await simulateInFrame(contentFrame, { answerCorrectly: false });
 				console.log(`[local] Quiz fail result:`, result);
 
@@ -1103,13 +968,11 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 						expect(parseFloat(state.score)).toBeLessThan(80);
 					}
 				} else {
-					// SCORM 2004: completion_status = "completed" (visited all pages), success_status = "failed"
 					expect(state.lessonStatus).toBe("completed");
 					if (state.successStatus) {
 						expect(state.successStatus).toBe("failed");
 					}
 					if (state.score !== "") {
-						// Scaled score 0–1; 0% correct = 0
 						expect(parseFloat(state.score)).toBeLessThan(0.8);
 					}
 				}
@@ -1120,8 +983,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 			}
 		});
 
-		// Logic rule tests — SCORM 1.2 only (branching is a shared runtime feature;
-		// no need to duplicate across formats).
 		if (format === "scorm12") {
 			test("logic rule — correct answer jumps to summary", async () => {
 				if (!driverAvailable) {
@@ -1143,12 +1004,9 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 					await page.goto(harness.url);
 					const contentFrame = await getContentFrame(page);
 
-					// Answer correctly — the logic rule should jump to the summary page,
-					// skipping the remediation page entirely.
 					const result = await simulateInFrame(contentFrame, { answerCorrectly: true });
 					console.log(`[local] Logic correct result:`, result);
 
-					// 3 pages visited: welcome → quiz → summary (remediation skipped).
 					expect(result.pagesVisited).toBe(3);
 					expect(result.questionsAnswered).toBe(1);
 
@@ -1157,7 +1015,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 
 					expect(["passed", "completed"]).toContain(state.lessonStatus);
 
-					// Verify suspend data shows exactly 3 pages visited — remediation absent.
 					if (state.suspendData) {
 						try {
 							const sd = JSON.parse(state.suspendData) as { visitedPages?: string[] };
@@ -1197,12 +1054,9 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 					await page.goto(harness.url);
 					const contentFrame = await getContentFrame(page);
 
-					// Answer incorrectly — the logic rule condition is not met, so linear
-					// navigation proceeds to remediation, then summary.
 					const result = await simulateInFrame(contentFrame, { answerCorrectly: false });
 					console.log(`[local] Logic incorrect result:`, result);
 
-					// 4 pages visited: welcome → quiz → remediation → summary.
 					expect(result.pagesVisited).toBe(4);
 					expect(result.questionsAnswered).toBe(1);
 
@@ -1211,7 +1065,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 
 					expect(["passed", "completed"]).toContain(state.lessonStatus);
 
-					// Verify suspend data shows all 4 pages visited, including remediation.
 					if (state.suspendData) {
 						try {
 							const sd = JSON.parse(state.suspendData) as { visitedPages?: string[] };
@@ -1243,7 +1096,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 				const logicFixtures = await buildScormCloudFixtures({ variant: "logicPersistence" });
 				let storeAfterSession1: ScormDataStore = {};
 
-				// Session 1: answer page 1 assessment, navigate to page 2, suspend.
 				const harness1 = await createLocalHarness(logicFixtures.scorm12Zip, "scorm12");
 				const browser1 = await chromium.launch({ headless: true });
 				const context1 = await browser1.newContext();
@@ -1321,7 +1173,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 					await harness1.cleanup();
 				}
 
-				// Session 2: launch with persisted LMS store and verify restored value.
 				const harness2 = await createLocalHarness(logicFixtures.scorm12Zip, "scorm12");
 				const browser2 = await chromium.launch({ headless: true });
 				const context2 = await browser2.newContext();
@@ -1332,7 +1183,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 					const frame2 = await getContentFrame(page2);
 					await waitForFrameHydration(frame2);
 
-					// If the local driver doesn't auto-resume to page 2, navigate once.
 					const config2 = await readFrameConfig(frame2);
 					if (config2.currentPage === 1) {
 						const navigated = await navigateFrameToNextPage(frame2);
@@ -1353,11 +1203,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 		}
 	});
 }
-
-// ---------------------------------------------------------------------------
-// Navigation variant tests — SCORM 1.2 only because navigation rendering is
-// format-independent and the core/default path is already covered for 2004.
-// ---------------------------------------------------------------------------
 
 test.describe("Local SCORM driver: scorm12 — navigation variants", () => {
 	test.describe.configure({ mode: "serial" });

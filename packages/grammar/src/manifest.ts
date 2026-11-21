@@ -29,15 +29,6 @@ export interface ManifestParameter {
 	type: string;
 	required: boolean;
 	options?: ManifestOption[];
-	/**
-	 * Whether setting this parameter changes the published output.
-	 *
-	 * Absent means implemented. `false` marks a parameter that parses and
-	 * validates but that no renderer or exporter reads — a real intention that is
-	 * not wired up yet. Authoring UI must not offer these as though they work;
-	 * the same distinction `ManifestOption.implemented` already draws for
-	 * individual enum values.
-	 */
 	implemented?: boolean;
 }
 
@@ -74,8 +65,6 @@ const INTERACTIVE_KEYWORDS = new Set(["checklist", "signature"]);
 
 const ASSESSMENT_DECORATOR_PARAMETERS: ManifestParameter[] = [
 	{ name: "scored", type: "boolean", required: false },
-	// competency / confidence / retrieval parse and validate but nothing reads
-	// them — see INERT_PARAMETERS below.
 	{ name: "competency", type: "text", required: false, implemented: false },
 	{ name: "confidence", type: "boolean", required: false, implemented: false },
 	{ name: "retrieval", type: "boolean", required: false, implemented: false },
@@ -89,7 +78,6 @@ const ASSESSMENT_DECORATOR_PARAMETERS: ManifestParameter[] = [
 	},
 ];
 
-/** Keywords whose response controls render a placeholder authors can override. */
 const PLACEHOLDER_KEYWORDS = new Set(["free-response", "fill-blank", "match"]);
 
 const SHUFFLE_KEYWORDS = new Set(["choose-one", "choose-many", "match", "order", "categorize"]);
@@ -98,25 +86,9 @@ const ASSESSMENT_SHARED_PARAMETERS: ManifestParameter[] = [
 	{ name: "points", type: "number", required: false },
 	{ name: "required", type: "boolean", required: false },
 	{ name: "timed", type: "number", required: false, implemented: false },
-	// `pass` is deliberately absent: it duplicated `passingScore`, and it was the
-	// inert half of the pair. `passingScore` is the canonical name and is read at
-	// AssessmentGroupBlock.tsx:15. `pass` still validates via assessment-schema so
-	// existing .prax files keep parsing, but authoring UI no longer teaches it.
 	{ name: "attempts", type: "number", required: false },
 ];
 
-/**
- * Parameters that parse and validate but that no renderer or exporter reads.
- *
- * Each is an intended capability — competency mapping, confidence-based
- * assessment, retrieval practice, timed questions — that is not wired to output
- * yet. They stay in the manifest so the grammar keeps accepting them and the
- * intent stays recorded, but they carry `implemented: false` so authoring UI can
- * rank and label them honestly instead of presenting them as working settings.
- *
- * Asserted exhaustively by `manifest.test.ts`. Implementing one, or discovering
- * another, must update this list deliberately rather than silently.
- */
 export const INERT_PARAMETERS: ReadonlySet<string> = new Set([
 	"visual",
 	"competency",
@@ -182,7 +154,6 @@ function getCategoryForEntry(entry: ManifestEntry): KeywordCategory {
 }
 
 const BLOCK_MANIFEST_ENTRIES: ManifestEntry[] = [
-	// Content primitives — no variant axes
 	{
 		keyword: "text",
 		label: "Text",
@@ -474,7 +445,6 @@ const BLOCK_MANIFEST_ENTRIES: ManifestEntry[] = [
 		],
 	},
 
-	// Containers
 	{
 		keyword: "accordion",
 		label: "Accordion",
@@ -616,7 +586,6 @@ const BLOCK_MANIFEST_ENTRIES: ManifestEntry[] = [
 		parameters: [],
 	},
 
-	// Interactions (assessments)
 	{
 		keyword: "choose-one",
 		label: "Single Choice",
@@ -830,7 +799,6 @@ const BLOCK_MANIFEST_ENTRIES: ManifestEntry[] = [
 	},
 ];
 
-/** Block types each authoring keyword can produce through the v3 parser. */
 const KEYWORD_BLOCK_TYPES: Record<string, readonly string[]> = {
 	text: ["text"],
 	heading: ["heading"],

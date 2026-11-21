@@ -1,10 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
 const ALLOWED_UNSCOPED_SELECTORS = new Set([
-	// The published learner document owns these page roots.
 	"html",
 	"body",
-	// These global fallbacks keep keyboard focus visible in published output.
 	"a:focus-visible",
 	"button:focus-visible",
 	"input:focus-visible",

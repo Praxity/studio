@@ -1,7 +1,6 @@
 import { escapeLength, findUnescaped } from "./escaping";
 import type { InlineNode } from "./inline-tree";
 
-/** Material recognition only. The two learner parsers keep their existing contracts. */
 export function parseMaterialFootnote(
 	source: string,
 	start: number,

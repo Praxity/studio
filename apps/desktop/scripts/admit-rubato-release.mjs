@@ -31,11 +31,9 @@ export function admitStudioRevision({
 		throw new AdmissionRefused("Release requires a full Studio SHA");
 	if (comparison.merge_base_commit?.sha !== studioSha)
 		throw new AdmissionRefused("Release SHA must belong to Studio main");
-	// The newest CI run wins. An older success cannot mask a later failure.
 	const run = runs.workflow_runs[0];
 	const mainRun =
 		run?.head_branch === "main" && ["push", "schedule", "workflow_dispatch"].includes(run.event);
-	// REST run responses omit dispatch inputs. ci.yml emits this exact title only for gate=candidate.
 	const candidateRun =
 		run?.event === "workflow_dispatch" &&
 		/^[a-f0-9]{40}$/.test(run.head_sha ?? "") &&
@@ -122,7 +120,6 @@ function readAdmission(studioSha, internal, api, mainSha, repo) {
 	if (!/^[a-f0-9]{40}$/.test(studioSha))
 		throw new AdmissionRefused("Release requires a full Studio SHA");
 	const comparison = mainComparison(api, repo, studioSha, mainSha);
-	// Filter remotely before selecting the newest run, so fork PR runs cannot displace CI.
 	const trustedRuns = (sha) => ({
 		workflow_runs: ["push", "schedule", "workflow_dispatch"]
 			.flatMap((event) =>
@@ -169,8 +166,6 @@ export function admitInternalCandidateRun(run, jobs) {
 	return run;
 }
 
-// The run title records source identity before a job starts, including dispatches
-// whose head_sha belongs to the private workflow repository.
 export function internalCandidateSource(run, { strict = true } = {}) {
 	const sha = /^CLI candidate ([a-f0-9]{40})$/.exec(run.display_title ?? "")?.[1];
 	if (
@@ -197,7 +192,6 @@ export function isAdmittedInternalCandidateRun(run, sha, api, repository) {
 	);
 }
 
-// Draft tags belong to the tooling repository; their body identifies the built source.
 export function internalCandidateReleaseSource(release) {
 	const match = /^Studio SHA: ([a-f0-9]{40})$/.exec(release.body ?? "");
 	return match && match[0] === release.body ? match[1] : undefined;
@@ -215,7 +209,6 @@ export function selectNewestInternalStudioRevision(execute = execFileSync, env =
 		"workflow_runs",
 	);
 	let sha = mainSha;
-	// Walk the main first-parent chain, not date-sorted commits from merged branches.
 	for (let count = 0; sha && count < 100; count++) {
 		const commit = api(
 			`${repo}/commits/${sha}`,
@@ -250,8 +243,6 @@ export function selectNewestInternalStudioRevision(execute = execFileSync, env =
 	);
 }
 
-// GitHub serves fork and pull-request commits through this repository too. A private
-// candidate builds only a commit on main or the head of a branch pushed here.
 function admitPrivateRef(ref, api, repo) {
 	if (/^[a-f0-9]{40}$/.test(ref)) {
 		mainComparison(api, repo, ref, api(`repos/${repo}/git/ref/heads/main`).object?.sha);
@@ -266,7 +257,6 @@ function admitPrivateRef(ref, api, repo) {
 			"Private candidate ref must be a full SHA on main or a Studio branch",
 		);
 	try {
-		// Git owns branch syntax, including Unicode and punctuation such as c++.
 		const checked = execFileSync("git", ["check-ref-format", "--branch", branch], {
 			encoding: "utf8",
 			stdio: "pipe",
@@ -345,7 +335,6 @@ export function admitRubatoPublisher(execute = execFileSync) {
 				`Rubato main ${rubatoSha} must install natively on ${runner}; run: ${run.html_url ?? run.id}`,
 			);
 	}
-	// The publisher builds from this SHA, so the guide and its sibling ship in one pack.
 	const skill = api(
 		`repos/Praxity/rubato/contents/skills/assessment-writing/SKILL.md?ref=${rubatoSha}`,
 	);

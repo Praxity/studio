@@ -17,10 +17,6 @@ export const LEARNER_POLISH_VARIANTS = [
 
 export type LearnerPolishVariant = (typeof LEARNER_POLISH_VARIANTS)[number];
 
-/**
- * A blank image shows whether its edge stays visible on a pale page. A photo
- * would make the edge pixels depend on the picture.
- */
 export function blankPanelPng(width = 480, height = 240): Uint8Array {
 	const chunk = (type: string, data: Buffer) => {
 		const length = Buffer.alloc(4);
@@ -124,7 +120,6 @@ function pointImagesAtStub(blocks: PraxityBlock[]): PraxityBlock[] {
 	});
 }
 
-/** Campfire with a grain texture: the textured page where the skip link escaped. */
 export function buildLearnerPolishCourse(variant: LearnerPolishVariant): CourseExportInput {
 	const parsed = readLesson(grammar(variant.locale));
 	if (parsed.hasErrors) {

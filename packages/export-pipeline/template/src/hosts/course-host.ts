@@ -45,12 +45,10 @@ export interface CourseHostConfig extends Partial<AdmittedChoiceStateFacts> {
 	completionMethod: "allPages" | "percentage" | "quiz";
 	completionThreshold?: number;
 	requiredAssessmentIds?: string[];
-	/** Course pass mark (0-100) and the questions whose score it applies to. */
 	passMark?: number;
 	scoredAssessmentIds?: string[];
 	pageRole: "content" | "glossary" | "resources";
 	strings: Record<string, string>;
-	/** Compiled for the whole course, including blocks on other documents. */
 	blockStatePolicy?: Record<string, "device" | "lms">;
 }
 
@@ -63,9 +61,7 @@ export interface CourseDeploymentConfig {
 
 export interface CourseHostAdapter {
 	format: CourseHostFormat;
-	/** Preview already owns local persistence, reset, freeze and inspection. */
 	deviceStateRuntime?: SCORMRuntime;
-	/** Formats with additional configuration validate it before constructing their runtime. */
 	readDeploymentConfig?: (doc: Document) => CourseDeploymentConfig | null;
 	createRuntime: (
 		page: CourseHostConfig,
@@ -102,7 +98,6 @@ type CourseHostWindow = {
 	__praxityTracker?: CourseTracker;
 };
 
-/** A confirmed return, resolved by the host before navigation initializes. */
 export interface ConfirmedCourseResume {
 	pageId: string;
 }
@@ -239,7 +234,6 @@ export function initializeCourseHost(
 			const resume =
 				owner?.lifetime()?.reason === "return" ? undefined : adapter.prepareResume?.(environment);
 			runtime.setBlockStatePolicy?.(blockStatePolicy);
-			// Let the shell restore readable content if the host cannot initialize.
 			if (!runtime.initialize()) throw new Error();
 			if (!discovered()) {
 				preparing = false;
@@ -256,7 +250,6 @@ export function initializeCourseHost(
 			const admittedOwner = owner;
 			const installationEpoch = admittedOwner ? admittedOwner.epoch() + 1 : undefined;
 			hostWindow.__praxityBlockState = requestedProvider;
-			// An injected accessor can retain or wrap the provider during installation.
 			const provider = hostWindow.__praxityBlockState;
 			const admittedLifetime = admittedOwner?.lifetime();
 			const owned = () =>
@@ -274,7 +267,6 @@ export function initializeCourseHost(
 			}
 			if (!owned() || resume?.(runtime, page) === "redirect" || !owned()) return;
 
-			// Utility documents use the launch's exit policy without evaluating their own course rule.
 			if (!(scormSession && page.pageRole !== "content")) {
 				trackerLifetime = admittedLifetime;
 				if (!owned()) return;
@@ -303,7 +295,6 @@ export function initializeCourseHost(
 			}
 			admitted = true;
 			preparing = false;
-			// Re-admission joins the shared support result under a fresh captured lifetime.
 			if (owner) announce();
 			else {
 				let provider: LearnerBlockStateRuntime | null | undefined = hostWindow.__praxityBlockState;
@@ -372,7 +363,6 @@ export function initializeCourseHost(
 		start();
 	} else start();
 
-	// Capture before any response consumer, including listeners installed before this host.
 	hostView.addEventListener(
 		"praxity:assessment-response",
 		(event) => {
@@ -437,7 +427,6 @@ export function initializeCourseHost(
 		let submissionView: ChoiceDependencyEvidence | undefined;
 		const view = hostWindow.__praxityBlockState?.getChoiceDependencyView?.();
 		if (view?.groups && Object.hasOwn(view.groups, groupId)) {
-			// The candidate precedes its write, preserving the existing objective-first order.
 			submissionView =
 				view.verifyGroupSubmission?.(groupId, detail, {
 					correct: typeof detail.correct === "boolean" ? detail.correct : undefined,
@@ -449,7 +438,6 @@ export function initializeCourseHost(
 				return;
 			}
 		}
-		// Keep the event's existing adapter and ticket; tracker writes have their own lifetime.
 		if (hasScore && runtime) tracker.trackGroupObjective(groupId, score, passed, runtime);
 		if (!owned()) return;
 		try {
@@ -475,7 +463,6 @@ export function initializeCourseHost(
 	return true;
 }
 
-/** SCORM owns utility participation and communication; other hosts keep their lifecycle. */
 export function initializeScormCourseHost(
 	adapter: ScormCourseHostAdapter,
 	environment = browserEnvironment(),
@@ -501,7 +488,6 @@ export function initializeScormCourseHost(
 	);
 }
 
-/** Document exits save progress. Only an authored End action may close communication. */
 function installScormLifecycle(
 	runtime: SCORMRuntime,
 	page: CourseHostConfig,
@@ -512,7 +498,6 @@ function installScormLifecycle(
 		| object
 		| null;
 	const session = getSessionState(api, environment.win);
-	// Finish retains the launch adapter through reentrant host teardown.
 	const finishTracker = new CourseTracker(runtime, page);
 	let finished = false;
 	const commit = () => {
@@ -524,7 +509,6 @@ function installScormLifecycle(
 	environment.win.__praxityFinishCourse = () => {
 		if (finished || session?.closed) return finished || session?.terminationSucceeded === true;
 		try {
-			// The adapter prepares completion before its final commit.
 			finished = finishTracker.finish(true);
 			return finished;
 		} finally {
@@ -552,7 +536,6 @@ export function readBasicCourseDeploymentConfig(doc: Document): CourseDeployment
 	return null;
 }
 
-/** The xAPI host opts into this reader; SCORM hosts need only the common deployment fields. */
 export function readCourseDeploymentConfig(doc: Document): CourseDeploymentConfig | null {
 	const basic = readBasicCourseDeploymentConfig(doc);
 	if (basic) return basic;
@@ -577,7 +560,6 @@ export function composeScormResumeUrl(href: string, targetSlug: string): string 
 	return url.href;
 }
 
-/** Capture communication state before Initialize, then resolve entry after it. */
 export function prepareScormResume(
 	adapter: ScormCourseHostAdapter,
 	environment: CourseHostEnvironment,
@@ -601,7 +583,6 @@ export function prepareScormResume(
 		);
 }
 
-/** Local storage supplies the bookmark only for fresh course entry. */
 export function prepareStandaloneResume(
 	environment: CourseHostEnvironment,
 ): (runtime: SCORMRuntime, page: CourseHostConfig) => "redirect" | null {
@@ -614,19 +595,15 @@ export function prepareStandaloneResume(
 	return (runtime, page) => handleCourseResume(runtime, page, environment, false, () => freshEntry);
 }
 
-/** Reload and Back/Forward keep the browser's destination. */
 function isFreshResumeEntry(performance: Performance): boolean {
 	const navigation = performance.getEntriesByType?.("navigation")?.[0] as
 		| PerformanceNavigationTiming
 		| undefined;
-	// Firefox may not expose the navigation entry before load. Its legacy timing
-	// object already distinguishes reload and history traversal before tracking.
 	return !["reload", "back_forward", 1, 2].includes(
 		navigation?.type ?? performance.navigation?.type,
 	);
 }
 
-/** Both transports resolve the same destination before tracking can replace the bookmark. */
 function handleCourseResume(
 	runtime: SCORMRuntime,
 	page: CourseHostConfig,
@@ -643,27 +620,20 @@ function handleCourseResume(
 			const cleanUrl = new URL(environment.location.href);
 			cleanUrl.searchParams.delete("praxity-resume");
 			environment.history.replaceState(environment.history.state, "", cleanUrl.href);
-		} catch {
-			// Focus still needs to be restored when the host blocks history changes.
-		}
+		} catch {}
 	}
 	if (arrival === "0") return null;
-	// Entry stays "resume" throughout a SCO session. Internal navigation and
-	// explicit deck fragments keep their own arrival policy.
 	if (!redirected && (continuingSession || page.currentPage !== 1)) return null;
 	let bookmark: string | null = null;
 	try {
 		bookmark = runtime.getBookmark();
-	} catch {
-		// Keep the current page when the storage adapter rejects bookmark access.
-	}
+	} catch {}
 	const savedSlug = resolveBookmarkSlug(bookmark, page.pageIdMap);
 	if (!savedSlug || !page.availableSlugs.includes(savedSlug)) return null;
 	const deckPageId = page.deck
 		? Object.entries(page.pageIdMap).find(([, slug]) => slug === savedSlug)?.[0]
 		: undefined;
 	const fragment = environment.location.href.split("#")[1];
-	// The deck owns matching restored fragments and gate redirects to its slides.
 	if (page.deck && fragment) {
 		if (!redirected) return null;
 	} else if (redirected && savedSlug !== page.currentSlug) return null;
@@ -677,7 +647,6 @@ function handleCourseResume(
 	return "redirect";
 }
 
-/** Current stable IDs and index URLs, plus legacy slug bookmarks. */
 export function resolveBookmarkSlug(
 	bookmark: string | null,
 	pageIdMap: Record<string, string>,
@@ -687,9 +656,7 @@ export function resolveBookmarkSlug(
 	try {
 		pageId =
 			new URL(bookmark, "https://praxity.invalid/").searchParams.get("praxity-page") || bookmark;
-	} catch {
-		// Malformed legacy URLs can still be plain slugs.
-	}
+	} catch {}
 	return Object.hasOwn(pageIdMap, pageId) ? pageIdMap[pageId] : bookmark;
 }
 

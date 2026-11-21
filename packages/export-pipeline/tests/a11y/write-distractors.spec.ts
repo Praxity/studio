@@ -15,7 +15,6 @@ function heldRoute(route: Route | undefined): Route {
 
 let directory: string, url: string, server: ReturnType<typeof createServer>;
 test.beforeAll(async ({ browser }) => {
-	// Launch the worker browser once, outside the per-case timing budget.
 	if (!browser.isConnected()) throw new Error("Browser disconnected");
 	directory =
 		process.env.PRAXITY_DISTRACTORS_HARNESS ??
@@ -45,7 +44,6 @@ test.beforeAll(async ({ browser }) => {
 	});
 	await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
 	url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-	// Initialise fonts and axe once, without sharing learner state between cases.
 	const warmContext = await browser.newContext();
 	try {
 		const warmPage = await warmContext.newPage();
@@ -104,7 +102,6 @@ for (const [lang, theme, width] of [
 					};
 		const answer = () => page.locator("[data-distractor-answer]");
 		const check = () => page.getByRole("button", { name: copy.check, exact: true });
-		// This fixture has no frames. The single-page axe runner keeps all rules and avoids a temporary tab in WebKit.
 		const evidence = async (state: string) => {
 			expect(await page.locator("iframe").count()).toBe(0);
 			expect(await page.locator("[maxlength]").count()).toBe(0);
@@ -152,7 +149,6 @@ for (const [lang, theme, width] of [
 			await page.goto(`${url}/${lang}-${theme}.html`, { waitUntil: "commit" });
 			await expect(answer()).toBeVisible();
 			await expect.poll(() => !!startup, { intervals: [10, 25, 50] }).toBe(true);
-			// Only the context is shared; learner state and routes belong to each fresh page.
 			const title = info.title;
 			if (title.startsWith("baseline:") || title.startsWith("ready:")) return;
 			await heldRoute(startup).continue();
@@ -200,7 +196,6 @@ for (const [lang, theme, width] of [
 			await evidence("baseline");
 		});
 		test("ready: preactivation input saves silently on a fresh page", async () => {
-			// This guards the UI; the base enhancer skips pending-read projections, so session tests prove the fix.
 			await page.evaluate(() => {
 				const status = document.querySelector("[data-distractor-status]");
 				if (!status) throw new Error("Missing status");
@@ -320,7 +315,6 @@ for (const [lang, theme, width] of [
 					? "The right answer is shown. Decide whether your answer was right."
 					: "La bonne réponse est affichée. Décidez si votre réponse était bonne.",
 			);
-			// Check is the retained reveal action, including a deliberate Retry.
 			await expect(check()).toBeFocused();
 			await evidence("revealed");
 		});
@@ -580,7 +574,6 @@ test.describe("activation boundaries", () => {
 		if (!held) throw new Error("No held support");
 		await held.continue();
 		await page.unroute("**/chunks/write-distractors-draft-*.js");
-		// A later task observes completion of the revoked import before the replacement mounts.
 		await page.evaluate(async () => {
 			await new Promise<void>((done) => requestAnimationFrame(() => done()));
 		});
@@ -1745,8 +1738,6 @@ test.describe("comparison edge cases", () => {
 	});
 });
 
-// Failed initial reads must expose recovery controls, protect saved bytes and
-// keep memory edits with one first-edit announcement and a stable notice.
 for (const [lang, theme, width] of [
 	["en", "light", 1280],
 	["en", "light", 320],
@@ -1947,7 +1938,6 @@ for (const [lang, theme, width] of [
 				const saved = await page.evaluate(() =>
 					(window as unknown as DistractorFixture).fixtureState.get("wd"),
 				);
-				// With no provider this checks no false deletion claim; arrival protection is tested below.
 				expect(saved).toMatchObject({
 					value: { answer: kind === "no provider" ? "Unread saved answer" : "" },
 				});

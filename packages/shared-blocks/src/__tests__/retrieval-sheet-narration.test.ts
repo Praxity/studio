@@ -77,7 +77,6 @@ it.each([
 				data: { ...block.data, date: "DATE_MARKER", side: "back", controlCopy: "CONTROL_MARKER" },
 			};
 			expect(resolve(withControls).pages[0].segments).toEqual(resolved.pages[0].segments);
-			// A positive control: editing a narrated question must invalidate review.
 			const edited = structuredClone(block);
 			const content = edited.data.content as { questions: { question: string }[] };
 			content.questions[0].question += " Changed";

@@ -18,7 +18,6 @@ import {
 } from "./choice-state-facts";
 import type { SavedAssessmentState } from "./learner-state";
 
-// Independent Python hashlib literals for version-4 facts.
 const signatureA = "s96:3w14l18FIDxpK_Py";
 const signatureB = "s96:glW7ns8cCA7BdGMb";
 const repairedSignature = "s96:pluAlGwQOqlD6-zE";
@@ -51,7 +50,6 @@ const repairedFacts: ChoiceAssessmentFacts = {
 	},
 	signature: "s96:pluAlGwQOqlD6-zE",
 };
-// Literal state written before signatures/history existed, including Try again's empty draft.
 const legacySubmitted: SavedAssessmentState = {
 	version: 1,
 	kind: "assessment",
@@ -141,7 +139,6 @@ function view(
 	};
 }
 
-// Precomputed from the specified JSON tuples using Node crypto, independently of this owner.
 const groupDigests = {
 	all: {
 		signed: "s96:kmPOYqqjHUBVflOI",
@@ -1035,7 +1032,6 @@ describe("group material references", () => {
 				groupView(saved, [], { a: ungraded, b: factsA, optional: factsA }, group),
 			),
 		).toBe("current");
-		// A newly submitted optional/private member changes the full set, even with no scored row.
 		expect(
 			choiceDependencyStatus(
 				"g",
@@ -1222,7 +1218,6 @@ describe("group material references", () => {
 			),
 		).toBe("history");
 
-		// A draft with positive attempts does not supply a missing signed reference.
 		expect(
 			choiceDependencyStatus(
 				"g",

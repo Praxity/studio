@@ -11,10 +11,6 @@ import {
 	readCourseDeploymentConfig,
 } from "../template/src/hosts/course-host";
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 function createConfig(overrides?: Partial<XapiConfig>): XapiConfig {
 	return {
 		endpoint: "https://lrs.example.com/xapi/statements",
@@ -27,10 +23,6 @@ function createConfig(overrides?: Partial<XapiConfig>): XapiConfig {
 	};
 }
 
-/**
- * Extract the statement body from the most recent fetch call.
- * Returns null if fetch was never called.
- */
 function lastStatementSent(): XapiStatement | null {
 	const mockFetch = globalThis.fetch as ReturnType<typeof vi.fn>;
 	const calls = mockFetch.mock.calls;
@@ -40,9 +32,6 @@ function lastStatementSent(): XapiStatement | null {
 	return JSON.parse(init.body as string) as XapiStatement;
 }
 
-/**
- * Return all statement bodies sent via fetch, in order.
- */
 function allStatementsSent(): XapiStatement[] {
 	const mockFetch = globalThis.fetch as ReturnType<typeof vi.fn>;
 	return mockFetch.mock.calls.map((call) => {
@@ -50,10 +39,6 @@ function allStatementsSent(): XapiStatement[] {
 		return JSON.parse(init.body as string) as XapiStatement;
 	});
 }
-
-// ---------------------------------------------------------------------------
-// Test suite
-// ---------------------------------------------------------------------------
 
 describe("XapiRuntime", () => {
 	let runtime: XapiRuntime;
@@ -63,7 +48,6 @@ describe("XapiRuntime", () => {
 		config = createConfig();
 		runtime = new XapiRuntime(config);
 
-		// Mock fetch globally
 		globalThis.fetch = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
 	});
 
@@ -128,9 +112,6 @@ describe("XapiRuntime", () => {
 		},
 	);
 
-	// -------------------------------------------------------------------
-	// 1. buildStatement() produces correct structure
-	// -------------------------------------------------------------------
 	describe("buildStatement()", () => {
 		it("gives different statements distinct UUIDs", () => {
 			runtime.trackPageVisit("p1");
@@ -227,9 +208,6 @@ describe("XapiRuntime", () => {
 		});
 	});
 
-	// -------------------------------------------------------------------
-	// 2. sendStatement() POSTs to endpoint with correct headers
-	// -------------------------------------------------------------------
 	describe("sendStatement()", () => {
 		it("reuses the built statement UUID after a failed send", async () => {
 			vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -279,9 +257,6 @@ describe("XapiRuntime", () => {
 		});
 	});
 
-	// -------------------------------------------------------------------
-	// 3. initialize() sends "initialized" verb
-	// -------------------------------------------------------------------
 	describe("initialize()", () => {
 		it("sends an 'initialized' statement and returns true", () => {
 			const result = runtime.initialize();
@@ -305,9 +280,6 @@ describe("XapiRuntime", () => {
 		});
 	});
 
-	// -------------------------------------------------------------------
-	// setSuccess() reports the course result separately from completion
-	// -------------------------------------------------------------------
 	describe("setSuccess()", () => {
 		beforeEach(() => {
 			runtime.initialize();
@@ -358,9 +330,6 @@ describe("XapiRuntime", () => {
 		);
 	});
 
-	// -------------------------------------------------------------------
-	// 4. terminate() sends appropriate completion verb
-	// -------------------------------------------------------------------
 	describe("terminate()", () => {
 		beforeEach(() => {
 			runtime.initialize();
@@ -417,9 +386,6 @@ describe("XapiRuntime", () => {
 		});
 	});
 
-	// -------------------------------------------------------------------
-	// 5. trackPageVisit() sends "experienced" verb and tracks locally
-	// -------------------------------------------------------------------
 	describe("trackPageVisit()", () => {
 		beforeEach(() => {
 			runtime.initialize();
@@ -457,9 +423,6 @@ describe("XapiRuntime", () => {
 		});
 	});
 
-	// -------------------------------------------------------------------
-	// 6. getVisitedPages() returns tracked pages
-	// -------------------------------------------------------------------
 	describe("getVisitedPages()", () => {
 		beforeEach(() => {
 			runtime.initialize();
@@ -486,9 +449,6 @@ describe("XapiRuntime", () => {
 		});
 	});
 
-	// -------------------------------------------------------------------
-	// 7. trackInteraction() sends "answered" verb with result
-	// -------------------------------------------------------------------
 	describe("trackInteraction()", () => {
 		beforeEach(() => {
 			runtime.initialize();
@@ -559,9 +519,6 @@ describe("XapiRuntime", () => {
 		});
 	});
 
-	// -------------------------------------------------------------------
-	// 8. getInteractions() returns tracked interactions
-	// -------------------------------------------------------------------
 	describe("getInteractions()", () => {
 		beforeEach(() => {
 			runtime.initialize();
@@ -595,9 +552,6 @@ describe("XapiRuntime", () => {
 		});
 	});
 
-	// -------------------------------------------------------------------
-	// 9. setCompletion("passed") sends "passed" verb
-	// -------------------------------------------------------------------
 	describe('setCompletion("passed")', () => {
 		beforeEach(() => {
 			runtime.initialize();
@@ -614,9 +568,6 @@ describe("XapiRuntime", () => {
 		});
 	});
 
-	// -------------------------------------------------------------------
-	// 10. setCompletion("failed") sends "failed" verb
-	// -------------------------------------------------------------------
 	describe('setCompletion("failed")', () => {
 		beforeEach(() => {
 			runtime.initialize();
@@ -633,9 +584,6 @@ describe("XapiRuntime", () => {
 		});
 	});
 
-	// -------------------------------------------------------------------
-	// setCompletion("completed") sends "completed" verb
-	// -------------------------------------------------------------------
 	describe('setCompletion("completed")', () => {
 		beforeEach(() => {
 			runtime.initialize();
@@ -651,9 +599,6 @@ describe("XapiRuntime", () => {
 		});
 	});
 
-	// -------------------------------------------------------------------
-	// setCompletion("incomplete") does not send a statement
-	// -------------------------------------------------------------------
 	describe('setCompletion("incomplete")', () => {
 		beforeEach(() => {
 			runtime.initialize();
@@ -674,9 +619,6 @@ describe("XapiRuntime", () => {
 		});
 	});
 
-	// -------------------------------------------------------------------
-	// 11. setScore() stores score for inclusion in statements
-	// -------------------------------------------------------------------
 	describe("setScore()", () => {
 		beforeEach(() => {
 			runtime.initialize();
@@ -728,9 +670,6 @@ describe("XapiRuntime", () => {
 		});
 	});
 
-	// -------------------------------------------------------------------
-	// 12. setBookmark() / getBookmark() work with local storage
-	// -------------------------------------------------------------------
 	describe("setBookmark() / getBookmark()", () => {
 		it("stores and retrieves a bookmark locally", () => {
 			runtime.setBookmark("page-3");
@@ -750,9 +689,6 @@ describe("XapiRuntime", () => {
 		});
 	});
 
-	// -------------------------------------------------------------------
-	// 13. setSuspendData() / getSuspendData() work with local storage
-	// -------------------------------------------------------------------
 	describe("setSuspendData() / getSuspendData()", () => {
 		it("keeps logic usable when durable storage is unavailable", () => {
 			const variables = new VariableStore([{ name: "answer", dataType: "text" }], runtime);
@@ -779,9 +715,6 @@ describe("XapiRuntime", () => {
 		});
 	});
 
-	// -------------------------------------------------------------------
-	// 14. commit() returns true
-	// -------------------------------------------------------------------
 	describe("commit()", () => {
 		it("returns true", () => {
 			runtime.initialize();
@@ -790,9 +723,6 @@ describe("XapiRuntime", () => {
 		});
 	});
 
-	// -------------------------------------------------------------------
-	// 15. Network failure in sendStatement is handled gracefully
-	// -------------------------------------------------------------------
 	describe("network failure handling", () => {
 		it("does not throw when fetch rejects", async () => {
 			(globalThis.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Network error"));
@@ -802,7 +732,6 @@ describe("XapiRuntime", () => {
 				id: "https://example.com/course",
 			});
 
-			// Should not throw
 			await expect(runtime.sendStatement(statement)).resolves.toBeUndefined();
 
 			expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("Failed to send statement"));
@@ -839,9 +768,6 @@ describe("XapiRuntime", () => {
 		});
 	});
 
-	// -------------------------------------------------------------------
-	// Activity ID construction
-	// -------------------------------------------------------------------
 	describe("activity ID construction", () => {
 		it("uses endpoint as base when no activityBase is configured", () => {
 			runtime.initialize();
@@ -898,9 +824,6 @@ describe("XapiRuntime", () => {
 		});
 	});
 
-	// -------------------------------------------------------------------
-	// getCompletion()
-	// -------------------------------------------------------------------
 	describe("getCompletion()", () => {
 		it("returns 'incomplete' by default", () => {
 			expect(runtime.getCompletion()).toBe("incomplete");
@@ -1130,7 +1053,6 @@ describe("XapiRuntime course state across pages", () => {
 			expect(Object.values(first.dom.window.localStorage).join("\n")).not.toContain(
 				"first attempt",
 			);
-			// Both registrations are now known; an existing shell can still save a draft.
 			first.state.set("check", { answer: "first attempt resumed" });
 			const revisit = host(false, "?registration=attempt-2", first.dom.window.localStorage);
 			expect(revisit.state.get("check")).toBeUndefined();

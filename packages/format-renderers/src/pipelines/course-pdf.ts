@@ -51,11 +51,8 @@ export interface CoursePdfLesson {
 	id: string;
 	title: string;
 	locale: string;
-	/** Parsed source, with durable IDs and narration sidecars, before display normalization. */
 	blocks: PraxityBlock[];
-	/** Explicit author Content from the grammar accessor, never from reader block data. */
 	selfCheckContents?: ReadonlyMap<string, Content>;
-	/** Explicit native answer-sheet input; generic reader data remains prompt-only. */
 	writeDistractorsContents?: ReadonlyMap<string, WriteDistractorsContent>;
 	componentDefaults?: Record<string, Record<string, unknown>>;
 	moduleDeck?: AssessmentDeckOptions;
@@ -66,14 +63,11 @@ export interface CoursePdfLesson {
 export interface CoursePdfOptions {
 	title: string;
 	locale: string;
-	/** Author diagnostic language, independent of the lesson content language. */
 	diagnosticLocale?: string;
 	lessons: CoursePdfLesson[];
 	pageSize?: "a4" | "letter";
 	includeAnswerSheet?: boolean;
-	/** Keys are authored references, not host paths. Only selected images are consumed. */
 	resolvedAssets?: ReadonlyMap<string, Uint8Array>;
-	/** Fontsource slugs staged beside the engine; other theme fonts fall back to bundled faces. */
 	availableFonts?: ReadonlySet<string>;
 }
 
@@ -101,11 +95,9 @@ export class CoursePdfError extends Error {
 const pageMarginCm = 2.2;
 const pageWidthPt = { a4: (210 * 72) / 25.4, letter: 612 };
 const invalidLiteralControl = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/;
-// Joining scripts and shared tatweel must stay in one shaping run, including with Latin.
 const joiningScript =
 	/[\u0640\p{Script=Arabic}\p{Script=Syriac}\p{Script=Nko}\p{Script=Mongolian}\p{Script=Mandaic}\p{Script=Manichaean}\p{Script=Psalter_Pahlavi}\p{Script=Phags_Pa}\p{Script=Sogdian}\p{Script=Old_Uyghur}\p{Script=Adlam}\p{Script=Hanifi_Rohingya}\p{Script=Chorasmian}]/u;
 
-// Empty boxes permit line breaks without adding copyable characters.
 function coursePdfLiteral(
 	segments: Array<{ text: string; marker: number | null }>,
 	width: string,
@@ -115,7 +107,6 @@ function coursePdfLiteral(
 	segments = segments.map((s) => ({ ...s, text: s.text.replace(/[ \t\u2028\u2029]+/g, " ") }));
 	const graphemes = new Intl.Segmenter(undefined, { granularity: "grapheme" });
 	const wholeText = segments.map((s) => s.text).join("");
-	// An evidence span can start inside a cluster, such as at its combining accent.
 	const boundaries = new Set([...graphemes.segment(wholeText)].map((part) => part.index));
 	boundaries.add(wholeText.length);
 	type Unit = { seg: number; weight: number; boundary: boolean; breakable: boolean } & (
@@ -146,7 +137,6 @@ function coursePdfLiteral(
 				breakable: false,
 			});
 	});
-	// UAX 14 keeps a space attached to its opening/closing punctuation.
 	const boundSpace = (k: number) => {
 		const previous = units[k - 1];
 		const next = units[k + 1];
@@ -180,8 +170,6 @@ function coursePdfLiteral(
 			.map((u) => ("text" in u ? typstString(u.text) : `super(${typstString(`[${u.marker}]`)})`))
 			.join("; ");
 		target.fill(decisions.length, start, end);
-		// Measure the prepared heading itself, including its show rules and Typst's
-		// implicit heading scale. Body runs keep their existing style and output.
 		const measured = wrap ? `px-title({${plain}})` : `{${plain}}`;
 		decisions.push(`let wrap${decisions.length} = measure(${measured}).width > ${width}`);
 	};
@@ -260,8 +248,6 @@ function coursePdfLiteral(
 		}
 	});
 	const content = items.join("; ");
-	// Heading bodies must contain text, not a layout/context node, for PDF/UA.
-	// Resolve break decisions outside the heading before wrapping the literal text.
 	if (wrap) {
 		const statements = [
 			`let px-title(body) = [${wrap("#body")}]`,
@@ -419,10 +405,7 @@ const WIDE_BLOCKS = new Set([
 
 const FOOTER_INSERT = /^<p>\s*<span data-footer-insert="true">@footer\.insert<\/span>\s*<\/p>$/;
 
-/** Print sets sources as page footnotes, so a source-list placeholder, and a disclosure
- * holding nothing else, is dropped. */
 function dropSourceLists(blocks: PraxityBlock[]): PraxityBlock[] {
-	// Anything carrying an enabled custom script stays, so its narration still prints.
 	const narrated = (value: Data) =>
 		typeof value.narration === "string" &&
 		value.narration.trim() !== "" &&
@@ -444,14 +427,12 @@ function dropSourceLists(blocks: PraxityBlock[]): PraxityBlock[] {
 	});
 }
 
-/** Sentence pieces let a long script start beside its slide and continue below it. */
 export function narrationPieces(html: string): string[][] {
 	const blocks = parseFragment(html)
 		.childNodes.filter((node) => "tagName" in node)
 		.map((node) => serializeOuter(node));
 	if (!blocks.length) blocks.push(html);
 	return blocks.map((block) => {
-		// Script headings are delivery cues, not document structure; keep them out of the outline.
 		const heading = /^<h[1-6]>([\s\S]*)<\/h[1-6]>$/.exec(block);
 		if (heading) return [`<strong>${heading[1]}</strong>`];
 		const paragraph = /^<p>([\s\S]*)<\/p>$/.exec(block);
@@ -459,7 +440,6 @@ export function narrationPieces(html: string): string[][] {
 		const pieces: string[] = [];
 		for (const sentence of paragraph[1].split(/(?<=[.!?][”’"')\]]*)\s+(?=[\p{Lu}“‘"(\d<])/u)) {
 			const open = pieces.at(-1);
-			// Never split inside inline emphasis.
 			if (
 				open !== undefined &&
 				(open.match(/<(?:strong|em)>/g)?.length ?? 0) !==
@@ -473,8 +453,6 @@ export function narrationPieces(html: string): string[][] {
 }
 
 function assertNoHighlightPdf(options: CoursePdfOptions): void {
-	// Permanent native limitation, independent of temporary runtime publication
-	// admission. Scan hidden descendants before rendering or staging any workbook.
 	const visit = (value: unknown, lessonId: string, locale: string, referencePath: string): void => {
 		if (Array.isArray(value)) {
 			value.forEach((child, index) => visit(child, lessonId, locale, `${referencePath}[${index}]`));
@@ -504,7 +482,6 @@ function assertNoHighlightPdf(options: CoursePdfOptions): void {
 	);
 }
 
-/** Pure preparation: referenced assets come only from selected printable content. */
 export function buildCoursePdfSource(options: CoursePdfOptions): {
 	typstSource: string;
 	questionCount: number;
@@ -735,7 +712,6 @@ export function buildCoursePdfSource(options: CoursePdfOptions): {
 						const definition = attr("data-tooltip-content") as string;
 						if (!inAnswers && !glossary.has(term.toLocaleLowerCase(lesson.locale)))
 							glossary.set(term.toLocaleLowerCase(lesson.locale), { term, definition });
-						// A heading stays a short title; its definition moves to the foot of the page.
 						return headingIds.has(id)
 							? `${content}#footnote[${escapeTypst(definition)}]`
 							: `${content} (${escapeTypst(definition)})`;
@@ -814,7 +790,6 @@ export function buildCoursePdfSource(options: CoursePdfOptions): {
 			);
 			const replace = (source: string) =>
 				source.replace(/\u0000PDFINLINE\d+X\d+END/g, (token) => replacements.get(token) ?? token);
-			// The appended block, if any, is only the source list; its items print as page footnotes.
 			return { body: replace(content), notes: replace(notes) };
 		};
 		const staticData = (data: Data, id?: string) => {
@@ -844,8 +819,6 @@ export function buildCoursePdfSource(options: CoursePdfOptions): {
 				}
 				if (source.visible === false || hidden(source.data)) return [];
 				staticData(source.data, source.id);
-				// Malformed response records become PDF diagnostics before normalization;
-				// the adapter requires identities on actual child records.
 				if (
 					source.type === "assessment" &&
 					record(source.data.response) &&
@@ -945,8 +918,6 @@ export function buildCoursePdfSource(options: CoursePdfOptions): {
 		const groups: Array<{ id: string; members: unknown; journal: boolean }> = [];
 		let pageNarration: ReturnType<typeof extractNarrationSegments> = [];
 		const renderedNarration = new Set<string>();
-		// Narration is collected per page as (paragraph, sentence) units; px-slide places as many
-		// beside the slide as fit its height and continues the rest below.
 		const pageNotes: string[] = [];
 		let noteParagraph = 0;
 		const note = (content: string) => pageNotes.push(`(${noteParagraph}, [${content}])`);
@@ -993,7 +964,6 @@ export function buildCoursePdfSource(options: CoursePdfOptions): {
 			const field = (owner: Data, key: string) => rich(getInlineField(owner, key), id);
 			let content: string;
 			if (block.type === "retrievalSheet") {
-				// Native workbooks consume the sheet’s public authored Content.
 				let sheet: RetrievalSheetContent;
 				try {
 					validateRetrievalSheet(data.content);
@@ -1052,7 +1022,6 @@ export function buildCoursePdfSource(options: CoursePdfOptions): {
 				).join("\n\n");
 				content = `#layout(size => [#px-eyebrow[Q${number}] ${literal(prompt.question)}]) <q-${number}>\n\n${escapeTypst(labels.answer)}\n\n#v(2cm)\n#line(length: 100%, stroke: 0.75pt + px-ink)\n\n${escapeTypst(instruction)}\n\n${spaces}`;
 				if (options.includeAnswerSheet === true) {
-					// Only explicit native answer sheets read this grammar-owned Content map.
 					const authored = lesson.writeDistractorsContents?.get(id);
 					if (!authored)
 						throw Object.assign(
@@ -1071,7 +1040,6 @@ export function buildCoursePdfSource(options: CoursePdfOptions): {
 							full.question !== prompt.question ||
 							full.count !== prompt.count ||
 							full.misconceptions.length !== prompt.items.length ||
-							// Native answer sheets require the source subset's one option per item.
 							full.authorOptions.length !== prompt.items.length ||
 							new Set(full.authorOptions.map((option) => option.misconception)).size !==
 								prompt.items.length ||
@@ -1138,8 +1106,6 @@ export function buildCoursePdfSource(options: CoursePdfOptions): {
 					);
 				}
 				const measure = pageWidthPt[options.pageSize ?? "a4"] - (2 * pageMarginCm * 72) / 2.54;
-				// 1.8 em allows margin beyond the widest packaged Latin face, including legacy OpenDyslexic.
-				// shortcut: the prefilter and 16-grapheme pieces target normal widths; measure pieces for narrow columns.
 				const capacity = Math.floor(
 					(measure -
 						Math.max(coursePdfTextLayout.questionInsetPt, 2 * coursePdfTextLayout.bodySizePt)) /
@@ -1246,12 +1212,9 @@ export function buildCoursePdfSource(options: CoursePdfOptions): {
 			if (!content && !["blockBreak", "variable", "pageBreak"].includes(block.type))
 				fail("Empty content block.", id);
 			if (!content) return "";
-			// A heading's own stickiness stops at this wrapper, so the wrapper keeps it with what follows.
-			// Surrounding paragraph breaks make lone inline text a tagged P rather than a block Span.
 			return `${inAnswers ? "" : aliases(id, blockAliases.get(id) ?? [block.name, data.name])}\n#block${block.type === "heading" ? "(sticky: true)" : ""}[\n\n${block.locale ? `#text(${language(block.locale, lesson.id, id)})[${content}]` : content}\n\n]${inAnswers ? "" : ` <${anchor(id)}>`}`;
 		};
 		const withSkippableBlock = <T>(block: PraxityBlock, run: () => T, skipped: T): T => {
-			// ponytail: copy state per block for safe rollback; stage mutations if huge workbooks make this costly.
 			const before = {
 				ids: new Set(ids),
 				printedIds: new Set(printedIds),
@@ -1458,8 +1421,6 @@ export function buildCoursePdfSource(options: CoursePdfOptions): {
 			noteParagraph = 0;
 			for (const segment of pageNarration)
 				if (segment.kind === "pageTitle" && !segment.blockId) supplement(segment);
-			// Text runs keep a readable measure; figures, tables and code take the full width. A run
-			// ending in a heading stays with the figure after it.
 			const parts: Array<{ wide: boolean; sticky: boolean; body: string }> = [];
 			const add = (block: PraxityBlock) => {
 				const body = renderBlock(block);
@@ -1471,10 +1432,6 @@ export function buildCoursePdfSource(options: CoursePdfOptions): {
 					last.sticky = block.type === "heading";
 				} else parts.push({ wide, sticky: block.type === "heading", body });
 			};
-			// Authored wrap: a small or medium floated image sits at its side with following blocks
-			// beside it. Large floats stack, as the published page does at this width.
-			// Wrapped text splits into paragraphs and list items so it can continue below the image
-			// mid-block, as it does on the page. Consecutive items regroup into one list in Typst.
 			const wrapUnits = (block: PraxityBlock) =>
 				withSkippableBlock(
 					block,
@@ -1570,7 +1527,6 @@ export function buildCoursePdfSource(options: CoursePdfOptions): {
 				const label = pageData.title ?? pageData.label;
 				const titled = typeof label === "string" && label.trim();
 				if (titled) pageContents.push(`#px-toc(<${anchor(pageId)}>)[${escapeTypst(label)}]`);
-				// Navigation labels are not visible titles; show one only where no heading opens the slide.
 				const first = normalized[0]?.data ?? {};
 				const opening = [first.content, first.title, first.groupName].find(
 					(value) => typeof value === "string",
@@ -1649,8 +1605,6 @@ export function buildCoursePdfSource(options: CoursePdfOptions): {
 		}
 	}
 	headingRanks.length = 0;
-	// Retrieval subsections follow all ordinary answers, so later Q answers never
-	// inherit a sheet's heading scope. Preserve ordinary-only appendix bytes.
 	const answerSections = [
 		...answers.map((render) => render()),
 		...retrievalAnswers.map(
@@ -1667,7 +1621,6 @@ export function buildCoursePdfSource(options: CoursePdfOptions): {
 			theme.preamble,
 			`#set text(${courseLanguage})`,
 			"#set smartquote(enabled: false)",
-			// Running header and folio repeat on every sheet; Typst tags them as pagination artifacts.
 			`#set page(paper: ${typstString(options.pageSize === "letter" ? "us-letter" : "a4")}, margin: (x: ${pageMarginCm}cm, y: 2.5cm), header: { counter(footnote).update(0); context if here().page() > 1 { set text(size: 0.8em, fill: px-line); let here-page = here().page(); let lessons = query(heading.where(level: 1)); let current = lessons.filter(h => h.location().page() == here-page); let before = lessons.filter(h => h.location().page() < here-page); ${typstString(options.title)}; h(1fr); if current.len() > 0 { current.first().body } else if before.len() > 0 { before.last().body } } }, footer: context if here().page() > 1 { set text(size: 0.8em, fill: px-line); h(1fr); counter(page).display() })`,
 			`#block(width: 100%, stroke: (left: 4pt + px-accent), inset: (left: 16pt, y: 6pt), above: 3cm, below: 1.5em)[#title[${escapeTypst(options.title)}]]`,
 			`#text(size: 0.9em)[${escapeTypst(strings.notice)}${answerSections.length ? ` ${escapeTypst(strings.answersIncluded)}` : ""}]`,
@@ -1687,7 +1640,6 @@ export function buildCoursePdfSource(options: CoursePdfOptions): {
 	};
 }
 
-/** Host-neutral: no project loader, Electron, viewer build, network or destination writes. */
 export async function exportCoursePdf(
 	options: CoursePdfOptions & {
 		executablePath: string;

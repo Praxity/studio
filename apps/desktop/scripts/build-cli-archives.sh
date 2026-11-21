@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Run from the source checkout's root. The candidate workflow can supply this
-# script from its own revision while building an older CLI-capable source ref.
 browser_editor=false
 if [[ "${1:-}" == --browser-editor ]]; then
   browser_editor=true
@@ -26,14 +24,10 @@ for arch in "${arches[@]}"; do
   fi
   TYPST_ARCH="$arch" pnpm build:cli
   archive="praxity-cli-${version}-macos-${arch}.tar.gz"
-  # macOS tar otherwise adds ._* AppleDouble files and xattr headers (com.apple.provenance)
-  # that GNU tar warns about.
   COPYFILE_DISABLE=1 tar --no-xattrs -C dist -czf "apps/desktop/release/$archive" studio-cli
   (cd apps/desktop/release && shasum -a 256 --binary "$archive" > "$archive.sha256")
 done
 
-# Tests can write source fixtures and add files to dist/studio-cli. Seal both
-# archives first, leaving the native payload and provenance for the proof.
 pnpm test:cli
 if [[ "$browser_editor" == true ]]; then
   PRAXITY_BROWSER_ARTIFACT="$PWD/dist/studio-cli" pnpm --filter @praxity/desktop e2e:browser-editor

@@ -132,9 +132,6 @@ describe("buildScormPackage desktop mode", () => {
 	it.each([false, true])(
 		"preserves base package bytes apart from schema notices without courseHomeUrl, moduleDeck=%s",
 		async (moduleDeck) => {
-			// T50 round 1 uses the shared glossary name and a single-warning media action catalog.
-			// Inline JSON writes <, > and & as <, > and &. With only </script escaped,
-			// as before this change, every entry matches the previous hashes.
 			const baseline: Record<string, string> = {
 				"pages/html": "16835922715c00669311082f7f47be16f85a4a801cb63c3e40d59944eb71569b",
 				"pages/scorm12": "374b5b8a3b0433f2878b3f7a2e6611a5163376dfd7a3e0ccfd68e8f84f351da7",
@@ -158,7 +155,6 @@ describe("buildScormPackage desktop mode", () => {
 					const zip = new AdmZip((await deployCourse(artifact, { format })).zip);
 					const files = zip
 						.getEntries()
-						// The added schema notice has its own complete-content export contract below.
 						.filter((entry) => !entry.isDirectory && entry.entryName !== "license.txt")
 						.map((entry) => [
 							entry.entryName,
@@ -1302,13 +1298,6 @@ describe("buildScormPackage desktop mode", () => {
 		};
 	}
 
-	/**
-	 * The unit tests in export-contrast.test.ts prove the helper corrects each role.
-	 * This proves every emission path actually runs through it: a real build with a
-	 * palette an author could plausibly pick, where every text role starts below the
-	 * floor. Author-supplied brand colours reaching output unvalidated was the P1 in
-	 * the 2026-07-28 audit.
-	 */
 	it("holds the 4.5:1 text floor for a palette that starts below it", async () => {
 		const hostile = {
 			palette: "standard",
@@ -1372,7 +1361,6 @@ describe("buildScormPackage desktop mode", () => {
 		}
 		expect(failures).toEqual([]);
 
-		// The author's fills are theirs to choose — only the text roles get corrected.
 		expect(
 			contrastRatio(vars.get("--praxity-color-accent") ?? "", background),
 		).toBeGreaterThanOrEqual(4.5);
@@ -1477,7 +1465,6 @@ describe("buildScormPackage desktop mode", () => {
 
 		const zip = new AdmZip(result.zip);
 		const entries = zip.getEntries().map((entry) => entry.entryName);
-		// page-N.html are redirect shims; the course chrome lives on the slug pages.
 		const lessonEntry = entries.find(
 			(name) => name.endsWith(".html") && name !== "index.html" && !/^page-\d+\.html$/.test(name),
 		);
@@ -1494,10 +1481,6 @@ describe("buildScormPackage desktop mode", () => {
 		expect(css).toContain("--praxity-font-family: 'Source Sans 3', sans-serif;");
 		expect(css).not.toContain("--praxity-spacing-md: 32px;");
 		expect(css).not.toContain("--praxity-block-spacing: 40px;");
-		// The fixture's archetype is `bottomBar`; it also sets navScrollProgress and
-		// navFloatingToc. This used to assert `praxity-layout-scroll`, because the
-		// exporter reverse-inferred the layout from toggles and those two outvoted the
-		// author's choice. The archetype now decides, and toggles only customise it.
 		expect(html).toContain('<body class="praxity-layout-bottombar">');
 		expect(html).not.toContain('data-praxity-image-hover="glow"');
 		expect(html).not.toContain('class="praxity-page-title"');
@@ -1514,7 +1497,6 @@ describe("buildScormPackage desktop mode", () => {
 
 		const zip = new AdmZip(result.zip);
 		const entries = zip.getEntries().map((entry) => entry.entryName);
-		// page-N.html are redirect shims; the course chrome lives on the slug pages.
 		const lessonEntry = entries.find(
 			(name) => name.endsWith(".html") && name !== "index.html" && !/^page-\d+\.html$/.test(name),
 		);

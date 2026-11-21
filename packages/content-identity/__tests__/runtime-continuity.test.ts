@@ -594,7 +594,6 @@ it("I4 unchanged repeated runtime siblings retain identity but changed multiplic
 	expect(duplicateIds).toHaveLength(4);
 	for (const id of original) expect(duplicateIds).not.toContain(id);
 	expect(duplicate.unresolved.filter((u) => u.reason === "duplicate").length).toBeGreaterThan(0);
-	// Removing all duplicates is admitted before reinsertion. No older revision is a baseline.
 	session.resolve(input);
 	const reinserted = newIds(session.resolve(next).view);
 	for (const id of original.concat(duplicateIds)) expect(reinserted).not.toContain(id);
@@ -880,7 +879,6 @@ it("I4 successful write correspondence uses the literal UUIDs issued by that wri
 		before.candidate,
 		written,
 	);
-	// Preparation neither stores nor advances the display revision.
 	expect(newIds(session.resolve(next).view)).toEqual([
 		"rt-00000000000000000000000000001003",
 		"rt-00000000000000000000000000001004",

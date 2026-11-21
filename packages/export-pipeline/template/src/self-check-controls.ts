@@ -4,7 +4,6 @@ import {
 	getSelfCheckHostStrings,
 } from "@praxity/shared-blocks/i18n/self-check-host-strings";
 import type { SelfCheckEffectTicket, SelfCheckRuntime } from "./self-check-runtime";
-// Reset projection belongs to the document owner, outside the lazy comparison adapter.
 export type SelfCheckControls = Omit<ReturnType<typeof installSelfCheckControls>, "projectReset">;
 export function installSelfCheckControls(
 	root: HTMLElement,
@@ -127,7 +126,6 @@ export function installSelfCheckControls(
 		clearError,
 		validAnswer,
 		cleanup() {
-			// A repeated cleanup must not overwrite a replacement's association with the same IDs.
 			if (
 				doc.getElementById(mode.id) === mode &&
 				answer.getAttribute("aria-describedby")?.split(/\s+/).includes(mode.id)

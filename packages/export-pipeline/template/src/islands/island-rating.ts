@@ -26,7 +26,6 @@ function readRestoredRatingValue(blockId: string, options: HTMLInputElement[]): 
 
 	const values = options.map((option) => Number(option.value)).filter(Number.isFinite);
 	if (values.length === 0) return undefined;
-	// A stored 0 means nothing was selected; clamping it would invent a rating.
 	if (value <= 0 && !values.includes(value)) return undefined;
 	const bounded = Math.max(Math.min(value, Math.max(...values)), Math.min(...values));
 	return values.reduce((nearest, candidate) =>
@@ -77,7 +76,6 @@ function enhanceRatingRoot(root: HTMLElement): () => void {
 			feedback.hidden = false;
 			if (feedbackTemplate) {
 				feedback.append(feedbackTemplate.content.cloneNode(true));
-				// Authored feedback can link to course slides; clones carry no listeners.
 				bindDeckControls(feedback);
 			}
 		}
@@ -146,7 +144,6 @@ function enhanceRatingRoot(root: HTMLElement): () => void {
 	fieldset.addEventListener("pointerleave", resetPreview);
 	cleanups.push(() => fieldset.removeEventListener("pointerleave", resetPreview));
 
-	// Native input can precede attachment, but reset or provider replacement revokes its ticket.
 	const pending =
 		root.ownerDocument.defaultView?.__praxitySelfCheckDocument?.takePendingRating(root);
 	for (const option of options) option.checked = false;

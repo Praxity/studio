@@ -114,7 +114,6 @@ function idProvider(
 	);
 }
 
-/** Project a resolved identity through the reader, including its virtual source roles. */
 export function projectLessonIdentity(
 	path: string,
 	read: ReadLessonResult,
@@ -157,10 +156,8 @@ interface LoadedIdentityStore {
 	store: IdentityStore;
 	activeHistoryIds: Set<string>;
 	files: Map<string, string>;
-	/** File identity evidence from the same opened handles as the admitted bytes. */
 	fileHandles: Map<string, string>;
 	reservations: Map<string, string>;
-	/** Private canonical facts for validated current heads. */
 	snapshotRecords: Map<string, { canonical: string; hash: string; nodesCanonical: string }>;
 }
 type LoadStoreOptions = Pick<
@@ -177,7 +174,6 @@ interface AdmittedIdentityStore {
 }
 const admissionStores = new AsyncLocalStorage<IdentityStoreReuseOwner>();
 
-/** Retain private validation only until this save completes, independently of the global budget. */
 export async function withIdentityStoreReuse<T>(work: () => Promise<T>): Promise<T> {
 	const owner: IdentityStoreReuseOwner = { active: true, stores: new Map() };
 	return admissionStores.run(owner, async () => {
@@ -199,7 +195,6 @@ interface SnapshotProof {
 	parents: readonly string[];
 	activeIds: readonly string[];
 	reservations: readonly (readonly [string, string])[];
-	/** Only current heads need the full graph and canonical bytes. */
 	record?: ParsedSnapshotRecord;
 	nodesCanonical?: string;
 	factBytes: number;
@@ -223,7 +218,6 @@ const STORE_CACHE_BYTES = 16 * 1024 * 1024;
 const STORE_CACHE_ENTRIES = 8;
 const STORE_READ_BATCH_SIZE = 8;
 
-/** Owns validated records privately; zero bytes selects independent fresh validation. */
 export class IdentityStoreCache {
 	constructor(options: { maxBytes?: number } = {}) {
 		const maxBytes = options.maxBytes ?? STORE_CACHE_BYTES;
@@ -233,12 +227,10 @@ export class IdentityStoreCache {
 	}
 	invalidate(): void {
 		const state = required(storeCaches.get(this), "store cache");
-		// An admission already reading disk may return its result, but cannot retain it after disposal.
 		state.records.clear();
 		state.bytes = 0;
 		storeCaches.set(this, { ...state, bytes: 0, records: new Map() });
 	}
-	/** Retained payload accounting, rather than process heap size. */
 	usage(): { bytes: number; entries: number; hits: number } {
 		const state = required(storeCaches.get(this), "store cache");
 		return { bytes: state.bytes, entries: state.records.size, hits: state.hits };
@@ -312,7 +304,6 @@ function validatedStore(
 	installed?: LoadedIdentityStore,
 	admitted?: AdmittedIdentityStore,
 ): LoadedIdentityStore {
-	// Lookup, validation and the retained key must use the same captured configuration.
 	const expectedCourseId = options.expectedCourseId;
 	const captured = { expectedCourseId };
 	if (
@@ -328,8 +319,6 @@ function validatedStore(
 			fileHandles,
 			reservations: new Map(admitted.loaded.reservations),
 		};
-	// Seeding exact private installed bytes produces no new snapshot proofs. Keep the
-	// existing proofs for the next guarded load, which validates the appended snapshot.
 	if (
 		installed &&
 		sameFiles(installed.files, files) &&
@@ -364,35 +353,23 @@ function validatedStore(
 	return loaded;
 }
 export interface ResolveCourseIdentityOptions {
-	/** Session-owned validated evidence. Exact store bytes and inventory are checked every time. */
 	identitySession?: CourseIdentitySession;
-	/** Require saved identity and source revisions, with no filesystem writes. */
 	strict?: boolean;
-	/** Explicit source deletions in the same admitted file plan, including rename donors. */
 	removedPaths?: readonly string[];
-	/** The complete course inventory, including lessons unaffected by this edit. */
 	lessonPaths: readonly string[];
-	/** Draft/result bytes. Omitted lessons use their exact saved bytes. */
 	sources?: Readonly<Record<string, string>>;
-	/** Build-local reads keyed by exact source bytes; never retained across admissions. */
 	lessonReads?: Map<string, ReadLessonResult>;
 	operations?: readonly IdentityOperation[];
-	/** Store-issued current resolution, including outside edits, for one atomic operation. */
 	operationBase?: ResolvedCourseIdentity;
-	/** Single-use registry evidence, bound to the store-issued operation base. */
 	operationPlan?: AppliedOperation;
-	/** A guarded inverse restores consumer metadata through the identity owner. */
 	restore?: {
 		identity: IdentityResolution;
 		written: IdentityResolution;
 		mapping: readonly IdentityMapping[];
 	};
 	expectedCourseId?: string;
-	/** Hosts with release evidence outside the course directory must set this. */
 	established?: boolean;
-	/** Explicit URL changes; old slugs remain reserved aliases. */
 	slugRenames?: Readonly<Record<string, string>>;
-	/** Explicit grammar-3 conversion starts a lineage using these approved store files. */
 	approvedConversion?: {
 		directory: string;
 		fileHashes: Readonly<Record<string, string>>;
@@ -400,15 +377,12 @@ export interface ResolveCourseIdentityOptions {
 }
 export interface ResolvedCourseIdentity {
 	identity: IdentityResolution;
-	/** Validated historical and author-artifact facts for the identity owner's durability predicate. */
 	activeHistoryIds?: ReadonlySet<string>;
-	/** Display-only graph. It has no store issuance and cannot authorize a write. */
 	readView?: IdentityReadView;
 	lessons: Map<string, ReadLessonResult>;
 	ids: Map<string, LessonIdAllocator>;
 	transientIds: boolean;
 	writeResult?: ProjectWriteResult;
-	/** Successful write evidence for author host state; never part of durable identity. */
 	correspondence?: IdentityReadView["correspondence"];
 }
 export interface IdentityMessageRef {
@@ -448,11 +422,9 @@ export class IdentityStoreError extends Error {
 interface Baseline {
 	writeActive?: () => boolean;
 	readInput: ResolveIdentityInput;
-	/** Durable prior facts survive intermediate operation resolutions of outside edits. */
 	retirementInput?: ResolveIdentityInput;
 	readView?: IdentityReadView;
 	writeBase?: IdentityResolution;
-	/** Target IDs captured by the registry's private operation issuance. */
 	recordedTargets?: readonly string[];
 	readRecords: LoadedIdentityStore["snapshotRecords"];
 	retirementRecords: LoadedIdentityStore["snapshotRecords"];
@@ -464,14 +436,10 @@ interface Baseline {
 	artifacts: Map<string, string | null>;
 	options: ResolveCourseIdentityOptions;
 	serialized: string;
-	/** The resolver's private value; public resolutions receive an independent copy. */
 	validatedIdentity: IdentityResolution;
-	/** Private bytes and hashes bind to serialized; never exposed with mutable snapshots. */
 	snapshotRecords: LoadedIdentityStore["snapshotRecords"];
 	readerMappings: Map<string, Map<string, string>>;
-	/** Captured before exposing mutable reads, so publication can detect altered projections. */
 	readerProjections: Map<string, string>;
-	/** Reconciled outside revisions become immutable parents in the same journal. */
 	operationSnapshots?: { canonical: string; hash: string }[];
 	persisted?: true;
 	session?: { owner: CourseIdentitySession; state: IdentitySessionState };
@@ -487,12 +455,10 @@ const readProofs = new WeakMap<
 	}
 >();
 
-/** Resolve captured author locators only through successfully installed I4 correspondence. */
 export function resolveReadIdentityId(result: ResolvedCourseIdentity, id: string): string {
 	return readProofs.get(result)?.correspondence.get(id) ?? id;
 }
 
-/** Read admissions expose display bindings only. Candidate evidence stays with I4. */
 export async function readCourseIdentity(
 	courseDir: string,
 	options: ResolveCourseIdentityOptions,
@@ -523,7 +489,6 @@ export async function readCourseIdentity(
 			const baseline = required(readBaseline, "read admission");
 			const input = baseline.readInput;
 			const view = required(baseline.readView, "read view");
-			// Slugs belong to I4's course-wide reservation owner, never to the display matcher.
 			for (const mapping of view.sourceMappings) {
 				const original = issued.identity.sourceMappings.find(
 					(m) =>
@@ -538,7 +503,6 @@ export async function readCourseIdentity(
 					view.nodes[mapping.id].aliases = structuredClone(node.aliases);
 				}
 			}
-			// Correspondence is released only by a successful explicit write, not a read.
 			view.correspondence = [];
 			const snapshots = view.lessons.map(
 				(lesson): IdentitySnapshot => ({
@@ -600,7 +564,6 @@ export async function readCourseIdentity(
 	});
 }
 
-/** Probe/preview planning cannot export its private candidate or authorize persistence. */
 export function planReadIdentity(
 	result: ResolvedCourseIdentity,
 	request: OperationRequest,
@@ -615,7 +578,6 @@ export function planReadIdentity(
 	};
 }
 
-/** Dry-run evidence describes display identity; executable plans remain private to I4. */
 export function resolveReadOperation(
 	result: ResolvedCourseIdentity,
 	request: OperationRequest,
@@ -796,7 +758,6 @@ function readDisplayBindings(result: ResolvedCourseIdentity, identity: IdentityR
 }
 
 function matchesIssuedIdentity(baseline: Baseline, identity: IdentityResolution): boolean {
-	// Canonical fallback retains acceptance of harmless undefined fields and key order.
 	return (
 		isDeepStrictEqual(baseline.validatedIdentity, identity) ||
 		baseline.serialized === serializeIdentity(identity)
@@ -812,7 +773,6 @@ interface RetainedCourseIdentity {
 }
 interface IdentitySessionState {
 	dependencies: IdentityDependencies;
-	// Held browser fields outlive RPC replies and transient artifact rebuild gaps.
 	correspondence?: { courseId: string; ids: Map<string, string> };
 	root?: string;
 	retained?: RetainedCourseIdentity;
@@ -821,7 +781,6 @@ interface IdentitySessionState {
 }
 const identitySessions = new WeakMap<CourseIdentitySession, IdentitySessionState>();
 
-/** One host session owns retained admission evidence, never caller-owned results. */
 export class CourseIdentitySession {
 	constructor(
 		readonly projectDir: string,
@@ -832,12 +791,10 @@ export class CourseIdentitySession {
 	invalidate(): void {
 		identitySessions.get(this)?.readSession?.invalidate();
 		identitySessions.get(this)?.draftReadSession?.invalidate();
-		// Replacing the state also prevents an in-flight admission from repopulating it.
 		const state = required(identitySessions.get(this), "admission session");
 		identitySessions.set(this, { root: state.root, dependencies: state.dependencies });
 		defaultStoreCache.invalidate();
 	}
-	/** Reader-owned copies let grammar-version guards reuse the same parse. */
 	lessonReads(): Map<string, ReadLessonResult> {
 		return new Map(
 			[...(identitySessions.get(this)?.retained?.reads.values() ?? [])].map((read) => [
@@ -848,7 +805,6 @@ export class CourseIdentitySession {
 	}
 }
 
-// Fatal UTF-8 decoding retains the BOM, so text equality proves exact admitted byte equality.
 const sameFiles = (left: ReadonlyMap<string, string>, right: ReadonlyMap<string, string>) =>
 	left.size === right.size && [...left].every(([path, text]) => right.get(path) === text);
 
@@ -873,7 +829,6 @@ function parseFile<T>(path: string, parse: () => T): T {
 	}
 }
 
-/** T1 isolates abandoned publications before write admission; live installs may still link twice. */
 export async function assertPlainIdentityStore(root: string): Promise<void> {
 	const { dev } = await lstat(root, { bigint: true });
 	async function visit(path: string): Promise<void> {
@@ -890,7 +845,6 @@ export async function assertPlainIdentityStore(root: string): Promise<void> {
 			(info.isFile() && info.nlink > 1n)
 		)
 			throw new ProjectPlainStoreError(path);
-		// .praxity itself must be plain, but window state and local drafts are not lineage.
 		if (info.isDirectory() && path !== ".praxity")
 			for (const name of (await readdir(join(root, path))).sort()) await visit(`${path}/${name}`);
 	}
@@ -945,7 +899,6 @@ async function entries(
 		const safe = await resolveExistingPathWithin(root, join(root, path));
 		const directory = await lstat(join(root, path), { bigint: true });
 		if (directory.isSymbolicLink()) throw new Error(`Identity: symbolic link at ${path}`);
-		// Native spelling and directory identity change on rename or replacement; appends do not.
 		fileHandles?.set(
 			`${path}:entry`,
 			`${safe}:${directory.dev}:${directory.ino}:${directory.birthtimeNs}`,
@@ -978,8 +931,6 @@ async function assertCompleteInventory(
 		if (lessonPaths.includes(head.path) || removedPaths.includes(head.path)) continue;
 		const livePath = await existingPath(head.path);
 		if (livePath === null) continue;
-		// A Windows case-only rename can still resolve through its old spelling.
-		// Compare canonical file names, leaving rename/copy matching to the owner.
 		inventoryPaths ??= new Set(
 			(await Promise.all(lessonPaths.map(existingPath))).filter((path) => path !== null),
 		);
@@ -1026,8 +977,6 @@ async function loadStoreWithin(
 	if (courseText === null) {
 		discardStoreRecord(state, root);
 		if (options.approvedConversion) {
-			// Rollback can retain empty destination directories and recovery copies.
-			// Explicit conversion may fill an empty store, never discard identity bytes.
 			const assertEmpty = async (path: string): Promise<void> => {
 				let contents: Dirent[];
 				try {
@@ -1060,7 +1009,6 @@ async function loadStoreWithin(
 				},
 			),
 		);
-		// A rolled-back first write never committed a namespace, even if installation began.
 		evidence.push(
 			(await readProjectRecoveryEvidence(root)).some(
 				(archive) =>
@@ -1098,7 +1046,6 @@ async function loadStoreWithin(
 		!sameFiles(mutableFiles(capturedFiles), mutableFiles(options.expectedFiles))
 	)
 		throw new ProjectFileConflictError("Identity: files changed on disk since resolution");
-	// Immutable snapshots prove their content hash before inventory changes are classified.
 	const validated = validatedStore(
 		cache,
 		root,
@@ -1114,11 +1061,9 @@ async function loadStoreWithin(
 	return validated;
 }
 
-/** Capture exact bytes even when working heads contain git conflict markers. */
 async function readStoreFiles(root: string, courseText: string, fileHandles?: Map<string, string>) {
 	const files = new Map<string, string>([[`${IDENTITY}/course.json`, courseText]]);
 	if (fileHandles) {
-		// A case-insensitive lookup or an internal symlink can open the same inode under a new entry.
 		const directory = await resolveExistingPathWithin(root, join(root, IDENTITY));
 		const names = (await readdir(directory, { withFileTypes: true }))
 			.filter((entry) => entry.name.toLowerCase() === "course.json")
@@ -1139,8 +1084,6 @@ async function readStoreFiles(root: string, courseText: string, fileHandles?: Ma
 		names.map((name) => ({ directory, path: `${IDENTITY}/${directory}/${name}` })),
 	);
 	for (let offset = 0; offset < paths.length; offset += STORE_READ_BATCH_SIZE) {
-		// Drain every admitted read before returning an error. Publish bytes and their
-		// opened-handle evidence together, in inventory order rather than completion order.
 		const captured = await Promise.allSettled(
 			paths.slice(offset, offset + STORE_READ_BATCH_SIZE).map(async ({ directory, path }) => {
 				const handles = fileHandles ? new Map<string, string>() : undefined;
@@ -1162,7 +1105,6 @@ async function readStoreFiles(root: string, courseText: string, fileHandles?: Ma
 	return files;
 }
 
-/** Every protected file an archive holds must pass its owner in the validated live namespace. */
 async function liveIdentityStoreIsIntact(
 	root: string,
 	capturedPaths: readonly string[],
@@ -1188,7 +1130,6 @@ async function liveIdentityStoreIsIntact(
 				if (source === null) return false;
 				const normalized = path.toLowerCase();
 				if (normalized === "narration.yaml") {
-					// Omit the optional identity so the read owner's empty-file view cannot prove stored identity.
 					if (parseNarrationSidecarV2(source).courseId !== store.course.courseId) return false;
 				} else if (normalized === ".praxity/review/state.json") {
 					parseReviewState(source, store.course.courseId);
@@ -1198,14 +1139,12 @@ async function liveIdentityStoreIsIntact(
 					if (state === null) return false;
 					parseReviewState(state, store.course.courseId);
 				} else {
-					// Legacy registries and other review files have no standalone namespace proof here.
 					return false;
 				}
 			}
 		}
 		return true;
 	} catch {
-		// Unreadable or invalid evidence cannot authorize deletion of recovery bytes.
 		return false;
 	}
 }
@@ -1229,7 +1168,6 @@ function parseStoreFiles(
 			.sort();
 	const headNames = names("lessons");
 	const snapshotNames = names("snapshots");
-	// Discover current heads now, but retain the historical-before-head refusal order.
 	const parsedHeads = headNames.map((name) => {
 		const path = `${IDENTITY}/lessons/${name}`;
 		try {
@@ -1306,7 +1244,6 @@ function parseStoreFiles(
 				factBytes: stringBytes(serializeIdentity(facts)),
 				record: nodesCanonical === undefined ? undefined : record,
 				nodesCanonical,
-				// Canonical bytes bound both the parsed graph payload and the retained canonical string.
 				recordBytes:
 					nodesCanonical === undefined
 						? 0
@@ -1368,7 +1305,6 @@ function parseStoreFiles(
 		)
 	)
 		throw new Error("Identity: missing lesson head for stored snapshots");
-	// Reuse the identity owner's course-wide graph and active-ID validation.
 	resolveIdentity(
 		{ course, priorHeads: heads, priorSnapshots: snapshots, parsedDocuments: [] },
 		dependencies,
@@ -1383,7 +1319,6 @@ function parseStoreFiles(
 	};
 }
 
-/** Pending author artifacts can exist even though those IDs have never been exported. */
 async function protectedHistoryIds(
 	root: string,
 	loaded: LoadedIdentityStore,
@@ -1440,7 +1375,6 @@ export function loadIdentityStore(
 	});
 }
 
-/** Validate an immutable git revision using the same rules as the disk store. */
 export function readIdentityRevision(files: ReadonlyMap<string, string>): IdentityMergeState & {
 	activeHistoryIds: ReadonlySet<string>;
 } {
@@ -1456,7 +1390,6 @@ export function readIdentityRevision(files: ReadonlyMap<string, string>): Identi
 	};
 }
 
-/** Merge only validated revision bytes; conflicted working heads are never parsed as a baseline. */
 export async function mergeCourseIdentity(
 	courseDir: string,
 	revisions: {
@@ -1498,7 +1431,6 @@ export async function mergeCourseIdentity(
 	if (!prepared.result.resolution) return prepared.result;
 	const resolution = prepared.result.resolution;
 	const proposed = new Map<string, string>();
-	// Preserve complete immutable history, including ancestors not referenced by current heads.
 	for (const files of inputs) {
 		for (const [path, text] of files) {
 			if (!path.startsWith(`${IDENTITY}/snapshots/`)) continue;
@@ -1520,7 +1452,6 @@ export async function mergeCourseIdentity(
 		);
 		proposed.set(`${IDENTITY}/lessons/${snapshot.lessonId}.json`, serializeIdentity(head));
 	}
-	// Preserve and validate any additional local history. Heads come only from the merge result.
 	for (const [path, text] of prepared.files) {
 		if (path.startsWith(`${IDENTITY}/snapshots/`) && !proposed.has(path)) proposed.set(path, text);
 		if (path.startsWith(`${IDENTITY}/lessons/`) && !proposed.has(path))
@@ -1542,7 +1473,6 @@ export async function mergeCourseIdentity(
 				);
 				if (!sameFiles(await readStoreFiles(root, courseText), prepared.files))
 					throw new Error("Identity: files changed during merge");
-				// Include unchanged sources as guards. T1 verifies every expected byte before installing anything.
 				const plan: ProjectFileChange[] = [...prepared.sources].map(([path, text]) => ({
 					path,
 					content: text,
@@ -1581,14 +1511,12 @@ export class IdentitySourceError extends Error {
 		readonly copyCountDropped = false,
 		readonly sameTitlePages = false,
 		readonly code: "bad_yaml" | "source_invalid" = "source_invalid",
-		/** The first error's grammar code, such as "svg-data-url". */
 		readonly diagnostic?: string,
 	) {
 		super(`${file}:${line}`);
 	}
 }
 
-/** Source validity precedes any identity-loss classification. */
 export function identitySourceError(
 	result: ResolvedCourseIdentity,
 	files?: readonly string[],
@@ -1642,7 +1570,6 @@ function designOnlySourceEdit(before: string | null | undefined, after: string):
 	return isDeepStrictEqual(oldContent, nextContent);
 }
 
-/** Classify the resolver's matches, never infer identity from positions or labels. */
 function identityInitialization(result: ResolvedCourseIdentity) {
 	const baseline = required(baselines.get(result), "initialization admission");
 	const prior = new Map(
@@ -1714,7 +1641,6 @@ function identityInitialization(result: ResolvedCourseIdentity) {
 	const samePageTitle = (node: IdentityNode | undefined) =>
 		pageKey !== undefined && node?.kind === "page" && identityKey(node) === pageKey;
 	const savedPageCount = [...durable.values()].filter(samePageTitle).length;
-	// Page candidates are lesson-scoped; a move can look like an extra page only at its destination.
 	const sameTitlePages =
 		!copyCountDropped &&
 		savedPageCount > 1 &&
@@ -1742,11 +1668,6 @@ function identityInitialization(result: ResolvedCourseIdentity) {
 	};
 }
 
-/**
- * Saved identities the resolver cannot retain, with their saved diagnostic locations.
- * Requires an admitted result. Counts ambiguous durable pending IDs as retired, although
- * ordinary Studio persistence keeps those IDs pending.
- */
 export function identityRetirements(result: ResolvedCourseIdentity): IdentityRetiredLocation[] {
 	const baseline = required(baselines.get(result), "initialization admission");
 	const input = baseline.retirementInput ?? baseline.readInput;
@@ -1773,7 +1694,6 @@ export function identityRetirements(result: ResolvedCourseIdentity): IdentityRet
 						file,
 						kind: node.kind,
 						page: page.kind === "page" ? page.label : "",
-						// Old offsets cannot locate lines in edited or absent source.
 						line:
 							savedSource && node.span.end <= source.length
 								? lineColumn(source, node.span.start).line
@@ -1795,7 +1715,6 @@ export function identityRetirements(result: ResolvedCourseIdentity): IdentityRet
 		);
 }
 
-/** Retirements that have neither recorded operation intent nor an explicit source deletion. */
 export function identityWriteRetirements(
 	result: ResolvedCourseIdentity,
 ): IdentityRetiredLocation[] {
@@ -1842,12 +1761,10 @@ export function identityWriteRetirements(
 	const { ambiguous } = identityInitialization(result);
 	return identityRetirements(result).filter((node) => {
 		if (ambiguous.has(node.id) || baseline.options.removedPaths?.includes(node.file)) return false;
-		// Recorded deletion covers descendants still live at its base, never earlier outside losses.
 		let owner: string | undefined = node.id;
 		while (owner) {
 			if (recorded.has(owner) && (owner === node.id || liveBefore.has(node.id))) return false;
 			if (liveBefore.has(node.id) && baseline.recordedTargets?.includes(owner)) return false;
-			// A recorded owner edit covers its implicit reader parts, only while they are still live.
 			if (node.kind === "part" && liveBefore.has(node.id) && continuing.has(owner)) return false;
 			owner = prior.get(owner)?.parent ?? undefined;
 		}
@@ -1896,7 +1813,6 @@ function newIdentityBlocks(
 	});
 }
 
-/** Inspect initialization without recovering a journal or admitting an identity write. */
 export async function previewCourseIdentityInitialization(
 	courseDir: string,
 	lessonPaths: readonly string[],
@@ -1910,7 +1826,6 @@ export async function previewCourseIdentityInitialization(
 	}
 }
 
-/** Explicitly record the current source without replacing any authored bytes. */
 export async function initializeCourseIdentity(
 	courseDir: string,
 	lessonPaths: readonly string[],
@@ -1927,7 +1842,6 @@ export async function initializeCourseIdentity(
 			assertIdentitySourceValid(result);
 			const initialization = identityInitialization(result);
 			const { pending } = initialization;
-			// Making text unique cannot identify which durable copy was removed.
 			if (pending && (!initialization.unmatched || pending.copyCountDropped) && !options.rederive) {
 				throw new IdentitySourceError(
 					pending.file,
@@ -2029,7 +1943,6 @@ export async function initializeCourseIdentity(
 	);
 }
 
-/** A refused write has no durable allocation to share with the author host. */
 export async function projectWriteRefusal(
 	result: ResolvedCourseIdentity,
 	refusal: OperationRefusal,
@@ -2055,8 +1968,6 @@ async function resolveAdmittedCourseIdentity(
 	captureReadBaseline?: (baseline: Baseline) => void,
 	expectedFiles?: ReadonlyMap<string, string>,
 ): Promise<ResolvedCourseIdentity> {
-	// Read and validate the approved store before acquiring the destination admission.
-	// Conversion may replace legacy metadata, but never an existing modern lineage.
 	const approved = options.approvedConversion
 		? await withProjectFileTransaction(
 				options.approvedConversion.directory,
@@ -2156,8 +2067,6 @@ async function resolveAdmittedCourseIdentity(
 				if (!sameFiles(issued.files, current.files))
 					throw new ProjectFileConflictError("Identity: operation base files changed");
 			}
-			// The admission above binds these facts before the next await. Caller-owned
-			// operation bases cannot change the graph paired with private canonical bytes.
 			const baseIdentity = base ? structuredClone(base.identity) : undefined;
 			const store = baseIdentity
 				? {
@@ -2202,13 +2111,11 @@ async function resolveAdmittedCourseIdentity(
 					if (cachedRead.tree.stream.source !== source)
 						throw new Error(`Identity: parsed source revision differs for ${path}`);
 					options.lessonReads?.set(source, cachedRead);
-					// Identical source can share parsing work, but each mutable lesson owns its tree.
 					const read = usedReads.has(cachedRead) ? structuredClone(cachedRead) : cachedRead;
 					usedReads.add(cachedRead);
 					return { path, source, read, unchanged };
 				}),
 			);
-			// Invalid lessons are opaque to a writer; only a read admission describes their current trees.
 			const preservedLessons = new Set(
 				!readSession && !options.strict
 					? parsed
@@ -2245,7 +2152,6 @@ async function resolveAdmittedCourseIdentity(
 				operations: options.operations,
 				readerRoles: true,
 			};
-			// Artifact edits are outside the identity file inventory retained by this resolver.
 			if (
 				retained &&
 				store.snapshots.some((snapshot) =>
@@ -2293,7 +2199,6 @@ async function resolveAdmittedCourseIdentity(
 				!Object.keys(options.sources ?? {}).length &&
 				!options.removedPaths?.length &&
 				!options.approvedConversion;
-			// Refresh the saved display proof before a writer plans against current sources.
 			if (!readSession && !options.strict && !base && savedWriteAdmission)
 				sessionState?.readSession?.resolve({
 					...input,
@@ -2473,7 +2378,6 @@ async function resolveAdmittedCourseIdentity(
 					(previousRecord?.nodesCanonical ?? serializeIdentity(previous.nodes)) ===
 						serializeIdentity(snapshot.nodes);
 				if (reused) identity.snapshots[index] = structuredClone(previous);
-				// A reused snapshot already passed store validation, including its namespace and graph.
 				if (reused && previousHash && previousCanonical)
 					resolvedRecords.set(snapshot.lessonId, {
 						canonical: previousCanonical,
@@ -2643,13 +2547,11 @@ async function resolveAdmittedCourseIdentity(
 					]),
 				),
 			};
-			// Reader planning evidence has no persistence issuance, even during its admission.
 			if (readSession) required(captureReadBaseline, "read baseline consumer")(baseline);
 			else baselines.set(result, baseline);
 			if (options.strict) assertIdentityExportable(result);
 			const currentSessionState = session ? identitySessions.get(session) : undefined;
 			if (currentSessionState) {
-				// Bind only successful admissions, including when reads were invalidated in flight.
 				if (currentSessionState.root !== undefined && currentSessionState.root !== root)
 					throw new Error("Identity: admission session belongs to another project");
 				currentSessionState.root = root;
@@ -2685,7 +2587,6 @@ async function resolveAdmittedCourseIdentity(
 	});
 }
 
-/** Persists only a resolver result, together with its exact source revisions. */
 export async function persistCourseIdentity(
 	courseDir: string,
 	result: ResolvedCourseIdentity,
@@ -2699,8 +2600,6 @@ export async function persistCourseIdentity(
 	const loaded = owner?.active ? owner.stores.get(result) : undefined;
 	const admitted = owner && loaded ? { owner, loaded } : undefined;
 	owner?.stores.delete(result);
-	// Capture caller-owned drafts before the first await. Admission and the returned
-	// value must use the same payload, even while another save holds the queue.
 	const payload = {
 		identity: structuredClone(result.identity),
 		lessons: structuredClone(result.lessons),
@@ -2725,7 +2624,6 @@ export async function persistCourseIdentity(
 		...installedInput,
 		parsedDocuments: [...payload.lessons].map(([path, lesson]) => ({ path, tree: lesson.tree })),
 	};
-	// Preserved lessons are absent from the write candidate, but must remain in the read proof.
 	const displayedIdentity = baseline.preservedLessons.size
 		? resolveIdentity({ ...displayInput, operations: undefined }, dependencies)
 		: payload.identity;
@@ -2742,7 +2640,6 @@ export async function persistCourseIdentity(
 						},
 						displayedIdentity,
 					),
-					// Draft display descriptors describe the result, not the saved operation base.
 					session.state.draftReadSession?.prepareWrite(
 						{ ...displayInput, operations: undefined },
 						undefined,
@@ -2784,8 +2681,6 @@ export async function persistCourseIdentity(
 	}
 	const assertUnchanged = () => {
 		assertCandidateLifetime(result);
-		// Most checkpoints compare the untouched captured JSON directly. Canonical
-		// fallback preserves acceptance of reordered keys and ignored undefined fields.
 		if (
 			(!isDeepStrictEqual(payload.identity, result.identity) &&
 				baseline.serialized !== serializeIdentity(result.identity)) ||
@@ -2920,7 +2815,6 @@ export async function persistCourseIdentity(
 					const path = `${IDENTITY}/lessons/${snapshot.lessonId}.json`;
 					add(path, required(files.get(path), "head bytes"), true);
 				}
-				// Immutable identity content is prepared before any authored source replacement.
 				plan.sort(
 					(a, b) =>
 						Number(!a.path.startsWith(`${IDENTITY}/snapshots/`)) -
@@ -2941,7 +2835,6 @@ export async function persistCourseIdentity(
 									source !== payload.lessons.get(file)?.tree.stream.source,
 							)
 						) {
-							// Review concerns disk changes; a refused draft must not point to an empty gate.
 							const diskSources = [...baseline.sources].filter(
 								(entry): entry is [string, string] =>
 									entry[1] !== null && baseline.options.lessonPaths.includes(entry[0]),
@@ -2971,8 +2864,6 @@ export async function persistCourseIdentity(
 						await planOptions.onStep?.(step);
 						assertUnchanged();
 						await assertArtifactsUnchanged();
-						// Deleted paths permit rename matching. Recheck through staging
-						// and installation without creating their missing parent folders.
 						await assertCompleteInventory(
 							root,
 							current.store,
@@ -3003,9 +2894,6 @@ export async function persistCourseIdentity(
 							),
 						);
 					});
-				// These exact private bytes passed schema/graph validation before
-				// publication. Parsing only current heads preserves JSON values such
-				// as 0 versus -0, including noncanonical immutable stored snapshots.
 				const snapshots = heads.map(
 					(head) =>
 						JSON.parse(
@@ -3058,7 +2946,6 @@ export async function persistCourseIdentity(
 				);
 				const session = baseline.session;
 				if (session && identitySessions.get(session.owner) === session.state) {
-					// A replacement or watcher invalidation prevents installed state from being reused.
 					const loaded = await loadStore(
 						root,
 						baseline.options,
@@ -3068,7 +2955,6 @@ export async function persistCourseIdentity(
 					);
 					if (sameFiles(loaded.files, files) && payload.identity.exportable) {
 						session.state.retained = {
-							// Retained store facts stay private to this module.
 							loaded,
 							lessonPaths: serializeIdentity(baseline.options.lessonPaths),
 							reads: structuredClone(payload.lessons),
@@ -3139,7 +3025,6 @@ function assertCandidateLifetime(result: ResolvedCourseIdentity): void {
 		throw new Error("Identity: write candidate admission expired");
 }
 
-/** Diagnostic labels never quote hidden self-check descendants. */
 export function identityDiagnosticLabel(
 	nodes: Readonly<Record<string, IdentityNode>>,
 	id: string,
@@ -3160,7 +3045,6 @@ function assertIdentitySourceValid(result: ResolvedCourseIdentity): void {
 	if (error) throw error;
 }
 
-/** Hosts call this immediately before publication; inspect and preview keep drafts readable. */
 export function assertIdentityExportable(
 	result: ResolvedCourseIdentity,
 	formatMessage?: (message: IdentityMessageRef) => string,
@@ -3199,7 +3083,6 @@ export function assertIdentityExportable(
 				)
 				.map(([id]) => id),
 		);
-		// An older store may lack author locators, but every persisted fact must still match.
 		const persistedRevisionMatches =
 			persisted &&
 			resolvedSnapshot &&

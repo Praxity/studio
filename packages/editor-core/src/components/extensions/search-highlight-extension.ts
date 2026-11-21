@@ -90,8 +90,6 @@ export function createSearchHighlightExtension(options: SearchHighlightOptions =
 							tr.setMeta(searchPluginKey, { type: "setIndex", index });
 							dispatch(tr);
 						}
-						// After decorations render, scroll the current-match element into view.
-						// Uses rAF so the decoration DOM is applied before querying.
 						if (view) {
 							requestAnimationFrame(() => {
 								const currentEl = view.dom.querySelector(".search-match--current");
@@ -169,9 +167,7 @@ export function createSearchHighlightExtension(options: SearchHighlightOptions =
 								};
 							}
 
-							// Document changed while search active — recompute
 							if (tr.docChanged && prev.query) {
-								// Two-pass: first get new count, then rebuild with clamped index
 								const preliminary = buildDecorations(newState.doc, prev.query, 0);
 								const clampedIndex = Math.min(
 									prev.currentIndex,

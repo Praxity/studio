@@ -1,6 +1,5 @@
 import type { LogicRule } from "@praxity/content-model/types";
 
-/** Parse the condition syntax shared by `if:` rules and block `visible:` values. */
 export function parseLogicConditionExpression(expression: string): LogicRule {
 	const input = expression.trim();
 	const negatedBoolean = /^!([A-Za-z][\w-]*)$/.exec(input);
@@ -30,7 +29,6 @@ export function parseLogicConditionExpression(expression: string): LogicRule {
 	return { source: `variable:${input}`, comparison: "is", value: true };
 }
 
-/** Compile one `visible:` value into the condition shape consumed by LogicEngine. */
 export function compileVisibleExpression(expression: string): {
 	operator: "and";
 	rules: LogicRule[];

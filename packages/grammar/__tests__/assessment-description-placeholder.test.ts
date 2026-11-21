@@ -26,8 +26,6 @@ const FILL_BLANK =
 const CATEGORIZE =
 	"# Untitled {hideTitle}\n\n::: categorize Sort these items. {level=3}\nEach item belongs to exactly one category.\n:: Head Protection\n- Hard hat\n:: Eye Protection\n- Safety goggles\n:::\n";
 
-// Written in the serializer's canonical key order (and with bare coordinates,
-// which is what it emits) so this asserts the new param and nothing else.
 const HOTSPOT =
 	"# Untitled {hideTitle}\n\n::: hotspot Select the pressure gauge.\nLook for the dial near the top.\n![Fire extinguisher diagram](/assets/fire-extinguisher.webp)\n- Pressure gauge {x=30 y=15 correct}\n:::\n";
 
@@ -45,7 +43,6 @@ describe("assessment description + placeholder", () => {
 		const [block] = parseBody(source);
 		expect(block.type).toBe("assessment");
 		if (_label === "fill-blank") {
-			// G4 keeps fill-blank instructions in the visible response template.
 			expect(block.data.response.template).toContain("Use the exact terms from the policy.");
 			return;
 		}
@@ -73,8 +70,6 @@ describe("assessment description + placeholder", () => {
 		expect(block.data.display).toBe("scenario");
 	});
 
-	// Round-tripping matters more than it sounds: the desktop app reserializes on
-	// every save, so a param the serializer forgets is a param the author loses.
 	it.each([
 		["choose-one", CHOICE],
 		["choose-many", CHOOSE_MANY],
@@ -88,7 +83,6 @@ describe("assessment description + placeholder", () => {
 		const blocks = parseBody(source);
 		const reserialized = replayLesson(readSource(source));
 		expect(reserialized).toBe(source);
-		// And parsing the output again is stable.
 		expect(parseBody(reserialized)[0].data).toEqual(blocks[0].data);
 	});
 

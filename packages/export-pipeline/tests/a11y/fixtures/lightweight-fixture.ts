@@ -17,19 +17,6 @@ import { extractDesktopDesignFromFrontmatter } from "../../../src/desktop-design
 export const FIXTURE_AUDIO_URL = "https://example.com/narration-sample.mp3";
 export const FIXTURE_IMAGE_URL = "https://example.com/test-image.webp";
 
-/**
- * Point fixture images at the deterministic download stub in global setup.
- *
- * The image used to be `https://images.unsplash.com/…`, fetched at build time by
- * `resolveAssets`. A slow or failing response threw, killed global setup, and left
- * the suite running against a stale `.test-env.json` — a whole run reporting on an
- * export nobody had just built.
- *
- * The document block stays remote: the parser only builds one from a remote URL
- * (local media paths cover images, video and audio only), and dropping it would
- * lose the `document` type from the hidden-block coverage assertion. Global setup
- * serves the fixture URLs from disk instead — see `stubFixtureDownloads`.
- */
 function resolveFixtureAssets(pages: PraxityPage[]): PraxityPage[] {
 	const rewrite = (blocks: PraxityBlock[]): PraxityBlock[] =>
 		blocks.map((block) => {
@@ -45,12 +32,6 @@ function resolveFixtureAssets(pages: PraxityPage[]): PraxityPage[] {
 	return pages.map((page) => ({ ...page, blocks: rewrite(page.blocks) }));
 }
 
-/**
- * Minimal 3-page fixture:
- * - Page 1: static (text + image)
- * - Page 2: interactive (accordion + tabs)
- * - Page 3: assessment (choice + assessment-group)
- */
 const LIGHTWEIGHT_GRAMMAR =
 	"---\ntitle: Config Variant Test\nlang: en\n---\n\n# Page One - Static Content\n\nWelcome to the test course.\n\n::: float {side=right}\n![Test image for validation](/assets/test-image.webp){size=medium}\n\nThis paragraph is long enough to demonstrate how prose uses the lane beside the image while the image remains in the same reading order. It continues with enough words to occupy several lines at the medium threshold and makes the wrapped geometry measurable in both browser engines.\n\nThe next paragraph also remains beside the image until the available vertical space is used.\n\n## Learning beside the image\n\n- Explain the first concept.\n- Apply the second concept.\n:::\n\nThis paragraph follows the cleared float region.\n\n# Page Two - Interactive\n\n::: accordion\n:: First section {level=3}\nAccordion content one.\n\n:: Second section {level=3}\nAccordion content two.\n:::\n\n## Tabs\n\n::: tabs\n:: Tab One\nFirst tab content.\n\n:: Tab Two\nSecond tab content.\n:::\n\n# Page Three - Assessment\n\n::: group @highlight{Combined assessment} {mode=all passingScore=1 width=wide level=3}\n::: choice Which answer is correct? {scored attempts=2 level=3}\n(x) @highlight.red{Correct answer}\n( ) Wrong answer A\n( ) Wrong answer B\n:::\n::: match Match each hazard to its control {scored width=full level=3}\n- Chemical splash -> Face shield\n- Fall risk -> Guardrail\n:::\n::: choice What should happen first? {scored level=3}\n(x) Stop work\n( ) Ignore the hazard\n:::\n:::\n\n::: free-response Reflection {level=3}\nplaceholder: Enter your response\n:::\n";
 
@@ -69,8 +50,6 @@ const parsedHiddenFixture = readLesson(HIDDEN_BLOCKS_GRAMMAR);
 export const HIDDEN_BLOCKS: PraxityBlock[] = parsedHiddenFixture.blocks.filter((block) =>
 	HIDDEN_BLOCK_TYPES.has(block.type),
 );
-// G4 has no document syntax. Keep the publisher's document coverage at its model
-// interface while all authored source in this fixture goes through the G4 reader.
 const documentBlock: PraxityBlock = {
 	id: "a11y-document",
 	type: "document",
@@ -113,11 +92,6 @@ export interface ThemeConfigOverride {
 	cssVars?: Record<string, string>;
 }
 
-/**
- * The chrome each variant actually ships. Exported because the specs used to keep
- * their own hand-written table of what should be visible, which drifted from this
- * one — every nav expectation now derives from here.
- */
 export const NAV_TOGGLES: Record<FixtureNavArchetype, Record<string, unknown>> = {
 	sidebar: { navOutline: true, navPrevNext: true },
 	bottomBar: { navOutline: true, navPrevNext: true, navBreadcrumbs: true },
@@ -220,8 +194,6 @@ export function buildSlidesNarrationCourse(): CourseExportInput {
 	const pages = resolveFixtureAssets(
 		splitBlocksIntoPages(parsed.blocks, "Slides Narration Axe Course"),
 	);
-	// Narration is sidecar/model data in G4. Keep the optional audio journey on
-	// the same slide and leave its complete text available without playback.
 	for (const page of pages) {
 		page.narrationEnabled = true;
 		if (page.title !== "Narrated slide") continue;

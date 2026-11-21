@@ -10,7 +10,6 @@ export { interpolate } from "./interpolate";
 export { type SupportedLocale, supportedLocales } from "./locale";
 
 export interface LearnerStrings {
-	// Navigation
 	next: string;
 	previous: string;
 	nextPage: string;
@@ -54,7 +53,6 @@ export interface LearnerStrings {
 	footnote: string;
 	footnotes: string;
 
-	// Narration
 	play: string;
 	pause: string;
 	seek: string;
@@ -72,7 +70,6 @@ export interface LearnerStrings {
 	followNarration: string;
 	showAll: string;
 
-	// Assessment
 	submit: string;
 	check: string;
 	completeReflection: string;
@@ -97,10 +94,8 @@ export interface LearnerStrings {
 	assessmentSessionEndedNotice: string;
 	showAnswer: string;
 	yourAnswer: string;
-	/** Label shown below ungraded text response (reflection). */
 	reflectionPrivateLabel: string;
 
-	// Flashcard / carousel
 	previousCard: string;
 	nextCard: string;
 	previousSlide: string;
@@ -115,7 +110,6 @@ export interface LearnerStrings {
 	sequenceScrollPrevious: string;
 	sequenceScrollNext: string;
 
-	// Certificate
 	certificateEarned: string;
 	congratulations: string;
 	downloadPdf: string;
@@ -125,11 +119,9 @@ export interface LearnerStrings {
 
 	returnToCourse: string;
 
-	// Rating
 	submitRating: string;
 	thankYou: string;
 
-	// General
 	required: string;
 	loading: string;
 	close: string;
@@ -200,13 +192,11 @@ export interface LearnerStrings {
 	logicAction: string;
 	logicActions: string;
 
-	// Document
 	documentFallbackTitle: string;
 	noDocumentUploaded: string;
 	documentDownload: string;
 	resourceOpenLink: string;
 
-	// External link
 	opensInNewTab: string;
 	viewTranscript: string;
 	videoUnavailableFallback: string;
@@ -214,7 +204,6 @@ export interface LearnerStrings {
 	mediaOpen: string;
 	mediaShowEmbed: string;
 
-	// Assessment aria-labels
 	selectAnAnswer: string;
 	selectAllThatApply: string;
 	selectAMatch: string;
@@ -249,14 +238,10 @@ export interface LearnerStrings {
 	hotspotLabel: string;
 	hotspotSelectionCount: string;
 	hotspotSelectionPrompt: string;
-	/** Labeled graphic helper prompt. */
 	labeledGraphicClickToReveal: string;
-	/** Explains the numbered order and availability of sequential pins. */
 	labeledGraphicSequentialInstruction: string;
-	/** Labeled graphic reveal progress text. */
 	labeledGraphicProgress: string;
 
-	// Flashcard
 	nowShowingBack: string;
 	nowShowingFront: string;
 	flashcardInteraction: string;
@@ -267,18 +252,15 @@ export interface LearnerStrings {
 	pauseCards: string;
 	cardAnnouncement: string;
 
-	// Rating
 	rateValueOf: string;
 	ratingLabel: string;
 
-	// Slides
 	slideAnnouncement: string;
 	noSlides: string;
 	slidesLabel: string;
 	chooseSlide: string;
 	goToSlide: string;
 
-	// Signature
 	signatureLabel: string;
 	signatureMethod: string;
 	signatureDraw: string;
@@ -290,7 +272,6 @@ export interface LearnerStrings {
 	signedAt: string;
 	clearSignature: string;
 
-	// Assessment group
 	untitledGroup: string;
 	groupModeOneOf: string;
 	groupModeAll: string;
@@ -314,14 +295,12 @@ export interface LearnerStrings {
 	assessmentGroupRequiredError: string;
 	assessmentGroupSaved: string;
 
-	// Sidebar
 	courseControls: string;
 	courseOutline: string;
 	closeCourseOutline: string;
 	collapseSidebar: string;
 	expandSidebar: string;
 
-	// Resources Tab
 	resourcesHeading: string;
 	resourceDocumentsHeading: string;
 	resourceExternalLinksHeading: string;
@@ -330,24 +309,17 @@ export interface LearnerStrings {
 	resourceFromLesson: string;
 	untitledResource: string;
 
-	// Generic
 	interaction: string;
 
-	// Columns preset headers
 	columnsPresetBefore: string;
 	columnsPresetAfter: string;
 	columnsPresetOptionA: string;
 	columnsPresetOptionB: string;
 
-	// Page title treatment
-	/** Label above the page title on the first page of each lesson. {n} = lesson number. */
 	lessonLabel: string;
-	/** Section status in the narrative context bar. */
 	narrativeSectionPosition: string;
-	/** Read-time hint in the narrative context bar. */
 	narrativeReadTime: string;
 
-	// Accessibility preferences bar
 	a11yPreferences: string;
 	a11yLargerText: string;
 	a11yLargerTextEnabled: string;
@@ -369,8 +341,6 @@ const en: LearnerStrings = {
 	previousModule: "Previous Module",
 	scormResumeAnnouncement: "Resumed at page {current} of {total}: {title}",
 	deckResumeAnnouncement: "Resumed at slide {current} of {total}: {title}",
-	// The prefix is its own line inside the heading. Layout drops a trailing ordinary
-	// space there, and NVDA then reads "6:Build"; a non-breaking space survives.
 	scormResumePositionPrefix: "Resumed at page {current} of {total}: ",
 	deckResumePositionPrefix: "Resumed at slide {current} of {total}: ",
 	skipToContent: "Skip to content",
@@ -541,13 +511,11 @@ const en: LearnerStrings = {
 	logicAction: "action",
 	logicActions: "actions",
 
-	// Document
 	documentFallbackTitle: "Document",
 	noDocumentUploaded: "No document uploaded",
 	documentDownload: "Download",
 	resourceOpenLink: "Open link",
 
-	// External link
 	opensInNewTab: "(opens in a new tab)",
 	viewTranscript: "View transcript",
 	videoUnavailableFallback: "Video unavailable in embedded player.",
@@ -690,7 +658,6 @@ const fr: LearnerStrings = {
 	moduleOf: "Module {current} sur {total}",
 	nextModule: "Module suivant",
 	previousModule: "Module précédent",
-	// French puts a non-breaking space before a colon; the cue's colon must not wrap alone.
 	scormResumeAnnouncement: "Reprise à la page {current} sur {total} : {title}",
 	deckResumeAnnouncement: "Reprise à la diapositive {current} sur {total} : {title}",
 	scormResumePositionPrefix: "Reprise à la page {current} sur {total} : ",
@@ -863,13 +830,11 @@ const fr: LearnerStrings = {
 	logicAction: "action",
 	logicActions: "actions",
 
-	// Document
 	documentFallbackTitle: "Document",
 	noDocumentUploaded: "Aucun document téléversé",
 	documentDownload: "Télécharger",
 	resourceOpenLink: "Ouvrir le lien",
 
-	// External link
 	opensInNewTab: "(s’ouvre dans un nouvel onglet)",
 	viewTranscript: "Voir la transcription",
 	videoUnavailableFallback: "Vidéo indisponible dans le lecteur intégré.",
@@ -1004,12 +969,10 @@ const fr: LearnerStrings = {
 
 const catalogs: Record<string, LearnerStrings> = { en, fr };
 
-/** Get learner-facing strings for a locale. Falls back to English. */
 export function getStrings(locale: string): LearnerStrings {
 	return catalogs[resolveLocale(locale)];
 }
 
-// Recovery copy stays outside the ordinary serialized catalog.
 const choiceRecoveryCatalogs = {
 	en: {
 		choiceHistoryNotice:
@@ -1027,7 +990,6 @@ export function getChoiceRecoveryStrings(locale: string) {
 	return choiceRecoveryCatalogs[resolveLocale(locale)];
 }
 
-// Preview diagnostics are not part of the learner catalog serialized into exports.
 interface PreviewStrings {
 	errorLine: string;
 	invalidSource: string;

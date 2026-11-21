@@ -119,7 +119,6 @@ describe("SCORM export end-to-end", () => {
 			JSON.stringify({ appVersion: "1.0.0", viewerSourceHash: "e2etest12345" }),
 			"utf-8",
 		);
-		// Synthetic JS has no dependencies; CSS, note icons and selected fonts retain real notices.
 		const packages = Object.fromEntries(
 			await Promise.all(
 				[

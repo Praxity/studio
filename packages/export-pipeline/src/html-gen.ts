@@ -1,40 +1,4 @@
 import {
-	choiceFactError,
-	choiceStateQuestion,
-	resolveAssessmentDontKnow,
-} from "@praxity/shared-blocks/assessment-choice";
-import { compileBlockStatePolicy } from "@praxity/shared-blocks/block-state-policy";
-import {
-	type ChoiceStateFacts,
-	choiceGroupDefinitionIsValid,
-	choiceGroupFactsAreValid,
-	choiceQuestionSignature,
-	isChoiceStateQuestion,
-} from "@praxity/shared-blocks/choice-state-facts";
-import { isInlineProjectionMetadataKey } from "@praxity/shared-blocks/inline-markdown";
-import { isStatefulBlock } from "@praxity/shared-blocks/types";
-import {
-	COURSE_HOME_DECK_SLOT,
-	COURSE_HOME_LINK_SLOT,
-	DEFAULT_COURSE_HOME_URL,
-} from "./course-home";
-import { fullyDecodeEntities } from "./html-entities";
-import {
-	type DeckPage,
-	deckPageData,
-	type ModuleDeckOptions,
-	validateModuleDeck,
-} from "./module-deck";
-import { deckStrings } from "./module-deck-strings";
-import { narrationPlaylistFromConfig } from "./narration-playlist";
-/**
- * Direct HTML page generator — replaces the Astro template pipeline.
- *
- * Produces complete semantic HTML pages. The runtime planner adds only the
- * islands needed to enhance that server-rendered baseline.
- */
-
-import {
 	compileVisibleExpression,
 	type DeckDesign,
 	type ImageEffectsMap,
@@ -48,6 +12,19 @@ import {
 	navArchetypeToLayoutClass,
 } from "@praxity/grammar/src/nav-archetype-layout.ts";
 import { getPageFocusDefault } from "@praxity/grammar/src/page-nav-overrides.ts";
+import {
+	choiceFactError,
+	choiceStateQuestion,
+	resolveAssessmentDontKnow,
+} from "@praxity/shared-blocks/assessment-choice";
+import { compileBlockStatePolicy } from "@praxity/shared-blocks/block-state-policy";
+import {
+	type ChoiceStateFacts,
+	choiceGroupDefinitionIsValid,
+	choiceGroupFactsAreValid,
+	choiceQuestionSignature,
+	isChoiceStateQuestion,
+} from "@praxity/shared-blocks/choice-state-facts";
 import { ensureContrast, formatOklch } from "@praxity/shared-blocks/color-math";
 import { estimateBlockTime } from "@praxity/shared-blocks/content-density";
 import { externalLinkIndicatorHtml } from "@praxity/shared-blocks/external-link-utils";
@@ -57,6 +34,7 @@ import { getPreviewStrings, getStrings, interpolate } from "@praxity/shared-bloc
 import { imageFloatRegions } from "@praxity/shared-blocks/image-float";
 import {
 	getInlineField,
+	isInlineProjectionMetadataKey,
 	prepareInlineBlocks,
 	renderInlineIcons,
 } from "@praxity/shared-blocks/inline-markdown";
@@ -81,6 +59,21 @@ import {
 } from "@praxity/shared-blocks/section-grouping";
 import { resolveDesignTokens } from "@praxity/shared-blocks/themes/resolve-design-tokens";
 import type { AssessmentBlockData, PraxityBlock, PraxityPage } from "@praxity/shared-blocks/types";
+import { isStatefulBlock } from "@praxity/shared-blocks/types";
+import {
+	COURSE_HOME_DECK_SLOT,
+	COURSE_HOME_LINK_SLOT,
+	DEFAULT_COURSE_HOME_URL,
+} from "./course-home";
+import { fullyDecodeEntities } from "./html-entities";
+import {
+	type DeckPage,
+	deckPageData,
+	type ModuleDeckOptions,
+	validateModuleDeck,
+} from "./module-deck";
+import { deckStrings } from "./module-deck-strings";
+import { narrationPlaylistFromConfig } from "./narration-playlist";
 import { privateChoicePrintCss } from "./patterns/choice/render";
 import type { LessonHeading } from "./patterns/heading/render";
 import { WRITE_DISTRACTORS_STYLESHEET } from "./patterns/write-distractors/assets";
@@ -116,7 +109,6 @@ import {
 	renderBlockHtml as renderSemanticBlockHtml,
 } from "./render-block-html.ts";
 
-/** Plain-text page title shared by the host config and artifact manifest. */
 export function publishedPageTitle(page: Pick<PraxityPage, "title">): string {
 	return fullyDecodeEntities(page.title);
 }
@@ -124,7 +116,6 @@ export function publishedPageTitle(page: Pick<PraxityPage, "title">): string {
 const COURSE_COMPLETION_OUTCOME =
 	'<p data-course-outcome hidden><svg class="icon icon-tabler" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path/></svg><span data-course-outcome-label></span></p>';
 
-/** Transcript typography changes only the reading panel, never the spoken script or cue IDs. */
 function renderDeckReadingScript(
 	segment: DeckPage["segments"][number],
 	block?: PraxityBlock,
@@ -143,7 +134,6 @@ function renderDeckReadingScript(
 					? splitHeadingContent(firstStem.data.content).heading
 					: "",
 	);
-	// Split only a title already in the script; custom narration can differ from slide text.
 	const readingTitle =
 		title &&
 		script.startsWith(title) &&
@@ -228,7 +218,6 @@ type NavToggleConfig = {
 };
 
 export interface CourseConfig {
-	/** Optional HTML return target, resolved at deployment so LMS output stays unchanged. */
 	courseHomeUrl?: string;
 	deckDesign?: DeckDesign;
 	moduleDeck?: ModuleDeckOptions;
@@ -238,20 +227,14 @@ export interface CourseConfig {
 	sourceLocale: string;
 	pages: PraxityPage[];
 	totalPages: number;
-	/** Named declarative slide styles from grammar frontmatter. */
 	slideStyles?: Record<string, SlideStyleDef>;
-	/** Pre-computed CSS custom properties (--praxity-* keys). */
 	cssVars?: Record<string, string>;
-	/** Dark-mode CSS custom properties for automatic system color mode. */
 	darkCssVars?: Record<string, string>;
 	theme?: Record<string, string>;
 	typography?: TypographyVariants;
 	defaultImageTreatment?: ImageTreatment;
-	/** Composable image effects — replaces defaultImageTreatment. */
 	imageEffects?: ImageEffectsMap;
-	/** When true, auto-calibrate magnitudes per image. */
 	imageEffectsAuto?: boolean;
-	/** Perceptual metadata keyed by asset storage key, for auto-calibration during publish. */
 	imageMetadataMap?: Map<string, ImagePerceptualMetadata>;
 	customCss?: string;
 	brandLogo?: {
@@ -269,7 +252,6 @@ export interface CourseConfig {
 	completionMethod?: "allPages" | "percentage" | "quiz";
 	completionThreshold?: number;
 	requireKnowledgeChecks?: boolean;
-	/** Course pass mark (0-100) over required, automatically scored questions. */
 	passingScore?: number;
 	completionQuizId?: string;
 	colorShades?: {
@@ -279,18 +261,14 @@ export interface CourseConfig {
 		warning?: string[];
 	};
 	estimatedDuration?: string;
-	/** woff2 filenames (weight 400) to preload for faster LCP text rendering. */
 	fontPreloads?: string[];
-	/** Compiler-derived glossary terms for the prepared rendering model. */
 	glossaryTerms?: Array<{
 		term: string;
 		definition: string;
 		lessonTitle: string;
 		lessonSlug: string;
 	}>;
-	/** Whether the glossary tab/page is enabled. */
 	glossaryTabEnabled?: boolean;
-	/** Resource entries for the published resources page. */
 	resourceEntries?: Array<{
 		title: string;
 		description: string;
@@ -299,34 +277,20 @@ export interface CourseConfig {
 		lessonTitle?: string;
 		lessonSlug?: string;
 	}>;
-	/** Whether the resources tab/page is enabled. */
 	resourcesTabEnabled?: boolean;
-	/** Section rhythm mode for publish-time visual grouping. */
 	sectionRhythm?: SectionRhythm;
-	/** Canonical divider style between sections. */
 	dividerStyle?: SectionDividerStyle;
 	/** @deprecated Use dividerStyle. Decorative SVG divider shape between sections. */
 	sectionTransition?: SectionTransition;
-	/** Optional decorative texture overlay for section backgrounds. */
 	texture?: SectionTexture;
-	/** Default transition for Slides blocks when per-block transition is unset. */
 	slideTransition?: "none" | "fade" | "slide" | "zoom";
-	/** Entrance animation applied to blocks in the published output. */
 	motionEntrance?: MotionEntrance;
-	/** Whether list-like items reveal sequentially. */
 	motionStagger?: MotionStagger;
-	/** Hover interaction style applied to published image blocks. */
 	imageHoverEffect?: ImageHoverEffect;
-	/** Default appearance mode in published output. */
 	colorMode?: ColorMode;
-	/** Pre-derived section palettes for alternate/manual rhythm modes. */
 	sectionPalettes?: SectionPaletteMap;
 	darkSectionPalettes?: SectionPaletteMap;
 }
-
-// ---------------------------------------------------------------------------
-// Utilities
-// ---------------------------------------------------------------------------
 
 const RTL_LANGS = ["ar", "he", "ur", "fa", "ps"];
 
@@ -348,12 +312,10 @@ function camelToKebab(str: string): string {
 	return str.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
 }
 
-/** Validate language code format (ISO 639-1 with optional region). */
 function sanitizeLanguage(lang: string): string {
 	return /^[a-z]{2}(-[A-Z]{2})?$/.test(lang) ? lang : "en";
 }
 
-/** Blend a hex color against the theme background using CSS color-mix(). */
 function accentTint(hex: string, pct: number): string {
 	return `color-mix(in oklab, ${hex} ${pct}%, var(--praxity-color-background, #ffffff))`;
 }
@@ -409,7 +371,6 @@ type CourseCssConfig = Pick<
 	| "typography"
 > & { content?: readonly PraxityPage[] };
 
-/** Course-specific CSS appended after the shared viewer CSS in both bundles. */
 export function generateCourseCss(config: CourseCssConfig, includeSlideArtwork = false): string {
 	const resolve = (mode: "light" | "dark", vars?: Record<string, string>) => {
 		const design: Record<string, unknown> = { ...config.theme };
@@ -495,10 +456,6 @@ function resolveHighlightStyle(value: unknown): "none" | "marker" | "gradient" |
 	return "none";
 }
 
-// ---------------------------------------------------------------------------
-// Block rendering
-// ---------------------------------------------------------------------------
-
 const FEATURE_WIDTH_BLOCK_TYPES = new Set<PraxityBlock["type"]>([
 	"image",
 	"video",
@@ -550,7 +507,6 @@ function renderBlockHtml(
 	const layoutMode = options?.suppressLayoutMode
 		? null
 		: (options?.inheritedLayoutMode ?? getBlockLayoutMode(block));
-	// Sanitize HTML content fields before serializing
 	const data = { ...block.data };
 	if (typeof data.content === "string") {
 		data.content = sanitizeHtml(data.content, { renderInlineIcons: false });
@@ -600,9 +556,6 @@ function renderBlockHtml(
 	});
 }
 
-/**
- * Add data-fallback attributes to mention spans for runtime resolution.
- */
 function processMentionPlaceholders(
 	html: string,
 	variables: Array<{ name: string; defaultValue?: unknown }>,
@@ -633,11 +586,9 @@ function nativeA11yControls(
 	return `<div class="praxity-a11y-pill" role="toolbar" aria-label="${escapeHtml(strings.a11yPreferences)}" aria-orientation="horizontal" data-a11y-toolbar data-praxity-js-control><button type="button" data-a11y-action="text" aria-pressed="false"${utilityLabels ? "" : ` aria-label="${escapeHtml(strings.a11yLargerText)}" title="${escapeHtml(strings.a11yLargerText)}"`}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M4 15L8 4h1L13 15"/><path d="M5.5 11.5h6"/><path d="M14.5 10l2-4h.5L19 10"/></svg>${utilityLabels ? `<span class="deck-utility-label">${escapeHtml(strings.a11yLargerText)}</span>` : ""}</button>${focusControl}</div>`;
 }
 
-// Tabler outline check, embedded so native navigation needs no icon runtime.
 const NATIVE_NAV_CHECK =
 	'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M5 12l5 5l10 -10"/></svg>';
 
-// Tabler outline icons, embedded so deck navigation needs no icon runtime.
 const DECK_FOLLOW =
 	'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20h-6a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2h8"/><path d="M18 4v17"/><path d="M15 18l3 3l3 -3"/></svg>';
 const DECK_LOCK =
@@ -645,12 +596,10 @@ const DECK_LOCK =
 const DECK_CHECK =
 	'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2"/><path d="M9 5a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2"/><path d="M9 14l2 2l4 -4"/></svg>';
 
-// Both outlines reserve one trailing status cell, independently of the current row.
 function outlineStatus(includeLock = false): string {
 	return `<span class="praxity-nav-marker-spacer" aria-hidden="true">${NATIVE_NAV_CHECK}<span class="praxity-nav-current-marker"></span>${includeLock ? DECK_LOCK : ""}</span>`;
 }
 
-// Tabler outline arrow-left/right, embedded like the other native navigation icons.
 function nativeSlideArrow(direction: "left" | "right"): string {
 	const head =
 		direction === "left"
@@ -703,10 +652,6 @@ function nativeProgressMarkup(
 	return `<span class="praxity-native-progress praxity-native-progress--${style}${grouped ? " praxity-native-progress--grouped" : ""}" role="progressbar" aria-label="${escapeHtml(label)}" aria-valuemin="1" aria-valuemax="${total}" aria-valuenow="${current}">${items}</span>`;
 }
 
-// ---------------------------------------------------------------------------
-// Page generators
-// ---------------------------------------------------------------------------
-
 export interface SlugEntry {
 	pageId: string;
 	slug: string;
@@ -722,9 +667,7 @@ export interface PageGenOptions {
 	currentSlug: string;
 	slugList: SlugEntry[];
 	slugMap: Map<string, string>;
-	/** Fingerprinted first-paint and document-shell runtime. */
 	shellFilename?: string;
-	/** Classic resume orientation loaded only after a confirmed LMS return. */
 	resumeFilename?: string;
 	islandAssets?: {
 		privacy?: { bootstrap: string; support: string };
@@ -735,21 +678,14 @@ export interface PageGenOptions {
 		islandFilenames: Partial<Record<IslandName, string>>;
 	};
 	basePath?: string;
-	/** Full stylesheet emitted by build.ts for Mantine-backed islands. */
 	stylesheetFilename?: string;
-	/** Mantine-free stylesheet emitted by build.ts for native/static pages. */
 	liteStylesheetFilename?: string;
-	/** Stylesheets containing native deck controls, selected only for module-deck pages. */
 	deckStylesheets?: { full: string; lite: string };
-	/** Synchronous pattern CSS, selected by the retrieval-sheet island plan. */
 	retrievalSheetStylesheetFilename?: string;
 	highlightStylesheetFilename?: string;
 	usedStylesheets?: Set<string>;
-	/** Page-scoped capability plan. */
 	runtimePlan?: PageRuntimePlan;
-	/** When provided, replaces the rendered block HTML in the main content area. */
 	overrideBodyHtml?: string;
-	/** Already compiled content, preserving the ordinary content shell. */
 	pageContentHtml?: string;
 }
 
@@ -763,8 +699,6 @@ export function availableIslandNames(
 	);
 }
 
-/** Defence in depth for callers that supply compiled pages, including drafts.
- * Source-level, course-wide diagnostics remain validateCourse's responsibility. */
 export function assertPracticeLogic(pages: readonly PraxityPage[], locale = "en"): void {
 	const all = pages.flatMap((page) => flattenLogicBlocks(page.blocks));
 	const policy = compileBlockStatePolicy(all);
@@ -787,8 +721,6 @@ export function assertPracticeLogic(pages: readonly PraxityPage[], locale = "en"
 			)
 			.map((block) => block.id),
 	);
-	// Publication deliberately refuses if ANY matching definition is practice:
-	// duplicate logic names remain advisory and cannot shadow this boundary.
 	const matches = (ref: string, ids: ReadonlySet<string>) =>
 		all.some((block) => ids.has(block.id) && resolveBlockRef([block], ref) === block.id);
 	for (const [pageIndex, page] of pages.entries()) {
@@ -798,8 +730,6 @@ export function assertPracticeLogic(pages: readonly PraxityPage[], locale = "en"
 		};
 		const visit = (value: unknown, owner: string, path: string): void => {
 			if (typeof value === "string" && /data-mention/i.test(value)) {
-				// Use the same HTML parser/sanitizer as published rich text. Its
-				// serialization normalizes attribute case, quotes and entities.
 				for (const mention of sanitizeHtml(value).matchAll(/\bdata-mention="([^"]*)"/g)) {
 					const ref = fullyDecodeEntities(mention[1]).split(":");
 					if (ref[0] === "blockOutput" && ref[1] && matches(ref[1], practiceIds))
@@ -815,7 +745,6 @@ export function assertPracticeLogic(pages: readonly PraxityPage[], locale = "en"
 			if (typeof record.id === "string" && typeof record.type === "string" && record.data) {
 				owner = record.id;
 				const data = record.data as Record<string, unknown>;
-				// Compiled groups use sibling ID membership, not nested child blocks.
 				if (record.type === "assessmentGroup" && Array.isArray(data.memberBlockIds)) {
 					for (const [index, member] of data.memberBlockIds.entries()) {
 						if (typeof member === "string" && matches(member, sheetTargets))
@@ -844,8 +773,6 @@ export function assertPracticeLogic(pages: readonly PraxityPage[], locale = "en"
 			if (typeof record.visible === "string")
 				read(compileVisibleExpression(record.visible).rules[0].source, owner, `${path}.visible`);
 			if (record.type === "require" || record.type === "requireCompletion") {
-				// The two runtime normalizers disagree on malformed target arrays.
-				// Conservatively inspect every string operand from either spelling.
 				const targets = [
 					{ value: record.target, path: `${path}.target` },
 					...(Array.isArray(record.targets)
@@ -873,7 +800,6 @@ export function assertPracticeLogic(pages: readonly PraxityPage[], locale = "en"
 	}
 }
 
-/** Compiled callers must satisfy the exact device-policy predicate too. */
 function assertPracticePublication(pages: readonly PraxityPage[], locale = "en"): void {
 	const all = pages.flatMap((page) => flattenLogicBlocks(page.blocks));
 	const members = new Set(
@@ -906,7 +832,6 @@ function assertPracticePublication(pages: readonly PraxityPage[], locale = "en")
 				`${path}.data`,
 				locale,
 			);
-		// Private descendants must never contribute to a container's required/gated completion.
 		const requiredOrGated =
 			ancestorRequiredOrGated ||
 			(typeof block.id === "string" &&
@@ -949,11 +874,6 @@ function assertPracticePublication(pages: readonly PraxityPage[], locale = "en")
 	assertPracticeLogic(pages, locale);
 }
 
-/**
- * Required, automatically scored questions, with each assessment group counted once.
- * They gate completion under the knowledge-check rule and make up the course score
- * for a pass mark; either way each must be able to report a result.
- */
 export function collectRequiredAssessmentIds(
 	pages: readonly PraxityPage[],
 	purpose: "knowledgeChecks" | "passingScore" = "knowledgeChecks",
@@ -1020,8 +940,6 @@ export function collectRequiredAssessmentIds(
 			if (group.type !== "assessmentGroup" || !Array.isArray(group.data.memberBlockIds)) continue;
 			const members = group.data.memberBlockIds as string[];
 			const required = members.some((id) => requiredChecks.has(id));
-			// A oneOf group scores only the member the learner picks, so an unscored option
-			// would leave the course result undecided forever.
 			if (
 				required &&
 				purpose === "passingScore" &&
@@ -1049,7 +967,6 @@ export function collectRequiredAssessmentIds(
 	return [...requiredIds];
 }
 
-/** Published duration rules shared by navigation digests and document rendering. */
 export function publishedReadingTimes(pages: readonly Pick<PraxityPage, "blocks">[]) {
 	const estimates = pages.map((page) =>
 		page.blocks.reduce(
@@ -1102,7 +1019,6 @@ export function courseVariables(config: CourseConfig) {
 		});
 }
 
-/** Keep native and override slide bodies on the same optional artwork frame. */
 function slideFrame(config: CourseConfig, page: PraxityPage): { open: string; close: string } {
 	const style = resolvePageSlideStyle(page, config.slideStyles);
 	const name = style.name;
@@ -1344,13 +1260,11 @@ export function renderPageFragments(
 			if (flow.float || flow.nodeId) region(`float-close:${flow.nodeId ?? regionIndex}`, "</div>");
 		}
 	};
-	// Sections use headings and space; authored blocks retain their order.
 	renderFlow(sectionBlocks);
 	if (frame) region(`slide-close:${sourcePage.id}`, frame.close);
 	return fragments;
 }
 
-/** Compile effective facts before a document or replacement output can be published. */
 function compileChoiceStateFacts(config: CourseConfig): ChoiceStateFacts {
 	const facts: ChoiceStateFacts = { choiceStateQuestions: {}, choiceStateSignatures: {} };
 	for (const page of config.pages) {
@@ -1424,7 +1338,6 @@ function compileChoiceStateFacts(config: CourseConfig): ChoiceStateFacts {
 	return facts;
 }
 
-/** Generate a complete HTML page around the shared semantic page content. */
 export function generateHtmlPage(opts: PageGenOptions): string {
 	assertPracticePublication([opts.page], opts.page.locale ?? opts.config.sourceLocale);
 	const choiceFacts = opts.choiceFacts ?? compileChoiceStateFacts(opts.config);
@@ -1471,8 +1384,6 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 				? "resources"
 				: "content";
 
-	// Per-page nav overrides (page-break params). Same helpers the viewer runs,
-	// so the exporter's static decisions cannot disagree with the React shell.
 	const { pageNavToggles, effectiveLayoutArchetype } = resolvePageNavigation(config, page);
 	const plannedRuntime =
 		opts.runtimePlan ?? planPageRuntime(config, page, availableIslandNames(opts.islandAssets));
@@ -1481,7 +1392,6 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 	const slidesLayout = effectiveLayoutArchetype === "slides";
 	const pageFocusDefault = getPageFocusDefault(page.data) === true;
 
-	// Build branching metadata
 	const runtimeBlocks = flattenLogicBlocks(page.blocks);
 	const logicBlocks = runtimeBlocks
 		.filter((b) => b.type === "logic")
@@ -1520,11 +1430,8 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 			? fullyDecodeEntities(page.lessonKicker)
 			: page.lessonKicker;
 
-	// Build page navigation JSON for CourseMenu/PageNav
 	const pagesList = slugList.map((entry, i) => {
 		const p = config.pages[i];
-		// Narration segments hold raw block source and the runtime never reads them here;
-		// this page's playlist below is their only learner-facing output.
 		const { _narrationSegments, ...data } = p?.data ?? {};
 		return {
 			id: entry.pageId,
@@ -1590,12 +1497,9 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 		previousLabel === localeStrings.previous
 			? escapeHtml(previousLabel)
 			: `<span class="praxity-nav-label-full">${escapeHtml(previousLabel)}</span><span class="praxity-nav-label-compact">${escapeHtml(localeStrings.previous)}</span>`;
-	// Shows "3 / 6" and reads as "Page 3 of 6". Static text, not a status message:
-	// each page is a full document, so the counter never changes after load.
 	const compactPositionMarkup = `<span aria-hidden="true">${progressCurrent} / ${progressTotal}</span><span class="praxity-a11y-sr-only">${escapeHtml(localPosition)}</span>`;
 	const pageCountMarkup = `<span class="praxity-nav-progress"><span class="praxity-nav-label-full">${escapeHtml(localPosition)}</span><span class="praxity-nav-label-compact">${compactPositionMarkup}</span></span>`;
 
-	// overrideBodyHtml bypasses block rendering for special pages (e.g. glossary)
 	const sectionBlocks = page.blocks;
 	const runtimeMode = plannedRuntime.mode;
 	const islandsNeeded = new Set<IslandName>(plannedRuntime.islands);
@@ -1665,13 +1569,11 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 		pageRole === "content" &&
 		(sectionCount > 1 || (!durationInCourseOutline && displayedReadingTimeMinutes > 0));
 
-	// Whether the glossary link should show in the course menu
 	const glossaryEnabled =
 		config.glossaryTabEnabled !== false &&
 		Array.isArray(config.glossaryTerms) &&
 		config.glossaryTerms.length > 0;
 
-	// Whether the resources link should show in the course menu
 	const resourcesEnabled =
 		config.resourcesTabEnabled !== false &&
 		Array.isArray(config.resourceEntries) &&
@@ -1690,7 +1592,6 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 		}
 		return sanitizeBlockForJson({ ...block, data });
 	});
-	// Inert configuration for the selected islands and host adapters.
 	const configJson = JSON.stringify({
 		...publishedChoiceFacts,
 		deckPages: opts.deckPages,
@@ -1708,10 +1609,8 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 		navigationStyle: config.navigationStyle ?? "sidebar",
 		strings: {
 			...localeStrings,
-			// The assessment island reads its own catalogue; keep page-runtime bytes stable.
 			assessmentStorageNotice: undefined,
 			assessmentSessionEndedNotice: undefined,
-			// Preserve the existing serialized catalogue for courses without a pass mark.
 			courseScoreWithPassMark:
 				config.passingScore === undefined ? undefined : localeStrings.courseScoreWithPassMark,
 		},
@@ -1803,7 +1702,6 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 				}),
 		completionQuizId: config.completionQuizId,
 		strings: {
-			// Pages knows its resume position at export; Guided resolves gated slides at runtime.
 			scormResumePositionPrefix: interpolate(localeStrings.scormResumePositionPrefix, {
 				current: currentPage,
 				total: totalPages,
@@ -1841,10 +1739,8 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 		resumeFilename,
 	});
 
-	// --- Assemble the HTML ---
 	const lines: string[] = [];
 
-	// DOCTYPE + html
 	const imageHoverEffect = config.imageHoverEffect ?? "none";
 	const highlightStyle = resolveHighlightStyle(config.theme?.highlightStyle);
 	const initialMode = config.colorMode === "dark" ? "dark" : "light";
@@ -1873,7 +1769,6 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 		`<script id="${HOST_CONFIG_ID}" type="application/json">${escapeJsonForScript(hostConfigJson)}</script>`,
 	);
 
-	// Resource preload hints — keep the critical fonts out of the stylesheet dependency chain.
 	for (const fontFile of config.fontPreloads ?? []) {
 		lines.push(
 			`<link rel="preload" href="fonts/${escapeHtml(fontFile)}" as="font" type="font/woff2" crossorigin />`,
@@ -1888,7 +1783,6 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 	}
 	lines.push(`<link rel="preload" href="${escapeHtml(shellFilename)}" as="script" />`);
 
-	// Pattern rules precede shared/theme/authored CSS so author overrides stay last.
 	if (islandsNeeded.has("retrievalSheet")) {
 		if (!opts.retrievalSheetStylesheetFilename)
 			throw Object.assign(new Error("Required retrieval-sheet stylesheet unavailable."), {
@@ -1909,7 +1803,6 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 		lines.push(`<link rel="stylesheet" href="${escapeHtml(opts.highlightStylesheetFilename)}" />`);
 	}
 	if (islandsNeeded.has("writeDistractors")) {
-		// Incremental prompt frames have no asset manifest; full publications must supply one.
 		const css =
 			opts.islandAssets === undefined
 				? WRITE_DISTRACTORS_STYLESHEET
@@ -1921,7 +1814,6 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 		opts.usedStylesheets?.add(css);
 		lines.push(`<link rel="stylesheet" href="${escapeHtml(css)}" />`);
 	}
-	// Generator and viewer styles are packaged as one request.
 	const stylesheetFilename =
 		deckPresentation && opts.deckStylesheets
 			? needsMantine
@@ -1933,7 +1825,6 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 	opts.usedStylesheets?.add(stylesheetFilename);
 	lines.push(`<link rel="stylesheet" href="${escapeHtml(stylesheetFilename)}" />`);
 
-	// Runtime configuration remains inert under a strict script-src policy.
 	if (!shouldEmitHtmlOnlyNoJs) {
 		lines.push(
 			`<script id="praxity-config" type="application/json">${escapeJsonForScript(configJson)}</script>`,
@@ -1968,25 +1859,17 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 	)
 		lines.push(`<script defer src="${escapeHtml(opts.islandAssets.privateChoice)}"></script>`);
 	lines.push(`<script src="${escapeHtml(shellFilename)}"></script>`);
-	// Install the shell's error listener before a deferred host download can fail.
-	// Gecko can report a fetch failure before a later parser-blocking shell runs.
 	lines.push(DEPLOYMENT_HEAD_MARKER);
 
 	lines.push("</head>");
-	// The author's archetype decides the layout — the same mapping the viewer uses.
-	// This used to reverse-infer a layout from individual toggles, which could not
-	// express `minimal` or `embedded` and silently downgraded a course to `sidebar`
-	// whenever a toggle was adjusted.
 	lines.push(
 		`<body class="${navArchetypeToLayoutClass(deckPresentation ? "slides" : effectiveLayoutArchetype)}">`,
 	);
 
-	// Course meta div
 	lines.push(
 		`<div id="praxity-course-meta" hidden data-total-pages="${totalPages}" data-current-page="${currentPage}" data-course-id="${escapeHtml(courseId)}"></div>`,
 	);
 
-	// Semantic landmarks + static navigation fallback for no-JS mode.
 	lines.push(
 		`<a href="#main-content" class="praxity-skip-link">${escapeHtml(localeStrings.skipToContent)}</a>`,
 	);
@@ -2069,10 +1952,6 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 	lines.push(
 		`<div class="praxity-layout-wrapper${nativeSlides || deckPresentation ? " praxity-layout-slides" : ""}"${hasSeparateTopBar ? ' data-has-top-bar="true"' : ""}>`,
 	);
-	// The `none` archetype means no navigation chrome. The no-JS fallback IS the
-	// navigation on static pages, so suppress it here too — otherwise a "no
-	// navigation" course still shipped a full page list on every text-only page
-	// while its islands showed nothing.
 	if (!suppressNav && outlineEnabled) {
 		lines.push(
 			`<nav${nativeNav ? ' id="course-nav-sidebar"' : ""} class="praxity-outline-fallback${nativeNav ? " praxity-course-menu praxity-native-outline" : ""}"${nativeNav ? ` data-island="nav" data-native-outline${hamburgerOnlyDrawer ? " data-nav-drawer" : ""}` : ""} aria-label="${escapeHtml(nativeNav ? localeStrings.courseNavigation : localeStrings.courseOutline)}">`,
@@ -2247,7 +2126,6 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 		}
 	}
 
-	// Root content is complete server-rendered semantic HTML.
 	const pageTexture = "";
 	const slideStyle = nativeSlides ? resolvePageSlideStyle(page, config.slideStyles) : undefined;
 	const slideStyleName = slideStyle?.name;
@@ -2563,9 +2441,6 @@ export function generateHtmlPage(opts: PageGenOptions): string {
 	return renderInlineIcons(lines.join("\n"));
 }
 
-/**
- * Generate the index.html page that redirects to the first course page.
- */
 export function generateHtmlIndex(
 	firstSlug: string,
 	basePath?: string,
@@ -2577,11 +2452,6 @@ export function generateHtmlIndex(
 	const shellConfig = escapeJsonForScript(
 		JSON.stringify({ version: 1, kind: "redirect", target, prefix, pageIdMap }),
 	);
-	// index.html is the SCORM launch file and the review-share entry point, so it
-	// receives ?embed=1, ?minimal=1 and review tokens that the viewer reads. A bare
-	// meta-refresh dropped them; the page-N shims already forwarded them. Keep the
-	// meta-refresh inside noscript: WebKit can otherwise follow it after the shell
-	// has requested its redirect, dropping the query even with scripting enabled.
 	return `<!doctype html>
 <html lang="en">
 <head>
@@ -2633,7 +2503,6 @@ export type HtmlOutputOptions = Pick<
 	| "resumeFilename"
 >;
 
-/** Course-wide render facts; module capabilities are planned once per module. */
 export function prepareHtmlCourse(
 	config: CourseConfig,
 	islandAssets?: PageGenOptions["islandAssets"],
@@ -2647,7 +2516,6 @@ export function prepareHtmlCourse(
 
 	if (config.moduleDeck) validateModuleDeck(config.moduleDeck, config.pages, config.sourceLocale);
 
-	// Build slug map
 	const slugMap = buildSlugMap(config.pages);
 	const slugList: SlugEntry[] = config.pages.map((p, i) => ({
 		pageId: p.id,
@@ -2698,7 +2566,6 @@ export function prepareHtmlCourse(
 
 export type PreparedHtmlCourse = ReturnType<typeof prepareHtmlCourse>;
 
-/** Assemble a document using page content supplied by the page compiler. */
 export function renderHtmlDocument(
 	prepared: PreparedHtmlCourse,
 	slug: string,
@@ -2773,7 +2640,6 @@ export function renderHtmlDocument(
 			runtimePlan: pageRuntimePlans.get(page.id),
 		});
 	}
-	// Write the shared glossary when at least one module enables it.
 	if (
 		slug === "glossary" &&
 		(config.moduleDeck
@@ -2793,7 +2659,6 @@ export function renderHtmlDocument(
 				{ pageId: "glossary", slug: "glossary", title: localeStrings.glossaryHeading },
 			];
 			const glossarySlugMap = new Map([...slugMap, ["glossary", "glossary"]]);
-			// Create a minimal synthetic page for the glossary shell
 			const glossaryPage: PraxityPage = {
 				id: "glossary",
 				title: localeStrings.glossaryHeading,
@@ -2833,7 +2698,6 @@ export function renderHtmlDocument(
 		}
 	}
 
-	// Write resources page when enabled and entries are present
 	if (
 		slug === "resources" &&
 		config.resourcesTabEnabled !== false &&
@@ -2851,7 +2715,6 @@ export function renderHtmlDocument(
 				{ pageId: "resources", slug: "resources", title: localeStrings.resourcesHeading },
 			];
 			const resourcesSlugMap = new Map([...slugMap, ["resources", "resources"]]);
-			// Create a minimal synthetic page for the resources shell
 			const resourcesPage: PraxityPage = {
 				id: "resources",
 				title: localeStrings.resourcesHeading,
@@ -2893,7 +2756,6 @@ export function renderHtmlDocument(
 	throw new Error(`Unknown HTML document: ${slug}`);
 }
 
-// Export utilities for testing
 export { escapeJsonForHtml, escapeJsonForScript, resolveColorShades, themeVarsToCss };
 
 export function renderDeckBody(

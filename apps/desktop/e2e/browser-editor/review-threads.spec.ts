@@ -100,7 +100,6 @@ for (const locale of ["en", "fr"] as const) {
 				const anchorPage = await browser.newPage();
 				try {
 					for (const [index, id] of ids.entries()) {
-						// Later deck slides are script redirects; load the learner document before reading nodes.
 						await anchorPage.goto(new URL(config.pages[index].href, url).href);
 						const pageRoot = deck
 							? anchorPage.locator(`[data-deck-slide="${id}"]`)

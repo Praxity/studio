@@ -279,8 +279,6 @@ class StrictScorm2004Api implements SCORM2004API {
 		}
 		if (/^cmi\.interactions\.\d+\.timestamp$/.test(element)) {
 			return (
-				// SCORM 2004 RTE 4.1.1.7 time(second,10,0): YYYY[-MM[-DD[Thh[:mm[:ss[.s[TZD]]]]]]].
-				// A time zone designator requires fractional seconds, at most two digits.
 				/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,2}(?:Z|[+-]\d{2}(?::\d{2})?)?)?$/.test(
 					value,
 				) && !Number.isNaN(Date.parse(value))
@@ -472,7 +470,6 @@ for (const version of ["1.2", "2004"] as const) {
 			dom.window.document.addEventListener("praxity:assessment-response", seen);
 			expect(state.set("check", saved)).toEqual({ status: "saved", destination: "device" });
 			expect(state.get("check")).toEqual(saved);
-			// Logic/deck round trips and retained runtime callers use the same policy.
 			runtime.setSuspendData(
 				JSON.stringify({
 					blockState: { check: saved },
@@ -796,7 +793,6 @@ for (const version of ["1.2", "2004"] as const) {
 					([name, key]) => name === set && key === `${scorePrefix}.${suffix}`,
 				);
 				if (!scored) {
-					// Completion-only courses send no score at all.
 					expect(score).toBe(-1);
 					continue;
 				}
@@ -1236,7 +1232,6 @@ describe("SCORM runtime strict LMS contracts", () => {
 		expect(api.data.get("cmi.score.scaled")).toBe("0.4");
 		expect(api.data.get("cmi.location")).toBe("summary");
 		expect(api.data.get("cmi.interactions.0.result")).toBe("incorrect");
-		// SCORM Cloud rejected the former "...:35Z" form with error 406.
 		expect(api.data.get("cmi.interactions.0.timestamp")).toMatch(
 			/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{1,2}Z$/,
 		);
@@ -1305,7 +1300,6 @@ for (const version of ["1.2", "2004"] as const) {
 				expect(second.initialize()).toBe(true);
 				expect(second.commit()).toBe(true);
 				expect(api.data.get(timeKey)).toBe(version === "1.2" ? "0000:01:02.34" : "PT1M2.34S");
-				// History/bfcache can retain the first adapter while a later document has joined.
 				vi.setSystemTime(start + 3_723_459);
 				expect(first.commit()).toBe(true);
 				expect(api.data.get(timeKey)).toBe(version === "1.2" ? "0001:02:03.45" : "PT1H2M3.45S");
@@ -1342,7 +1336,6 @@ for (const version of ["1.2", "2004"] as const) {
 					expect(first.initialize()).toBe(true);
 					vi.setSystemTime(start + 60_000);
 					expect(closed ? first.terminate() : first.commit()).toBe(true);
-					// The LMS resets and reuses its API object, then index resets content bookkeeping.
 					Object.assign(api, version === "1.2" ? new StrictScorm12Api() : new StrictScorm2004Api());
 					resetSessionState(api, { parent: lms });
 					vi.setSystemTime(start + 600_000);
@@ -1454,7 +1447,6 @@ for (const version of ["1.2", "2004"] as const) {
 			const api = makeApi();
 			expect(makeRuntime(api).initialize()).toBe(true);
 			const calls = api.calls;
-			// The LMS resets its communication state but reuses the API object and marker.
 			Object.assign(api, makeApi(), { calls });
 			expect(readSessionState(api)).toBe(true);
 			const dom = new JSDOM(generateHtmlIndex("intro"));
@@ -1550,7 +1542,6 @@ for (const version of ["1.2", "2004"] as const) {
 			).toBe("failed");
 			expect(runtime.terminate()).toBe(true);
 
-			// A resumed launch gets a new communication session, never reopens a terminated API.
 			const resumedApi = version === "1.2" ? new StrictScorm12Api() : new StrictScorm2004Api();
 			resumedApi.data = new Map(api.data);
 			if (resumedApi instanceof StrictScorm12Api) installScorm12Api(resumedApi);
@@ -1595,7 +1586,6 @@ for (const version of ["1.2", "2004"] as const) {
 				runtime.commit();
 				runtime.setCompletion(status);
 				expect(runtime.commit()).toBe(true);
-				// Failed attempts keep their state for a retry in either version.
 				expect(api.data.get(exitKey)).toBe(
 					status === "failed" ? "suspend" : version === "1.2" ? "" : "normal",
 				);
@@ -1657,7 +1647,6 @@ it("rejects SCORM 1.2 error 101 when the status read fails", () => {
 	expect(api.LMSInitialize("")).toBe("true");
 	vi.spyOn(api, "LMSGetValue").mockImplementation((element) => {
 		api.calls.push(["LMSGetValue", element]);
-		// A failing LMS call sets an error that the adapter must inspect.
 		api.LMSSetValue("cmi.core.lesson_status", "invalid");
 		return "";
 	});
@@ -1689,9 +1678,7 @@ it("makes no diagnostic calls after failed SCORM 1.2 Finish", () => {
 	}
 	try {
 		runtime.terminate();
-	} catch {
-		/* Failure may reject the caller, never query the closed LMS. */
-	}
+	} catch {}
 	const finish = api.calls.findIndex(([name]) => name === "LMSFinish");
 	expect(finish).toBeGreaterThanOrEqual(0);
 	expect(api.calls.slice(finish + 1)).toEqual([]);
@@ -1793,7 +1780,6 @@ for (const version of ["1.2", "2004"] as const) {
 			try {
 				return call();
 			} catch {
-				// SCORM 1.2 preserves its existing uninitialized error for blocked transfers.
 				return undefined;
 			}
 		}
@@ -2157,8 +2143,6 @@ it.each(["1.2", "2004"] as const)(
 	},
 );
 
-// Captured runtime writes at 08a6a0d8d; privacy also seeds untrusted device data.
-// These literal inputs are never regenerated by tests.
 const frozenLearnerState: Record<string, Record<string, Record<string, string>>> = JSON.parse(
 	readFileSync(new URL("./fixtures/scorm-learner-state.json", import.meta.url), "utf8"),
 );
@@ -2286,7 +2270,6 @@ describe.each(["scorm12", "scorm2004"] as const)("%s frozen learner-state fixtur
 			]);
 			expect(state.get("reported")).toStrictEqual({ answer: "SYNTHETIC REPORTED" });
 			expect(state.get("journal")).toBeUndefined();
-			// The untrusted LMS input really contains both device-owned records.
 			expect(data.get("cmi.suspend_data")).toContain("SYNTHETIC PRIVATE");
 			expect(state.set("reported", { answer: "SYNTHETIC REPORTED" })).toStrictEqual({
 				status: "saved",
@@ -2346,8 +2329,6 @@ describe.each(["scorm12", "scorm2004"] as const)("%s frozen learner-state fixtur
 				"later-question": { answer: "later answer" },
 			},
 		};
-		// The runtime has no learner-state epoch. Strict envelope equality guards
-		// against adding one (or attempt fields) during restore and a later save.
 		expect(JSON.parse(data.get("cmi.suspend_data") ?? "null")).toStrictEqual(
 			version === "scorm12"
 				? { ...preserved, custom: JSON.stringify(custom) }
@@ -2513,7 +2494,7 @@ describe("SCORM 1.2 privacy append high water", () => {
 			});
 			vi.spyOn(api, "LMSGetLastError").mockImplementation(() => (countError ? "401" : "0"));
 			vi.spyOn(api, "LMSSetValue").mockImplementation((key, value) => {
-				countError = false; // Every successful LMS call clears its preceding error.
+				countError = false;
 				return set(key, value);
 			});
 			if (selfCheck) runtime.trackInteraction("secret", "PRIVATE ANSWER", true);

@@ -311,8 +311,6 @@ export function timeoutRaises(before, after, filename, defaults = {}, changedLin
 			!reference.includes("://") && /(?:^|[/\\])[^/\\]+\.(?:log|md|json|txt|html)$/i.test(reference)
 		);
 	}
-	// Match per line: a bare token scanner loses its place after regex or template literals
-	// (it can't tell `/` division from a regex without the parser) and skipped real comments.
 	after.split("\n").forEach((text, index) => {
 		const comment = text.match(/\/\/\s*timeout:.*$/)?.[0];
 		if (comment && evidenceReference(comment)) evidence.add(index + 1);

@@ -1,4 +1,3 @@
-/** Keep the UTF-16 field budget without cutting a Unicode code point in half. */
 export function truncateInteractionResponse(response: string, limit: number): string {
 	const last = response.charCodeAt(limit - 1);
 	const next = response.charCodeAt(limit);

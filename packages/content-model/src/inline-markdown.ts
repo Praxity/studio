@@ -11,7 +11,6 @@ import {
 
 export interface InlineMarkdownOptions {
 	interactive?: boolean;
-	/** Restrict narration to visual bold/italic; leave cues and other syntax literal. */
 	emphasisOnly?: boolean;
 }
 
@@ -237,7 +236,6 @@ function parse(text: string, emphasisOnly = false, offset = 0): InlineNode[] {
 	return nodes;
 }
 
-/** Display-field semantics, including legacy escapes and unresolved forms. */
 export function parseInlineMarkdown(text: string, options: InlineMarkdownOptions = {}): InlineTree {
 	return ownInlineTrivia({
 		source: text,
@@ -247,7 +245,6 @@ export function parseInlineMarkdown(text: string, options: InlineMarkdownOptions
 	});
 }
 
-/** Dependency-free authored inline formatting shared by parsers and renderers. */
 export function inlineMarkdown(text: string, options: InlineMarkdownOptions = {}): string {
 	return renderInlineTree(parseInlineMarkdown(text, options), options);
 }

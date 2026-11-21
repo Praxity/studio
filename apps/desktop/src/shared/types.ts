@@ -77,32 +77,28 @@ export interface WorkspaceData {
 	courses: WorkspaceCourse[];
 }
 
-/** A lesson file within a multi-file course */
 export interface LessonFileInfo {
-	filename: string; // "intro.prax"
-	title: string; // from frontmatter, or filename sans .prax
-	path: string; // absolute path
-	pageCount: number; // count of parsed lesson pages
+	filename: string;
+	title: string;
+	path: string;
+	pageCount: number;
 	wordCount: number;
-	lastModified: string; // ISO date
+	lastModified: string;
 }
 
-/** Result of loading a multi-file course folder */
 export interface CourseData {
-	coursePath: string; // absolute path to course folder
+	coursePath: string;
 	manifest: import("./course-manifest").CourseManifest;
-	/** Exact raw bytes belonging to this loaded snapshot, after any loader migration. */
 	manifestSource: string | undefined;
-	lessons: LessonFileInfo[]; // ordered per manifest
-	unlistedLessons: LessonFileInfo[]; // .prax files not in manifest
-	workspacePath: string | null; // parent workspace if any
+	lessons: LessonFileInfo[];
+	unlistedLessons: LessonFileInfo[];
+	workspacePath: string | null;
 }
 
-/** Result of opening a specific lesson for editing */
 export interface LessonData {
 	grammar: string;
-	lessonPath: string; // absolute path to .prax file
-	coursePath: string; // absolute path to course folder
+	lessonPath: string;
+	coursePath: string;
 }
 
 export type LeftSidebarMode = "pages" | "files" | "preview";

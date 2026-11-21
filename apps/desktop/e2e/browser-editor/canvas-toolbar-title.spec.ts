@@ -37,7 +37,6 @@ for (const language of ["en", "fr"] as const) {
 						const buttons = page.locator(".praxity-top-bar .praxity-a11y-pill button");
 						expect(await buttons.count()).toBeGreaterThan(0);
 						for (const button of await buttons.all()) {
-							// The author document has no learner scripts, so its preferences stay hidden.
 							if (mode === "Edit") {
 								await expect(button).toBeHidden();
 								continue;
@@ -60,7 +59,6 @@ for (const language of ["en", "fr"] as const) {
 						await expect(position).toHaveAttribute("title", title);
 						await expect(position).toHaveCSS("text-overflow", "ellipsis");
 						if (mode === "Edit" && width === 390) {
-							// Without learner scripts, the narrow author layout hides the whole top bar.
 							await expect(page.locator(".praxity-top-bar-fallback")).toBeHidden();
 							await expect(visibleTitle).toHaveAttribute("title", title);
 							await expect(visibleTitle).toHaveCSS("text-overflow", "ellipsis");

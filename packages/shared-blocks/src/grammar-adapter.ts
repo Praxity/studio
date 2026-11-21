@@ -71,7 +71,6 @@ const ASSESSMENT_DEFAULT_KEYS: Record<string, string> = {
 	matrix: "matrix",
 };
 
-/** Merge author defaults before adapters synthesize rendering fields. Authored fields win. */
 function withComponentDefaults(block: PraxityBlock, defaults?: ComponentDefaultsMap): PraxityBlock {
 	if (Object.getOwnPropertyDescriptor(block, "type")?.value === "selfCheck") {
 		const result = constructSelfCheckPromptBlock(block);
@@ -113,7 +112,6 @@ function withComponentDefaults(block: PraxityBlock, defaults?: ComponentDefaults
 			return [parameter.key, parameter.value];
 		}),
 	);
-	// Blank response modes and their choices must be authored on each question.
 	if (keyword === "fill-blank") {
 		delete normalized.style;
 		delete normalized.bank;
@@ -131,7 +129,6 @@ function withComponentDefaults(block: PraxityBlock, defaults?: ComponentDefaults
 		normalized.comparisonStyle = normalized.style;
 		delete normalized.style;
 	}
-	// Page-title folding is compiler-owned, never an authored component default.
 	delete normalized._foldedPageTitle;
 	const data = { ...normalized, ...block.data };
 	if (
@@ -481,7 +478,6 @@ function adaptBlock(
 			}
 		}
 	}
-	// Resolved v2 narration stays attached to its renderer block.
 	for (const key of NARRATION_BLOCK_FIELDS) {
 		if (block.data?.[key] !== undefined) nextData[key] = block.data[key];
 	}
@@ -558,7 +554,6 @@ export function adaptGrammarPreviewBlocks(
 		: {};
 	let validated = false;
 	let selfCheckDefaults: ReturnType<typeof constructSelfCheckDefaults>;
-	// Unused self-check defaults must not refuse an ordinary course.
 	Object.defineProperty(defaults, "selfCheck", {
 		get() {
 			if (!validated) {

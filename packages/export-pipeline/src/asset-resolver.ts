@@ -4,7 +4,6 @@ import { traverseAssetGraph } from "@praxity/shared-blocks/asset-graph";
 import type { PraxityPage } from "@praxity/shared-blocks/types";
 import fs from "fs-extra";
 
-/** Simple concurrency limiter — replaces p-limit to avoid standalone dep issues. */
 function pLimit(concurrency: number) {
 	let active = 0;
 	const queue: Array<() => void> = [];
@@ -30,13 +29,10 @@ function pLimit(concurrency: number) {
 }
 
 export interface AssetResolverOptions {
-	/** Directory to download assets into (e.g., tempDir/public/assets/) */
 	assetsDir: string;
-	/** Base path for URL rewriting (e.g., "./assets/" or "/assets/") */
 	basePath?: string;
 }
 
-/** Rewrite authored `/assets/...` paths for packages served below an LMS root. */
 export function normalizeRootLocalAssetUrl(
 	value: string,
 	basePath = "./assets/",
@@ -52,10 +48,6 @@ interface ResolvedAsset {
 	relativePath: string;
 }
 
-/**
- * Resolve all remote assets in course pages.
- * Downloads each unique URL once and rewrites all references to local paths.
- */
 export async function resolveAssets(
 	pages: PraxityPage[],
 	options: AssetResolverOptions,
@@ -63,10 +55,8 @@ export async function resolveAssets(
 	await fs.ensureDir(options.assetsDir);
 	const basePath = options.basePath ?? "./assets/";
 
-	// Collect all unique URLs
-	const urlMap = new Map<string, string>(); // original URL -> local relative path
+	const urlMap = new Map<string, string>();
 
-	// First pass: discover all URLs. Embed src is an iframe URL, but poster fields are assets.
 	await traverseAssetGraph(pages, {
 		onAsset: ({ block, key, value }) => {
 			if (block.type === "embed" && key === "src") return;
@@ -76,7 +66,6 @@ export async function resolveAssets(
 		},
 	});
 
-	// Download all unique assets
 	const limit = pLimit(8);
 	const downloadPromises = [...urlMap.keys()].map((url) =>
 		limit(async () => {
@@ -84,7 +73,6 @@ export async function resolveAssets(
 				const resolved = await downloadAsset(url, options.assetsDir, basePath);
 				urlMap.set(url, resolved.relativePath);
 			} catch (error) {
-				// On failure: log warning, use placeholder
 				console.warn(`Failed to download asset: ${url}`, error);
 				urlMap.set(url, `${basePath}placeholder.png`);
 			}
@@ -93,13 +81,11 @@ export async function resolveAssets(
 
 	await Promise.all(downloadPromises);
 
-	// Ensure placeholder exists if any downloads failed
 	const hasPlaceholder = [...urlMap.values()].some((v) => v.includes("placeholder.png"));
 	if (hasPlaceholder) {
 		await createPlaceholder(options.assetsDir);
 	}
 
-	// Second pass: rewrite downloaded and root-local asset URLs.
 	return traverseAssetGraph(pages, {
 		rewriteAsset: ({ block, key, value }) => {
 			if (block.type === "embed" && key === "src") return undefined;
@@ -113,16 +99,9 @@ export async function resolveAssets(
 	});
 }
 
-/**
- * RFC1918, loopback, and link-local IP patterns that must be blocked to prevent SSRF.
- */
 const BLOCKED_HOSTNAME_PATTERN =
 	/^(localhost|127\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|192\.168\.\d+\.\d+|169\.254\.\d+\.\d+|\[::1\])$/i;
 
-/**
- * Hostnames that are embed/streaming services — their URLs should be kept
- * as-is (for iframe embeds) rather than downloaded as binary assets.
- */
 const EMBED_HOSTNAMES = new Set([
 	"youtube.com",
 	"www.youtube.com",
@@ -190,77 +169,12 @@ async function createPlaceholder(assetsDir: string): Promise<void> {
 	const placeholderPath = path.join(assetsDir, "placeholder.png");
 	if (await fs.pathExists(placeholderPath)) return;
 
-	// Create a minimal 1x1 PNG (smallest valid PNG)
 	const png = Buffer.from([
-		0x89,
-		0x50,
-		0x4e,
-		0x47,
-		0x0d,
-		0x0a,
-		0x1a,
-		0x0a, // PNG signature
-		0x00,
-		0x00,
-		0x00,
-		0x0d,
-		0x49,
-		0x48,
-		0x44,
-		0x52, // IHDR chunk
-		0x00,
-		0x00,
-		0x00,
-		0x01,
-		0x00,
-		0x00,
-		0x00,
-		0x01,
-		0x08,
-		0x02,
-		0x00,
-		0x00,
-		0x00,
-		0x90,
-		0x77,
-		0x53,
-		0xde,
-		0x00,
-		0x00,
-		0x00,
-		0x0c,
-		0x49,
-		0x44,
-		0x41, // IDAT chunk
-		0x54,
-		0x08,
-		0xd7,
-		0x63,
-		0xf8,
-		0xcf,
-		0xc0,
-		0x00,
-		0x00,
-		0x00,
-		0x02,
-		0x00,
-		0x01,
-		0xe2,
-		0x21,
-		0xbc,
-		0x33,
-		0x00,
-		0x00,
-		0x00,
-		0x00,
-		0x49,
-		0x45,
-		0x4e, // IEND chunk
-		0x44,
-		0xae,
-		0x42,
-		0x60,
-		0x82,
+		0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+		0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53,
+		0xde, 0x00, 0x00, 0x00, 0x0c, 0x49, 0x44, 0x41, 0x54, 0x08, 0xd7, 0x63, 0xf8, 0xcf, 0xc0, 0x00,
+		0x00, 0x00, 0x02, 0x00, 0x01, 0xe2, 0x21, 0xbc, 0x33, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e,
+		0x44, 0xae, 0x42, 0x60, 0x82,
 	]);
 	await fs.writeFile(placeholderPath, png);
 }

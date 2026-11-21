@@ -77,7 +77,6 @@ const record = (value: unknown): value is Data =>
 const hidden = (value: Data) =>
 	value.hidden === true || value.hide === true || value.visible === false;
 
-/** Static content only; the caller owns inclusion, assets, references, and assessment numbering. */
 export function renderPdfContent(block: PraxityBlock, ctx: PdfContentContext): string {
 	const { rich, field, fail, renderBlocks } = ctx;
 	const data = block.data;
@@ -100,7 +99,6 @@ export function renderPdfContent(block: PraxityBlock, ctx: PdfContentContext): s
 		values.length ? `(${values.map((value) => `[${value}]`).join(", ")},)` : "()";
 	const pairs = (values: string[][]) =>
 		values.length ? `(${values.map((pair) => content(pair)).join(", ")},)` : "()";
-	// Accordion, tab and step labels are headings in the published course; keep them in the outline.
 	const itemLabel = (item: Data) =>
 		!item.label
 			? ""
@@ -108,7 +106,6 @@ export function renderPdfContent(block: PraxityBlock, ctx: PdfContentContext): s
 				? heading(field(item, "label"), data.headingLevel)
 				: `#strong[${field(item, "label")}]`;
 	const panel = (item: Data) => join(itemLabel(item), renderBlocks(item.children));
-	// A block title always travels with the content it introduces.
 	const title = (owner: Data, name = "title") =>
 		owner[name] ? `#block(sticky: true)[#strong[${optional(owner, name)}]]` : "";
 	const caption = (owner: Data, name = "caption") =>
@@ -358,7 +355,6 @@ export function renderPdfContent(block: PraxityBlock, ctx: PdfContentContext): s
 			const alt =
 				described ||
 				`${plain(data.chartType) || "bar"} chart${plain(data.title) ? `: ${plain(data.title)}` : ""}`;
-			// The published static SVG, with theme colours and the body font made concrete for Typst.
 			const svg = (markup: string) => {
 				let resolved = markup;
 				for (let previous = ""; previous !== resolved; ) {
@@ -369,7 +365,6 @@ export function renderPdfContent(block: PraxityBlock, ctx: PdfContentContext): s
 							ctx.chart?.vars[name] ?? fallback?.trim() ?? "#1a1a1a",
 					);
 				}
-				// Outlines only separate light fills from white paper; on dense bar charts they read as noise.
 				resolved = resolved.replace(/<rect\b[^>]*>/g, (rect) => {
 					const fill = / fill="(#[0-9a-fA-F]{6})"/.exec(rect)?.[1];
 					return fill && contrastRatio(fill, "#ffffff") >= 3
@@ -398,7 +393,6 @@ export function renderPdfContent(block: PraxityBlock, ctx: PdfContentContext): s
 								),
 							),
 						);
-			// Pick the variant whose built-in text size suits the printed width.
 			const visual = `#layout(size => image(bytes(if size.width > 400pt { ${wide} } else if size.width > 250pt { ${medium} } else { ${compact} }), format: "svg", width: 100%, alt: ${typstString(alt)}))`;
 			if (described)
 				return join(
@@ -408,7 +402,6 @@ export function renderPdfContent(block: PraxityBlock, ctx: PdfContentContext): s
 					visual,
 					caption(data),
 				);
-			// Without authored alternative text the source data stays in print as the text equivalent.
 			ctx.warn(strings.chart);
 			const headers = [
 				typeof data.xAxisLabel === "string" ? data.xAxisLabel : strings.category,
@@ -423,8 +416,6 @@ export function renderPdfContent(block: PraxityBlock, ctx: PdfContentContext): s
 				optional(data, "subtitle"),
 				visual,
 				escapeTypst(strings.chart),
-				// Long, narrow source tables sit in two balanced halves, each with its header, when
-				// every word still fits the halved columns; otherwise the single table prints.
 				headers.length <= 3 && rows.length > 12 && rows.length <= 80
 					? `#px-split-table((${[...new Set([...headers, ...rows.flat()].flatMap((cell) => cell.split(/\s+/)).filter(Boolean))].map(typstString).join(", ")},), ${headers.length}, [${table({ headers, rows, highlightHeaderCol: true })}], [${table({ headers, rows: rows.slice(0, Math.ceil(rows.length / 2)), highlightHeaderCol: true })}], [${table({ headers, rows: rows.slice(Math.ceil(rows.length / 2)), highlightHeaderCol: true })}])`
 					: table({ headers, rows, highlightHeaderCol: true }),
@@ -450,8 +441,6 @@ export function renderPdfContent(block: PraxityBlock, ctx: PdfContentContext): s
 				block.a11y?.ariaLabel ?? block.a11y?.altText ?? data.altText ?? data.alt,
 			);
 		case "columns": {
-			// Authored columns stay side by side, in their published proportions; a label stays with
-			// its column's content, and comparisons keep a dividing rule.
 			const columns = items(data.items);
 			const share = (item: Data) =>
 				typeof item.width === "number" && item.width > 0 ? item.width : 1;
@@ -545,7 +534,6 @@ export function renderPdfContent(block: PraxityBlock, ctx: PdfContentContext): s
 		case "logic":
 			return fail("Logic needs a static version before PDF export.");
 		case "selfCheck":
-			// Grammar refuses publication first; this guards direct callers until a PDF form exists.
 			return fail("Self-check can’t be exported to PDF yet.");
 		default:
 			return fail(`Unsupported PDF content block: ${block.type}.`);

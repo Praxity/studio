@@ -15,14 +15,11 @@ export const highlightXapi = {
 	actorMode: "lms" as const,
 };
 
-/** Build the production CLI once per spec. xAPI has no CLI flag, so use its
- * existing source-input and deployment owners with the same saved course. */
 export async function highlightPublisher(
 	directory: string,
 	preparedAssets = join(checkout, "apps/desktop/resources/export-assets"),
 ) {
 	const assets = join(directory, "assets");
-	// Each file keeps a captured asset set while other checks may rebuild the checkout.
 	await cp(preparedAssets, assets, { recursive: true });
 	const runtimeRequire = createRequire(join(checkout, "packages/shared-blocks/package.json"));
 	const entry = join(directory, "cli.mjs");

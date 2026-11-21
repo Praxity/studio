@@ -44,7 +44,6 @@ const xapiConfig = {
 };
 const actor = { name: "Acceptance learner", mbox: "mailto:acceptance@example.com" };
 
-// One real command bundle and one build of each package per file, outside test timing.
 test.beforeAll(async () => {
 	const startedAt = Date.now();
 	root = process.env.PRAXITY_UNCERTAINTY_BUILD ?? (await mkdtemp(join(tmpdir(), "uncertainty-")));
@@ -233,12 +232,10 @@ test.afterAll(async () => {
 		await new Promise<void>((resolve, reject) =>
 			server.close((error) => (error ? reject(error) : resolve())),
 		);
-	// An explicit build directory belongs to the evidence collector, who retires it.
 	if (root && !process.env.PRAXITY_UNCERTAINTY_BUILD)
 		await rm(root, { recursive: true, force: true });
 });
 
-// The LMS stub records every call and retains it across reload, including unload commits.
 async function installLms(page: Page, format: Format) {
 	await page.addInitScript(
 		({ format }) => {
@@ -373,7 +370,6 @@ async function expectDestination(activity: Locator, format: Format, locale: stri
 			: locale === "en"
 				? "A new attempt starts fresh."
 				: "Une nouvelle tentative repart de zéro.";
-	// innerText excludes the hidden alternative scope, unlike textContent.
 	expect(await activity.locator("[data-practice-mode]").innerText()).toBe(
 		`${destination} ${scope}`,
 	);
@@ -467,7 +463,6 @@ for (const format of formats)
 						2,
 					),
 				);
-			// Ordinary reporting must also stay clean while restored private state is mounted.
 			const ordinary = choices(page).nth(1);
 			await ordinary.getByRole("radio").last().focus();
 			await page.keyboard.press("Space");
@@ -605,7 +600,6 @@ for (const format of formats)
 					return records.map(([key, value]) => ({ key, state: JSON.parse(value) }));
 				}, restore);
 				expect(saved).toHaveLength(1);
-				// Positive control: all three activities really saved before reload.
 				expect(Object.keys(saved[0].state.blockState)).toHaveLength(3);
 				await page.reload({ waitUntil: "domcontentloaded" });
 				for (const index of [0, 2]) {
@@ -617,7 +611,6 @@ for (const format of formats)
 					} else await expect(activity.locator("input:checked")).toHaveCount(0);
 					await expect(activity.locator('[data-result="unknown"]')).toHaveCount(0);
 				}
-				// Invalid choice envelopes do not change the self-check's separate recovery contract.
 				await expect(selfCheck.locator("textarea")).toHaveValue("PRIVATE_UNCHECKED_DRAFT");
 				const quiet = await expectQuietRestore(page);
 				const sent = await outgoing(page, requests);
@@ -634,7 +627,6 @@ for (const locale of ["en", "fr"])
 	test(`html ${locale}: shuffled authored identities stay paired with labels and uncertainty remains last in DOM and narration`, async ({
 		page,
 	}) => {
-		// Force a permutation so the assertion cannot pass on an accidentally unshuffled mount.
 		await page.addInitScript(() => {
 			Math.random = () => 0;
 		});
@@ -926,7 +918,6 @@ for (const locale of ["en", "fr"]) {
 				return window.__praxityBlockState?.get(id);
 			}),
 		).toBeUndefined();
-		// This exercises resetState's storage owner, not a shipped course reset action.
 		expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true);
 	});
 }

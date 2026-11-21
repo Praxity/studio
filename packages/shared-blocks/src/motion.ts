@@ -15,7 +15,6 @@ function setVisible(root: ParentNode): void {
 	}
 }
 
-/** Initialize block and item entrance motion below a single Praxity root. */
 export function initializeEntranceMotion(root: HTMLElement): () => void {
 	let observer: IntersectionObserver | undefined;
 	const showAll = () => setVisible(root);

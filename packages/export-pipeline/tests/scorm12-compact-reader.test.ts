@@ -6,7 +6,6 @@ import vectors from "./fixtures/scorm12-compact-vectors";
 const read = codec.parseScorm12CompactSuspendData;
 
 beforeEach(() => {
-	// Each rejection test first proves it reached a functioning compact reader.
 	expect(read(vectors[0].wire)).toEqual(vectors[0].expected);
 });
 
@@ -40,7 +39,6 @@ function typedCustom(value: number[], expanded = 0, keys = rootKeys): number[] {
 	return [expanded, 1, keys.length, ...keys.flatMap(text), 8, 0, 7, 0, 7, 0, ...value];
 }
 
-/** Construct malformed transport inputs independently of any production encoder. */
 function frame(
 	typed: number[],
 	expected: unknown = empty,

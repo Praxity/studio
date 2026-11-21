@@ -122,7 +122,6 @@ describe("resolveSlideStyle", () => {
 	});
 
 	it("resolves public style properties as complete variable sets", () => {
-		// Values come from docs/prax-format/reference/document-structure.md.
 		const styleCases = {
 			"paper-stacked": { background: "paper", mediaPlacement: "stacked" },
 			"surface-left": { background: "surface", mediaPlacement: "left" },

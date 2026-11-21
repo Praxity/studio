@@ -23,7 +23,6 @@ function sheet(parent: HTMLElement = document.body, id = "sheet") {
 	return root;
 }
 function clean() {
-	// jsdom queues zero-delay focus bookkeeping independently of the print owner.
 	vi.advanceTimersByTime(0);
 	expect(
 		document.querySelector(

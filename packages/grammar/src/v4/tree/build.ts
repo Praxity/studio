@@ -21,7 +21,6 @@ function value(stream: TokenStream, index: number): SourceValue {
 	};
 }
 
-/** Authored header settings before schema filtering, using the original lexical tokens. */
 export function readHeaderSettings(
 	stream: TokenStream,
 	line: Pick<TokenLine, "tokenStart" | "tokenEnd">,
@@ -46,12 +45,10 @@ export function readHeaderSettings(
 				value: value(stream, index + 2),
 			});
 		}
-		// G1 replaces duplicate names with diagnostic tokens. Their trailing values have no key.
 	}
 	return result;
 }
 
-/** Builds structure over G1's unchanged tokens; body interpretation and schema validation follow in G3-G5. */
 export function buildLessonTree(stream: TokenStream, options: TreeOptions = {}): LessonTree {
 	const diagnostics: TreeDiagnostic[] = [];
 	const makeNode = (kind: TreeKind, tokenStart: number, tokenEnd: number): TreeNode => ({
@@ -130,7 +127,6 @@ export function buildLessonTree(stream: TokenStream, options: TreeOptions = {}):
 	const finishItem = () => {
 		const item = current();
 		const container = stack[stack.length - 2];
-		// Blank gaps between items, including empty items, belong to the container.
 		const trailing: SourceSpan[] = [];
 		while (item.trivia.at(-1)?.tokenEnd === item.span.tokenEnd) {
 			const trivia = item.trivia.pop();
@@ -167,7 +163,6 @@ export function buildLessonTree(stream: TokenStream, options: TreeOptions = {}):
 	const body = (line: TokenLine) => {
 		const previous = current().children.at(-1);
 		if (previous?.kind === "part" && stream.source.startsWith("  ", line.start)) {
-			// Blank lines become internal part trivia only when an indented paragraph follows.
 			const gap = current().trivia.findIndex(
 				(trivia) => trivia.tokenStart >= previous.span.tokenEnd,
 			);
@@ -255,7 +250,6 @@ export function buildLessonTree(stream: TokenStream, options: TreeOptions = {}):
 								const inner = current();
 								extend(inner, line.tokenStart);
 								inner.status = "unresolved";
-								// G3 distinguishes this boundary from EOF/page recovery.
 								report("unclosed-block", inner.header ?? inner.span, { type: inner.type });
 								pop();
 							}
@@ -306,14 +300,12 @@ export function buildLessonTree(stream: TokenStream, options: TreeOptions = {}):
 				firstStart: token.value.firstStart,
 			});
 			const node = current().children.at(-1);
-			// Openers/pages/items are now on the stack; leaf headers are still its last child.
 			if (current().header?.tokenStart === line.tokenStart) current().status = "unresolved";
 			else if (node) node.status = "unresolved";
 		}
 	}
 	finishPage(stream.tokens.length);
 	extend(root, stream.tokens.length);
-	// Iterative postorder keeps deeply nested authored drafts off the JavaScript call stack.
 	const nodes = [root];
 	for (let index = 0; index < nodes.length; index++) nodes.push(...nodes[index].children);
 	for (let index = nodes.length - 1; index >= 0; index--) {

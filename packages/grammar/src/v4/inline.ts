@@ -19,7 +19,6 @@ function value(source: string, start: number, end: number, decode = true): Inlin
 	return { ...range, value: decode ? decodePunctuation(range.raw) : range.raw };
 }
 
-// Use G1's punctuation rule. Decoding happens only after a token's bounds are known.
 function escapeLength(source: string, index: number, end: number): number {
 	return index + 1 < end ? punctuationEscapeLength(source, index, "ascii") : 0;
 }
@@ -238,7 +237,6 @@ function parse(source: string, start: number, end: number): InlineNode[] {
 	return nodes;
 }
 
-/** Pass the full lesson and an undecoded G1 token/span to retain lesson-relative offsets. */
 export function tokenizeInline(
 	source: string,
 	range: InlineRange = { start: 0, end: source.length },

@@ -75,7 +75,6 @@ for (const locale of ["en", "fr"] as const)
 									`http://127.0.0.1:${address.port}/${locale}/${artifact.manifest.pages[0].slug}.html${query}`,
 								);
 								const root = page.locator("[data-self-check]").first();
-								// Exercise reporting after controls mount and the host finishes restoring state.
 								await expect(root.locator("[data-self-check-comparison]")).toHaveCount(1);
 								await expect(page.locator("html")).not.toHaveAttribute(
 									"data-praxity-learner-state",

@@ -17,7 +17,6 @@
 	box-shadow: -8px 0 24px rgb(0 0 0 / 12%);
 }
 
-/* The deck workspace excludes its navigation footer. Keep review comments inside it. */
 .praxity-deck[data-ready="true"] .prx-review-workspace {
 	position: relative;
 }
@@ -78,7 +77,6 @@ body.praxity-layout-bottombar:has(> .prx-review-sidebar--local.prx-review-sideba
 	}
 }
 
-/* Short viewports need the review actions in flow so course content has room to scroll. */
 @media (max-height: 20rem) {
 	html:has(> body > .prx-review-sidebar--local.prx-review-sidebar--collapsed) {
 		--praxity-scroll-overlay-end: 0px;
@@ -392,7 +390,6 @@ body.praxity-layout-bottombar:has(> .prx-review-sidebar--local.prx-review-sideba
 	box-shadow: 0 3px 12px rgb(0 0 0 / 18%);
 }
 
-/* Keep the deck utility row and transport on one line at the narrowest width. */
 @media (max-width: 22.5rem) {
 	.praxity-deck .deck-position-controls #deck-position {
 		inline-size: 0;
@@ -428,7 +425,6 @@ html[data-praxity-mode="dark"] {
 	}
 }
 
-/* Beneath the sidebar, with hit boxes excluded from learner navigation zones. */
 .prx-review-overlay {
 	position: fixed;
 	inset: 0;
@@ -458,7 +454,6 @@ html[data-praxity-mode="dark"] {
 
 .prx-review-marker::before {
 	position: absolute;
-	/* Absolute offsets start inside the 2px border. */
 	left: -14px;
 	top: -14px;
 	width: 48px;
@@ -466,7 +461,6 @@ html[data-praxity-mode="dark"] {
 	content: "";
 }
 
-/* The tip touches the point; the numbered circle stays above and to its right. */
 .prx-review-marker:not(.prx-review-marker--block)::after {
 	position: absolute;
 	left: -2px;
@@ -510,7 +504,6 @@ html[data-praxity-mode="dark"] {
 	overflow-wrap: anywhere;
 }
 
-/* On phones leave learner content visible above the same review panel. */
 @media (max-width: 720px) {
 	.prx-review-sidebar--local:not(.prx-review-sidebar--collapsed),
 	.praxity-deck[data-ready="true"]
@@ -854,7 +847,6 @@ html[data-praxity-mode="dark"] {
 	}
 }
 
-/* The form's gap supplies spacing between notices, including tab-only mode. */
 .prx-review-composer-notice,
 .prx-review-tab-warning {
 	margin: 0;

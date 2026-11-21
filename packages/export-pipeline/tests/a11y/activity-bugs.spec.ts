@@ -204,8 +204,6 @@ for (const locale of ["en", "fr"]) {
 				});
 				await expect(action).toBeFocused();
 				await expect(action).toHaveAccessibleDescription(expectedSummary);
-				// Submission restores each ancestor's anchor after the reveal, then scrolls focus.
-				// This wait depends on AssessmentBlock's inline overflowAnchor suppression.
 				await expect
 					.poll(() =>
 						action.evaluate((element) => {

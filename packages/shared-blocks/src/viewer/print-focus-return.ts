@@ -1,4 +1,3 @@
-/** Retain an activity's focus across browser print without changing its content or controls. */
 export function preservePrintFocus(
 	root: HTMLElement,
 	current: () => boolean = () => true,
@@ -10,14 +9,11 @@ export function preservePrintFocus(
 	let printing = false;
 	let target: HTMLElement | null = null;
 	const capture = (active: Element | null) => {
-		// Media entry and beforeprint can both arrive. Keep the first capture:
-		// Firefox blurs print-hidden controls to BODY between these events.
 		if (printing || !current()) return;
 		printing = true;
 		target = active instanceof view.HTMLElement && root.contains(active) ? active : null;
 	};
 	const begin = () => capture(doc.activeElement);
-	// CSS can hide a focused action before the print-media change listener runs.
 	const blurred = (event: FocusEvent) => {
 		if (media?.matches && event.target instanceof view.HTMLElement && root.contains(event.target))
 			capture(event.target);
@@ -26,7 +22,6 @@ export function preservePrintFocus(
 		target = null;
 	};
 	const finish = () => {
-		// afterprint may precede screen styles; hidden controls cannot take focus.
 		if (media?.matches) return;
 		const original = target;
 		cancel();
@@ -72,7 +67,6 @@ export function preservePrintFocus(
 		doc.addEventListener("keydown", cancel);
 		return cleanup;
 	} catch (error) {
-		// A failed attach must not leave a document listener holding the activity.
 		cleanup();
 		throw error;
 	}

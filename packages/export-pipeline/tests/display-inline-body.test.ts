@@ -31,7 +31,6 @@ it("retains the base learner body and embedded block JSON with every inline cons
 	const body = renderPageFragments(config, lesson.pages[0], new Set(["assessment"]))
 		.map((fragment) => fragment.html)
 		.join("\n");
-	// Captured before the node refactor. Opaque text preserves the learner's exact HTML.
 	expect(body).toBe(
 		readFileSync(new URL("./fixtures/inline-nodes-body.txt", import.meta.url), "utf8"),
 	);
@@ -42,7 +41,6 @@ it("retains the base learner body and embedded block JSON with every inline cons
 	expect(body).not.toContain("choiceStateSignatures");
 });
 
-// Main rendering characterization: material projection must not change any learner byte.
 const mainRenderCases: {
 	name: string;
 	locale: string;
@@ -4822,7 +4820,6 @@ it.each(mainRenderCases)("preserves main rendering and embedded JSON: $name", (r
 		expect(extractNarrationSegments("", {}, page.blocks, {}, row.locale)).toEqual(row.narration);
 });
 
-// Pinned from the base after removing only the compiled choice facts.
 const mainDocumentCases = [
 	{
 		name: "labelCodeHtml",

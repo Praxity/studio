@@ -10,11 +10,9 @@ import type { A11yIssue } from "./checker";
 
 export interface SelfCheckAuditSource {
 	read: ReadLessonResult;
-	/** Editor identities may differ from a fresh source read's transient IDs. */
 	spans?: ReadonlyMap<string, BlockSpan>;
 }
 
-// Review guidance for this comparison task, not authored limits or WCAG failures.
 const maxModelWords = 200;
 const maxCriterionCharacters = 120;
 const minimumSpoilerCharacters = 20;
@@ -23,7 +21,6 @@ const placeholderHint =
 const normalized = (text: string) =>
 	text.normalize("NFC").toLowerCase().replace(/\s+/gu, " ").trim();
 
-/** Author-only advice. Full Content stays here; results contain codes and locations. */
 export function checkSelfCheckAccessibility(
 	pageId: string,
 	blocks: readonly PraxityBlock[],
@@ -44,7 +41,6 @@ export function checkSelfCheckAccessibility(
 					);
 				})?.id
 			: blocks.find((block) => block.id === record.id)?.id;
-		// A single read may supply several pages. Audit only this page's activities.
 		if (!blockId) continue;
 		for (const diagnostic of read.diagnostics) {
 			if (

@@ -1,0 +1,8 @@
+{
+	"ignore": [],
+	"files": {
+		"docs/prax-format/scripts/generate-block-index.mjs": 1,
+		"packages/editor-core/src/lib/a11y/checker.ts": 1,
+		"packages/format-renderers/__tests__/retrieval-sheet-pdf.test.ts": 1
+	}
+}

@@ -36,7 +36,6 @@ interface UndoState {
 	count: number;
 }
 
-/** Dismissals survive panel switches but disappear when the Studio process ends. */
 const sessionDismissalsByCourse = new Map<string, Set<string>>();
 
 export function A11yAuditPanel({

@@ -1,6 +1,5 @@
 import type { ScormSessionState } from "./session";
 
-/** Keep unreadable LMS bytes for recovery instead of certifying an empty attempt. */
 export class SuspendDataReader<T> {
 	unreadable = false;
 	constructor(
@@ -9,12 +8,6 @@ export class SuspendDataReader<T> {
 		private readonly version: "1.2" | "2004",
 	) {}
 
-	/**
-	 * ADL SCORM 2004 4th edition RTE 3.1.7.4.1 and 4.2.23 distinguish
-	 * General Get Failure (301) from an unset suspend value (403).
-	 * SCORM 1.2 RTE 3.3 / 3.4.4 requires LMSGetLastError to distinguish
-	 * an empty value from a failed LMSGetValue. Check before another API call.
-	 */
 	read(
 		read: () => string,
 		getLastError: () => string | number,

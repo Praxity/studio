@@ -25,13 +25,6 @@
 	background: var(--panel-surface);
 }
 
-/*
- * Section titles stay bold whether open or closed.
- *
- * Collapsed headers used to drop to 400 and a muted colour, so once one section was open its
- * neighbours faded out — exactly when you need to see what comes before and after. The
- * chevron already carries open-versus-closed, so dimming the label only cost scannability.
- */
 .header[aria-expanded="true"],
 .header[aria-expanded="false"] {
 	font-weight: 600;

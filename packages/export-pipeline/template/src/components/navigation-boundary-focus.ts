@@ -1,4 +1,3 @@
-/** Move endangered focus before native disabling can send it to the document body. */
 export function updateBoundaryNavigation(
 	previous: HTMLButtonElement | null,
 	next: HTMLButtonElement | null,
@@ -10,7 +9,6 @@ export function updateBoundaryNavigation(
 	const endangered =
 		(previous !== null && active === previous && previousDisabled) ||
 		(next !== null && active === next && nextDisabled);
-	// The opposite control may still be disabled from the boundary we just left.
 	if (previous && !previousDisabled) previous.disabled = false;
 	if (next && !nextDisabled) next.disabled = false;
 	if (endangered) {

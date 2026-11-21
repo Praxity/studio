@@ -1,7 +1,6 @@
 import { isInlineProjectionMetadataKey } from "./inline-fields";
 import type { AssessmentBlockData, PraxityBlock } from "./types";
 
-/** Group completion and score requirements retain their distinct fallback sets. */
 export function assessmentGroupRequirements(members: readonly PraxityBlock[]) {
 	const requiredIds = new Set(
 		members
@@ -24,7 +23,6 @@ export function assessmentGroupRequirements(members: readonly PraxityBlock[]) {
 	return { requiredIds, scoreRequiredIds };
 }
 
-/** One diagnostic format for source and effective-fact publication refusals. */
 export function choiceFactError(blockId: string, field: string, locale = "en"): Error {
 	return new Error(
 		locale.toLowerCase().split(/[-_]/)[0] === "fr"
@@ -33,7 +31,6 @@ export function choiceFactError(blockId: string, field: string, locale = "en"): 
 	);
 }
 
-/** Effective grading and attempts used by controls and material signatures. */
 export function assessmentStatePolicy(
 	data: Pick<
 		AssessmentBlockData,
@@ -55,12 +52,10 @@ export function assessmentStatePolicy(
 	};
 }
 
-/** Authored/default scoring selects the canonical response grading mode. */
 export function assessmentGradingMode(scored: unknown): "exact" | "none" {
 	return scored === true ? "exact" : "none";
 }
 
-/** Normalization supplies effective pass gates, including group and deck overrides. */
 export function assessmentOffersDontKnow(
 	data: {
 		assessmentType?: unknown;
@@ -134,7 +129,6 @@ function gateRule(
 			: undefined;
 }
 
-/** Shared gate derivation for deck access and assessment defaults. Input is flattened. */
 export function deckPageGates(blocks: readonly PraxityBlock[], options: AssessmentDeckOptions) {
 	const grouped = new Set<string>();
 	const gates: Array<{ id: string; rule: "attempt" | "pass" }> = [];
@@ -162,11 +156,9 @@ export function deckPageGates(blocks: readonly PraxityBlock[], options: Assessme
 	return gates;
 }
 
-/** Resolve renderer metadata without replacing the author's optional setting. */
 export function resolveAssessmentDontKnow(
 	blocks: readonly PraxityBlock[],
 	deck?: AssessmentDeckOptions,
-	/** Source narration keeps its original block types and target roles. */
 	source: readonly PraxityBlock[] = blocks,
 ): PraxityBlock[] {
 	const assessments: PraxityBlock[] = [];

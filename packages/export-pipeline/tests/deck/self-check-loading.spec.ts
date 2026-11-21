@@ -10,7 +10,6 @@ import AdmZip from "adm-zip";
 import { compileCourse, deployCourse, selfCheckContentInput } from "../../src/build";
 import { analyzeAxe } from "../a11y/helpers";
 
-// Hold the canonical request before insertion in both HTTP and file documents.
 async function holdSlice3Canonical(page: Page) {
 	await page.addInitScript(() => {
 		const append = Element.prototype.append;
@@ -98,7 +97,6 @@ for (const format of ["html", "scorm12", "scorm2004", "file"] as const)
 				});
 				await page.evaluate(() => window.dispatchEvent(new Event("beforeprint")));
 				await page.emulateMedia({ media: "print" });
-				// Firefox refuses focus changes in print media; choose focus before afterprint on screen.
 				if (focus !== "restore") await page.emulateMedia({ media: "screen" });
 				await page.evaluate(
 					({ transition, focus }) => {
@@ -314,7 +312,6 @@ for (const format of ["html", "scorm12", "scorm2004", "file"] as const) {
 					).releaseSlice3Canonical(false),
 				);
 				await expect(roots.nth(0).locator('[data-self-check-action="retry"]')).toBeVisible();
-				// Retry owns a new, held canonical request.
 				await page.evaluate(() => {
 					const append = Element.prototype.append;
 					Element.prototype.append = function (...nodes) {

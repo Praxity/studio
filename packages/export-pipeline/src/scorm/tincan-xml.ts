@@ -1,8 +1,6 @@
 import { declaredCourseActivityId } from "./activity-id.ts";
 import { escapeXml } from "./manifest.ts";
 
-// See docs/context/scorm-xapi-standards.md for spec references
-
 export function generateTincanXml(
 	courseId: string,
 	courseTitle: string,

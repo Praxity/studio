@@ -2,7 +2,6 @@ import { isNonemptyString, isPositiveInteger, isString } from "../../../src/scor
 import type { CourseHostConfig } from "./course-host";
 import { isRecord, isStringArray, isStringRecord, readJsonElement } from "./host-json";
 
-/** Display-only consumers do not depend on optional assessment metadata. */
 export function readCoreCourseConfig(doc: Document): CourseHostConfig | null {
 	return decodeCoreCourseConfig(readJsonElement(doc, "praxity-host-config"));
 }

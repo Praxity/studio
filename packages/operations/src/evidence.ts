@@ -1,6 +1,5 @@
 import type { IdentityOperation, IdentityResolution } from "@praxity/content-identity";
 
-/** Replay must install the IDs returned to the host, including allocated descendants. */
 export function bindAllocatedEvidence(
 	evidence: readonly IdentityOperation[],
 	identity: IdentityResolution,

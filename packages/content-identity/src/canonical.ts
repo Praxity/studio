@@ -15,7 +15,6 @@ import { toBlocks } from "@praxity/grammar/src/v4/to-blocks.ts";
 import { definitionOf, type TreeNode } from "@praxity/grammar/src/v4/tree/index.ts";
 import type { CanonicalDescriptor, IdentitySnapshot, ParsedDocument } from "./types.ts";
 
-// Unicode White_Space plus BOM, shared by descriptors, lexical scores and fragments.
 const whitespace = /[\p{White_Space}\uFEFF]+/gu;
 export function normalizeText(text: string): string {
 	return text
@@ -24,10 +23,7 @@ export function normalizeText(text: string): string {
 		.replace(whitespace, " ")
 		.trim();
 }
-/** Deterministic JSON. Exact authored bytes are hashed separately as sourceHash. */
 export function serializeIdentity(value: unknown): string {
-	// Field names recur across every node. Their escaped JSON tokens belong to
-	// this serialization only, so callers and later admissions cannot stale them.
 	return serializeIdentityValue(value, new Map());
 }
 function serializeIdentityValue(value: unknown, keys: Map<string, string>): string {
@@ -132,7 +128,6 @@ function semantic(node: TreeNode, parent?: TreeNode): Record<string, unknown> {
 			cells: row.cells.map((cell) => inline(cell.raw)),
 		}));
 	if (["body", "recovery", "frontmatter"].includes(node.kind)) {
-		// Code and math remain literal. G1 owns their shielding.
 		fields.body = /^(?:\s*`{3,}|\s*~{3,}|\$\$)/u.test(node.raw)
 			? node.raw.replace(/\r\n|\r/g, "\n").normalize("NFC")
 			: inline(node.raw);
@@ -167,14 +162,12 @@ function matchText(value: unknown): string {
 		.map(([, entry]) => matchText(entry))
 		.join(" ");
 }
-/** Reads the supplied semantic tree without changing it or rebuilding grammar. */
 export function describeDocument(
 	document: ParsedDocument,
 	options: { readerRoles?: boolean; priorSnapshots?: readonly IdentitySnapshot[] } = {},
 ): CanonicalDescriptor[] {
 	const output: CanonicalDescriptor[] = [];
 	const paths = new Map<Readonly<TreeNode>, number[]>();
-	// Each node's inline semantics are shared by its own descriptor and ancestor revisions.
 	type SemanticSubtree = {
 		parent?: TreeNode;
 		own: Record<string, unknown>;
@@ -199,7 +192,6 @@ export function describeDocument(
 		paths.set(node, path);
 		const { own, full } = subtree(node, parent);
 		const revisionContent = serializeIdentity(full);
-		// Lessons/pages own metadata/title. Children have separate identities and revisions.
 		const canonical =
 			node.kind === "lesson" || node.kind === "page"
 				? serializeIdentity({
@@ -254,7 +246,6 @@ export function describeDocument(
 			if (owner.type === "fill-blank") {
 				const style = owner.settings.find((s) => s.name === "style")?.value.value;
 				let index = node.children.length;
-				// G6 shields code, variables, glossary and other inline syntax from blanks.
 				for (const token of tokenizeInline(node.raw).children) {
 					if (token.kind !== "text") continue;
 					let offset = token.start;
@@ -342,7 +333,6 @@ export function describeDocument(
 				blank.readerOwnerPath = [...ownerPath];
 				continue;
 			}
-			// Offsets and fragment ordinals locate projections; their content matches identity.
 			const type = `reader-role:${role.replace(/^(prose|fence):.*$/u, "$1")}`;
 			const content =
 				role === "flow"
@@ -386,7 +376,6 @@ export function describeDocument(
 	}
 	return output;
 }
-/** Shared tokenization for lexical similarity and the split/merge guard. */
 export const lexicalTokens = (text: string): string[] =>
 	normalizeText(text)
 		.toLowerCase()
@@ -405,7 +394,6 @@ function dice(a: string[], b: string[]): number {
 	}
 	return (2 * shared) / (a.length + b.length);
 }
-/** L uses multiset token counts and Unicode scalar trigrams. */
 export function lexicalScore(a: string, b: string): number {
 	const x = normalizeText(a).toLowerCase();
 	const y = normalizeText(b).toLowerCase();

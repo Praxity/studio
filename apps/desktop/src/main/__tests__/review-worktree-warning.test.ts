@@ -62,7 +62,6 @@ beforeAll(async () => {
 });
 afterEach(() => vi.unstubAllEnvs());
 afterAll(async () => {
-	// Studio creates identity and local data outside the ignored fixture review store.
 	await rm(join(linked, "course/.praxity"), { recursive: true });
 	await git(main, "worktree", "remove", linked);
 	await rm(scratch, { recursive: true });

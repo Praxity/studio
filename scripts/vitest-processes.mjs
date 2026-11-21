@@ -24,7 +24,6 @@ function listLinuxProcesses() {
 
 const sleep = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 
-// Only the dedicated setsid groups recorded by this job may be signalled.
 export function clearVitestProcessGroups(
 	file,
 	{
@@ -45,15 +44,10 @@ export function clearVitestProcessGroups(
 		)
 	)
 		throw new Error("Invalid Vitest process-group file");
-	// shortcut: descendants using setsid or a double fork escape, causing false reds, never false passes.
-	// Upgrade by tagging step processes with an environment variable and scanning
-	// /proc/<pid>/environ, which also avoids process-group-ID reuse.
-	// A child with a cleared environment still escapes; skip other users' processes.
 	const groups = new Set(values.map(Number));
 	let processes = list();
 	if (processes.some((member) => member.pid === process.pid && groups.has(member.group)))
 		throw new Error("Refusing to signal the confirmation process group");
-	// Zombies have already exited and cannot consume CPU or receive signals.
 	const leftovers = () =>
 		processes.filter((member) => groups.has(member.group) && member.state !== "Z");
 	const describe = (members) =>

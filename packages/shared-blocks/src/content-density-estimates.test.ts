@@ -17,7 +17,6 @@ const textBlock = (content: string): PraxityBlock =>
 const headingBlock = (content: string): PraxityBlock => makeBlock("heading", { content, level: 2 });
 const pageBreakBlock = (): PraxityBlock => makeBlock("pageBreak");
 
-// Generate a block with ~N words of text content
 const textWithWords = (wordCount: number): PraxityBlock => {
 	const words = Array.from({ length: wordCount }, (_, i) => `word${i}`).join(" ");
 	return textBlock(words);
@@ -55,7 +54,6 @@ describe("estimateBlockTime", () => {
 	const config = { readingSpeed: 180 as const };
 
 	it("estimates text block time based on word count", () => {
-		// 180 words at 180 WPM = 1 minute
 		const block = textWithWords(180);
 		const time = estimateBlockTime(block, config);
 		expect(time).toBeCloseTo(1, 1);
@@ -69,7 +67,6 @@ describe("estimateBlockTime", () => {
 	});
 
 	it("estimates video block time with 10% buffer", () => {
-		// 180 seconds default, * 1.1 / 60 = 3.3 minutes
 		const block = makeBlock("video", { src: "https://example.com/video.mp4" });
 		const time = estimateBlockTime(block, config);
 		expect(time).toBeCloseTo(3.3, 1);
@@ -82,7 +79,6 @@ describe("estimateBlockTime", () => {
 	});
 
 	it("estimates audio block time", () => {
-		// 120 seconds default / 60 = 2 minutes
 		const block = makeBlock("audio", { src: "https://example.com/audio.mp3" });
 		const time = estimateBlockTime(block, config);
 		expect(time).toBeCloseTo(2, 1);
@@ -206,7 +202,6 @@ describe("estimateBlockTime", () => {
 	});
 
 	it("estimates quote block using data.text field", () => {
-		// 180 words at 180 WPM = 1 minute
 		const words = Array.from({ length: 180 }, (_, i) => `word${i}`).join(" ");
 		const block = makeBlock("quote", { text: words });
 		const time = estimateBlockTime(block, config);
@@ -214,7 +209,6 @@ describe("estimateBlockTime", () => {
 	});
 
 	it("estimates note block using title + content", () => {
-		// 90 words title + 90 words content = 180 words at 180 WPM = 1 minute
 		const half = Array.from({ length: 90 }, (_, i) => `word${i}`).join(" ");
 		const block = makeBlock("note", {
 			title: half,
@@ -232,7 +226,7 @@ describe("estimateBlockTime", () => {
 		const block = textWithWords(150);
 		const slowTime = estimateBlockTime(block, slowConfig);
 		const fastTime = estimateBlockTime(block, fastConfig);
-		expect(slowTime).toBeCloseTo(1, 1); // 150/150 = 1 min
+		expect(slowTime).toBeCloseTo(1, 1);
 		expect(fastTime).toBeCloseTo(150 / 220, 2);
 		expect(slowTime).toBeGreaterThan(fastTime);
 	});

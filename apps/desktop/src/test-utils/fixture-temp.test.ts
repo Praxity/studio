@@ -22,7 +22,6 @@ it("preserves local temp defaults and ordinary tmpfs fixtures", () => {
 	expect(fixtureTmpdir("comments-cli")).toBe(tmpdir());
 });
 
-// This is a fixture-placement policy: reverting a caller must fail alongside changing the owner.
 it.each(["project-os-lock", "project-journal-flush-dependency"])(
 	"routes %s project fixtures through the disk policy",
 	(suite) => {

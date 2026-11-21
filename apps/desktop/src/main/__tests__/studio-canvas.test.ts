@@ -93,7 +93,6 @@ it("admits the canvas mode through launch, preserving exact route and origin adm
 		const launched = await fetch(`${server.origin}/launch?canvas=read`, { redirect: "manual" });
 		outstanding.push(new URL(launched.headers.get("location") ?? "", server.origin));
 	}
-	// Eight live one-use admissions survive other tabs; the oldest ninth admission is evicted.
 	expect((await fetch(outstanding[0], { redirect: "manual" })).status).toBe(401);
 	for (const pending of outstanding.slice(1, -1)) {
 		expect((await fetch(pending, { redirect: "manual" })).status).toBe(503);
@@ -392,7 +391,6 @@ it("admits compilation once, refuses absent and non-HTML launches, and retains o
 	).toBe(401);
 	let previous = "";
 	for (let i = 0; i < 2; i++) {
-		// Retain the prior block identity: this test covers canvas revisions, not retirement review.
 		await writeFile(
 			join(root, "project/lesson.prax"),
 			`# First\n\nRevision zero.\n${i === 1 ? "\nRevision one.\n" : ""}`,

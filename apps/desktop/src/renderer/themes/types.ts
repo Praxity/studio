@@ -55,30 +55,13 @@ export interface ThemeColors {
 	statusDense: string;
 	focusRing: string;
 
-	/* --- Roles added by the 2026-07-25 token audit --- */
-
-	/**
-	 * Inner ring of the two-tone focus indicator. Was pinned to #ffffff in
-	 * tokens.css and excluded from this list, so it never changed with the
-	 * theme — invisible on every light theme.
-	 */
 	focusRingInner: string;
-	/** Accent corrected for use as *text/icon* on panel surfaces. `accent` stays the fill. */
 	accentOnSurface: string;
-	/** Input/select/button surface, distinct from the panel it sits on. */
 	controlBg: string;
-	/**
-	 * Outline of an interactive control — guaranteed 3:1 per WCAG 1.4.11.
-	 * `border`/`borderSubtle` remain the decorative dividers and are not held
-	 * to that ratio.
-	 */
 	controlBorder: string;
-	/** Background of a selected/active row or card in a panel. */
 	selectedBg: string;
-	/** Text on `selectedBg`. */
 	selectedText: string;
 
-	/* Severity triplets — chip surface, chip border, chip text, solid badge. */
 	severityCriticalSurface: string;
 	severityCriticalBorder: string;
 	severityCriticalText: string;
@@ -95,18 +78,15 @@ export interface ThemeColors {
 	severityInfoBadgeBg: string;
 	severityInfoBadgeText: string;
 
-	/* Ink for the marks drawn on the compositions previews. */
 	schematicMuted: string;
 	schematicStrong: string;
 
-	/* Brand washes behind the compositions previews, one per category. */
 	compositionTintEngage: string;
 	compositionTintExplain: string;
 	compositionTintPractice: string;
 	compositionTintAssess: string;
 	compositionTintStructure: string;
 
-	/* Composition category hues, lightness-corrected per theme. */
 	categoryEngage: string;
 	categoryExplain: string;
 	categoryPractice: string;

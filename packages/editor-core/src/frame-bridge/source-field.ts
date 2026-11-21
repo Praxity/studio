@@ -3,7 +3,6 @@ import { sourceField as french } from "../messages/fr.json";
 import { measureOrigins, positionFixed } from "./geometry";
 import type { FrameFocus, FrameSource } from "./protocol";
 
-/** Native field lifetime; admission and trust-marker reads stay in the Page lens. */
 export function mountSourceField(options: {
 	document: Document;
 	source: FrameSource;
@@ -25,8 +24,6 @@ export function mountSourceField(options: {
 	const group = doc.createElement("div");
 	group.setAttribute("data-praxity-chrome", "source-group");
 	registerChrome(group);
-	// The root's display mode stays admitted for this editing transaction. The body
-	// remains course-owned, including flex/grid layout and deliberate hiding.
 	const display = win.getComputedStyle(doc.documentElement).display;
 	const rootGuard = doc.createElement("style");
 	registerChrome(rootGuard);
@@ -46,7 +43,6 @@ export function mountSourceField(options: {
 	inner.setAttribute("role", "group");
 	root.append(inner);
 	function syncGeometry() {
-		// Important shadow rules outrank even inline host geometry in the outer tree.
 		const next = `:host { ${group.style.cssText} }`;
 		if (geometryText.data !== next) geometryText.data = next;
 	}
@@ -63,13 +59,11 @@ export function mountSourceField(options: {
 	description.append(descriptionText);
 	const field = doc.createElement("textarea");
 	field.spellcheck = false;
-	// The native field owns text and editing history until this draft closes.
 	field.value = options.source.value;
 	field.setSelectionRange(0, 0);
 	field.setAttribute("aria-describedby", description.id);
 	const closer = doc.createElement("div");
 	const diagnostic = doc.createElement("div");
-	// Preserve native typing groups across repeated diagnostic projections.
 	const diagnosticText = doc.createTextNode("");
 	diagnostic.append(diagnosticText);
 	diagnostic.setAttribute("data-praxity-chrome", "source-diagnostic");
@@ -80,7 +74,6 @@ export function mountSourceField(options: {
 	closer.textContent = ":::";
 	registerChrome(closer);
 	inner.append(description, caption, field);
-	// Course patches may replace or move the slot, never the native editing group.
 	doc.documentElement.append(group);
 	registerControl(field, { file: options.file, nodeId: options.source.nodeId, role: "source" });
 	let anchor = options.anchor;
@@ -228,7 +221,6 @@ export function mountSourceField(options: {
 	};
 }
 
-/** Included in the lens's first, nonce-named important layer. */
 export function sourceFieldGuardCss() {
 	return '[data-praxity-chrome="source-slot"] { all:initial; display:block; box-sizing:border-box; width:100%; margin:4px 0 12px; pointer-events:none; } [data-praxity-chrome="source-slot"][hidden] { display:none; }';
 }

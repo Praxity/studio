@@ -299,7 +299,6 @@ describe("I1 operation evidence", () => {
 										? [{ oldId: null, newId: null, fate: "new" as const }]
 										: []),
 								];
-			// Supply the exact output placements; this tests identity undo, not source transforms.
 			const placements = maps.flatMap((m, i) =>
 				m.fate === "retired" || m.fate === "absorbed" ? [] : [at(i, i === 1 ? [0, 1] : [0, 0])],
 			);

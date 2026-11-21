@@ -15,8 +15,6 @@ it("keeps every persisted descriptor byte from main for split choice description
 		'{"content":{"content":"<p>Then <span data-footer-content=\\"N\\">@footer{N}</span> more.</p>"},"type":"reader-role:prose"}',
 	);
 	expect(canonical).not.toContain("_inlineTrees");
-	// Whole-descriptor bytes captured on main, including canonical, matchText,
-	// revisionContent and ranges used by persisted identity and retirement.
 	expect(createHash("sha256").update(canonical).digest("hex")).toBe(
 		"88dde21733cd13226db18b232f3dca673631064f7a2a8a35a6f1c60d01ef48b4",
 	);

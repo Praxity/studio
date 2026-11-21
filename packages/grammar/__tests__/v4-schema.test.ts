@@ -214,7 +214,6 @@ describe("G4 schema public interface", () => {
 	])("accepts G4 constructs in the converted %s corpus", (lesson) => {
 		const source = readFileSync(new URL(`./fixtures/v4/${lesson}.prax`, import.meta.url), "utf8");
 		const tree = parse(source);
-		// G5 owns undeclared assessment types. Any error from a G4 declaration still fails.
 		expect(tree.diagnostics.filter((d) => d.code !== "unknown-type")).toEqual([]);
 		expect(tree.root.raw).toBe(source);
 	});

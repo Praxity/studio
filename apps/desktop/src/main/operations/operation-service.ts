@@ -86,8 +86,6 @@ const requestSchema = z
 					.strict(),
 			)
 			.nonempty(),
-		// The registry owns each operation's argument names and value constraints.
-		// Zod 4 omits __proto__ before validating record keys; refuse it before cloning.
 		args: z
 			.unknown()
 			.refine((args) => !args || typeof args !== "object" || !Object.hasOwn(args, "__proto__"))
@@ -126,7 +124,6 @@ export type OperationServiceResult =
 	  })
 	| (OperationRefusal & { retirements?: IdentityRetiredLocation[]; reviewUrl?: string });
 interface OperationOptions {
-	/** Compare-and-set: unlike ordinary node rebasing, this binds exact file bytes. */
 	expectedRevision?: OperationFileBase;
 	canvas?: { scope?: CanvasPageScope };
 }
@@ -154,7 +151,6 @@ export const operationTransactionId = (input: unknown) =>
 		? input.transactionId
 		: "";
 
-/** One session owns history. Clients send IDs, never executable inverse records. */
 export class OperationService {
 	private seq = 0;
 	private readonly canvasIdentitySession: CourseIdentitySession;
@@ -172,7 +168,6 @@ export class OperationService {
 		this.canvasIdentitySession = identitySession ?? new CourseIdentitySession(root);
 	}
 
-	/** Called only after the host admits an outside revision. */
 	admitOutsideChange(): number {
 		return ++this.seq;
 	}
@@ -211,7 +206,6 @@ export class OperationService {
 								error.line === problem.line &&
 								(error.level === "error" || error.level === "critical"),
 						);
-				// These keep the existing course-wide, multi-location build refusal.
 				const practice =
 					error?.messageRef.key === "grammar.v4.private-choice-practice-only" ||
 					error?.messageRef.key === "grammar.v4.practice-no-tracking";
@@ -497,7 +491,6 @@ export class OperationService {
 	private async snapshot(root: string, readOnly = false, identitySession = this.identitySession) {
 		const { lessonFilesOnDisk } = await readCourseManifestData(root);
 		const lessonReads = identitySession?.lessonReads() ?? new Map();
-		// The lesson reader validates encoding, grammar version and filesystem paths.
 		for (const file of lessonFilesOnDisk) {
 			lessonPath.parse(file);
 			await readLessonSource(root, file, { lessonReads });
@@ -531,8 +524,6 @@ export class OperationService {
 			if (!lesson || digest(lesson.tree.stream.source) !== expectedRevision.baseRevision)
 				return refusal(request.transactionId, "stale");
 		}
-		// Clipboard operations need atomic integration with LocalEditorStore.
-		// A direct inverse must never come from a client.
 		if (
 			["applyInverse", "cutBlocks", "copyBlocks", "pasteBlocks", "discardCut"].includes(
 				request.operation,
@@ -548,7 +539,6 @@ export class OperationService {
 			if (!lesson || !base) return refusal(request.transactionId, "invalid-args", target);
 			const source = lesson.tree.stream.source;
 			if (target.ref.kind !== "node") {
-				// Boundaries have no owned text guard. Refuse stale boundaries until S2 supplies a draft guard.
 				if (base.baseRevision !== digest(source))
 					return refusal(request.transactionId, "stale", target);
 				targets.push(target);
@@ -562,7 +552,6 @@ export class OperationService {
 				return refusal(request.transactionId, "conflict", target);
 			const inline = target.inline;
 			if (inline && base.baseRevision !== digest(source)) {
-				// A token's absolute offsets cannot be safely rebased without its base owner offset.
 				return refusal(request.transactionId, "stale", target);
 			}
 			targets.push({
@@ -571,8 +560,6 @@ export class OperationService {
 				...(inline ? { inline } : {}),
 			});
 		}
-		// O1 expects every parsed lesson represented by the course identity. Unrequested
-		// lessons get current bases only after all client-supplied preconditions resolve.
 		const files = sourceFiles(current);
 		for (const base of request.files) {
 			if (

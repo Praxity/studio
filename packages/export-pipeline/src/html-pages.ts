@@ -17,7 +17,6 @@ import { type SelfCheckRuntime, selfCheckPageAssets } from "./self-check.ts";
 
 import { type WriteDistractorsRuntime, writeDistractorsPageAssets } from "./write-distractors.ts";
 
-/** Write the same documents used by incremental preview, plus stable redirects. */
 export async function generateHtmlPages(
 	config: CourseConfig & Pick<CourseExportInput, "selfCheckContents" | "writeDistractorsContents">,
 	distDir: string,
@@ -51,7 +50,6 @@ export async function generateHtmlPages(
 		selfCheckRuntime,
 		writeDistractorsRuntime,
 	);
-	// Require real assets on the publishing path, including when none were supplied.
 	const prepared = preparePageCompiler(context);
 	const { slugMap, slugList, firstSlug, pageRuntimePlans, deckPages } = prepared;
 	const usedStylesheets = new Set<string>();

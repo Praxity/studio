@@ -4,7 +4,6 @@ import { readTestEnv } from "./helpers";
 
 async function findDisclosurePage(page: Page, selector: string) {
 	const env = readTestEnv();
-	// The comprehensive fixture contains third-party embeds. These checks are local.
 	await page.route("https://**", (route) => route.abort());
 	for (const candidate of env.pages) {
 		await page.goto(`${env.url}/${candidate.slug}.html`, { waitUntil: "domcontentloaded" });

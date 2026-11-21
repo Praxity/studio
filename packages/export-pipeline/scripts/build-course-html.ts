@@ -1,18 +1,3 @@
-/**
- * Build a grammar .md file into a standalone HTML export directory.
- *
- * Usage: tsx scripts/build-course-html.ts <course.md> <output-dir> [supplement.json] [--fresh-assets]
- *
- * Same pipeline the desktop app uses (buildScormPackage, format "html"), driven
- * from the CLI so sample/test courses can be produced without launching Electron.
- * The optional supplement is a JSON array of typed blocks for fixtures that cover
- * internal block types without public grammar syntax.
- *
- * PageSpeed sample:
- * pnpm --filter @praxity/export-pipeline exec tsx scripts/build-course-html.ts \
- *   ../../docs/test-fixtures/sample-course-grammar.md /tmp/praxity-pagespeed-sample \
- *   ../../docs/test-fixtures/sample-course-pagespeed-extras.json --fresh-assets
- */
 import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -64,7 +49,6 @@ for (const warning of parsed.warnings ?? []) {
 }
 
 const frontmatter = (parsed.frontmatter ?? {}) as GrammarFrontmatter;
-// Local asset paths in the grammar are relative to the source file's directory.
 const resolvedAssets = new Map<string, Uint8Array>();
 const [resolvedSource] = await traverseAssetGraph(
 	[{ id: "sample-course-source", title: "Sample Course", blocks }],

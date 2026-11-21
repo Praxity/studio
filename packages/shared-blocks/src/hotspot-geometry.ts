@@ -1,4 +1,3 @@
-/** Hotspot coordinates are percentages of the displayed image on each axis. */
 export function hotspotGeometry(shape: unknown, coords: unknown) {
 	if (!Array.isArray(coords) || !coords.every((n) => typeof n === "number" && Number.isFinite(n)))
 		return null;

@@ -347,13 +347,11 @@ describe("readable interaction reports from a rendered course", () => {
 		],
 		[
 			"bitmap",
-			// The encoder's comma list is 254 chars at 88 positions, 257 at 89: the first bitmap.
 			Array.from({ length: 89 }, (_, index) => `Option ${index + 1}`),
 			"positions-hex:ffffffffffffffffffffff1",
 		],
 	])("retains every SCORM 1.2 selection with %s labels", async (_name, labels, expected) => {
 		const question = choice("poll", "Pick all", labels);
-		// Resume all but the last option to exercise learner input at the large-selection boundary.
 		const selected = (question.data.response as ChoiceResponse).options.map((option) => option.id);
 		const { dom, data, answer } = await launch([question], "scorm12", "fr", undefined, {
 			poll: selected.slice(0, -1),

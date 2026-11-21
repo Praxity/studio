@@ -111,7 +111,6 @@ describe("I2 study controlled cases on converted courses", () => {
 		expect(idAt(after, [1, 2])).not.toBe(original);
 		expect(after.unresolved.filter((u) => u.candidates.includes(original))).toHaveLength(2);
 		expect(after.exportable).toBe(false);
-		// Saving the unresolved source again cannot turn provisional copies into a winner.
 		const saved = apply(after, { "welcome.prax": source });
 		expect(saved.exportable).toBe(false);
 	});
@@ -184,8 +183,6 @@ describe("I2 study controlled cases on converted courses", () => {
 		for (const id of ids(after).slice(1)) expect(ids(before)).not.toContain(id);
 	});
 	it("known wrong match: indistinguishable replacement has the typo's exact bytes", () => {
-		// The study labels this edit as replacement, although its bytes equal the typo.
-		// Content alone cannot distinguish intent. A recorded replace mapping is required.
 		const { before, after } = session(base, {
 			"welcome.prax": welcome.replace("computer.", "computre."),
 		});
@@ -344,7 +341,6 @@ describe("I2 reconciliation boundaries", () => {
 		expect(lexicalScore(x, y)).toBe(11 / 14);
 		const old = `# Page\n::: note {tone=info}\n${x}\n:::\n::: note {tone=warning}\n${y}\n:::\n`;
 		const next = `# Page\n::: note {tone=success}\n${x}\n:::\n`;
-		// Best S=.95, competing S=.80. Its lexical score is below .80 too.
 		const { before, after } = session({ "a.prax": old }, { "a.prax": next });
 		expect(idAt(after, [0, 0], "a.prax")).toBe(idAt(before, [0, 0], "a.prax"));
 	});

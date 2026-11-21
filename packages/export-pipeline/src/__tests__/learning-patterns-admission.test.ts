@@ -10,8 +10,6 @@ let root = "";
 let refusal = "";
 let inputs: string[] | undefined;
 
-// One real build for this file. Copied policy/source and links to read-only
-// dependencies prevent the planted manifest omission from touching other builds.
 beforeAll(async () => {
 	root = await realpath(await mkdtemp(path.join(tmpdir(), "learning-patterns-bundle-")));
 	const put = async (relative: string, contents: Uint8Array | string) => {

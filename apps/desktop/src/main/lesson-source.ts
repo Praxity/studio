@@ -117,8 +117,6 @@ export async function resolveLessonSources(
 		lessonReads?: Map<string, ReadLessonResult>;
 	} = {},
 ): Promise<ResolvedCourseIdentity> {
-	// Discovery and identity must see the same admitted course revision. A writer
-	// between separate admissions can add a head absent from the captured inventory.
 	return withProjectFileTransaction(
 		courseDir,
 		async (root) => {
@@ -131,7 +129,6 @@ export async function resolveLessonSources(
 	);
 }
 
-/** Explicit write owners request candidates inside their existing write admission. */
 export async function resolveLessonSourcesForWrite(
 	courseDir: string,
 	sources: Readonly<Record<string, string>> = {},
@@ -240,8 +237,6 @@ export async function renameProjectSource(
 				if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
 			}
 			async function capture(oldPath: string, newPath: string): Promise<void> {
-				// Descendant parents are created by the journaled plan. Its expected-null
-				// writes check collisions after those parents exist, including outside races.
 				const original = await resolveWritablePathWithin(root, join(root, oldPath));
 				const entry = await lstat(original);
 				if (entry.isSymbolicLink()) throw new Error("Symbolic links are not allowed");

@@ -1,4 +1,3 @@
-/** Return the innermost renderer for a block ID when wrappers share that ID. */
 export function findBlockElement(
 	blockId: string,
 	root: Document | Element = document,

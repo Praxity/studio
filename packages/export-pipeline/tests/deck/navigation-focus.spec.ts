@@ -67,7 +67,6 @@ test("narration End, Home and play keep slider focus while the slide and title u
 	await expect(page.locator("#page-1")).toBeVisible();
 	await expect(page).toHaveTitle("First slide");
 	await expect(slider).toBeFocused();
-	// Start playback without moving focus to the play button.
 	await page
 		.locator(".praxity-narration-transport button")
 		.evaluate((button: HTMLButtonElement) => button.click());
@@ -116,7 +115,6 @@ for (const locale of ["en", "fr"]) {
 		).toBeVisible();
 		await expect(page.locator(".praxity-resume-prefix,.praxity-resume-summary")).toHaveCount(0);
 		await expect(page.locator("body")).toBeFocused();
-		// Fresh course entry still resumes and focuses the saved destination.
 		await page.goto("about:blank");
 		await page.goto(`${publishedNavigation}/deck-${locale}/index.html`);
 		await expect(page.locator(".praxity-deck")).toHaveAttribute("data-ready", "true");

@@ -13,7 +13,6 @@ export class PrivateProjectPathError extends Error {
 	}
 }
 
-/** Fixed private paths retain their spelling and never traverse links. */
 export async function checkPrivateProjectPath(
 	root: string,
 	relative: string,
@@ -30,7 +29,6 @@ export async function checkPrivateProjectPath(
 		}
 		try {
 			const parent = join(root, ...parts.slice(0, index));
-			// Strict stores also refuse an absent spelling with a case-folded sibling.
 			if (options.plain) {
 				const names = await readdir(parent);
 				if (
@@ -57,7 +55,6 @@ export async function checkPrivateProjectPath(
 			)
 				throw new PrivateProjectPathError(path, "plain");
 			if (options.writable) {
-				// Windows directory READONLY is decorative; it does not deny writes.
 				if (entry.isFile() && !(entry.mode & 0o222))
 					throw new PrivateProjectPathError(path, "read-only");
 				await access(target, constants.W_OK);
@@ -71,7 +68,6 @@ export async function checkPrivateProjectPath(
 	return { missing };
 }
 
-/** The last wildcard must override earlier negations; preserve the owner's bytes. */
 export function privateFolderIgnoreContent(source: string | null): string | null {
 	if (source !== null && /(?:^|\r?\n)\*(?:\r?\n)*$/u.test(source)) return null;
 	const separator = source && !/[\r\n]$/u.test(source) ? "\n" : "";

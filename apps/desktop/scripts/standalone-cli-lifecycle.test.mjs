@@ -31,7 +31,6 @@ describe("standalone Studio lifecycle", () => {
 		launcher = path.join(root, "launcher.mjs");
 		project = path.join(root, "course");
 		await mkdir(project);
-		// macOS temp folders can contain /var aliases; match the CLI's canonical root.
 		project = await realpath(project);
 		await mkdir(path.join(root, "editor"));
 		await writeFile(path.join(root, "editor/index.html"), "<!doctype html><title>Studio</title>");
@@ -41,8 +40,6 @@ describe("standalone Studio lifecycle", () => {
 			"4f56045c295617d094843daf46a0b666472d5613d232b9fe302224248ed4d362\n",
 		);
 		await writeFile(path.join(project, "lesson.prax"), "---\ntitle: Test\n---\n# Hello\n");
-		// CI runs Node tests before desktop prebuild. Keep real preview/export assets
-		// in this fixture by running their owning builder, including on clean checkouts.
 		await promisify(execFile)(
 			process.execPath,
 			["--import", "tsx", path.join(desktop, "scripts/prebuild-viewer.ts")],
@@ -89,7 +86,6 @@ process.stdout.write('advice=' + report.issues.filter(issue => issue.rule === 'c
 				{
 					name: "external-dom-runtime",
 					setup(builder) {
-						// Catch eager signature imports even if their DOM dependency becomes lazy.
 						builder.onLoad(
 							{ filter: /[/\\]shared-blocks[/\\]src[/\\]assessment-(choice|content)\.ts$/ },
 							async (args) => ({
@@ -109,8 +105,6 @@ process.stdout.write('advice=' + report.issues.filter(issue => issue.rule === 'c
 				},
 			],
 		});
-		// Inject delay/failure only at Node's HTTP adapter. CLI, session, filesystem,
-		// watchers and preview/export disposal all run their production implementations.
 		await writeFile(
 			preload,
 			`
@@ -240,13 +234,11 @@ child.once('exit', (code) => process.exit(code ?? 1));
 		const studioPid = parent ? (await once(child, "message"))[0].pid : child.pid;
 		t.after(async () => {
 			requests.abort();
-			// Kill only this test's CLI, and only while its inherited pipe remains open.
 			if (parent && !child.stdout.destroyed) process.kill(studioPid, "SIGKILL");
 			if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
 			await closed;
 		});
 		const waitFor = async (text) => {
-			// The test deadline bounds startup; readiness is the CLI's output, not a poll count.
 			await new Promise((resolve, reject) => {
 				const finish = (error) => {
 					child.stdout.off("data", check).off("end", check).off("close", check);
@@ -267,7 +259,6 @@ child.once('exit', (code) => process.exit(code ?? 1));
 						finish(new Error(`CLI closed before ${text}: ${stdout} ${stderr}`));
 				};
 				child.stdout.on("data", check).on("end", check).on("close", check);
-				// Process exit can precede the final output chunk; close waits for the streams.
 				child.on("close", check);
 				t.signal.addEventListener("abort", abort, { once: true });
 				if (t.signal.aborted) abort();
@@ -380,7 +371,6 @@ child.once('exit', (code) => process.exit(code ?? 1));
 		assert.deepEqual((await readdir(course)).sort(), [".vscode"]);
 	});
 
-	// Exceed the old 500-poll cap: about 8 s on Windows and 5 s on Unix.
 	test("slow startup waits for the printed session URL", { timeout: 30_000 }, async (t) => {
 		const cli = await start(t, "normal", false, {
 			env: { TEST_PRELOAD_DELAY: process.platform === "win32" ? "9000" : "5500" },
@@ -423,7 +413,6 @@ child.once('exit', (code) => process.exit(code ?? 1));
 	test("studio help and startup refusals exit with a live IPC parent", {
 		timeout: 10_000,
 	}, async (t) => {
-		// Two eager DOM imports exceed this deadline; help and argument errors need neither.
 		const outputs = [];
 		for (const [args, code] of [
 			[["studio", "--help"], 0],

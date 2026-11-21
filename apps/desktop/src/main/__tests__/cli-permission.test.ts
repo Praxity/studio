@@ -34,8 +34,6 @@ beforeAll(async () => {
 	const tempBase = process.platform === "win32" ? path.parse(os.tmpdir()).root : os.tmpdir();
 	root = await realpath(await mkdtemp(path.join(tempBase, "cli-permission-")));
 	entry = path.join(root, "cli.mjs");
-	// Bundle the actual command and lesson writer without a browser build or Typst
-	// download. Only jsdom's runtime files remain external, as in the shipped CLI.
 	await build({
 		stdin: {
 			resolveDir: desktop,
@@ -152,7 +150,6 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-	// Writers get fresh metadata; read-only cases use the shared initialized course.
 	course = await createCourse(`course-${randomUUID()}`);
 });
 
@@ -172,8 +169,6 @@ afterAll(async () => {
 });
 
 function runWithGrants(write: boolean, ...args: string[]) {
-	// Match the portable proof's grants. Dependency/assets reads are the only
-	// source-mode additions; checkout source and all non-temporary writes stay denied.
 	const tempTree =
 		process.platform === "win32"
 			? root

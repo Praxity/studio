@@ -16,7 +16,6 @@ const prepare = steps.find((step) => step.name === "Prepare apt archive reuse");
 const install = steps.find((step) => step.name === "Install browser and system dependencies");
 const collect = steps.find((step) => step.name === "Collect current dependency archives");
 
-// Privileged modes/owners are recorded; fixture mkdir/cp also work on Windows without _apt.
 const sandboxSudo = `
 sudo() {
   printf '%s\\n' "$*" >> "$RUNNER_TEMP/sudo-commands"
@@ -139,7 +138,6 @@ for (const cached of [false, true]) {
 			});
 			mkdirSync(new URL("temp/", root), { recursive: true });
 			const path = (name) => fileURLToPath(new URL(name, root)).replaceAll("\\", "/");
-			// Redirect privileged filesystem adapters into this fixture; apt and pnpm are fakes.
 			const script = [prepare.run, install.run, collect.run]
 				.join("\n")
 				.replaceAll("/etc/apt/apt.conf.d", path("apt-config"))
@@ -200,7 +198,6 @@ ${script}`;
 					readFileSync(new URL("summary", root), "utf8"),
 					/Playwright dependency archive bytes: \d+/,
 				);
-				// A later package revision replaces the saved archive without stale bytes.
 				writeFileSync(new URL("temp/playwright-debs/current.deb", root), "old package bytes");
 				stepArguments(
 					{},

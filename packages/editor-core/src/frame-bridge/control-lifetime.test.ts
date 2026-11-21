@@ -53,7 +53,6 @@ it("retired handles and shadow adapters can be collected while the lens stays al
 	try {
 		for (let i = 0; i < 20; i++) retire(i);
 		await setImmediate();
-		// Node's heap query performs collection without requiring a test-only GC global.
 		queryObjects(WeakRef);
 		await setImmediate();
 		expect(refs.filter((ref) => ref.deref()).length).toBe(0);

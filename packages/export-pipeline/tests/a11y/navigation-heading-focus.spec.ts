@@ -29,7 +29,6 @@ for (const mode of ["pages", "deck"]) {
 				await expect(heading).toBeFocused();
 				await expect(heading).toHaveAttribute("tabindex", "-1");
 				await expectNoFocusRing(heading);
-				// Keyboard controls keep their indicator after arrival as well.
 				await page.keyboard.press("Tab");
 				await next.focus();
 				await expect(next).toBeFocused();

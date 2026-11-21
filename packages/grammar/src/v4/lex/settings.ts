@@ -30,12 +30,10 @@ export function appendDiagnostic(
 	tokens.push({ kind: "diagnostic", start, end, raw: text.slice(start, end), value });
 }
 
-/** Decode after identifying boundaries. Unknown escapes and ordinary backslashes survive. */
 export function decodePunctuation(raw: string): string {
 	return decodeEscapes(raw, "ascii");
 }
 
-/** First reserved suffix, including malformed or non-final groups. Escaped braces are text. */
 export function settingsStart(
 	text: string,
 	start: number,
@@ -144,7 +142,6 @@ export function lexSettings(text: string, start: number, end: number, tokens: To
 			index++;
 			const valueStart = index;
 			if (index === close) {
-				// The equals sign owns this error because an empty value has no source range.
 				tokens.pop();
 				appendDiagnostic(tokens, text, index - 1, index, { code: "missing-setting-value" });
 				break;

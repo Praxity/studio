@@ -23,7 +23,6 @@ function isBlock(value: unknown): value is LogicBlockLike {
 	);
 }
 
-/** Flatten nested block arrays while retaining their heading-section boundary. */
 export function flattenLogicBlocks<T extends LogicBlockLike>(
 	blocks: readonly T[],
 ): Array<ScopedLogicBlock<T>> {

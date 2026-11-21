@@ -398,7 +398,6 @@ it("scans in-memory contexts and collectors for hidden bytes", async () => {
 			page.blocks.map((block) => projectText(block, block.id, null)),
 		]),
 	];
-	// Exercise each refusal with authored markers still present in the private input.
 	const failures = [
 		() => createCourseContext({ ...input, writeDistractorsContents: [] }),
 		() =>

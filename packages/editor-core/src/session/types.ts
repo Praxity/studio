@@ -14,7 +14,6 @@ import type {
 } from "@praxity/grammar/src/operations/contract.ts";
 
 export type { FocusTarget, OperationRefusal, OperationRequest, OperationResult };
-/** Author acknowledgement metadata, excluded from executable operation/history evidence. */
 export type AuthorOperationResult =
 	| (OperationResult & {
 			historyId: string;
@@ -70,9 +69,7 @@ export interface DraftSeed {
 	file: string;
 	target: NodeRef | InsertionPoint;
 	baseRevision: string;
-	/** Exact whole owned slice, including closer and original line endings. */
 	expectedText: string;
-	/** Editable slice, excluding a container's closer; whole file in Source lens. */
 	editableText: string;
 	scope?: "node" | "file";
 }
@@ -87,19 +84,15 @@ export interface Draft extends DraftSeed {
 	changedAt: number;
 	validatedGeneration: number;
 	persistedGeneration: number;
-	/** Full payload version, independent of the text generation. Legacy records start at zero. */
 	persistenceVersion?: number;
-	/** Last matching successful acknowledgement of that full payload. */
 	persistedVersion?: number;
 	resolutionEpoch?: number;
-	/** D11 records the outside version without replacing the author's field. */
 	outside?: DraftSeed;
 }
 export interface TargetSnapshot {
 	target: OperationTarget;
 	revision: string;
 	draftId: string | null;
-	/** Menus retain every selected member's guards from the moment they opened. */
 	selection?: {
 		targets: OperationTarget[];
 		files: OperationFileBase[];
@@ -182,9 +175,7 @@ export interface HistoryEntry {
 	id: string;
 	kind: "operation" | "discard";
 	summary: Message;
-	/** Acknowledged operations retained for summaries and source-session grouping. */
 	operations: OperationResult[];
-	/** Opaque service acknowledgements; executable inverses stay server-owned. */
 	historyIds: string[];
 	draft?: Draft;
 	sessionId?: string;
@@ -218,27 +209,21 @@ export interface Session {
 	selected: string[];
 	selection: Selection;
 	drafts: Record<string, Draft>;
-	/** Display bindings for ID-free drafts, held only in the author session. */
 	draftDisplayIds: Record<string, string>;
-	/** Confirmed absence is a source baseline, not permission to reuse the retired node. */
 	draftAbsences: Record<string, { revision: string; focus: Focus }>;
-	/** Restoration-only metadata changes are not author work to flush at close. */
 	restoredDraftVersions?: Record<string, number>;
-	/** Successful saves awaiting a proven source seed; never persisted with drafts or history. */
 	draftAcknowledgements: Record<
 		string,
 		{
 			revision: string;
 			generation: number;
 			focus: Focus;
-			/** Original receipt bytes distinguish normalization from a superseding own edit. */
 			receiptRevision: string;
 			receiptText?: string;
 			target?: DraftSeed["target"];
 			expectedText?: string;
 		}
 	>;
-	/** A null request ID queues an idle put; a string identifies its in-flight acknowledgement. */
 	pendingDraftPersistence: Record<
 		string,
 		{
@@ -255,10 +240,8 @@ export interface Session {
 	sequence: number;
 	draftNamespace: string;
 	pending: Pending | null;
-	/** Selection is committed only by the matching native focus acknowledgement. */
 	replyFocus?: { requestId: string; snapshot: SelectionSnapshot; historyEntryId?: string };
 	revisions: Record<string, string>;
-	/** Service order for admitted source revisions; independent of controller transaction IDs. */
 	revisionSeqs: Record<string, number>;
 	interfaceLanguage: "en" | "fr";
 	courseLanguage: string;
@@ -272,11 +255,8 @@ export type Resolution =
 	| { kind: "refused"; message: Message };
 export interface Dependencies {
 	now: number;
-	/** Parses in place, using the owning grammar/operation modules; called only on idle. */
 	validateDraft: (draft: Draft) => { diagnostics: OperationDiagnostic[]; escapes: boolean };
-	/** Grammar tokens, never a UI regex; line is a stable structural-line identity. */
 	helperTokens: (draft: Draft) => readonly HelperToken[];
-	/** Resolves by identity/address and supplies F8 sibling/parent/page fallback. */
 	focusNeighbours: (focus: Focus) => {
 		next?: Focus;
 		previous?: Focus;
@@ -284,15 +264,10 @@ export interface Dependencies {
 		page: Focus;
 	};
 	nameOfFocus: (focus: Focus) => string;
-	/** Resolves a successful write's actual owned bytes, path and fingerprint. */
 	readDraft: (focus: Focus, scope?: "node" | "file") => DraftSeed;
-	/** Caller uses the existing interface translator for registry diagnostics. */
 	translate: (message: Message | MessageRef) => string;
-	/** Current lesson in preorder, including pages and container items. IDs are durable. */
 	selectionNodes?: () => readonly SelectionNode[];
-	/** Unresolved suggestions, in review navigation order. Review owns persistence. */
 	reviewSuggestions?: () => readonly ReviewSuggestion[];
-	/** Grammar/service dry-run availability, including conversion and child constraints. */
 	selectionAllowed?: (
 		operation: string,
 		targets: readonly OperationTarget[],
@@ -346,7 +321,6 @@ export type Command =
 	| { type: "select"; focus: Focus; mode?: "range" | "toggle" }
 	| {
 			type: "selectionKey";
-			/** Plain handle navigation moves focus without extending the selection. */
 			extend?: boolean;
 			key:
 				| "previous"

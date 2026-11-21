@@ -179,7 +179,6 @@ for (const mode of ["small", "full"]) {
 			await expect(active).toHaveCSS("opacity", "1");
 			await expect(active).toHaveCSS("transform", /^(none|matrix\(1, 0, 0, 1, 0, 0\))$/);
 			await page.emulateMedia({ reducedMotion: "reduce" });
-			// The global reduced-motion guard permits 0.01ms to preserve transition events.
 			await expect
 				.poll(() =>
 					active.evaluate((element) =>

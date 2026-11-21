@@ -34,8 +34,8 @@ const EXPECTED_BLOCK_TYPES = [
 	"accordion",
 	"tabs",
 	"sequence",
-	"columns", // also covers `as: comparison` (parses to columns)
-	"card", // includes explicit `as: card` and legacy `as: flashcard` input
+	"columns",
+	"card",
 	"assessment",
 	"rating",
 	"checklist",
@@ -56,9 +56,6 @@ function runBlockTypeCoverageAssertions(fixturePath: string): void {
 		const result = readSource(source);
 		const types = new Set(result.blocks.map((b) => b.type));
 
-		// Verified against actual readSource output — these are the distinct public
-		// grammar block types the fixture produces.
-		// the fixture produces. If any fails, the parser has regressed.
 		for (const type of EXPECTED_BLOCK_TYPES) {
 			expect(types.has(type), `missing block type: ${type}`).toBe(true);
 		}
@@ -261,7 +258,7 @@ describe("Parser Fidelity: renderer-fidelity.prax", () => {
 		const source = await readFile(FIXTURE_PATH, "utf-8");
 		const { blocks } = readSource(source);
 		const cols = blocks.filter((b) => b.type === "columns");
-		expect(cols.length).toBe(2); // explicit col + comparison
+		expect(cols.length).toBe(2);
 		for (const col of cols) {
 			const data = col.data as Record<string, unknown>;
 			expect(
@@ -330,8 +327,6 @@ describe("Parser Fidelity: renderer-fidelity.prax", () => {
 		const { blocks } = readSource(source);
 		const textBlocks = blocks.filter((b) => b.type === "text");
 
-		// Each pattern targets a specific grammar construct that should NEVER appear
-		// as raw text if the parser is working correctly.
 		const grammarPatterns: Array<{ pattern: RegExp; label: string }> = [
 			{
 				pattern:
@@ -386,7 +381,6 @@ describe("Parser Fidelity: renderer-fidelity.prax", () => {
 
 		for (const block of textBlocks) {
 			const content = String((block.data as Record<string, unknown>).content ?? "");
-			// Strip HTML tags, normalize whitespace for pattern matching
 			const plainText = content.replace(/<[^>]+>/g, "\n").replace(/&[^;]+;/g, " ");
 			for (const { pattern, label } of grammarPatterns) {
 				expect(

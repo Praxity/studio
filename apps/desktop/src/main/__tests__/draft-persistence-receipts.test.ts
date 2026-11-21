@@ -292,7 +292,6 @@ it("D3 a reply lost before execution is reconciled before the real HTTP request 
 	late.on("error", (error) => received.resolve({ status: 0, result: String(error) }));
 	late.write(body.slice(0, -1));
 	try {
-		// The caller has no reply while the original authenticated body can still arrive.
 		expect(
 			await rpc(server, "draftPersistenceReconcile", {
 				...identity,

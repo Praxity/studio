@@ -2,7 +2,6 @@ import { LEARNER_STATE_MAX_BYTES } from "@praxity/shared-blocks/learner-state";
 import { inflateSync, strFromU8, strToU8, unzlibSync, zlibSync } from "fflate";
 import type { InteractionRecord } from "./types";
 
-/** Shape stored inside cmi.suspend_data as JSON. */
 export interface Scorm12SuspendData {
 	visitedPages: string[];
 	interactions: InteractionRecord[];
@@ -22,7 +21,6 @@ function suspendDataPayload(data: unknown): Scorm12SuspendData | null {
 		: null;
 }
 
-// CRC-32/ISO-HDLC, also used by gzip and ZIP. fflate 0.8.3 has no public CRC export.
 const CRC32_TABLE = Uint32Array.from({ length: 256 }, (_, value) => {
 	let crc = value;
 	for (let bit = 0; bit < 8; bit++) crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
@@ -48,7 +46,6 @@ function hasAdler32(bytes: Uint8Array, compressed: Uint8Array): boolean {
 }
 
 const EVIDENCE_FORMAT = "praxity-evidence-1";
-// Dictionary tokens mirror learner-state signature syntax; update when that format changes.
 const EVIDENCE_TOKEN =
 	/sha256:[a-f0-9]{64}|s96:[A-Za-z0-9_-]{16}|[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/g;
 const TOKEN_WIDTHS = [16, 32, 12];
@@ -61,7 +58,6 @@ function base64(bytes: Uint8Array): string {
 function fromBase64(text: string): Uint8Array {
 	const binary = atob(text);
 	if (btoa(binary) !== text) throw new Error("Noncanonical base64");
-	// Indexed copying keeps checksum rejection fast for damaged saves.
 	const bytes = new Uint8Array(binary.length);
 	for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index);
 	return bytes;
@@ -71,7 +67,6 @@ function isObject(value: JsonValue): value is { [key: string]: JsonValue } {
 	return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-/** Dictionary bytes stay outside DEFLATE; only shapes and references are compressed. */
 function encodeEvidence(raw: string): string {
 	const bytes = strToU8(raw);
 	if (bytes.length > LEARNER_STATE_MAX_BYTES)
@@ -103,9 +98,7 @@ function encodeEvidence(raw: string): string {
 				data.custom = custom;
 				expanded = true;
 			}
-		} catch {
-			/* Opaque custom strings retain their exact bytes. */
-		}
+		} catch {}
 	}
 	const shapes: string[][] = [];
 	const shapeIndices = new Map<string, number>();
@@ -159,7 +152,6 @@ function encodeEvidence(raw: string): string {
 				uint(index);
 				return;
 			}
-			// UTF-8 has no representation for a lone surrogate. Keep tag 5 for valid strings.
 			if (/[\uD800-\uDFFF]/u.test(input)) {
 				output.push(9);
 				uint(input.length);
@@ -248,10 +240,8 @@ function decodeEvidence(envelope: unknown[]): JsonValue {
 		}
 	}
 	const compressed = body.subarray(tableSize);
-	// Allocate from the checked declaration, never the untrusted DEFLATE stream.
 	const typed = unzlibSync(compressed, { out: new Uint8Array((typedSize as number) + 1) });
 	if (typed.length !== typedSize) throw new Error("Evidence inflated length");
-	// fflate accepts bytes after DEFLATE's end. A complete stream must need its last byte.
 	let completeWithoutLastByte = false;
 	try {
 		const prefix = inflateSync(compressed.subarray(2, -5), {
@@ -259,9 +249,7 @@ function decodeEvidence(envelope: unknown[]): JsonValue {
 		});
 		completeWithoutLastByte =
 			prefix.length === typed.length && prefix.every((byte, index) => byte === typed[index]);
-	} catch {
-		// Removing the last DEFLATE byte normally makes the stream incomplete.
-	}
+	} catch {}
 	if (completeWithoutLastByte) throw new Error("Evidence trailing compressed byte");
 	if (!hasAdler32(typed, compressed)) throw new Error("Evidence Adler");
 	let at = 0,
@@ -312,11 +300,9 @@ function decodeEvidence(envelope: unknown[]): JsonValue {
 			case 5: {
 				const bytes = take(uint());
 				charge(bytes.length);
-				// Tag 5 retains its original, valid UTF-8 meaning.
 				return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes);
 			}
 			case 9: {
-				// Tag 9 stores UTF-16 code units in big-endian order, including lone surrogates.
 				const bytes = take(uint() * 2);
 				charge(bytes.length);
 				const units = new DataView(bytes.buffer, bytes.byteOffset, bytes.length);
@@ -378,13 +364,11 @@ function decodeEvidence(envelope: unknown[]): JsonValue {
 	return data;
 }
 
-/** Bounded compact reader for replacement preflight and restoration. */
 export function parseScorm12CompactSuspendData(raw: string): Scorm12SuspendData | null {
 	try {
 		if (raw.length > SCORM12_SUSPEND_DATA_LIMIT) return null;
 		const envelope: unknown = JSON.parse(raw);
 		if (!Array.isArray(envelope)) return null;
-		// Both envelopes use the same payload validation.
 		return suspendDataPayload(decodeEvidence(envelope));
 	} catch {
 		return null;
@@ -396,13 +380,11 @@ export interface Scorm12SuspendDataCodec {
 	parse(raw: string): Scorm12SuspendData | null;
 }
 
-/** Hosts with choices select this lossless raw-first codec. */
 export function serializeScorm12CompactSuspendData(
 	data: Scorm12SuspendData,
 	reservedCharacters = 0,
 ): string {
 	const raw = JSON.stringify(data);
-	// The adapter preflights every injected codec before replacing LMS bytes.
 	return fitScorm12Candidate(
 		raw.length + reservedCharacters <= SCORM12_SUSPEND_DATA_LIMIT ? raw : encodeEvidence(raw),
 	);
@@ -413,7 +395,6 @@ export const scorm12CompactSuspendDataCodec: Scorm12SuspendDataCodec = {
 	parse: parseScorm12SuspendData,
 };
 
-/** Verify the exact filtered payload before replacing readable LMS bytes. */
 export function preflightScorm12SuspendData(
 	data: Scorm12SuspendData,
 	candidate: string,
@@ -434,15 +415,12 @@ function fitScorm12Candidate(candidate: string): string {
 	return candidate;
 }
 
-/** The adapter and export-time estimate use the same wire representation. */
 export function serializeScorm12SuspendData(
 	data: Scorm12SuspendData,
 	reservedCharacters = 0,
 ): string {
 	const raw = JSON.stringify(data);
 	if (raw.length + reservedCharacters <= SCORM12_SUSPEND_DATA_LIMIT) return raw;
-	// Choice answers repeat option IDs. Preserve the existing opaque custom-data
-	// and self-check size contracts for envelopes without choice state.
 	try {
 		const states = data.custom && JSON.parse(data.custom).blockState;
 		if (
@@ -466,7 +444,6 @@ export function serializeScorm12SuspendData(
 		encoding: "praxity-zlib-1",
 		size: bytes.length,
 		crc32: crc32(bytes),
-		// Cover unused DEFLATE padding bits as well as changes in decoded data.
 		compressedCrc32: crc32(compressed),
 		data: base64(compressed),
 	});
@@ -489,8 +466,6 @@ export function parseScorm12SuspendData(raw: string): Scorm12SuspendData | null 
 				return null;
 			const compressed = fromBase64(data.data);
 			if (crc32(compressed) !== data.compressedCrc32) return null;
-			// One extra byte detects output beyond the declared length without unbounded allocation.
-			// fflate does not verify the zlib trailer's Adler-32.
 			const bytes = unzlibSync(compressed, { out: new Uint8Array(data.size + 1) });
 			if (bytes.length !== data.size || crc32(bytes) !== data.crc32 || compressed.length < 6)
 				return null;
@@ -503,7 +478,6 @@ export function parseScorm12SuspendData(raw: string): Scorm12SuspendData | null 
 	}
 }
 
-/** Refuse an over-cap write without discarding any saved answer or row. */
 export function fitScorm12SuspendData(data: Scorm12SuspendData): string {
 	const serialized = serializeScorm12SuspendData(data);
 	if (serialized.length > SCORM12_SUSPEND_DATA_LIMIT) {

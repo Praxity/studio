@@ -67,7 +67,6 @@ import { buildVisitedStatusCourse } from "./fixtures/visited-status-fixture";
 import { type CoursePageMeta, DISCOVERY_SELECTORS } from "./helpers";
 
 export default async function globalSetup(_config: FullConfig): Promise<() => Promise<void>> {
-	// The design-system capture runner already serves fresh scratch exports.
 	if (process.env.PRAXITY_DESIGN_SYSTEM_ENV) return async () => {};
 	const started = performance.now();
 	const cleanup = await prepareFixtureEnvironment(buildFixtures);
@@ -212,18 +211,6 @@ const FIXTURE_DOWNLOADS = new Map<string, { bytes: () => Promise<Uint8Array>; me
 	[POLISH_IMAGE_URL, { bytes: async () => blankPanelPng(), mediaType: "image/png" }],
 ]);
 
-/**
- * Serve the fixture's remote assets from disk.
- *
- * `resolveAssets` downloads remote assets at build time, so the suite depended on
- * example.com answering. When it 404'd, the build threw, this setup died, and the
- * run continued against a stale `.test-env.json` — reporting on an export nobody
- * had just built, which is how a flake became a wrong diagnosis.
- *
- * The document URL must stay remote because the parser only builds that block
- * from a remote URL. The audio and image URLs exercise the same resolver path
- * used by authored media. Unexpected requests fail without reaching the network.
- */
 export function stubFixtureDownloads(): () => void {
 	const realFetch = globalThis.fetch;
 	globalThis.fetch = (async (input: RequestInfo | URL) => {
@@ -273,7 +260,6 @@ async function buildFixtures(
 			),
 		),
 	);
-	// Supplemental audit pages belong before the summary so it remains the course end.
 	const auditBlocks = conformanceFixture.course.blocks;
 	const summaryFirstBlock = conformanceFixture.pages.find((page) => page.title === "Summary")
 		?.blocks[0];
@@ -744,10 +730,6 @@ $$
 	const branchingAudio = new Map<string, Uint8Array>(
 		["intro", "question", "calm"].map((name) => [`assets/${name}.mp3`, dialogueAudio]),
 	);
-	// Retry must pause only when the next answer hides the playing branch. A
-	// 60-second PCM clip outlasts the test's 30-second budget, so natural completion
-	// cannot race that assertion. Generate silence locally instead of borrowing
-	// a speech sample whose duration can change independently of this journey.
 	const tenseAudio = silentWav(60);
 	branchingAudio.set("assets/tense.wav", tenseAudio);
 	const branching = await buildScormPackage(

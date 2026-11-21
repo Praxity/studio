@@ -140,7 +140,6 @@ it("text-field inspection returns canvas bindings and file revisions without eli
 	}
 });
 
-// Reuses the first run's public-interface prerequisite; captions are covered by their owning slice.
 it("the existing canvas admits the generated title and paragraph", async () => {
 	const root = await fixture("# Page\n\nParagraph.\n");
 	const snapshot = await new OperationService(root).canvasTextSnapshot();
@@ -223,7 +222,6 @@ it.each([
 	);
 	const changed = await hashes(root);
 	const paths = new Set([...Object.keys(before), ...Object.keys(changed)]);
-	// Transactions retain displaced inodes in root recovery stages, outside .praxity/.
 	const differences = [...paths].filter(
 		(p) => before[p] !== changed[p] && !p.startsWith(".praxity-write-"),
 	);

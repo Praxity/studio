@@ -19,7 +19,6 @@ declare global {
 	}
 }
 const failed = new WeakMap<Document, boolean>();
-/** Cache the attempt before insertion. Only explicit Retry clears a rejected attempt. */
 export function loadSelfCheckImplementation(
 	entry: string,
 	doc = document,
@@ -170,7 +169,6 @@ export function startSelfCheckDocument(entry: string, doc = document) {
 							retry.focus();
 						}
 					}
-					// A document with only later-module dependencies has no activity mount to retain it.
 					if (current() && doc.querySelector("[data-self-check]")) record.release();
 					if (retry && current())
 						for (const root of doc.querySelectorAll<HTMLElement>("[data-self-check]")) {
@@ -225,7 +223,6 @@ export function startSelfCheckDocument(entry: string, doc = document) {
 	record.release = mountSelfCheckRuntime(doc, (runtime) => {
 		clear();
 		if (!runtime) return;
-		// The canonical adapter takes over these controls only after its current load succeeds.
 		if (!attachment)
 			for (const root of doc.querySelectorAll<HTMLElement>("[data-self-check]")) {
 				const answer = root.querySelector("textarea"),
@@ -349,7 +346,6 @@ const core: {
 	},
 	initSelfCheckEnhancements: (scope: ParentNode = document) => {
 		const doc = scope.nodeType === 9 ? (scope as Document) : (scope.ownerDocument ?? document);
-		// Scope leases use the admitted adapter, never a later evaluation of its global.
 		const implementation =
 			started.get(doc)?.implementation ??
 			(window.PraxitySelfCheckIsland?.build === selfCheckBuild
@@ -361,7 +357,6 @@ const core: {
 		const release = mountSelfCheckRuntime(doc, () => {});
 		if (core.entry && startedOwner !== doc.defaultView?.__praxitySelfCheckDocument) {
 			core.start(core.entry, doc);
-			// Explicit scope leases own cold startup; releasing the last scope cancels it.
 			started.get(doc)?.release();
 		}
 		const current = doc.defaultView?.__praxitySelfCheckDocument?.loadTicket();

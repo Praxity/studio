@@ -1,7 +1,6 @@
 export const COURSE_PRESET_IDS = ["ink", "forest", "plum", "clay", "clear"] as const;
 export type CoursePresetId = (typeof COURSE_PRESET_IDS)[number];
 
-/** Saved IDs migrate here in grammar, authoring and published output. */
 export const COURSE_PRESET_ALIASES = {
 	ink: "ink",
 	forest: "forest",
@@ -47,7 +46,6 @@ export function resolveCoursePresetId(value: unknown): CoursePresetId {
 		: "ink";
 }
 
-/** Old direct reads still work, while pickers enumerate the five current IDs. */
 export function withCoursePresetAliases<T extends Record<CoursePresetId, unknown>>(
 	presets: T,
 ): T & Record<keyof typeof COURSE_PRESET_ALIASES, T[CoursePresetId]> {

@@ -73,7 +73,6 @@ it.each([".git", "node_modules"])(
 				code: "asset-internal-refused",
 			});
 		}
-		// The inventory's write-probe already refuses this linked storage layout.
 		await expect(new ProjectAssetInventory(root).read()).rejects.toThrowError(
 			"Symbolic links are not allowed",
 		);

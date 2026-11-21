@@ -43,11 +43,9 @@ export interface EditorScrollHandle {
 
 const GRAMMAR_PARSE_OPTIONS = { preserveWhitespace: "full" as const };
 
-/** Extracts plain text from TipTap, preserving newlines between paragraphs. */
 function extractText(editor: Editor | null): string {
 	if (!editor) return "";
 	const lines: string[] = [];
-	// Keep the empty final paragraph that represents the author's final newline.
 	editor.state.doc.forEach((node) => {
 		lines.push(node.textContent);
 	});
@@ -73,7 +71,6 @@ interface GrammarRawEditorProps {
 	smartPunctuationEnabled?: boolean;
 	focusModeEnabled?: boolean;
 	lineLength?: 72 | 80 | 100 | 120 | 0;
-	/** Label for the instructor badge decoration. Desktop passes translated string; defaults to "Instructor". */
 	instructorBadgeLabel?: string;
 	showNarrationControls?: boolean;
 	showNarrationLabel?: string;
@@ -231,11 +228,7 @@ export const GrammarRawEditor = forwardRef<EditorScrollHandle, GrammarRawEditorP
 		const hasRestoredCursorRef = useRef(false);
 		const pendingNavigationSelectionRef = useRef<number | null>(null);
 		const pendingNavigationTimerRef = useRef<number | null>(null);
-		// One-shot: skip the selection report caused by applying loaded content, so
-		// the author isn't jumped to the last slide on open (setContent lands the
-		// cursor at the end of the doc).
 		const suppressSelectionReportRef = useRef(false);
-		// Capture ydoc so the mount effect can read Y.Text content after mount
 		const ydocRef = useRef(ydoc);
 		ydocRef.current = ydoc;
 		const setGrammarSourceRef = useRef(setGrammarSource);
@@ -317,7 +310,6 @@ export const GrammarRawEditor = forwardRef<EditorScrollHandle, GrammarRawEditorP
 			immediatelyRender: false,
 			extensions: [
 				StarterKit.configure({
-					// Plain-text mode: disable all rich-text features
 					bold: false,
 					italic: false,
 					strike: false,
@@ -331,7 +323,6 @@ export const GrammarRawEditor = forwardRef<EditorScrollHandle, GrammarRawEditorP
 					codeBlock: false,
 					hardBreak: false,
 					undoRedo: {},
-					// Keep document, paragraph, text
 				}),
 				delimiterMatchingExtension,
 				grammarHighlightExtension,
@@ -355,9 +346,6 @@ export const GrammarRawEditor = forwardRef<EditorScrollHandle, GrammarRawEditorP
 					role: "textbox",
 					"aria-label": "Grammar editor",
 					"aria-multiline": "true",
-					// Syntax-bearing editor: browser spellcheck red-underlines asset
-					// filenames and grammar keys, and a red squiggle already means
-					// "syntax error" here. Turn it off.
 					spellcheck: "false",
 					style: [
 						"outline: none",
@@ -371,8 +359,6 @@ export const GrammarRawEditor = forwardRef<EditorScrollHandle, GrammarRawEditorP
 					].join("; "),
 				},
 				handleKeyDown() {
-					// A deliberate key press supersedes the short focus-restoration guard
-					// installed by page navigation. Never send typing back to that page.
 					pendingNavigationSelectionRef.current = null;
 					return false;
 				},
@@ -388,8 +374,6 @@ export const GrammarRawEditor = forwardRef<EditorScrollHandle, GrammarRawEditorP
 				},
 			},
 			onFocus: ({ editor: e }) => {
-				// Keyboard entry needs the document selection as well as DOM focus.
-				// A freshly mounted browser editor can otherwise receive keys without a caret.
 				e.view.focus();
 			},
 			onUpdate: ({ editor: e }) => {
@@ -399,7 +383,6 @@ export const GrammarRawEditor = forwardRef<EditorScrollHandle, GrammarRawEditorP
 					return;
 				}
 
-				// Mirror editor text into Y.Text for both guest-mode and authenticated collaboration.
 				const doc = ydocRef.current;
 				if (doc !== null) {
 					const text = extractText(e);
@@ -424,8 +407,6 @@ export const GrammarRawEditor = forwardRef<EditorScrollHandle, GrammarRawEditorP
 					);
 					return;
 				}
-				// Skip the one selection-update produced by loading content (cursor
-				// lands at doc end) so open doesn't jump to the last slide.
 				if (suppressSelectionReportRef.current) {
 					suppressSelectionReportRef.current = false;
 					return;
@@ -524,12 +505,11 @@ export const GrammarRawEditor = forwardRef<EditorScrollHandle, GrammarRawEditorP
 				const doc = e.state.doc;
 				const targetLine = Math.max(0, Math.min(lineNumber, doc.childCount - 1));
 
-				// Compute ProseMirror position at start of target paragraph
 				let pos = 0;
 				for (let i = 0; i < targetLine; i++) {
 					pos += doc.child(i).nodeSize;
 				}
-				pos += 1; // Enter the paragraph node
+				pos += 1;
 				const revealLine = () => {
 					const container = findScrollContainer(e.view.dom) ?? containerRef.current;
 					const coords = e.view.coordsAtPos(pos);
@@ -543,10 +523,6 @@ export const GrammarRawEditor = forwardRef<EditorScrollHandle, GrammarRawEditorP
 					return;
 				}
 
-				// Not ProseMirror's scrollIntoView: that scrolls the minimum amount, so a
-				// target arrived at from the panel lands hard against whichever edge it
-				// entered from. Place it a third down instead, and flash it so the reader
-				// can see where they were taken.
 				pendingNavigationSelectionRef.current = pos;
 				if (pendingNavigationTimerRef.current != null) {
 					window.clearTimeout(pendingNavigationTimerRef.current);
@@ -603,7 +579,6 @@ export const GrammarRawEditor = forwardRef<EditorScrollHandle, GrammarRawEditorP
 			};
 		}, []);
 
-		// Listen for grammar insertion requests from the copilot.
 		useEffect(() => {
 			const handleInsertGrammar = (event: Event) => {
 				const { grammar, inlinePlaceholder, wrapSelection } =
@@ -645,7 +620,6 @@ export const GrammarRawEditor = forwardRef<EditorScrollHandle, GrammarRawEditorP
 			return () => window.removeEventListener("praxity:insert-grammar", handleInsertGrammar);
 		}, []);
 
-		// Keep TipTap in sync with Y.Text updates (remote peers + IndexedDB restore).
 		useEffect(() => {
 			if (!editor || !ydoc) return;
 
@@ -698,12 +672,6 @@ export const GrammarRawEditor = forwardRef<EditorScrollHandle, GrammarRawEditorP
 		return (
 			<div
 				ref={containerRef}
-				// `data-raw-theme` used to gate the whole raw syntax palette off
-				// Mantine's computed colour scheme, which does not track the theme
-				// chosen in Settings — so the light palette rendered on dark editors
-				// at 1.5-1.9:1. The palette now cascades from the desktop theme
-				// tokens on documentElement; this attribute is retained only as a
-				// styling hook and no longer selects colours.
 				data-raw-theme={computedColorScheme}
 				data-line-length={lineLength === 0 ? "unlimited" : "limited"}
 				className="praxity-raw-editor-shell"

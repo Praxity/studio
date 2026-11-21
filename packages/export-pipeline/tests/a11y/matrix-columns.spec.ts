@@ -22,7 +22,6 @@ for (const [name, index, small] of [
 					"",
 				);
 			await expect(table).toBeVisible();
-			// Viewport width alone does not establish wide content in previews or decks.
 			await table.evaluate((node) => {
 				const assessment = node.closest<HTMLElement>(".praxity-block-assessment");
 				if (!assessment) throw new Error("Missing assessment container");
@@ -52,7 +51,6 @@ for (const [name, index, small] of [
 						const walker = document.createTreeWalker(header, NodeFilter.SHOW_TEXT);
 						while (walker.nextNode()) {
 							const node = walker.currentNode;
-							// Each range covers one full word, so wrapping at spaces is allowed.
 							for (const match of (node.textContent ?? "").matchAll(/\S+/gu)) {
 								const range = document.createRange();
 								range.setStart(node, match.index);
@@ -85,7 +83,6 @@ for (const [name, index, small] of [
 						targetSpacing: controls.every((input, index) => {
 							const rect = input.getBoundingClientRect();
 							if (Math.min(rect.width, rect.height) >= 24) return true;
-							// WCAG 2.5.8 AA permits smaller targets when their 24px spacing circles do not overlap.
 							return controls.every((other, otherIndex) => {
 								if (index === otherIndex) return true;
 								const peer = other.getBoundingClientRect();
@@ -101,7 +98,6 @@ for (const [name, index, small] of [
 				});
 				expect(layout.broken).toEqual([]);
 				expect(layout.headerStyles).toEqual(Array(4).fill("normal/normal/none"));
-				// Both tables reserve the existing 16rem statement measure at this wide setup.
 				expect(layout.statementWidth).toBeGreaterThanOrEqual(256);
 				expect(layout.statementShare).toBeLessThan(0.45);
 				expect(layout.controlCount).toBe(rows * 4);
@@ -122,7 +118,6 @@ for (const [name, index, small] of [
 		await page.evaluate(() => {
 			document.documentElement.dir = "ltr";
 		});
-		// At reflow width, RTL answer rows stack and every control stays reachable.
 		await page.setViewportSize({ width: 320, height: 900 });
 		expect(
 			await page.evaluate(() => document.documentElement.scrollWidth - innerWidth),

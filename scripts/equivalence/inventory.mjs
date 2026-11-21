@@ -5,7 +5,6 @@ import path from "node:path";
 const require = createRequire(new URL("../../apps/desktop/package.json", import.meta.url));
 const sorted = (views) => views.sort((a, b) => a.key.localeCompare(b.key, "en"));
 
-/** Each physical document is a view, even a redirect or an unfamiliar utility. */
 export function deriveInventory(documents) {
 	const { JSDOM } = require("jsdom");
 	if (!documents.length) throw new Error("Build emitted no HTML documents");
@@ -41,7 +40,6 @@ export function deriveInventory(documents) {
 				ids.add(slide.id);
 				const moduleFile = `${slide.moduleSlug}.html`;
 				if (!files.has(moduleFile)) throw new Error(`${file}: missing module ${moduleFile}`);
-				// Configs repeat the course-wide deck list. Capture each slide under its owner.
 				if (moduleFile === file)
 					views.push({
 						key: `slide:${file}#${slide.id}`,

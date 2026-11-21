@@ -6,7 +6,6 @@ export default defineConfig({
 	workers: 1,
 	retries: 1,
 	use: {
-		// Cloud launch URLs are bearer credentials; do not retain browser network traces.
 		trace: "off",
 		screenshot: "off",
 	},

@@ -19,7 +19,6 @@ export function unwrapHeadingParagraph(html: string): string {
 	return match ? match[1] : trimmed;
 }
 
-/** Change display case without changing markup or the stored authored value. */
 export function sentenceCaseKicker(html: string): string {
 	let first = true;
 	return html.replace(/(^|>)([^<]+)/g, (_match, boundary: string, text: string) => {
@@ -32,10 +31,6 @@ export function sentenceCaseKicker(html: string): string {
 	});
 }
 
-/**
- * Canonical heading styles for editor canvas and published output.
- * Single source of truth — imported by both heading-block-editor.tsx and HeadingBlock.tsx.
- */
 export const HEADING_STYLES: Record<number, CSSProperties> = {
 	1: {
 		fontSize: publishedHeadingFontSize(1),
@@ -81,7 +76,6 @@ export const HEADING_STYLES: Record<number, CSSProperties> = {
 	},
 };
 
-/** Published output variant adds margin/padding resets */
 export const HEADING_STYLES_PUBLISHED: Record<number, CSSProperties> = Object.fromEntries(
 	Object.entries(HEADING_STYLES).map(([level, style]) => [
 		level,

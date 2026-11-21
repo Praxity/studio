@@ -294,7 +294,6 @@ it.each([
 	{ variant: "ordinary", data: {}, whole: false },
 	{ variant: "hide", data: { hide: true }, whole: true },
 ])("keeps a parent accordion recording whole with a $variant highlight", ({ data, whole }) => {
-	// Item recordings exercise recurse; whole-container recordings exercise visibility splitting.
 	const extract = (children: PraxityBlock[]) =>
 		extractNarrationSegments("", {}, [
 			{

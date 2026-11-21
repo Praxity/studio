@@ -226,7 +226,6 @@ async function runCase(
 		const wasMutated = target.mutated.get(id),
 			previousToken = target.tokens.get(id) || 0;
 		if (action.type === "check") {
-			// Native Check validates and starts admission; it does not submit.
 			if (!String(previous?.draft?.answer ?? "").trim()) return;
 			if (target.admitted.has(id)) return;
 			action = { type: "retry", blockId: id };
@@ -373,7 +372,6 @@ async function runCase(
 						owner.failed.add(id);
 						throw e;
 					}
-					// A void set call already started while current may finish; successor writes must follow it.
 					owner.stored.set(id, clone(value) as ModelState);
 					boundary(owner, "write-return", id);
 					record({ releaseWrite: id, owner: owner.index });
@@ -476,7 +474,6 @@ async function runCase(
 				if (owner.mutated.get(id) && !owner.failed.has(id) && !equal(expected, actual))
 					fail("lost-write", { owner: owner.index, id, expected, actual });
 				const projection = owner.projected.get(id);
-				// Opaque rejected bytes have no admitted state. Their completion must stay unavailable.
 				const isValid =
 					expected?.version === 1 &&
 					expected?.kind === "self-check" &&
@@ -616,7 +613,6 @@ async function runCase(
 				if (pending.length) await release(pending[random(pending.length)], random(4) === 0);
 			} else for (const action of withAnswerSuccessor(makeAction())) issue(action);
 			await flush();
-			// Resetting a thrown listener does not refresh the session; later delivery must recover itself.
 			if (random(4) === 0) active.throwSubscriber = false;
 		}
 		armed = undefined;
@@ -726,7 +722,6 @@ describe("self-check session command histories", () => {
 	const env =
 		(globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env ?? {};
 	const seeds = Number(env.SELF_CHECK_MODEL_SEEDS ?? (env.CI ? 10000 : 1000));
-	// Batches keep CI's per-test time gate while running the same complete seed range.
 	for (let first = 1; first <= seeds; first += 100) {
 		const last = Math.min(first + 99, seeds);
 		it(`matches the reference for seeds ${first}-${last}`, async () => {

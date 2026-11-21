@@ -11,8 +11,6 @@ import {
 	writeProjectFiles,
 } from "../project-file-transactions";
 
-// Real bytes and recovery paths; project-journal tests own storage durability.
-// Tested restore refusals precede flushing; no-op syncFile also skips its post-write path checks.
 function withCountingFlushes<T>(work: (value: T) => Promise<void>) {
 	return async (value: T) => {
 		const flushes = { syncFile: vi.fn(async () => {}), syncDirectory: vi.fn(async () => {}) };

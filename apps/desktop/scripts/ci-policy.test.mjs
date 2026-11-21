@@ -184,7 +184,6 @@ for (const [label, github, inputs, expected] of events) {
 				.sort(),
 			[...expected].sort(),
 		);
-		// Even a stale true browser output cannot allocate a PR browser runner.
 		if (github.event_name === "pull_request")
 			for (const job of browserJobs)
 				assert.equal(condition(ci.jobs[job].if, github, needs, false, inputs), false);
@@ -412,7 +411,7 @@ test("combined fast checks retain independent commands and failure verdicts", ()
 		"source-owners": "node scripts/check-source-owners.mjs",
 		"timeout-evidence":
 			'node scripts/fetch-timeout-base.mjs --base "$TIMEOUT_BASE"\nnode scripts/check-test-timeouts.mjs --base "$TIMEOUT_BASE"\n',
-		lint: "pnpm exec biome check .",
+		lint: "pnpm lint",
 		typecheck: "pnpm typecheck",
 	};
 	assert.equal(

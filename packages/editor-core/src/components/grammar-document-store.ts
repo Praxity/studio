@@ -11,15 +11,10 @@ import {
 } from "../lib/themes/normalize-design-variants";
 
 export interface GrammarCursorLocation {
-	/** Line number in raw grammar source (0-based paragraph index). */
 	grammarLine: number;
-	/** Column offset within the line. */
 	grammarColumn: number;
-	/** Enclosing block keyword when known from an `as:` declaration. */
 	enclosingKeyword: string | null;
-	/** Nth occurrence of enclosingKeyword in the source (0-based). */
 	keywordOccurrenceIndex: number;
-	/** Scroll progress as a normalized fraction [0..1]. */
 	scrollFraction: number;
 }
 
@@ -33,8 +28,6 @@ interface GrammarDocumentState {
 	designNumberDiagnostics: DesignNumberDiagnostic[];
 	parseError: string | null;
 	cursorLocation: GrammarCursorLocation | null;
-	/** When true, a local design change is pending sync to Y.Text.
-	 *  setParsedResult will preserve the local designVariants until cleared. */
 	_designDirty: boolean;
 
 	setGrammarSource: (source: string) => void;
@@ -51,11 +44,9 @@ interface GrammarDocumentState {
 	setCursorLocation: (location: GrammarCursorLocation | null) => void;
 }
 
-// ── Custom event names shared across editor components ──
 export const CURSOR_LOCATION_CHANGED_EVENT = "praxity:editor-cursor-location-changed";
 export const SCROLL_TO_PREVIEW_BLOCK_EVENT = "praxity:scroll-to-preview-block";
 
-// ── Shared editor helpers ──
 export function clamp(value: number, min: number, max: number): number {
 	return Math.min(Math.max(value, min), max);
 }

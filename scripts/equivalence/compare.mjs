@@ -18,7 +18,6 @@ await encoder.init(wasm);
 export const encodePng = async (image) => Buffer.from(await encoder.default(image));
 export const screenshotName = (key) => `${createHash("sha256").update(key).digest("hex")}.png`;
 
-/** Compare all RGBA channels exactly; dimension-only pixels also differ. */
 export async function comparePng(baseBytes, candidateBytes) {
 	const base = await decoder.default(baseBytes);
 	const candidate = await decoder.default(candidateBytes);

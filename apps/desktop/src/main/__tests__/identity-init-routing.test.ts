@@ -424,7 +424,6 @@ describe.each(["en", "fr"])("identity routing in %s", (locale) => {
 	] as const)(
 		"keeps two durable copies dropping to one refused on %s and repeated init, with rewrite=%s",
 		async (command, rewritten) => {
-			// Initialize both copies as durable in a fresh store, rather than saving a provisional copy.
 			const fresh = await mkdtemp(join(tmpdir(), "identity-durable-copies-"));
 			roots.push(fresh);
 			await writeFile(join(fresh, "course.yaml"), "title: Example\nlessons: [first.prax]\n");

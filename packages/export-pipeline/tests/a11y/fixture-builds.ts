@@ -20,7 +20,6 @@ export async function runFixtureBuilds(
 			}
 		}),
 	);
-	// All writers settle before setup can remove their shared output directory.
 	if (failures.length)
 		throw new AggregateError(
 			failures.sort((a, b) => a.index - b.index).map(({ error }) => error),

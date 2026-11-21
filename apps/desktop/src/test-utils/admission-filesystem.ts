@@ -1,9 +1,7 @@
 import { callbackify } from "node:util";
 
-// Linux admission fixtures avoid thread-pool overhead; other hosts keep their native IO.
 const synchronousAdmission = process.platform === "linux";
 
-/** Path admission uses the native callback API as well as fs/promises. */
 export function admissionNativeFilesystem(fs: typeof import("node:fs")) {
 	if (!synchronousAdmission) return fs;
 	return {
@@ -19,8 +17,6 @@ export function admissionNativeFilesystem(fs: typeof import("node:fs")) {
 	};
 }
 
-/** Native synchronous calls avoid per-step thread-pool scheduling in admission tests.
- * Real bytes and handles remain; journal suites own flush/crash durability. */
 export function admissionFilesystem(
 	fs: typeof import("node:fs/promises"),
 	nativeFs: typeof import("node:fs"),
@@ -42,7 +38,6 @@ export function admissionFilesystem(
 		rename: async (...args: Parameters<typeof fs.rename>) => nativeFs.renameSync(...args),
 		open: async (...args: Parameters<typeof fs.open>) => {
 			type Handle = Awaited<ReturnType<typeof fs.open>>;
-			// Keep the complete native handle API for positioned reads, streams and closure.
 			const handle = await fs.open(...args);
 			return Object.assign(handle, {
 				readFile: async (...options: Parameters<Handle["readFile"]>) =>

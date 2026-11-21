@@ -8,7 +8,6 @@ export interface CourseOutcome {
 	finish?: "complete" | "terminate";
 }
 
-/** The runtime-only End path and course tracker share this injected writer. */
 interface OutcomeRuntime {
 	setScore?(raw: number, min: number, max: number): void;
 	setSuccess?(status: "passed" | "failed" | "unknown"): void;
@@ -37,13 +36,11 @@ export function writeCourseOutcome(
 		(outcome.forceCompletion || runtime.getCompletion?.() !== outcome.completion)
 	)
 		runtime.setCompletion?.(outcome.completion);
-	// SCORM prepares completion before its final commit, after pending writes.
 	if (outcome.finish === "terminate") return runtime.terminate?.(true) ?? false;
 	if (outcome.finish === "complete") runtime.commit?.();
 	return true;
 }
 
-/** Runtime-only End has no tracker. Keep its legacy completion rule beside the writer. */
 export function finishRuntimeCourse(runtime: OutcomeRuntime | undefined): boolean {
 	return writeCourseOutcome(runtime, {
 		completion: "completed",

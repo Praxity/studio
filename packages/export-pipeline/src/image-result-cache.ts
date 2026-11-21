@@ -26,7 +26,6 @@ const DEFAULT_MAX_ENTRIES = 1024;
 const hash = (bytes: Uint8Array | string) => createHash("sha256").update(bytes).digest("hex");
 const missing = (error: unknown) => (error as NodeJS.ErrnoException).code === "ENOENT";
 
-/** Strict preview readers keep derived files outside the admitted project. */
 export function imageCacheDirectory(): string {
 	const local = process.env.LOCALAPPDATA;
 	const xdg = process.env.XDG_CACHE_HOME;
@@ -52,7 +51,6 @@ export interface ImageResultCacheOptions {
 	onError?: (error: unknown) => void;
 }
 
-/** Content-addressed derivatives. The single-file envelope binds key and output digest. */
 export class ImageResultCache {
 	private readonly encoder: typeof optimizeImage;
 	private readonly encoderOptions: ImageEncoderOptions;
@@ -76,7 +74,6 @@ export class ImageResultCache {
 			throw new Error("Invalid image cache limits");
 	}
 	async optimize(bytes: Uint8Array, codecDir?: string): Promise<Uint8Array | undefined> {
-		// Apply today's limits to a cache left by an older process, even on a hit.
 		this.initialized ??= this.evict().catch((error) => {
 			if (!missing(error)) this.report(error);
 		});
@@ -102,7 +99,6 @@ export class ImageResultCache {
 			return hit;
 		}
 		const result = await this.encoder(bytes, codecDir, this.encoderOptions);
-		// Undefined can mean a transient codec failure. Never persist that as a negative hit.
 		if (
 			!result ||
 			result.length >= bytes.length ||
@@ -119,8 +115,6 @@ export class ImageResultCache {
 				try {
 					await rename(temp, file);
 				} catch (error) {
-					// Windows refuses replacement while another writer has this entry open.
-					// A complete matching winner already satisfies this installation.
 					if (
 						!["EPERM", "EACCES", "EEXIST"].includes((error as NodeJS.ErrnoException).code ?? "") ||
 						!(await this.read(file, key, bytes.length))
@@ -134,7 +128,6 @@ export class ImageResultCache {
 				});
 			}
 		});
-		// Cache failures are reported, but never discard a successful derivative.
 		this.pending = install.then(
 			() => undefined,
 			() => undefined,
@@ -176,8 +169,6 @@ export class ImageResultCache {
 	private async evict(): Promise<void> {
 		const entries = [];
 		for (const name of await readdir(this.options.directory)) {
-			// Count abandoned atomic-write stages too. Evicting a competing stage
-			// only loses cache work; its caller still receives the encoded result.
 			if (!/^[a-f0-9]{64}(?:\.image|\.[a-f0-9-]{36}\.tmp)$/.test(name)) continue;
 			const file = path.join(this.options.directory, name);
 			try {

@@ -17,7 +17,6 @@ function invalidPrompt(): Error {
 		code: "EWRITEDISTRACTORSPROMPT",
 	});
 }
-/** Check descriptors before reading: cloning would erase unknown keys and invoke getters. */
 function assertPlain(value: unknown, seen = new Set<object>()): void {
 	if (!value || typeof value !== "object") return;
 	if (
@@ -65,7 +64,6 @@ function setting(key: string, value: unknown): string | number | boolean {
 	return value;
 }
 
-/** Recognize a prompt before generic visitors can invoke or erase its discriminator. */
 export function admitWriteDistractorsPrompt(
 	input: unknown,
 ): WriteDistractorsPromptBlock | undefined {
@@ -73,8 +71,6 @@ export function admitWriteDistractorsPrompt(
 	const type = Object.getOwnPropertyDescriptor(input, "type");
 	if (type && !("value" in type)) throw invalidPrompt();
 	if (!type && "type" in input) {
-		// Inspect the inherited discriminator without invoking a getter. An unknown
-		// accessor is a generic capture refusal, not a distractor-specific diagnosis.
 		for (
 			let prototype = Object.getPrototypeOf(input);
 			prototype;
@@ -95,7 +91,6 @@ export function admitWriteDistractorsPrompt(
 		: undefined;
 }
 
-/** The closed generic record. Full Content is never accepted here. */
 export function constructWriteDistractorsPromptBlock(input: unknown): WriteDistractorsPromptBlock {
 	try {
 		assertPlain(input);
@@ -167,8 +162,6 @@ export function constructWriteDistractorsPromptBlock(input: unknown): WriteDistr
 	}
 }
 
-/** Validate raw defaults before canonicalisation can discard hidden/unknown fields.
- * Count belongs to the source prompt, so defaults cannot introduce another count. */
 export function constructWriteDistractorsDefaults(
 	defaults: unknown,
 ): Partial<WriteDistractorsData> | undefined {

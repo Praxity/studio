@@ -237,7 +237,6 @@ describe("constructed self-check adaptation", () => {
 	});
 
 	it("constructs independent, idempotent records with an independent string-path oracle", () => {
-		// This list is the test contract, not the production runtime-key mapper.
 		expect(Object.keys(BLOCK_SCHEMA["self-check"].settings).sort()).toEqual([
 			"deckGate",
 			"entrance",
@@ -252,7 +251,6 @@ describe("constructed self-check adaptation", () => {
 		for (const representation of ["runtime", "source", "no-locale"]) {
 			const input = valid();
 			if (representation === "no-locale") delete input.locale;
-			// Vary all scalar setting representations that source readers/defaults may supply.
 			if (representation === "source") {
 				input.data.level = "6";
 				input.data.hide = "false";

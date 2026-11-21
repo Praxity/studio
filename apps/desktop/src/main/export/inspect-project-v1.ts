@@ -39,7 +39,6 @@ import {
 
 export interface InspectionLocation {
 	file: string;
-	/** Original file lines, 1-based and inclusive. Never character or byte offsets. */
 	startLine: number;
 	endLine: number;
 }
@@ -62,7 +61,6 @@ export interface InspectionText {
 export interface InspectionBlockV1 {
 	ref: string;
 	parentRef: string | null;
-	/** Display identity; runtime tokens cannot anchor durable notes. Use ref within this snapshot. */
 	id: string;
 	entityId: string;
 	revision: string;
@@ -128,7 +126,6 @@ export interface InspectionNarration {
 		isFullFileDuration: false;
 	} | null;
 	audioProvenance: { script: string; language: string; voice: string; speed: number } | null;
-	/** Retained schema-1 field; grammar 4 uses UUID targets below. */
 	unresolvedAnchor?: {
 		kind: string;
 		type?: string;
@@ -170,7 +167,6 @@ export interface CourseInspectionV1 {
 			revision: string;
 			number: number;
 			title: string;
-			/** Flat preorder, including nested blocks; parentRef reconstructs the tree. */
 			blocks: InspectionBlockV1[];
 		}>;
 		narration: InspectionNarration[];
@@ -183,7 +179,6 @@ function record(value: unknown): value is Record<string, unknown> {
 	return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-/** Structural paths survive identity overlays and removal of legacy ID rows. */
 function walkBlocks(
 	value: unknown,
 	visit: (block: PraxityBlock, key: string, parent: string | null) => void,
@@ -199,8 +194,6 @@ function walkBlocks(
 		}
 		for (const [field, child] of Object.entries(value)) {
 			if (isInlineProjectionMetadataKey(field, { keepDisplay: true })) continue;
-			// Assessment prose is classified by its owning assessment projection.
-			// Rewalking renderer fragments would turn prompts and feedback into body text.
 			if (field === "data" && value.type === "assessment" && record(child)) {
 				for (const [name, item] of Object.entries(child)) {
 					if (!["stem", "description", "feedback"].includes(name))
@@ -295,13 +288,11 @@ export function projectText(
 			"plain",
 		);
 	} else if (block.type === "selfCheck") {
-		// Learners see only the literal task until the runtime exists; the model and criteria stay out.
 		coverage = "text";
 		add("prompt", "content/task", record(data.content) ? data.content.task : undefined, "plain");
 	} else if (["card", "columns", "accordion", "tabs", "sequence"].includes(block.type)) {
 		coverage = "container";
 		const items = Array.isArray(data.items) ? data.items.filter(record) : [];
-		// CardBlock suppresses a group title only when its sole item repeats it.
 		const duplicateCardTitle =
 			block.type === "card" &&
 			items.length === 1 &&
@@ -584,7 +575,6 @@ async function projectMedia(
 	);
 }
 
-/** YAML node ranges refer to actual authored sidecar entries, including multiline scripts. */
 function narrationLocations(source: string, file: string): Array<InspectionLocation | null> {
 	const lineCounter = new LineCounter();
 	const document = parseDocument(normalizeLineEndings(source), { lineCounter });
@@ -611,8 +601,6 @@ async function optionalSource(projectDir: string, file: string): Promise<string 
 	}
 }
 
-/** Inspect a resolved dialogue model, including legacy adapter turns without a
- * speaker. Source coordinates come from the authored G4 fence, not model ranks. */
 export function projectDialogue(
 	block: PraxityBlock,
 	location: InspectionLocation | null,
@@ -671,8 +659,6 @@ async function inspectProjectSnapshot(
 	});
 	const narrationSource = await optionalSource(projectDir, "narration.yaml");
 	const identity = await resolveLessonSources(projectDir);
-	// A read-only identity overlay allocates runtime tokens. Only persisted
-	// identity contributes to the fingerprint of an unchanged authored project.
 	const storedIdentity = await loadIdentityStore(projectDir);
 	const identitySource = serializeIdentity(storedIdentity);
 	const sidecar =

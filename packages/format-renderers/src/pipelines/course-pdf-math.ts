@@ -2,8 +2,6 @@ import { renderMath } from "@praxity/shared-blocks/math";
 import { type DefaultTreeAdapterMap, parseFragment } from "parse5";
 import { typstString } from "../renderers/typst/escaping.ts";
 
-// Reviewed against MiTeX 0.2.7. Unknown commands fail rather than reaching its
-// dimension eval handlers or commands that silently discard authored content.
 const commands = new Set(
 	`
 frac dfrac tfrac binom dbinom tbinom sqrt left right

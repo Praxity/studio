@@ -3,7 +3,6 @@ import type { PraxityBlock } from "@praxity/shared-blocks/types";
 import { describe, expect, it } from "vitest";
 import { estimateScorm12Storage } from "../src/scorm/scorm12-storage";
 
-/** Desktop page IDs: `page-` plus a UUID, 41 characters. */
 function pageId(index: number): string {
 	return `page-00000000-0000-4000-8000-${String(index).padStart(12, "0")}`;
 }
@@ -32,7 +31,6 @@ describe("estimateScorm12Storage", () => {
 				],
 			},
 		});
-		// One full attempt, using the published saved-state schema and estimate allowances.
 		const expected =
 			JSON.stringify({
 				visitedPages: ["page-1"],

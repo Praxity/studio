@@ -8,8 +8,6 @@ import {
 
 import { privatePracticeState } from "../private-practice-scope";
 
-/** Localized paragraphs come from SSR. Observe only the private activity roots;
- * React can replace its form without discarding the notice's announcement state. */
 export function installPrivateChoiceNotices(doc: Document) {
 	const win = doc.defaultView;
 	if (!win) return () => {};
@@ -85,7 +83,6 @@ export function installPrivateChoiceNotices(doc: Document) {
 				)
 					return;
 			}
-			// React and the admitted provider finish this input before presentation.
 			requestSelfCheckFrame(() => update(id, true), selfCheckEpochTicket(doc));
 		};
 		root.addEventListener("input", deliberate);
@@ -97,8 +94,6 @@ export function installPrivateChoiceNotices(doc: Document) {
 		update();
 		return () => observer.disconnect();
 	}, doc);
-	// The original privacy buffer settles its rejection one microtask after the
-	// host's ready event. A lifetime-bound frame projects that final failed state.
 	win.addEventListener("praxity:runtime-ready", () => {
 		requestSelfCheckFrame(() => update(), selfCheckEpochTicket(doc));
 	});

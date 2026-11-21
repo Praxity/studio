@@ -20,15 +20,10 @@ const grammarHighlightPluginKey = new PluginKey<GrammarHighlightState>("grammar-
 
 type GrammarHighlightMeta = { type: "toggle-frontmatter-fold" };
 
-// --- Patterns ---
 const FRONTMATTER_FENCE_RE = /^\s*---\s*$/;
 const HEADING_RE = /^(#{1,6})\s+(.+)$/;
 const ASSESS_OPTION_RE = /^(\([x ]\)|\[[x ]\])\s+/i;
 
-/**
- * Resolve a block keyword to its manifest category.
- * Returns null for unknown keywords (typos, future blocks not yet in manifest).
- */
 export function resolveKeywordCategory(keyword: string): KeywordCategory | null {
 	if (!keyword) return null;
 	return getManifest().get(keyword)?.category ?? null;
@@ -56,7 +51,6 @@ function buildHighlightDecorations(
 		const lineStart = pos + 1;
 		const nodeEnd = pos + node.nodeSize;
 
-		// --- Frontmatter ---
 		if (frontmatterEligible) {
 			if (!inFrontmatter && trimmed === "---") {
 				inFrontmatter = true;
@@ -100,7 +94,6 @@ function buildHighlightDecorations(
 			}
 		}
 
-		// --- Section break (standalone --- after frontmatter) ---
 		if (FRONTMATTER_FENCE_RE.test(trimmed)) {
 			decorations.push(Decoration.node(pos, nodeEnd, { "data-token-type": "section-break" }));
 			decorations.push(
@@ -111,7 +104,6 @@ function buildHighlightDecorations(
 			return true;
 		}
 
-		// --- Heading ---
 		const headingMatch = HEADING_RE.exec(text);
 		if (headingMatch) {
 			const markerLen = headingMatch[1]?.length ?? 0;
@@ -124,7 +116,6 @@ function buildHighlightDecorations(
 			return true;
 		}
 
-		// --- Assessment option ---
 		const optionMatch = ASSESS_OPTION_RE.exec(text);
 		if (optionMatch) {
 			decorations.push(Decoration.node(pos, nodeEnd, { "data-token-type": "assess-option" }));
@@ -136,11 +127,9 @@ function buildHighlightDecorations(
 			return true;
 		}
 
-		// All other lines: plain text, no decorations
 		return true;
 	});
 
-	// --- Frontmatter fold decorations ---
 	if (
 		frontmatterOpenerPos != null &&
 		frontmatterOpenerNodeEnd != null &&
@@ -164,11 +153,6 @@ function buildHighlightDecorations(
 					);
 					button.textContent = "\u25b8";
 					button.dataset.frontmatterFold = "true";
-					// Same wiring as the fold caret in delimiter-matching-plugin: the
-					// widget key carries the folded state so the button is redrawn rather
-					// than reused (which had frozen `aria-expanded` at its draw-time
-					// value), mousedown only cancels the selection change, and Enter/Space
-					// are handled here because ProseMirror's keymap would take them first.
 					const toggle = () => {
 						const hadFocus = document.activeElement === button;
 						view.dispatch(
@@ -193,8 +177,6 @@ function buildHighlightDecorations(
 					});
 					return button;
 				},
-				// Keyed widgets are compared by key alone, so the folded state has to be
-				// in the key or the button is reused and keeps its draw-time ARIA.
 				{ side: -1, key: `frontmatter-fold-${isFolded}` },
 			),
 		);
@@ -252,7 +234,6 @@ export function createGrammarHighlightExtension(strings: GrammarHighlightStrings
 					const range = highlighted?.frontmatterRange;
 					if (!range) return false;
 
-					// Use the selection origin, including when a drag crosses the boundary.
 					const inside = state.selection.anchor >= range.from && state.selection.anchor <= range.to;
 					const from = inside ? range.from : range.to + 2;
 					const to = inside ? range.to : state.doc.content.size - 1;

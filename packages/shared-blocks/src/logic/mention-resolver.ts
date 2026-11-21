@@ -11,10 +11,6 @@ export class MentionResolver {
 		private learnerTracker?: LearnerTracker,
 	) {}
 
-	/**
-	 * Resolve all mention placeholders in the DOM.
-	 * Call after logic evaluation and on block interactions.
-	 */
 	resolve(): void {
 		const mentions = document.querySelectorAll("[data-mention]");
 		for (let i = 0; i < mentions.length; i++) {
@@ -47,7 +43,6 @@ export class MentionResolver {
 			return fields[field];
 		}
 		if (ref.startsWith("learnerInfo:")) {
-			// ref format: "learnerInfo:scope:metric" e.g. "learnerInfo:course:grade"
 			const parts = ref.split(":");
 			const scope = parts[1];
 			const metric = parts[2];

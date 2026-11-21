@@ -4,9 +4,6 @@ import {
 	srgbToLinear,
 } from "@praxity/shared-blocks/color-math";
 
-/**
- * Parse hex color string to [R, G, B]. Returns null for incomplete/invalid input.
- */
 export function parseHex(hex: string): [number, number, number] | null {
 	const cleaned = hex.replace("#", "");
 	if (cleaned.length === 3) {
@@ -40,7 +37,6 @@ export function getContrastRatio(fg: string, bg: string): number | null {
 	return contrastRatioFromLuminances(lum1, lum2);
 }
 
-/** WCAG relative luminance from a hex string. Returns 0 for invalid input. */
 export function relativeLuminanceFromHex(hex: string): number {
 	const rgb = parseHex(hex);
 	if (!rgb) return 0;

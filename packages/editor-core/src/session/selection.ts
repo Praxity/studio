@@ -37,7 +37,6 @@ export const singleNodeOperations = new Set([
 	"removeItem",
 	"moveItem",
 ]);
-/** Handle commands name the action; selection owns which schema operation applies. */
 export function selectionOperationName(
 	state: Session,
 	operation: string,
@@ -166,7 +165,6 @@ function range(
 	const other = [target.id, ...ancestors(target.id, nodes)];
 	const common = chain.find((id) => other.includes(id));
 	if (common === anchor.id || common === target.id) return [common];
-	// Pages are structural owners. A block range across pages contains their top-level blocks.
 	if (!common && anchor.kind === "block") {
 		const top = nodes.filter(
 			(n) => n.kind === "block" && n.lessonId === anchor.lessonId && n.parentId === n.pageId,

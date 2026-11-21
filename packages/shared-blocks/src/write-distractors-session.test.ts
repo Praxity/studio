@@ -910,8 +910,6 @@ it("a host-reported transient device read failure holds unread saved bytes throu
 	const original = saved();
 	const f = fixture({ a: original }, true);
 	const readFailures = new Set<string>();
-	// The private host catches the device read error and reports it via its
-	// per-block save result; get itself returns undefined, never throws.
 	f.provider.getSaveResult.mockImplementation((id) =>
 		readFailures.has(id) ? { status: "not-saved", code: "storage-unavailable" } : undefined,
 	);

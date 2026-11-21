@@ -187,7 +187,6 @@ for (const presentation of ["pages", "deck"] as const) {
 					document.documentElement.dir = dir;
 				}, direction);
 				const figure = layoutDialogue(page);
-				// A narrow block on a wide page must use the same container breakpoint.
 				if (width === 1280)
 					await figure.evaluate((e) => ((e as HTMLElement).style.inlineSize = "19rem"));
 				const turns = figure.getByRole("listitem");
@@ -236,7 +235,6 @@ for (const presentation of ["pages", "deck"] as const) {
 							? item.bubble.right - item.avatar.right
 							: item.avatar.left - item.bubble.left,
 					).toBeCloseTo(12, 1);
-					// Firefox DOMRect subtraction can report 3.99998 for the 4px CSS gap.
 					expect(Number((item.text.top - item.avatar.bottom).toFixed(2))).toBeGreaterThanOrEqual(4);
 					await expect(turns.nth(index).locator("img")).toHaveAttribute("alt", "");
 					await expect(turns.nth(index).locator("img")).toHaveAttribute("role", "presentation");
@@ -349,8 +347,6 @@ for (const presentation of ["pages", "deck"] as const) {
 						const bubble = e.querySelector(".praxity-dialogue-bubble");
 						const avatar = e.querySelector("img");
 						if (!bubble || !avatar) throw new Error("Missing narration turn content");
-						// CSSOM exposes offsets within an absolute grid area, not the li.
-						// A temporary absolute probe measures those same used properties.
 						const probe = document.createElement("span");
 						for (const property of [
 							"position",

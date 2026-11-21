@@ -10,7 +10,6 @@ const source =
 const test = base.extend<object, { a11ySession: string }>({
 	a11ySession: [
 		async ({ browserName }, use) => {
-			// Prepare before listening: browser projects must not rewrite each other's active lesson.
 			const editorAssetsDir = process.env.PRAXITY_BROWSER_EDITOR_ASSETS;
 			if (!editorAssetsDir) throw new Error("Browser editor assets were not prepared");
 			const projectDir = await mkdtemp(

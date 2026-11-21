@@ -62,7 +62,6 @@ test("real source-owner command guards pattern renderers and enhancer entries", 
 	}
 });
 
-// Each plant runs the real command in an isolated repository, including its TS program.
 for (const [name, files, rule] of [
 	...["fixtures", "tests", "test-utils", "__tests__", "e2e"].map((directory) => [
 		`code under ${directory} retains ownership checks`,

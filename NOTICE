@@ -6,7 +6,7 @@ retain their own terms. The root LICENSE does not replace those terms.
 Vendored source and notices:
 
 - packages/export-pipeline/src/patterns/highlight/ -> LICENSE in that folder.
-  Renderer and exclusive styles adapted from learning-patterns at
+  Renderer, enhancer and exclusive styles adapted from learning-patterns at
   b3f82d2415982da20dda28b61770d7e85084901b, MIT, Copyright (c) 2026 Ariel Harlap.
   Generated exports retain the upstream MIT text in
   third-party-notices/learning-patterns@0.1.0.txt.
@@ -45,6 +45,10 @@ Vendored source and notices:
   https://doi.org/10.5281/zenodo.14714410.
   Licence: https://creativecommons.org/licenses/by/4.0/.
 
+- packages/export-pipeline/template/review-comments.js embeds outline paths from
+  the installed @tabler/icons catalog. The Tabler Icons 3.46.0 source and MIT
+  terms are identified above for the other embedded navigation artwork.
+
 Prepared third-party assets, generated during builds:
 
 - apps/desktop/resources/typst/ -> LICENSE, NOTICE and FONT-NOTICE for Typst
@@ -66,3 +70,12 @@ Other separate terms:
 
 Installed dependencies keep the licences supplied in their packages. Generated
 CLI and course notices preserve the terms of dependencies included in each build.
+
+Licence-test reference texts:
+
+- scripts/notice.test.mjs checks the Feather licence from
+  https://github.com/feathericons/feather/blob/v4.29.2/LICENSE with LF line endings.
+- The same test checks the Apache 2.0 licence from
+  https://www.apache.org/licenses/LICENSE-2.0.txt, retrieved 2026-10-19, and
+  the complete licence and disclaimers from
+  https://www.w3.org/copyright/document-license-2002/.

@@ -1,16 +1,10 @@
-/* Adapted from learning-patterns/patterns/highlight/pattern.css at
-   b3f82d2415982da20dda28b61770d7e85084901b, MIT, Copyright (c) 2026 Ariel Harlap.
-   Studio owns this presentation. See LICENSE in this folder. */
 .praxity-highlight {
 	min-width: 0;
 	overflow-wrap: anywhere;
 }
-/* Decks keep navigation's no-JS class off. Successful highlight attachment
-   owns the visibility of its controls independently of that navigation class. */
 .praxity-highlight[data-highlight-enhanced] [data-praxity-js-control] {
 	display: inline-flex;
 }
-/* Native hidden state wins over button and feedback display rules. */
 .praxity-highlight [hidden] {
 	display: none !important;
 }
@@ -19,7 +13,6 @@
 .praxity-highlight-answer > li + li {
 	margin-block-start: var(--space-4);
 }
-/* Match retrieval's paragraph gap with enough specificity to retain it in shared prose. */
 .praxity-highlight[data-highlight] > [data-highlight-flow],
 .praxity-highlight [data-highlight-controls],
 .praxity-highlight[data-highlight] > [data-highlight-memory-notice] {
@@ -72,7 +65,6 @@
 .praxity-highlight-feedback[data-highlight-outcome="missed"] {
 	color: var(--praxity-color-warning);
 }
-/* Keep a verdict with the chunk's last word while allowing long labels to wrap. */
 .praxity-highlight-feedback[data-highlight-outcome="correct"]::before,
 .praxity-highlight-feedback[data-highlight-outcome="missed"]::before,
 .praxity-highlight-feedback[data-highlight-outcome="wrong"]::before {

@@ -19,7 +19,6 @@ import {
 type Instance = { destroy(): void };
 const instances = new WeakMap<HTMLElement, Instance>();
 
-/** State belongs only to this mount. No host state or persistence adapter participates. */
 export function enhanceRetrievalSheet(root: HTMLElement): Instance {
 	const existing = instances.get(root);
 	if (existing) return existing;
@@ -56,8 +55,6 @@ export function enhanceRetrievalSheet(root: HTMLElement): Instance {
 		const deliver = () => {
 			if (current()) status.textContent = message;
 		};
-		// First failure speech waits for a rendered empty region. This helper uses our mount
-		// ticket explicitly, so it neither reads nor joins the learner-state provider.
 		if (frame) statusFrame = requestSelfCheckFrame(deliver, current);
 		else queueMicrotask(deliver);
 	}
@@ -92,7 +89,6 @@ export function enhanceRetrievalSheet(root: HTMLElement): Instance {
 		try {
 			current = validateState({ date: defaultDate(today), side: "front" }) ?? current;
 		} catch (error) {
-			// Local today + 7 may exceed year 9999. Keep the blank baseline date until corrected.
 			if (!(error instanceof RangeError)) throw error;
 		}
 		let invalid = !current.date;
@@ -145,7 +141,6 @@ export function enhanceRetrievalSheet(root: HTMLElement): Instance {
 				for (const [key, value] of attributes) panel.setAttribute(key, value);
 				root.insertBefore(panel, hint);
 			}
-			// Restore the same date node so rebind does not leave stale handles.
 			dateLine.textContent = originalDate.text;
 			for (const attribute of [...dateLine.attributes]) dateLine.removeAttribute(attribute.name);
 			for (const [name, value] of originalDate.attributes) dateLine.setAttribute(name, value);
@@ -256,7 +251,6 @@ export function enhanceRetrievalSheet(root: HTMLElement): Instance {
 		for (const [index, tab] of buttons.entries()) {
 			listen(tab, "click", () => select(index));
 			listen(tab, "keydown", (event) => {
-				// Match the course Tabs block: arrows move focus; Enter/Space selects.
 				const keyboard = event as KeyboardEvent;
 				if (keyboard.altKey || keyboard.ctrlKey || keyboard.metaKey) return;
 				const key = keyboard.key;

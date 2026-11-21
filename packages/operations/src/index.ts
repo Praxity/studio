@@ -75,7 +75,6 @@ const canvasTextFields: Partial<Record<TreeNode["kind"], CanvasTextDescriptor>> 
 	option: {
 		field: "text",
 		multiline: true,
-		// Markers belong to the response, even when pasted into the label's text slice.
 		accepts: (text) => !/^[ \t]*(?:\([ xX]\)|\[[ xX]\])(?:[ \t]|$)/mu.test(text),
 		range: (node) => node.text?.range,
 	},
@@ -84,13 +83,11 @@ const canvasTextFields: Partial<Record<TreeNode["kind"], CanvasTextDescriptor>> 
 		roles: ["correct", "incorrect", "option-feedback", "caption"],
 		names: ["correct", "incorrect", "feedback", "caption"],
 		multiline: true,
-		// Reader result roles already resolve shared and promoted feedback to its source part.
 		range: (node) => node.value?.span,
 	},
 	body: {
 		field: "text",
 		multiline: true,
-		// The tree resolves unknown named-part candidates to ordinary paragraph text.
 		range: (node, stream) =>
 			stream.lines
 				.filter((line) => line.start >= node.span.start && line.end <= node.span.end)
@@ -104,7 +101,6 @@ const canvasTextFields: Partial<Record<TreeNode["kind"], CanvasTextDescriptor>> 
 	"list-entry": {
 		field: "text",
 		multiline: true,
-		// Numeric prefixes are inline text after the item's marker; later lines reparse in context.
 		accepts: (text) => {
 			const stream = tokenizeLesson(text);
 			const first = stream.lines[0];
@@ -133,7 +129,6 @@ function canvasTextDescriptor(node: Readonly<TreeNode>) {
 	return descriptor?.names && !descriptor.names.includes(node.name ?? "") ? undefined : descriptor;
 }
 
-/** Exact scalar ranges are shared by ordinary operations and canvas eligibility. */
 function textField(node: Readonly<TreeNode>, stream: TokenStream) {
 	const descriptor = canvasTextDescriptor(node);
 	if (!descriptor || node.status !== "resolved") return null;
@@ -164,7 +159,6 @@ export function canvasTextField(
 	return field?.text.trim() ? field : null;
 }
 
-/** Reparse the whole lesson so a scalar edit cannot change its structural nodes. */
 export function canvasTextRefusal(
 	source: string,
 	node: Readonly<TreeNode>,
@@ -188,8 +182,6 @@ export function canvasTextRefusal(
 	const parent = before.find(
 		(entry) => entry.node.span.start === node.span.start && entry.node.kind === node.kind,
 	)?.parent?.node;
-	// Only rendered question feedback treats timing words as settings. CLI setText
-	// retains timing edits; option feedback always treats these words as prose.
 	if (
 		role !== undefined &&
 		node.name === "feedback" &&
@@ -216,10 +208,6 @@ export function canvasTextRefusal(
 	const after = locateTree(tree);
 	const shape = (entry: LocatedNode) => {
 		const n = entry.node;
-		// Headers, markers and settings lie outside the field; its exact range below
-		// rejects text that reparses into any of them. Paths retain ownership.
-		// Continuation bounds need no separate guard: the exact field bounds and
-		// unchanged outside bytes already contain their parsed children.
 		return [entry.path, n.kind, n.status, n.trivia.length];
 	};
 	if (JSON.stringify(before.map(shape)) !== JSON.stringify(after.map(shape))) return syntaxRefusal;
@@ -254,12 +242,10 @@ export interface OperationSourceFile {
 export interface OperationContext extends IdentityDependencies {
 	identity: IdentityResolution;
 	activeHistoryIds?: ReadonlySet<string>;
-	/** Hosts using the reader projection set this even before any role exists. */
 	readerRoles?: boolean;
 	clipboard?: CutRecord | null;
 }
 
-/** Argument vocabulary owned by the registry; hosts and contract tests enumerate it here. */
 export const operationRegistry: Readonly<Record<string, readonly string[]>> = {
 	editInline: ["text", "target", "definition", "rename"],
 	editSource: ["text"],
@@ -289,7 +275,6 @@ export const operationRegistry: Readonly<Record<string, readonly string[]>> = {
 	mergeBlocks: [],
 	replaceBlock: ["text", "type"],
 };
-/** Hosts persist these snapshots atomically with the planned source edits. */
 export interface AppliedOperation extends OperationResult {
 	identity: IdentityResolution;
 	evidence: IdentityOperation[];
@@ -297,12 +282,10 @@ export interface AppliedOperation extends OperationResult {
 	clipboardText?: string;
 	history: OperationHistory;
 }
-/** Host-owned records in their original application order, never client-supplied inverses. */
 export interface InverseGroupRequest {
 	transactionId: string;
 	operations: readonly AppliedOperation[];
 }
-/** No member may be installed alone. Persist every member snapshot and the final files together. */
 export interface InverseGroupPlan {
 	ok: true;
 	transactionId: string;
@@ -310,7 +293,6 @@ export interface InverseGroupPlan {
 	after: OperationSourceFile[];
 	identity: IdentityResolution;
 	clipboard: CutRecord | null;
-	/** Inverse records in application order; pass this list back to plan the whole redo. */
 	members: AppliedOperation[];
 }
 export interface OperationIdentityBinding {
@@ -326,7 +308,6 @@ export interface OperationIdentityBinding {
 		mapping: Readonly<AppliedOperation["inverse"]["mapping"]>;
 	};
 }
-/** The store binds every intermediate inverse to its server-owned forward record. */
 export interface InverseGroupIdentityBinding {
 	identity: IdentityResolution;
 	before: readonly OperationSourceFile[];
@@ -348,7 +329,6 @@ const issuedIdentities = new WeakMap<
 	}
 >();
 
-/** The host supplies its admitted inventory, never a client-provided resolution. */
 export function consumeOperationIdentity(
 	operation: AppliedOperation,
 	binding: OperationIdentityBinding,
@@ -396,9 +376,7 @@ interface RootPlacement {
 	oldId: string | null;
 	start: number;
 	fate: "kept" | "survivor" | "copied" | "new" | "pending";
-	/** An inserted root's offset inside its base-revision insertion edit. */
 	insert?: SourceEdit;
-	/** A reparented root keeps its descendants even when the transaction also retires wrappers. */
 	preserveDescendants?: boolean;
 	resolvedStart?: number;
 }
@@ -524,8 +502,6 @@ function boundaryAt(
 				)?.id ?? null)
 			: null;
 	const children = state.nodes.filter((n) => n.parent === parent);
-	// Pages own separator trivia. Within an explicit parent, a gap can fall
-	// before the preceding page's span ends, so classify it by child starts.
 	return {
 		kind: "insertion",
 		parentId: ids(parent),
@@ -534,8 +510,6 @@ function boundaryAt(
 				.reverse()
 				.find((n) => (parentPath ? n.node.span.start < offset : n.node.span.end <= offset)),
 		),
-		// Without an explicit parent, an interior offset anchors before its child
-		// so the boundary stays adjacent even when the edit starts inside a node.
 		before: ids(
 			children.find((n) => (parentPath ? n.node.span.start >= offset : n.node.span.end > offset)),
 		),
@@ -625,7 +599,6 @@ function propertyEdit(target: ResolvedTarget, args: Record<string, unknown>): So
 	return { start: line.contentEnd, end: line.contentEnd, text: ` {${tokenText}}` };
 }
 
-/** Pure all-or-none planning. Hosts own writes, rebasing and history application. */
 export function applyOperation(
 	files: readonly OperationSourceFile[],
 	request: OperationRequest,
@@ -783,8 +756,6 @@ function apply(
 		: undefined;
 	if (!allowed || Object.keys(args).some((key) => !allowed.includes(key)))
 		return refuse("invalid-args");
-	// Lookup names are vocabulary, unlike free author text. Validate even when a
-	// supplied text replacement means this adapter would otherwise ignore type.
 	for (const key of ["name", "field", "type", "direction", "position", "rename"])
 		if (typeof args[key] === "string" && Object.hasOwn(Object.prototype, args[key]))
 			return refuse("invalid-args");
@@ -879,7 +850,6 @@ function apply(
 			const plans = inline.plans;
 			for (const document of inline.documents) inlineDocuments.set(document.path, document);
 			inlineCount = plans.length;
-			// Glossary scope is the complete course, with a base guard for every lesson.
 			if (
 				plans.some((p) => p.token.kind === "term") &&
 				context.identity.heads.some((h) => !states.has(h.path))
@@ -936,7 +906,6 @@ function apply(
 					if (target.entry.parent?.node.kind !== "page")
 						return refuse("not-allowed", target.target);
 					if (!args.title) return refuse("invalid-args", target.target);
-					// A page break authorizes the following siblings' new owner, without editing their bytes.
 					target.state.targets.push(
 						...target.state.nodes.filter(
 							(n) =>
@@ -1208,7 +1177,6 @@ function apply(
 			if (!/^::(?:[ \t]|\r?\n|$)/u.test(text)) return refuse("invalid-args", target.target);
 			if (args.position !== undefined && args.position !== "before" && args.position !== "after")
 				return refuse("invalid-args", target.target);
-			// An untouched item insertion draft writes nothing, including in an invalid empty container.
 			if (/^::[ \t]*$/u.test(text)) break;
 			const draft = parse({
 				path: target.target.file,
@@ -1430,8 +1398,6 @@ function apply(
 			const text = preserveLineEndings(textArg(args, "text"), target.state.file.source);
 			const descriptor = canvasTextDescriptor(target.entry.node);
 			let replacement = text;
-			// Ordinary setText retains insertion into empty parts and caption clearing.
-			// Canvas admission separately refuses empty text before applying the operation.
 			const emptyPart =
 				target.entry.node.kind === "part" &&
 				(range.start === range.end || (target.entry.node.name === "caption" && text === ""));
@@ -1726,8 +1692,6 @@ function apply(
 		default:
 			return refuse("invalid-args");
 	}
-	// Removing or moving the final child also removes its empty item owner.
-	// Plan these edits against the base tree so history still has one exact inverse.
 	for (const state of states.values()) {
 		const covered = (entry: LocatedNode) =>
 			state.edits.some(
@@ -1735,7 +1699,6 @@ function apply(
 			);
 		const deleteOwner = (owner: LocatedNode) => {
 			const adjacent = deletionRange(owner);
-			// A move can insert at the owner's outer boundary, inside adjacent deletion trivia.
 			const range = state.edits.some(
 				(e) => e.start === e.end && e.text && e.start >= adjacent.start && e.start <= adjacent.end,
 			)
@@ -1754,7 +1717,6 @@ function apply(
 			const items = state.nodes.filter((n) => n.parent === owner && n.node.kind === "item");
 			const leaving = items.filter(covered);
 			if (!leaving.length || covered(owner)) continue;
-			// A same-owner reorder removes bytes at one boundary and inserts them at another.
 			const incoming = movedInto(state, owner).length;
 			const remaining = items.length - leaving.length + incoming;
 			const min =
@@ -1824,7 +1786,6 @@ function apply(
 		for (let i = 1; i < state.edits.length; i++)
 			if (state.edits[i].start < state.edits[i - 1].end) return refuse("invalid-args");
 		const source = applyEdits(state.file.source, state.edits);
-		// Structural cleanup can extend the edits after inline policy validation.
 		const inlineDocument = inlineDocuments.get(state.file.path);
 		const after =
 			inlineDocument?.tree.stream.source === source
@@ -1841,7 +1802,6 @@ function apply(
 	}
 	for (const head of context.identity.heads.filter((h) => !states.has(h.path))) {
 		const file = files.find((f) => f.path === head.path);
-		// An opaque lesson has no admitted source nodes; the host preserves its stored graph.
 		if (!file && !context.identity.sourceMappings.some((node) => node.file === head.path)) continue;
 		if (!file || identityPlan.sourceHash(head.head) !== context.digest(file.source))
 			return refuse("stale");
@@ -1981,7 +1941,6 @@ function apply(
 			const nextItems = locateTree(after.tree).filter(
 				(n) => n.node.kind === "item" && n.parent && samePath(n.parent.path, root.path),
 			);
-			// The transformation preserves the declared item sequence; no content matching happens here.
 			items.forEach((item, i) => {
 				if (nextItems[i])
 					place(target.target.file, nextItems[i].path, mappedId(target.state, item), "kept");
@@ -2033,7 +1992,6 @@ function apply(
 				place(state.file.path, candidate.path, old.id, "kept");
 		}
 	}
-	// I1 owns reconciliation, ID allocation, pending records and inverse mappings.
 	const evidenceFiles = [...states.values()].map((s) => ({
 		path: s.file.path,
 		fromRevision: context.digest(s.file.source),
@@ -2042,7 +2000,6 @@ function apply(
 		),
 		fromSnapshot: context.identity.heads.find((h) => h.path === s.file.path)?.head ?? "",
 	}));
-	// Unchanged surrounding nodes are modify evidence, separate from copy/insert/delete intent.
 	const groups = new Map<OperationIntent, number[]>();
 	mapping.forEach((m, index) => {
 		const part =
@@ -2132,8 +2089,6 @@ function apply(
 				const map = identity.sourceMappings.find((m) => m.id === id);
 				return map ? after.tree.stream.source.slice(map.span.start, map.span.end) : null;
 			};
-			// A moved slice has neighbours at both ends. Its written guard protects
-			// the node itself; both boundaries protect the destination's neighbours.
 			for (const point of moved
 				? [ref, boundaryAt(nextState, moved.span.end, identity, parentPath)]
 				: [ref])
@@ -2159,7 +2114,6 @@ function apply(
 				}
 			}
 		}
-		// Source replacement can retire rebuilt parts inside a surviving written root.
 		for (const map of identity.mapping.filter(
 			(m) => (m.fate === "retired" || m.fate === "absorbed") && m.oldId,
 		)) {

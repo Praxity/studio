@@ -233,7 +233,6 @@ test.beforeAll(async ({ browserName, playwright }) => {
 	const address = server.address();
 	if (!address || typeof address === "string") throw new Error("Missing address");
 	base = `http://127.0.0.1:${address.port}/`;
-	// Keep process startup outside case timings; cache-return cases use fresh contexts.
 	if (browserName === "chromium")
 		cacheBrowser = await playwright.chromium.launch({
 			headless: true,
@@ -251,7 +250,6 @@ async function settle(page: Page) {
 		() =>
 			(!document.querySelector<HTMLElement>(".praxity-deck") ||
 				document.querySelector<HTMLElement>(".praxity-deck")?.dataset.ready) &&
-			// Distractors own a typed session rather than a self-check consumer.
 			(document.querySelector("[data-write-distractors]")
 				? document
 						.querySelector('[data-distractor-action="check"]')
@@ -311,8 +309,6 @@ for (const format of formats) {
 					document.addEventListener(
 						"praxity:self-check-owner",
 						(event) => {
-							// Hold island teardown so the original handler's queued render can finish.
-							// The owner revokes its ticket before publishing this UI notification.
 							if (view.authority.replaced) event.stopImmediatePropagation();
 						},
 						{ capture: true },
@@ -353,11 +349,9 @@ for (const format of formats) {
 						set(id, value);
 					};
 				});
-			// check() retries after replacement remounts the island, creating a second gesture.
 			await page.locator('[data-block-id="practice-gate"] input[type=radio]').first().click();
 			if (cause !== "selection" && cause !== "held-selection")
 				await page.locator('[data-block-id="practice-gate"] [data-assessment-submit]').click();
-			// Flush React's queued render and persistence effect without a timing delay.
 			await page.evaluate(
 				() =>
 					new Promise<void>((done) =>
@@ -458,7 +452,6 @@ for (const format of formats) {
 							},
 						});
 					}
-					// Hold the successor's admission at the implementation seam.
 					window.__praxitySelfCheckCore.implementation = () => new Promise(() => {});
 					window.__praxityBlockState = { get: () => undefined, set() {}, getPolicy: () => "lms" };
 				});
@@ -578,7 +571,6 @@ for (const format of formats) {
 	});
 }
 
-// Every entry has either a learner action or an explicit absence of learner writes.
 const returnActions: Record<string, ((page: Page) => Promise<void>) | "no learner writes"> = {
 	"island-nav": async (page) => {
 		await page.locator('[data-action="goToPage"][data-target-page="slide-2"]').click();
@@ -751,7 +743,6 @@ const returnActions: Record<string, ((page: Page) => Promise<void>) | "no learne
 	},
 };
 test("return-action table covers every island entry point", async () => {
-	// Retrieval controls are memory-only: returning must not restore or report saved state.
 	expect(returnActions["island-retrieval-sheet"]).toBe("no learner writes");
 	expect(returnActions["island-highlight"]).toBe("no learner writes");
 	const source = await readFile(resolve("src/bundle-viewer.ts"), "utf8");

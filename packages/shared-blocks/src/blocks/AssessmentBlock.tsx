@@ -98,10 +98,6 @@ import { scrollElementIntoView } from "../viewer/scroll-into-view";
 import { ContainerContext } from "./container-context";
 import { InlineContent } from "./InlineContent";
 
-/**
- * Validates text-response input before submission.
- * Exported for unit testing.
- */
 export function isTextResponseValid(
 	value: string,
 	inputType: "short" | "long" | "numeric",
@@ -162,7 +158,6 @@ export function isFillBlankAnswerCorrect(
 		expectedAnswers.some((expected) => {
 			if (!expected.startsWith("~"))
 				return (hasSources ? decodeEscapes(expected) : expected) === normalized;
-			// ponytail: O(pattern × answer) matching avoids regex backtracking; cap input sizes if long-form blanks are added.
 			const characters = Array.from(normalized);
 			let matches = [true, ...characters.map(() => false)];
 			const tokens = Array.from(expected.slice(1));
@@ -185,14 +180,6 @@ export function isFillBlankAnswerCorrect(
 	);
 }
 
-/**
- * Mantine's `Input` builds its own aria attributes and spreads them *after*
- * `...rest`, so an `aria-describedby` passed as a prop is silently replaced by
- * `undefined` (@mantine/core 9.0.0, components/Input/Input.mjs). Native
- * elements like `<fieldset>` take the prop fine; Mantine-rendered controls need
- * the attribute set on the node. Returns one stable callback ref, so it also
- * works for the controls we render inside a `.map()`.
- */
 function useDescribedByRef(describedBy: string | undefined) {
 	return useCallback(
 		(node: HTMLElement | null) => {
@@ -207,7 +194,6 @@ function useDescribedByRef(describedBy: string | undefined) {
 	);
 }
 
-/** Join optional ids into an aria-describedby value, dropping the empty ones. */
 function joinIds(...ids: Array<string | undefined>): string | undefined {
 	const present = ids.filter((id): id is string => Boolean(id));
 	return present.length > 0 ? present.join(" ") : undefined;
@@ -267,8 +253,6 @@ function categorizeItems(categories: CategorizeResponse["categories"]): Categori
 	);
 }
 
-// Surveys without an answer key have no correctness verdict. Keyed matrices
-// compare sets, including multiple selections, without changing SCORM grading.
 function matrixRowCorrect(
 	statement: MatrixResponse["statements"][number],
 	selected: number[] = [],
@@ -511,7 +495,6 @@ function isSavedAnswerCorrect(
 	}
 }
 
-/** Resolve and render an option label from string or ProseMirror content. */
 function resolveOptionLabel(option: Record<string, unknown>) {
 	return (
 		<span
@@ -721,7 +704,6 @@ function MatchingPreview({
 		return shuffle ? shuffleArray(indexedPairs) : indexedPairs;
 	}, [shuffle, rawPairs.length]);
 
-	// Build stable dropdown options from all matches + distractors.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: intentional — shuffle once per mount
 	const matchOptions = useMemo(() => {
 		const options = rawPairs.map((p) => p.correctMatch).filter(Boolean);
@@ -759,9 +741,7 @@ function MatchingPreview({
 								className="praxity-matching-answer"
 								data-result={result === null ? undefined : result ? "correct" : "incorrect"}
 							>
-								{/* Options ids must be props: Mantine overrides attributes.options.id. */}
 								<div className="praxity-matching-control">
-									{/* The input keeps its keyboard/ARIA behavior; this copy can wrap. */}
 									<span className="praxity-matching-value" aria-hidden="true">
 										{selections[pair.id] ?? placeholder}
 									</span>
@@ -847,9 +827,6 @@ function SequencePreview({
 	const locale = useLocale();
 	const s = useStrings(locale);
 	const actionButtonSize = "var(--target-size)";
-	// Announcing the move, not the score. This region used to read "N of M in
-	// correct order" on every keystroke, which handed the learner the answer while
-	// they were still working it out and fired on every single move.
 	const [announcement, setAnnouncement] = useState("");
 	const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
 	const [dropIndex, setDropIndex] = useState<number | null>(null);
@@ -899,10 +876,7 @@ function SequencePreview({
 		commit(updated, items[index].label, newIndex);
 	};
 
-	/** Drag is the enhancement; the arrow buttons stay the single-pointer path WCAG 2.5.7 requires. */
 	const dropItem = (from: number, to: number) => {
-		// Dropping just below yourself lands you where you already were — no move, and
-		// no announcement claiming one.
 		const target = from < to ? to - 1 : to;
 		if (target === from) return;
 		const updated = [...items];
@@ -962,12 +936,6 @@ function SequencePreview({
 							})}`}
 						</VisuallyHidden>
 					</Text>
-					{/*
-					 * Controls sit side by side after the label, not stacked before it.
-					 * Stacked, two 34px buttons set the row height to ~86px for one line
-					 * of text and pushed the ordinal, the arrows and the label onto three
-					 * different optical baselines.
-					 */}
 					<Group gap={4} wrap="nowrap" className="praxity-order-controls">
 						{index > 0 ? (
 							<ActionIcon
@@ -1039,8 +1007,6 @@ function TextResponsePreview({
 	const inputType = response.inputType ?? "short";
 	const maxLength = response.maxLength;
 	const remaining = maxLength != null ? maxLength - value.length : null;
-	// A placeholder is never a label — the accessible name still comes from the
-	// stem, and an unset override falls back to the localized default.
 	const defaultPlaceholder = inputType === "numeric" ? s.enterANumber : s.typeYourAnswer;
 	const placeholder = response.placeholder || defaultPlaceholder;
 	const describedByRef = useDescribedByRef(describedBy);
@@ -1347,13 +1313,11 @@ function CategorizePreview({
 		return null;
 	}
 
-	// Stable fingerprint for categories content — drives re-shuffle when items change.
 	const categoriesKey = useMemo(
 		() => JSON.stringify(categories.map(({ id, items }) => [id, items])),
 		[categories],
 	);
 
-	// Pool all items from all categories into a flat list with stable keys.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: shuffle once per mount or content change
 	const items: CategorizeItem[] = useMemo(() => {
 		const flat = categorizeItems(categories);
@@ -1464,7 +1428,6 @@ function HotspotPreview({
 	const [labelId, setLabelId] = useState<string | null>(null);
 	const isSingle = (response.selectionMode ?? "single") === "single";
 
-	// Expose reset function to parent via ref callback (stable, no re-render churn)
 	const onResetRef = useRef(onReset);
 	onResetRef.current = onReset;
 	useEffect(() => {
@@ -1499,7 +1462,6 @@ function HotspotPreview({
 			}
 		}
 		onSelectionChange?.(nextIds);
-		// Toggle label: show on select, dismiss on deselect
 		setLabelId((prev) => (prev === id ? null : id));
 		onInteract?.();
 	};
@@ -1594,14 +1556,12 @@ function HotspotPreview({
 												: "var(--praxity-hotspot-font-size, 0.75em)",
 									}}
 								></button>
-								{/* Outside the clipped button so a concave polygon cannot hide the number or check. */}
 								<span aria-hidden="true">
 									{selectedIds.has(hotspot.id) ? `✓ ${content}` : content}
 								</span>
 							</span>
 						);
 					})}
-					{/* Label tooltip — smart positioning to stay inside image */}
 					{labelHotspot?.label &&
 						(() => {
 							const xPct = labelHotspot.coords[0];
@@ -1827,11 +1787,8 @@ export function PreviewAssessmentBlock({
 }: BlockProps<AssessmentBlockData> & {
 	transformImageUrl?: (url: string) => string;
 	groupedDownloadSubmit?: boolean;
-	/** Plain group or page title supplied by the publisher. */
 	reportTitle?: string;
-	/** Total reporting budget for runtimes with a bounded serialized choice response. */
 	choiceResponseLimit?: number;
-	/** Published facts are computed once; recovery requires the optional evidence capability. */
 	compiledChoiceFacts?: ChoiceAssessmentFacts;
 	passGate?: boolean;
 }) {
@@ -1902,8 +1859,6 @@ export function PreviewAssessmentBlock({
 		? compiledChoiceFacts.question.maxAttempts || Infinity
 		: localMaxAttempts;
 
-	// Resolve shuffled defaults and any durable answer before the first render so
-	// learner controls never flash empty while state is being restored.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: shuffle once per mounted response
 	const sequenceItems = useMemo(() => {
 		if (assessmentType !== "sequence" || !response) return [];
@@ -2072,8 +2027,6 @@ export function PreviewAssessmentBlock({
 	const effectiveRequired = containerCtx?.required ?? required;
 	const feedbackId = `feedback-${blockId}`;
 	const descriptionId = `assessment-description-${blockId}`;
-	// The description explains the question, so it must be announced with the
-	// response controls rather than only sitting next to them.
 	const describedBy = descriptionHtml ? descriptionId : undefined;
 	const descriptionMarkup = useMemo(
 		() =>
@@ -2102,8 +2055,6 @@ export function PreviewAssessmentBlock({
 			const controls = responseArea?.querySelectorAll<HTMLElement>(
 				'input:not([type="hidden"]), select, textarea, button, a[href], [tabindex]',
 			);
-			// Retry returns to an answer control, not its keyboard-scrollable region.
-			// Wait until the response is enabled again, and stay inside this question.
 			const firstControl = Array.from(controls ?? []).find(
 				(control) =>
 					control.tabIndex >= 0 &&
@@ -2111,14 +2062,11 @@ export function PreviewAssessmentBlock({
 					!control.matches(":disabled") &&
 					!control.closest('[hidden], [inert], [aria-hidden="true"], [aria-disabled="true"]'),
 			);
-			// Responses without an enabled control (file upload) fall back to the question.
 			const focusTarget = firstControl ?? document.getElementById(questionStemId);
 			focusTarget?.focus();
-			// WebKit can focus a hotspot outside its nested scroller after retry reflows.
 			if (focusTarget?.closest(".praxity-hotspot-scroll")) {
 				focusTarget.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "instant" });
 			}
-			// Keep Try again mounted until focus has left it, avoiding a stop on body.
 			setRetryFocusPending(false);
 		}
 	}, [isChecked, questionStemId, retryFocusPending]);
@@ -2294,7 +2242,6 @@ export function PreviewAssessmentBlock({
 			persistAssessmentState(JSON.parse(serializedBlockState), current);
 			return;
 		}
-		// Guard: block empty/invalid text-response submissions
 		if (assessmentType === "textResponse" && response) {
 			const textResp = response as TextResponseConfig;
 			if (
@@ -2322,7 +2269,6 @@ export function PreviewAssessmentBlock({
 			element.style.overflowAnchor = "none";
 		}
 		setAttemptCount(nextAttempt);
-		// Group submission delivers one focus announcement from its shared action.
 		focusFeedbackAfterSubmit.current =
 			cardRef.current
 				?.querySelector("[data-assessment-submit]")
@@ -2357,7 +2303,6 @@ export function PreviewAssessmentBlock({
 		card.setAttribute("data-attempted", "true");
 
 		if (canAutoScore && response) {
-			// Auto-score for choice and hotspot (both graded and knowledge checks)
 			let isCorrect = false;
 
 			if (assessmentType === "choice") {
@@ -2425,7 +2370,6 @@ export function PreviewAssessmentBlock({
 				submittedCorrect = false;
 				card.setAttribute("data-result", "unknown");
 			}
-			// Open and survey responses are submitted without inventing a score.
 			card.setAttribute("data-completed", "true");
 			if (!atomicSubmission) containerCtx?.onChildComplete(blockId);
 		}
@@ -2440,7 +2384,6 @@ export function PreviewAssessmentBlock({
 				completed: !canAutoScore || submittedCorrect === true || nextAttempt >= maxAttempts,
 				reviewedChoiceIds: savedAnswer as string[],
 			} as SavedAssessmentState;
-			// The reporting event reads the same owner state synchronously.
 			const write = () => persistAssessmentState(next, current);
 			const written =
 				data.private !== true && responseText !== null && provider?.stageSubmission
@@ -2739,8 +2682,6 @@ export function PreviewAssessmentBlock({
 			? correctFeedback
 			: incorrectFeedback
 		: correctFeedback || incorrectFeedback;
-	// Grammar's compatibility projection also promotes option feedback into the
-	// overall field. Once shown beside that option, do not repeat it below.
 	const feedbackHtml =
 		assessmentType === "choice" &&
 		(reviewedChoiceIds.has(feedbackOptionIds?.[isCorrectAnswer ? "correct" : "incorrect"] ?? "") ||
@@ -2753,7 +2694,6 @@ export function PreviewAssessmentBlock({
 			))
 			? ""
 			: overallFeedback;
-	// Keep focused descendants when later renders update the surrounding controls.
 	const feedbackMarkup = useMemo(
 		() => ({ __html: processMathSpans(sanitizeHtml(feedbackHtml)) }),
 		[feedbackHtml],
@@ -2788,7 +2728,6 @@ export function PreviewAssessmentBlock({
 			? (feedback?.querySelector<HTMLButtonElement>("[data-assessment-retry]") ??
 				cardRef.current?.querySelector<HTMLButtonElement>("[data-assessment-continue]"))
 			: null;
-		// NVDA reads the button and its feedback description once in browse and focus modes.
 		if (action && descriptions.length)
 			action.setAttribute("aria-describedby", descriptions.join(" "));
 		let focusedAfterSubmit: HTMLElement | null = null;
@@ -2813,7 +2752,6 @@ export function PreviewAssessmentBlock({
 			const positions = submitScroll.current;
 			submitScroll.current = [];
 			for (const { element, top, left } of positions) element.scrollTo(left, top);
-			// The summary and row reveals share one timing; keep the scroll anchor off until it finishes.
 			requestAnimationFrame(() =>
 				requestAnimationFrame(async () => {
 					await feedback
@@ -2821,8 +2759,6 @@ export function PreviewAssessmentBlock({
 						?.getAnimations?.()[0]
 						?.finished.catch(() => {});
 					for (const { element, anchor } of positions) {
-						// A group may submit several tables together. The first submission
-						// owns restoration; later submissions already see "none".
 						if (anchor !== "none") element.style.overflowAnchor = anchor;
 					}
 					if (focusedAfterSubmit && document.activeElement === focusedAfterSubmit) {
@@ -2904,7 +2840,6 @@ export function PreviewAssessmentBlock({
 
 	const questionMeta = (
 		<>
-			{/* Keep metadata outside the question text. */}
 			{(assessmentDisplay === "reflection" || (isGraded && points !== null)) && (
 				<div className="praxity-assessment-question-meta">
 					{assessmentDisplay === "reflection" && (
@@ -3078,7 +3013,6 @@ export function PreviewAssessmentBlock({
 									)}
 									{authoredFeedbackEnabled && feedbackHtml && (
 										<>
-											{/* Keep separator whitespace inside the label's single text run. */}
 											<span className="praxity-sr-only">
 												{`${showResultStatus && assessmentType !== "choice" ? ". " : ""}${s.feedbackLabel}: `}
 											</span>

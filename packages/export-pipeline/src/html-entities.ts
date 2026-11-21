@@ -12,7 +12,6 @@ function decodeHtmlEntities(value: string): string {
 export function fullyDecodeEntities(value: string): string {
 	let prev = value;
 	let decoded = decodeHtmlEntities(prev);
-	// Max 3 passes to prevent infinite loop on malformed input
 	for (let i = 0; i < 3 && decoded !== prev; i++) {
 		prev = decoded;
 		decoded = decodeHtmlEntities(prev);

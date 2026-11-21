@@ -34,7 +34,6 @@ function mount(
 			groups: listed ? { g: { mode, memberIds: ["a", "b"], requiredIds: ["a", "b"] } } : {},
 			readState: (id) => values.get(id),
 		};
-		// Base replay injects only the owner API already present on that revision.
 		return Object.hasOwn(choiceOwner, "bindChoiceDependencyView")
 			? choiceOwner.bindChoiceDependencyView(input)
 			: {

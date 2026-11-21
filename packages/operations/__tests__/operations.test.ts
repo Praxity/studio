@@ -995,7 +995,6 @@ describe("O1 public registry", () => {
 		const source =
 			"# Page\r\n::: self-check Task\r\nmodel: Model\r\n  more\r\n\r\n  again\r\n:: Criterion\r\nmissed: Hint\r\nevidence: Model\r\n:::\r\n\r\nAfter\r\n";
 		const f = fixture(source);
-		// An editSource draft omits the closer; the file keeps its own line endings.
 		const text =
 			"::: self-check Task\nmodel: Model\n  more\n\n  again\n:: Criterion\nmissed: Hint\nevidence: Model\n";
 		const result = applied(f.run("editSource", [f.target("self-check")], { text }));
@@ -1016,7 +1015,6 @@ describe("O1 public registry", () => {
 		const valid = "::: self-check Task\nmodel: Model\n:: Criterion\nmissed: Hint\n:::\n";
 		const result = applied(f.run("pasteBlocks", [at], { text: valid }));
 		expect(result.diagnostics.map((diagnostic) => diagnostic.message)).toEqual([]);
-		// Any other error still refuses the paste.
 		expect(f.run("pasteBlocks", [at], { text: valid.replace("model: Model\n", "") })).toMatchObject(
 			{ ok: false, code: "escapes-range" },
 		);

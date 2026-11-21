@@ -13,14 +13,12 @@ let url: string;
 let standardUrl: string;
 const files = new Map<string, Buffer>();
 
-// Windows WebKit exclusions: native artwork-link Tab traversal at these widths.
 const WINDOWS_WEBKIT_LINK_TRAVERSAL_WIDTHS = [1440, 700, 390, 320];
 
 test.beforeAll(async () => {
 	test.setTimeout(120_000);
 	const course = moduleDeckFixture();
 	course.moduleDeck = {};
-	// Guided slides must provide their frame even when the course navigation is not slides.
 	course.navigationStyle = "minimal";
 	course.deckDesign = { initialPanel: "closed" };
 	course.slideStyles = { decorated: { cornerImage: "https://artwork.example/corners.png" } };
@@ -206,12 +204,10 @@ for (const width of [1440, 700, 390, 320]) {
 			),
 		).toEqual([]);
 		const link = art.getByRole("link");
-		// Start before slide content, then reach the link through the browser's tab order.
 		await art.getByRole("heading").evaluate((heading) => {
 			heading.setAttribute("tabindex", "-1");
 			(heading as HTMLElement).focus();
 		});
-		// Match the existing macOS WebKit keyboard policy: Option+Tab includes links.
 		await page.keyboard.press(
 			browserName === "webkit" && process.platform === "darwin" ? "Alt+Tab" : "Tab",
 		);
@@ -360,7 +356,6 @@ test("200% slide text reflows at 320px without horizontal scrolling", async ({ p
 	await page.goto(url);
 	await expect(page.locator(".praxity-deck")).toHaveAttribute("data-ready", "true");
 	const slide = page.locator('[data-deck-slide="corners"] .praxity-slide');
-	// Text-only enlargement: capture computed sizes before changing ancestor sizes.
 	await slide.evaluate((element) => {
 		const sizes = [element, ...element.querySelectorAll("*")].map(
 			(el) => [el, parseFloat(getComputedStyle(el).fontSize)] as const,

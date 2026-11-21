@@ -1,6 +1,5 @@
 import type { InlineTree } from "./inline-tree";
 
-/** Compiler trees are bound to the exact display field they describe. */
 export interface InlineField {
 	trees: InlineTree[];
 	display: string;
@@ -36,7 +35,6 @@ export function inlineField(owner: Record<string, unknown>, key: string): Inline
 	return Array.isArray(entry.trees) && typeof entry.display === "string" ? entry : undefined;
 }
 
-/** A display transform may carry provenance forward only from matching input. */
 export function rebindInlineFields(
 	before: Record<string, unknown>,
 	after: Record<string, unknown>,

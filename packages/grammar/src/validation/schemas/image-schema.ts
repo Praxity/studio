@@ -34,8 +34,6 @@ export const imageSchema: BlockSchema = {
 			errorLevel: "error",
 			description: "Alternative text for screen readers unless decorative.",
 			validate(value, block) {
-				// Parser stores alt text as data.altText (not data.alt)
-				// Also check data.alt for editor-shape blocks
 				const altValue = value ?? block.data?.alt;
 				const decorative = block.data?.decorative === true;
 				if (decorative) return [];

@@ -77,7 +77,6 @@ import { withProjectFileTransaction } from "../project-file-transactions";
 import { type AuthorWarning, lessonTitleWarnings } from "./accessibility-enforcement";
 import { ProjectAssetInventory } from "./project-asset-inventory";
 
-/** A host-owned, disposable preparation cache. Assets have their own admission. */
 export class ProjectLessonPreparation {
 	constructor(
 		readonly projectDir: string,
@@ -114,19 +113,14 @@ export interface BuildExportInputFromProjectOptions {
 	passingScore?: number;
 	viewerVersionPath: string;
 	lessonFilename?: string;
-	/** In-memory authoring source. It is never written back by export input building. */
 	lessonSource?: string;
 	workspacePath?: string | null;
-	/** Trusted host policy. Server sessions disable all ancestor workspace reads. */
 	inheritWorkspaceSettings?: boolean;
-	/** Read-only by default. Trusted writers must explicitly opt into persistence and recovery. */
 	manifestPolicy?: "read-only" | "write";
 }
 
 export interface ProjectExportInput extends DesktopExportInput {
-	/** Host-only lesson selection; never serialized into learner output. */
 	lessonFiles?: Record<string, string>;
-	/** Host-only captured source hashes, excluded from compiler manifests. */
 	sourceRevisions?: Record<string, string>;
 	authorWarnings?: AuthorWarning[];
 	designWarnings?: DesignWarning[];
@@ -245,9 +239,6 @@ function sectionPaletteConfig(design: Record<string, unknown>, blocks: PraxityBl
 
 async function readProjectAssets(options: BuildExportInputFromProjectOptions) {
 	if (options.loadAssets === false) {
-		// PDF still uses publication's asset-reference guards, but only its selected
-		// images need bytes (resolved separately by resolvePdfAssets). Admit real
-		// paths through the shared filesystem policy; never invent missing assets.
 		const paths = options.preparePdf ? await listProjectAssets(options.projectDir) : [];
 		return {
 			bytes: new Map(paths.map((asset) => [asset, new Uint8Array()])),
@@ -300,7 +291,6 @@ async function readWorkspaceConfig(
 			};
 		} catch (error) {
 			if ((error as NodeJS.ErrnoException).code === "ELOCKCACHE") throw error;
-			// Try next candidate.
 		}
 	}
 
@@ -415,8 +405,6 @@ async function prepareIdentity(
 	options: BuildExportInputFromProjectOptions,
 	admitted?: ResolvedCourseIdentity,
 ) {
-	// The caller holds the same admission that issued this identity. Recorded
-	// commits reuse their durable reader projections instead of reconciling twice.
 	if (admitted) {
 		return {
 			identity: admitted,
@@ -427,7 +415,6 @@ async function prepareIdentity(
 	}
 	const lessonReads = options.identitySession?.lessonReads() ?? new Map<string, ReadLessonResult>();
 	const savedSources = new Map<string, string>();
-	// Legacy source must report the converter before I4 publication or persistence checks.
 	if (options.lessonSource !== undefined) refuseGrammar3(options.lessonSource, lessonReads);
 	const { lessonFilesOnDisk } = await readExportManifest(options);
 	for (const filename of lessonFilesOnDisk)
@@ -435,8 +422,6 @@ async function prepareIdentity(
 			filename,
 			await readLessonSource(options.projectDir, filename, { lessonReads }),
 		);
-	// Practice source refusals precede identity publication. A required container can
-	// be structurally unresolved and must still report its source-located practice error.
 	assertCoursePracticeAdmission(
 		[...savedSources].map(([path, saved]) => {
 			const source = path === options.lessonFilename ? (options.lessonSource ?? saved) : saved;
@@ -607,7 +592,6 @@ async function buildLessonInputFromProject(
 							locale: resolved.locale,
 							blocks: withNarrationRuntime(narration.blocks, narrationRuntime),
 							...pdfSelfCheckInputs(selfChecks.selfCheckContents, options.includeAnswerSheet),
-							// Only explicit native PDF inputs carry grammar-captured distractor Content.
 							...pdfWriteDistractorsInputs(
 								selfChecks.writeDistractorsContents,
 								options.includeAnswerSheet,
@@ -720,7 +704,6 @@ async function prepareCourseLesson({
 			locale: resolved.locale,
 			blocks: structuredClone(withNarrationRuntime(narration.blocks, narrationRuntime)),
 			...pdfSelfCheckInputs(selfChecks.selfCheckContents, options.includeAnswerSheet),
-			// Only explicit native PDF inputs carry grammar-captured distractor Content.
 			...pdfWriteDistractorsInputs(selfChecks.writeDistractorsContents, options.includeAnswerSheet),
 			design: resolved.design,
 			moduleDeck: moduleDeckOptions(manifest.moduleDeck, narration.blocks, narration.frontmatter),
@@ -733,8 +716,6 @@ async function prepareCourseLesson({
 			),
 		});
 
-	// Registries are lesson-local. Scope only selected custom definitions in the
-	// assembled input, retaining built-in defaults when a lesson overrides one.
 	const lessonFirstPage = {
 		lessonLocale: resolved.locale,
 	};
@@ -756,8 +737,6 @@ async function prepareCourseLesson({
 
 	const leadingBoundary = partitionLessonPages(narration.blocks)[0]?.boundary;
 	if (leadingBoundary) {
-		// The authored boundary already starts this lesson's first page.
-		// Implicit-page metadata has no page to apply to in this lesson.
 		leadingBoundary.data = withLessonIdentity(
 			{
 				...narrationRuntime,
@@ -790,9 +769,6 @@ async function retainedCourseLesson(input: CourseLessonPreparationInput) {
 	const read = input.identity.lessons.get(input.filename);
 	if (!read || read.tree.stream.source !== input.lessonSource)
 		throw new Error(`Identity source revision differs for ${input.filename}`);
-	// Admission still runs on every build. Bind preparation to exact source bytes,
-	// ID-bearing projections and all settings/narration inputs, including other lessons'
-	// narration targets. V8 bytes preserve undefined, Maps and RegExps without JSON collisions.
 	const key = serialize([
 		input.lessonNumber,
 		input.lessonSource,
@@ -815,7 +791,6 @@ async function retainedCourseLesson(input: CourseLessonPreparationInput) {
 	}
 	const prepared = await prepareCourseLesson(input);
 	const value = serialize(prepared);
-	// Replacing the owner state prevents an in-flight preparation repopulating it.
 	if (lessonPreparations.get(owner) !== retained) return prepared;
 	const previous = retained.entries.get(input.filename);
 	if (previous) {
@@ -998,8 +973,6 @@ export async function buildExportInputFromProject(
 	);
 }
 
-/** Trusted host adapter: call inside the project admission that issued identity.
- * This is preview-only; publication keeps its persistence checks above. */
 export function buildAdmittedCoursePreviewInput(
 	options: BuildCourseExportInputOptions,
 	identity: ResolvedCourseIdentity,

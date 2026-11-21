@@ -96,7 +96,6 @@ it.each([-1, 1, 65521])("rejects an incorrect declared decoded length (%i)", (of
 
 it("rejects excess decoded bytes even when their Adler-32 matches the declared prefix", () => {
 	const prefix = JSON.stringify({ visitedPages: [], interactions: [], custom: "answer" });
-	// 65,521 spaces leave both Adler-32 sums unchanged modulo 65,521.
 	const raw = JSON.stringify({
 		encoding: "praxity-zlib-1",
 		size: strToU8(prefix).length,

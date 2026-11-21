@@ -218,7 +218,6 @@ it.each(["2025-02-29", "0000-01-01"])(
 		const { root, input, print } = mount();
 		choose(root, "custom");
 		input.focus();
-		// jsdom erases these native date values. Expose the raw field value to the real event handler.
 		vi.spyOn(input, "value", "get").mockReturnValue(value);
 		expect(input.value).toBe(value);
 		input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -255,7 +254,6 @@ it.each([
 		expect(new Date(`${expected}T${String(hour).padStart(2, "0")}:30:00`).getTimezoneOffset()).toBe(
 			toOffset,
 		);
-		// A fixed 168-hour interval lands on the wrong local date at these transition boundaries.
 		const fixed = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 		const fixedCivil = `${fixed.getFullYear()}-${String(fixed.getMonth() + 1).padStart(2, "0")}-${String(fixed.getDate()).padStart(2, "0")}`;
 		expect(fixedCivil).not.toBe(expected);

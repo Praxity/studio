@@ -39,7 +39,6 @@ export interface WriteDistractorsSnapshot {
 	activities: readonly WriteDistractorsView[];
 }
 export interface WriteDistractorsSessionDependencies {
-	/** Supplied by the existing document owner's captured lifetime, never a live global lookup. */
 	provider: LearnerBlockStateRuntime | undefined;
 	current(): boolean;
 	admit(
@@ -50,7 +49,6 @@ export interface WriteDistractorsSessionDependencies {
 	deferStart?: boolean;
 }
 
-/** W09 attaches this adapter to the existing document lifetime. It owns no DOM or host lifecycle. */
 export function createWriteDistractorsSession(
 	references: readonly WriteDistractorsReference[],
 	dependencies: WriteDistractorsSessionDependencies,
@@ -91,7 +89,6 @@ export function createWriteDistractorsSession(
 	}
 	const snapshot = (): WriteDistractorsSnapshot => ({
 		activities: [...entries].map(([blockId, entry]) => {
-			// Raw refused provider input remains opaque. Never traverse it for display.
 			const { saved: _saved, pendingWrite: _pendingWrite, ...mount } = entry.mount;
 			return {
 				blockId,
@@ -123,9 +120,6 @@ export function createWriteDistractorsSession(
 				result = undefined;
 			}
 			if (!current()) return;
-			// Durable evidence is separate from the reducer receipt for the latest draft.
-			// A missing receipt can mean execution without acknowledgement. Never infer
-			// an empty store from it on a subsequent revision change.
 			if (result?.status === "saved") {
 				entry.readNotSaved = false;
 				entry.mount = { ...entry.mount, saved: value };
@@ -148,8 +142,6 @@ export function createWriteDistractorsSession(
 		writeFailed() {},
 		project() {},
 		published() {
-			// Live keys are publication events. A sibling's later completion must not
-			// announce them again; persistent save status remains on the mount.
 			resetAnnouncements();
 		},
 	});
@@ -162,8 +154,6 @@ export function createWriteDistractorsSession(
 		pass: ActivityEffectTicket,
 		deliberate = false,
 	): DistractorReduction | undefined => {
-		// Every adapter outcome has a W06 ticket, including synchronous reset and
-		// read delivery. The reducer's optional ticket remains only for pure callers.
 		if (!current() || !pass.current()) return;
 		const result = reduceWriteDistractors(entry.mount, command, entry.rules);
 		if (!pass.current() || !current()) return;
@@ -176,7 +166,6 @@ export function createWriteDistractorsSession(
 		else if (status === "unavailable") entry.notice = "selfCheckUnavailable";
 		else if (status !== "conflict" && status !== "pending" && !entry.loading) entry.notice = null;
 		if (!entry.mount.notSaved) entry.notSavedAnnounced = false;
-		// Only a pending initial read is silent. Queued flushes await their write receipt.
 		if (
 			deliberate &&
 			entry.mount.notSaved &&
@@ -208,7 +197,6 @@ export function createWriteDistractorsSession(
 	const read = (entry: Entry, deliberate = false): boolean => {
 		const pass = effects.ticket(),
 			generation = entry.mount.generation;
-		// FIFO interruptions keep Retry intent; a replacement generation does not.
 		const stillDeliberate = () => deliberate && entry.mount.generation === generation;
 		let observation: ReturnType<typeof access.read>;
 		try {
@@ -232,8 +220,6 @@ export function createWriteDistractorsSession(
 				});
 			return false;
 		}
-		// A missing store is different from a store whose previously observed (or
-		// unacknowledged) bytes still need admission. Never discard that evidence.
 		if (
 			observation.value === undefined &&
 			observation.result?.status === "not-saved" &&
@@ -244,8 +230,6 @@ export function createWriteDistractorsSession(
 		}
 		entry.readNotSaved = observation.result?.status === "not-saved";
 		entry.uncertainStorage = entry.readNotSaved && observation.value !== undefined;
-		// Retry after an unacknowledged write observes the store again. An older
-		// confirmed receipt must not mask those newly read bytes in the reducer.
 		entry.mount = { ...entry.mount, saved: observation.value };
 		const held = entry.mount.heldEdits.length > 0;
 		const result = apply(
@@ -258,7 +242,6 @@ export function createWriteDistractorsSession(
 			},
 			pass,
 		);
-		// This is a new local draft, not a restore write. No next gesture is needed.
 		if (result?.mount.restoreStatus === "empty" && held)
 			apply(entry, { type: "flush" }, effects.ticket(), true);
 		return result !== undefined;
@@ -345,8 +328,6 @@ export function createWriteDistractorsSession(
 			return snapshot().activities.find((entry) => entry.blockId === blockId);
 		},
 		subscribe(listener: Parameters<typeof effects.subscribe>[0]) {
-			// Cancellation may publish a view so controls can detach, but that view's
-			// ticket must never grant learner effects after this session is disposed.
 			return effects.subscribe((value, pass, command) =>
 				listener(
 					value,

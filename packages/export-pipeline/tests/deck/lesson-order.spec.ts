@@ -169,7 +169,6 @@ for (const variant of ["gated-absent", "gated-optional", "gated-sequential"]) {
 				"aria-disabled",
 				"true",
 			);
-			// Visit the opening slide before the assessment becomes the limiting rule.
 			await page.locator("#deck-next").click();
 			await expect(page.locator('[data-deck-slide="slide-2"]')).toBeVisible();
 		}

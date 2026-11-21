@@ -184,8 +184,6 @@ describe("buildExportInputFromProject", () => {
 			viewerVersionPath,
 			scope: "course",
 		});
-		// This boundary accepts prepared models, including hostile IPC payloads.
-		// G4 requires source alt text, so exercise missing alt at that model edge.
 		const image = input.blocks.find(
 			(block) => block.type === "image" && block.data.src === "/assets/unnamed.webp",
 		);

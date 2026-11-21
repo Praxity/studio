@@ -35,7 +35,6 @@ export function assertAdlManifestPassed(result: {
 		];
 		return matches.length === 1 ? Number(matches[0][1]) : undefined;
 	};
-	// ADL exits zero for invalid manifests. Its summary and checkpoint marker decide passage.
 	if (
 		result.error ||
 		result.status !== 0 ||
@@ -59,7 +58,6 @@ export function validateAdlManifest(packagePath: string, tools: AdlManifestTools
 		["-Djava.awt.headless=true", "-jar", tools.validator, resolve(packagePath)],
 		{
 			cwd: lib,
-			// The official distribution loads its schemas/resources relative to this suite root.
 			env: { ...process.env, SCORM4ED_TS111_HOME: dirname(lib) },
 			encoding: "utf8",
 			timeout: 60_000,

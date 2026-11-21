@@ -78,7 +78,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 					expect(progress.registrationSuccess).toBe("PASSED");
 				}
 
-				// Cloud requires the separate interaction flag even when runtime data is requested.
 				const detailed = await client.getProgress(regId, {
 					includeRuntime: true,
 					includeInteractionsAndObjectives: true,
@@ -88,7 +87,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 					const runtime = detailed.runtime;
 					expect(runtime.runtimeInteractions.length).toBe(env.scoredQuestionCount);
 
-					// Verify suspend data contains visited pages
 					if (runtime.suspendData) {
 						const suspendData = JSON.parse(runtime.suspendData);
 						expect(Array.isArray(suspendData.visitedPages)).toBe(true);
@@ -103,7 +101,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 
 				await client.createRegistration(regId, courseId, "test-learner-2");
 
-				// Session 1: visit first 2 pages, then close
 				const launchUrl1 = await client.getLaunchLink(regId, LAUNCH_OPTS);
 				await simulateLearner(browser, launchUrl1, { stopAfterPage: 2 });
 
@@ -114,7 +111,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 				);
 				expect(progress1.registrationCompletion).toBe("INCOMPLETE");
 
-				// Verify suspend data has 2 visited pages
 				const detailed1 = await client.getProgress(regId, { includeRuntime: true });
 				expect(detailed1.runtime?.suspendData).toBeTruthy();
 				if (detailed1.runtime?.suspendData) {
@@ -122,7 +118,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 					expect(sd.visitedPages.length).toBe(2);
 				}
 
-				// Session 2: complete the course
 				const launchUrl2 = await client.getLaunchLink(regId, LAUNCH_OPTS);
 				await simulateLearner(browser, launchUrl2);
 
@@ -204,7 +199,6 @@ test.describe("SCORM Cloud: error cases", () => {
 			return;
 		}
 
-		// Use the SCORM 1.2 course that was already imported in global setup
 		const courseId = `praxity-test-warnings-${Date.now()}`;
 		const fixtures = await buildScormCloudFixtures();
 		const jobId = await client.uploadCourse(courseId, fixtures.scorm12Zip);
@@ -215,7 +209,6 @@ test.describe("SCORM Cloud: error cases", () => {
 			expect(Array.isArray(result.parserWarnings)).toBe(true);
 			expect(result.courseId).toBe(courseId);
 
-			// Verify array element types
 			for (const warning of result.parserWarnings) {
 				expect(typeof warning).toBe("string");
 			}
@@ -226,9 +219,7 @@ test.describe("SCORM Cloud: error cases", () => {
 		} finally {
 			try {
 				await client.deleteCourse(courseId);
-			} catch {
-				// Best-effort cleanup
-			}
+			} catch {}
 		}
 	});
 });

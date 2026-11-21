@@ -10,7 +10,6 @@ afterEach(() => {
 	vi.unstubAllGlobals();
 });
 
-// Moodle-style getters reset the error on each call. Unset 2004 data also permits 403.
 function host(version: "1.2" | "2004", unset: "0" | "403", original = "", failFirstRead = false) {
 	const statusKey = version === "1.2" ? "cmi.core.lesson_status" : "cmi.completion_status";
 	const values: Record<string, string> = {
@@ -109,7 +108,6 @@ for (const version of ["1.2", "2004"] as const) {
 		},
 	);
 }
-// Retained review probe: an actual empty first launch must still report outcomes.
 for (const [version, unset] of [
 	["1.2", "0"],
 	["2004", "403"],

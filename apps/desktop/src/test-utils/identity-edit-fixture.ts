@@ -2,8 +2,6 @@ import { createHash } from "node:crypto";
 import type { IdentityOperation } from "@praxity/content-identity";
 import { resolveLessonSources } from "../main/lesson-source";
 
-/** These fixtures change text without changing tree paths. Bind the explicit
- * modify intent to the saved snapshot; no positional matching reaches hosts. */
 export async function identityEditFixture(
 	root: string,
 	file: string,

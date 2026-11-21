@@ -51,7 +51,6 @@ for (const locale of ["en", "fr"] as const) {
 				await expect(status).toHaveText(expected[locale]);
 				await expect(status).toHaveAttribute("aria-live", "polite");
 				await expect(status).not.toContainText(/grammar\.v4|rt-|Datenschutz|bartholomew/);
-				// The toggle is the only author button, regardless of editable kind.
 				await expect(page.getByRole("button", { name: /^(Edit|Modifier) / })).toHaveCount(1);
 				const toggle = page.getByRole("button", {
 					name: canvasMessages[locale].enter,
@@ -72,11 +71,9 @@ for (const locale of ["en", "fr"] as const) {
 					join(process.env.PRAXITY_BROWSER_PROJECT ?? "", "lesson.prax"),
 					source.replace(/^(correct:.*|incorrect:.*)\r?\n/gmu, ""),
 				);
-				// Keep Edit open until a newer captured build exists. Both routes below use the old revision.
 				await expect(status).toHaveText(canvasMessages[locale].connected);
 				await expect(page).not.toHaveURL(authorUrl);
 				if (recovery === "reload") {
-					// Evict the captured source-error build from the four-build ring.
 					for (let revision = 0; revision < 3; revision++) {
 						const previousUrl = page.url();
 						await writeFile(
@@ -86,7 +83,6 @@ for (const locale of ["en", "fr"] as const) {
 						await expect(page).not.toHaveURL(previousUrl);
 						await expect(status).toHaveText(canvasMessages[locale].connected);
 					}
-					// Address a tab to its retained old revision, then exercise the real document Reload redirect.
 					await page.evaluate((url) => history.replaceState(null, "", url), authorUrl);
 					const response = await page.reload();
 					expect(response?.request().redirectedFrom()?.url()).toBe(authorUrl);

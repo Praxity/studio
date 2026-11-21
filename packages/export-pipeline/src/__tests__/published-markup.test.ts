@@ -2,7 +2,6 @@ import type { PraxityBlock } from "@praxity/shared-blocks/types";
 import { describe, expect, it } from "vitest";
 import { renderBlockHtml, sanitizeBlockForJson } from "../render-block-html.ts";
 
-// Exercise the public renderer/projection boundary before and after extraction.
 function block(type: PraxityBlock["type"], data: Record<string, unknown>): PraxityBlock {
 	return { id: "probe", type, data } as PraxityBlock;
 }
@@ -83,11 +82,9 @@ describe("published markup characterisation", () => {
 		["data:audio/mp3;base64,AAAA", "#", "#"],
 		[" \nJaVaScRiPt:bad()\t", "#", "#"],
 		[" \tVbScRiPt:bad()\n", "#", "#"],
-		// Browsers drop leading C0 controls and inner tabs and newlines before reading the scheme.
 		["java\nscript:bad()", "#", "#"],
 		["\u0001javascript:bad()", "#", "#"],
 		["\u0000 data:text/html,x", "#", "#"],
-		// Entities are not decoded: "&" cannot appear in a scheme, so these stay relative URLs.
 		["jav&#x61;script:bad()", "jav&#x61;script:bad()", "jav&#x61;script:bad()"],
 		["vb&#115;cript:bad()", "vb&#115;cript:bad()", "vb&#115;cript:bad()"],
 	])("keeps media and href JSON policies distinct: %s", (input, media, href) => {

@@ -14,7 +14,6 @@ export interface SelfCheckState {
 	submitted: (LearnerState & { shown: true; contentRevision: string }) | null;
 }
 
-/** Data for praxity:assessment-response. Only a deliberate submit returns it. */
 export interface SelfCheckAssessmentResponse {
 	blockId: string;
 	assessmentType: "textResponse";
@@ -34,7 +33,6 @@ export interface SelfCheckStateResult {
 	response: SelfCheckAssessmentResponse | null;
 }
 
-/** Reset is also the initial state. No completion or feedback is persisted. */
 export function resetSelfCheckState(): SelfCheckStateResult {
 	return {
 		status: "empty",
@@ -46,10 +44,6 @@ export function resetSelfCheckState(): SelfCheckStateResult {
 	};
 }
 
-/** Comparison compatibility, independent of source/artifact revision and part order.
- * Hash exact decoded Content: grammar already handles structural line endings and
- * continuation indentation; authored whitespace and Unicode spelling can carry meaning.
- */
 export function selfCheckContentRevision(content: Content): string {
 	assertContent(content);
 	const context = content.context;
@@ -64,7 +58,6 @@ export function selfCheckContentRevision(content: Content): string {
 			.map((part) => [part.id, part.label, part.missed, part.evidence]),
 	]);
 	try {
-		// Synchronous SHA-256 also works in HTTP-framed and offline learner contexts.
 		const digest = sha256(new TextEncoder().encode(canonical));
 		return `sha256:${Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
 	} catch {
@@ -72,9 +65,6 @@ export function selfCheckContentRevision(content: Content): string {
 	}
 }
 
-/** Pure read: never rewrites saved bytes or replays a response. Invalid IDs refuse
- * the entire envelope; readable draft text remains available for learner recovery.
- */
 export function restoreSelfCheckState(content: Content, value: unknown): SelfCheckStateResult {
 	assertContent(content);
 	if (value === undefined) return resetSelfCheckState();
@@ -124,9 +114,6 @@ export function restoreSelfCheckState(content: Content, value: unknown): SelfChe
 	};
 }
 
-/** An explicit edit may replace rejected state. A readable previous comparison
- * stays separate from the draft, including when its content revision is stale.
- */
 export function editSelfCheckDraft(
 	content: Content,
 	value: unknown,

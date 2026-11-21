@@ -39,7 +39,6 @@ const captured =
 const fallbackCleanups: (() => Promise<unknown>)[] = [];
 let fallbackFiles: Awaited<ReturnType<typeof fixture>>;
 beforeAll(async () => {
-	// Port-fallback assertions reuse an admitted course instead of bootstrapping its durable stores.
 	fallbackFiles = await fixture(fallbackCleanups);
 	const result = await runPraxityCli(
 		["studio", fallbackFiles.projectDir, "--review", "--no-open"],
@@ -391,7 +390,6 @@ it("pins the default port rule to a literal canonical-path vector", () => {
 async function defaultPort(projectDir: string) {
 	const root = await realpath(projectDir);
 	const canonical = process.platform === "win32" ? root.toLowerCase() : root;
-	// Independent expectation from the documented SHA-256 rule and literal port range.
 	return 45000 + (createHash("sha256").update(canonical).digest().readUInt32BE(0) % 1000);
 }
 
@@ -665,7 +663,6 @@ it("inspection omits the review config, capability and assets while Read HEAD su
 	expect(html).not.toContain(capability);
 	expect(html).not.toContain("/_praxity/review/");
 	const head = await fetch(readUrl, { method: "HEAD" });
-	// Node never sends HEAD bodies, so only the status exercises this handler.
 	expect(head.status).toBe(200);
 });
 

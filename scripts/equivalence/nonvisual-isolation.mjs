@@ -30,7 +30,6 @@ function productionPath(file) {
 	return /(?:^|\/)(?:packages|apps)\//.test(sourcePath);
 }
 function assertSource(checkout, file, workspaceRequest = false) {
-	// Ignore third-party package internals; workspace sources must stay on this side.
 	if (!workspaceRequest && !productionPath(file)) return;
 	const resolved = realpathSync(file);
 	if (!within(checkout, resolved))

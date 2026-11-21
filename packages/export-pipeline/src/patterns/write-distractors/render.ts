@@ -9,7 +9,6 @@ import type { WriteDistractorsAssetReference } from "@praxity/shared-blocks/writ
 import { strings } from "learning-patterns/patterns/write-distractors/strings.js";
 import { escapeHtml } from "../../published-markup";
 
-/** Prompt-only baseline. Neither hidden authored Content nor active controls are serialized. */
 export function renderWriteDistractors(
 	prompt: WriteDistractorsPrompt,
 	{

@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LogicEngine } from "./logic-engine";
 import { VariableStore } from "./variable-store";
 
-// Stub HTMLElement in Node environment (no jsdom)
 class MockHTMLElement {
 	style: Record<string, string> = {};
 	attributes: Record<string, string> = {};
@@ -21,7 +20,6 @@ class MockHTMLElement {
 		delete this.attributes[name];
 	}
 	querySelector(selector: string) {
-		// Check if any child matches the selector by className
 		const classMatch = selector.match(/^\.(.+)$/);
 		if (classMatch) {
 			return this.children.find((c) => c.className === classMatch[1]) ?? null;
@@ -42,7 +40,6 @@ class MockHTMLElement {
 }
 vi.stubGlobal("HTMLElement", MockHTMLElement);
 
-// Mock document for LogicEngine's DOM access
 // biome-ignore lint/suspicious/noExplicitAny: test mock
 const mockElements = new Map<string, any>();
 
@@ -252,7 +249,6 @@ describe("LogicEngine", () => {
 			const store = createTestVariableStore({ visible: true });
 			const engine = new LogicEngine(store, []);
 
-			// Test show
 			engine.registerLogicBlock({
 				blockId: "logic-show",
 				conditions: {
@@ -635,7 +631,6 @@ describe("LogicEngine", () => {
 		});
 
 		it("block source reads computed fields from DOM", () => {
-			// Set up a mock element with rating data
 			const ratingEl = {
 				getAttribute: (name: string) => {
 					if (name === "data-rating-value") return "4";

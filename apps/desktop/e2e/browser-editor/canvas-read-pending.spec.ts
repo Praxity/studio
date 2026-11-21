@@ -108,7 +108,6 @@ for (const gesture of ["click", "middle", "Control", "Meta", "Enter", "context m
 			await expect(read).toHaveText("Read mode: Updating");
 			await expect(read).toHaveAttribute("aria-busy", "true");
 			await expect(read).toHaveAttribute("aria-disabled", "true");
-			// A context menu can only offer link navigation when the browser has an href.
 			await expect(read).not.toHaveAttribute("href");
 			const tabs = context.pages().length;
 			if (gesture === "Enter") {
@@ -130,7 +129,6 @@ for (const gesture of ["click", "middle", "Control", "Meta", "Enter", "context m
 			await expect(read).not.toHaveAttribute("aria-disabled");
 			await page.keyboard.press("Escape");
 			if (gesture === "context menu" || gesture === "middle") {
-				// Native context menus and Windows Firefox autoscroll consume the next pointer click.
 				await read.focus();
 				await page.keyboard.press("Enter");
 			} else await read.click();

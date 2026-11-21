@@ -292,7 +292,6 @@ describe("exportProject", () => {
 			requireKnowledgeChecks: true,
 			passingScore: 0.5,
 		});
-		// An unusable pass mark must stop the export rather than weaken it to completion-only.
 		for (const invalid of [0, 1.5, "0.8", -1]) {
 			await writeFile(
 				path.join(projectDir, "praxity.json"),

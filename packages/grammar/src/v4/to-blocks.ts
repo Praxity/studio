@@ -36,8 +36,6 @@ import {
 	type TreeNode,
 } from "./tree/index.ts";
 
-/** A host resolves these nodes against its identity snapshot. Roles identify source fields
- * without their own tree node, such as a pair's answer or a generated rating label. */
 export type LessonIdAllocator = ((node: Readonly<TreeNode>, role?: string) => string) & {
 	readonly transient?: boolean;
 };
@@ -97,21 +95,17 @@ const inlineTree = (raw: string) => {
 			if ("children" in node) placeholders(node.children);
 		}
 	};
-	// Keep the current footer planner's inert placeholder contract. Source spelling
-	// remains in the lossless tree; this projection is only renderer data.
 	placeholders(tree.children);
 	return tree;
 };
 const inline = (raw: string, interactive = true) =>
 	renderInlineTree(inlineTree(raw), { interactive });
 
-/** Mark HTML-valued fields at projection so consumers never parse them as source. */
 const inlineHtmlFields = (fields: Record<string, unknown>) => ({
 	...fields,
 	_htmlFields: Object.keys(fields),
 });
 
-/** Adapt semantic nodes directly to the canonical renderer shapes. Never call the v3 parser. */
 export function toBlocks(
 	tree: AnalyzedLessonTree,
 	options: {
@@ -160,8 +154,6 @@ export function toBlocks(
 		data: Record<string, unknown>,
 		role?: string,
 	): PraxityBlock => {
-		// Schema defaults remain available to semantic decisions above. Runtime
-		// metadata contains authored settings only, under the existing renderer names.
 		const resolved = Object.fromEntries(
 			node.settings.map((entry) => [entry.name, settings(node)[entry.name]]),
 		);
@@ -183,7 +175,6 @@ export function toBlocks(
 			highlight: ["mode", "maxMarks"],
 		};
 		for (const key of consumed[type] ?? []) delete rest[key];
-		// False is the legacy choice contract: no new data key or policy membership.
 		if (node.type === "choice" && rest.private !== true) delete rest.private;
 		return {
 			id: id(node, role),
@@ -230,8 +221,6 @@ export function toBlocks(
 		`<span data-node-id="${escapeHtml(id(node, role))}">${inline(displayText(raw))}</span>`;
 	const bodyHtml = (child: PraxityBlock): string => {
 		let content = typeof child.data.content === "string" ? child.data.content : "";
-		// HTML-valued prose containers keep Markdown's native block elements. Their
-		// current renderer interface is a string, so retain each source wrapper here.
 		if (child.type === "heading") {
 			const level = Number(child.data.level);
 			content = `<h${level}>${content.replace(/^<p>|<\/p>$/g, "")}</h${level}>`;
@@ -398,8 +387,6 @@ export function toBlocks(
 		const feedback = { correct: resultFeedback("correct"), incorrect: resultFeedback("incorrect") };
 		const common = {
 			stem,
-			// Retain the source of compatibility-promoted option feedback so the
-			// activity renderer can place it beside that option without repetition.
 			...(correctOption || incorrectOption
 				? {
 						_feedbackOptionIds: {
@@ -509,8 +496,6 @@ export function toBlocks(
 					.join("\n")
 					.trim();
 				const masked = maskedBlankContent(template);
-				// Escape protected braces in the legacy template so its blank scanner agrees
-				// with the schema. Raw spelling remains in the lossless tree.
 				const safeTemplate = template
 					.split("")
 					.map((char, index) =>
@@ -642,8 +627,6 @@ export function toBlocks(
 			...parts,
 			headers: rows[0] ?? [],
 			rows: rows.slice(1),
-			// Preserve grammar 4 inline semantics beside the raw cell values used by
-			// sorting and charts. The display preparer still accepts legacy Markdown.
 			...(rows.some((row) => row.some((cell) => /@source(?:s|\{)/.test(String(cell))))
 				? {
 						_inline: {
@@ -760,7 +743,6 @@ export function toBlocks(
 						imageId: id(image),
 						caption,
 						_inline: {
-							// Cross-run inline tokens keep the combined projection without ambiguous locators.
 							caption:
 								combined === separate
 									? runs.map((child) => boundInline(child, text(child))).join("\n\n")
@@ -826,8 +808,6 @@ export function toBlocks(
 				];
 			}
 			case "dialogue": {
-				// Empty declarations establish a G4 speaker key without adding a
-				// local override to the renderer's cast-resolution interface.
 				const speakers = Object.fromEntries(
 					Object.entries(options.cast ?? {}).filter(
 						([, entry]) => entry && typeof entry === "object" && Object.keys(entry).length,
@@ -921,7 +901,6 @@ export function toBlocks(
 							: {}),
 					},
 				);
-				// The current accordion/tabs/sequence/columns renderers draw only item labels.
 				return title && node.type !== "cards"
 					? [
 							block(
@@ -999,7 +978,6 @@ export function toBlocks(
 					}),
 				];
 			case "write-distractors":
-				// Only the literal prompt and allocated item identities enter generic data.
 				return [
 					block(node, "writeDistractors", {
 						level: node.headingLevel ?? 2,
@@ -1027,8 +1005,6 @@ export function toBlocks(
 					} satisfies RetrievalSheetData),
 				];
 			case "self-check":
-				// Generic readers get only the prompt and criterion identities. Full author
-				// Content is read explicitly through readSelfCheckContent, never block data.
 				return [
 					block(node, "selfCheck", {
 						level: node.headingLevel ?? 2,
@@ -1083,8 +1059,6 @@ export function toBlocks(
 		});
 	const frontmatter = tree.root.children.find((node) => node.kind === "frontmatter");
 	if (frontmatter && pages[0]) {
-		// Declarations have hidden runtime wrappers. Keep the authored page title
-		// first, matching the existing publisher's heading and reading order.
 		const firstBlock = pages[0].blocks[0];
 		const declarationIndex = firstBlock?.type === "heading" && firstBlock.data.level === 1 ? 1 : 0;
 		pages[0].blocks.splice(
@@ -1109,8 +1083,6 @@ export function toBlocks(
 			),
 		);
 	}
-	// A flat stream keeps the current desktop/export API usable. Every page, including
-	// the first, has a pageBreak so callers need no firstPage frontmatter exception.
 	const blocks = pages.flatMap((page) => {
 		const record = nodes.get(page.id);
 		if (!record) throw new Error(`Missing page node record: ${page.id}`);
@@ -1121,8 +1093,6 @@ export function toBlocks(
 				data: {
 					...Object.fromEntries(Object.entries(page.data ?? {}).filter(([key]) => key !== "title")),
 					id: page.id,
-					// Let the existing publisher infer plain navigation from the visible
-					// heading. Explicit nav and hidden titles retain their authored label.
 					...(part(record.node, "nav") || page.data?.hideTitle
 						? { title: page.title, label: page.title }
 						: {}),
@@ -1131,10 +1101,8 @@ export function toBlocks(
 			...page.blocks,
 		];
 	});
-	// Allocate author-only records last so sequential allocators retain every learner ID.
 	for (const field of optionFeedback) id(field, "option-feedback");
 	return { pages, blocks, nodes };
 }
 
-/** These reader roles locate author fields but never emit IDs into learner data. */
 export const AUTHOR_ONLY_READER_ROLES: ReadonlySet<string> = new Set(["option-feedback"]);

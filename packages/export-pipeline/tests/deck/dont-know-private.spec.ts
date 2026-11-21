@@ -317,7 +317,6 @@ for (const locale of ["en", "fr"]) {
 	test(`${locale}: 400% reflow, text spacing, forced colours and reduced motion preserve the activity`, async ({
 		page,
 	}) => {
-		// 1280px at 400% gives a 320 CSS-pixel layout viewport.
 		await page.setViewportSize({ width: 320, height: 900 });
 		await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
 		await open(page, locale);

@@ -21,8 +21,6 @@ function purifierInstance() {
 
 describe("sanitizer traversal", () => {
 	it("does not register window listeners after 1,000 unique calls", () => {
-		// ALLOWED_ATTR shadowroot returns nodes in the original document, exposing
-		// the shared window through the public DOM API rather than jsdom internals.
 		const root = DOMPurify.sanitize("<p>Warm window</p>", {
 			RETURN_DOM: true,
 			ALLOWED_ATTR: ["shadowroot"],
@@ -95,7 +93,6 @@ describe("sanitizer memo", () => {
 			expect(calls).toBeGreaterThan(firstCalls);
 			expect(run(first)).toEqual(expected);
 			expect(sanitize).toHaveBeenCalledTimes(calls);
-			// The shared memo retains at most 256 results across all helpers.
 			for (let i = 0; i < 254; i++) run(`<p>Memo filler ${i}</p>`);
 			run(first);
 			run("<p>Memo overflow</p>");

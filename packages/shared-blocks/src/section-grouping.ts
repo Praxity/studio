@@ -52,13 +52,6 @@ function getBlockSectionTheme(block: PraxityBlock): SectionPaletteName | undefin
 		: undefined;
 }
 
-/**
- * Group a flat block list into publish-time visual sections.
- *
- * - uniform: keep the page flat unless a block has an explicit palette
- * - alternate: split on H2 headings and alternate light/dark palettes
- * - manual: split whenever a block starts a new section via sectionTheme or a divider palette
- */
 export function groupBlocksIntoSections(
 	blocks: PraxityBlock[],
 	rhythm: SectionRhythm,

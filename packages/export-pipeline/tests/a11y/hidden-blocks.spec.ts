@@ -54,8 +54,6 @@ test.describe("hidden block accessibility", () => {
 		await expect(rating.getByRole("radio", { name: "2 of 5" })).toBeChecked();
 
 		const signature = page.locator("[data-block-type='signature']");
-		// Not exact: the fixture sets required:true, so RequiredIndicator's glyph is
-		// appended to the label element's text (SignatureBlock.tsx:217-218).
 		await expect(signature.getByText("Sign to confirm completion")).toBeVisible();
 		const methodTabs = signature.getByRole("tablist", { name: /signature method/i });
 		await expect(methodTabs).toBeVisible();
@@ -74,7 +72,6 @@ test.describe("hidden block accessibility", () => {
 		const rating = page.locator("[data-block-type='rating']");
 		const feedback = rating.locator("[data-rating-feedback]");
 		await expect(feedback).toBeHidden();
-		// The styled label covers the visually hidden radio, as for a learner.
 		const option = rating.getByRole("radio", { name: "2 of 5" });
 		await rating.locator(`label[for="${await option.getAttribute("id")}"]`).click();
 		await expect(option).toBeChecked();

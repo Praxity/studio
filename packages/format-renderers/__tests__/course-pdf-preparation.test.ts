@@ -110,7 +110,6 @@ describe("course PDF preparation and host boundary", () => {
 		expect(theme.preamble).toContain('px-heading-font = ("Source Serif 4", "Libertinus Serif",)');
 		expect([...theme.fonts].sort()).toEqual(["source-sans-3", "source-serif-4"]);
 		expect(coursePdfTheme(design, new Set()).fonts.size).toBe(0);
-		// A dark theme surface must not become the print tint.
 		const dark = coursePdfTheme(
 			{ colorBackgroundLight: "#000000", colorAccent: "#ffffff" },
 			new Set(),
@@ -123,13 +122,11 @@ describe("course PDF preparation and host boundary", () => {
 		] as const)
 			for (const surface of ["#ffffff", hex("px-tint")])
 				expect(contrastRatio(hex(name), surface)).toBeGreaterThanOrEqual(ratio);
-		// Slides flow continuously with a rule between them; only lessons start a new sheet.
 		const slides = buildCoursePdfSource(
 			course(readBlockSource("# First\n\n# Second {hideTitle}\n\nNext\n").blocks),
 		).typstSource;
 		expect(slides.match(/#pagebreak\(weak: true\)/g)).toHaveLength(1);
 		expect(slides.match(/#px-break/g)).toHaveLength(1);
-		// A navigation label is shown only where no heading opens the slide.
 		expect(slides).toContain("#px-eyebrow[Second]");
 		expect(slides).not.toContain("#px-eyebrow[First]");
 		expect(slides).not.toContain("#px-slide(");
@@ -190,12 +187,9 @@ describe("course PDF preparation and host boundary", () => {
 				).blocks,
 			),
 		).typstSource;
-		// Medium floats wrap on their authored side; the image is read first.
 		expect(source).toMatch(/#px-float\(right, 0\.5, \[[\s\S]*Wrapped[\s\S]*BESIDE/);
 		expect(source.indexOf("BELOW")).toBeGreaterThan(source.indexOf("BESIDE"));
-		// Stacked images print at the published share and alignment.
 		expect(source).toMatch(/size\.width \* 0\.33[\s\S]*align\(right/);
-		// A large float stacks, as the published page does at print width.
 		expect(source).not.toContain("#px-float(left");
 		expect(source).toMatch(/#px-columns\(false, \(0\.6+\d*fr, 0\.3+\d*fr,\)/);
 	});
@@ -271,7 +265,6 @@ describe("course PDF preparation and host boundary", () => {
 		expect(handout).toContain("BODY SOURCE");
 		expect(handout.match(/BODY SOURCE/g)).toHaveLength(1);
 		expect(handout.indexOf("BODY SOURCE")).toBeLessThan(handout.indexOf("AFTER INSERT"));
-		// Sources print as native page footnotes at their references; list placeholders are dropped.
 		expect(handout.match(/#footnote\[/g)).toHaveLength(2);
 		expect(handout).not.toContain("@footer.insert");
 		expect(handout).not.toContain("KEY");
@@ -330,7 +323,6 @@ describe("course PDF preparation and host boundary", () => {
 		expect(result).toContain('#px-slide("Narration", ((false, false, [');
 		expect(result).toContain("#px-eyebrow[Roxanne]");
 		expect(result).toContain("A private thought\\.");
-		// A chart the script does not narrate breaks out across both columns.
 		const wide = buildCoursePdfSource(
 			course([
 				block("spoken", "text", { content: "Spoken", narration: "Script." }),
@@ -346,7 +338,6 @@ describe("course PDF preparation and host boundary", () => {
 		expect(result).not.toContain("SECRET");
 		expect(result.match(/Visible text/g)).toHaveLength(1);
 		expect(result.indexOf("Visible text")).toBeLessThan(result.indexOf("#strong[Custom]"));
-		// Scripts sit in the slide's notes column, after all of its visible content.
 		expect(result.indexOf("Visible disabled script")).toBeLessThan(
 			result.indexOf("#strong[Custom]"),
 		);

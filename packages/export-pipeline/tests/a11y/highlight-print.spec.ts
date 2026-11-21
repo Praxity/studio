@@ -171,8 +171,6 @@ async function open(placement: Placement, lang = "en", long = false) {
 	if (placement === "tabs") await page.getByRole("tab", { name: "Other", exact: true }).click();
 	if (placement === "deck") await page.locator("#deck-previous").click();
 	if (placement === "back") await page.locator("[data-card-flip]").click();
-	// Inactive-container checks start without focus in the external reveal control.
-	// The top-level checked case below verifies highlight's own Start over focus.
 	if (["tabs", "deck", "back"].includes(placement))
 		await page.evaluate(() => (document.activeElement as HTMLElement)?.blur());
 }
@@ -196,7 +194,6 @@ async function setPrintMedia(mode: "screen" | "print") {
 async function screen() {
 	return root().evaluate((node) => ({
 		html: node.outerHTML,
-		// BODY HTML includes unrelated deck resize bookkeeping after print.
 		focus: document.activeElement === document.body ? "BODY" : document.activeElement?.outerHTML,
 		containers: [
 			...document.querySelectorAll("[hidden],[open],[aria-expanded],[data-flipped]"),
@@ -215,7 +212,6 @@ for (const placement of placements)
 			browserName,
 		}) => {
 			await open(placement, lang);
-			// Exercise hidden activities without opening their containers, as print must do.
 			await root().evaluate((node) => {
 				node.querySelectorAll<HTMLElement>("[data-highlight-chunk]")[0].click();
 				node.querySelector<HTMLButtonElement>("[data-highlight-check]")!.click();
@@ -414,8 +410,6 @@ for (const placement of placements)
 						? "He said: “Return at noon!” Read &amp; < carefully."
 						: "Il dit : « Je reviens à midi ! » Lisez &amp; < attentivement.",
 				);
-				// PDF extractors may omit a space at a line boundary. Count every authored
-				// non-whitespace character, including all repeated punctuation, on both projections.
 				const compact = normalized.replace(/\s/gu, "");
 				const answerStart = compact.indexOf(lang === "en" ? "Answer" : "Réponse");
 				const passagePhrase = (

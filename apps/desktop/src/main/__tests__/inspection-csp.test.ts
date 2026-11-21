@@ -84,12 +84,10 @@ async function server(kind: "browser") {
 	});
 	cleanup.push(() => listener.close());
 	const hosted = await listener.hostCourseArtifact(deployment());
-	// Pin the bound loopback origin itself, not just its reuse in the policy.
 	expect(listener.origin).toMatch(/^http:\/\/127\.0\.0\.1:\d+$/);
 	expect(hosted.entryUrl.startsWith(`${listener.origin}/`)).toBe(true);
 	return {
 		url: hosted.entryUrl,
-		// WebKit matches 'self' against nothing once the iframe sandbox makes the origin opaque.
 		self: listener.origin,
 		policySuffix: "; frame-ancestors http://127.0.0.1:1234",
 		fetch,
@@ -136,21 +134,17 @@ for (const kind of ["browser"] as const)
 				expect(response.headers.get("content-length")).toBe(String(Buffer.byteLength(body)));
 				const doc = new JSDOM(body).window.document;
 				const templates = [...doc.querySelectorAll("template")];
-				// Only the host navigates the Page lens; a refresh would load a learner page there.
 				expect(doc.querySelectorAll("meta[http-equiv]")).toHaveLength(0);
 				expect(templates.map((template) => template.content.querySelector("script,meta"))).toEqual([
 					null,
 					null,
 				]);
-				// A declared shadow root would hide its links from the bridge's click guard.
 				expect(templates.some((template) => template.hasAttribute("shadowrootmode"))).toBe(false);
-				// The bridge reads the product's own URL parameters; the server adds none.
 				const scripts = [...doc.querySelectorAll("script")];
 				expect(scripts[0].textContent).toBe(bridge);
 				expect([...scripts[0].attributes].map((attribute) => attribute.name)).toEqual(["nonce"]);
 				expect(scripts[0].getAttribute("nonce")).toBe(nonce);
 				expect(doc.querySelectorAll("[nonce]")).toHaveLength(1);
-				// JSON data blocks never execute; the Page lens reads the logic config from them.
 				expect(scripts.map((script) => script.type || "classic")).toEqual([
 					"classic",
 					"application/json",

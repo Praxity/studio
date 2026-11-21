@@ -122,7 +122,6 @@ it("admits the repro lesson's text fields with the compiler's transient lesson a
 	const page = splitBlocksIntoPages(input.blocks, "Example")[0];
 	if (!page.lessonId) throw new Error("Missing compiled lesson identity");
 	const scope = { lessonId: page.lessonId, pageId: page.id, pageIndex: 0 };
-	// Entering the author document runs the identity review gate after compilation.
 	await resolveLessonSourcesForWrite(root, {}, { identitySession });
 	const current = await resolveLessonSources(root, {}, { identitySession });
 	expect(current.transientIds).toBe(true);
@@ -341,7 +340,6 @@ for (const locale of ["en", "fr"] as const) {
 							? "This lesson was deleted or renamed. Restore its file or update the course's lesson list, then reopen Studio."
 							: "Cette leçon a été supprimée ou renommée. Restaurez son fichier ou mettez à jour la liste des leçons du cours, puis rouvrez Studio.",
 				};
-				// Check before and after the author repairs the manifest's old filename.
 				expect(await session.invoke("canvasTextSnapshot", {}, captured)).toMatchObject(expected);
 				await writeFile(
 					join(root, "course.yaml"),

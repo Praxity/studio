@@ -47,7 +47,6 @@ test("CI fetch bounds deepening and fetches full pinned histories for a distant 
 	assert.equal(git(checkout, "rev-parse", "--is-shallow-repository"), "true");
 	git(checkout, "config", "maintenance.auto", "true");
 	git(checkout, "config", "gc.auto", "1");
-	// Keep the planted unsafe helper in the foreground during regression checks.
 	git(checkout, "config", "maintenance.autoDetach", "false");
 	git(checkout, "config", "gc.autoDetach", "false");
 	const trace = join(root, "git-trace.jsonl");
@@ -133,7 +132,6 @@ test("a shallow PR merge source cannot keep timeout fetching in an endless deepe
 	git(checkout, "remote", "add", "origin", pathToFileURL(origin).href);
 	git(checkout, "fetch", "--depth=1", "origin", "refs/pull/1/merge:refs/remotes/pull/1/merge");
 	git(checkout, "checkout", "--detach", "refs/remotes/pull/1/merge");
-	// The source contains the base object, but its merge tip remains a shallow root.
 	git(origin, "fetch", "--depth=1", pathToFileURL(source).href, base);
 	git(checkout, "fetch", "--depth=1", "origin", base);
 	git(checkout, "fetch", "--deepen=8", "origin", git(checkout, "rev-parse", "HEAD"), base);

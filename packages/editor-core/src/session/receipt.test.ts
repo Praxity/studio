@@ -79,7 +79,6 @@ it("07f fix D14 a successful receipt settles without reading its target", () => 
 	expect(settled.state.history).toHaveLength(1);
 	expect(settled.state.history[0].historyIds).toEqual(["history-one"]);
 	expect(draft(settled.state).text).toBe("First save");
-	// A refused projection after settlement cannot consume the durable receipt.
 	expect(() =>
 		dispatch(
 			settled.state,
@@ -312,7 +311,6 @@ it.each([false, true])(
 		expect(draft(admitted)).toMatchObject({
 			baseRevision: "initial",
 			expectedText: "Text\n",
-			// With no later typing the saved text belongs to the undone write.
 			status: typing ? "dirty" : "clean",
 			text: typing ? "First save, more" : "Text\n",
 		});

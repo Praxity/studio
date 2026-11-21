@@ -45,7 +45,6 @@ export function deriveHeadings(
 					);
 			}
 			if (child.kind === "heading") level = child.headingLevel ?? level;
-			// Derived titles do not change their parent's last authored heading.
 			const ownLevel =
 				child.headingLevel ??
 				(definition?.items

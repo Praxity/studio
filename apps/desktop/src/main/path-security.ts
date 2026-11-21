@@ -17,7 +17,6 @@ import { setTimeout as delay } from "node:timers/promises";
 import { promisify } from "node:util";
 import { ProjectFileBusyError, ProjectLockCacheOverlapError } from "../shared/project-write-errors";
 
-// Native resolution uses the filesystem's spelling, including case aliases.
 const realpath = promisify(fsRealpath.native);
 
 const admittedRoots = new AsyncLocalStorage<{ root: string; identity: string; active: boolean }>();
@@ -27,7 +26,6 @@ function directoryIdentity(entry: Awaited<ReturnType<typeof rootEntry>>): string
 }
 const rootEntry = (root: string) => lstat(root, { bigint: true });
 
-/** The admission lock owns this proof. No pathname result survives the transaction. */
 export async function withProjectPathAdmission<T>(
 	root: string,
 	work: () => Promise<T>,
@@ -51,8 +49,6 @@ async function resolveRoot(root: string): Promise<string> {
 async function assertAdmittedRoot(root: string): Promise<void> {
 	const admitted = admittedRoots.getStore();
 	if (!admitted?.active || root !== admitted.root) return;
-	// Targets and parents still resolve natively on every use. A replaced root or
-	// renamed ancestor must refuse instead of admitting a different directory.
 	if (directoryIdentity(await rootEntry(root)) !== admitted.identity)
 		throw new Error("Project directory changed");
 }
@@ -70,7 +66,6 @@ export function isWithin(root: string, target: string): boolean {
 	);
 }
 
-// Resolve existing ancestors without creating cache entries during path admission.
 async function canonicalPath(path: string): Promise<string> {
 	try {
 		return await realpath(path);
@@ -92,10 +87,6 @@ export async function assertOutsideProjectLockCache(target: string): Promise<voi
 		canonicalPath(cache),
 		canonicalPath(resolve(target)),
 	]);
-	// On macOS, closing ANY descriptor for a SQLite inode cancels this process's
-	// POSIX locks, even when SQLite's connection is still open. Guard reads as well
-	// as deletion/replacement, before any descriptor opens. Windows uses file locks.
-	// https://www.sqlite.org/howtocorrupt.html#_closing_a_file_descriptor
 	if (isWithin(cache, resolve(target)) || isWithin(realCache, realTarget))
 		throw new ProjectLockCacheOverlapError();
 }
@@ -106,7 +97,6 @@ export async function assertAllowedProjectRoot(projectPath: string): Promise<str
 		canonicalPath(projectLockCacheDirectory()),
 		canonicalPath(homedir()),
 	]);
-	// Refuse the home ancestor even when .praxity-studio links to another volume.
 	if (
 		isWithin(root, join(home, ".praxity-studio", "project-locks")) ||
 		isWithin(root, cache) ||
@@ -139,8 +129,6 @@ export async function resolveExistingPathWithin(
 				if (cause.code !== "ENOENT") throw cause;
 				return undefined;
 			});
-			// Optional-file callers may ignore absence, but an existing dangling link
-			// must not hide an asset or sidecar boundary failure as an empty success.
 			if (entry?.isSymbolicLink())
 				throw new Error("Symbolic link target cannot be resolved", { cause: error });
 			throw error;
@@ -172,7 +160,6 @@ export async function resolveWritablePathWithin(
 	return safePath;
 }
 
-/** The caller owns and must close the admitted handle. */
 export async function openFileWithin(rootPath: string, targetPath: string): Promise<FileHandle> {
 	const safePath = await resolveExistingPathWithin(rootPath, targetPath);
 	return open(safePath, constants.O_RDONLY | constants.O_NOFOLLOW);
@@ -191,7 +178,6 @@ export async function readFileWithin(
 	}
 }
 
-/** Hash referenced media without holding the complete file in memory. */
 export async function sha256FileWithin(rootPath: string, targetPath: string): Promise<string> {
 	const safePath = await resolveExistingPathWithin(rootPath, targetPath);
 	const file = await open(
@@ -210,7 +196,6 @@ export async function sha256FileWithin(rootPath: string, targetPath: string): Pr
 
 export class FileNotWritableError extends Error {}
 
-/** Replacement permissions come from the file as well as its parent directory. */
 export async function assertFileWritableWithin(root: string, destination: string) {
 	const target = await resolveWritablePathWithin(root, destination);
 	const entry = await lstat(target).catch((error: NodeJS.ErrnoException) => {
@@ -219,14 +204,12 @@ export async function assertFileWritableWithin(root: string, destination: string
 	});
 	if (entry) {
 		if (!entry.isFile()) throw new FileNotWritableError();
-		// access alone permits root to replace an author's POSIX read-only file.
 		if (!(entry.mode & 0o222)) throw new FileNotWritableError();
 		await access(target, constants.W_OK);
 	}
 	return entry?.mode;
 }
 
-/** One sharing-violation budget for journaled and atomic publications. */
 export async function waitForFileSharingRetry(error: unknown, attempt: number): Promise<void> {
 	const code = (error as NodeJS.ErrnoException).code;
 	if (!code || !["EPERM", "EBUSY", "EACCES"].includes(code)) throw error;
@@ -235,7 +218,6 @@ export async function waitForFileSharingRetry(error: unknown, attempt: number): 
 	await delay(wait);
 }
 
-/** Stage in the authorized directory so replacement is atomic on the same filesystem. */
 export async function writeFileAtomicallyWithin(
 	root: string,
 	destination: string,

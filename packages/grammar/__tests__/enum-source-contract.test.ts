@@ -11,7 +11,6 @@ const assessment = {
 	display: ["standard", "scenario"],
 	deckGate: ["attempt", "pass"],
 };
-// Literal vocabularies from the grammar 4 format reference. Schema additions must be reviewed here.
 const options: Record<string, Record<string, string[]>> = {
 	text: {},
 	note: { tone: ["note", "info", "tip", "success", "warning"], style: ["outline", "shaded"] },

@@ -18,7 +18,6 @@ export const browserExportSchema = exportScormSchema
 	.extend({ format: exportScormSchema.shape.format.extract(["html", "pdf"]) })
 	.strict();
 
-/** Owns one cancellable export and its rooted output. No global/native settings. */
 export class StudioExportService {
 	private active: { controller: AbortController; done: Promise<unknown> } | undefined;
 	private closed = false;
@@ -65,8 +64,6 @@ export class StudioExportService {
 	async close() {
 		this.closed = true;
 		this.cancel();
-		// The admitted RPC owns and reports any job error. Shutdown drains that
-		// same promise after cancellation, without reporting it twice.
 		await Promise.allSettled(this.active ? [this.active.done] : []);
 	}
 	private async perform(
@@ -144,8 +141,6 @@ export class StudioExportService {
 					: {}),
 			};
 		} catch (error) {
-			// Compiler cancellation is wrapped by exportProject. Output/cleanup
-			// failures must still surface, even when cancellation happened too.
 			if (
 				controller.signal.aborted &&
 				(!savingOutput || (error instanceof Error && error.name === "AbortError"))

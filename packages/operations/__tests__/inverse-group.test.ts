@@ -397,7 +397,6 @@ it("caps groups at five members and refuses six before cloning with inputs uncha
 	};
 	expect(planInverseGroup(s.files, request, s.context)).toEqual(refused);
 	expect(serializeIdentity({ files: s.files, context: s.context, request })).toBe(before);
-	// An oversized group must refuse before trying to clone its records.
 	Object.assign(s.operations[5], { nonCloneable: () => {} });
 	expect(planInverseGroup(s.files, request, s.context)).toEqual(refused);
 });

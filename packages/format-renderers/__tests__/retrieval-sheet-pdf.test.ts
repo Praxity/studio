@@ -125,13 +125,9 @@ it.each(["title", "question", "answer"] as const)(
 	},
 );
 
-// Two compiles total: combine all EN/FR, 3/8-row and heading-level fixtures in
-// each answer mode. Poppler also runs once per output, rather than per variant.
 describe.skipIf(!process.env.PRAXITY_TEST_TYPST)("native retrieval workbook", () => {
 	let root: string;
 	const pdfs = new Map<boolean, { text: string; structure: string; bbox: string; raw: string }>();
-	// Two real exports share the existing native-test 60 s allowance. Setup took
-	// 2.2–3.7 s locally; loaded CI must not inherit the unrelated 10 s hook default.
 	beforeAll(async () => {
 		const executablePath = process.env.PRAXITY_TEST_TYPST;
 		if (!executablePath) throw new Error("Pinned Typst is required");

@@ -169,7 +169,6 @@ it("browser snapshot reports an outside edit to retained recovery bytes without 
 	const outside = await open(join(root, "lesson.prax"), "r+");
 	try {
 		await writeProjectFiles(root, [{ path: "lesson.prax", content: `${source}Saved.\n` }]);
-		// An outside editor kept the displaced inode open through the save.
 		await outside.writeFile("Outside edit to the retained original.\n");
 		const before = await projectDiskSnapshot(root);
 		const snapshot = await session.readSnapshot();
