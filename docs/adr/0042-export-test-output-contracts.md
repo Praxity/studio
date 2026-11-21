@@ -19,6 +19,8 @@ Export tests include platform observations, fixture admission rules and measured
 
 - `holds the 4.5:1 text floor for a palette that starts below it`: The unit tests in export-contrast.test.ts prove the helper corrects each role. This proves every emission path actually runs through it: a real build with a palette an author could plausibly pick, where every text role starts below the floor. Author-supplied brand colours reaching output unvalidated was the P1 in the 2026-07-28 audit.
 
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not independently verified.
+
 ### packages/export-pipeline/src/__tests__/choice-baseline.test.ts
 
 - `$name: description $block.data.description.0.data.content`: Literal output captured before extraction. Preserve the entire baseline, including wrappers, whitespace, disabled inputs, localized notices and identity fallbacks.
@@ -26,20 +28,32 @@ Export tests include platform observations, fixture admission rules and measured
 ### packages/export-pipeline/src/__tests__/forced-palette-coverage.test.ts
 
 - `unassertedBranches`: Only statements executed on the branch count: a callback, nested condition or unawaited promise cannot stand in for an assertion of the no-palette rendering.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not independently verified.
 - `asserted`: expectFocusRing's normal-palette path owns the >=3:1 floor. A literal true third argument selects forced-palette behavior instead.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not independently verified.
 - `PALETTE_INDEPENDENT_SPECS`: These journeys assert the same semantics, geometry or visible indicator in both palettes. New emulating specs require a palette branch unless reviewed here.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not independently verified.
 - `emulatesForcedColors`: Include named/indirect media objects conservatively, not only inline options.
 - `unexpectedForcedColors`: One explicit exception: this observer query invalidates marker geometry. It never reads matches or chooses palette-specific rendering. Remove only that one literal, so any additional reference still fails ownership.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not independently verified.
 - `unexpectedForcedColors`: Join adjacent quoted fragments to catch the reviewed split-literal query.
 - `inputs`: bundle-viewer.test.ts checks this inventory against every bundle's metafile.
 
 ### packages/export-pipeline/src/__tests__/html-gen.test.ts
 
 - `compiles the %s Pages resume cue from the shared template`: The prefix ends with a non-breaking space so NVDA keeps the gap before the title.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not independently verified.
 - `compiles the %s Pages resume cue from the shared template`: French also keeps the colon on the same line with a non-breaking space.
 - `forwards the query string and hash like the page-N shims do`: index.html is the SCORM launch file and the review-share entry point, so it carries ?embed=1, ?minimal=1 and review tokens that the viewer reads. A bare meta-refresh dropped them, while the page-N shims already preserved them.
 - `config`: With interactive shell controls disabled, the static page links are the navigation and must stay visible without an island.
 - `emits theme vars into course CSS`: The selector also carries Mantine's own, so the token aliases we set there are not outranked by Mantine's defaults.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not independently verified.
 - `cases`: The exporter used to reverse-infer the layout from individual nav toggles. That inference could not express `minimal` (its preset turns off outline, prev/next and edge arrows, so the `none` branch claimed it) or `embedded` (absent from the chain), and it downgraded a course to `sidebar` whenever an author adjusted a toggle — including a brand-new project, which scaffolds as `slides`. Pin every archetype to its own class.
 - `html`: The slides preset's toggle combination previously *was* the only way to reach praxity-layout-slides; toggles must no longer override the choice.
 - `html`: `none` means no navigation chrome. The fallback IS the navigation on static pages, so leaving it in shipped a full page list on every text-only page of a course that asked for none.
@@ -52,6 +66,8 @@ Export tests include platform observations, fixture admission rules and measured
 ### packages/export-pipeline/src/__tests__/module-deck-runtime.test.ts
 
 - `controls`: WebKit focuses the enclosing controls landmark when a More button is pressed.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not independently verified.
 
 ### packages/export-pipeline/src/__tests__/new-tab-links.test.ts
 
@@ -68,10 +84,16 @@ Export tests include platform observations, fixture admission rules and measured
 
 ### packages/export-pipeline/src/__tests__/render-block-html.test.ts
 
-- `renders an ordered list of named turns with decorative avatars`: WebKit + VoiceOver read alt="" images inside a figure by file name without it.
+- `renders an ordered list of named turns with decorative avatars`: Retain `role="presentation"` alongside `alt=""` on decorative avatars. The replaced comment reported that WebKit with VoiceOver announced the filename without `role="presentation"`. The named test pins both attributes; it does not run VoiceOver.
+
+  Evidence: [W3C WAI decorative images](https://www.w3.org/WAI/tutorials/images/decorative/) describes empty alt and presentation roles. The specific WebKit/VoiceOver filename observation is from the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not independently verified.
 - `static assessment shell`: This markup is the pre-hydration shell: the React viewer owns answering, submitting, feedback and scoring. Shipped with live inputs it was a form a learner could fill in that could never be submitted — no submit control, no feedback, answers gone at the next page.
 - `media blocks and the heading outline`: A media block used to append `<h3 class="praxity-sr-only">Continue after video</h3>`. It put a phantom section in the heading outline with nothing under it — on a page whose first real section was an h2, a screen-reader user browsing by heading hit an h3 between the page title and the first section. The block is already a labelled region, which is what AT navigates past, and the string was hardcoded English with no French entry. The existing accessibility decision rejects a mandatory following heading: WCAG 2.4.1 requires a way to bypass repeated blocks and does not prescribe this technique.
-- `hides decorative images from assistive technology`: WebKit + VoiceOver read alt="" images inside a figure by file name.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not independently verified.
+- `hides decorative images from assistive technology`: Retain `role="presentation"` alongside `alt=""` on decorative figure images. The named test asserts both attributes for decorative images and a meaningful alt without a presentation role for informative images. The replaced comment reported filename announcements in WebKit with VoiceOver when the presentation role was absent; the unit test does not reproduce that screen-reader observation.
+
+  Evidence: [W3C WAI decorative images](https://www.w3.org/WAI/tutorials/images/decorative/) describes empty alt and presentation roles. The specific WebKit/VoiceOver filename observation is from the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not independently verified.
 
 ### packages/export-pipeline/src/__tests__/retrieval-sheet-assets.test.ts
 
@@ -81,11 +103,15 @@ Export tests include platform observations, fixture admission rules and measured
 ### packages/export-pipeline/src/__tests__/retrieval-sheet-controls.test.ts
 
 - `rejects unsanitized date %s at the input interface`: jsdom erases these native date values. Expose the raw field value to the real event handler.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not independently verified.
 - `fixed`: A fixed 168-hour interval lands on the wrong local date at these transition boundaries.
 
 ### packages/export-pipeline/src/__tests__/retrieval-sheet-print.test.ts
 
 - `clean`: jsdom queues zero-delay focus bookkeeping independently of the print owner.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not independently verified.
 
 ### packages/export-pipeline/src/__tests__/untrusted-course-text.test.ts
 
@@ -104,7 +130,7 @@ Export tests include platform observations, fixture admission rules and measured
 
 ### packages/export-pipeline/tests/choice-icon-names.test.ts
 
-- `'${producer} compiles and exports mixed raw and compiler icons with exact main learner bytes'`: Pinned from the display owners at the recorded main revision, with no signature call.
+- `'${producer} compiles and exports mixed raw and compiler icons with exact main learner bytes'`: The expected `compiledHtml` and `exportedQuestionHtml` come from `tests/fixtures/choice-icon-mixed-main.json` (relative to `packages/export-pipeline/`). Its `mainCommit` field records capture revision `6fdf8819aafaa1402939f768d46485a15e243b3c`; the `grammar` and `display` members own the two expected captures. This commit is not present in the available Git object history, so the revision is recorded fixture metadata, not an independently verified capture. `beforeAll` produces the current output through `preparedIconQuestion`, `compilePage`, `compileCourse` and `deployCourse`; the byte-comparison test does not call the signature helper.
 
 ### packages/export-pipeline/tests/compiled-choice-bytes.test.ts
 
@@ -117,7 +143,9 @@ Export tests include platform observations, fixture admission rules and measured
 
 ### packages/export-pipeline/tests/course-outcome-writes.test.ts
 
-- `%s Finish caller authority`: Generated on main before restoring the refactor. Calls and return values share one log.
+- `%s Finish caller authority`: Expected logs belong to `tests/__snapshots__/course-outcome-writes.test.ts.snap` (relative to `packages/export-pipeline/`), under the `standalone Finish caller authority` and `xapi Finish caller authority` keys for `revoked caller during completion` and `revoked provider during completion`. The `launch` fixture supplies the current runtime; the tests record calls and the Finish return value in one log. The earliest available public revision containing the test and snapshots is `e844d74f9bd6a643941f9fa8ca241e5376b3adc0`; it does not identify the original capture revision or the refactor mentioned by the deleted comment. That originating provenance remains unknown.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not independently verified.
 
 ### packages/export-pipeline/tests/fixtures/choice-facts.ts
 
@@ -130,11 +158,15 @@ Export tests include platform observations, fixture admission rules and measured
 ### packages/export-pipeline/tests/fixtures/load-grammar-fixture.ts
 
 - `ensureDesktopExportAssets`: The desktop prebuild command, run through Node: Windows has no pnpm executable to spawn.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not independently verified.
 - `legacy`: Stemless assessments remain a supported stored model. G4 authored hotspots require a question, so retain the publisher fallback case at its interface.
 
 ### packages/export-pipeline/tests/fixtures/review-page-layout.ts
 
 - `reviewPageLayout`: JSDOM has no layout. Keep concealment and contents behavior at the browser seam.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not independently verified.
 
 ### packages/export-pipeline/tests/fixtures/self-check-release.ts
 
@@ -151,12 +183,18 @@ Export tests include platform observations, fixture admission rules and measured
 - `assertOutput`: Never let another decode complete a truncated marker at either boundary.
 - `assertOutput`: A digest/URL prefix can be part of the same token. Four offsets cover every base64 alignment without joining independent strings.
 - `normalizePdfOutput`: Decode PDF metadata/outline/ActualText channels as well as compressed streams. Glyph-mapped content still needs pdftotext; neither view substitutes for the other.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not independently verified.
 - `endOfDictionary`: DecodeParms can follow Filter, so the nearest opener may belong to a nested dictionary.
 
 ### packages/export-pipeline/tests/focus-assertions.ts
 
 - `expectFocusRing`: A user-selected forced palette controls contrast; honor its system colors.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not independently verified.
 - `expectFocusRing`: WebKit emulates the media query without replacing authored colors.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not independently verified.
 
 ### packages/export-pipeline/tests/learning-patterns-notices.test.ts
 
@@ -175,16 +213,24 @@ Export tests include platform observations, fixture admission rules and measured
 ### packages/export-pipeline/tests/review-anchors.test.ts
 
 - `open`: JSDOM has no layout hit testing; individual occlusion cases supply their own hit.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not independently verified.
 - `fill`: CSS color-mix(in srgb, …, transparent) composites encoded sRGB channels; the theme's compositeOver helper deliberately mixes linear RGB instead.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not independently verified.
 
 ### packages/export-pipeline/tests/review-composer.test.ts
 
 - `open`: JSDOM has no SubtleCrypto. Keep native SHA-256 behind that platform seam.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not independently verified.
 - `collisionIds`: Golden SHA-256 UUID chain for [candidate, "Kept text", collisionAnchor].
 
 ### packages/export-pipeline/tests/review-threads.test.ts
 
 - `open`: Native `Response` bodies need an event-loop turn before they can be read; draining microtasks alone does not settle them.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not independently verified.
 
 ### packages/export-pipeline/tests/tracking.test.ts
 
@@ -199,6 +245,8 @@ Export tests include platform observations, fixture admission rules and measured
 
 - `placement`: Cards share one root. Remove sibling activities so a front refusal cannot accidentally stand in for proof that the back also refuses publication.
 - `lessonInputs`: The web fixture also exercises an emoji unsupported by bundled PDF fonts. Native publication uses the same marked fields with supported font characters.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not independently verified.
 
 Sources: the comments and corresponding implementations in the named files at Studio commit `bed54f6109aa4ae868c981f53233a5ee9c5afdd7`. Explicit spec sections, issue numbers, capture revisions and owner dates above retain the original evidence references.
 
