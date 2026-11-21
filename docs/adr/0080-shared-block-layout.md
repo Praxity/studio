@@ -17,8 +17,21 @@ Block CSS must preserve reading order, native activation and readable review sta
   made adjacent sections read as one continuous run of text.
 
 - `[data-praxity-root][data-praxity-motion-entrance] :is( .praxity-block, .praxity-sequence-item,
-  .praxity-card-item, .praxity-stats-item )[data-entrance]`: Override the viewer's universal
-  reduced-motion duration as well.
+  .praxity-card-item, .praxity-stats-item )[data-entrance]`: Under `@media (prefers-reduced-motion:
+  reduce)`, disable entrance transitions and delays with `transition: none !important` and
+  `transition-delay: 0ms !important`. Apply the same disabling rule under
+  `[data-praxity-root][data-praxity-reduced-motion]`. This also overrides the viewer-wide
+  `transition-duration: 0s !important` rule in `packages/shared-blocks/src/viewer/viewer-shell.css`,
+  whose selectors are `[data-praxity-root][data-praxity-reduced-motion="true"] *`,
+  `[data-praxity-root][data-praxity-reduced-motion="true"] *::before` and
+  `[data-praxity-root][data-praxity-reduced-motion="true"] *::after`. Reduced motion does not permit
+  an authored entrance duration.
+
+  Evidence: The two entrance selectors in `packages/shared-blocks/src/blocks/shared-blocks.css` set
+  both declarations. `packages/shared-blocks/src/motion.test.ts`, "bails out visibly for OS and
+  learner reduced-motion preferences", checks initialization;
+  `packages/export-pipeline/tests/a11y/design-layout-motion.spec.ts`, `${mode} entrance modes
+  respect ${reducedMotion}`, checks browser paint and transition behavior.
 
 - `[data-praxity-root]:not([data-praxity-motion-entrance]) .praxity-block[data-entrance],
   [data-praxity-root][data-praxity-motion-entrance="none"] .praxity-block[data-entrance]`: Stale
@@ -36,6 +49,10 @@ Block CSS must preserve reading order, native activation and readable review sta
 
 - `[data-praxity-root] :is(h1, h2, h3, h4, h5, h6)`: Retain -webkit-hyphens for Safari before 17,
   which reads only the prefixed hyphenation property.
+
+  Evidence: [WebKit Features in Safari 17.0,
+  Hyphenation](https://webkit.org/blog/14445/webkit-features-in-safari-17-0/#hyphenation) dates
+  unprefixed hyphens support to Safari 17 and records prefixed support since 2011.
 
 - `[data-praxity-root] :is(h1, h2, h3, h4, h5, h6) :is(code, kbd, samp)`: An inserted hyphen would
   change code that learners read or copy.
@@ -60,9 +77,15 @@ Block CSS must preserve reading order, native activation and readable review sta
 - `.praxity-card-controls`: Keep the control label at least 13px, one pixel above the 12px minimum:
   transformed faces can land on fractional device pixels in Firefox.
 
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
+
 - `.praxity-chart-visual .praxity-chart-mark`: Bars and legend swatches keep a same-hue edge: it
   holds 3:1 for pale fills without a text-coloured outline on every bar. The SVG stroke attribute
   remains for print, which drops it where the fill already contrasts with paper.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 - `.praxity-assessment-choice-option` and `.praxity-ag-radio-row`: Keep option-row borders
   transparent at rest. The question and page already supply boundaries, and the radio supplies the
@@ -74,10 +97,16 @@ Block CSS must preserve reading order, native activation and readable review sta
   target. WebKit moved pointer-up from label to input and clicked their shared div, losing native
   activation. Color and focus feedback keep targets stationary.
 
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
+
 - `.praxity-page-content .praxity-assessment-choice-option input:focus-visible,
   .praxity-assessment-choice-option input[type="radio"]:focus, .praxity-ag-radio-row
   input[type="radio"]:focus`: The row owns focus. Native radio arrows can clear WebKit's
   focus-visible heuristic, so keep the row ring on :focus and suppress only its inner ring.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 - `.praxity-assessment-choice-option:has(input:disabled),
   .praxity-ag-radio-row:has(input:disabled)`: Keep submitted option text at reading contrast even
@@ -102,18 +131,27 @@ Block CSS must preserve reading order, native activation and readable review sta
   .praxity-rating-options:has(> .praxity-rating-numeric:nth-of-type(11):last-child)`: Round down so
   Gecko's subpixel gap rounding cannot force an early wrap.
 
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
+
 - `.praxity-slides-grid[data-transition="none"] .praxity-slides-item`: Authored "none" names no
-  property, so the reduced-motion 0.01ms duration policy cannot turn the visibility swap into a
-  transition.
+  property, so the viewer's zero-duration reduced-motion policy cannot turn the visibility swap into
+  a transition.
 
 - `[data-praxity-root] .praxity-assessment-choice-option > input[type="radio"]`: Transparent native
   hit targets retain their circular shape in Chromium.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### `packages/shared-blocks/src/reading-rhythm.css`
 
 - `@media (prefers-reduced-motion: reduce)`: Zero-duration animations keep their end keyframe.
   Removing the animation can expose its initial state when an authored reveal uses
   animation-fill-mode.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 - `@container praxity-stage (max-width: 767px)`: A laptop viewport can contain a phone-sized
   authoring preview.

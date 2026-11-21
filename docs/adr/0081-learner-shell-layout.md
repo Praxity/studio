@@ -22,6 +22,9 @@ Published shells must fit their workspace and preserve focus without adding dupl
   #main-content, .praxity-slide)`: One-page authoring previews measure natural content, not the
   iframe viewport. Otherwise expanding the iframe can keep expanding a viewport-sized slide.
 
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
+
 - `.praxity-outline-fallback[data-hydrated]`: Once the nav island owns this mount, CourseMenu
   supplies its own spacing and borders. Keeping the fallback padding made compact top bars narrower
   than the page and made the desktop sidebar overflow its 260px grid track.
@@ -44,6 +47,9 @@ Published shells must fit their workspace and preserve focus without adding dupl
   framed the whole slide on arrival; Safari also applies focus-visible to programmatic focus.
   Interactive descendants must retain their keyboard focus rings.
 
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
+
 - `.praxity-page-content :is(input, select, textarea):focus-visible, a:focus-visible,
   button:focus-visible, .praxity-viewer-shell summary:focus-visible, .praxity-viewer-shell
   audio:focus-visible, .praxity-viewer-shell video:focus-visible, input:focus-visible,
@@ -58,6 +64,9 @@ Published shells must fit their workspace and preserve focus without adding dupl
   variables with important declarations so button and document blocks use course theme colors. Keep
   --praxity-color-button-outline tied to course-surface contrast. The renderer's data-block-type
   wrapper is separate from its outer praxity-block.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 - `:is(html[data-praxity-root], .praxity-viewer-shell)`: Theme tokens are inline on this element;
   important is required for the preference to win.

@@ -15,23 +15,47 @@ Narration must retain authored identity and privacy while media adapters respect
 - `observeEmbedFailure`: Iframe load events do not prove a cross-origin provider rendered
   successfully. Keep the source link visible; remove the empty frame on observable failures.
 
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
+
 - `waitForConfirmation`: A cross-origin load event also fires on network errors. If the provider
   sends no confirmation, offer a compact fallback and explicit recovery. Never infer failure from
   opaque, zero-valued Resource Timing fields.
 
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
+
 - `observeEmbedFailure`: Bind before navigation so even a synchronous CSP refusal is observed.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### `packages/shared-blocks/src/blocks/video-player/use-video-player.ts`
 
-- `useVideoPlayer`: For YouTube we must append enablejsapi=1 and origin so postMessage commands
-  work. Without origin, YouTube refuses to initialize the JS API. onReady never fires, currentTime
-  never updates, and cue points never trigger.
+- `useVideoPlayer`: Set `enablejsapi=1` and, for a non-null page origin, the `origin` parameter on
+  YouTube embeds. Google recommends origin as an additional IFrame API security measure. The removed
+  comment reported a startup failure without origin in Studio's integration, but did not retain the
+  browser, player version or reproduction. Omission is not established as a universal cause of
+  initialization failure.
+
+  Evidence: [YouTube origin
+  parameter](https://developers.google.com/youtube/player_parameters#origin) supports the parameter
+  policy.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified. The historical startup failure has not been reproduced.
 
 - `finalEmbedUrl`: Omit the origin parameter for file:// documents, whose origin is the string
   "null".
 
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
+
 - `useVideoPlayer`: CSP can refuse the API while the cross-origin player and its native controls
   still work.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### `packages/shared-blocks/src/blocks/video-player/use-vimeo-player.ts`
 
@@ -44,8 +68,20 @@ Narration must retain authored identity and privacy while media adapters respect
   postMessage commands. The previous approach had origin and race failures. Poll every 500ms because
   the API reports discrete state changes rather than continuous time updates.
 
+  Evidence: [YouTube IFrame API
+  events](https://developers.google.com/youtube/iframe_api_reference#Events) documents state-change
+  notifications and getCurrentTime as a query. The 500ms polling interval is Studio policy.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified. The earlier raw-postMessage failure is a historical observation without a
+  retained reproduction.
+
 - `useYouTubePlayer`: Do not call player.destroy() during React cleanup: it removes the iframe from
   the DOM. Just drop the reference; React will unmount the iframe element.
+
+  Evidence: [YouTube IFrame API, Accessing and modifying DOM
+  nodes](https://developers.google.com/youtube/iframe_api_reference#Accessing_and_modifying_DOM_nodes),
+  player.destroy, explicitly removes the player iframe.
 
 ### `packages/shared-blocks/src/narration.ts`
 
@@ -68,8 +104,7 @@ Narration must retain authored identity and privacy while media adapters respect
 - `normalizeNarrationSourceContent`: Page-title text and unknown legacy fingerprints must survive
   writes intact.
 
-- `derivedBlockScript`: The task is literal text; feedback narration awaits a learner-step target
-  contract.
+- `derivedBlockScript`: For the selfCheck case, narrate only the literal task text.
 
 - `visit`: A whole-container clip/script cannot become an introduction after splitting.
 
@@ -94,6 +129,10 @@ Narration must retain authored identity and privacy while media adapters respect
   Rejected designs were a floating popover, hidden content after main, the full script in a live
   region, a missing-timings status and controls before Listen. The original record cited published
   Chromium and WebKit accessibility checks.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified. The deleted record did not identify the browser run or retained speech
+  transcript.
 
 ## Sources
 

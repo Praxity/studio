@@ -18,6 +18,10 @@ Renderers share identity, spacing, contrast and text conventions across preview 
   is in every bundled font's Latin set; Typst sets a whole run in a fallback font when one glyph is
   missing, which a square such as U+25A0 triggers.
 
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified. The comment did not identify a Typst version, font files or retained
+  rendering fixture for that fallback observation.
+
 - `renderCartesianChartSvg`: Label extents are estimated at the 16-unit base size, since SVG text
   cannot be measured here.
 
@@ -45,6 +49,11 @@ Renderers share identity, spacing, contrast and text conventions across preview 
   line inside the heading. Layout drops a trailing ordinary space there, and NVDA then reads
   "6:Build"; a non-breaking space survives.
 
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified. `packages/shared-blocks/src/i18n/__tests__/strings.test.ts`,
+  "distinguishes page and module visits from actual completion in both locales", pins the
+  non-breaking separator strings, not live NVDA speech.
+
 - `fr`: French puts a non-breaking space before a colon; the cue's colon must not wrap alone.
 
 ### `packages/shared-blocks/src/lib/external-link-utils.tsx`
@@ -65,6 +74,9 @@ Renderers share identity, spacing, contrast and text conventions across preview 
 
 - `renderMath`: Wrap with aria-label so screen readers that don't parse MathML still get a readable
   string. Keep authored source readable if rendering fails, in every course language.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 - `renderMathSpeech`: Generate a human-readable speech string from LaTeX using KaTeX's a11y contrib.
   Returns null if generation fails (invalid LaTeX, etc.). The caller falls back to MathML only.
@@ -95,6 +107,9 @@ Renderers share identity, spacing, contrast and text conventions across preview 
   etc., and an unregistered name makes Mantine variants degenerate (white-on-light badge text,
   caught by axe). Shade 6+ is dark enough for AA text on shade 0.
 
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
+
 ### `packages/shared-blocks/src/viewer/completion-effects.ts`
 
 - `createCompletionEffects`: Keep Continue controls focusable with aria-disabled and show one
@@ -109,16 +124,35 @@ Renderers share identity, spacing, contrast and text conventions across preview 
 - `rememberGlossaryFocusReturn`: Native new tabs do not consistently restore the originating link in
   Firefox.
 
+  Evidence: `packages/export-pipeline/tests/deck/glossary-return-focus.spec.ts`, `${mode} ${source}
+  glossary tab returns focus to its trigger`, checks the return policy.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified. Native Firefox behavior without the recovery helper is not independently
+  established by that test.
+
 - `onReturn`: Firefox can reset focus to BODY after the window's return events.
+
+  Evidence: `packages/export-pipeline/tests/deck/glossary-return-focus.spec.ts`, `glossary return
+  survives a late BODY reset with ${state} popover`, injects the reset to pin recovery. Evidence:
+  the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified. The test does not establish that Firefox generates the reset.
 
 ### `packages/shared-blocks/src/viewer/inline-tooltips.ts`
 
 - `hide`: Removing a focused popover fires focusout synchronously in Chromium. Clear ownership
   before removal so dismissal cannot re-enter and lose the trigger.
 
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
+
 - `initInlineTooltips`: Click binds to each trigger, not to body: Chromium exposes an element with a
   click listener as clickable, and every descendant inherits that, so NVDA said "clickable" before
   ordinary course content. Keyboard and hover stay delegated.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified. The deleted comment did not record Chromium/NVDA versions or a speech
+  transcript.
 
 ### `packages/shared-blocks/src/viewer/navigate-page.ts`
 
@@ -131,10 +165,17 @@ Renderers share identity, spacing, contrast and text conventions across preview 
 - `capture`: Media entry and beforeprint can both arrive. Keep the first capture: Firefox blurs
   print-hidden controls to BODY between these events.
 
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified. `packages/shared-blocks/src/viewer/print-focus-return.a11y.md` records the
+  capture policy and historical Chromium event-order observations, without a Firefox reproduction.
+
 ### `packages/shared-blocks/src/viewer/scroll-into-view.ts`
 
 - `scrollElementIntoView`: Native smooth scrolling has no duration control; learner motion must stay
   under 300 ms.
+
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ## Sources
 
