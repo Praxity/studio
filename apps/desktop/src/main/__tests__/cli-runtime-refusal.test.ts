@@ -109,3 +109,19 @@ it.each(["html", "scorm-1.2", "scorm-2004", "pdf"])(
 		);
 	},
 );
+
+it("CLI PDF uses explicit PDF assets independently of the viewer directory", async () => {
+	const root = await mkdtemp(join(tmpdir(), "cli-pdf-assets-"));
+	roots.push(root);
+	const output = join(root, "course.pdf");
+	const result = await runPraxityCli(
+		["export", publicationRoot, "--format", "pdf", "--output", output],
+		{
+			appVersion: "0.3.0",
+			exportAssetsDir: join(root, "viewer-assets"),
+			pdfAssetsDir: resolve(import.meta.dirname, "../../../resources/typst"),
+		},
+	);
+	expect(result.exitCode, result.stdout + result.stderr).toBe(0);
+	expect((await readFile(output)).subarray(0, 5).toString()).toBe("%PDF-");
+});

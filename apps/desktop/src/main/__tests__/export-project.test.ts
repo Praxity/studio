@@ -1,9 +1,15 @@
+import * as childProcess from "node:child_process";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { type DesktopExportInput, selfCheckContentInput } from "@praxity/export-pipeline";
 import { readLesson, readSelfCheckContent } from "@praxity/grammar";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("node:child_process", async (importOriginal) => ({
+	...(await importOriginal<typeof import("node:child_process")>()),
+	execFile: vi.fn(),
+}));
 
 const mocks = vi.hoisted(() => ({
 	assertViewerAssetsReady: vi.fn(),
@@ -48,11 +54,17 @@ import { resolveCompletionSettings } from "../project-config";
 const tempDirs: string[] = [];
 let admittedProjectDir: string;
 beforeEach(async () => {
+	vi.stubEnv("PRAXITY_STUDIO_TYPST", process.execPath);
+	vi.mocked(childProcess.execFile).mockImplementation(((...args: unknown[]) => {
+		const callback = args.at(-1) as (error: null, stdout: string, stderr: string) => void;
+		callback(null, "typst 0.15.1 (9dfd3a08)", "");
+	}) as typeof childProcess.execFile);
 	admittedProjectDir = await mkdtemp(path.join(os.tmpdir(), "export-admission-"));
 	tempDirs.push(admittedProjectDir);
 });
 
 afterEach(async () => {
+	vi.unstubAllEnvs();
 	vi.clearAllMocks();
 	await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
@@ -241,7 +253,8 @@ describe("exportProject", () => {
 				diagnosticLocale: "fr",
 				pageSize: "letter",
 				includeAnswerSheet: true,
-				executablePath: path.resolve("/missing/typst/typst"),
+				executablePath: process.execPath,
+				assetDirectory: path.resolve("/missing/typst"),
 			}),
 		);
 		mocks.exportCoursePdf.mockRejectedValueOnce(

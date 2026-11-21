@@ -64,7 +64,21 @@ export async function startJourney(
 				"--no-open",
 				...(options.port === undefined ? [] : ["--port", String(options.port)]),
 			],
-			{ cwd: root, windowsHide: true, stdio: ["ignore", "pipe", "pipe"] },
+			{
+				cwd: root,
+				windowsHide: true,
+				stdio: ["ignore", "pipe", "pipe"],
+				env: {
+					...process.env,
+					PRAXITY_STUDIO_TYPST:
+						process.env.PRAXITY_STUDIO_TYPST ??
+						process.env.PRAXITY_TEST_TYPST ??
+						resolve(
+							import.meta.dirname,
+							`../../resources/typst/typst${process.platform === "win32" ? ".exe" : ""}`,
+						),
+				},
+			},
 		);
 		const stopped = new Promise<void>((resolve) => child.once("close", () => resolve()));
 		try {
@@ -112,7 +126,13 @@ export async function startJourney(
 		editorAssetsDir,
 		appVersion: "0.3.0",
 		exportAssetsDir: resolve(import.meta.dirname, "../../resources/export-assets"),
-		typstExecutablePath: process.env.PRAXITY_TEST_TYPST,
+		typstExecutablePath:
+			process.env.PRAXITY_STUDIO_TYPST ??
+			process.env.PRAXITY_TEST_TYPST ??
+			resolve(
+				import.meta.dirname,
+				`../../resources/typst/typst${process.platform === "win32" ? ".exe" : ""}`,
+			),
 	});
 	process.env.PRAXITY_BROWSER_READY_URL = server.readyUrl;
 	return async () => {

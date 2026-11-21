@@ -171,10 +171,12 @@ test("format package preserves public docs, skill links, legal bytes, and comple
 	assert.ok(!payload.files.some((file) => file.path.includes("scripts/")));
 });
 
-for (const [platform, arch, binary] of [
-	["win32", "x64", "typst.exe"],
-	["darwin", "arm64", "typst"],
-	["darwin", "x64", "typst"],
+for (const [platform, arch] of [
+	["win32", "arm64"],
+	["linux", "x64"],
+	["linux", "arm64"],
+	["darwin", "arm64"],
+	["darwin", "x64"],
 ]) {
 	test(`payload inventory records ${platform}/${arch} without requiring the target host`, async (t) => {
 		const outputDir = await temporaryArtifact(t);
@@ -187,7 +189,8 @@ for (const [platform, arch, binary] of [
 			'<script type="module" src="/editor.js"></script>',
 		);
 		await writeFile(path.join(outputDir, "editor", "editor.js"), 'console.log("Editor");');
-		await writeFile(path.join(outputDir, "typst", binary), Buffer.from([0, 1, 0]));
+		await mkdir(path.join(outputDir, "typst/fonts"));
+		await writeFile(path.join(outputDir, "typst/fonts/LICENSE"), "font notice");
 		await writeFile(path.join(outputDir, "export-assets", "viewer.css"), "body {}");
 		await writeFile(path.join(outputDir, "export-assets", "inspection-frame.js"), "void 0;");
 		await writeFile(path.join(outputDir, "legal", "LICENSE"), "legal notice");
@@ -204,23 +207,15 @@ for (const [platform, arch, binary] of [
 				["export-assets/viewer.css", "course-delivery-runtime-and-inputs"],
 				["legal/LICENSE", "operative-legal-notice"],
 				["praxity.mjs", "studio-module"],
-				[`typst/${binary}`, "third-party"],
+				["typst/fonts/LICENSE", "third-party"],
 			],
 		);
 		assert.equal(payload.payloadSha256, sha256(JSON.stringify(payload.files)));
 	});
 }
 
-test("payload inventory rejects unsupported targets, private paths, source maps and symlinks", async (t) => {
+test("payload inventory rejects private paths, source maps and symlinks", async (t) => {
 	const outputDir = await temporaryArtifact(t);
-	await assert.rejects(
-		inventoryPayload(outputDir, repoDir, { platform: "linux", arch: "x64" }),
-		/Unsupported standalone CLI platform/,
-	);
-	await assert.rejects(
-		inventoryPayload(outputDir, repoDir, { platform: "win32", arch: "arm64" }),
-		/Unsupported Typst architecture/,
-	);
 	const target = { platform: "win32", arch: "x64" };
 	await writeFile(path.join(outputDir, "private.txt"), repoDir);
 	await assert.rejects(inventoryPayload(outputDir, repoDir, target), /Private checkout path/);

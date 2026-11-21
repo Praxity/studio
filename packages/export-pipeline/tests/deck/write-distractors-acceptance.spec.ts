@@ -3,7 +3,7 @@ import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { readWriteDistractorsContent } from "@praxity/grammar";
@@ -74,7 +74,7 @@ test.beforeAll(async () => {
 	await build({
 		stdin: {
 			resolveDir: checkout,
-			contents: `import {runPraxityCli} from './apps/desktop/src/main/cli'; const result = await runPraxityCli(process.argv.slice(2), {appVersion: ${JSON.stringify(version)}, exportAssetsDir: ${JSON.stringify(assets)}, typstExecutablePath: ${JSON.stringify(typstExecutablePath)}}); process.stdout.write(result.stdout); process.stderr.write(result.stderr); process.exitCode = result.exitCode;`,
+			contents: `import {runPraxityCli} from './apps/desktop/src/main/cli'; const result = await runPraxityCli(process.argv.slice(2), {appVersion: ${JSON.stringify(version)}, exportAssetsDir: ${JSON.stringify(assets)}, typstExecutablePath: ${JSON.stringify(typstExecutablePath)}, pdfAssetsDir: ${JSON.stringify(dirname(typstExecutablePath))}}); process.stdout.write(result.stdout); process.stderr.write(result.stderr); process.exitCode = result.exitCode;`,
 		},
 		outfile: join(root, "cli.mjs"),
 		bundle: true,

@@ -68,7 +68,7 @@ test("formal build has only the admitted archive and browser commands, without s
 		.map((entry) => entry.run);
 	assert.deepEqual(commands, [
 		'pnpm install --frozen-lockfile --store-dir "$RUNNER_TEMP/cli-candidate-$GITHUB_RUN_ID/pnpm-store"',
-		'source "$GITHUB_WORKSPACE/workflow/apps/desktop/scripts/prepare-macos-tmpdir.sh"\nbash ../workflow/apps/desktop/scripts/build-cli-archives.sh\n',
+		'source "$GITHUB_WORKSPACE/workflow/apps/desktop/scripts/prepare-macos-tmpdir.sh"\npnpm --filter @praxity/desktop prepare:typst\nbash ../workflow/apps/desktop/scripts/build-cli-archives.sh\n',
 	]);
 });
 
@@ -117,7 +117,7 @@ test("formal release shards every packaged browser engine and gates publication 
 	assert.ok(job["timeout-minutes"] > journeys["timeout-minutes"]);
 	assert.equal(
 		journeys.run.split("\n")[1],
-		'PRAXITY_BROWSER_ARTIFACT="$PWD/dist/studio-cli" pnpm --filter @praxity/desktop run e2e:browser-editor --project="${{ matrix.browser }}" --shard="${{ matrix.shard }}"',
+		'PRAXITY_STUDIO_TYPST="$PWD/apps/desktop/resources/typst/typst" PRAXITY_BROWSER_ARTIFACT="$PWD/dist/studio-cli" pnpm --filter @praxity/desktop run e2e:browser-editor --project="${{ matrix.browser }}" --shard="${{ matrix.shard }}"',
 	);
 	assert.deepEqual(release.jobs.publish.needs, ["build", "browser-editor"]);
 });
@@ -126,7 +126,10 @@ test("formal browser shards prepare source fixture assets before packaged journe
 	const steps = release.jobs["browser-editor"].steps;
 	const prebuild = steps.find((step) => step.name === "Prepare source fixture assets");
 	assert.ok(prebuild);
-	assert.equal(prebuild.run, "pnpm --filter @praxity/desktop prebuild");
+	assert.equal(
+		prebuild.run,
+		"pnpm --filter @praxity/desktop prebuild\npnpm --filter @praxity/desktop prepare:typst\n",
+	);
 	assert.equal(prebuild.if, undefined);
 	assert.equal(prebuild["continue-on-error"], undefined);
 	const index = (name) => steps.findIndex((step) => step.name === name);

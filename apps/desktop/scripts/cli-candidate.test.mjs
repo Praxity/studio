@@ -132,7 +132,13 @@ test("the actual Mac TMPDIR guard accepts 43 bytes and refuses 44 or more before
 	for (const length of [44, 85, 43]) {
 		const result = spawnSync(
 			bash,
-			["-e", "-o", "pipefail", "-c", `mkdir() { echo mkdir; }\nbash() { echo build; }\n${script}`],
+			[
+				"-e",
+				"-o",
+				"pipefail",
+				"-c",
+				`mkdir() { echo mkdir; }\npnpm() { [[ "$*" == "--filter @praxity/desktop prepare:typst" ]] || return 23; echo prepare; }\nbash() { echo build; }\n${script}`,
+			],
 			{
 				encoding: "utf8",
 				env: { ...process.env, TMPDIR: "/" + "x".repeat(length - 1), INTERNAL_INSTALL: "true" },
@@ -140,7 +146,7 @@ test("the actual Mac TMPDIR guard accepts 43 bytes and refuses 44 or more before
 		);
 		assert.equal(result.error, undefined);
 		assert.equal(result.status, length < 44 ? 0 : 1, result.stderr);
-		if (length < 44) assert.equal(result.stdout, "mkdir\nbuild\n");
+		if (length < 44) assert.equal(result.stdout, "mkdir\nprepare\nbuild\n");
 		else {
 			assert.equal(result.stdout, "", "No tool may start with an overlong socket path");
 			assert.match(result.stderr, /TMPDIR is too long for macOS tool sockets/);
@@ -160,7 +166,7 @@ test("the actual Mac TMPDIR creation refuses symlinks and permits private-direct
 			[
 				"-e",
 				"-c",
-				`${prefix}TMPDIR="$REQUESTED_TMPDIR"\nmkdir() { printf 'mkdir:%s\\n' "$*"; ${mkdir}; }\nbash() { echo build; }\n${script}`,
+				`${prefix}TMPDIR="$REQUESTED_TMPDIR"\nmkdir() { printf 'mkdir:%s\\n' "$*"; ${mkdir}; }\npnpm() { [[ "$*" == "--filter @praxity/desktop prepare:typst" ]] || return 23; echo prepare; }\nbash() { echo build; }\n${script}`,
 			],
 			{
 				cwd: directory,
@@ -179,7 +185,7 @@ test("the actual Mac TMPDIR creation refuses symlinks and permits private-direct
 	for (const state of ["absent", "existing"]) {
 		const result = run("./private-tmp");
 		assert.equal(result.status, 0, `${state}: ${result.stderr}`);
-		assert.equal(result.stdout, "mkdir:-m 700 -p ./private-tmp\nbuild\n");
+		assert.equal(result.stdout, "mkdir:-m 700 -p ./private-tmp\nprepare\nbuild\n");
 		assert.ok(existsSync(join(directory, "private-tmp")));
 	}
 });

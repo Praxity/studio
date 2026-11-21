@@ -415,3 +415,27 @@ test("stages all Clear reading and ExtraBold faces for PDF without changing othe
 		await rm(directory, { recursive: true, force: true });
 	}
 });
+
+test("assets-only staging ignores the compiler archive and still verifies MiTeX", async () => {
+	const root = await mkdtemp(path.join(tmpdir(), "typst-assets-only-"));
+	try {
+		const archive = path.join(root, "invalid-typst.zip");
+		const mitexArchive = path.join(root, "invalid-mitex.tar.gz");
+		await writeFile(archive, "invalid compiler");
+		await writeFile(mitexArchive, "invalid math package");
+		await assert.rejects(
+			prepareTypst({
+				assetsOnly: true,
+				archive,
+				mitexArchive,
+				output: path.join(root, "out"),
+				cache: path.join(root, "cache"),
+				platform: "win32",
+				arch: "x64",
+			}),
+			/MiTeX archive checksum mismatch/,
+		);
+	} finally {
+		await rm(root, { recursive: true, force: true });
+	}
+});

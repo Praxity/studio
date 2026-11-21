@@ -29,6 +29,6 @@ jobs:
         with:
           node-version: 24.22.1
       - run: pnpm install --frozen-lockfile
-      # build:cli prepares viewer/export assets and the pinned compiler.
+      - run: pnpm --filter @praxity/desktop prepare:typst
       - run: pnpm build:cli
       - run: pnpm test:cli

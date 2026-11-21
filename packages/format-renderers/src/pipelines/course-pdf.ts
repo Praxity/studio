@@ -1643,6 +1643,7 @@ export function buildCoursePdfSource(options: CoursePdfOptions): {
 export async function exportCoursePdf(
 	options: CoursePdfOptions & {
 		executablePath: string;
+		assetDirectory?: string;
 		signal?: AbortSignal;
 		temporaryRoot?: string;
 	},
@@ -1651,10 +1652,20 @@ export async function exportCoursePdf(
 	if (!options.executablePath)
 		throw new CoursePdfError("course", undefined, "An explicit Typst executable is required.");
 	options.signal?.throwIfAborted();
-	const fontDir = path.join(path.dirname(options.executablePath), "fonts");
+	const assetDirectory = options.assetDirectory ?? path.dirname(options.executablePath);
+	const fontDir = path.join(assetDirectory, "fonts");
 	const availableFonts = new Set(
 		await readdir(fontDir).catch((error: NodeJS.ErrnoException) => {
-			if (error.code === "ENOENT") return [];
+			if (error.code === "ENOENT") {
+				if (options.assetDirectory === undefined) return [];
+				throw new CoursePdfError(
+					"course",
+					undefined,
+					options.diagnosticLocale === "fr"
+						? `Répertoire des polices PDF introuvable : ${fontDir}`
+						: `Missing PDF fonts directory: ${fontDir}`,
+				);
+			}
 			throw error;
 		}),
 	);
@@ -1684,7 +1695,7 @@ export async function exportCoursePdf(
 		])
 			files.set(
 				`mitex/${filename}`,
-				await readFile(path.join(path.dirname(options.executablePath), "mitex", filename), {
+				await readFile(path.join(assetDirectory, "mitex", filename), {
 					signal: options.signal,
 				}),
 			);

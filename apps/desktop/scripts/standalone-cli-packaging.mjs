@@ -1,7 +1,6 @@
 import { createHash } from "node:crypto";
 import { cp, mkdir, readdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import { selectTypstRelease } from "./prepare-typst.mjs";
 import { assertNoPrivateCheckoutPath, portablePath } from "./standalone-cli-paths.mjs";
 
 export const STUDIO_BROWSER_COMPONENT = "studio-browser-editor";
@@ -60,12 +59,6 @@ export function canvasBundlePlugin(entry) {
 	};
 }
 
-export function assertStandaloneTarget(platform, arch) {
-	if (platform !== "darwin" && platform !== "win32")
-		throw new Error(`Unsupported standalone CLI platform: ${platform}`);
-	selectTypstRelease(platform, arch);
-}
-
 export async function filesIn(directory) {
 	const files = [];
 	for (const entry of await readdir(directory, { withFileTypes: true })) {
@@ -92,7 +85,6 @@ export async function packagePraxFormat(sourceDir, outputDir) {
 }
 
 export async function inventoryPayload(outputDir, repoDir, { platform, arch }) {
-	assertStandaloneTarget(platform, arch);
 	const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 	const files = [];
 	for (const file of await filesIn(outputDir)) {

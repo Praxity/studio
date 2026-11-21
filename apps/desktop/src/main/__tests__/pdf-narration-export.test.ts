@@ -1,3 +1,4 @@
+import * as childProcess from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -6,6 +7,11 @@ import { serializeNarrationSidecarV2 } from "../../shared/narration-sidecar";
 import { narrationFixture } from "../../test-utils/narration-fixture";
 import { exportProject } from "../export/export-project";
 import { ProjectAssetInventory } from "../export/project-asset-inventory";
+
+vi.mock("node:child_process", async (importOriginal) => ({
+	...(await importOriginal<typeof import("node:child_process")>()),
+	execFile: vi.fn(),
+}));
 
 const { exportCoursePdf } = vi.hoisted(() => ({ exportCoursePdf: vi.fn() }));
 
@@ -19,6 +25,11 @@ vi.mock("@praxity/export-pipeline/bundle-viewer", () => ({
 
 let projectDir: string;
 beforeEach(async () => {
+	vi.stubEnv("PRAXITY_STUDIO_TYPST", process.execPath);
+	vi.mocked(childProcess.execFile).mockImplementation(((...args: unknown[]) => {
+		const callback = args.at(-1) as (error: null, stdout: string, stderr: string) => void;
+		callback(null, "typst 0.15.1 (9dfd3a08)", "");
+	}) as typeof childProcess.execFile);
 	projectDir = await mkdtemp(path.join(os.tmpdir(), "pdf-narration-"));
 	await mkdir(path.join(projectDir, "assets"));
 	await writeFile(
@@ -41,6 +52,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+	vi.unstubAllEnvs();
 	await rm(projectDir, { recursive: true, force: true });
 });
 
