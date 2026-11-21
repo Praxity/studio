@@ -25,12 +25,12 @@ Review commands retain historical receipts while edge delivery must respect auth
 
 - `global.CacheStorage`: Vitest also loads DOM declarations, which hide Workers' default cache property.
 - `immutableFile`: Match exporter fingerprints, never ordinary authored filenames or HTML.
-- `lookupShare.stored`: KV defaults to 60 s, minimum 30 s; the explicit TTL preserves that existing window. Revocation or shortened expiry can take up to 60 s to reach this edge.
+- `lookupShare.stored`: Use an explicit 60 s read-cache TTL. Cloudflare documents a 60 s default and a 30 s minimum in its [2026-01-30 KV changelog](https://developers.cloudflare.com/changelog/post/2026-01-30-kv-reduced-minimum-cachettl/). Revocation or shortened expiry can remain stale at another location for 60 s or more; 60 s is not a global propagation bound. Source: [How KV works, consistency](https://developers.cloudflare.com/kv/concepts/how-kv-works/#consistency).
 - `createShare`: Return the server-computed expiry so clients render the authoritative date rather than recomputing it (avoids build/upload clock skew).
-- `serveFile.conditional`: Preserve R2's existing range and conditional semantics, including If-Range.
+- `serveFile.conditional`: Bypass the edge cache for `Range` and `if-*` requests. Studio evaluates `If-Range` against object metadata and computes the byte range; R2 evaluates the supplied `onlyIf` conditions and range read. Source: [R2GetOptions](https://developers.cloudflare.com/r2/api/workers/workers-api-reference/#r2getoptions). Studio response coverage: `packages/review-share/tests/worker.test.ts`, "keeps conditional/range behavior with a warm edge cache: %j" and "respects If-Range %s".
 - `serveFile.exists`: Cached bytes must not bypass R2 retention or manual deletion.
 - `serveFile`: Date and weak validators cannot establish an exact representation match here.
-- `serveFile.object.range`: A minimal read lets R2 evaluate If-None-Match before a 416 response.
+- `serveFile.object.range`: For an unsatisfiable range on a nonempty object, request offset 0 and length 1 with `onlyIf` before producing 416. If R2 returns metadata without a body for an unmet condition, return 304 first. Source: [R2 conditional operations](https://developers.cloudflare.com/r2/api/workers/workers-api-reference/#conditional-operations). Studio precedence coverage: `packages/review-share/tests/worker.test.ts`, "evaluates conditional GET before range %s"; this uses the test adapter rather than a deployed R2 service.
 
 Sources: the corresponding comments and implementations at commit `bed54f6109aa4ae868c981f53233a5ee9c5afdd7`, and the regression cases in `packages/review-share/tests/`.
 

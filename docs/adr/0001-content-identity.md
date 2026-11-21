@@ -12,25 +12,24 @@ Identity resolution must preserve history when identical source, moved content a
 
 ### `packages/content-identity/__tests__/canonical-semantics.test.ts`
 
-- `describeDocument characterization fixtures`: Literal outputs from canonical.ts at 49089c1b4, before semantic memoisation.
+- Test "preserves pre-memo lesson metadata and complete root revisions": retain literal `describeDocument` outputs captured at commit `49089c1b4`, before semantic memoisation, so expected values stay independent of the current implementation.
 
 ### `packages/content-identity/__tests__/inline-projection.test.ts`
 
-- `describeDocument characterization fixtures`: Whole-descriptor bytes captured on main, including canonical, matchText, revisionContent and ranges used by persisted identity and retirement.
+- Test "keeps every persisted descriptor byte from main for split choice descriptions": retain the complete literal descriptors, including `canonical`, `matchText`, `revisionContent` and ranges used by persisted identity and retirement.
 
 ### `packages/content-identity/__tests__/self-check-canonical.test.ts`
 
-- `describeDocument characterization fixtures`: Adding reader-only records must ensure that every pre-existing descriptor keeps this baseline.
-- `describeDocument characterization fixtures`: Captured from the reader branch after merging main, before prompt projection.
+- Test "keeps existing I4 canonical bytes and hashes for every converted non-self-check fixture": adding reader-only records must preserve the literal canonical baseline of pre-existing descriptors.
 
 ### `packages/content-identity/scripts/history-replay.ts`
 
 - `HistoryConversionProof`: The conversion archive retains this binding with its conversion evidence; it is not manifest authority.
-- `replayHistory.before`: Evaluate.py scores each pair independently. Preserve that denominator and oracle.
+- `replayHistory`: Resolve each transition independently from its complete previous snapshot, rather than carrying predictions from an earlier transition forward. The caller-supplied `HistoryCorpus.transitions[].pairs` labels are the expected old-to-new correspondence; missing labelled occurrences refuse replay. Verification: `packages/content-identity/__tests__/history-replay.test.ts`, tests "scores proven converted occurrences against independent labels through the resolver", "wrong author labels remain visible in the report" and "each transition gets its complete previous snapshot even after a lesson disappears".
 
 ### `packages/content-identity/scripts/replay-history.ts`
 
-- `module initialization`: Canonical hash of the study's four {old,new,pairs} records, in chronological order. Changing an oracle requires a separately reviewed study, never a local gate override.
+- `module initialization`: The CLI pins the canonical serialized transition labels to SHA-256 `d89c0815a83ec1f19a202a153df27cd1bc53f53d49291b22d155b667ad58df3e` and the ordered occurrence inventory to `8ba40ccd50e45decde237a8438c8b958f3ba671fd018a7b2b96b0df20f71d7c3`. It loads the corpus from the first argument and conversion proofs from the optional third argument or the adjacent `proofs/` directory. Changing expected labels requires a separately reviewed replacement corpus, never a local gate override. These hashes admit only the pinned input bytes; they do not independently verify the historical labels. The matching rule and its verification are defined by `replayHistory` and the named regression tests rather than an external evaluator.
 - `module initialization`: Archive wrong/lost cases before checking the gate, including a failing result.
 
 ### `packages/content-identity/src/canonical.ts`
@@ -70,7 +69,7 @@ Identity resolution must preserve history when identical source, moved content a
 
 ### `packages/content-identity/src/reconcile.ts`
 
-- `fragments`: Reject multi-fragment coverage, including small tails the study's guard misses.
+- `fragments`: Block fuzzy continuation when ordered adjacent fragments of the same type jointly cover at least 95% of a donor, start before its 5% boundary and reach its 95% boundary. Include one-word tails and short donors in split/merge detection; no fragment may be reused. Verification: `packages/content-identity/__tests__/reconciliation.test.ts`, tests "short donors also reject exact contiguous split/merge coverage", "a repeated one-word tail still proves contiguous split/merge coverage" and "small fragments %j require a recorded survivor in both directions".
 - `fragments.paths`: Repeated words may give a tail several possible positions. Memoize coverage instead of enumerating every path; monotonic sibling order forbids reusing a part.
 - `matchSimilar.targets`: The target set limits accepted matches to the current depth; all unmatched descriptors still compete in the frozen matrix.
 - `matchSimilar.oldSiblings.sort`: An absent pending record can share an ordinal and start with a shifted sibling.

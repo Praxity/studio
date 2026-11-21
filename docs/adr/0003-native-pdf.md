@@ -12,20 +12,30 @@ Native workbooks preserve authored meaning through Typst, including shaping, hea
 
 ### `packages/format-renderers/__tests__/course-pdf-native.test.ts`
 
-- `skipIf`: Native checks require the bundled compiler and Poppler. A supplied path must work.
-- `toHaveLength`: Poppler 24.02 omits alt text; the exact /Alt assertion in this test reads the PDF itself.
+- Tests "exports marked matching and rating blocks with the native compiler", "compiles both workbook variants with real Typst and retains content" and "preserves authored container order and image accessibility in PDF tags": `it.skipIf(!process.env.PRAXITY_TEST_TYPST)` gates native checks. Once an executable is supplied, compiler or Poppler failures must fail the test rather than skip it.
+- Test "preserves authored container order and image accessibility in PDF tags", helper `decodedPdf`: check the exact `/Alt` value in decoded PDF bytes independently of the Figure count read through `parsePdfStructure`. The replaced comment reports that Poppler 24.02 omits alt text; the test does not establish that observation for every Poppler version.
+
+  Evidence: the code comment this replaced (commit bed54f6); not independently verified.
 
 ### `packages/format-renderers/__tests__/helpers/pdf-structure.ts`
 
-- `parsePdfStructure`: Poppler's two-space nesting is stable; 24.02 omits the newer inline alt field.
-- `parsePdfStructure`: Windows Poppler adds one terminal NUL; keep any authored internal NUL.
+- `parsePdfStructure`: Interpret two-space nesting in the expected Poppler structure output. Accept an optional inline alt field because the replaced comment reports that Poppler 24.02 omits it. This is the helper's admitted input format, not a guarantee for all Poppler releases.
+
+  Evidence: the code comment this replaced (commit bed54f6); not independently verified.
+- `parsePdfStructure`: Remove one terminal NUL from the parsed inline alt field while preserving any internal NUL. The replaced comment attributes the terminal byte to Windows Poppler.
+
+  Evidence: the code comment this replaced (commit bed54f6); not independently verified.
 
 ### `packages/format-renderers/__tests__/self-check-wrapping.test.ts`
 
-- `mock`: This suite also tests formatting beyond authored admission limits. Keep the real validator everywhere except the explicitly scoped lower-level formatting calls.
-- `formattingOnly.mockImplementation.mocked`: Only task/label maxima are bypassed at this test boundary; all actual PDF text, geometry, evidence, identity, and copy checks still use the originals.
-- `toContain`: Poppler normalizes no-break spaces and omits word joiners, including on main.
-- `toEqual`: Poppler reverses RTL text; compare the Arabic character inventory separately.
+- Module-level `vi.mock("learning-patterns/patterns/self-check/logic.js")` and helper `formattingOnly`: wrap the real validator so formatting tests may exceed authored task/label length limits. Calls outside `formattingOnly` retain real admission.
+- `formattingOnly`, used by tests "keeps French punctuation bound to its words in %s fields" and "keeps words that fit the actual %s task width whole": substitute only task and criterion-label scaffolds during validation, restore the real validator in `finally`, and retain the original text for PDF geometry, evidence, identity and copy checks.
+- Test "wraps joined runs containing %j": compare extracted text after stripping spaces, U+00A0, U+202F, U+2007 and U+2060; also require that a word joiner was not added when the authored separator was different. This names the native extraction tolerance enforced by the test.
+
+  Evidence: the code comment this replaced (commit bed54f6); not independently verified.
+- Test "keeps a mixed Arabic and Latin run in bounds with every character": assert the Latin run literally and compare the Arabic character inventory independently of extraction order. The replaced comment reports reversed RTL extraction by Poppler.
+
+  Evidence: the code comment this replaced (commit bed54f6); not independently verified.
 
 ### `packages/format-renderers/src/pipelines/course-pdf-assessments.ts`
 
@@ -70,7 +80,9 @@ Native workbooks preserve authored meaning through Typst, including shaping, hea
 - `coursePdfLiteral.boundaries`: An evidence span can start inside a cluster, such as at its combining accent.
 - `coursePdfLiteral.boundSpace`: UAX 14 keeps a space attached to its opening/closing punctuation.
 - `coursePdfLiteral.markRun.measured`: Measure the prepared heading itself, including its show rules and Typst's implicit heading scale. Body runs keep their existing style and output.
-- `coursePdfLiteral`: Heading bodies must contain text, not a layout/context node, for PDF/UA. Resolve break decisions outside the heading before wrapping the literal text.
+- `coursePdfLiteral`: For the native PDF/UA heading path in `coursePdfLiteral`, resolve break decisions in the outer context and let the generated `px-title` function wrap literal heading text. Keep the context/layout node outside the heading body; the replaced comment records a PDF/UA restriction without an independently retained platform reproduction.
+
+  Evidence: the code comment this replaced (commit bed54f6); not independently verified.
 - `dropSourceLists`: Print sets sources as page footnotes, so a source-list placeholder, and a disclosure holding nothing else, is dropped.
 - `dropSourceLists.narrated`: Anything carrying an enabled custom script stays, so its narration still prints.
 - `narrationPieces.heading`: Script headings are delivery cues, not document structure; keep them out of the outline.
@@ -83,9 +95,9 @@ Native workbooks preserve authored meaning through Typst, including shaping, hea
 - `buildCoursePdfSource.pageNotes`: Narration is collected per page as (paragraph, sentence) units; px-slide places as many beside the slide as fit its height and continues the rest below.
 - `buildCoursePdfSource.renderBlockUnsafe.sheet`: Native workbooks consume the sheet’s public authored Content.
 - `buildCoursePdfSource.renderBlockUnsafe.authored`: Only explicit native answer sheets read this grammar-owned Content map.
-- `buildCoursePdfSource.renderBlockUnsafe.length.authorOptions`: Native answer sheets require the source subset's one option per item.
+- `buildCoursePdfSource.renderBlockUnsafe`, write-distractors answer-sheet branch: the admitted source subset has exactly one `authorOptions` entry for each prompt misconception item. Require matching question/count, misconception IDs in prompt order, an option count equal to the item count, and distinct option misconception references. Resolve each option by its misconception ID before rendering; otherwise refuse with `write-distractors-content-invalid`.
 - `buildCoursePdfSource.renderBlockUnsafe.capacity`: 1.8 em allows margin beyond the widest packaged Latin face, including legacy OpenDyslexic.
-- `buildCoursePdfSource.renderBlockUnsafe`: A heading's own stickiness stops at this wrapper, so the wrapper keeps it with what follows. Surrounding paragraph breaks make lone inline text a tagged P rather than a block Span.
+- `buildCoursePdfSource.renderBlockUnsafe`: Emit `#block(sticky: true)[...]` around a rendered heading and ordinary `#block[...]` around other rendered content. The heading wrapper must itself be sticky so the heading stays with following content across the outer block boundary. Retain the blank lines inside that wrapper so standalone inline content becomes a tagged paragraph rather than a block Span.
 - `buildCoursePdfSource.flushPage.parts`: Text runs keep a readable measure; figures, tables and code take the full width. A run ending in a heading stays with the figure after it.
 - `buildCoursePdfSource.flushPage.wrapUnits`: Authored wrap: a small or medium floated image sits at its side with following blocks beside it. Large floats stack, as the published page does at this width. Wrapped text splits into paragraphs and list items so it can continue below the image mid-block, as it does on the page. Consecutive items regroup into one list in Typst.
 - `buildCoursePdfSource.flushPage.first`: Navigation labels are not visible titles; show one only where no heading opens the slide.
@@ -104,7 +116,7 @@ Native workbooks preserve authored meaning through Typst, including shaping, hea
 - `TypstHtmlOptions.element`: Return undefined to use the shared semantic HTML mapping.
 - `safeTypstLink`: Only external web/email links. Unsafe targets retain their visible content.
 - `trimLayout`: Trim layout whitespace without removing intentional no-break spaces.
-- `renderTypstNode.signed`: Typst item numbers cannot be negative; retain HTML labels via its numbering function.
+- `renderTypstNode.signed`: For HTML ordered lists containing a negative label, emit positive sequential `enum.item` numbers and use a custom numbering function to reproduce the authored signed labels. Source: Typst v0.15.1 [`EnumItem.number`](https://github.com/typst/typst/blob/v0.15.1/crates/typst-library/src/model/enum.rs) is `Smart<u64>`, so the item number cannot represent a negative integer.
 
 ### `packages/format-renderers/src/renderers/typst/escaping.ts`
 

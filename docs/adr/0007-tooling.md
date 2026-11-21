@@ -69,10 +69,10 @@ Ownership guards and equivalence checks must fail closed without confusing gener
 ### `scripts/confirm-slow-tests.mjs`
 
 - `observeConfirmationHost.snapshot`: Telemetry must report its own failure without changing the timing gate.
-- `observeConfirmationHost.cpuTicks`: Guest/guest_nice are already included in user/nice, so sum only the first eight fields.
-- `observeConfirmationHost.iowaitTicks`: Linux documents that iowait may decrease; retain the signed delta for diagnosis.
+- `observeConfirmationHost.cpuTicks`: Guest/guest_nice are already included in user/nice, so sum only the first eight fields. Source: Linux v6.12 [`account_guest_time`](https://github.com/torvalds/linux/blob/v6.12/kernel/sched/cputime.c), which accounts guest time to both USER/GUEST or NICE/GUEST_NICE.
+- `observeConfirmationHost.iowaitTicks`: Linux documents that iowait may decrease; retain the signed delta for diagnosis. Source: [Linux /proc documentation, /proc/stat](https://docs.kernel.org/filesystems/proc.html#miscellaneous-kernel-statistics-in-proc-stat).
 - `runConfirmation.child`: Own a process group so a timed-out attempt cannot affect later measurements.
-- `runConfirmation.setEncoding.stdout`: EMFILE/ENFILE can return a child without creating its stdio streams.
+- `runConfirmation.setEncoding.stdout`: EMFILE/ENFILE can return a child without creating its stdio streams. Source: Node v24.22.1 [`ChildProcess.prototype.spawn`](https://github.com/nodejs/node/blob/v24.22.1/lib/internal/child_process.js) returns early for `UV_EMFILE`/`UV_ENFILE`, before stream creation. Verification: `scripts/confirm-slow-tests.test.mjs`, "real Node EMFILE and ENFILE spawn failures retain their cause without stdio or a crash".
 - `runConfirmation.checkOutput`: Preserve spawnSync's default output cap when switching to streams.
 - `confirmationPath`: Vitest reports missing files as failures; keep their path for that diagnostic.
 - `confirmSlowTests`: Confirm serially after the shard, with the same project setup and test timeouts.
@@ -101,7 +101,9 @@ Ownership guards and equivalence checks must fail closed without confusing gener
 - `settleCapture.positions`: Lazy hydration may need temporary scrolling. Retain node references so DOM insertions cannot corrupt restoration of the runtime's natural scroll state.
 - `capturePair`: One loopback origin is reused across both sides; no warmed browser state.
 - `capturePair`: A cancellation is accepted only with a completed load of the same URL.
-- `capturePair.verifiedMedia`: Chromium often aborts metadata preloads once the header is read. Fully load each unfinished media URL in this view to corroborate availability.
+- `capturePair.verifiedMedia`: The replaced comment reports Chromium aborting some metadata preloads after reading their headers. `capturePair.verifiedMedia` fully loads each unfinished media URL in the same view to corroborate availability; an aborted preload alone must not establish a failed media asset.
+
+  Evidence: the code comment this replaced (commit bed54f6); not independently verified.
 
 ### `scripts/equivalence/inventory.mjs`
 
@@ -119,7 +121,7 @@ Ownership guards and equivalence checks must fail closed without confusing gener
 - `zipPayloads`: Parse central/local records, not a byte-signature scan (payload may contain signatures). The only rewritten bytes are local +10..13 and central +12..15: DOS time/date.
 - `comparePackages`: Deliberately stricter than manifest-backed aliasing: filenames must match exactly. No fingerprint stripping or inferred aliases; a manifest change is itself a payload change.
 - `PDF_VOLATILE_METADATA`: XMP equivalents of /CreationDate, /ModDate and trailer /ID; observed in repeated Typst 0.15.1 builds. No broad date/ID/whitespace replacement.
-- `normalizePdfBytes`: Typst 0.15.1 emits classic xref tables and an uncompressed XMP stream. Follow their references: never search/replace arbitrary content streams.
+- `normalizePdfBytes`: For the retained Typst 0.15.1 PDF fixtures, follow classic xref and metadata-stream references before normalizing bytes; never search/replace arbitrary content streams. Verification: `scripts/equivalence-nonvisual.test.mjs`, "native PDF normalization preserves length, content, offsets and nonvolatile metadata", "native PDF normalization accepts UTC Info dates" and "PDF metadata normalization names only observed volatile fields". This is the observed fixture format, not a promise about every Typst PDF.
 
 ### `scripts/equivalence/nonvisual-gate.mjs`
 
@@ -172,9 +174,9 @@ Ownership guards and equivalence checks must fail closed without confusing gener
 ### `scripts/prax-format-skill.test.mjs`
 
 - `formatRoot`: Rubato installs docs/prax-format/ as the skill folder: SKILL.md plus its topic guides.
-- `doesNotMatch`: A relative link would leave the installed skill folder.
-- `prose`: Fenced and inline code hold placeholder destinations, not documentation links.
-- `deepEqual`: Building and candidate packaging use only Studio source, before Rubato pins can merge.
+- Test "choice guidance names Rubato's assessment-writing skill instead of a host path": reject a `../../` link because it would leave the installed prax-format skill folder.
+- Test "skill links resolve inside the installed prax-format folder", local `prose`: exclude fenced and inline code before validating Markdown links, because code examples contain placeholder destinations.
+- Test "publishing requires the assessment skill at the exact Rubato revision selected after approval": `admitRelease` for build/candidate packaging must use only Studio source; `admitRubatoPublisher` separately verifies the selected Rubato skill revision for publication.
 - `assertExportCommands.commands`: Scan every language and prose with the same detector, including prefixed executables.
 - `assertExportCommands.equal`: Even an unparsed Markdown construct must not hide an export from the guard.
 
@@ -190,12 +192,16 @@ Ownership guards and equivalence checks must fail closed without confusing gener
 
 ### `scripts/slow-tests-confirmation-reporter.mjs`
 
-- `ConfirmationJsonReporter`: Vitest's JSON reporter omits unhandled errors, which can coexist with test failures.
+- `ConfirmationJsonReporter`: Preserve the `onTestRunEnd` unhandled-error argument in confirmation JSON even when ordinary assertion failures exist. The replaced comment reports that the default Vitest JSON reporter omits those errors.
+
+  Evidence: the code comment this replaced (commit bed54f6); not independently verified.
 
 ### `scripts/slow-tests-reporter.mjs`
 
 - `validateAllowlist`: Expired base entries must still permit removal or a deliberate re-add.
-- `SlowTestsReporter.onInit.error`: Vitest logs pool teardown timeouts after onTestRunEnd without setting exitCode.
+- `SlowTestsReporter.onInit.error`: The replaced comment reports that Vitest may log a forks teardown timeout after `onTestRunEnd` without setting `exitCode`. Preserve failure status for that lone logger message. Verification of Studio's response: `scripts/slow-tests-handoff.test.mjs`, "report-only preserves other logger errors and only a lone forks line sets failure"; that test supplies the logger message and does not independently establish Vitest's timing.
+
+  Evidence: the code comment this replaced (commit bed54f6); not independently verified.
 - `SlowTestsReporter.onTestRunEnd`: Confirmation also verifies the isolated job's workers have exited.
 
 ### `scripts/sync-prax-format.mjs`

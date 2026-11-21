@@ -19,16 +19,16 @@ The grammar keeps a lossless source tree alongside learner projections. Source e
 
 ### `packages/grammar/__tests__/page-nav-overrides.test.ts`
 
-- `toBe`: Duration predates this mechanism and renders viewer-side only; it must not flip existing static pages to the full viewer.
+- Test "is false for pages with no params or only title/duration/style params" in describe "pageHasNavOverrides": the `duration` setting must not select the full viewer for an otherwise static page.
 
 ### `packages/grammar/__tests__/v4-adapter-compatibility.test.ts`
 
-- `toEqual`: The compiler-node binding amendment adds compile-only provenance; keep the original literal checking that response settings stay off prose children.
+- Test "keeps response metadata on the question and prose children free of settings": compiler-only inline provenance may be added, but `withoutInlineProjectionMetadata` must still leave the literal expected prose-child data without question response settings.
 
 ### `packages/grammar/__tests__/v4-body.test.ts`
 
 - `definitions`: Literal declarations stand in for the grammar 4 semantic schema. The tree owns no block/setting vocabulary.
-- `toEqual.map.first`: For page-boundary metadata compatibility, a folded H1 group retains its title while its page also has explicit metadata.
+- Parameterized test "derived headings equal authored grammar-3 levels: ${lesson}": `repeatedBoundary` excludes the first H1 group only when its level and title repeat the page heading. The folded group keeps its title even when the page has explicit metadata.
 
 ### `packages/grammar/__tests__/v4-docs.test.ts`
 
@@ -40,7 +40,7 @@ The grammar keeps a lossless source tree alongside learner projections. Source e
 
 ### `packages/grammar/__tests__/v4-schema.test.ts`
 
-- `toEqual`: The semantic schema owns undeclared assessment types. Any error from a grammar 4 declaration still fails.
+- Parameterized test "accepts G4 constructs in the converted %s corpus": allow only `unknown-type` diagnostics from constructs outside the grammar 4 declarations under test; every other diagnostic fails. The complete semantic schema owns the undeclared assessment types.
 
 ### `packages/grammar/__tests__/v4-tree.test.ts`
 
@@ -272,7 +272,7 @@ The grammar keeps a lossless source tree alongside learner projections. Source e
 - `inlineHtmlFields`: Mark HTML-valued fields at projection so consumers never parse them as source.
 - `toBlocks`: Adapt semantic nodes directly to the canonical renderer shapes. Never call the v3 parser.
 - `toBlocks.block.resolved`: Schema defaults remain available to semantic decisions in the schema. Runtime metadata contains authored settings only, under the existing renderer names.
-- `toBlocks.block`: False is the legacy choice contract: no new data key or policy membership.
+- `toBlocks.block`: For a choice node, retain the `private` setting only when it is `true`. Otherwise delete `rest.private` so a false or omitted setting adds neither a new renderer-data key nor privacy-policy membership.
 - `toBlocks.bodyHtml`: HTML-valued prose containers keep Markdown's native block elements. Their current renderer interface is a string, so retain each source wrapper here.
 - `toBlocks.assessment.common`: Retain the source of compatibility-promoted option feedback so the activity renderer can place it beside that option without repetition.
 - `toBlocks.assessment.safeTemplate`: Escape protected braces in the legacy template so its blank scanner agrees with the schema. Raw spelling remains in the lossless tree.
@@ -313,7 +313,7 @@ The grammar keeps a lossless source tree alongside learner projections. Source e
 - `readHeaderSettings`: The lexer replaces duplicate names with diagnostic tokens. Their trailing values have no key.
 - `buildLessonTree.finishItem.trailing`: Blank gaps between items, including empty items, belong to the container.
 - `buildLessonTree.body.gap`: Blank lines become internal part trivia only when an indented paragraph follows.
-- `buildLessonTree`: The body interpreter distinguishes this boundary from EOF/page recovery.
+- `buildLessonTree`, `case "item"`: when an item belongs to an outer container, close intervening inner non-container blocks at that item's first token and report `unclosed-block` before attaching the item to its allowed owner. Keep this outer-item recovery boundary distinct from EOF/page recovery. Verification: `packages/grammar/__tests__/v4-body.test.ts`, "recovers an inner non-container at an outer item without stealing that item".
 - `buildLessonTree`: Openers/pages/items are now on the stack; leaf headers are still its last child.
 - `buildLessonTree.nodes`: Iterative postorder keeps deeply nested authored drafts off the JavaScript call stack.
 

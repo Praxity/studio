@@ -24,7 +24,7 @@ Authored values, rendered HTML, answer keys and durable identities have differen
 
 - `ASSET_FIELDS`: Keep the asset-field list shared by publication, export and preview. Adding separate field lists would let asset rewriting drift between those outputs.
 - `escapeHtml`: Escape text for HTML text content and double-quoted attributes. This is the only HTML escaper: published pages, the grammar and shared blocks all import it, so one fix reaches every output.
-- `escapeJsonForScript`: Escape JSON for a `<script type="application/json">` element. The HTML tokenizer reads script content as raw text, where `</script` ends the element early and `<!--` followed by `<script` enters the "script data double escaped" state, in which `</script>` no longer ends it and the rest of the page is swallowed. Writing `<` as a JSON string escape keeps `JSON.parse` output unchanged; `>` and `&` are escaped too, following the usual JSON-in-HTML convention.
+- `escapeJsonForScript`: Escape JSON for a `<script type="application/json">` element. The HTML tokenizer reads script content as raw text, where `</script` ends the element early and `<!--` followed by `<script` enters the "script data double escaped" state, in which a `</script>` sequence no longer closes the element and following markup can remain inside script data. Writing `<` as a JSON string escape keeps `JSON.parse` output unchanged; `>` and `&` are escaped too. Source: HTML Standard tokenization, [script data end tag name](https://html.spec.whatwg.org/multipage/parsing.html#script-data-end-tag-name-state), [double escape start](https://html.spec.whatwg.org/multipage/parsing.html#script-data-double-escape-start-state) and [double escape end](https://html.spec.whatwg.org/multipage/parsing.html#script-data-double-escape-end-state) states. In the double-escaped state, a matching `</script>` changes tokenizer state rather than closing the element.
 
 ### `packages/content-model/src/escaping.ts`
 
@@ -44,7 +44,7 @@ Authored values, rendered HTML, answer keys and durable identities have differen
 
 ### `packages/content-model/src/inline-footnotes.ts`
 
-- `parseMaterialFootnote`: Material recognition only. The two learner parsers keep their existing contracts.
+- `parseMaterialFootnote`: Recognize both `@source{...}`/`@sources` and legacy `@footer{...}`/`@footer.insert` forms for material advice. Do not use this recognizer to broaden learner parsing. `tokenizeInline` in `packages/grammar/src/v4/inline.ts` accepts `@source{...}` and `@sources`, while treating `@footer{...}` as unresolved. `parseInlineMarkdown` in `packages/content-model/src/inline-markdown.ts` recognizes legacy `@footer{...}` and `@footer.insert` for existing display fields. The recognizer is used by `checkChoiceRawHtmlFootnotes` in `packages/editor-core/src/lib/a11y/choice-raw-html-footnote-advice.ts`.
 
 ### `packages/content-model/src/inline-icons.ts`
 
@@ -55,7 +55,7 @@ Authored values, rendered HTML, answer keys and durable identities have differen
 ### `packages/content-model/src/inline-markdown.ts`
 
 - `InlineMarkdownOptions.emphasisOnly`: Restrict narration to visual bold/italic; leave cues and other syntax literal.
-- `parseInlineMarkdown`: Display-field semantics, including legacy escapes and unresolved forms.
+- `parseInlineMarkdown`: Parse existing display fields using the legacy escape policy from `escaping.ts`. Recognized `@footer{...}`, `@icon{...}` and doodle openers with invalid or missing bodies become `InlineNode` records with `kind: "unresolved"`, `status: "unresolved"`, raw spelling and source bounds. The same applies after a closed bracketed label followed by `(` or `{` when the destination or definition is invalid or unterminated. Empty or nested-brace footer/term bodies and invalid icon names remain unresolved; do not silently turn them into valid syntax. Unrecognized text, including a label with no closing bracket, remains text.
 
 ### `packages/content-model/src/inline-preparation.ts`
 
@@ -101,7 +101,7 @@ Authored values, rendered HTML, answer keys and durable identities have differen
 - `PraxityPage.locale`: Resolved language of the containing lesson; otherwise inherit the course.
 - `PraxityPage.data`: Arbitrary metadata attached to the page by its preceding pageBreak.
 - `PraxityPage.lessonTitleIsFallback`: The lesson label is generated because there is no authored title.
-- `Lesson.sortOrder`: Independent title for the first page on canvas.
+- `Lesson.firstPageTitle`: Independent title for the first page on canvas.
 - `Lesson.role`: Lesson role, "content" (default), "glossary", or "resources". Non-content lessons are hidden from learner navigation.
 - `HeadingBlockData.headingOffset`: Offset added in published output to maintain heading hierarchy after auto-titles.
 - `QuoteBlockData.style`: Omitted and legacy styles retain the original left-line quote treatment.
@@ -111,7 +111,8 @@ Authored values, rendered HTML, answer keys and durable identities have differen
 - `DialogueBlockData.speakers`: Local speaker declarations keyed by the author's key spelling.
 - `NoteBlockData._tablerIconNodes`: Export-only Tabler outline nodes; authors never set this directly.
 - `ColumnItem`: Column-specific item, separate from ContainerItem to avoid polluting other container types.
-- `ColumnItem.label`: Positive relative proportion; omitted or invalid persisted values use 1 Author-supplied heading for semantic column presets.
+- `ColumnItem.width`: Positive relative proportion. `renderColumns` in `packages/export-pipeline/src/render-block-html.ts` uses 1 when a persisted width is omitted, non-finite or not positive.
+- `ColumnItem.label`: Author-supplied heading for semantic column presets; independent of the column width.
 - `ColumnsBlockData`: Columns block data, does NOT extend BaseContainerData.
 - `HeroCoverBlockData.headingOffset`: Publish-time semantic heading offset injected by html-gen.ts.
 - `AssessmentBlockData.stemLevel`: Heading level the author wrote the question at. The stem renders as a real heading so questions are reachable by heading navigation (WCAG 2.4.6); the level has to be the authored one or the page's outline order breaks.
