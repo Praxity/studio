@@ -14,7 +14,7 @@ let fixture: Awaited<ReturnType<typeof exampleCourseServer<"deck" | "pages" | "p
 test.skip(({ browserName }) => browserName !== "chromium", "Laptop fit is measured in Chromium.");
 
 test.beforeAll(async () => {
-	fixture = await exampleCourseServer("patterns/worked-example-practice", {
+	fixture = await exampleCourseServer("patterns/worked-example", {
 		deck: (_file, source) => source,
 		pages: (file, source) =>
 			file === "course.yaml" ? source.replace("moduleDeck: true\n", "") : source,

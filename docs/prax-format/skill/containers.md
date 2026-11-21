@@ -22,7 +22,7 @@ Accordion, tabs and sequence require item titles. Cards, comparison and columns 
 
 Put column weights on item openers. Weights are positive finite numbers, including fractions. Keep width on the block distinct from weight on its columns. See the [image comparison pattern](../examples/patterns/image-comparison.prax).
 
-To teach on one laptop-sized slide, put a worked example and one practice question in weighted columns on a page of their own. See the [worked example pattern](../examples/patterns/worked-example-practice/en.prax). Its fit is measured for that example's length; longer slides scroll, and narrow screens stack the columns.
+To teach on one laptop-sized slide, put a worked example and one practice question in weighted columns on a page of their own. See the [worked example pattern](../examples/patterns/worked-example/en.prax). Its fit is measured for that example's length; longer slides scroll, and narrow screens stack the columns.
 
 To scaffold a writing task, put a free response and an ordinary checklist of criteria in columns after the prompt. Say that the ticks are the learner's own judgment; they don't submit or grade the answer. See the [writing checklist pattern](../examples/patterns/writing-checklist/en.prax). Use a [self-check](../reference/blocks-interactive.md#self-check) instead when criteria should appear only after an independent answer.
 
