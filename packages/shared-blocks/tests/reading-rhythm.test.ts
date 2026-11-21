@@ -42,17 +42,17 @@ describe("published type scale", () => {
 		])
 			expect(typeCss).toContain(`--${name}: ${value}`);
 		for (const [step, value] of [
-			[1, 4],
-			[2, 8],
-			[3, 12],
-			[4, 16],
-			[6, 24],
-			[8, 32],
-			[12, 48],
-			[16, 64],
-			[24, 96],
+			[1, "0.25rem"],
+			[2, "0.5rem"],
+			[3, "0.75rem"],
+			[4, "1rem"],
+			[6, "1.5rem"],
+			[8, "2rem"],
+			[12, "3rem"],
+			[16, "4rem"],
+			[24, "6rem"],
 		])
-			expect(typeCss).toContain(`--space-${step}: ${value}px`);
+			expect(typeCss).toContain(`--space-${step}: ${value};`);
 	});
 	it("scales the complete type system at the learner's large text step", () => {
 		expect(typeCss).toMatch(/data-praxity-text-size="large"[\s\S]*?--root-font-size: 20px/);

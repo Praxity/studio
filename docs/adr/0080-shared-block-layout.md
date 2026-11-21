@@ -146,6 +146,17 @@ Block CSS must preserve reading order, native activation and readable review sta
 
 ### `packages/shared-blocks/src/reading-rhythm.css`
 
+- `--space-1` to `--space-24`: The spacing scale is in rem at its nominal 16px values, so block,
+  section and gutter gaps keep their default size and grow with Larger text, which raises the root
+  font size. Radii, focus widths, the 44px target size and shadows stay in px because their sizes
+  have their own reasons. Root font policy is unchanged. The deck toolbar's block padding in
+  `packages/shared-blocks/src/viewer/deck-shell.css` keeps a 4px floor around its focus-ring
+  clearance instead of `--space-1`: the bar holds fixed 44px targets, and padding that grew with
+  enlarged text took height from the transcript sheet at 320 by 720px.
+
+  Evidence: `packages/export-pipeline/tests/a11y/spacing-rhythm.spec.ts` measures four gaps in an
+  exported page at both text sizes.
+
 - `@media (prefers-reduced-motion: reduce)`: Zero-duration animations keep their end keyframe.
   Removing the animation can expose its initial state when an authored reveal uses
   animation-fill-mode.

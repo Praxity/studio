@@ -91,7 +91,6 @@ for (const width of [1280, 390]) {
 					ink: color("ink"),
 					paper: color("paper-2"),
 					gap: body.getBoundingClientRect().top - label.getBoundingClientRect().bottom,
-					space: Number.parseFloat(getComputedStyle(element).getPropertyValue("--space-2")),
 				};
 			});
 			for (const token of result.mapped) {
@@ -115,7 +114,7 @@ for (const width of [1280, 390]) {
 			}
 			expect.soft(new Set(result.mapped.map((token) => token.actual)).size).toBe(4);
 			expect.soft(result.punctuation).toBe(result.ink);
-			expect.soft(result.gap).toBeCloseTo(result.space, 1);
+			expect.soft(result.gap).toBeCloseTo(8, 1);
 		}
 	});
 

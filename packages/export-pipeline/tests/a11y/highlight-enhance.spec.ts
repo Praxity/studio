@@ -669,18 +669,16 @@ for (const mode of ["key", "evidence"] as const)
 				} else await expect(wrong.locator(".praxity-highlight-verdict")).toHaveCount(0);
 				const joiner = await wrong.evaluate((node) => getComputedStyle(node, "::before").content);
 				expect(joiner).toContain("\u2060");
-				const margins = await page.locator("[data-highlight]").evaluate((root) => {
-					const expected = parseFloat(getComputedStyle(root).getPropertyValue("--space-4"));
-					return {
-						expected,
-						actual: ["flow", "controls", "memory-notice"].map((name) =>
+				const margins = await page
+					.locator("[data-highlight]")
+					.evaluate((root) =>
+						["flow", "controls", "memory-notice"].map((name) =>
 							parseFloat(
 								getComputedStyle(root.querySelector(`[data-highlight-${name}]`)!).marginBlockStart,
 							),
 						),
-					};
-				});
-				expect(margins.actual).toEqual([margins.expected, margins.expected, margins.expected]);
+					);
+				expect(margins).toEqual([16, 16, 16]);
 				await expect(ui(page, "restart")).toBeFocused();
 				await expect(ui(page, "status")).toHaveText("");
 				await scan(page);
