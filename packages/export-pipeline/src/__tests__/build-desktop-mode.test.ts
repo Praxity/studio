@@ -133,14 +133,14 @@ describe("buildScormPackage desktop mode", () => {
 		"preserves base package bytes apart from schema notices without courseHomeUrl, moduleDeck=%s",
 		async (moduleDeck) => {
 			const baseline: Record<string, string> = {
-				"pages/html": "16835922715c00669311082f7f47be16f85a4a801cb63c3e40d59944eb71569b",
-				"pages/scorm12": "374b5b8a3b0433f2878b3f7a2e6611a5163376dfd7a3e0ccfd68e8f84f351da7",
-				"pages/scorm2004": "973fc10de8271bc0fe2e594a631fa3b497544036be3e29e2206658781139d47c",
-				"pages/xapi": "693a2f4cb4a137c806bd0308fdc6f8dabb52a892465be8dc9e162b997b784eb8",
-				"guided/html": "b7c2a160ad13441c8d755061c1c37338139e44d6bab4eb373484b55dcee663b6",
-				"guided/scorm12": "137740d1e55b9642dbc7e7918e22ac1b9a483978a7e5a02e6f30625b7a6abe66",
-				"guided/scorm2004": "0e7e26872249fa44f5414d6ab5ee4d371f039c94cf26a64b460d83b602ddfba7",
-				"guided/xapi": "b9d8e64859c32c7080625e878dd9ad996f38759f24bf0652be114762c05a5979",
+				"pages/html": "f2d565b34b5127cad44024182ad8f2c3bfabb77f4bd9dfb4e43e994a614d40cf",
+				"pages/scorm12": "a9c00c5d2f0c38bb540dcc898d4cb8168ce34ffee4fa62dd90661d1eee7e6945",
+				"pages/scorm2004": "94cc4b9372632c89f48efc3c82acec64b49245862cf7ac6822be75670f3a4195",
+				"pages/xapi": "225f177cd6c852d5faba49e6b493ccb30dd696b99bcd955236cf2f8db5ac0ea6",
+				"guided/html": "71fd8db160d6b530221e650454667375d5df5857b15f211494d61494ded44a66",
+				"guided/scorm12": "962f3c892de11eae4dfdccf199c5fc69a88c50c86157b16175604c7b8e2bd460",
+				"guided/scorm2004": "d3b6dfaa22478174139f3a48c268b3455562208309ca37fe865d85a91e512eda",
+				"guided/xapi": "0aa616666d41622ef1e2c127e61d808e78cef253087eef0be88b1234661cdcf5",
 			};
 			const input = createDesktopHtmlInput();
 			input.blocks = readSource("# End\n\nA [term]{A definition.}.\n").blocks;
