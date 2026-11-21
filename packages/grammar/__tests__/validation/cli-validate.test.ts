@@ -6,7 +6,6 @@ import { describe, expect, it } from "vitest";
 
 const CLI_PATH = resolve(import.meta.dirname, "../../src/cli/validate.ts");
 
-// Match the package command without spawning a platform-specific shell shim.
 const TSX_LOADER = import.meta.resolve("tsx");
 const CLI_TEST_TIMEOUT_MS = 20_000;
 

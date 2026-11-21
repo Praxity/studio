@@ -1,7 +1,6 @@
 import { escapeHtml } from "./constants";
 import { inlineIconPlaceholder } from "./inline-icons";
 
-/** Half-open UTF-16 offsets in the original lesson, including raw escape spelling. */
 export interface InlineRange {
 	start: number;
 	end: number;
@@ -16,14 +15,12 @@ export interface InlineValue extends InlineSource {
 }
 
 export interface InlineReferenceTrivia {
-	/** Ancillary separator whitespace in neighbouring text. Raw spans stay lossless. */
 	referenceTrivia?: InlineRange[];
 }
 
 export interface InlineTerm extends InlineSource, InlineReferenceTrivia {
 	kind: "term";
 	children: InlineNode[];
-	/** Empty means a mention whose definition belongs to the course glossary. */
 	definition: InlineValue;
 }
 
@@ -50,7 +47,6 @@ export type InlineNode = InlineSource &
 export interface InlineTree extends InlineRange {
 	source: string;
 	children: InlineNode[];
-	/** Compiler-created paragraph; authored HTML never acquires this ownership. */
 	envelope?: { kind: "paragraph"; generatedBy?: AncillaryInlineNode["kind"] };
 }
 
@@ -68,7 +64,6 @@ const ANCILLARY_KINDS = new Set<InlineNode["kind"]>([
 const isAncillary = (node: InlineNode): node is AncillaryInlineNode =>
 	ANCILLARY_KINDS.has(node.kind);
 
-/** Signature facts come from compiler kinds, without rendering another HTML tree. */
 export function inlineMaterial(tree: InlineTree): { text: string; icons: string[] } {
 	const icons: string[] = [];
 	const text = (nodes: readonly InlineNode[]): string =>
@@ -98,7 +93,6 @@ export function inlineMaterial(tree: InlineTree): { text: string; icons: string[
 }
 type Boundary = { kind: "material" } | { kind: "gap"; range: InlineRange } | AncillaryInlineNode;
 
-/** Classify a whole ancillary run before assigning any gap, across bold/italic only. */
 export function ownInlineTrivia(tree: InlineTree): InlineTree {
 	const sequence = (nodes: InlineNode[]): void => {
 		const boundaries: Boundary[] = [];
@@ -106,7 +100,6 @@ export function ownInlineTrivia(tree: InlineTree): InlineTree {
 			for (const node of nodes) {
 				if (isAncillary(node)) {
 					delete node.referenceTrivia;
-					// Nested annotations keep local trivia; the parent stays one ancillary boundary.
 					if ("children" in node) sequence(node.children);
 					boundaries.push(node);
 				} else if (node.kind === "text") {
@@ -149,7 +142,6 @@ export function ownInlineTrivia(tree: InlineTree): InlineTree {
 				}
 			}
 			if (annotations.length) {
-				// Between material siblings the last existing gap remains a word separator.
 				const retained = start > 0 && end < boundaries.length ? gaps.at(-1) : undefined;
 				for (const gap of gaps) {
 					if (gap === retained) continue;
@@ -164,7 +156,6 @@ export function ownInlineTrivia(tree: InlineTree): InlineTree {
 	return tree;
 }
 
-/** Mark the generated paragraph while its source constructs are still available. */
 export function inlineParagraph(tree: InlineTree): InlineTree {
 	const annotations: AncillaryInlineNode["kind"][] = [];
 	const ancillary = (nodes: InlineNode[]): boolean =>
@@ -187,7 +178,6 @@ export function inlineParagraph(tree: InlineTree): InlineTree {
 
 export interface InlineTreeRenderOptions {
 	interactive?: boolean;
-	/** G5 supplies course definitions; this renderer never builds a glossary. */
 	resolveTerm?: (term: InlineTerm) => string | undefined;
 }
 
@@ -242,7 +232,6 @@ function renderNodes(
 		.join("");
 }
 
-/** Render parsed semantics without scanning source. Sanitize at the existing HTML sink. */
 export function renderInlineTree(tree: InlineTree, options: InlineTreeRenderOptions = {}): string {
 	const html = renderNodes(tree.children, options, options.interactive !== false);
 	return tree.envelope?.kind === "paragraph" ? `<p>${html}</p>` : html;

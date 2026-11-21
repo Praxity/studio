@@ -30,8 +30,6 @@ export async function checkoutState(checkout) {
 	};
 }
 
-// Only these trusted entry points may select a dependency closure. CLI callers
-// bind their own literal entry; the pixel gate retains its original default.
 const entryModules = {
 	"pixel-gate": ["build", "capture", "compare", "inventory", "provenance"],
 	"nonvisual-gate": [
@@ -63,8 +61,6 @@ export async function validateCheckouts(
 		throw new Error(`Unknown gate entry: ${entryPoint}`);
 	if (running !== (await realpath(path.join(base, `scripts/equivalence/${entryPoint}.mjs`))))
 		throw new Error("Run the exact --base entry point (trusted tooling realpath)");
-	// Node resolves these relative imports beside the admitted entry point. Refuse
-	// module symlinks escaping that directory, including a candidate nested in base.
 	for (const name of entryModules[entryPoint]) {
 		const modulePath = path.join(base, `scripts/equivalence/${name}.mjs`);
 		if ((await realpath(modulePath)) !== modulePath)
@@ -147,7 +143,6 @@ export async function validateCheckouts(
 	};
 }
 
-// Every process starts with empty, private persistent and compiler caches.
 export async function freshBuildEnvironment(root) {
 	await mkdir(root);
 	const locations = {

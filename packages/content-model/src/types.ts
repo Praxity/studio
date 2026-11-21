@@ -1,12 +1,10 @@
 import type { SectionPaletteName } from "./constants";
 
-/** Generic self-check reader data. Full authored Content belongs to grammar. */
 export interface SelfCheckPrompt {
 	task: string;
 	parts: { id: string }[];
 }
 
-/** Public authored recall content; every field is literal plain text. */
 export interface RetrievalSheetContent {
 	title: string;
 	questions: { id: string; question: string; answer: string }[];
@@ -16,7 +14,6 @@ export interface RetrievalSheetData {
 	level: number;
 }
 
-/** Public authored highlight content; every text field stays literal. */
 export interface HighlightContent {
 	mode: "key" | "evidence";
 	title: string;
@@ -33,7 +30,6 @@ export type HighlightData = {
 	entrance?: "none" | "fade" | "slide" | "scale";
 };
 
-/** Generic prompt only. Full authored Content belongs to grammar. */
 export interface WriteDistractorsPrompt {
 	question: string;
 	count: 1 | 2 | 3 | 4 | 5;
@@ -48,15 +44,7 @@ export type WriteDistractorsData = {
 	entrance?: "none" | "fade" | "slide" | "scale";
 };
 
-/**
- * Shared type definitions for Praxity block system.
- *
- * This file is the SINGLE SOURCE OF TRUTH for BlockType, PraxityBlock,
- * and PraxityPage.
- */
-
 export type BlockType =
-	// Content
 	| "text"
 	| "heading"
 	| "image"
@@ -76,13 +64,11 @@ export type BlockType =
 	| "code"
 	| "equation"
 	| "heroCover"
-	// Container
 	| "accordion"
 	| "tabs"
 	| "columns"
 	| "sequence"
 	| "card"
-	// Interactive
 	| "labeledGraphic"
 	| "checklist"
 	| "rating"
@@ -91,25 +77,15 @@ export type BlockType =
 	| "retrievalSheet"
 	| "highlight"
 	| "writeDistractors"
-	// Assessment
 	| "assessment"
-	// Logic
 	| "variable"
 	| "logic"
 	| "assessmentGroup"
 	| "pageBreak"
 	| "blockBreak"
-	// Course-level data blocks
 	| "resourceEntry";
 
-/**
- * Runtime array of all block types — SINGLE SOURCE OF TRUTH.
- *
- * Derived from the BlockType union above. When you add a new block type
- * to the union, add it here too. TypeScript will error if the two drift.
- */
 export const BLOCK_TYPES = [
-	// Content
 	"text",
 	"heading",
 	"image",
@@ -129,13 +105,11 @@ export const BLOCK_TYPES = [
 	"code",
 	"equation",
 	"heroCover",
-	// Container
 	"accordion",
 	"tabs",
 	"columns",
 	"sequence",
 	"card",
-	// Interactive
 	"labeledGraphic",
 	"checklist",
 	"rating",
@@ -144,19 +118,15 @@ export const BLOCK_TYPES = [
 	"retrievalSheet",
 	"highlight",
 	"writeDistractors",
-	// Assessment
 	"assessment",
-	// Logic
 	"variable",
 	"logic",
 	"assessmentGroup",
 	"pageBreak",
 	"blockBreak",
-	// Course-level data blocks
 	"resourceEntry",
 ] as const satisfies readonly BlockType[];
 
-/** These block projections contain literal text, never inline grammar or rich HTML. */
 export function isLiteralTextBlockType(type: unknown): boolean {
 	return (
 		type === "code" ||
@@ -183,18 +153,14 @@ export interface PraxityBlock {
 		ariaLabel?: string;
 		decorative?: boolean;
 	};
-	/** ISO 639-1 locale for this block's content, if different from the course sourceLocale */
 	locale?: string;
-	/** When set, this block starts a new section with the given palette (manual rhythm mode) */
 	sectionTheme?: SectionPaletteName;
 }
 
 export interface PraxityPage {
-	/** Resolved language of the containing lesson; otherwise inherit the course. */
 	locale?: string;
 	id: string;
 	title: string;
-	/** Arbitrary metadata attached to the page by its preceding pageBreak. */
 	data?: Record<string, unknown>;
 	description?: string;
 	blocks: PraxityBlock[];
@@ -203,7 +169,6 @@ export interface PraxityPage {
 	};
 	lessonId?: string;
 	lessonTitle?: string;
-	/** The lesson label is generated because there is no authored title. */
 	lessonTitleIsFallback?: boolean;
 	lessonKicker?: string;
 	lessonTime?: string;
@@ -212,17 +177,14 @@ export interface PraxityPage {
 	narrationDefaults?: Record<string, unknown>;
 }
 
-// === Lessons hierarchy (Course → Lesson → Page → Block) ===
-
 export interface Lesson {
 	id: string;
 	title: string;
-	firstPageTitle?: string; // independent title for the first page on canvas
+	firstPageTitle?: string;
 	sortOrder: number;
-	pages: LessonPage[]; // kept required during transition, default []
-	blocks: PraxityBlock[]; // new: flat block stream
+	pages: LessonPage[];
+	blocks: PraxityBlock[];
 	settings?: LessonSettings;
-	/** Lesson role — "content" (default), "glossary", or "resources". Non-content lessons are hidden from learner navigation. */
 	role?: "content" | "glossary" | "resources";
 }
 
@@ -247,8 +209,6 @@ export interface BlockProps<T = Record<string, unknown>> {
 	blockId: string;
 }
 
-// === Content Block Data Interfaces ===
-
 export interface TextBlockData {
 	content: string;
 	reveal?: number | string | boolean;
@@ -258,18 +218,14 @@ export interface HeadingBlockData {
 	content: string;
 	level: 1 | 2 | 3;
 	kicker?: string;
-	/** Offset added in published output to maintain heading hierarchy after auto-titles. */
 	headingOffset?: number;
-	/** Display style: standard heading or chapter/act marker */
 	display?: "standard" | "chapter";
 }
 
 export type BlockLayoutMode = "narrow" | "wide" | "full" | "breakout";
 
 export interface SlideStyleDef {
-	/** Draw the leading accent rule (enabled by the built-in section style). */
 	accentRule?: boolean;
-	/** Optional decorative course image, independent of the background colour. */
 	cornerImage?: string;
 	measure?: "narrow" | "default" | "wide" | "full";
 	align?: "start" | "center";
@@ -307,7 +263,6 @@ export interface ImageBlockData {
 	decorative: boolean;
 	caption?: string;
 	captionEnabled?: boolean;
-	/** Intrinsic raster dimensions added while packaging published output. */
 	intrinsicWidth?: number;
 	intrinsicHeight?: number;
 	loading?: "eager" | "lazy";
@@ -318,7 +273,6 @@ export interface ImageBlockData {
 	alignment?: ImageAlignment;
 	/** @deprecated Use effects instead. Migrated on read. */
 	treatment?: ImageTreatment;
-	/** Per-image effect overrides from grammar {effects: ...} syntax. */
 	effects?: "none" | Record<string, { intensity: number; [key: string]: unknown }>;
 }
 
@@ -379,7 +333,6 @@ export interface QuoteBlockData {
 	decorator?: "line-left" | "quotation-marks" | "cinematic";
 	/** @deprecated All quotes now inherit the body size. */
 	size?: "default" | "large" | "very-large";
-	/** Omitted and legacy styles retain the original left-line quote treatment. */
 	style?:
 		| "none"
 		| "outline"
@@ -401,11 +354,8 @@ export interface DialogueSpeakerData {
 
 export interface DialogueTurnData {
 	id: string;
-	/** Speaker key exactly as the author wrote it; undefined for an unattributed item. */
 	speaker?: string;
-	/** Paragraphs of inline markdown. */
 	paragraphs: string[];
-	/** Filled by resolveDialogueSpeakers (Task 4); never serialized. */
 	name?: string;
 	avatar?: string;
 	voice?: string;
@@ -414,7 +364,6 @@ export interface DialogueTurnData {
 
 export interface DialogueBlockData {
 	turns: DialogueTurnData[];
-	/** Local speaker declarations keyed by the author's key spelling. */
 	speakers?: Record<string, DialogueSpeakerData>;
 	style?: "bubbles" | "script";
 	caption?: string;
@@ -446,7 +395,6 @@ export interface DocumentBlockData {
 	display?: "bookmark" | "button" | "download";
 	buttonVariant?: "filled" | "outline" | "light";
 	filename?: string;
-	/** File size in bytes. */
 	size?: number;
 	mimeType?: string;
 }
@@ -475,7 +423,6 @@ export interface NoteBlockData {
 	emoji?: string;
 	title?: string;
 	icon?: NoteIconName;
-	/** Export-only Tabler outline nodes; authors never set this directly. */
 	_tablerIconNodes?: unknown;
 	content: string;
 	style: NoteStyle | "filled";
@@ -483,17 +430,11 @@ export interface NoteBlockData {
 }
 
 export interface CodeBlockData {
-	/** The source code content */
 	code: string;
-	/** Programming language identifier (e.g., "javascript", "python", "html") */
 	language: string;
-	/** Optional title displayed above the code block */
 	title?: string;
-	/** Show line numbers in published output (default: true) */
 	showLineNumbers?: boolean;
-	/** Highlighted line numbers (stored as array, UI parses from "1-3,5,8-10" string input) */
 	highlightLines?: number[];
-	/** Starting line number for display (default: 1) */
 	startLine?: number;
 }
 
@@ -526,8 +467,6 @@ export interface TableBlockData {
 	gridlines?: "none" | "rows" | "columns" | "inside" | "all";
 	columnAlignments?: ("left" | "center" | "right")[];
 }
-
-// === Container Types ===
 
 export interface ContainerItem {
 	id: string;
@@ -585,20 +524,16 @@ export interface TabsContainerData extends BaseContainerData {
 	tabPosition: "top" | "left";
 }
 
-/** Column-specific item — separate from ContainerItem to avoid polluting other container types. */
 export interface ColumnItem {
 	id: string;
-	width: number; // positive relative proportion; omitted or invalid persisted values use 1
-	/** Author-supplied heading for semantic column presets. */
+	width: number;
 	label?: string;
 	children: PraxityBlock[];
 }
 
-/** Columns block data — does NOT extend BaseContainerData. */
 export interface ColumnsBlockData {
 	items: ColumnItem[];
 	trackCompletion?: boolean;
-	/** Display preset for semantic framing */
 	preset?: "default" | "beforeAfter" | "comparison";
 	layout?: BlockLayoutMode;
 }
@@ -611,9 +546,7 @@ export interface HeroCoverBlockData {
 	alignment?: "center" | "left" | "right";
 	verticalAlignment?: "top" | "center" | "bottom";
 	overlayOpacity?: number;
-	/** "dark" = dark overlay / light text (default), "light" = light overlay / dark text */
 	overlayColor?: "dark" | "light";
-	/** Publish-time semantic heading offset injected by html-gen.ts */
 	headingOffset?: number;
 }
 
@@ -625,8 +558,6 @@ export interface SequenceContainerData extends BaseContainerData {
 	scrollable?: boolean;
 	layout?: BlockLayoutMode;
 }
-
-// === Interactive Types ===
 
 export interface LabeledGraphicBlockData {
 	imageSrc: string;
@@ -665,8 +596,6 @@ export interface SignatureBlockData {
 	required: boolean;
 }
 
-// === Assessment Types ===
-
 export interface AssessmentBlockData {
 	assessmentType:
 		| "choice"
@@ -684,19 +613,8 @@ export interface AssessmentBlockData {
 		| "speech"
 		| "dictation";
 	stem: PraxityBlock[];
-	/**
-	 * Heading level the author wrote the question at. The stem renders as a real
-	 * heading so questions are reachable by heading navigation (WCAG 2.4.6); the
-	 * level has to be the authored one or the page's outline order breaks.
-	 */
 	stemLevel?: number;
-	/** Publish-time semantic heading offset injected by html-gen.ts */
 	headingOffset?: number;
-	/**
-	 * Optional supporting prose shown between the question stem and the response
-	 * controls — scenario setup, instructions, extra context. Rendered as rich
-	 * text and wired to the response controls via `aria-describedby`.
-	 */
 	description?: PraxityBlock[];
 	response:
 		| ChoiceResponse
@@ -722,19 +640,14 @@ export interface AssessmentBlockData {
 		};
 	};
 	feedbackEnabled?: boolean;
-	/** Assessments with answer keys can reveal them after one attempt. Legacy modes retain retry behavior. */
 	feedbackMode?: "retry" | "reveal" | "unified" | "perOption";
 	shuffle?: boolean;
 	/** @deprecated Use `gradingMode` instead. */
 	graded?: boolean;
-	/** Offer the reserved uncertainty answer on single-answer choice questions. */
 	dontKnow?: boolean;
-	/** Resolved display metadata; never persisted as an authored setting. */
 	_dontKnow?: boolean;
 	gradingMode?: "none" | "partial" | "exact";
-	/** Keep an ungraded text response on the learner's device instead of reporting it. */
 	private?: boolean;
-	/** Optional visible label for the assessment action button. */
 	buttonLabel?: string;
 	points?: number;
 	attempts?: number;
@@ -770,7 +683,6 @@ export interface MatchingResponse {
 	inputMethod: "drag" | "dropdown";
 	pairs: { id: string; prompt: string; correctMatch: string; feedback?: string }[];
 	distractors?: string[];
-	/** Author override for the match dropdown placeholder. Falls back to the localized default. */
 	placeholder?: string;
 }
 
@@ -791,28 +703,22 @@ export interface TextResponseConfig {
 		stemming?: boolean;
 		synonyms?: string[][];
 	};
-	/** Author override for the input placeholder. Falls back to the localized default. */
 	placeholder?: string;
-	/** Optional learner download controls for the response. */
 	downloadAs?: "txt" | "docx" | "both";
 }
 
 export interface FillBlankResponse {
 	type: "fillBlank";
 	style?: "inline-inputs" | "dropdown" | "word-bank";
-	/** Shared, consumable options; duplicate entries allow repeated selections. */
 	wordBank?: string[];
-	/** Authored sentence with `{answer}` or `____` tokens rendered as inline inputs. */
 	template?: string;
 	blanks: {
 		id: string;
 		answer: string;
-		/** Raw typed-answer syntax when escapes distinguish literal and wildcard punctuation. */
 		answerSources?: string[];
 		alternatives?: string[];
 		choices?: string[];
 	}[];
-	/** Author override for the blank input placeholder. Falls back to the localized default. */
 	placeholder?: string;
 }
 
@@ -836,7 +742,6 @@ export interface HotspotResponse {
 	hotspots: {
 		id: string;
 		shape: "rect" | "ellipse" | "polygon";
-		/** Percent of image axes: rect [left, top, width, height], ellipse [cx, cy, rx, ry] (legacy circle [cx, cy, radius]), polygon [x1, y1, ...]. */
 		coords: number[];
 		label?: string;
 		isCorrect?: boolean;
@@ -890,18 +795,14 @@ export interface DictationResponse {
 	matching?: TextResponseConfig["matching"];
 }
 
-// === Logic Types ===
-
 export interface VariableBlockData {
 	variableName: string;
 	dataType: "number" | "text" | "boolean";
 	source: "manual" | "url_parameter" | "lms" | "computed";
 	defaultValue?: string | number | boolean;
 	locked?: boolean;
-	// URL parameter source
 	urlParamName?: string;
 	urlParamFallback?: string | number | boolean;
-	// LMS source
 	lmsField?: string;
 	lmsFallback?: string | number | boolean;
 }
@@ -960,23 +861,17 @@ export interface LogicBlockData {
 	actions: LogicAction[];
 }
 
-// === Assessment Group ===
-
 export type AssessmentGroupMode = "all" | "oneOf";
 
 export interface AssessmentGroupBlockData {
 	groupName: string;
-	/** Internal projection flag: this group replaces its page's standalone heading. */
 	_foldedPageTitle?: boolean;
-	/** Authored heading level; older blocks default to H2. */
 	_headingLevel?: number;
 	mode: AssessmentGroupMode;
 	memberBlockIds: string[];
 	layout?: BlockLayoutMode;
 	layoutMode?: BlockLayoutMode;
-	/** Optional visible label for the group action button. */
 	buttonLabel?: string;
-	/** Publish-time outline adjustment; not authored grammar. */
 	headingOffset?: number;
 	requireAll?: boolean;
 	pointsOverride?: number;
@@ -984,19 +879,13 @@ export interface AssessmentGroupBlockData {
 	showResultsSummary?: boolean;
 }
 
-// === Page Break ===
-
 export interface PageBreakBlockData {
 	label?: string;
 	title?: string;
 	[key: string]: unknown;
 }
 
-// === Block Break ===
-
 export type BlockBreakBlockData = Record<string, never>;
-
-// === Chart Types ===
 
 export interface ChartBlockData {
 	chartType: "bar" | "line" | "scatter" | "area" | "radar" | "stacked";
@@ -1020,36 +909,22 @@ export interface ChartBlockData {
 	colorScheme?: string;
 }
 
-// === Course-level Data Blocks ===
-
-/** Data for a resource entry block. Stored in the resources pseudo-lesson. */
 export interface ResourceEntryData {
-	/** Display title */
 	title: string;
-	/** Description shown on the resources page */
 	description: string;
-	/** Resource type: file (uploaded asset), link (external URL), or lessonPdf (auto-generated) */
 	resourceType: "file" | "link" | "lessonPdf";
-	/** Asset ID for file type resources */
 	assetId?: string;
-	/** URL for link type resources */
 	url?: string;
-	/** Lesson ID for lessonPdf type resources */
 	lessonId?: string;
-	/** Whether to include this resource on the published Resources page */
 	includeInResourcesPage: boolean;
-	/** File size in bytes (for display) */
 	fileSizeBytes?: number;
-	/** MIME type (for file type icon) */
 	mimeType?: string;
 }
 
-/** IDs used in DOM references must be safe tokens. UUID identities satisfy this contract. */
 export function isValidNodeId(value: unknown): value is string {
 	return typeof value === "string" && /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/.test(value);
 }
 
-/** Durable content identities use lowercase UUID-shaped tokens. */
 export function isIdentityNodeId(value: unknown): value is string {
 	return (
 		typeof value === "string" &&
@@ -1057,12 +932,10 @@ export function isIdentityNodeId(value: unknown): value is string {
 	);
 }
 
-/** Read-view identity has no durable UUID representation. */
 export function isRuntimeNodeId(value: unknown): value is string {
 	return typeof value === "string" && /^rt-[0-9a-f]{32}$/u.test(value);
 }
 
-/** Display joins accept stored identity and runtime identity; durable ingress does not. */
 export function isDisplayNodeId(value: unknown): value is string {
 	return isIdentityNodeId(value) || isRuntimeNodeId(value);
 }
@@ -1081,7 +954,6 @@ const STATEFUL_BLOCK_TYPES = new Set<BlockType>([
 	"signature",
 	"tabs",
 ]);
-/** Runtime controls whose state belongs in the learner snapshot. */
 export function isStatefulBlock(block: PraxityBlock): boolean {
 	return STATEFUL_BLOCK_TYPES.has(block.type);
 }

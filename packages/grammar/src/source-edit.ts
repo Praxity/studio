@@ -2,7 +2,6 @@ import YAML, { CST, isMap, isNode, isScalar, isSeq } from "yaml";
 import { findFrontmatterRange, parseFrontmatter } from "./frontmatter.ts";
 import { normalizeYamlLineEndings, preserveLineEndings } from "./line-endings.ts";
 
-/** A replacement of `[start, end)` in the full source, offsets not lines. */
 export interface SourceEdit {
 	start: number;
 	end: number;
@@ -38,8 +37,6 @@ export class SourceEditError extends Error {
 }
 
 function yamlEditDocument(source: string) {
-	// YAML accepts LF/CRLF only. Normalize lone CR without moving any raw offset,
-	// then restore CST trivia so collection edits retain the author's bytes.
 	const input = normalizeYamlLineEndings(source);
 	const document = YAML.parseDocument(input, { keepSourceTokens: true });
 	const token = document.contents?.srcToken;
@@ -59,8 +56,6 @@ function yamlEditDocument(source: string) {
 	return document;
 }
 
-/** Edit only the selected value or collection entry. CST tokens retain authored
- * trivia; document serialization would rewrite unrelated flow syntax and EOLs. */
 export function setYamlPath(
 	source: string,
 	path: readonly (string | number)[],
@@ -72,8 +67,6 @@ export function setYamlPath(
 	const target = document.getIn(path, true);
 	let next: string;
 	if (!deleting && isNode(target) && target.range) {
-		// Flow replacements fit anywhere a value can occur, including inline maps.
-		// Multiline strings use quoted escapes so no neighbouring indentation changes.
 		const text = YAML.stringify(value, {
 			collectionStyle: "flow",
 			lineWidth: 0,
@@ -135,8 +128,6 @@ export function setYamlPath(
 						{ start: parent.range[0], end: parent.range[2], text: CST.stringify(token) },
 					]);
 				} else {
-					// Delete the entry's own line, leaving preceding standalone comments
-					// and the following entry's indentation at their exact offsets.
 					const first = item.key ?? item.start.find((part) => part.type === "seq-item-ind");
 					const last = item.value ?? item.sep?.at(-1) ?? first;
 					if (!first || !last) throw new SourceEditError("Missing YAML entry range");
@@ -202,7 +193,6 @@ export function setYamlPath(
 			}
 		}
 	}
-	// Reject an edit whose syntax changes the wrong data, before returning any bytes.
 	if (deleting) document.deleteIn(path);
 	else document.setIn(path, value);
 	const candidate = yamlEditDocument(next);
@@ -214,7 +204,6 @@ export function setYamlPath(
 	return next;
 }
 
-/** Edit YAML frontmatter without reserializing the `.prax` body. */
 export function setFrontmatterPath(
 	source: string,
 	path: readonly (string | number)[],

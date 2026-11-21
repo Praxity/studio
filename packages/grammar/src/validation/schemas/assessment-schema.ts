@@ -134,12 +134,6 @@ export const assessmentSchema: BlockSchema = {
 		required: { type: "boolean", required: false },
 		points: { type: "number", required: false, min: 0 },
 		attempts: { type: "number", required: false, min: 0 },
-		// `pass` is gone, not deprecated. It duplicated `passingScore` and was the
-		// half nothing read, so a pass threshold is a group-level concept: use
-		// `assessment-group` with `passingScore`. Unknown parameters are ignored
-		// rather than flagged (validate.ts iterates the schema, not the document),
-		// so existing files carrying `pass:` keep parsing exactly as before — the
-		// value was never applied either way.
 		timed: { type: "number", required: false, min: 1 },
 		feedback: {
 			type: "enum",

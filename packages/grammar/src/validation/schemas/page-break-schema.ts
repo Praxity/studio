@@ -58,10 +58,6 @@ export const pageBreakSchema: BlockSchema = {
 		},
 		...booleanNavAttributes,
 		hide: { type: "boolean", required: false, errorLevel: "warning" },
-		// `focus` and `duration` are validated at block level below: the parser
-		// coerces true/false to booleans (focus), and `duration` doubles as the
-		// reading-time toggle (show|hide) AND the documented page-transition
-		// duration (e.g. 500ms), so neither fits a plain string enum.
 	},
 	validate(block): ValidationError[] {
 		const errors: ValidationError[] = [];

@@ -34,7 +34,6 @@ function palette(accent: string, darkAccent: string, paper = "#ffffff") {
 			colorTertiary: null,
 			colorButtonBackground: darkAccent,
 			colorButtonText: "#121417",
-			// Dark status saturation must retain the existing Lc75 reading floor.
 			colorSuccess: "#9ee1ab",
 			colorError: "#ffbddb",
 			colorWarning: "#f0dfb9",
@@ -42,7 +41,6 @@ function palette(accent: string, darkAccent: string, paper = "#ffffff") {
 	};
 }
 
-/** One palette owner, shared by editor swatches, preview and exported courses. */
 export const READING_PALETTES = withCoursePresetAliases({
 	ink: palette("#294c78", "#c9dff8"),
 	forest: palette("#245036", "#c6dfd1"),
@@ -51,8 +49,6 @@ export const READING_PALETTES = withCoursePresetAliases({
 	clear: palette("#294c78", "#c9dff8"),
 });
 
-// Saved Studio designs contain the old preset's default colours. Keep these
-// migration facts separate from the current roles; authored overrides survive.
 const legacyPalettes = {
 	clean: {
 		light: {

@@ -345,16 +345,12 @@ describe("G6 original lesson ranges", () => {
 	});
 });
 
-// Grammar-4 forms are documented in docs/prax-format/reference/inline-formatting.md.
-// Translate only the source-note rename when comparing the two dialects.
 function compareInline(source: string) {
 	const legacy = source.replace(/@source\{/g, "@footer{").replace(/@sources\b/g, "@footer.insert");
 	const converted = legacy
 		.replace(/@footer\{/g, "@source{")
 		.replace(/@footer\.insert/g, "@sources");
 	for (const interactive of [true, false]) {
-		// These assertion literals use escaped quotes absent from v3's punctuation set.
-		// Exact expected values keep the dialect allowlist narrow.
 		const escapedQuoteDifferences = new Map([
 			[String.raw`role=\"link`, "role=&quot;link"],
 			[String.raw`data-doodle=\"highlight\"`, "data-doodle=&quot;highlight&quot;"],

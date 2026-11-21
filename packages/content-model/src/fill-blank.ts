@@ -1,7 +1,6 @@
 import { decodeEscapes, escapeLength, findUnescaped, splitUnescaped } from "./escaping";
 import type { FillBlankResponse } from "./types";
 
-/** Keep source markers separate from literal text, including escaped braces and underscores. */
 export function fillBlankParts(content: string): Array<{ text: string; blank: boolean }> {
 	const parts: Array<{ text: string; blank: boolean }> = [];
 	let start = 0;
@@ -36,7 +35,6 @@ export function fillBlankParts(content: string): Array<{ text: string; blank: bo
 	return parts;
 }
 
-/** Dropdown markers use * for correct choices; typed blanks keep their original alternatives. */
 export function parseFillBlankContent(
 	content: string,
 	style?: unknown,
@@ -86,7 +84,6 @@ export function fillBlankChoices(
 		: undefined;
 }
 
-/** Checks partial selections as well as complete attempts, including bank occurrence counts. */
 export function validFillBlankSelections(
 	response: FillBlankResponse,
 	values: Record<string, string>,

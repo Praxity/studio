@@ -37,7 +37,6 @@ export interface ValidationConfig {
 	strictness?: ValidationStrictness;
 	suppressions?: string[];
 	frontmatter?: GrammarFrontmatter;
-	/** Whole-file, zero-based ranges from the grammar reader. */
 	spans?: ReadonlyMap<string, { startLine: number; endLine: number }>;
 }
 
@@ -50,7 +49,6 @@ export interface ValidationContext {
 
 export interface SchemaAttribute {
 	type: SchemaAttributeType;
-	/** Project a canonical field when the renderer shape differs from the legacy field. */
 	read?: (block: PraxityBlock) => unknown;
 	required?: boolean;
 	default?: unknown;

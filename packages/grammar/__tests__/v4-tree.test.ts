@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import { lineColumn, type TokenStream, tokenizeLesson } from "../src/v4/lex";
 import { buildLessonTree, type SourceSpan, type TreeNode, type TreeOptions } from "../src/v4/tree";
 
-// Literal corpus declarations, not the production schema, which arrives in G4/G5.
 const corpusOptions: TreeOptions = {
 	isPart: (name, owner) =>
 		(owner.kind === "page" && name === "nav") ||
@@ -55,7 +54,6 @@ function assertSpans(stream: TokenStream, root: TreeNode) {
 			for (const child of node.children)
 				expect(child.span.end).toBeLessThanOrEqual(node.closer.start);
 		}
-		// Leaves own their raw range. Structural headers, closers and trivia fill all other gaps.
 		const owned =
 			node.children.length || node.header
 				? [

@@ -33,7 +33,6 @@ export type DiagnosticCode =
 	| "settings-not-final"
 	| "setting-on-body-line";
 
-/** Language-neutral facts. Tree/schema diagnostics supply translated messages later. */
 export interface LexDiagnostic {
 	code: DiagnosticCode;
 	name?: string;
@@ -76,11 +75,9 @@ export type Token = {
 
 export interface TokenLine {
 	kind: LineKind;
-	/** UTF-16 offsets, including the BOM on the first line and its original terminator. */
 	start: number;
 	contentEnd: number;
 	end: number;
-	/** Half-open indexes into TokenStream.tokens. No synthetic EOF line/token. */
 	tokenStart: number;
 	tokenEnd: number;
 }
@@ -92,10 +89,5 @@ export interface TokenStream {
 }
 
 export interface LexOptions {
-	/**
-	 * Schema/tree supplies contextual setting names, aliases and near misspellings.
-	 * Unknown name: lines remain part candidates for the tree to resolve as learner text.
-	 * The offset lets the caller select its enclosing schema without a second stack here.
-	 */
 	isSettingName?: (name: string, lineStart: number) => boolean;
 }

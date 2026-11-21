@@ -101,7 +101,6 @@ test("cursor notice retains the complete pinned upstream MIT text", async () => 
 	const license = await readFile(
 		new URL("apps/desktop/resources/third-party-notices/feather-icons@4.29.2/LICENSE", root),
 	);
-	// https://github.com/feathericons/feather/blob/v4.29.2/LICENSE, LF line endings.
 	assert.equal(
 		createHash("sha256").update(license.toString("utf8").replaceAll("\r\n", "\n")).digest("hex"),
 		"308028e93fcf84972523cdf6e616f73168546b4953895f516d01287f16fe7bee",
@@ -143,7 +142,6 @@ test("schema notice retains ADL, LOM and W3C attribution and full Apache text", 
 		schema.indexOf("Apache License\n"),
 		schema.indexOf("\nIEEE Learning Technology Standards Committee"),
 	);
-	// https://www.apache.org/licenses/LICENSE-2.0.txt, retrieved 2026-10-19.
 	assert.equal(
 		createHash("sha256").update(apache.replace(/\s+/gu, " ").trim()).digest("hex"),
 		"0ffddef9e48f8a09aed5caf2d44f7ba1c1be2d9b8e0a6f693b1635b2d5566645",
@@ -160,7 +158,6 @@ test("schema notice retains ADL, LOM and W3C attribution and full Apache text", 
 		"http://www.w3.org/2001/datatypes.dtd",
 	])
 		assert.ok(schema.includes(text), `Missing schema attribution: ${text}`);
-	// Complete licence and disclaimers from the dated W3C document licence source above.
 	const documentLicense = schema.slice(schema.indexOf("By using and/or copying this document"));
 	assert.equal(
 		createHash("sha256").update(documentLicense.replace(/\s+/gu, " ").trim()).digest("hex"),

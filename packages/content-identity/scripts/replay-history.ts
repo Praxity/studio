@@ -12,8 +12,6 @@ if (!manifest || !report || (process.argv.length !== 4 && process.argv.length !=
 const input: HistoryCorpus = JSON.parse(readFileSync(manifest, "utf8"));
 const digest = (text: string) => createHash("sha256").update(text).digest("hex");
 const proofDirectory = archive ? resolve(archive) : join(dirname(resolve(manifest)), "proofs");
-// Canonical hash of the study's four {old,new,pairs} records, in chronological order.
-// Changing an oracle requires a separately reviewed study, never a local gate override.
 if (
 	digest(serializeIdentity(input.transitions)) !==
 	"d89c0815a83ec1f19a202a153df27cd1bc53f53d49291b22d155b667ad58df3e"
@@ -33,7 +31,6 @@ const result = replayHistory(input, {
 	digest,
 	loadProof: (hash) => readFileSync(join(proofDirectory, `${hash}.json`), "utf8"),
 });
-// Archive wrong/lost cases before checking the gate, including a failing result.
 writeFileSync(report, `${JSON.stringify(result, null, 2)}\n`, "utf8");
 assertLeadershipGate(result);
 console.log(JSON.stringify(result.counts));

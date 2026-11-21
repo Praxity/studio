@@ -73,7 +73,6 @@ function validateEntries(entries, today) {
 export function validateAllowlist(entries, previous, now = Date.now()) {
 	validateEntries(entries, new Date(now).toISOString().slice(0, 10));
 	if (previous !== undefined) {
-		// Expired base entries must still permit removal or a deliberate re-add.
 		validateEntries(previous);
 		const allowed = new Map(previous.map((entry) => [key(entry), entry]));
 		for (const entry of entries) {
@@ -101,7 +100,6 @@ export default class SlowTestsReporter {
 		this.reportOnly = process.env.SLOW_TESTS_REPORT_ONLY === "true";
 		this.confirmationTimedOut = false;
 		if (this.reportOnly) {
-			// Vitest logs pool teardown timeouts after onTestRunEnd without setting exitCode.
 			const error = ctx.logger.error.bind(ctx.logger);
 			ctx.logger.error = (...args) => {
 				if (
@@ -173,7 +171,6 @@ export default class SlowTestsReporter {
 			}
 		}
 		if (this.violations.length === 0) return;
-		// Confirmation also verifies the isolated job's workers have exited.
 		if (process.env.CI === "true" && process.env.GITHUB_ACTIONS === "true" && !this.reportOnly) {
 			const file =
 				process.env.SLOW_TESTS_PENDING_FILE ??

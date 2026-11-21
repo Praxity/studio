@@ -22,7 +22,6 @@ export interface IdentityNode {
 	parent: string | null;
 	order: number;
 	canonical: string;
-	/** Absent for legacy descriptors. Writers still emit the legacy format by default. */
 	canonicalVersion?: 2;
 	matchText: string;
 	label: string;
@@ -37,7 +36,6 @@ export interface IdentityNode {
 }
 export interface IdentitySnapshot {
 	schema: 1;
-	/** Required namespace guard, including snapshots read without their heads. */
 	courseId: string;
 	lessonId: string;
 	parents: string[];
@@ -50,7 +48,6 @@ export interface ParsedDocument {
 }
 export interface CanonicalDescriptor {
 	file: string;
-	/** Tree child indexes; virtual blanks and reader parts append after real children. */
 	path: number[];
 	parentPath: number[] | null;
 	kind: IdentityNode["kind"];
@@ -61,9 +58,7 @@ export interface CanonicalDescriptor {
 	label: string;
 	span: SourceSpan;
 	valid: boolean;
-	/** Full subtree semantics, independent of its matching descriptor. */
 	revisionContent: string;
-	/** Reader projections with no separate source-tree node. */
 	readerRole?: string;
 	readerOwnerPath?: number[];
 }
@@ -71,31 +66,22 @@ export interface IdentityOperation {
 	intent: OperationIntent;
 	files: { path: string; fromRevision: string; toRevision: string; fromSnapshot: string }[];
 	mapping: IdentityMapping[];
-	/** Binds result identities to the resulting parse, guarded by file revisions. */
 	placements: { mappingIndex: number; file: string; path: readonly number[] }[];
-	/** History restores recorded IDs, including retired IDs, without reallocating. */
 	inverse?: boolean;
 }
 export interface IdentityDependencies {
 	allocateId: () => string;
-	/** Optional read-view allocator; returns rt- followed by 32 lowercase hex characters. */
 	allocateRuntimeId?: () => string;
-	/** Synchronous SHA-256 of UTF-8 text. Hosts supply the implementation. */
 	digest: (text: string) => string;
 }
 export interface ResolveIdentityInput {
 	parsedDocuments: readonly ParsedDocument[];
 	priorSnapshots: readonly IdentitySnapshot[];
-	/** IDs active in validated history, plus IDs protected by author artifacts. Omit to keep all IDs durable. */
 	activeHistoryIds?: ReadonlySet<string>;
-	/** Omit only for a new namespace or recovery from validated snapshots. */
 	course?: CourseIdentity;
-	/** Snapshot lessonId is the lesson-head filename stem. */
 	priorHeads?: readonly LessonHead[];
 	operations?: readonly IdentityOperation[];
-	/** Validated history for I3. I1 never chooses between branch heads. */
 	mergeBase?: readonly IdentitySnapshot[];
-	/** Include the grammar reader's virtual parts. Inferred from prior role records. */
 	readerRoles?: boolean;
 }
 export interface SourceMapping {
@@ -125,7 +111,6 @@ export interface IdentityResolution {
 	exportable: boolean;
 }
 
-/** Display identity only. No heads, snapshots or operation mappings can be persisted. */
 export interface IdentityReadView {
 	kind: "runtime-read";
 	course: CourseIdentity;
@@ -134,11 +119,9 @@ export interface IdentityReadView {
 	lessons: { file: string; lessonId: string; sourceHash: string }[];
 	runtimeIds: string[];
 	unresolved: UnresolvedIdentity[];
-	/** Author host state only, never durable lineage or operation authority. */
 	correspondence: { runtimeId: string; durableId: string }[];
 }
 
-/** Complete course heads at one git revision, not the immutable snapshot history. */
 export interface IdentityMergeState {
 	course: CourseIdentity;
 	heads: readonly LessonHead[];
@@ -152,13 +135,11 @@ export interface IdentityMergeConflict {
 		| "retired-id"
 		| "documents-mismatch";
 	ids: string[];
-	/** Field requiring a decision, or a merged-source address when available. */
 	field?: string;
 	file?: string;
 	path?: number[] | null;
 }
 export interface IdentityMergeResult {
-	/** No writable result exists until every conflict is resolved. */
 	resolution: IdentityResolution | null;
 	conflicts: IdentityMergeConflict[];
 }

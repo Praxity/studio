@@ -1,4 +1,3 @@
-/** Studio presentation and learner-flow choices for the module-deck runtime. */
 export interface DeckDesign {
 	preset?: "compact" | "transcript" | "selfPaced" | "custom";
 	outline?: boolean;
@@ -7,7 +6,6 @@ export interface DeckDesign {
 	slideCounter?: boolean;
 	followNarration?: boolean;
 	autoAdvance?: boolean;
-	/** Require earlier slides to be visited. Authored assessment gates always apply. */
 	sequentialLessons?: boolean;
 }
 
@@ -24,7 +22,6 @@ export function getDeckPreset(preset: DeckDesign["preset"] = "compact"): Require
 	};
 }
 
-/** Retain only valid authored keys, so normalization does not erase course inheritance. */
 export function normalizeDeckDesign(value: unknown): DeckDesign {
 	const raw =
 		value && typeof value === "object" && !Array.isArray(value)
@@ -58,7 +55,6 @@ export function normalizeDeckDesign(value: unknown): DeckDesign {
 	return result;
 }
 
-/** Share the same effective defaults between Studio and export. */
 export function resolveDeckDesign(value: unknown): Required<DeckDesign> {
 	const authored = normalizeDeckDesign(value);
 	const result = { ...getDeckPreset(authored.preset), ...authored };

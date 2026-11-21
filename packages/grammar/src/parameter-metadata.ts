@@ -1,4 +1,3 @@
-/** Canonical source names project onto stable runtime fields; shared by editor and grammar. */
 export function toModelParameter(
 	keyword: string,
 	key: string,
@@ -27,7 +26,6 @@ export function toSourceParameter(
 	return { key, value };
 }
 
-/** Defaults are authored source too: retain canonical names without mutating the input. */
 export function canonicalComponentDefaults(
 	value: unknown,
 	onConflict?: (message: string) => void,

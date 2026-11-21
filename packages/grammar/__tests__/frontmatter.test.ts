@@ -112,7 +112,6 @@ Body`;
 	it("returns empty frontmatter on YAML with duplicate keys", () => {
 		const source = `---\ntitle: First\ntitle: Second\n---\n\nBody`;
 		const result = parseFrontmatter(source);
-		// yaml package handles duplicate keys (last wins), but test it doesn't throw
 		expect(result.body).toBe("Body");
 	});
 });

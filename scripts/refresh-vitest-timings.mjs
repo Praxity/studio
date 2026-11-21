@@ -27,7 +27,6 @@ export function timingEntries(
 		if (marker >= 0) entries.push(JSON.parse(line.slice(marker + "Vitest file timing: ".length)));
 	}
 	if (entries.length) return entries;
-	// Bootstrap older CI runs which predate the JSON-line reporter.
 	for (const line of clean.split(/\r?\n/)) {
 		const match = line.match(
 			/Z\s+\S+\s+([\w-]+)\s+(\S+\.(?:test|spec)\.[cm]?[jt]sx?)\s+\(.+\)\s+([\d.]+)(ms|s)\s*$/,

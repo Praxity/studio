@@ -11,14 +11,11 @@ export interface PronunciationConfig {
 	lexemes: PronunciationLexeme[];
 }
 
-/** Grammar frontmatter (theme, lang, title, design). */
 export interface GrammarFrontmatter {
 	theme?: string;
 	lang?: string;
 	title?: string;
-	/** Group label above the lesson's first page heading. */
 	kicker?: string;
-	/** Authored duration below the lesson's first page heading. */
 	time?: string;
 	narrationEnabled?: boolean;
 	narrationLanguage?: string;
@@ -42,7 +39,6 @@ export type NavArchetype =
 	| "none"
 	| "custom";
 
-/** Composable image effects map — presence = enabled, absence = disabled. */
 export interface ImageEffectsMap {
 	grayscale?: { intensity: number };
 	colorWash?: {
@@ -58,7 +54,6 @@ export interface ImageEffectsMap {
 	dithering?: { intensity: number };
 }
 
-/** Cached per-image perceptual analysis for auto-calibration. */
 export interface ImagePerceptualMetadata {
 	v: 1;
 	avgLuminance: number;
@@ -90,7 +85,6 @@ export interface HeadingTypography extends FontRoleTypography {
 }
 
 export interface TypographyVariants {
-	/** Missing in legacy courses; normalization persists the current pairing. */
 	pairing?: "sans" | "book" | "clear";
 	fontDisplay: FontDisplay;
 	body: FontRoleTypography;
@@ -98,13 +92,11 @@ export interface TypographyVariants {
 	code?: Pick<FontRoleTypography, "fontFamily">;
 }
 
-/** Design system variant axes — controls visual rendering of blocks. */
 export interface DesignVariants {
 	palette: string;
 	colorMode: "light" | "dark" | "auto";
 	accentHue: number;
 	accentHueCustomized?: boolean;
-	// Explicit color tokens (filled by preset, read directly by CSS generation)
 	colorBackgroundLight?: string;
 	colorBackgroundDark?: string;
 	/** @deprecated Derived from colorBackgroundLight/colorBackgroundDark and active mode. */
@@ -153,10 +145,8 @@ export interface DesignVariants {
 		| "blend";
 	backgroundTexture: "none" | "grain" | "paper" | "noise";
 	highlightStyle: "none" | "marker" | "gradient" | "scribble";
-	/** Studio module-deck presentation and initial learner preferences. */
 	deck?: DeckDesign;
 	navLayout?: "sidebar" | "bottomBar" | "none";
-	// Navigation archetype system (supersedes navLayout)
 	navArchetype?: NavArchetype;
 	navArchetypeBase?: NavArchetype;
 	navOutline?: boolean;
@@ -180,28 +170,22 @@ export interface DesignVariants {
 	navSwipeGestures?: boolean;
 	navKeyboardArrows?: boolean;
 	showA11yPill?: boolean;
-	/** Aggregate `[term]{definition}` tooltips into a published glossary page. Default true. */
 	glossaryPage?: boolean;
 
-	// Accent colors
 	colorSecondary?: string | null;
 	colorTertiary?: string | null;
 	motionEntrance?: "none" | "fade" | "slide" | "scale";
 	motionStagger?: "none" | "sequential";
-	/** Default transition for single-layout Card blocks without a transition parameter. */
 	slideTransition?: "none" | "fade" | "slide" | "zoom";
 	/** @deprecated Use imageEffects instead. Migrated on read. */
 	imageStyle?: "none" | "two-color" | "grayscale" | "grain" | "textured" | "blur";
 	imageHoverEffect?: "none" | "lift" | "tilt" | "glow";
-	/** Composable image effects — replaces imageStyle. */
 	imageEffects?: ImageEffectsMap;
-	/** When true, auto-calibrate magnitudes per image using perceptual metadata. */
 	imageEffectsAuto?: boolean;
 	componentDefaults: Record<string, unknown>;
 	brand?: {
 		logoUrl?: string;
 		logoDarkUrl?: string;
-		/** `left` and `center` are accepted only when loading older projects. */
 		logoPlacement?: "sidebar" | "header" | "hidden" | "left" | "center";
 		/** @deprecated Retained for older projects; logoPlacement now controls visibility. */
 		logoScope?: "all-pages" | "title-only";

@@ -69,7 +69,6 @@ function systemProbe(root: string): Probe {
 export async function collectGatePreflight({
 	root,
 	env = process.env,
-	// Worktrees have no .env; PRAXITY_ENV_FILE points at the clone that holds it.
 	credentialsPath = env.PRAXITY_ENV_FILE ?? join(root, ".env"),
 	probe = systemProbe(root),
 }: {
@@ -100,7 +99,6 @@ export async function collectGatePreflight({
 	} catch {
 		record("package metadata / lockfile", { present: false });
 	}
-	// pnpm is a .cmd shim on Windows. Run its JS entry point with Node, without a shell.
 	const pnpmVersion = env.npm_execpath
 		? await probe.command(process.execPath, [env.npm_execpath, "--version"])
 		: await probe.command("pnpm", ["--version"]);
@@ -166,13 +164,10 @@ export async function collectGatePreflight({
 			break;
 		}
 	record("NVDA", { present: Boolean(nvdaPath), path: nvdaPath });
-	// Only lengths enter the summary. Never persist the env source, response body or exception.
 	let credentials: Record<string, string | undefined> = {};
 	try {
 		credentials = parseEnv(await probe.read(credentialsPath));
-	} catch {
-		/* Missing/unreadable credentials are reported individually below. */
-	}
+	} catch {}
 	const appId = credentials.SCORM_CLOUD_APP_ID ?? "";
 	const secretKey = credentials.SCORM_CLOUD_SECRET_KEY ?? "";
 	summary.credentials = { appIdLength: appId.length, secretKeyLength: secretKey.length };

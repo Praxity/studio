@@ -32,7 +32,6 @@ afterEach(() => {
 	}
 });
 
-/** Each test reads actual branch commits and the git common base, never mocks git. */
 function fixture(
 	sources = { "first.prax": first, "second.prax": second },
 	prepare?: (state: IdentityResolution) => void,
@@ -85,7 +84,6 @@ function present<T>(value: T | null | undefined): T {
 	return value;
 }
 
-// Real git subprocesses share this machine with builds and other worktrees.
 describe("course-wide identity on real git branches", { timeout: 30_000 }, () => {
 	it("retains both branches' lineage for a shared addition absent from the base", () => {
 		const f = fixture();

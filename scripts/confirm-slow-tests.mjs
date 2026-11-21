@@ -78,7 +78,6 @@ export function observeConfirmationHost({ platform = process.platform, read = re
 				throw new Error("Invalid aggregate CPU counters");
 			return { cpu, loadavg: read("/proc/loadavg", "utf8").trim(), ioPressure: ioPressure() };
 		} catch (error) {
-			// Telemetry must report its own failure without changing the timing gate.
 			return { error: error.message };
 		}
 	};
@@ -86,12 +85,10 @@ export function observeConfirmationHost({ platform = process.platform, read = re
 	return () => {
 		const after = snapshot();
 		if (before.error || after.error) return { error: before.error ?? after.error };
-		// guest/guest_nice are already included in user/nice, so sum only the first eight fields.
 		const cpuTicks =
 			after.cpu.reduce((sum, value) => sum + value, 0) -
 			before.cpu.reduce((sum, value) => sum + value, 0);
 		const stealTicks = after.cpu[7] - before.cpu[7];
-		// Linux documents that iowait may decrease; retain the signed delta for diagnosis.
 		const iowaitTicks = after.cpu[4] - before.cpu[4];
 		return {
 			loadavgStart: before.loadavg,
@@ -114,7 +111,6 @@ export function runConfirmation(
 	{ platform = process.platform, spawnProcess = spawn, killProcess = process.kill } = {},
 ) {
 	return new Promise((resolve) => {
-		// Own a process group so a timed-out attempt cannot affect later measurements.
 		const child = spawnProcess(executable, args, { ...options, detached: platform !== "win32" });
 		let error;
 		child.on("error", (failure) => {
@@ -139,7 +135,6 @@ export function runConfirmation(
 			error = Object.assign(new Error("spawn ETIMEDOUT"), { code: "ETIMEDOUT" });
 			kill();
 		}, timeout);
-		// EMFILE/ENFILE can return a child without creating its stdio streams.
 		child.stdout?.setEncoding(encoding);
 		child.stderr?.setEncoding(encoding);
 		child.stdout?.on("data", (data) => {
@@ -152,7 +147,6 @@ export function runConfirmation(
 		});
 		function checkOutput(data) {
 			outputBytes += Buffer.byteLength(data, encoding);
-			// Preserve spawnSync's default output cap when switching to streams.
 			if (outputBytes > 1024 * 1024 && !error) {
 				error = Object.assign(new Error("confirmation output exceeded 1 MiB"), { code: "ENOBUFS" });
 				kill();
@@ -169,7 +163,6 @@ function confirmationPath(file) {
 	try {
 		return realpathSync(file);
 	} catch (error) {
-		// Vitest reports missing files as failures; keep their path for that diagnostic.
 		if (error.code === "ENOENT") return resolve(file);
 		throw error;
 	}
@@ -230,7 +223,6 @@ export async function confirmSlowTests(
 		JSON.stringify([moduleId, projectRoot, projectName, configFile]),
 	);
 	try {
-		// Confirm serially after the shard, with the same project setup and test timeouts.
 		for (const [index, violations] of [...files.values()].entries()) {
 			const { moduleId, projectRoot, projectName, configFile, entry } = violations[0];
 			const targets = violations.map(({ nameParts }) => nameParts);
@@ -251,7 +243,6 @@ export async function confirmSlowTests(
 			logger.log(`Confirming slow tests in file: ${entry.file}`);
 			let timeoutError;
 			try {
-				// Vitest discovers real paths, including /private/var behind macOS's /var.
 				const file = confirmationPath(moduleId);
 				const longerPaths = `${file.replaceAll("\\", "/").replace(/([?*[\]{}()!])/g, "\\$1")}?*`;
 				const pattern = targets
@@ -277,7 +268,6 @@ export async function confirmSlowTests(
 							"--retry=0",
 							`--testNamePattern=${pattern}`,
 							`--exclude=${longerPaths}`,
-							// Override configured reporters so confirmation cannot recursively rerun itself.
 							"--reporter=default",
 							`--reporter=${fileURLToPath(new URL("./slow-tests-confirmation-reporter.mjs", import.meta.url))}`,
 							`--outputFile=${reportPath}`,
@@ -303,8 +293,6 @@ export async function confirmSlowTests(
 						result.error.code === "ENOBUFS"
 					)
 						break;
-					// Vitest writes JSON after afterAll: missing JSON cannot prove nothing ran.
-					// Only a failed start can retry; any finished report is final as well.
 					if (existsSync(reportPath)) break;
 					if (attempt === 1 || deadline - now() <= 0) break;
 					logger.log(
@@ -316,7 +304,6 @@ export async function confirmSlowTests(
 						confirmationTimedOut = true;
 						timeoutError = result.error;
 					}
-					// A completed report can still contain failures before child teardown times out.
 					if (!existsSync(reportPath)) throw result.error;
 				}
 				const report = readConfirmationReport(reportPath, result, file);
@@ -380,7 +367,6 @@ export async function confirmSlowTests(
 		logger.error(
 			`Slow-test confirmation infrastructure failed:\n${infrastructureFailures.join("\n")}`,
 		);
-	// Owner decision 2026-10-12: macOS nightly timings are advisory; correctness still fails.
 	return Boolean(
 		(!reportOnly && failures.length) ||
 			confirmationFailures.length ||

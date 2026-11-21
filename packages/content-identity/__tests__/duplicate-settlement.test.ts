@@ -564,7 +564,6 @@ describe("duplicate settlement from validated history", () => {
 			});
 			expect(originals.map((id) => nodes(pending)[id].status)).toEqual(["pending", "pending"]);
 			expect(pending.exportable).toBe(false);
-			// Refused CLI initialization leaves the admitted baseline unchanged.
 			expect(serializeIdentity(initial)).toBe(admitted);
 			const restored = apply(initial, {
 				"one.prax": duplicate.replace("Other subject.", "Unrelated replacement."),
@@ -588,7 +587,6 @@ describe("duplicate settlement from validated history", () => {
 			const pending = apply(initial, { "one.prax": base });
 			const snapshot = pending.snapshots[0];
 			expect(originals.map((id) => snapshot.nodes[id].status)).toEqual(["pending", "pending"]);
-			// Model retained donor coordinates alongside shifted or overlapping sibling ordinals.
 			snapshot.nodes[originals[0]].order = 2;
 			snapshot.nodes[originals[1]].order = key === "start" ? 0 : 2;
 			if (key === "end")

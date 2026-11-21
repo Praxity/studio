@@ -3,13 +3,11 @@ import { escapeTypst, typstString } from "./escaping.ts";
 
 type HtmlNode = DefaultTreeAdapterMap["childNode"];
 export interface TypstHtmlOptions {
-	/** Return undefined to use the shared semantic HTML mapping. */
 	element?: (node: DefaultTreeAdapterMap["element"], content: string) => string | undefined;
 }
 
 export { escapeTypst, typstString } from "./escaping.ts";
 
-/** Only external web/email links. Unsafe targets retain their visible content. */
 export function safeTypstLink(url: string, content: string): string {
 	if (!/^(https?:|mailto:)/i.test(url) || /[\u0000-\u0020\u007f-\u009f]/.test(url)) {
 		return content;
@@ -37,7 +35,6 @@ export function decodeHtmlEntities(text: string): string {
 	return parseFragment(text.replaceAll("<", "&lt;")).childNodes.map(plainNode).join("");
 }
 
-// Trim layout whitespace without removing intentional no-break spaces.
 function trimLayout(text: string): string {
 	return text.replace(/^[\t\n\r ]+|[\t\n\r ]+$/g, "");
 }
@@ -89,7 +86,6 @@ function renderTypstNode(node: HtmlNode, options?: TypstHtmlOptions): string {
 			number += reversed ? -1 : 1;
 			return current;
 		});
-		// Typst item numbers cannot be negative; retain HTML labels via its numbering function.
 		const signed = ordered && numbers.some((value) => value < 0);
 		const numbering = signed
 			? `numbering: n => (${numbers.map((value) => typstString(`${value}.`)).join(", ")},).at(n - 1), `

@@ -201,7 +201,6 @@ describe("G1 Q1 fence shielding and line shapes", () => {
 });
 
 describe("G1 FORMAT-NEXT 4.8, every B as specified row", () => {
-	// Schema owns the vocabulary. G1 receives only a spelling classifier.
 	const isSettingName = (name: string) => ["tone", "colour"].includes(name.toLowerCase());
 	it.each([
 		["space before colon", "Indice : relisez…"],

@@ -1,7 +1,6 @@
 import { JsonReporter } from "vitest/reporters";
 import { assertConfirmationTargets, testNameParts } from "./confirm-slow-tests.mjs";
 
-// Vitest's JSON reporter omits unhandled errors, which can coexist with test failures.
 export default class ConfirmationJsonReporter extends JsonReporter {
 	constructor() {
 		super({});

@@ -58,7 +58,6 @@ test("sibling exceeds cap", async () => { await new Promise(resolve => setTimeou
 `,
 		[["target"]],
 		{
-			// Keep this regression bounded even when the name filter is removed.
 			run: (exe, args, config) => runConfirmation(exe, args, { ...config, timeout: 10000 }),
 		},
 	);

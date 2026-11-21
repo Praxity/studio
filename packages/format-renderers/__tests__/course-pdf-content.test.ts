@@ -176,7 +176,6 @@ describe("PDF static content", () => {
 		).blocks;
 		const dialogue = parsed.find((block) => block.type === "dialogue");
 		if (!dialogue) throw new Error("Missing PDF dialogue fixture");
-		// Persisted models can contain unattributed turns; grammar 4 requires a speaker.
 		(dialogue.data.turns as Array<{ id: string; paragraphs: string[] }>).push({
 			id: "unattributed-turn",
 			paragraphs: ["Unattributed"],

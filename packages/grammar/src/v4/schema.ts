@@ -77,7 +77,6 @@ export type HelperKind =
 export interface HelperDefinition {
 	kind: HelperKind;
 	options?: readonly { value: string; labelKey: string; icon: string }[];
-	/** Colour edits address a colour inside the effects expression, not the whole value. */
 	subvalue?: "effect-colour";
 }
 export interface SettingDefinition {
@@ -121,7 +120,6 @@ export const INLINE_HELPERS = {
 	icon: { kind: "icon" },
 } as const satisfies Record<string, HelperDefinition>;
 
-// Canonical grammar 4 vocabularies are owned here.
 export const GRAMMAR4_ENUMS: Readonly<
 	Record<string, { values: readonly string[]; default?: string }>
 > = {
@@ -305,7 +303,6 @@ function toggle(name: string, defaultValue?: boolean): SettingDefinition {
 			"toggle",
 			(value) => typeof value === "boolean" || value === "true" || value === "false",
 		),
-		// Parameter defaults often live in renderers. Do not invent false for omitted settings.
 		default: defaultValue,
 	};
 }
@@ -334,7 +331,6 @@ function numberSetting(
 	};
 }
 const columns = numberSetting("columns", 2, 4, true);
-// These legacy vocabularies have types but no runtime export. Exhaustive keys keep them tied to their owners.
 const entranceIcons = {
 	none: "minus",
 	fade: "blur",
@@ -354,7 +350,6 @@ const universal = {
 	entrance: enumSetting("entrance", Object.keys(entranceIcons), "none"),
 	level: numberSetting("level", 1, 6, true),
 };
-// NoteTone has no runtime constant. This exhaustive record is checked against its owning type.
 const toneIcons = {
 	note: "info-circle",
 	info: "info-circle",
@@ -363,7 +358,6 @@ const toneIcons = {
 	warning: "alert-triangle",
 } satisfies Record<NoteTone, string>;
 const tone = enumSetting("tone", NOTE_TONES, "note");
-// CardBlockData has no runtime colour vocabulary; exhaustive keys track its owner.
 const cardColours = { primary: true, secondary: true } satisfies Record<
 	NonNullable<CardBlockData["color"]>,
 	boolean
@@ -403,7 +397,6 @@ function subject(
 			: {}),
 	};
 }
-/** A refused media source or link destination gets a diagnostic that names what to use instead. */
 function subjectUrlRefusal(
 	kind: SubjectDefinition["kind"],
 	value: string,
@@ -417,7 +410,6 @@ function subjectUrlRefusal(
 		: undefined;
 }
 function linkSubject(value: string, raw = value): boolean {
-	// Delimiters must be identified before G1's subject escapes are decoded.
 	const nodes = tokenizeInline(raw).children;
 	return (
 		nodes.length === 1 &&
@@ -454,7 +446,6 @@ function constraints(
 	for (const child of node.children) {
 		if (!definition.allowedChildren.includes(child.kind))
 			issues.push(
-				// A model: line after the first criterion parses as that criterion's body.
 				node.kind === "item" && parent?.type === "self-check" && child.raw.startsWith("model:")
 					? { code: "model-after-criterion", span: child.span }
 					: {
@@ -483,8 +474,6 @@ function constraints(
 		if (privateChoiceHasForbiddenSettings(node) || parent?.type === "group")
 			issues.push({ code: "private-choice-practice-only", span: location });
 	}
-	// Group prose can itself contain blocks. Check its full subtree too; direct
-	// members and choices with forbidden settings already receive this diagnostic.
 	if (node.type === "group")
 		for (const child of descendants(node))
 			if (
@@ -582,8 +571,6 @@ function constraints(
 
 const namedPart = (node: TreeNode, name: string) =>
 	node.children.find((child) => child.kind === "part" && child.name === name);
-/** The library's content from grammar's literal fields. The lexer decodes each value once;
- * this only normalizes line endings and continuation indentation. The host supplies IDs. */
 export function selfCheckContent(
 	node: TreeNode,
 	criterionId: (item: TreeNode, index: number) => string,
@@ -605,12 +592,6 @@ export function selfCheckContent(
 			}),
 	};
 }
-/** validateContent owns the content rules. Blank and missing fields already have their own
- * subject, part or child-count diagnostic. Evidence that isn't found exactly once in the
- * model has its own code, and any other refusal is self-check-invalid, so a new library rule
- * never passes silently. The library stops at its first failure, so a later criterion's
- * evidence is checked once earlier blank fields are filled. IDs are positional stand-ins:
- * analysis has no identity, and the reader's allocator refuses missing or duplicate IDs. */
 function selfCheckIssues(node: TreeNode): DefinitionIssue[] {
 	const content = selfCheckContent(node, (_item, index) => `criterion-${index}`);
 	try {
@@ -630,8 +611,6 @@ function selfCheckIssues(node: TreeNode): DefinitionIssue[] {
 		return [{ code: "self-check-invalid", span: node.header ?? node.span }];
 	}
 }
-/** Literal conversion shared by semantic admission and the grammar projection.
- * Paragraph breaks are structural; the item identity allocator owns chunk IDs. */
 export function highlightContent(
 	node: TreeNode,
 	chunkId: (item: TreeNode, index: number) => string,
@@ -703,8 +682,6 @@ function highlightIssues(
 		if (note) length(chunk.note ?? "", chunkFields.note.maxLength, "highlight-note-too-long", note);
 	}
 	for (const field of [node, ...items]) {
-		// The shared lexer preserves the quoted spelling; numeric and boolean coercion
-		// would otherwise erase the source contract's distinction.
 		for (const setting of field.settings)
 			if (
 				["maxMarks", "key", "paragraph"].includes(setting.name) &&
@@ -718,8 +695,6 @@ function highlightIssues(
 	}
 	if (items.length && !chunks.some((chunk) => chunk.key === true))
 		issues.push({ code: "highlight-no-target", span: node.header ?? node.span });
-	// Precise structural/field diagnostics own known failures. Upstream owns the
-	// remaining semantic admission and its exception must never expose authored text.
 	if (
 		issues.length ||
 		priorIssues.length ||
@@ -746,9 +721,6 @@ function highlightIssues(
 	}
 	return issues;
 }
-/** No identities are authored here. Analysis supplies positional stand-ins; the
- * reader supplies the existing lesson identity allocator's item IDs. Decode raw
- * fields once, including continuations, and preserve all nonstructural whitespace. */
 export function retrievalSheetContent(
 	node: TreeNode,
 	questionId: (item: TreeNode, index: number) => string,
@@ -795,8 +767,6 @@ function retrievalSheetIssues(node: TreeNode): DefinitionIssue[] {
 				answer,
 			);
 	}
-	// Structural/required/blank/duplicate failures already have precise diagnostics.
-	// Do not turn the same failure into an additional library-invalid error.
 	if (
 		issues.length ||
 		!content.title.trim() ||
@@ -820,7 +790,6 @@ function retrievalSheetIssues(node: TreeNode): DefinitionIssue[] {
 	}
 	return issues;
 }
-/** Paired literal fields for semantic admission and the source-owned typed accessor. */
 export function writeDistractorsContent(
 	node: TreeNode,
 	misconceptionId: (item: TreeNode, index: number) => string,
@@ -900,8 +869,6 @@ function writeDistractorsIssues(
 	const count = node.settings.find((setting) => setting.name === "count");
 	if (count?.value.raw.startsWith('"'))
 		issues.push({ code: "bad-setting-value", span: count.span, args: { name: "count" } });
-	// The named checks own structure, blankness, lengths and duplicates. Never
-	// repeat them as a generic library failure or expose upstream exception text.
 	if (
 		structural.some((issue) => issue.code !== "unsupported-runtime") ||
 		issues.some((issue) => issue.severity !== "warning") ||
@@ -1052,7 +1019,6 @@ function assessment(
 }
 const scale = numberSetting("scale", 2, 10, true);
 
-/** Spot geometry belongs to hotspot, not the lexer or generic tree. Coordinates are percentages. */
 export const SPOT_SETTINGS: Readonly<Record<string, SettingDefinition>> = {
 	shape: enumSetting("shape", ["point", "rect", "ellipse", "polygon"], "point"),
 	x: numberSetting("x", 0, 100),
@@ -1072,7 +1038,6 @@ export const SPOT_SETTINGS: Readonly<Record<string, SettingDefinition>> = {
 	correct: toggle("correct"),
 };
 
-/** Rule action syntax is strict. Callers never recover an unknown verb as a show action. */
 export function parseRuleAction(expression: string): LogicAction | undefined {
 	const input = expression.trim();
 	const targeted = /^(show|hide|require|jump)\s+(.+)$/.exec(input);
@@ -1120,7 +1085,6 @@ function settingValue(node: TreeNode, name: string): string | boolean | undefine
 	return node.settings.find((s) => s.name === name)?.value.value;
 }
 
-/** Choice privacy is opt-in; free-response's existing flag has a separate contract. */
 function isPrivateChoice(node: TreeNode): boolean {
 	return (
 		node.type === "choice" &&
@@ -1140,7 +1104,6 @@ function privateChoiceHasForbiddenSettings(node: TreeNode): boolean {
 	);
 }
 
-/** Separators belong to the raw spelling; only individual words decode escapes. */
 export function wordBankEntries(node: TreeNode): string[] {
 	const bank = node.children.find((n) => n.kind === "part" && n.name === "bank");
 	return splitUnescaped(bank?.value?.raw ?? "", "|").map((word) => decodeEscapes(word.trim()));
@@ -1189,8 +1152,6 @@ function responseConstraints(node: TreeNode): DefinitionIssue[] {
 			if (!String(entry.text?.value ?? "").trim()) fail("nonempty-response", entry);
 	};
 	if (node.type === "free-response") {
-		// Description sinks accept rich prose HTML, not arbitrary block renderers.
-		// Check wrappers too so inspect cannot admit content those sinks discard.
 		const proseOnly = (owner: TreeNode) => {
 			for (const child of owner.children) {
 				if (child.kind === "part" || child.kind === "recovery") continue;
@@ -1366,7 +1327,6 @@ function responseConstraints(node: TreeNode): DefinitionIssue[] {
 				issues.push({ code: "self-check-in-group", span: child.header ?? child.span });
 			else if (child.kind === "block" && !groupContentTypes.includes(child.type ?? ""))
 				fail("group-assessments-or-prose", child);
-		// Each nested group owns its subtree's membership diagnostics.
 		const nested = node.children
 			.filter((child) => child.type !== "group")
 			.flatMap((child) => child.children);
@@ -1408,7 +1368,6 @@ function responseConstraints(node: TreeNode): DefinitionIssue[] {
 	return issues;
 }
 
-/** Grammar-4 declarations only. Grammar 3 never imports this registry. */
 export const BLOCK_SCHEMA: Readonly<Record<string, BlockDefinition>> = {
 	text: block("text", "::: text\nText\n:::\n", { subject: subject("none") }),
 	note: block("note", "::: note {tone=note}\nText\n:::\n", {
@@ -1509,7 +1468,6 @@ export const BLOCK_SCHEMA: Readonly<Record<string, BlockDefinition>> = {
 		subject: subject("none"),
 		body: "tables",
 		parts: ["caption"],
-		// StatsBlock accepts exactly 2, 3 or 4; its CSS reduces grids at smaller widths.
 		settings: { ...universal, columns, size: vocabularySetting("stats", "size") },
 		allowedChildren: ["table", "part", "body", "recovery"],
 	}),
@@ -1614,8 +1572,6 @@ export const BLOCK_SCHEMA: Readonly<Record<string, BlockDefinition>> = {
 						writeDistractorsSchema.properties.count.maximum,
 						true,
 					),
-					// This new setting uses canonical source integers. Keep the
-					// legacy level/points numeric parser's leniency unchanged.
 					accepts: (value) =>
 						typeof value === "string" &&
 						/^[1-9]\d*$/.test(value) &&
@@ -1828,7 +1784,6 @@ export const BLOCK_SCHEMA: Readonly<Record<string, BlockDefinition>> = {
 };
 const backDefinition = block("back", "::: back\nBack\n:::\n", { subject: subject("none") });
 
-/** Inject into analyzeLessonTree. G5 can compose its declarations with this lookup. */
 export function getDefinition(type: string): BlockDefinition | undefined {
 	return type === "back"
 		? backDefinition
@@ -1873,7 +1828,6 @@ export interface CourseValidationResult {
 	names: ReadonlyMap<string, CourseOccurrence>;
 }
 
-/** Metadata validation shared by the single-lesson reader and course checks. */
 export function readTreeFrontmatter(tree: AnalyzedLessonTree): {
 	data: Record<string, unknown>;
 	error?: string;
@@ -1919,7 +1873,6 @@ export function inlineText(nodes: readonly InlineNode[]): string {
 		)
 		.join("");
 }
-/** Learner fields only. Never scan structural settings, URLs, frontmatter or rule expressions. */
 export function learnerInline(lesson: CourseLesson): InlineNode[] {
 	const { stream, root } = lesson.tree;
 	const result: InlineNode[] = [];
@@ -1946,7 +1899,6 @@ export function learnerInline(lesson: CourseLesson): InlineNode[] {
 					.map((n) => ("children" in n ? { ...n, children: outsideAnswers(n.children) } : n));
 			result.push(...outsideAnswers(children));
 		};
-		// Split around protected block literals while preserving multiline inline ranges elsewhere.
 		let cursor = start;
 		for (const line of stream.lines) {
 			if (
@@ -1981,7 +1933,6 @@ export function learnerInline(lesson: CourseLesson): InlineNode[] {
 	return result;
 }
 
-/** Course-wide checks are pure and retain the first definition/name in supplied lesson order. */
 export function validateCourse(
 	lessons: readonly CourseLesson[],
 	options: CourseValidationOptions = {},
@@ -2026,7 +1977,6 @@ export function validateCourse(
 		});
 	};
 	for (const lesson of lessons) {
-		// Replace G3's literal same-lesson glossary fallback with the G6 course check below.
 		diagnostics.push(
 			...lesson.tree.diagnostics
 				.filter((d) => d.code !== "conflicting-glossary-definitions")
@@ -2034,8 +1984,6 @@ export function validateCourse(
 		);
 		const all = descendants(lesson.tree.root);
 		nodes.set(lesson, all);
-		// Parents precede children in `all`; one reverse pass indexes subtree
-		// ownership and strict sheet ancestors without walking each subtree again.
 		const practiceOwners = new Set<TreeNode>();
 		const literalPracticeAncestors = new Set<TreeNode>();
 		for (let index = all.length - 1; index >= 0; index--) {
@@ -2067,8 +2015,6 @@ export function validateCourse(
 			const name = String(setting.value.value);
 			const first = names.get(name);
 			if (!first && node.type === "self-check") selfCheckNames.add(name);
-			// Duplicate-name diagnostics are non-blocking in publication hosts. Any
-			// matching practice definition must still establish the privacy boundary.
 			if (
 				isPrivateChoice(node) ||
 				["retrieval-sheet", "write-distractors", "highlight"].includes(node.type ?? "")
@@ -2160,9 +2106,6 @@ export function validateCourse(
 				report(lesson, "unknown-cast-speaker", node.speaker?.range.start ?? node.span.start, {
 					speaker: String(node.speaker?.value ?? ""),
 				});
-			// Unknown gate spellings remain unknown-setting. The same authored
-			// token must also establish the course practice refusal before schema
-			// filtering removes it from the analyzed settings.
 			for (const setting of node.header && practiceAncestors.get(lesson)?.has(node)
 				? readHeaderSettings(lesson.tree.stream, node.header)
 				: []) {
@@ -2208,7 +2151,6 @@ export function validateCourse(
 
 export interface ConversionDeclaration {
 	target: string;
-	/** Stable loss identifiers. Hosts translate them and show only authored losses. */
 	losses: readonly string[];
 	losesAnswers: boolean;
 }
@@ -2294,7 +2236,6 @@ function conversionTargets(source: string): string[] {
 		return [];
 	return ["text"];
 }
-/** Empty rows deliberately offer no conversion. Transformations and state compatibility belong to O4/L1. */
 export const TURN_INTO: Readonly<Record<string, readonly ConversionDeclaration[]>> =
 	Object.fromEntries(
 		Object.keys(BLOCK_SCHEMA).map((type) => [
@@ -2302,7 +2243,6 @@ export const TURN_INTO: Readonly<Record<string, readonly ConversionDeclaration[]
 			conversionTargets(type).map((target) => conversion(type, target)),
 		]),
 	);
-/** A selection can wrap only if every selected type lists that target. Columns use their dedicated operation. */
 export const WRAP_IN: Readonly<Record<string, readonly string[]>> = Object.fromEntries(
 	Object.keys(BLOCK_SCHEMA).map((type) => [
 		type,
@@ -2337,11 +2277,8 @@ function publishedDefinition(definition: BlockDefinition): Record<string, unknow
 		...(itemDefinition ? { itemDefinition: publishedDefinition(itemDefinition) } : {}),
 	};
 }
-/** JSON-only schema projection. Executable validators stay in grammar; no timestamps or host state. */
 export function generateBlocksIndex() {
 	return JSON.parse(
-		// The published index names message keys `label`: secret scanners read a
-		// `"labelKey": "dotted.value"` pair as a generic API key.
 		JSON.stringify({
 			grammarVersion: 4,
 			generatedFrom: "packages/grammar/src/v4/schema.ts",

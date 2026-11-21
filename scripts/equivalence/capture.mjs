@@ -21,15 +21,12 @@ export const conditions = Object.freeze({
 	initialStorage: "empty; fresh context for each view",
 });
 
-// The shared narration player probes durations sequentially after document load.
-// Deck readiness and network-idle can precede verification between those probes.
 export function narrationReady(doc = document) {
 	return [...doc.querySelectorAll('.praxity-narration-position input[type="range"]')].every(
 		(input) => !input.disabled,
 	);
 }
 
-// Browser-side audit: fullPage alone cannot see nested scrollports.
 export function scrollRegions(doc = document) {
 	return [...doc.querySelectorAll("*")].flatMap((node) => {
 		const rect = node.getBoundingClientRect();
@@ -71,8 +68,6 @@ export function islandsReady(doc = document) {
 	});
 }
 
-// Observe every request for the lifetime of the page, including resize-triggered
-// fetches after Playwright's one-shot load-state networkidle has already fired.
 const networks = new WeakMap();
 export function trackNetworkRequests(page) {
 	if (networks.has(page)) return networks.get(page);
@@ -91,7 +86,6 @@ export function trackNetworkRequests(page) {
 	const tracker = {
 		async waitForQuiet({ quietMs = 500, timeoutMs = 30000 } = {}) {
 			const started = performance.now();
-			// Always require a fresh quiet interval after the caller's layout change.
 			while (pending.size || performance.now() - Math.max(started, changed) < quietMs) {
 				if (performance.now() - started >= timeoutMs)
 					throw new Error(`Network did not settle: ${[...pending].map((r) => r.url()).join(", ")}`);
@@ -103,8 +97,6 @@ export function trackNetworkRequests(page) {
 	return tracker;
 }
 
-// Zero offsets are covered by the initial screenshot. Identify only nonzero
-// scrollers, in their own document order, so unrelated DOM insertions are inert.
 export function initialScrollPositions(doc = document) {
 	return [...doc.querySelectorAll("*")]
 		.filter((node) => {
@@ -147,8 +139,6 @@ export function clippedFocusables(doc = document) {
 		for (let parent = node.parentElement; parent; parent = parent.parentElement) {
 			const style = doc.defaultView.getComputedStyle(parent);
 			const box = parent.getBoundingClientRect();
-			// Content outside a scrollable ancestor is covered by expansion. Audit
-			// hidden/clip ancestors inside it, without blaming outer deck clipping.
 			if (
 				(/auto|scroll/.test(style.overflowY) && parent.scrollHeight > parent.clientHeight) ||
 				(/auto|scroll/.test(style.overflowX) && parent.scrollWidth > parent.clientWidth)
@@ -195,8 +185,6 @@ export function clippedFocusables(doc = document) {
 export async function settleCapture(page) {
 	const network = trackNetworkRequests(page);
 	await network.waitForQuiet();
-	// Lazy hydration may need temporary scrolling. Retain node references so DOM
-	// insertions cannot corrupt restoration of the runtime's natural scroll state.
 	const positions = await page.evaluateHandle(() =>
 		[...document.querySelectorAll("*")].map((node) => ({
 			node,
@@ -274,7 +262,6 @@ export function unprovenMediaCancellations(cancelled, completed) {
 	return [...new Set(cancelled)].filter((url) => !successful.has(url));
 }
 
-/** One loopback origin is reused across both sides; no warmed browser state. */
 export async function capturePair(chromium, baseRoot, candidateRoot, out) {
 	const inventories = [await inventory(baseRoot), await inventory(candidateRoot)];
 	await mkdir(out, { recursive: true });
@@ -359,7 +346,6 @@ export async function capturePair(chromium, baseRoot, candidateRoot, out) {
 					});
 					page.on("requestfailed", (request) => {
 						const error = request.failure()?.errorText;
-						// A cancellation is accepted only with a completed load of the same URL.
 						if (request.resourceType() === "media" && error === "net::ERR_ABORTED")
 							entry.cancelledMedia.push(request.url());
 						else entry.errors.push(`requestfailed: ${request.url()} ${error}`);
@@ -404,8 +390,6 @@ export async function capturePair(chromium, baseRoot, candidateRoot, out) {
 						caret: "hide",
 					});
 					entry.scrollCapture = await captureFullRegion(page);
-					// Chromium often aborts metadata preloads once the header is read. Fully
-					// load each unfinished media URL in this view to corroborate availability.
 					entry.verifiedMedia = await page.evaluate(
 						async (urls) => {
 							const verified = [];

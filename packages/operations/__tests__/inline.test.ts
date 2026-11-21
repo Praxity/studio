@@ -401,7 +401,6 @@ it("converted-course inline target edits keep LF, CRLF and mixed bytes and every
 				ending === "lf" ? "\n" : ending === "crlf" || line++ % 2 ? "\r\n" : "\n",
 			);
 		const a = read("leadership/00-avant-de-commencer");
-		// The toolkit welcome has no inline links; append a fixture token without rewriting its course bytes.
 		const b = `${read("toolkit/welcome")}\n\n[Toolkit resource](https://example.org)\n`;
 		for (const path of ["a.prax", "b.prax"]) {
 			const f = fixture(a, b);

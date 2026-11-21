@@ -22,7 +22,6 @@ const equal = (a: unknown, b: unknown) =>
 const content = (node: IdentityNode) => [node.kind, node.type, node.canonical];
 const union = (...lists: string[][]) => [...new Set(lists.flat())].sort();
 
-/** Merge decisions are pure. The caller reads git and installs only a conflict-free result. */
 export function mergeIdentity(
 	base: IdentityMergeState,
 	ours: IdentityMergeState,
@@ -89,7 +88,6 @@ export function mergeIdentity(
 		const right = t.nodes.get(id);
 		if (!left || !right) {
 			if (before) {
-				// A head must retain retirement history; absence cannot prove deletion.
 				conflicts.push({ reason: "documents-mismatch", ids: [id], field: "missing-history" });
 			} else if (left ?? right) selected.set(id, structuredClone((left ?? right) as IdentityNode));
 			continue;
@@ -116,8 +114,6 @@ export function mergeIdentity(
 			conflicts.push({ reason: "divergent-change", ids: [id], field: "delete-edit" });
 		node.parent = choose(id, "parent", before.parent, left.parent, right.parent);
 		node.status = choose(id, "status", before.status, left.status, right.status);
-		// Numeric offsets shift after disjoint insertions. The merged parse owns order
-		// and spans; neither is evidence of a competing entity or content edit.
 		node.lineage = union(before.lineage, left.lineage, right.lineage);
 		if (node.kind === "page") {
 			node.slug = choose(id, "slug", before.slug, left.slug, right.slug);
@@ -168,8 +164,6 @@ export function mergeIdentity(
 		snapshot.nodes[id] = node;
 	}
 	if (conflicts.length) return { resolution: null, conflicts };
-	// This pool combines records from different source revisions. It cannot claim
-	// unchanged-file evidence from either branch, especially for duplicate siblings.
 	const documentHashes = new Set(documents.map((d) => hash(d.tree.stream.source)));
 	for (const snapshot of snapshots.values()) {
 		snapshot.sourceHash = hash(
@@ -204,7 +198,6 @@ export function mergeIdentity(
 		});
 	}
 	if (conflicts.length) return { resolution: null, conflicts };
-	// Merge commits point at both real branch heads, never at the synthetic reconciliation input.
 	for (const snapshot of resolution.snapshots) {
 		snapshot.parents = [
 			...new Set(

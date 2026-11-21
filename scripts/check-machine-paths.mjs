@@ -2,7 +2,6 @@ import { execFileSync } from "node:child_process";
 import { lstatSync, readFileSync, readlinkSync } from "node:fs";
 import { join } from "node:path";
 
-// Literal paths also occur inside escaped strings. Scan text without decoding source syntax.
 const machinePath = /\b[A-Z]:[\\/]|\bUsers[\\/][^\\/\s"'`<>]+|\/(?:Users|home)\/[^/\s"'`<>]+\//;
 const fixturePath =
 	/(^|\/)(?:__tests__|tests?|__fixtures__|fixtures|test-utils|test-helpers)\/|\.(?:test|spec)\.[^/]+$/;
@@ -42,7 +41,6 @@ try {
 		const bytes = lstatSync(path).isSymbolicLink()
 			? Buffer.from(readlinkSync(path))
 			: readFileSync(path);
-		// Git treats NUL-containing files as binary. UTF-16 BOMs identify text explicitly.
 		const bigEndian = bytes[0] === 0xfe && bytes[1] === 0xff;
 		const utf16 = bigEndian || (bytes[0] === 0xff && bytes[1] === 0xfe);
 		if (!utf16 && bytes.includes(0)) continue;

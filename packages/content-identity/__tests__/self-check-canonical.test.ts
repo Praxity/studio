@@ -19,7 +19,6 @@ it("keeps existing I4 canonical bytes and hashes for every converted non-self-ch
 				{ path, tree: readLesson(readFileSync(resolve(root, file), "utf8")).tree },
 				{ readerRoles: true },
 			)
-				// C06c1 adds reader-only records; every pre-existing descriptor keeps this baseline.
 				.filter((node) => node.readerRole !== "option-feedback")
 				.map(({ path, parentPath, canonical, revisionContent, readerRole, readerOwnerPath }) => ({
 					path,
@@ -32,7 +31,6 @@ it("keeps existing I4 canonical bytes and hashes for every converted non-self-ch
 		};
 	});
 	expect(fixtures).toHaveLength(5);
-	// Captured from the reader branch after merging main, before prompt projection.
 	expect(createHash("sha256").update(serializeIdentity(canonical)).digest("hex")).toBe(
 		"0f71bd6bdab886b7a6bd4bb690799504578a2f686cbecfce45c0aeb3fe4ab145",
 	);

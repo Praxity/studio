@@ -1,7 +1,6 @@
 import { inflateRawSync } from "node:zlib";
 import { hash } from "./provenance.mjs";
 
-// Preserve array and Map order; no string, whitespace, path or markup normalization.
 export function literal(value) {
 	if (value instanceof Map) return { $map: [...value].map(([k, v]) => [literal(k), literal(v)]) };
 	if (value instanceof Set) return { $set: [...value].map(literal) };
@@ -18,7 +17,6 @@ export function literal(value) {
 		if (![Object.prototype, null].includes(Object.getPrototypeOf(value)))
 			throw new Error("Unsupported literal object prototype");
 		const entries = Object.entries(value).map(([k, v]) => [k, literal(v)]);
-		// Escape marker-shaped author data, keeping it distinct from undefined/Map/etc.
 		return entries.some(([key]) => key.startsWith("$"))
 			? { $record: entries }
 			: Object.fromEntries(entries);
@@ -57,8 +55,6 @@ export function firstDifference(base, candidate, location = "$") {
 	return null;
 }
 
-// Parse central/local records, not a byte-signature scan (payload may contain signatures).
-// The ONLY rewritten bytes are local +10..13 and central +12..15: DOS time/date.
 export function zipPayloads(bytes) {
 	const normalized = Buffer.from(bytes);
 	let end = bytes.length - 22;
@@ -126,8 +122,6 @@ export function comparePackages(base, candidate) {
 			.map(({ payload: _payload, ...entry }) => entry)
 			.sort((a, b) => a.name.localeCompare(b.name, "en"));
 	const difference = firstDifference(manifest(left), manifest(right));
-	// Deliberately stricter than manifest-backed aliasing: filenames must match exactly.
-	// No fingerprint stripping or inferred aliases; a manifest change is itself a payload change.
 	return {
 		pass: !difference && left.normalized.equals(right.normalized),
 		files: left.entries.length,
@@ -150,8 +144,6 @@ export function comparePackages(base, candidate) {
 	};
 }
 
-// XMP equivalents of /CreationDate, /ModDate and trailer /ID; observed in
-// repeated Typst 0.15.1 builds. No broad date/ID/whitespace replacement.
 export const PDF_VOLATILE_METADATA = [
 	"xmp:CreateDate",
 	"xmp:ModifyDate",
@@ -167,8 +159,6 @@ export function normalizePdfMetadata(xml) {
 	return xml;
 }
 
-// Typst 0.15.1 emits classic xref tables and an uncompressed XMP stream.
-// Follow their references: never search/replace arbitrary content streams.
 export function normalizePdfBytes(bytes) {
 	const normalized = Buffer.from(bytes);
 	const raw = bytes.toString("latin1");

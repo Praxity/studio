@@ -71,7 +71,6 @@ interface SnapshotOptions {
 	digest?: (text: string) => string;
 }
 
-/** Namespace checks also apply when a store binds an already validated snapshot to a head. */
 export function assertIdentitySnapshotNamespace(
 	snapshot: Pick<IdentitySnapshot, "courseId" | "lessonId">,
 	options: Pick<SnapshotOptions, "courseId" | "lessonId">,
@@ -208,7 +207,6 @@ export function parseIdentitySnapshot(
 	return snapshot;
 }
 
-/** Parsing the extension does not authorize the legacy matcher to consume it. */
 export function assertLegacyIdentitySnapshot(snapshot: IdentitySnapshot): void {
 	if (Object.values(snapshot.nodes).some((node) => node.canonicalVersion === 2))
 		throw Object.assign(
@@ -219,7 +217,6 @@ export function assertLegacyIdentitySnapshot(snapshot: IdentitySnapshot): void {
 		);
 }
 
-/** Package-private parser for the read session's own graphs, never durable ingress. */
 export function parseIdentityReadSnapshot(
 	text: string,
 	options: Pick<SnapshotOptions, "courseId" | "digest">,
@@ -230,7 +227,6 @@ export function parseIdentityReadSnapshot(
 	return parseSnapshot(text, options, checkId);
 }
 
-/** Plans and retained store records use the same canonical bytes and content address. */
 export function hashIdentitySnapshot(
 	snapshot: IdentitySnapshot,
 	digest: (text: string) => string,
@@ -241,7 +237,6 @@ export function hashIdentitySnapshot(
 	return { canonical, hash };
 }
 
-/** Fresh validated data. The retaining store owns this record and its canonical bytes. */
 export function parseIdentitySnapshotRecord(
 	text: string,
 	options: SnapshotOptions & { digest: (text: string) => string },

@@ -24,7 +24,6 @@ const generated = JSON.parse(read("reference/blocks.json")) as {
 	blocks: { id: string; insertTemplate: string; settings: Record<string, unknown> }[];
 };
 
-// Compile each example once before the block coverage assertions.
 const compiledExamples = new Map<
 	string,
 	ReturnType<typeof parse> & { courseDiagnostics: ReturnType<typeof validateCourse>["diagnostics"] }
@@ -35,7 +34,6 @@ const compiledCourses = new Map<
 >();
 beforeAll(() => {
 	for (const entry of readdirSync(resolve(docsDir, "examples"), { recursive: true })) {
-		// Markdown links keep forward slashes on Windows.
 		const file = entry.replaceAll("\\", "/");
 		if (!file.endsWith(".prax")) continue;
 		const lesson = parse(read(`examples/${file}`));
@@ -52,7 +50,6 @@ beforeAll(() => {
 			manifests.get(manifest) ??
 			(existsSync(manifest) ? parseYaml(readFileSync(manifest, "utf8")) : {});
 		manifests.set(manifest, context);
-		// A folder may also hold independent examples outside the manifest's lesson list.
 		const courseLessons = context.lessons?.includes(basename(file))
 			? context.lessons.map((lesson) => `${folder}/${lesson}`)
 			: [file];
@@ -217,9 +214,6 @@ describe("prax-format published spec", () => {
 		});
 	});
 
-	// docs/prax-format is mirrored at release to github.com/Praxity/prax-format, so a
-	// stale blocks.json ships a spec that disagrees with the parser. These assertions
-	// fail the build instead, pointing at the generator.
 	it("blocks.json is regenerated from the grammar-4 schema", () => {
 		expect(generated).toEqual(generateBlocksIndex());
 		expect(generated.grammarVersion).toBe(4);
@@ -244,8 +238,6 @@ describe("prax-format published spec", () => {
 	});
 
 	it("no longer documents a per-question pass threshold", () => {
-		// `pass` duplicated `passingScore` and was the half nothing read. The spec
-		// must not teach it, or authors will set a value that never applies.
 		for (const file of [
 			"skill/assessments.md",
 			"reference/blocks-assessments.md",

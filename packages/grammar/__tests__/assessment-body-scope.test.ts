@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readBlockFixture as readBlockSource } from "./helpers/lesson-fixture.ts";
 
-/**
- * Prose written after a question is course content, not part of the question.
- * It used to be swallowed: fill-blank joined it into the sentence with the
- * blank, and the shape-filtered types dropped it. Either way it vanished with
- * no error.
- */
 describe("assessment bodies stop at prose", () => {
 	const prose = "This paragraph is course prose, not part of the question.";
 
@@ -74,11 +68,6 @@ describe("assessment bodies stop at prose", () => {
 	});
 });
 
-/**
- * Hotspot body content keeps the same assessment scope, so the
- * heading form every other assessment uses fell through to a loose heading, a
- * loose image and a bullet list — no assessment, no error.
- */
 describe("hotspot accepts the heading form", () => {
 	const source =
 		"# Untitled {hideTitle}\n\n::: hotspot Where is the hazard?\n![Warehouse floor](/assets/floor.png)\n- Spill {x=30 y=40 correct}\n- Shelf {x=70 y=20}\n:::\n";

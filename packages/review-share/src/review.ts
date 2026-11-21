@@ -1,7 +1,6 @@
 export const MAX_NAME_LENGTH = 60;
 export const MAX_COMMENT_LENGTH = 2_000;
 
-/** String bounds count UTF-16 code units. HTTP adapters enforce requestBodyBytes. */
 export const REVIEW_LIMITS = Object.freeze({
 	name: MAX_NAME_LENGTH,
 	body: MAX_COMMENT_LENGTH,
@@ -69,7 +68,6 @@ export interface ReviewThread {
 	messages: ReviewMessage[];
 	resolution: ReviewResolution | null;
 }
-/** Original mutation outcome; current lifecycle facts always come from the thread. */
 export interface ReviewOutcome {
 	threadId: string;
 	version: number;
@@ -89,7 +87,6 @@ export interface ReviewState {
 	receipts: ReviewReceipt[];
 }
 
-/** Serialize an admitted state once, before an adapter publishes it. */
 export function serializeReviewState(state: ReviewState, role: ReviewRole): ParseResult<string> {
 	const value = JSON.stringify(state);
 	const limit =
@@ -139,7 +136,6 @@ export type ReviewCommandResult =
 export interface ReviewDeps {
 	now(): string;
 	uuid(): string;
-	/** Local adapters set this only after matching the principal to its stored manifest identity. */
 	storedPrincipal?: boolean;
 }
 
@@ -178,7 +174,6 @@ function object<T>(fields: { [K in keyof T]: Parser<T[K]> }): Parser<T> {
 		return result;
 	};
 }
-/** Serialized into the local review bootstrap so the browser and C1 use one text rule. */
 export const REVIEW_TEXT_RULES = Object.freeze({
 	controls: /[\u0000-\u0008\u000b-\u001f\u0080-\u009f]/u.source,
 	bodyControls:
@@ -192,7 +187,6 @@ function text(max: number, nonempty = true, allowCrLf = false): Parser<string> {
 		"u",
 	);
 	const surrogates = new RegExp(REVIEW_TEXT_RULES.surrogates, "u");
-	// Read existing records under their original text rules; only new input gets stricter admission.
 	const storedControls = allowCrLf
 		? /[\u0000-\u0008\u000b\u000c\u000e-\u001f]|\r(?!\n)/u
 		: /[\u0000-\u0008\u000b-\u001f]/u;
@@ -243,7 +237,6 @@ const uuid: Parser<string> = (value, path) => {
 		invalid(path);
 	return value;
 };
-/** Adapters use the same canonical UUID admission as command payloads. */
 export function parseReviewUuid(value: unknown): ParseResult<string> {
 	return parse(uuid, value);
 }
@@ -263,7 +256,6 @@ const fraction: Parser<number> = (value, path) => {
 };
 const pinPath: Parser<string> = (value, path, stored) => {
 	const result = text(REVIEW_LIMITS.pinPath, false)(value, path, stored);
-	// Empty means the node itself; every other step is a direct element child.
 	if (result === "") return result;
 	const steps = result.split(" > ");
 	if (
@@ -311,7 +303,6 @@ const anchor: Parser<ReviewAnchor> = (value, path, stored) => {
 	if (result.pin !== null && result.nodeId === null) invalid(`${path}.pin`);
 	return result;
 };
-// Windows reply files retain their CRLF bytes; other free text keeps the stricter rule.
 const messageBody = text(REVIEW_LIMITS.body, true, true);
 const message = object<ReviewMessage>({
 	id: uuid,
@@ -361,7 +352,6 @@ function checkLifecycle(
 ) {
 	if ((value.status === "resolved") !== (value.resolution !== null)) invalid(`${path}.resolution`);
 }
-/** Parse persisted bytes before using them; no repair, clamping or identity invention. */
 export function parseReviewState(value: unknown): ParseResult<ReviewState> {
 	return parse((input, path) => {
 		const result = stateShape(input, path, true);
@@ -459,7 +449,6 @@ async function command(
 	);
 	const admitted = parseReviewPrincipal(principal, deps.storedPrincipal || prior !== undefined);
 	if (!admitted.ok) return admitted;
-	// A receipt admits historical text only for replay; the digest still requires the exact request.
 	const parsed = parseCommandPayload(kind, input, prior !== undefined);
 	if (!parsed.ok) return parsed;
 	const payload = parsed.value;

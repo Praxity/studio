@@ -43,7 +43,6 @@ function flatten(nodes: readonly InlineNode[]): InlineNode[] {
 }
 const escapeText = (text: string) => text.replace(/[\\`*_[\]{}()~=@]/gu, "\\$&");
 
-/** Keep authored formatting delimiters; distribute a plain label across its existing leaves. */
 function labelEdits(token: Editable, text: string, target: OperationTarget): SourceEdit[] {
 	const leaves = flatten(token.children).filter((n) => !("children" in n));
 	if (!leaves.length)
@@ -68,7 +67,6 @@ function labelEdits(token: Editable, text: string, target: OperationTarget): Sou
 	});
 }
 
-/** Resolve only learner tokens, including glossary occurrences in the other revision-bound lessons. */
 export function planInlineEdits(
 	lessons: readonly CourseLesson[],
 	selections: readonly InlineSelection[],
@@ -241,7 +239,6 @@ export function planInlineEdits(
 		if (formatting(plan.token.children) !== formatting(next.children))
 			return fail("invalid-args", plan.target);
 	}
-	// Grammar owns glossary validity. Compare its course checks before and after the complete plan.
 	const glossaryErrors = (inputs: readonly CourseLesson[]) =>
 		validateCourse(inputs).diagnostics.filter((d) =>
 			["undefined-glossary-term", "conflicting-glossary-definitions"].includes(d.code),

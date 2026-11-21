@@ -83,7 +83,6 @@ run().catch(error => { console.error(error); process.exitCode = 1; });
 			],
 			{
 				cwd: directory,
-				// No NODE_PATH or adjacent node_modules: the artifact must load in Node alone.
 				env: { LANG: "C.UTF-8" },
 				encoding: "utf8",
 				timeout: 95_000,

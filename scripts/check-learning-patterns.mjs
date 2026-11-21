@@ -34,9 +34,6 @@ export async function verifyTrustedBase(root, base) {
 		const repository = path.join(directory, "repository");
 		git(directory, "init", "--bare", "--quiet", repository);
 		const config = path.resolve(root, git(root, "rev-parse", "--git-common-dir").trim(), "config");
-		// An empty object database forces contact even when the checkout already
-		// has the SHA. Include its authentication config without copying credentials.
-		// Keep shallow-fetch boundaries entirely outside the candidate checkout.
 		git(
 			repository,
 			"-c",

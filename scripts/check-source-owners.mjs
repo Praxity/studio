@@ -3,12 +3,10 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import ts from "typescript";
-// Exact legacy caller/import pairs from abaf1f3f; remove each pair when its owner migrates.
 import legacyWorkspaceSourceImports from "./workspace-source-imports-legacy.json" with {
 	type: "json",
 };
 
-// Exceptions name an expression, not a whole file. New detection still fails.
 export const sourceOwnerAllowlist = [
 	{
 		path: "scripts/check-comments.mjs",
@@ -94,8 +92,6 @@ export const sourceOwnerAllowlist = [
 	},
 ];
 
-// Raw self-check access is for author owners. Owners receiving explicit Content
-// need no raw-source exemption; generic output utilities stay prompt-only.
 export const selfCheckAuthorOwners = [
 	"packages/grammar/src/",
 	"packages/content-identity/src/",
@@ -104,7 +100,6 @@ export const selfCheckAuthorOwners = [
 	"packages/editor-core/src/session/",
 	"packages/editor-core/src/frame-bridge/",
 	"packages/editor-core/src/components/",
-	// Source checker advice returns only rule codes and source locations.
 	"packages/editor-core/src/lib/a11y/self-check-advice.ts",
 	"packages/editor-core/src/lib/a11y/retrieval-sheet-advice.ts",
 	"packages/editor-core/src/lib/a11y/highlight-advice.ts",
@@ -112,18 +107,12 @@ export const selfCheckAuthorOwners = [
 	"apps/desktop/src/main/identity-store.ts",
 	"apps/desktop/src/main/lesson-source.ts",
 	"apps/desktop/src/main/operations/",
-	// Author inspection drafts project full container source with the identity owner.
 	"apps/desktop/src/main/studio/preview-scheduler.ts",
-	// Review retains exact authored revisions locally, alongside identity snapshots.
-	// The author-only snapshot owner prepares and validates source and node ranges.
 	"apps/desktop/src/shared/editor-session.ts",
-	// This source-aware host gives author advice about explicit narration duplication.
 	"apps/desktop/src/shared/self-check-narration-advice.ts",
 ];
 const testPath = /(?:^|\/)(?:__tests__|tests|e2e|fixtures|test-utils)(?:\/|$)|\.(?:test|spec)\./;
 
-// Test-like names inside pattern roots are not an enforcement exemption: these
-// files can also be explicit browser entry points. Literal data is not code.
 const patternRoots = [
 	"packages/export-pipeline/src/patterns/",
 	"packages/export-pipeline/template/src/patterns/",
@@ -131,7 +120,6 @@ const patternRoots = [
 const patternPath = (path) => patternRoots.some((root) => path.startsWith(root));
 const exemptTestPath = (path) => !patternPath(path) && testPath.test(path);
 
-// No raw scheduler exceptions: mount disposal and domain guards supplement the lifetime helpers.
 export const learnerAuthorityDirectories = [
 	"packages/export-pipeline/template/src/",
 	"packages/shared-blocks/src/",
@@ -140,7 +128,6 @@ export const learnerAuthorityDirectories = [
 	"packages/export-pipeline/src/",
 ];
 
-/** New cross-package consumers use public entries. Exact legacy pairs remain until migrated. */
 export function checkWorkspaceSourceImports(path, source) {
 	const owner = path.match(/^(?:packages|apps)\/([^/]+)\//u)?.[1];
 	const file = ts.createSourceFile(path, source, ts.ScriptTarget.Latest, true);
@@ -177,7 +164,6 @@ export function scansLearnerAuthority(path, directories = learnerAuthorityDirect
 	return !exemptTestPath(path) && directories.some((directory) => path.startsWith(directory));
 }
 
-// These events have no learner-state effects. New events require dispatch authority by default.
 const uiOnlyLearnerEvents = {
 	"praxity:active-page-change": "Current-page display and playback pause",
 	"praxity:visibility-change": "Visibility display refresh",
@@ -497,7 +483,6 @@ export function checkLearnerAuthority(path, file, literal, checker) {
 	return failures;
 }
 
-// These callbacks retain their own guards; other raw uses still fail.
 const learnerSchedulerExceptions = [
 	{
 		path: "packages/shared-blocks/src/viewer/NarrationBar.tsx",
@@ -516,7 +501,6 @@ export function checkLifetimeOwners(path, source, program) {
 	if (exemptTestPath(path)) return [];
 	const consumers =
 		path.startsWith("packages/export-pipeline/template/src/islands/") ||
-		// Pattern enhancers retain the same lifetime rules when moved out of template/src.
 		patternPath(path) ||
 		path.startsWith("packages/shared-blocks/src/viewer/") ||
 		path === "packages/shared-blocks/src/logic/dom-logic-runtime.ts";
@@ -569,7 +553,6 @@ export function checkLifetimeOwners(path, source, program) {
 	collect(file);
 	failures.push(...checkLearnerAuthority(path, file, literal, program?.getTypeChecker()));
 	function visit(node) {
-		// Type annotations do not schedule work.
 		if (ts.isTypeNode(node)) return;
 		if (ts.isTypeOfExpression(node) && !ts.isCallExpression(node.expression)) return;
 		const name = ts.isPropertyAccessExpression(node)
@@ -595,8 +578,6 @@ export function checkLifetimeOwners(path, source, program) {
 		ts.forEachChild(node, visit);
 	}
 	visit(file);
-	// Keep the public provider's set method behind its one write owner, including aliases.
-	// privacy-bootstrap delegates to its internal storage adapters after its captured lifetime check.
 	if (program && path !== "packages/shared-blocks/src/learner-block-state.ts") {
 		const typedFile = program.getSourceFile(resolve(path));
 		const checker = program.getTypeChecker();
@@ -798,7 +779,6 @@ export function checkSelfCheckOwners(path, source, program) {
 		/(?:grammar\/(?:src\/)?|^\.\/|^\.\.\/)(?:v4\/)?(?:tree|lex|to-blocks)(?:[/.]|$)/;
 	const grammarModule = /(?:^|\/)grammar(?:\/src\/|$)|(?:^|\/)read-lesson(?:\.[cm]?[jt]s)?$/;
 	const { literal, loader } = moduleLoaders(file, checker, patternPath(path));
-	// Resolve computed compiler-channel names without widening legacy raw-source checks.
 	const compilerLiteral = patternPath(path) ? literal : moduleLoaders(file, checker, true).literal;
 	const fullRead = (node) => {
 		const type = checker?.getTypeAtLocation(node);
@@ -815,8 +795,6 @@ export function checkSelfCheckOwners(path, source, program) {
 						? (node.propertyName ?? node.name).text
 						: literal(node.propertyName)
 					: null;
-	// Unknown values fail closed. Types exempt only ordinary arrays and indexed
-	// projection records, never a lossless tree or the reader's node-record Map.
 	function unrelatedProjection(node, name) {
 		if (!checker) return false;
 		const receiver = checker.getTypeAtLocation(
@@ -880,7 +858,6 @@ export function checkSelfCheckOwners(path, source, program) {
 		);
 	}
 	const failures = [];
-	// This bridge may call the accessor; raw tree/node traversal stays forbidden.
 	const admittedAccessor = (name) =>
 		path === "apps/desktop/src/main/export/build-export-input-from-project.ts" &&
 		["readSelfCheckContent", "readWriteDistractorsContent"].includes(name);
@@ -926,16 +903,12 @@ export function checkSelfCheckOwners(path, source, program) {
 			]),
 		},
 	];
-	// Grammar, asset admission and revision hashing own full distractor values. Author tree retention
-	// does not grant generic collectors permission to read answer-bearing fields.
 	const distractorContentOwner = [
 		"packages/grammar/src/read-lesson.ts",
 		"packages/grammar/src/v4/schema.ts",
 		"packages/export-pipeline/src/write-distractors.ts",
 		"packages/shared-blocks/src/write-distractors-content.ts",
 	].includes(path);
-	// Name-based guard: key-agnostic serialization relies on the output invariant;
-	// upgrade to a type-based Content check like fullRead if new bypasses need it.
 	const distractorHiddenKeys = new Set(["rightAnswer", "misconceptions", "authorOptions"]);
 	const distractorUiStringKey = "rightAnswer";
 
@@ -1015,7 +988,6 @@ export function checkSelfCheckOwners(path, source, program) {
 			].includes(expression)
 		)
 			return false;
-		// Both lexical branches are required. The same lookup outside answer-sheet admission refuses.
 		for (let owner = node.parent; owner; owner = owner.parent) {
 			if (
 				!ts.isIfStatement(owner) ||
@@ -1038,7 +1010,6 @@ export function checkSelfCheckOwners(path, source, program) {
 
 	function visit(node) {
 		if (revisionAdmission(node) || nativePdfSite(node)) return;
-		// This declaration owns the guard's key names, not authored Content.
 		if (
 			path === "scripts/check-source-owners.mjs" &&
 			ts.isVariableDeclaration(node) &&
@@ -1047,14 +1018,11 @@ export function checkSelfCheckOwners(path, source, program) {
 		)
 			return;
 		const expression = node.getText(file).replace(/\s+/g, " ");
-		// This exact envelope discriminator validates saved state, not a source node.
 		if (
 			path === "packages/shared-blocks/src/self-check-state.ts" &&
 			expression === 'value.kind !== "self-check"'
 		)
 			return;
-		// This author session retains admitted reads, then the export-input owner
-		// constructs the prompt projection. These exact cache writes publish nothing.
 		if (
 			path === "apps/desktop/src/main/studio/project-session.ts" &&
 			[
@@ -1063,13 +1031,11 @@ export function checkSelfCheckOwners(path, source, program) {
 			].includes(expression)
 		)
 			return;
-		// Published islands load browser URLs; they cannot resolve Node grammar modules.
 		if (
 			path === "packages/export-pipeline/template/src/island-loader.ts" &&
 			expression === "import(moduleUrl)"
 		)
 			return;
-		// This loader imports installer APIs from a reviewed external Rubato checkout.
 		if (
 			path === "scripts/install-internal-studio.mjs" &&
 			expression === "import(pathToFileURL(join(root, path)).href)"
@@ -1084,8 +1050,6 @@ export function checkSelfCheckOwners(path, source, program) {
 					ts.isComputedPropertyName(node.propertyName)
 				? compilerLiteral(node.propertyName.expression)
 				: name;
-		// Unknown keys could select raw Content. Restrict this fail-closed rule to
-		// pattern block-data reads; ordinary indexed presentation records stay usable.
 		const computedDataKey = ts.isElementAccessExpression(node)
 			? memberName(node.expression) === "data" && node.argumentExpression
 			: ts.isBindingElement(node) &&
@@ -1110,8 +1074,6 @@ export function checkSelfCheckOwners(path, source, program) {
 			ts.isImportSpecifier(node) || ts.isExportSpecifier(node)
 				? (node.propertyName ?? node.name).text
 				: null;
-		// Only the Content owner may call upstream validation, through its trimmed
-		// value bridge. Studio's codec alone admits persisted envelopes (W07/W08).
 		const upstreamModule =
 			module ??
 			(ts.isCallExpression(node) &&
@@ -1192,17 +1154,13 @@ export function checkSelfCheckOwners(path, source, program) {
 				((distractorHiddenKeys.has(compilerName) ||
 					(ts.isStringLiteralLike(node) && distractorHiddenKeys.has(node.text))) &&
 					!(
-						// This i18n owner aliases the imported plain string, never authored Content.
-						(
-							(path === "packages/shared-blocks/src/i18n/practice-host-strings.ts" &&
-								ts.isPropertyAccessExpression(node) &&
-								node.expression.getText(file) === "distractorStrings[resolveLocale(locale)]" &&
-								node.name.text === distractorUiStringKey) ||
-							// The closed prompt constructor reads schema bounds, never Content.
-							(path === "packages/shared-blocks/src/write-distractors-prompt.ts" &&
-								ts.isPropertyAccessExpression(node) &&
-								node.expression.getText(file) === "schema.properties")
-						)
+						(path === "packages/shared-blocks/src/i18n/practice-host-strings.ts" &&
+							ts.isPropertyAccessExpression(node) &&
+							node.expression.getText(file) === "distractorStrings[resolveLocale(locale)]" &&
+							node.name.text === distractorUiStringKey) ||
+						(path === "packages/shared-blocks/src/write-distractors-prompt.ts" &&
+							ts.isPropertyAccessExpression(node) &&
+							node.expression.getText(file) === "schema.properties")
 					)) ||
 				(module &&
 					/(?:^|\/)write-distractors(?:\.[cm]?[jt]s)?$/.test(module) &&
@@ -1213,7 +1171,6 @@ export function checkSelfCheckOwners(path, source, program) {
 						"packages/export-pipeline/src/html-pages.ts",
 					].includes(path)));
 
-		// Pattern modules cannot hide Content keys in exported constants or strings.
 		const member =
 			(!admittedAccessor(name) && accessors.has(name)) ||
 			(patternPath(path) && accessors.has(literal(node)));
@@ -1283,8 +1240,6 @@ const marker = (node) =>
 		(node.text.includes("---") || node.text === "# " || node.text.includes("\uFEFF"))) ||
 	(ts.isNumericLiteral(node) && Number(node.text) === 65279);
 
-// Runtime recognition in the durable parser only improves its refusal message.
-// Display acceptance belongs to narration hashing and private read matching.
 const displayIdOwners = {
 	parseIdentityReadSnapshot: ["packages/content-identity/src/resolve.ts"],
 	isRuntimeNodeId: [
@@ -1375,7 +1330,6 @@ function checkProductionImports(path, source, program) {
 	const { literal, loader } = moduleLoaders(file, checker);
 	const failures = [];
 	function visit(node) {
-		// Desktop uses ESM imports so runtime loaders cannot bypass writer ownership.
 		const name = ts.isIdentifier(node)
 			? node.text
 			: ts.isElementAccessExpression(node)
@@ -1426,7 +1380,6 @@ function checkProductionImports(path, source, program) {
 						ts.isNamedExports(node.exportClause) &&
 						node.exportClause.elements.length > 0 &&
 						node.exportClause.elements.every((binding) => binding.isTypeOnly)));
-		// The frame barrel evaluates page-lens CSS; Node owners use the pure view entry.
 		if (
 			/^apps\/desktop\/src\/(?:shared|main)\//u.test(path) &&
 			target &&
@@ -1470,7 +1423,6 @@ export function checkDisplayIdImports(path, source, program) {
 	});
 }
 
-/** Choice admission is confined to the state owner, host binding and recovery UI. */
 export function checkDormantChoiceImports(path, source, program) {
 	const owner = "packages/shared-blocks/src/choice-learner-state.ts";
 	const recoveryConsumer = "packages/shared-blocks/src/blocks/AssessmentBlock.tsx";
@@ -1663,7 +1615,6 @@ function checkOutcomeOwners(path, file) {
 					node.parent.operator === ts.SyntaxKind.ExclamationToken
 				) &&
 				!ts.isTypeOfExpression(node.parent));
-		// Reject references too: aliases and Reflect.apply must not bypass ownership.
 		if (
 			path !== "packages/export-pipeline/src/scorm/tracking.ts" &&
 			((ts.isIdentifier(node) &&
@@ -1679,7 +1630,6 @@ function checkOutcomeOwners(path, file) {
 			return;
 		}
 
-		// An adapter may translate its own combined status into its own success field.
 		const internalSuccess =
 			path === "packages/export-pipeline/src/scorm/api/scorm2004.ts" &&
 			method === "setSuccess" &&
@@ -1704,10 +1654,6 @@ function checkOutcomeOwners(path, file) {
 	return failures;
 }
 
-// Each emitting function is exercised by new-tab-links.test.ts. Counts make a
-// new target in an existing renderer require the same coverage review. Each
-// pair counts target literals and marker calls; the tooltip sanitizer also reads
-// the target before marking it in one DOM loop.
 const newTabRenderers = {
 	"packages/export-pipeline/src/render-block-html.ts": {
 		renderAudio: [1, 1],
@@ -1761,8 +1707,6 @@ function checkNewTabLinkOwners(path, file) {
 	const failures = [];
 	for (const [owner, literals] of groups) {
 		const name = owner?.name?.getText(file) ?? owner?.parent?.name?.getText(file) ?? "<module>";
-		// These two consumers only read a target; changing the expression to a
-		// writer must still fail, even if the literal count stays the same.
 		const reader =
 			(path === "packages/export-pipeline/template/src/course-shell.ts" &&
 				name === "bindGlossaryLinks") ||
@@ -1803,7 +1747,6 @@ function checkNewTabLinkOwners(path, file) {
 
 export function checkSourceOwners(path, source, allowlist = sourceOwnerAllowlist) {
 	path = path.replaceAll("\\", "/");
-	// Fixtures intentionally contain hostile source. The lint itself is tested by planting it.
 	if (exemptTestPath(path)) return [];
 	const file = ts.createSourceFile(
 		path,

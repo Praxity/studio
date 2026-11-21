@@ -119,7 +119,6 @@ const INLINE_ICON_PATH_DATA_PATTERN =
 	/^(?:[\s,]|[MmZzLlHhVvCcSsQqTtAa]|[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?)*$/;
 const INLINE_ICON_NUMBER_PATTERN = /[-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?/g;
 
-/** Matches both kebab-case names and the PascalCase names exported by Tabler. */
 export const INLINE_ICON_NAME_PATTERN = /^(?:[a-z0-9]+(?:-[a-z0-9]+)*|Icon[A-Z0-9][A-Za-z0-9]*)$/;
 
 export interface InlineIconSpec {
@@ -212,7 +211,6 @@ function pascalToKebab(value: string): string {
 		.toLowerCase();
 }
 
-/** Normalize an authored Tabler name without deciding whether the icon exists. */
 export function parseInlineIconName(raw: string): InlineIconSpec | null {
 	if (!INLINE_ICON_NAME_PATTERN.test(raw)) return null;
 	if (raw.startsWith("Icon")) {
@@ -227,7 +225,6 @@ export function parseInlineIconName(raw: string): InlineIconSpec | null {
 	return name ? { source: raw, name, variant } : null;
 }
 
-/** HTML placeholder kept in parsed content until the export catalog is available. */
 export function inlineIconPlaceholder(raw: string, nodes?: unknown): string | null {
 	const spec = parseInlineIconName(raw);
 	if (!spec) return null;
@@ -255,10 +252,6 @@ function isProtectedInlineIconContext(value: string, offset: number): boolean {
 	return unescapedBackticks % 2 === 1;
 }
 
-/**
- * Replace trusted icon placeholders or generated SVGs without accepting arbitrary
- * markup. The callback owns the final output and can return a text fallback.
- */
 export function replaceInlineIconMarkup(
 	html: string,
 	replace: (
@@ -285,7 +278,6 @@ export function replaceInlineIconMarkup(
 	);
 }
 
-/** Minimal static SVG writer used by the export pipeline after sanitization. */
 export function renderInlineIconSvg(
 	source: string,
 	spec: InlineIconSpec,
@@ -315,7 +307,6 @@ export function renderInlineIconSvg(
 	return `<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" ${paint} class="${INLINE_ICON_CLASS}" data-praxity-inline-icon="${escapeHtml(source)}" data-icon="${escapeHtml(spec.name)}" data-icon-variant="${spec.variant}" ${INLINE_ICON_NODES_ATTRIBUTE}="${escapeHtml(encodedNodes)}" aria-hidden="true" focusable="false">${paths.join("")}</svg>`;
 }
 
-/** Rebuild only validated, build-embedded markers after HTML sanitization. */
 export function renderInlineIcons(html: string): string {
 	if (!html.includes("data-praxity-inline-icon=")) return html;
 	return replaceInlineIconMarkup(html, (source, spec, nodes, tag, original) => {

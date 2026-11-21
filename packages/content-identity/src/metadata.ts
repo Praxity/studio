@@ -18,7 +18,6 @@ function* metadataChanges(
 	}
 }
 
-/** Guard precisely the metadata fields the inverse will restore, before parsing inverse edits. */
 export function canRestoreIdentityMetadata(
 	current: IdentityResolution,
 	prior: IdentityResolution,
@@ -33,7 +32,6 @@ export function canRestoreIdentityMetadata(
 	return true;
 }
 
-/** Inverses restore only metadata fields changed by their forward operation. */
 export function restoreIdentityMetadata(
 	resolution: IdentityResolution,
 	prior: IdentityResolution,
