@@ -209,6 +209,17 @@ body.praxity-layout-bottombar:has(> .prx-review-sidebar--local.prx-review-sideba
 	cursor: pointer;
 }
 
+.prx-review-author-filter {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	font-weight: 600;
+}
+
+.prx-review-author-filter select {
+	font-weight: 400;
+}
+
 .prx-review-filters legend,
 .prx-review-filter {
 	max-width: 100%;
@@ -471,6 +482,12 @@ html[data-praxity-mode="dark"] {
 	clip-path: polygon(0 100%, 0 0, 100% 0);
 	pointer-events: none;
 	content: "";
+}
+
+/* Inside an open host popover, viewport-positioned above that popover. */
+.prx-review-marker--layer {
+	position: fixed;
+	z-index: 1;
 }
 
 .prx-review-marker[hidden] {
@@ -855,4 +872,59 @@ html[data-praxity-mode="dark"] {
 .prx-review-composer-status:empty {
 	margin: 0;
 	padding: 0;
+}
+
+/* Floating local controls: Pin and Comments show their icon; the label expands on hover, focus
+   and while pressed, and stays in the accessible name throughout. */
+.prx-review-sidebar--local.prx-review-sidebar--collapsed :is(.prx-review-pin, .prx-review-toggle) {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.prx-review-sidebar--local.prx-review-sidebar--collapsed
+	:is(.prx-review-pin, .prx-review-toggle)
+	.prx-review-action-icon {
+	margin-inline-end: 0;
+}
+
+.prx-review-sidebar--local.prx-review-sidebar--collapsed
+	:is(.prx-review-pin, .prx-review-toggle)
+	.prx-review-action-label {
+	max-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	transition:
+		max-width 0.2s ease,
+		margin 0.2s ease;
+}
+
+.prx-review-sidebar--local.prx-review-sidebar--collapsed
+	:is(.prx-review-pin, .prx-review-toggle):is(
+		:hover,
+		:focus-visible,
+		[aria-pressed="true"],
+		[aria-expanded="true"]
+	)
+	.prx-review-action-label {
+	max-width: 20em;
+	margin-inline-start: 0.35em;
+}
+
+.prx-review-sidebar--local.prx-review-sidebar--collapsed .prx-review-toggle .prx-review-count {
+	position: absolute;
+	inset-block-start: -0.5rem;
+	inset-inline-end: -0.5rem;
+	min-width: 1.25rem;
+	min-height: 1.25rem;
+	border: 2px solid var(--praxity-color-background, #fff);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.prx-review-sidebar--local.prx-review-sidebar--collapsed
+		:is(.prx-review-pin, .prx-review-toggle)
+		.prx-review-action-label {
+		transition: none;
+	}
 }

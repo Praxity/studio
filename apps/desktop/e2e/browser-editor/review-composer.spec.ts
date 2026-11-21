@@ -11,15 +11,111 @@ test.beforeEach(({ page }) => {
 	page.on("dialog", (dialog) => dialog.accept());
 });
 
-async function selectQuote(page: Page) {
-	await page.evaluate(() => {
+async function selectQuote(page: Page, selector = '[data-node-id="quote"]') {
+	await page.evaluate((selector) => {
 		const range = document.createRange();
-		range.selectNodeContents(document.querySelector('[data-node-id="quote"]') as Element);
+		range.selectNodeContents(document.querySelector(selector) as Element);
 		getSelection()?.removeAllRanges();
 		getSelection()?.addRange(range);
 		document.dispatchEvent(new Event("selectionchange"));
+	}, selector);
+}
+
+// True when a hit test at the element's centre lands on it: nothing paints above it.
+function topmost(page: Page, selector: string) {
+	return page.locator(selector).evaluate((node) => {
+		const box = node.getBoundingClientRect();
+		const hit = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+		return Boolean(hit && node.contains(hit));
 	});
 }
+function popoverOpen(page: Page, selector: string) {
+	return page.evaluate(
+		(selector) => document.querySelector(selector)?.matches(":popover-open"),
+		selector,
+	);
+}
+
+test("text in an open host popover takes comments above it, and its comment reopens the popover", async ({
+	page,
+}) => {
+	const panelStyle = "inset:0 auto 0 0;margin:0;width:340px;height:100vh;padding:96px 24px";
+	const fixture = await servedReview("en", false, {
+		body: `<aside id="side-panel" popover="manual" style="${panelStyle}"><p data-node-id="panel" data-block-id="b-panel">Text inside a side panel.</p></aside><aside id="menu-panel" popover style="${panelStyle}"><p data-node-id="menu" data-block-id="b-menu">Text inside a menu.</p></aside>`,
+	});
+	try {
+		await page.goto(fixture.url);
+		await page.evaluate(() => (document.querySelector("#side-panel") as HTMLElement).showPopover());
+		await selectQuote(page, '[data-node-id="panel"]');
+		const selection = page.locator(".prx-review-selection");
+		await expect(selection).toBeVisible();
+		expect(await topmost(page, ".prx-review-selection")).toBe(true);
+		await selection.click();
+		const field = page.getByRole("textbox", { name: "Comment", exact: true });
+		await field.fill("On the side panel");
+		await page.getByRole("button", { name: "Save comment", exact: true }).click();
+		await expect(page.locator(".prx-review-comment")).toHaveCount(1);
+		const listed = await fixture.list();
+		if (!("threads" in listed)) throw new Error(listed.code);
+		expect(listed.threads[0].anchor).toMatchObject({
+			nodeId: "panel",
+			quote: { exact: "Text inside a side panel." },
+		});
+		const marker = page.locator("#side-panel .prx-review-marker");
+		await expect(marker).toBeVisible();
+		expect(await topmost(page, "#side-panel .prx-review-marker")).toBe(true);
+		await page.evaluate(() => (document.querySelector("#side-panel") as HTMLElement).hidePopover());
+		await page.locator(".prx-review-show").click();
+		await expect.poll(() => popoverOpen(page, "#side-panel")).toBe(true);
+		await expect(page.locator('[data-node-id="panel"]')).toBeFocused();
+
+		// Opening the modal composer closes a light-dismiss popover; Escape reopens it.
+		await page.evaluate(() => (document.querySelector("#side-panel") as HTMLElement).hidePopover());
+		await page.evaluate(() => (document.querySelector("#menu-panel") as HTMLElement).showPopover());
+		await selectQuote(page, '[data-node-id="menu"]');
+		await selection.click();
+		await expect(field).toBeFocused();
+		expect(await popoverOpen(page, "#menu-panel")).toBe(false);
+		await page.keyboard.press("Escape");
+		await expect.poll(() => popoverOpen(page, "#menu-panel")).toBe(true);
+	} finally {
+		await page.goto("about:blank");
+		await fixture.close();
+	}
+});
+
+test("Show on page fires the host's reveal event before revealing a hidden step", async ({
+	page,
+}) => {
+	const fixture = await servedReview("en", false, {
+		body: '<section class="step" hidden><p data-node-id="step" data-block-id="b-step">Text in a later step.</p></section>',
+		script: `document.querySelector("script[data-praxity-review-comments]").setAttribute("data-review-reveal-event", "host-reveal");
+document.addEventListener("host-reveal", (event) => { window.revealed = event.detail.getAttribute("data-node-id"); event.detail.closest(".step").hidden = false; });`,
+	});
+	try {
+		await page.goto(fixture.url);
+		const anchor = await page.evaluate(() => {
+			const step = document.querySelector(".step") as HTMLElement;
+			step.hidden = false;
+			const captured = (
+				window as unknown as { PraxityReview: { fromBlock(target: Element): unknown } }
+			).PraxityReview.fromBlock(document.querySelector('[data-node-id="step"]') as Element);
+			step.hidden = true;
+			return captured;
+		});
+		await fixture.seed(anchor as Parameters<typeof fixture.seed>[0], "Check the later step.");
+		await page.reload();
+		await page.getByRole("button", { name: "Expand comments" }).click();
+		await page.locator(".prx-review-show").click();
+		await expect(page.locator('[data-node-id="step"]')).toBeFocused();
+		expect(await page.evaluate(() => (window as unknown as { revealed: string }).revealed)).toBe(
+			"step",
+		);
+	} finally {
+		await page.goto("about:blank");
+		await fixture.close();
+	}
+});
 
 test("keyboard save preserves newlines in composer and reply", async ({ page }) => {
 	const fixture = await servedReview("en");

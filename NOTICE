@@ -31,7 +31,8 @@ Vendored source and notices:
   third-party-notices/feather-icons@4.29.2.txt.
 - packages/export-pipeline/src/__tests__/fixtures/pilot-pattern-renderers.json,
   packages/shared-blocks/src/scene-header.tsx,
-  packages/export-pipeline/src/html-gen.ts and
+  packages/export-pipeline/src/html-gen.ts,
+  packages/export-pipeline/template/review-comments.js and
   packages/export-pipeline/template/src/components/course-completion-result.ts
   contain copied or adapted Tabler Icons 3.46.0 SVG paths, under MIT, including
   test fixtures and native navigation artwork. Their full terms are in

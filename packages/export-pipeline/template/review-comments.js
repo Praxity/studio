@@ -7,6 +7,9 @@
 		pageId: script.getAttribute("data-review-page-id") || "",
 		locale: script.getAttribute("data-review-locale") === "fr" ? "fr" : "en",
 		expiresAt: script.getAttribute("data-review-expires-at") || "",
+		// A host with stepped or hidden content names an event; Show on page fires it, with the
+		// target element as detail, before revealing and scrolling to a hidden target.
+		revealEvent: script.getAttribute("data-review-reveal-event") || "",
 	};
 	var localConfig = null;
 	var configError = false;
@@ -267,7 +270,11 @@
 					leaveReply: "Vous avez des modifications de révision non envoyées. Quitter quand même ?",
 					leaveAnyway: "Quitter quand même",
 					replySession:
+						"Les réponses non envoyées sont conservées dans ce navigateur jusqu’à leur envoi.",
+					replyPageOnly:
 						"Les réponses non envoyées restent dans cette page jusqu’à sa fermeture ou son rechargement.",
+					byAuthor: "Écrit par",
+					anyAuthor: "Tout le monde",
 				}
 			: {
 					all: "All",
@@ -295,7 +302,10 @@
 					stale: "Comments are offline or out of date. Retrying automatically.",
 					leaveReply: "You have unsent review changes. Leave anyway?",
 					leaveAnyway: "Leave anyway",
-					replySession: "Unsent replies stay in this page until it is closed or reloaded.",
+					replySession: "Unsent replies are kept in this browser until you send them.",
+					replyPageOnly: "Unsent replies stay in this page until it is closed or reloaded.",
+					byAuthor: "Written by",
+					anyAuthor: "Anyone",
 				},
 	);
 	function parseLocalConfig(value) {
@@ -500,7 +510,9 @@
 		save: "M6 4h10l4 4v10a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12a2 2 0 0 1 2 -2M10 14a2 2 0 1 0 4 0a2 2 0 1 0 -4 0M14 4l0 4l-6 0l0 -4",
 		close: "M18 6l-12 12M6 6l12 12",
 		show: "M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0M21 21l-6 -6",
-		pin: "M9 4v6l-2 4v2h10v-2l-2 -4v-6M12 16l0 5M8 4l8 0",
+		pin: "M15 4.5l-4 4l-4 1.5l-1.5 1.5l7 7l1.5 -1.5l1.5 -4l4 -4M9 15l-4.5 4.5M14.5 4l5.5 5.5",
+		message:
+			"M3 20l1.3 -3.9c-2.324 -3.437 -1.426 -7.872 2.1 -10.374c3.526 -2.501 8.59 -2.296 11.845 .48c3.255 2.777 3.695 7.266 1.029 10.501c-2.666 3.235 -7.615 4.215 -11.574 2.293l-4.7 1",
 		trash:
 			"M4 7l16 0M10 11l0 6M14 11l0 6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3",
 	};
@@ -523,7 +535,7 @@
 		return icon;
 	}
 	function labelAction(control, icon, label) {
-		control.replaceChildren(actionIcon(icon), element("span", "", label));
+		control.replaceChildren(actionIcon(icon), element("span", "prx-review-action-label", label));
 	}
 	function keyboardSave(field, button) {
 		var mac = /Mac|iPhone|iPad|iPod/i.test(navigator.userAgentData?.platform || navigator.platform);
@@ -613,6 +625,24 @@
 				return true;
 		}
 		return false;
+	}
+
+	// An open host popover sits in the top layer, above all review UI in the page. Review controls
+	// for content inside it move into that popover so they show above it.
+	function topLayerOf(node) {
+		try {
+			return node?.closest?.(":popover-open") || null;
+		} catch {
+			return null;
+		}
+	}
+	function showPopover(node) {
+		if (node.isConnected && !topLayerOf(node))
+			try {
+				node.showPopover();
+			} catch {
+				// Not a popover in this browser, or the host removed it.
+			}
 	}
 
 	function bounded(text, max) {
@@ -1031,6 +1061,8 @@
 		var threadViews = new Map();
 		var pageGroups = new Map();
 		var threadFilter = "all";
+		var authorFilter = "";
+		var authorSelect;
 		var refreshVersion = 0;
 		var refreshInFlight = null;
 		var pollDelay = 5000;
@@ -1195,6 +1227,18 @@
 				filters.append(label);
 			});
 			content.insertBefore(filters, status);
+			var authorField = element("div", "prx-review-author-filter");
+			var authorFieldLabel = element("label", "", strings.byAuthor);
+			authorSelect = element("select", "prx-review-input");
+			authorSelect.id = authorFieldLabel.htmlFor = "prx-review-author";
+			authorSelect.append(new Option(strings.anyAuthor, ""));
+			authorSelect.addEventListener("change", () => {
+				authorFilter = authorSelect.value;
+				renderThreads();
+				announceList(threadCount());
+			});
+			authorField.append(authorFieldLabel, authorSelect);
+			content.insertBefore(authorField, status);
 			["keydown", "keyup", "keypress"].forEach((name) =>
 				sidebar.addEventListener(name, (event) => event.stopPropagation()),
 			);
@@ -1319,10 +1363,10 @@
 						px = Math.max(0, Math.min(viewportRight, px));
 						py = Math.max(0, Math.min(viewportBottom, py));
 						var hit = document.elementFromPoint(px, py);
-						if (hit?.closest(".prx-review-overlay"))
+						if (hit?.closest(".prx-review-overlay,.prx-review-marker"))
 							hit = document
 								.elementsFromPoint(px, py)
-								.find((el) => !el.closest(".prx-review-overlay"));
+								.find((el) => !el.closest(".prx-review-overlay,.prx-review-marker"));
 						return (
 							!hit ||
 							!(root.contains(hit) || hit.contains(root)) ||
@@ -1330,6 +1374,7 @@
 						);
 					})
 					.some(Boolean);
+				var layer = topLayerOf(spot.target);
 				var hidden =
 					blocked ||
 					!box.width ||
@@ -1338,7 +1383,7 @@
 					x > viewportRight - 12 ||
 					y < 24 ||
 					y > viewportBottom;
-				return { entry, spot, hidden, x, y, block };
+				return { entry, spot, hidden, x, y, block, layer };
 			});
 			if (reviewTools) reviewTools.updateSelection();
 			var losingFocus = placements.find(
@@ -1349,7 +1394,10 @@
 				updateToggle();
 				losingFocus.entry.item.focus({ preventScroll: true });
 			}
-			placements.forEach(({ entry, spot, hidden, x, y, block }) => {
+			placements.forEach(({ entry, spot, hidden, x, y, block, layer }) => {
+				if (!hidden && entry.marker.parentElement !== (layer || overlay))
+					(layer || overlay).append(entry.marker);
+				entry.marker.classList.toggle("prx-review-marker--layer", Boolean(layer));
 				if (entry.state !== spot.state) {
 					entry.chip.textContent = strings[spot.state]
 						? `${spot.state === "anotherPage" ? "" : "⚠ "}${strings[spot.state]}`
@@ -1367,8 +1415,14 @@
 				else CSS.highlights.delete("prx-review-quote");
 			}
 		}
+		// Reply text saved in browser storage survives leaving; only unsaved text and retries do not.
 		function hasUnsentReplies() {
-			return [...threadViews.values()].some((entry) => entry.field.value.length || entry.pending);
+			return [...threadViews.values()].some(
+				(entry) =>
+					(entry.field.value.length &&
+						!reviewTools.replyDraft.saved(entry.thread.id, entry.field.value)) ||
+					entry.pending,
+			);
 		}
 		var leaveDialog, leaveDestination, leaveOpener;
 		function navigateToThread(url, opener) {
@@ -1438,10 +1492,13 @@
 				status.textContent = strings[spot.state] || strings.notVisible;
 				return;
 			}
+			if (config.revealEvent && spot.state === "notVisible")
+				document.dispatchEvent(new CustomEvent(config.revealEvent, { detail: target }));
 			var ancestors = [];
 			for (var el = target; el && pageRoot().contains(el); el = el.parentElement)
 				ancestors.unshift(el);
 			ancestors.forEach((el) => {
+				if (el.matches("[popover]")) showPopover(el);
 				if (el.matches("details:not([open])")) {
 					var summary = el.querySelector(":scope > summary");
 					if (summary && !hidden(summary)) summary.click();
@@ -1614,7 +1671,7 @@
 		}
 		function asReviewUI(node) {
 			return (node.nodeType === 1 ? node : node.parentElement)?.closest(
-				"[data-review-ui],.prx-review-overlay,.prx-review-sidebar,.prx-review-toggle",
+				"[data-review-ui],.prx-review-overlay,.prx-review-marker,.prx-review-sidebar,.prx-review-toggle",
 			);
 		}
 
@@ -1648,7 +1705,9 @@
 				}
 				if (restoreFocus) toggle.focus();
 			} else if (collapsed) {
-				toggle.append(document.createTextNode(`${strings.comments} `));
+				// Local review shows an icon whose label expands; the label stays in the name.
+				if (anchors) labelAction(toggle, "message", strings.comments);
+				else toggle.append(document.createTextNode(`${strings.comments} `));
 				if (comments.length) {
 					var badge = element("span", "prx-review-count", String(comments.length));
 					badge.setAttribute("aria-label", String(comments.length));
@@ -1687,14 +1746,17 @@
 				? strings.you
 				: strings.localUser;
 		}
+		function byAuthor(thread) {
+			return !authorFilter || thread.messages.some((m) => authorLabel(m.actor) === authorFilter);
+		}
 		function visibleThread(thread) {
-			return threadFilter === "all" || thread.status === threadFilter;
+			return (threadFilter === "all" || thread.status === threadFilter) && byAuthor(thread);
 		}
 		function threadCount() {
 			var count = comments.filter(visibleThread).length;
 			return formatted(count === 1 ? strings.countOne : strings.count, {
 				count,
-				filter: strings[threadFilter],
+				filter: authorFilter ? `${strings[threadFilter]}, ${authorFilter}` : strings[threadFilter],
 			});
 		}
 		function updateThread(entry, thread, index) {
@@ -1817,7 +1879,6 @@
 			replyForm.hidden = true;
 			replyForm.id = `prx-review-reply-${thread.id}`;
 			replyToggle.setAttribute("aria-controls", replyForm.id);
-			replyToggle.setAttribute("aria-expanded", "false");
 			var fieldLabel = element("label", "prx-review-label");
 			var field = element("textarea", "prx-review-input");
 			field.id = `${replyForm.id}-text`;
@@ -1830,6 +1891,26 @@
 			failure.id = `${replyForm.id}-error`;
 			failure.hidden = true;
 			field.setAttribute("aria-describedby", `${hint.id} ${failure.id}`);
+			var replyDraft = reviewTools.replyDraft;
+			var restored = replyDraft.get(thread.id);
+			// A reload during a save leaves the sent text behind; drop it once the thread shows it.
+			if (
+				restored &&
+				thread.messages.some((m) => m.body === restored && authorLabel(m.actor) === strings.you)
+			) {
+				replyDraft.set(thread.id, "");
+				restored = "";
+			}
+			field.value = restored;
+			replyForm.hidden = !field.value;
+			replyToggle.setAttribute("aria-expanded", String(!replyForm.hidden));
+			field.addEventListener("input", () => {
+				replyDraft.set(thread.id, field.value);
+				hint.textContent =
+					!field.value || replyDraft.saved(thread.id, field.value)
+						? strings.replySession
+						: strings.replyPageOnly;
+			});
 			var send = button("prx-review-reply-send prx-review-action", strings.sendReply, () =>
 				mutateThread(entry, "reply"),
 			);
@@ -1946,6 +2027,7 @@
 				entry.field.removeAttribute("aria-invalid");
 				if (kind === "reply" && entry.field.value === pending.payload.body) {
 					entry.field.value = "";
+					reviewTools.replyDraft.set(entry.thread.id, "");
 					entry.replyForm.hidden = true;
 					entry.replyToggle.setAttribute("aria-expanded", "false");
 				}
@@ -1981,8 +2063,25 @@
 			}
 		}
 		function renderThreads(preserveEditing = false) {
+			var authors = [
+				...new Set(comments.flatMap((t) => t.messages.map((m) => authorLabel(m.actor)))),
+			];
+			if (!authors.includes(authorFilter)) authorFilter = "";
+			if (
+				[...authorSelect.options]
+					.slice(1)
+					.map((o) => o.value)
+					.join("\n") !== authors.join("\n")
+			)
+				authorSelect.replaceChildren(
+					new Option(strings.anyAuthor, ""),
+					...authors.map((label) => new Option(label, label)),
+				);
+			authorSelect.value = authorFilter;
 			["open", "resolved", "all"].forEach((value) => {
-				var count = comments.filter((thread) => value === "all" || thread.status === value).length;
+				var count = comments.filter(
+					(thread) => (value === "all" || thread.status === value) && byAuthor(thread),
+				).length;
 				var label = filters.querySelector(`[value="${value}"]`).nextElementSibling;
 				var text = `${strings[value]} (${count.toLocaleString(config.locale)})`;
 				if (label.textContent !== text) label.textContent = text;
@@ -2455,6 +2554,7 @@
 
 			var draftPrefix = `praxity-review-draft:${localConfig.reviewId}:`;
 			var outboxPrefix = `praxity-review-outbox:${localConfig.reviewId}:`;
+			var replyPrefix = `praxity-review-reply:${localConfig.reviewId}:`;
 			var storageAnnounced = false;
 			function storageFailure() {
 				storageFailed = true;
@@ -2924,6 +3024,18 @@
 				}
 
 				return {
+					// Reply text by thread: plain last-write-wins text through the same storage and
+					// memory fallback. Replies already freeze their own request for Retry.
+					reply: {
+						get: (threadId) => read(replyPrefix + threadId).raw || "",
+						set: (threadId, body) =>
+							body ? put(replyPrefix + threadId, body) : remove(replyPrefix + threadId, false),
+						// True only when this exact text is in browser storage, not the memory fallback.
+						saved(threadId, body) {
+							var held = read(replyPrefix + threadId);
+							return held.durable && held.raw === body;
+						},
+					},
 					list,
 					match,
 					write,
@@ -3096,7 +3208,10 @@
 					pendingViews.delete(pending);
 				}
 			}
+			var composerLayer = null;
 			function openComposer(anchor, opener, retained) {
+				// Opening the modal composer closes a host's light-dismiss popover; Cancel reopens it.
+				composerLayer = topLayerOf(anchors.resolve(anchor).target);
 				exitPin(false);
 				touchClick = null;
 				selectionButton.hidden = true;
@@ -3130,6 +3245,7 @@
 				current = null;
 				composer.close();
 				refreshComposer();
+				if (composerLayer) showPopover(composerLayer);
 				updateSelection();
 				if (returnFocus) restoreFocus(composerOpener);
 			}
@@ -3427,6 +3543,8 @@
 					selectionButton.hidden = true;
 					return;
 				}
+				var layer = topLayerOf(owner) || document.body;
+				if (selectionButton.parentElement !== layer) layer.append(selectionButton);
 				selectionButton.hidden = false;
 				var width = selectionButton.getBoundingClientRect().width || 100;
 				var left = Math.max(4, Math.min(innerWidth - width - 4, box.right + 4));
@@ -3573,6 +3691,7 @@
 				refreshComposer,
 				updateSelection,
 				draftCount: () => draftStore.list(activePageId).length,
+				replyDraft: draftStore.reply,
 				save,
 				pageChange() {
 					closeComposer(false);

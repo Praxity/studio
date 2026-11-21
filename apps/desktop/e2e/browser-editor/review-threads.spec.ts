@@ -292,12 +292,84 @@ for (const locale of ["en", "fr"] as const) {
 							await expect(expand).toBeFocused();
 						}
 					});
-			test("cross-lesson jumps protect an unsent reply with a keyboard-operable dialog", async ({
+			test("reply drafts survive Escape, Cancel and reload; a save freezes the field and clears only the sent draft", async ({
 				page,
 			}) => {
 				const first = page.locator(`[data-thread-id="${threadId}"]`);
+				const second = page.locator(".prx-review-comment").filter({ hasText: "Review page 2" });
+				await first.locator(".prx-review-reply-toggle").click();
+				await first.locator("textarea").fill("First draft");
+				await first.locator("textarea").press("Escape");
+				await expect(first.locator(".prx-review-reply-toggle")).toBeFocused();
+				await second.locator(".prx-review-reply-toggle").click();
+				await expect(second.locator("textarea")).toHaveValue("");
+				await second.locator("textarea").fill("Second draft");
+				await second.locator(".prx-review-reply-cancel").click();
+				await first.locator(".prx-review-reply-toggle").click();
+				await expect(first.locator("textarea")).toHaveValue("First draft");
+				await page.reload();
+				await openComments(page);
+				// Restored drafts reopen their reply forms.
+				await expect(first.locator("textarea")).toBeVisible();
+				await expect(first.locator("textarea")).toHaveValue("First draft");
+				await expect(second.locator("textarea")).toHaveValue("Second draft");
+				await expect(second.locator(".prx-review-reply-toggle")).toHaveAttribute(
+					"aria-expanded",
+					"true",
+				);
+				let release = () => {};
+				const held = new Promise<void>((resolve) => {
+					release = resolve;
+				});
+				await page.route("**/api/reviews/**", async (route) => {
+					if (route.request().method() === "POST") await held;
+					await route.continue();
+				});
+				await second.locator(".prx-review-reply-send").click();
+				await expect(second.locator("textarea")).toHaveJSProperty("readOnly", true);
+				await second.locator("textarea").press("x");
+				await expect(second.locator("textarea")).toHaveValue("Second draft");
+				release();
+				await expect(second.locator(".prx-review-comment-text").last()).toHaveText("Second draft");
+				await page.unrouteAll({ behavior: "wait" });
+				const secondId = await second.getAttribute("data-thread-id");
+				const replyKeys = () =>
+					page.evaluate(() =>
+						Object.keys(localStorage).filter((key) => key.startsWith("praxity-review-reply:")),
+					);
+				expect((await replyKeys()).some((key) => key.endsWith(`:${secondId}`))).toBe(false);
+				expect((await replyKeys()).some((key) => key.endsWith(`:${threadId}`))).toBe(true);
+				// A reload that lands mid-save leaves the sent text stored; the thread already shows it.
+				await page.evaluate(
+					([key]) => localStorage.setItem(key, "Second draft"),
+					[(await replyKeys())[0].replace(/[^:]+$/, secondId ?? "")],
+				);
+				await page.reload();
+				await openComments(page);
+				await expect(second.locator(".prx-review-reply")).toBeHidden();
+				await second.locator(".prx-review-reply-toggle").click();
+				await expect(second.locator("textarea")).toHaveValue("");
+				await expect(first.locator("textarea")).toHaveValue("First draft");
+			});
+			test("cross-lesson jumps protect a pending reply retry with a keyboard-operable dialog and keep a saved draft without one", async ({
+				page,
+			}) => {
+				const first = page.locator(`[data-thread-id="${threadId}"]`);
+				await page.route("**/api/reviews/**", (route) =>
+					route.request().method() === "POST"
+						? route.fulfill({
+								status: 500,
+								contentType: "application/json",
+								body: '{"ok":false,"code":"internal"}',
+							})
+						: route.continue(),
+				);
 				await first.locator(".prx-review-reply-toggle").click();
 				await first.locator("textarea").fill("Unsent reply to keep");
+				await first.locator(".prx-review-reply-send").click();
+				await expect(first.locator(".prx-review-reply-send")).toHaveText(
+					locale === "fr" ? "Réessayer" : "Retry",
+				);
 				const show = page
 					.locator(".prx-review-comment")
 					.filter({ hasText: "Review page 3" })
@@ -327,6 +399,21 @@ for (const locale of ["en", "fr"] as const) {
 					),
 				).toBeFocused();
 				await expect(page).not.toHaveURL(/review-thread=/);
+				await page.unrouteAll({ behavior: "wait" });
+				// The retry was in memory and is gone; the typed text was saved and comes back.
+				await expect(first.locator("textarea")).toHaveValue("Unsent reply to keep");
+				await page
+					.locator(".prx-review-comment")
+					.filter({ hasText: "Review page 2" })
+					.locator(".prx-review-show")
+					.click();
+				await expect(dialog).toHaveCount(0);
+				await expect(
+					page.locator(
+						`${deck ? `[data-deck-slide="${ids[1]}"]` : "main"} [data-node-id="${nodeIds[1]}"]`,
+					),
+				).toBeFocused();
+				await expect(first.locator("textarea")).toHaveValue("Unsent reply to keep");
 			});
 			test("filters announce counts and a reviewer can explicitly reopen by keyboard", async ({
 				page,
@@ -361,7 +448,89 @@ for (const locale of ["en", "fr"] as const) {
 					locale === "fr" ? "Ouvert" : "Open",
 				);
 				await expect(page.locator('[data-review-filter="all"]')).toBeChecked();
+				const author = page.getByRole("combobox", {
+					name: locale === "fr" ? "Écrit par" : "Written by",
+					exact: true,
+				});
+				await expect(author.locator("option")).toHaveCount(3);
+				await expect(author.locator("option").first()).toHaveText(
+					locale === "fr" ? "Tout le monde" : "Anyone",
+				);
+				await author.selectOption({ label: "Agent" });
+				await expect(page.locator(".prx-review-status")).toHaveText(
+					locale === "fr"
+						? "1 commentaire, filtre : Tous, Agent."
+						: "1 comment, filter: All, Agent.",
+				);
+				await expect(page.locator(".prx-review-comment:visible")).toHaveCount(1);
+				await expect(thread).toBeVisible();
+				await expect(page.locator('[data-review-filter="all"] + span')).toHaveText(
+					locale === "fr" ? "Tous (1)" : "All (1)",
+				);
+				await author.selectOption({ label: locale === "fr" ? "Tout le monde" : "Anyone" });
+				await expect(page.locator(".prx-review-comment:visible")).toHaveCount(3);
 			});
+			if (!deck)
+				test("floating Pin and Comments controls show icons whose labels expand on focus and stay in the name", async ({
+					page,
+				}) => {
+					await page.emulateMedia({ reducedMotion: "reduce" });
+					await page.goto(url);
+					// beforeEach clicked the toggle; move the pointer off it so nothing is hovered.
+					await page.mouse.move(0, 0);
+					const pin = page.getByRole("button", {
+						name: locale === "fr" ? "Repère" : "Pin",
+						exact: true,
+					});
+					const comments = page.getByRole("button", {
+						name: locale === "fr" ? "Développer les commentaires" : "Expand comments",
+						exact: true,
+					});
+					const labelWidth = (control: typeof pin) =>
+						control
+							.locator(".prx-review-action-label")
+							.evaluate((node) => node.getBoundingClientRect().width);
+					for (const control of [pin, comments]) {
+						await expect(control.locator("svg[aria-hidden='true']")).toHaveCount(1);
+						await expect(control.locator(".prx-review-action-label")).toHaveCSS(
+							"transition-duration",
+							"0s",
+						);
+						expect(await labelWidth(control)).toBe(0);
+					}
+					await expect(comments.locator(".prx-review-count")).toHaveText("3");
+					for (
+						let i = 0;
+						i < 24 && !(await pin.evaluate((node) => node === document.activeElement));
+						i++
+					)
+						await page.keyboard.press("Tab");
+					await expect(pin).toBeFocused();
+					expect(await labelWidth(pin)).toBeGreaterThan(0);
+					await page.keyboard.press("Enter");
+					await expect(pin).toHaveAttribute("aria-pressed", "true");
+					await page.keyboard.press("Escape");
+					await expect(pin).toHaveAttribute("aria-pressed", "false");
+					await expect(pin).toBeFocused();
+					for (
+						let i = 0;
+						i < 24 && !(await comments.evaluate((node) => node === document.activeElement));
+						i++
+					)
+						await page.keyboard.press("Shift+Tab");
+					await expect(comments).toBeFocused();
+					expect(await labelWidth(comments)).toBeGreaterThan(0);
+					expect(await labelWidth(pin)).toBe(0);
+					await pin.hover();
+					expect(await labelWidth(pin)).toBeGreaterThan(0);
+					await page.keyboard.press("Enter");
+					await expect(
+						page.getByRole("button", {
+							name: locale === "fr" ? "Fermer les commentaires" : "Close comments",
+							exact: true,
+						}),
+					).toBeFocused();
+				});
 		});
 	}
 }
