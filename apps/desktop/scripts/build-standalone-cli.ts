@@ -14,7 +14,6 @@ import {
 } from "../../../packages/export-pipeline/src/export-assets";
 import { assertLearningPatternsBundleInputs } from "../../../scripts/learning-patterns-admission.mjs";
 import {
-	assertStandaloneTarget,
 	filesIn,
 	inventoryPayload,
 	packagePraxFormat,
@@ -25,7 +24,6 @@ import { portablePath } from "./standalone-cli-paths.mjs";
 const legalFiles = ["LICENSE", "LICENSING.md"];
 const platform = process.platform;
 const arch = process.env.TYPST_ARCH ?? process.arch;
-assertStandaloneTarget(platform, arch);
 
 const desktopDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const repoDir = path.resolve(desktopDir, "../..");
@@ -268,6 +266,7 @@ await writeFile(
 		{
 			name: "@praxity/studio-cli",
 			version,
+			private: true,
 			bin: { praxity: "praxity.mjs" },
 			license: "MIT",
 			repository: { type: "git", url: "https://github.com/Praxity/studio.git" },
@@ -330,8 +329,6 @@ const inventory = {
 	buildNode: process.version,
 	entrypoint: "praxity.mjs",
 	legal: legalFiles.map((filename) => `legal/${filename}`),
-	licenseVersion: "1.0.1",
-	licenseEffectiveDate: "2026-09-29",
 	...payload,
 	dependencies,
 	runtimePackages,

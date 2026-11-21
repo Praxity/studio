@@ -27,11 +27,27 @@ test("leading page agrees across CLI inspect, HTML and PDF exports", async () =>
 			return execFileSync(process.execPath, [join(artifact, "praxity.mjs"), ...args], {
 				encoding: "utf8",
 				windowsHide: true,
+				env: {
+					...process.env,
+					PRAXITY_STUDIO_TYPST:
+						process.env.PRAXITY_STUDIO_TYPST ??
+						process.env.PRAXITY_TEST_TYPST ??
+						resolve(
+							import.meta.dirname,
+							`../../resources/typst/typst${process.platform === "win32" ? ".exe" : ""}`,
+						),
+				},
 			});
 		const result = await runPraxityCli(args, {
 			appVersion: "0.3.0",
 			exportAssetsDir: resolve(import.meta.dirname, "../../resources/export-assets"),
-			typstExecutablePath: process.env.PRAXITY_TEST_TYPST,
+			typstExecutablePath:
+				process.env.PRAXITY_STUDIO_TYPST ??
+				process.env.PRAXITY_TEST_TYPST ??
+				resolve(
+					import.meta.dirname,
+					`../../resources/typst/typst${process.platform === "win32" ? ".exe" : ""}`,
+				),
 		});
 		expect(result.exitCode, result.stderr).toBe(0);
 		return result.stdout;

@@ -16,7 +16,7 @@ import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { crc32, deflateSync } from "node:zlib";
+import { crc32, deflateSync, inflateSync } from "node:zlib";
 import AdmZip from "adm-zip";
 import { build } from "esbuild";
 
@@ -450,7 +450,7 @@ test("portable CLI exports and preserves identities outside the checkout", async
 			const result = spawnSync(process.execPath, [author, course], { encoding: "utf8" });
 			assert.equal(result.status, 0, result.stderr || result.stdout);
 		};
-		const bundle = path.join(root, "tool with spaces");
+		let bundle = path.join(root, "tool with spaces");
 		await cp(new URL("../../../dist/studio-cli", import.meta.url), bundle, { recursive: true });
 		const inventory = JSON.parse(await readFile(path.join(bundle, "inventory.json"), "utf8"));
 		assert.equal(inventory.distribution, "npm-tarball");
@@ -458,8 +458,8 @@ test("portable CLI exports and preserves identities outside the checkout", async
 		assert.equal(inventory.platform, process.platform);
 		assert.equal(inventory.arch, process.arch);
 		assert.equal(inventory.license, "MIT");
-		assert.equal(inventory.licenseVersion, "1.0.1");
-		assert.equal(inventory.licenseEffectiveDate, "2026-09-29");
+		assert.ok(!Object.hasOwn(inventory, "licenseVersion"));
+		assert.ok(!Object.hasOwn(inventory, "licenseEffectiveDate"));
 		const typstExecutable = process.platform === "win32" ? "typst.exe" : "typst";
 		for (const filename of [typstExecutable, "LICENSE", "NOTICE", "FONT-NOTICE", "version.json"])
 			assert.ok(!inventory.files.some((file) => file.path === `typst/${filename}`));
@@ -509,6 +509,7 @@ test("portable CLI exports and preserves identities outside the checkout", async
 		assert.deepEqual(await filesIn(path.join(bundle, "legal")), ["LICENSE", "LICENSING.md"]);
 		const manifest = JSON.parse(await readFile(path.join(bundle, "package.json"), "utf8"));
 		assert.equal(manifest.license, "MIT");
+		assert.equal(manifest.private, true);
 		assert.deepEqual(manifest.bin, { praxity: "praxity.mjs" });
 		assert.ok(
 			(await readFile(path.join(bundle, manifest.bin.praxity), "utf8")).startsWith(
@@ -546,6 +547,37 @@ test("portable CLI exports and preserves identities outside the checkout", async
 					notice,
 				);
 		}
+		const install = path.join(root, "installed");
+		await mkdir(install);
+		const npm = (command, args, cwd) => {
+			const result = spawnSync(command, args, {
+				cwd,
+				encoding: "utf8",
+				windowsHide: true,
+				shell: process.platform === "win32",
+				maxBuffer: 32 * 1024 * 1024,
+				env: { ...process.env, NODE_PATH: "", NODE_OPTIONS: "" },
+			});
+			assert.ifError(result.error);
+			assert.equal(result.status, 0, result.stderr || result.stdout);
+			return result.stdout;
+		};
+		const packed = JSON.parse(
+			npm("npm", ["pack", "--json", "--pack-destination", root], bundle),
+		)[0];
+		npm(
+			"npm",
+			["install", "--offline", "--no-audit", "--no-fund", path.join(root, packed.filename)],
+			install,
+		);
+		npm("npx", ["--no-install", "praxity", "--help"], install);
+		bundle = path.join(install, "node_modules/@praxity/studio-cli");
+		for (const dependency of inventory.dependencies)
+			for (const notice of dependency.notices)
+				await readFile(path.join(bundle, notice)).catch(async (error) => {
+					if (error.code !== "EISDIR") throw error;
+					await readdir(path.join(bundle, notice));
+				});
 		const project = path.join(root, "course");
 		await mkdir(path.join(project, "assets"), { recursive: true });
 		await writeFile(
@@ -925,7 +957,7 @@ test("portable CLI exports and preserves identities outside the checkout", async
 		await writeFile(quizPath, `${await readFile(quizPath, "utf8")}\n$$\n\\frac{1}{2}\n$$\n`);
 		await writeFile(
 			path.join(pdfProject, "course.yaml"),
-			"title: Public safety quiz\nlessons:\n  - lesson.prax\n",
+			"title: Public safety quiz\nlessons:\n  - lesson.prax\ndesign:\n  typography:\n    pairing: book\n",
 		);
 		persistFixture(pdfProject);
 		for (const paperSize of ["a4", "letter"]) {
@@ -948,9 +980,29 @@ test("portable CLI exports and preserves identities outside the checkout", async
 				const pdf = await readFile(pdfPath);
 				assert.equal(pdf.subarray(0, 5).toString(), "%PDF-");
 				assert.ok(pdf.length > 1000);
+				const raw = pdf.toString("latin1");
+				let decoded = raw;
+				for (const match of raw.matchAll(/(?<!end)stream\r?\n/g)) {
+					const length = [
+						...raw.slice(Math.max(0, match.index - 500), match.index).matchAll(/\/Length\s*(\d+)/g),
+					].at(-1);
+					if (!length) throw new Error("PDF stream is missing its length");
+					const start = match.index + match[0].length;
+					const bytes = pdf.subarray(start, start + Number(length[1]));
+					try {
+						decoded += inflateSync(bytes).toString("latin1");
+					} catch {
+						decoded += bytes.toString("latin1");
+					}
+				}
+				assert.match(decoded, /SourceSerif4/);
+				assert.match(decoded, /\/Formula\b/);
 			}
 		}
+	} catch (error) {
+		console.error(error);
+		throw error;
 	} finally {
-		await rm(root, { recursive: true, force: true });
+		await rm(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 	}
 });

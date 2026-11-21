@@ -1140,4 +1140,26 @@ describe("course PDF workbook", () => {
 			await rm(root, { recursive: true, force: true });
 		}
 	});
+	it.each(["en", "fr"] as const)(
+		"refuses a missing explicit PDF font directory in %s instead of changing the font fallback",
+		async (locale) => {
+			const root = await mkdtemp(path.join(tmpdir(), "missing-pdf-fonts-"));
+			try {
+				await expect(
+					exportCoursePdf({
+						...course("# Text\n\nRead.\n"),
+						executablePath: path.join(root, "typst"),
+						assetDirectory: root,
+						diagnosticLocale: locale,
+					}),
+				).rejects.toThrow(
+					locale === "fr"
+						? `Répertoire des polices PDF introuvable : ${path.join(root, "fonts")}`
+						: `Missing PDF fonts directory: ${path.join(root, "fonts")}`,
+				);
+			} finally {
+				await rm(root, { recursive: true, force: true });
+			}
+		},
+	);
 });

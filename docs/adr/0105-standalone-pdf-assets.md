@@ -21,8 +21,12 @@ The standalone CLI uses the following boundaries:
 
 ## Consequences
 
-The PDF renderer accepts a separate asset directory. Omitting it preserves existing direct callers' asset lookup beside the compiler. Installer and canvas behaviour are unchanged.
+The PDF renderer accepts a separate asset directory. Omitting it preserves existing direct callers' asset lookup beside the compiler. Canvas behaviour is unchanged. Installer behaviour changes: a Rubato pack using this CLI must set `PRAXITY_STUDIO_TYPST` from its own tools directory. Rubato release remains paused until its wrapper supplies that environment variable or legacy installer packaging is retired.
+
+Explicit PDF asset directories must contain `fonts/`; absence is an error. Programmatic export hosts can set `pdfAssetsDir` independently of viewer assets and the compiler.
+
+The npm payload is platform-independent and has no build-platform gate. Inventory `platform` and `arch` remain as legacy archive provenance because `scripts/install-internal-studio.mjs` checks them when admitting an archive. They do not restrict npm installation. Remove those fields when that legacy archive consumer is retired.
 
 Acceptance remains: affected checks; lookup tests for precedence, missing and wrong versions, PATH and Windows shims; and a clean tarball install running `npx praxity --help`, HTML export and PDF export with a digest-verified official Typst 0.15.1 download. PDF evidence must also exercise math and theme fonts so the asset-directory separation is tested.
 
-For the implementation, CI coverage comes from `fast-checks`, `node-checks` and `affected-test` on the PR, with candidate `test` shards and published-output gates. The scheduled or manually dispatched `Standalone CLI proof` workflow builds and exercises the standalone artifact on macOS from `main`; the npm pack/install checks still need explicit acceptance evidence.
+For the implementation, CI coverage comes from `fast-checks`, `node-checks` and `affected-test` on the PR, with candidate `test` shards and published-output gates. The scheduled or manually dispatched `Standalone CLI proof` workflow builds and exercises the standalone artifact on macOS from `main`; the existing Linux `node-checks` job also packs, installs and exercises the tarball.

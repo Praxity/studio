@@ -73,6 +73,7 @@ interface CliRuntime {
 	writeIdentityNotice?: (text: string) => Promise<void>;
 	openReviewStore?: typeof openReviewStore;
 	typstExecutablePath?: string;
+	pdfAssetsDir?: string;
 	appVersion: string;
 	exportAssetsDir: string;
 	expectedAppVersion?: string;
@@ -852,6 +853,7 @@ export async function runPraxityCli(args: string[], runtime: CliRuntime): Promis
 						pageSize: parsed.pageSize ?? "a4",
 						includeAnswerSheet: parsed.includeAnswerSheet,
 						typstExecutablePath: runtime.typstExecutablePath,
+						pdfAssetsDir: runtime.pdfAssetsDir,
 					}
 				: {}),
 			exportAssetsDir: runtime.exportAssetsDir,

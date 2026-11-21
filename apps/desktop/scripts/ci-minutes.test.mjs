@@ -558,6 +558,18 @@ const safeBrowserReferences = [
 		count: 1,
 		reason: "The URL downloads a pinned toolchain asset, not a file in docs/releases.",
 	},
+	{
+		file: "apps/desktop/src/main/export/resolve-typst-executable.ts",
+		literal: "https://github.com/typst/typst/releases/tag/v${TESTED_TYPST_VERSION}",
+		count: 1,
+		reason: "The pinned upstream release URL is installation guidance, not a local release input.",
+	},
+	{
+		file: "apps/desktop/src/main/export/resolve-typst-executable.test.ts",
+		literal: "https://github.com/typst/typst/releases/tag/v0.15.1",
+		count: 1,
+		reason: "The test asserts the official installation link, not a local release input.",
+	},
 ];
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const root = new URL("../../../", import.meta.url);
@@ -721,7 +733,13 @@ test("root Node checks run once while Vitest shards bypass the local test prefix
 	const nodeSteps = Object.values(ci.jobs).flatMap((job) =>
 		(job.steps ?? []).filter((step) => /node --test\b/.test(step.run ?? "")),
 	);
-	assert.equal(nodeSteps.length, 2);
+	assert.equal(nodeSteps.length, 3);
+	const tarball = nodeJob.steps.find(
+		(step) => step.name === "Verify npm tarball installation and exports",
+	);
+	assert.match(tarball.run, /prepare:typst/);
+	assert.match(tarball.run, /build:cli/);
+	assert.match(tarball.run, /--test-name-pattern='portable CLI exports'.*standalone-cli.proof.mjs/);
 	assert.ok(nodeSteps.every((step) => nodeJob.steps.includes(step)));
 	for (const event_name of ["pull_request", "workflow_dispatch", "schedule"])
 		assert.equal(enabled(nodeJob.if.slice(3, -2), { event_name }, { code: "true" }), true);

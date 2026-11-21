@@ -328,6 +328,14 @@ jobs:
           done
           node --test --test-concurrency=4 "${tests[@]}"
 
+      - name: Verify npm tarball installation and exports
+        env:
+          PRAXITY_STUDIO_TYPST: ${{ github.workspace }}/apps/desktop/resources/typst/typst
+        run: |
+          pnpm --filter @praxity/desktop prepare:typst
+          pnpm build:cli
+          node --test --test-name-pattern='portable CLI exports' apps/desktop/scripts/standalone-cli.proof.mjs
+
   affected-test:
     needs: changes
     if: ${{ github.repository == (vars.STUDIO_SOURCE_REPO || github.repository) && (!cancelled() && github.event_name == 'pull_request' && needs.changes.result == 'success' && needs.changes.outputs.code == 'true' && needs.changes.outputs.vitest == 'affected') }}

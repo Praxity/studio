@@ -176,6 +176,7 @@ if (mode === "stages") {
 		enforceAccessibility: true,
 		temporaryRoot: output,
 		typstExecutablePath: typst,
+		pdfAssetsDir: typst ? path.dirname(typst) : undefined,
 	});
 	await writeFile(
 		path.join(output, mode === "pdf" ? "course.pdf" : "course.zip"),

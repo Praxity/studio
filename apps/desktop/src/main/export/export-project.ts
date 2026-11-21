@@ -47,6 +47,7 @@ export interface ExportProjectOptions {
 	pageSize?: "a4" | "letter";
 	includeAnswerSheet?: boolean;
 	typstExecutablePath?: string;
+	pdfAssetsDir?: string;
 	signal?: AbortSignal;
 	temporaryRoot?: string;
 	projectDir: string;
@@ -357,7 +358,7 @@ export async function exportProject(
 				executablePath: await resolveTypstExecutable(options.typstExecutablePath, {
 					locale: options.adviceLocale,
 				}),
-				assetDirectory: path.resolve(options.exportAssetsDir, "../typst"),
+				assetDirectory: options.pdfAssetsDir ?? path.resolve(options.exportAssetsDir, "../typst"),
 				signal: options.signal,
 				temporaryRoot: options.temporaryRoot,
 			});

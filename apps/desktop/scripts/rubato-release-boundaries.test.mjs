@@ -461,11 +461,11 @@ test("formal publication selects publish mode; dry runs still work", () => {
 
 const smoke = () =>
 	workflow.jobs["native-smoke"].steps.find((step) => step.name === "Verify native package smoke");
-for (const scenario of ["ok", "wrong arch", "bad digest", "failed CLI", "failed Typst"])
-	test(`native smoke external commands: ${scenario}`, (t) => {
+for (const scenario of ["ok", "wrong arch", "bad digest", "failed CLI", "failed PDF"])
+	test(`native smoke command failure propagation: ${scenario}`, (t) => {
 		const root = mkdtempSync(join(tmpdir(), "release-smoke-"));
 		t.after(() => rmSync(root, { recursive: true, force: true }));
-		mkdirSync(join(root, "candidate/studio-cli/typst"), { recursive: true });
+		mkdirSync(join(root, "candidate"), { recursive: true });
 		const name = "praxity-cli-0.3.0-macos-arm64.tar.gz",
 			bytes = "smoke fixture";
 		writeFileSync(join(root, "candidate", name), bytes);
@@ -473,12 +473,7 @@ for (const scenario of ["ok", "wrong arch", "bad digest", "failed CLI", "failed 
 			join(root, "candidate", `${name}.sha256`),
 			`${createHash("sha256").update(bytes).digest("hex")}  ${name}\n`,
 		);
-		writeFileSync(
-			join(root, "candidate/studio-cli/typst/typst"),
-			'#!/bin/sh\nexit "$TYPST_STATUS"\n',
-			{ mode: 0o755 },
-		);
-		const script = `node() { if [[ "$1" == -p ]]; then printf '%s\\n' "$MOCK_ARCH"; else [[ "$CLI_STATUS" == 0 ]]; fi; }\ntar() { :; }\nshasum() { shift 2; sha256sum "$@"; }\n${smoke().run}`;
+		const script = `node() { if [[ "$1" == -p ]]; then printf '%s\\n' "$MOCK_ARCH"; elif [[ "$*" == *"export smoke-course"* ]]; then [[ "$PDF_STATUS" == 0 ]]; else [[ "$CLI_STATUS" == 0 ]]; fi; }\ntar() { :; }\nshasum() { shift 2; sha256sum "$@"; }\n${smoke().run}`;
 		const result = spawnSync(bash, ["-e", "-o", "pipefail", "-c", script], {
 			encoding: "utf8",
 			env: {
@@ -491,7 +486,8 @@ for (const scenario of ["ok", "wrong arch", "bad digest", "failed CLI", "failed 
 						: createHash("sha256").update(bytes).digest("hex"),
 				MOCK_ARCH: scenario === "wrong arch" ? "x64" : "arm64",
 				CLI_STATUS: scenario === "failed CLI" ? "1" : "0",
-				TYPST_STATUS: scenario === "failed Typst" ? "1" : "0",
+				PDF_STATUS: scenario === "failed PDF" ? "1" : "0",
+				GITHUB_WORKSPACE: root.replaceAll("\\", "/"),
 			},
 		});
 		assert.equal(result.status === 0, scenario === "ok", result.stderr);
@@ -671,4 +667,30 @@ test("Rubato release attests all five assets with publisher-scoped permissions",
 	assert.deepEqual(step.with, {
 		"subject-path": "${{ runner.temp }}/candidate/*.tar.gz\n${{ runner.temp }}/pack/*\n",
 	});
+});
+
+test("release smoke prepares a real external compiler and compiles a PDF", () => {
+	const job = workflow.jobs["native-smoke"];
+	const prepare = job.steps.find(
+		(step) => step.name === "Prepare external Typst with verified upstream digest",
+	);
+	assert.match(prepare.run, /prepare:typst/);
+	assert.match(
+		smoke().run,
+		/PRAXITY_STUDIO_TYPST=.*workflow\/apps\/desktop\/resources\/typst\/typst/,
+	);
+	assert.match(smoke().run, /export smoke-course --format pdf/);
+	assert.doesNotMatch(smoke().run, /studio-cli\/typst\/typst/);
+});
+
+test("packaged browser journeys prepare and pass external Typst", () => {
+	const job =
+		workflow.jobs["browser-editor"] ??
+		Object.values(workflow.jobs).find((job) =>
+			job.steps?.some((step) => step.name === "Verify packaged browser journeys"),
+		);
+	const prepare = job.steps.find((step) => step.name === "Prepare source fixture assets");
+	assert.match(prepare.run, /prepare:typst/);
+	const verify = job.steps.find((step) => step.name === "Verify packaged browser journeys");
+	assert.match(verify.run, /PRAXITY_STUDIO_TYPST=.*resources\/typst\/typst/);
 });

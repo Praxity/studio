@@ -203,7 +203,7 @@ export async function prepareTypst({
 	assetsOnly = false,
 	cache = path.join(desktopDir, "resources/.typst-cache"),
 } = {}) {
-	const release = selectTypstRelease(platform, arch);
+	const release = assetsOnly ? undefined : selectTypstRelease(platform, arch);
 	const extension = platform === "win32" ? "zip" : "tar.xz";
 	const binary = platform === "win32" ? "typst.exe" : "typst";
 	const tar =
@@ -214,7 +214,7 @@ export async function prepareTypst({
 					"System32/tar.exe",
 				)
 			: "/usr/bin/tar";
-	const name = `typst-${release.target}`;
+	const name = assetsOnly ? undefined : `typst-${release.target}`;
 	const archivePath = archive ?? path.join(cache, `${name}-${TYPST_VERSION}.${extension}`);
 	let bytes;
 	if (!assetsOnly) {

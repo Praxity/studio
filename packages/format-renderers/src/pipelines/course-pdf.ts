@@ -1656,7 +1656,16 @@ export async function exportCoursePdf(
 	const fontDir = path.join(assetDirectory, "fonts");
 	const availableFonts = new Set(
 		await readdir(fontDir).catch((error: NodeJS.ErrnoException) => {
-			if (error.code === "ENOENT") return [];
+			if (error.code === "ENOENT") {
+				if (options.assetDirectory === undefined) return [];
+				throw new CoursePdfError(
+					"course",
+					undefined,
+					options.diagnosticLocale === "fr"
+						? `Répertoire des polices PDF introuvable : ${fontDir}`
+						: `Missing PDF fonts directory: ${fontDir}`,
+				);
+			}
 			throw error;
 		}),
 	);
