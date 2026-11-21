@@ -45,10 +45,12 @@ async function desktopExportCopyInputs(): Promise<DesktopExportInputFile[]> {
 			"image-codecs/notices",
 		)),
 		...(await directoryInputs(path.join(pipelineRoot, "schemas"), "schemas")),
-		...["review-comments.js", "review-comments.css"].map((name) => ({
-			source: path.join(pipelineRoot, "template", name),
-			assetPath: name,
-		})),
+		...["review-comments.js", "review-comments.css", "course-help.js", "course-help.css"].map(
+			(name) => ({
+				source: path.join(pipelineRoot, "template", name),
+				assetPath: name,
+			}),
+		),
 		...["tabler-nodes-outline.json", "tabler-nodes-filled.json"].map((name) => ({
 			source: path.join(pipelineRoot, "node_modules/@tabler/icons", name),
 			assetPath: name,

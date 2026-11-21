@@ -12,6 +12,7 @@ export const workspaceProjects = [
 	"packages/editor-core",
 	"packages/format-renderers",
 	"packages/review-share",
+	"packages/course-help",
 
 	"apps/desktop",
 ] as const;

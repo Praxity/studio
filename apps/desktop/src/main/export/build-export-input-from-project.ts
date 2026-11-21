@@ -618,6 +618,7 @@ async function buildLessonInputFromProject(
 		frontmatter,
 		config: {
 			...(manifest.courseHomeUrl === undefined ? {} : { courseHomeUrl: manifest.courseHomeUrl }),
+			...(manifest.help === undefined ? {} : { help: manifest.help }),
 			...sectionPaletteConfig(resolved.design, narration.blocks),
 			moduleDeck: moduleDeckOptions(manifest.moduleDeck, narration.blocks, frontmatter),
 			completionThreshold: options.completionThreshold,
@@ -948,6 +949,7 @@ async function buildCourseInputSnapshot(
 		frontmatter,
 		config: {
 			...(manifest.courseHomeUrl === undefined ? {} : { courseHomeUrl: manifest.courseHomeUrl }),
+			...(manifest.help === undefined ? {} : { help: manifest.help }),
 			...sectionPaletteConfig(combinedDesign, combinedBlocks),
 			moduleDeck: moduleDeckOptions(manifest.moduleDeck, combinedBlocks, frontmatter),
 			completionThreshold: options.completionThreshold,

@@ -49,6 +49,42 @@ describe("parseCourseManifest", () => {
 			parseCourseManifest("locale: en\ncourseHomeUrl: 'data:text/html,test'", "fr"),
 		).toThrow("courseHomeUrl doit être une URL relative ou une URL HTTPS absolue.");
 	});
+	it("parses and round-trips help", () => {
+		const manifest = parseCourseManifest(
+			"help:\n  endpoint: https://help.example.org/course/\n  label: ' Ask a tutor '\n  intro: Tutors reply within a day.\n",
+		);
+		expect(manifest.help).toEqual({
+			endpoint: "https://help.example.org/course/",
+			label: "Ask a tutor",
+			intro: "Tutors reply within a day.",
+		});
+		expect(parseCourseManifest(serializeCourseManifest(manifest)).help).toEqual(manifest.help);
+		expect(parseCourseManifest("help: { endpoint: help }").help).toEqual({ endpoint: "help" });
+		expect(parseCourseManifest("title: Course").help).toBeUndefined();
+	});
+	it.each(["javascript:alert(1)", "http://help.example.org/", "//help.example.org/", ""])(
+		"refuses help endpoint %j",
+		(endpoint) => {
+			expect(() => parseCourseManifest(`help: { endpoint: ${JSON.stringify(endpoint)} }`)).toThrow(
+				"help.endpoint must be a relative URL or an absolute HTTPS URL.",
+			);
+		},
+	);
+	it.each([
+		"help: help/",
+		"help: []",
+		"help: { label: Ask }",
+		"help: { endpoint: help, label: '' }",
+		"help: { endpoint: help, intro: 3 }",
+		"help: { endpoint: help, colour: red }",
+	])("refuses malformed help %s", (yaml) => {
+		expect(() => parseCourseManifest(yaml)).toThrow(
+			"help must contain an endpoint and may contain label and intro text.",
+		);
+		expect(() => parseCourseManifest(yaml, "fr")).toThrow(
+			"help doit contenir endpoint et peut contenir les textes label et intro.",
+		);
+	});
 	it("leaves courseHomeUrl absent by default", () => {
 		expect(parseCourseManifest("title: Course").courseHomeUrl).toBeUndefined();
 		expect(serializeCourseManifest(parseCourseManifest("title: Course"))).toBe("title: Course\n");

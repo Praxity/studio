@@ -1,0 +1,353 @@
+/* Learner help button (course-help.js). Colours follow the course's --praxity-color-* tokens. */
+.praxity-help {
+	font-family: inherit;
+	color: var(--praxity-color-text, #212529);
+}
+
+/* Display rules below would otherwise override the hidden attribute. */
+.praxity-help [hidden] {
+	display: none !important;
+}
+
+.praxity-help-sr {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+.praxity-help-button,
+.praxity-help-picker {
+	position: fixed;
+	inset-inline-end: 1rem;
+	inset-block-end: 1rem;
+	z-index: 9000;
+}
+
+.praxity-help-button {
+	display: inline-flex;
+	align-items: center;
+	min-width: 3rem;
+	min-height: 3rem;
+	padding: 0.375rem;
+	border: 2px solid var(--praxity-color-background, #fff);
+	border-radius: 999px;
+	color: var(--praxity-color-button-text, #fff);
+	background: var(--praxity-color-button-background, #0969da);
+	font: inherit;
+	font-size: 0.9375rem;
+	font-weight: 600;
+	cursor: pointer;
+	box-shadow: 0 4px 14px rgb(0 0 0 / 25%);
+}
+
+.praxity-help-icon {
+	display: grid;
+	place-items: center;
+	width: 2rem;
+	height: 2rem;
+	border-radius: 50%;
+	color: var(--praxity-color-button-background, #0969da);
+	background: var(--praxity-color-button-text, #fff);
+	font-size: 1.125rem;
+	font-weight: 700;
+	line-height: 1;
+}
+
+/* The label stays in the accessible name; it only widens into view on hover or focus. */
+.praxity-help-label {
+	max-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	transition:
+		max-width 0.2s ease,
+		margin 0.2s ease;
+}
+
+.praxity-help-button:is(:hover, :focus-visible) .praxity-help-label {
+	max-width: 16em;
+	margin-inline: 0.5rem 0.75rem;
+}
+
+.praxity-help-badge:not([hidden]) {
+	display: inline-block;
+	min-width: 1.5rem;
+	margin-inline-start: 0.25rem;
+	padding: 0 0.4rem;
+	border-radius: 999px;
+	color: var(--praxity-color-text-inverted, #fff);
+	background: var(--praxity-color-error, #b42318);
+	box-shadow: 0 0 0 2px var(--praxity-color-background, #fff);
+	font-size: 0.8125rem;
+	font-weight: 700;
+	line-height: 1.5rem;
+	text-align: center;
+}
+
+.praxity-help :focus-visible {
+	outline: 3px solid var(--praxity-color-focus, #005fcc);
+	outline-offset: 2px;
+}
+
+.praxity-help-dialog {
+	position: fixed;
+	inset: auto 1rem 5rem auto;
+	box-sizing: border-box;
+	width: min(28rem, calc(100vw - 2rem));
+	max-height: calc(100dvh - 7rem);
+	margin: 0;
+	padding: 1.25rem;
+	overflow: auto;
+	overflow-wrap: anywhere;
+	color: var(--praxity-color-text, #212529);
+	background: var(--praxity-color-background, #fff);
+	border: 1px solid var(--praxity-color-border, #8c959f);
+	border-radius: 12px;
+	box-shadow: 0 8px 28px rgb(0 0 0 / 25%);
+}
+
+.praxity-help-dialog::backdrop {
+	background: rgb(0 0 0 / 20%);
+}
+
+.praxity-help-dialog p {
+	margin: 0;
+}
+
+.praxity-help-dialog > * + * {
+	margin-block-start: 1rem;
+}
+
+.praxity-help-head {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+.praxity-help-head h2 {
+	margin: 0;
+	font-size: 1.25rem;
+}
+
+.praxity-help-close {
+	flex: none;
+	width: 2.75rem;
+	height: 2.75rem;
+	margin-inline-start: auto;
+	color: var(--praxity-color-text, #212529);
+	background: var(--praxity-color-background-alt, #f5f5f5);
+	border: 1px solid var(--praxity-color-border, #8c959f);
+	border-radius: 50%;
+	font-size: 1.375rem;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.praxity-help-intro,
+.praxity-help-meta {
+	color: var(--praxity-color-text-light, #57606a);
+}
+
+.praxity-help-meta {
+	font-size: 0.875rem;
+}
+
+.praxity-help-dialog form > * + * {
+	margin-block-start: 0.5rem;
+}
+
+.praxity-help-dialog label {
+	display: block;
+	font-weight: 600;
+}
+
+.praxity-help-dialog textarea {
+	display: block;
+	box-sizing: border-box;
+	width: 100%;
+	padding: 0.5rem;
+	color: inherit;
+	background: var(--praxity-color-background, #fff);
+	border: 1px solid var(--praxity-color-control-border, #8c959f);
+	border-radius: 6px;
+	font: inherit;
+}
+
+.praxity-help-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+.praxity-help-primary,
+.praxity-help-secondary {
+	min-height: 2.75rem;
+	padding: 0.5rem 1rem;
+	border-radius: 6px;
+	font: inherit;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.praxity-help-primary {
+	color: var(--praxity-color-button-text, #fff);
+	background: var(--praxity-color-button-background, #0969da);
+	border: 2px solid var(--praxity-color-button-background, #0969da);
+}
+
+.praxity-help-secondary {
+	color: var(--praxity-color-text, #212529);
+	background: var(--praxity-color-background, #fff);
+	border: 2px solid var(--praxity-color-button-outline, var(--praxity-color-border, #8c959f));
+}
+
+.praxity-help-primary[aria-disabled="true"] {
+	cursor: progress;
+	opacity: 0.75;
+}
+
+.praxity-help-about {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.75rem;
+	padding: 0.75rem;
+	background: var(--praxity-color-surface, #f6f8fa);
+	border-inline-start: 3px solid var(--praxity-color-accent, #0b5cad);
+}
+
+.praxity-help-about p {
+	flex: 1;
+	display: -webkit-box;
+	overflow: hidden;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 3;
+}
+
+.praxity-help-list {
+	padding-block-start: 0.75rem;
+	border-block-start: 1px solid var(--praxity-color-border, #d8dee4);
+}
+
+.praxity-help-list h3 {
+	margin: 0 0 0.375rem;
+	font-size: 1rem;
+}
+
+.praxity-help-list ol {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.praxity-help-thread {
+	padding-block: 0.75rem;
+	border-block-end: 1px solid var(--praxity-color-border, #d8dee4);
+}
+
+.praxity-help-quote {
+	margin-block: 0.25rem !important;
+	padding-inline-start: 0.5rem;
+	color: var(--praxity-color-text-light, #57606a);
+	border-inline-start: 3px solid var(--praxity-color-border, #d8dee4);
+	font-size: 0.875rem;
+}
+
+.praxity-help-body {
+	white-space: pre-wrap;
+}
+
+.praxity-help-reply {
+	margin: 0.5rem 0 0 0.75rem;
+	padding: 0.5rem 0.75rem;
+	background: var(--praxity-color-surface, #f6f8fa);
+	border-radius: 8px;
+}
+
+.praxity-help-mine {
+	background: var(--praxity-color-background, #fff);
+	border: 1px solid var(--praxity-color-border, #d8dee4);
+}
+
+.praxity-help-new {
+	display: inline-block;
+	padding: 0 0.5rem;
+	color: var(--praxity-color-text-inverted, #fff);
+	background: var(--praxity-color-error, #b42318);
+	border-radius: 999px;
+	font-size: 0.8125rem;
+	font-weight: 600;
+}
+
+.praxity-help-follow {
+	margin-block-start: 0.5rem;
+}
+
+.praxity-help-picker {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.5rem 0.75rem;
+	box-sizing: border-box;
+	max-width: min(26rem, calc(100vw - 2rem));
+	padding: 0.75rem 1rem;
+	color: var(--praxity-color-text, #212529);
+	background: var(--praxity-color-background, #fff);
+	border: 2px solid var(--praxity-color-accent, #0b5cad);
+	border-radius: 12px;
+	box-shadow: 0 4px 14px rgb(0 0 0 / 25%);
+}
+
+.praxity-help-picker p {
+	flex: 1 1 14rem;
+	margin: 0;
+}
+
+.praxity-help-picking main,
+.praxity-help-picking main * {
+	cursor: crosshair;
+}
+
+.praxity-help-target {
+	outline: 2px dashed var(--praxity-color-accent, #0b5cad) !important;
+	outline-offset: 2px;
+}
+
+@media (max-width: 30rem) {
+	.praxity-help-dialog {
+		inset: auto 0.5rem 0.5rem;
+		width: auto;
+		max-height: calc(100dvh - 1rem);
+		padding: 1rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.praxity-help-label {
+		transition: none;
+	}
+}
+
+@supports (forced-color-adjust: auto) {
+	@media (forced-colors: active) {
+		.praxity-help-button,
+		.praxity-help-picker {
+			border: 2px solid ButtonText;
+		}
+
+		.praxity-help-badge,
+		.praxity-help-new {
+			forced-color-adjust: none;
+			color: HighlightText;
+			background: Highlight;
+		}
+
+		.praxity-help-target {
+			outline-color: Highlight !important;
+		}
+	}
+}
