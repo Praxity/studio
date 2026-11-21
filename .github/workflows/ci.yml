@@ -678,18 +678,34 @@ jobs:
           path: apps/desktop/resources/.typst-cache
           key: typst-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/desktop/scripts/prepare-typst.mjs') }}
       - run: pnpm --filter @praxity/desktop prepare:typst
+      - name: Prepare browser authoring scratch
+        run: |
+          scratch="$RUNNER_TEMP/browser-editor"
+          if [ "${{ matrix.browser }}" = webkit ]; then
+            scratch=/dev/shm/browser-editor
+            mkdir "$scratch"
+            sudo mount -t tmpfs -o "size=4G,mode=700,uid=$(id -u),gid=$(id -g)" tmpfs "$scratch"
+            mkdir "$scratch/tmp"
+            printf 'TMPDIR=%s\n' "$scratch/tmp" >> "$GITHUB_ENV"
+            df -h "$scratch"
+            free -m
+          fi
+          printf 'PRAXITY_TEST_ARTIFACTS=%s\n' "$scratch" >> "$GITHUB_ENV"
       - name: Browser authoring journeys
-        # The runner context is unavailable in job-level env.
-        env:
-          PRAXITY_TEST_ARTIFACTS: ${{ runner.temp }}/browser-editor
         run: pnpm --filter @praxity/desktop run e2e:browser-editor --project=${{ matrix.browser }} --shard=${{ matrix.shard }} --workers=2
+      - name: Report WebKit core dumps and I/O pressure
+        if: failure() && !cancelled() && matrix.browser == 'webkit'
+        continue-on-error: true
+        run: |
+          sudo coredumpctl list --no-pager || true
+          cat /proc/pressure/io
       - name: Upload browser authoring failure evidence
         if: failure() && !cancelled()
         continue-on-error: true
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: browser-editor-${{ matrix.browser }}-${{ strategy.job-index }}
-          path: ${{ runner.temp }}/browser-editor/browser-editor-results/
+          path: ${{ env.PRAXITY_TEST_ARTIFACTS }}/browser-editor-results/
           retention-days: 7
 
   format-contracts:

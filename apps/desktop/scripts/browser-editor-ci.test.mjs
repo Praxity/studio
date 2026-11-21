@@ -91,6 +91,43 @@ test("browser editor CI gates the selected engines in Linux shards with prepared
 	assert.equal(job["continue-on-error"], undefined);
 });
 
+test("WebKit browser journeys keep Studio scratch and temp files on a bounded tmpfs", () => {
+	const steps = ci.jobs["browser-editor"].steps;
+	const prepare = steps.findIndex((step) => step.name === "Prepare browser authoring scratch");
+	const journeys = steps.findIndex((step) => step.run?.includes("e2e:browser-editor"));
+	assert.ok(prepare >= 0 && prepare < journeys, "Scratch must be prepared before the journeys");
+	const script = steps[prepare].run;
+	assert.ok(script.startsWith('scratch="$RUNNER_TEMP/browser-editor"\n'));
+	assert.ok(script.includes('if [ "${{ matrix.browser }}" = webkit ]; then\n'));
+	assert.ok(script.includes("scratch=/dev/shm/browser-editor\n"));
+	assert.match(
+		script,
+		/sudo mount -t tmpfs -o "size=4G,mode=700,uid=\$\(id -u\),gid=\$\(id -g\)" tmpfs "\$scratch"/,
+	);
+	assert.ok(script.includes(`printf 'TMPDIR=%s\\n' "$scratch/tmp" >> "$GITHUB_ENV"`));
+	assert.ok(
+		script.trimEnd().endsWith(`printf 'PRAXITY_TEST_ARTIFACTS=%s\\n' "$scratch" >> "$GITHUB_ENV"`),
+	);
+	assert.equal(steps[journeys].env, undefined, "Journeys must read the prepared scratch");
+	const upload = steps.find((step) => step.name === "Upload browser authoring failure evidence");
+	assert.equal(upload.with.path, "${{ env.PRAXITY_TEST_ARTIFACTS }}/browser-editor-results/");
+});
+
+test("failed WebKit browser journeys report core dumps and I/O pressure", () => {
+	const steps = ci.jobs["browser-editor"].steps;
+	const report = steps.findIndex(
+		(step) => step.name === "Report WebKit core dumps and I/O pressure",
+	);
+	const journeys = steps.findIndex((step) => step.run?.includes("e2e:browser-editor"));
+	assert.ok(report > journeys, "The report must follow the journeys");
+	assert.equal(steps[report].if, "failure() && !cancelled() && matrix.browser == 'webkit'");
+	assert.equal(steps[report]["continue-on-error"], true);
+	assert.equal(
+		steps[report].run,
+		"sudo coredumpctl list --no-pager || true\ncat /proc/pressure/io\n",
+	);
+});
+
 test("no CI job reads the runner context in job-level env", () => {
 	for (const [name, job] of Object.entries(ci.jobs))
 		assert.doesNotMatch(JSON.stringify(job.env ?? {}), /\brunner\./, name);

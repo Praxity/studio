@@ -145,6 +145,14 @@ Only the Test shards and their confirmations use this directory; dependency and
 asset preparation precede it. Teardown restores temp paths for action cleanup
 unless cancelled. Ephemeral runner VMs discard the mount; a leaked process
 cannot fail a passing shard through a busy unmount.
+WebKit browser-editor shards put `PRAXITY_TEST_ARTIFACTS` and `TMPDIR` on a
+tmpfs at `/dev/shm/browser-editor`, capped at 4 GiB. During WebKit shards the
+hosted runners write core dumps of over a gigabyte each to the runner disk.
+While a dump flushes, every Studio fsync slows down, and saves and server
+starts outlast the journeys' 5-second waits. On tmpfs, fsync doesn't touch the
+disk. Chromium shards keep their scratch on runner disk. A failed WebKit shard
+logs `coredumpctl list` and `/proc/pressure/io`, so the log names any process
+that dumped core and shows recent I/O stalls.
 `apps/desktop/src/test-utils/fixture-temp.ts` owns fixture placement for the
 complete recovery-save latency gate and journal-flush parity on runner disk.
 Disk placement preserves the gate's storage costs, not proof of power-loss
