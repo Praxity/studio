@@ -45,11 +45,8 @@ test("formal build has only the admitted archive and browser commands, without s
 			"Setup pnpm",
 			"Setup Node.js",
 			"Install dependencies",
-			"Install headless browsers",
-			"Enable macOS keyboard navigation",
 			"Build and verify standalone CLI archives",
 			"Capture verified archive digests",
-			"Restore macOS keyboard navigation",
 			"Hand off private CLI candidate",
 			"Upload release handoff",
 			"Clean candidate workspace and downloads",
@@ -71,8 +68,7 @@ test("formal build has only the admitted archive and browser commands, without s
 		.map((entry) => entry.run);
 	assert.deepEqual(commands, [
 		'pnpm install --frozen-lockfile --store-dir "$RUNNER_TEMP/cli-candidate-$GITHUB_RUN_ID/pnpm-store"',
-		"pnpm --filter @praxity/desktop exec playwright install chromium firefox webkit",
-		'source "$GITHUB_WORKSPACE/workflow/apps/desktop/scripts/prepare-macos-tmpdir.sh"\nbash ../workflow/apps/desktop/scripts/build-cli-archives.sh --browser-editor\n',
+		'source "$GITHUB_WORKSPACE/workflow/apps/desktop/scripts/prepare-macos-tmpdir.sh"\nbash ../workflow/apps/desktop/scripts/build-cli-archives.sh\n',
 	]);
 });
 
@@ -88,4 +84,40 @@ test("formal publisher binds both digest inputs to the build outputs", () => {
 			`\${{ needs.build.outputs.${arch.toLowerCase()}_sha256 }}`,
 		);
 	}
+});
+
+test("formal release shards every packaged browser engine and gates publication on all shards", () => {
+	const job = release.jobs["browser-editor"];
+	assert.deepEqual(job.needs, ["admit", "build"]);
+	assert.equal(job["runs-on"], "macos-15-intel");
+	assert.equal(job.strategy["fail-fast"], false);
+	assert.deepEqual(job.strategy.matrix, {
+		browser: ["chromium", "firefox", "webkit"],
+		shard: ["1/3", "2/3", "3/3"],
+	});
+	assert.equal(job["continue-on-error"], undefined);
+	const step = (name) => job.steps.find((entry) => entry.name === name);
+	assert.equal(step("Checkout source").with.ref, "${{ needs.admit.outputs.source_ref }}");
+	assert.deepEqual(step("Download sealed CLI archives").with, {
+		name: "cli-release-handoff",
+		path: "source/apps/desktop/release",
+	});
+	const extract = step("Verify and extract native archive");
+	assert.deepEqual(extract.env, {
+		ARCHIVE_NAME: "${{ needs.build.outputs.x64_name }}",
+		ARCHIVE_SHA256: "${{ needs.build.outputs.x64_sha256 }}",
+	});
+	assert.match(extract.run, /shasum -a 256 "\$ARCHIVE_NAME"/);
+	assert.match(extract.run, /\[\[ "\$\{actual%% \*\}" == "\$ARCHIVE_SHA256" \]\] \|\| exit 1/);
+	assert.match(extract.run, /tar -xzf "\$ARCHIVE_NAME" -C \.\.\/\.\.\/\.\.\/dist/);
+	const journeys = step("Verify packaged browser journeys");
+	assert.equal(journeys.if, undefined);
+	assert.equal(journeys["continue-on-error"], undefined);
+	assert.equal(journeys["timeout-minutes"], 45);
+	assert.ok(job["timeout-minutes"] > journeys["timeout-minutes"]);
+	assert.equal(
+		journeys.run.split("\n")[1],
+		'PRAXITY_BROWSER_ARTIFACT="$PWD/dist/studio-cli" pnpm --filter @praxity/desktop run e2e:browser-editor --project="${{ matrix.browser }}" --shard="${{ matrix.shard }}"',
+	);
+	assert.deepEqual(release.jobs.publish.needs, ["build", "browser-editor"]);
 });
