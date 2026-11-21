@@ -23,7 +23,6 @@ export const GrammarFormattingExtension = Extension.create({
 					const tr = state.tr;
 
 					if (empty) {
-						// No selection: insert marker pair and place cursor between
 						tr.insertText(`${marker}${marker}`, from);
 						tr.setSelection(TextSelection.create(tr.doc, from + marker.length));
 						dispatch(tr);
@@ -32,7 +31,6 @@ export const GrammarFormattingExtension = Extension.create({
 
 					const selectedText = state.doc.textBetween(from, to, "");
 
-					// Check if already wrapped — unwrap
 					if (
 						selectedText.startsWith(marker) &&
 						selectedText.endsWith(marker) &&
@@ -44,7 +42,6 @@ export const GrammarFormattingExtension = Extension.create({
 						return true;
 					}
 
-					// Wrap selection
 					tr.insertText(marker, to);
 					tr.insertText(marker, from);
 					dispatch(tr);

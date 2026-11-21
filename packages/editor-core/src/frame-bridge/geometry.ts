@@ -12,7 +12,6 @@ export interface PopupPlacement {
 	side: "above" | "below" | "left" | "right";
 	replaceParent: boolean;
 }
-/** F11: measurements are frame viewport pixels, including caret line boxes. */
 export function popupPlacement(options: {
 	anchor: Box;
 	size: { width: number; height: number };
@@ -74,12 +73,6 @@ export function popupPlacement(options: {
 	};
 }
 
-/**
- * Top-layer chrome uses the viewport origin and inherited zoom when available.
- * Otherwise measure each distinct parent's containing block with a fixed probe beside
- * the first element there. Siblings share a containing block. Insert and show every
- * probe before reading any, so a placement pass lays out once however many parents it has.
- */
 export function measureOrigins(
 	elements: Iterable<HTMLElement>,
 	admit: (element: Element, kind: "geometry" | "popup") => void,
@@ -100,7 +93,6 @@ export function measureOrigins(
 		const existing = retained?.get(element.parentElement);
 		const probe = existing ?? element.ownerDocument.createElement("span");
 		admit(probe, "geometry");
-		// Course stylesheets match the probe too; inline !important keeps them from skewing it.
 		probe.style.cssText =
 			"all:initial!important;position:fixed!important;left:0!important;top:0!important;width:100px!important;height:100px!important;zoom:1!important;visibility:hidden!important;pointer-events:none!important";
 		if (!probe.isConnected) element.before(probe);
@@ -114,16 +106,11 @@ export function measureOrigins(
 	for (const [parent, probe] of probes) origins.set(parent, probe.getBoundingClientRect());
 	for (const probe of probes.values()) {
 		if (probe.matches(":popover-open")) probe.hidePopover();
-		// Retain during native editing: removing any frame node ends Chromium's group.
 		if (!retained) probe.remove();
 	}
 	return origins;
 }
 
-/**
- * Preserve U3's containing-block conversion under ancestor transforms and CSS zoom.
- * A placement pass passes `measureOrigins` for all its elements at once.
- */
 export function positionFixed(
 	element: HTMLElement,
 	box: { left: number; top: number; width: number; height: number | "auto"; maxHeight?: number },
@@ -139,8 +126,6 @@ export function positionFixed(
 	const scaleX = origin.width / 100;
 	const scaleY = origin.height / 100;
 	if (scaleX <= 0 || scaleY <= 0) throw new Error("Invalid chrome containing block");
-	// Inline !important outranks every author stylesheet, so course CSS cannot move or
-	// resize chrome. anchorPopup's plain assignments reset these values and the flag.
 	const set = (property: string, value: string) => {
 		if (
 			element.style.getPropertyValue(property) !== value ||
@@ -148,15 +133,10 @@ export function positionFixed(
 		)
 			element.style.setProperty(property, value, "important");
 	};
-	// In the top layer no ancestor transform applies, so the only scale left is
-	// inherited CSS zoom. Undo it on the element itself: a zoomed handle would shrink
-	// its ring, glyph and hit extension even with a compensated box.
 	if (topLayer) set("zoom", `${1 / scaleX}`);
 	const [x, y] = topLayer ? [1, 1] : [scaleX, scaleY];
 	const left = (box.left - origin.left) / x;
 	set("direction", rtl ? "rtl" : "ltr");
-	// WebKit can ignore a new popover's insets under transformed ancestors.
-	// Start top-layer chrome at the viewport corner and translate to its measured box.
 	set(
 		"inset-inline-start",
 		rtl ? `calc(100% - ${(topLayer ? 0 : left) + box.width / x}px)` : `${topLayer ? 0 : left}px`,
@@ -172,11 +152,9 @@ export function positionFixed(
 	if (box.maxHeight !== undefined) set("max-height", `${box.maxHeight / y}px`);
 }
 
-// Paint-only animations do not need placement; keyframe names use CSSOM camel case.
 const geometryProperty =
 	/^(?:transform|translate|rotate|scale|zoom|offset(?:Path|Distance|Rotate|Anchor|Position)|(?:min|max)?(?:Width|Height)|width|height|(?:min|max)?(?:InlineSize|BlockSize)|inlineSize|blockSize|top|right|bottom|left|inset.*|margin.*|padding.*|border.*Width|boxSizing|display|position|float|clear|flex.*|grid.*|gap|rowGap|columnGap|columns|columnWidth|columnCount|columnSpan|align.*|justify.*|order|font(?!Palette$).*|lineHeight|letterSpacing|wordSpacing|textIndent|whiteSpace|writingMode|direction|overflow(?!Clip).*|contentVisibility)$/u;
 
-/** One read/write batch for scroll, resize and intrinsic course reflow. */
 export function observeGeometry(
 	doc: Document,
 	update: () => void,
@@ -238,8 +216,6 @@ export function observeGeometry(
 	return {
 		observe(elements: Iterable<Element>) {
 			const next = new Set(elements);
-			// Re-observing unchanged nodes delivers their initial sizes again on each
-			// focus render, scheduling a second full placement with no geometry change.
 			if (next.size === observed.size && [...next].every((element) => observed.has(element)))
 				return;
 			observed = next;
@@ -261,7 +237,6 @@ export function observeGeometry(
 	};
 }
 
-/** L3 uses the top layer; callers render a Back row when replaceParent is true. */
 export function anchorPopup(options: {
 	element: HTMLElement;
 	anchor: () => Box;
@@ -287,7 +262,6 @@ export function anchorPopup(options: {
 	};
 	let lastAnchor: Box | null = null;
 	function position() {
-		// Release the last clamp to measure intrinsic content on a viewport resize.
 		element.style.width = intrinsic.width;
 		element.style.height = intrinsic.height;
 		element.style.maxHeight = intrinsic.maxHeight;
@@ -309,7 +283,6 @@ export function anchorPopup(options: {
 		};
 		const initial = popupPlacement({ ...input, size });
 		positionFixed(element, { ...initial, height: size.height }, admit);
-		// A narrow panel may wrap differently after its width is constrained.
 		element.style.height = intrinsic.height;
 		element.style.maxHeight = intrinsic.maxHeight;
 		const placement = popupPlacement({ ...input, size: element.getBoundingClientRect() });
@@ -326,9 +299,6 @@ export function anchorPopup(options: {
 	const geometry = observeGeometry(doc, position);
 	geometry.observe([doc.body, element]);
 	position();
-	// Caret anchors have no element to observe. Transforms and sibling reflow
-	// can move an element without resizing it, so compare its viewport box while
-	// open and write geometry only when it moves.
 	let tracking: number;
 	function trackAnchor() {
 		const anchor = options.anchor();
@@ -352,12 +322,6 @@ export function anchorPopup(options: {
 		},
 	};
 }
-/**
- * Visibility through ancestors, shared by canvas entry and in-frame handles.
- * `visibility` inherits and a descendant may set it back to visible, so only the
- * element's own computed value counts; display, hidden, inert and aria-hidden on
- * any ancestor still remove it.
- */
 export function isEditorElementAvailable(element: HTMLElement): boolean {
 	const win = element.ownerDocument.defaultView;
 	if (!win || !element.isConnected) return false;

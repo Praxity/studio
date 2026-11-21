@@ -4,7 +4,6 @@ import type {
 } from "@praxity/grammar/src/operations/contract.ts";
 import type { AnnouncementContext, Message, Session } from "./types";
 
-/** Message files own every sentence, including optional clauses and plurals. */
 export function announcement(event: string, params: Record<string, string | number> = {}): Message {
 	const values = {
 		name: "",
@@ -53,7 +52,6 @@ export function announcement(event: string, params: Record<string, string | numb
 	};
 }
 
-/** Explicit registry-name coverage makes new operations require a speech decision. */
 export const operationEvents: Readonly<Record<string, string>> = {
 	editSource: "saved",
 	setProperty: "helperApplied",

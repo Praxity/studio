@@ -7,7 +7,6 @@ import type {
 } from "@praxity/shared-blocks/course-preview-protocol";
 import type { mountPageLens } from "./page-lens";
 
-/** Paint feedback only. Save state is the controller's durable result (see preview.ts). */
 export interface RenderFeedback {
 	nodes: Record<string, { state: "updating" } | { state: "failed"; message: string }>;
 	failure: PreviewCompileDiagnostic[] | null;
@@ -19,7 +18,6 @@ export interface DraftGesture {
 	nodeIds: string[];
 }
 
-/** Draft sequences belong to a subscription epoch, durable sequences to individual fragments. */
 export function createFramePatcher(options: {
 	document: Document;
 	pageId: string;
@@ -87,7 +85,6 @@ export function createFramePatcher(options: {
 			if (next <= epoch || disposed) return;
 			epoch = next;
 			draftSeq = -1;
-			// The resynced page replaces painted drafts, even at a revision already applied.
 			for (const draft of drafts.values())
 				if (draft.painted) for (const id of draft.nodeIds) revisions.delete(id);
 			drafts.clear();

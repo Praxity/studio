@@ -192,9 +192,6 @@ describe("checkCourseAccessibility", () => {
 		expect(altIssue?.severity).toBe("critical");
 	});
 
-	// The v3 parser emits alt text as `data.alt`; only the editor block shape uses
-	// `data.altText`. Reading one key and not the other silently reported every
-	// authored image as missing alt text, which the publish pre-flight then blocked on.
 	it("accepts alt text under the parser's `alt` key", () => {
 		const pages: PraxityPage[] = [
 			{
@@ -513,10 +510,6 @@ describe("checkCourseAccessibility", () => {
 		expect(issue).toBeDefined();
 		expect(issue?.severity).toBe("critical");
 	});
-
-	// ============================================================
-	// New rule tests
-	// ============================================================
 
 	describe("link-text-quality", () => {
 		it("flags generic link text in TipTap content", () => {
@@ -1335,7 +1328,6 @@ describe("checkCourseAccessibility", () => {
 				},
 			];
 
-			// H2 (heading block) → H2 inside tabs — no jump, should pass
 			const report = checkCourseAccessibility(pages);
 			const issue = report.issues.find((i) => i.rule === "heading-hierarchy");
 			expect(issue).toBeUndefined();
@@ -1375,7 +1367,6 @@ describe("checkCourseAccessibility", () => {
 				},
 			];
 
-			// H1 → H3 (skips H2) — should flag
 			const report = checkCourseAccessibility(pages);
 			const issue = report.issues.find((i) => i.rule === "heading-hierarchy");
 			expect(issue).toBeDefined();
@@ -1401,7 +1392,6 @@ describe("checkCourseAccessibility", () => {
 				},
 			];
 
-			// H1 → H3 via heading blocks — should flag
 			const report = checkCourseAccessibility(pages);
 			const issue = report.issues.find((i) => i.rule === "heading-hierarchy");
 			expect(issue).toBeDefined();
@@ -1438,7 +1428,6 @@ describe("checkCourseAccessibility", () => {
 				},
 			];
 
-			// H2 (heading block) → H4 in stem (skips H3) — should flag
 			const report = checkCourseAccessibility(pages);
 			const issue = report.issues.find((i) => i.rule === "heading-hierarchy");
 			expect(issue).toBeDefined();
@@ -1904,10 +1893,6 @@ describe("checkCourseAccessibility", () => {
 			expect(issue).toBeUndefined();
 		});
 	});
-
-	// ============================================================
-	// New rules (17 additional)
-	// ============================================================
 
 	describe("assessment-format-hint", () => {
 		it("flags text input with no placeholder or hint", () => {
@@ -2643,10 +2628,6 @@ describe("checkCourseAccessibility", () => {
 			expect(issue).toBeUndefined();
 		});
 	});
-
-	// ============================================================
-	// Phase 0: Grammar block type rules
-	// ============================================================
 
 	describe("data-table (grammar block)", () => {
 		it("flags data-table with no header row or column", () => {
@@ -3402,10 +3383,6 @@ describe("checkCourseAccessibility", () => {
 		});
 	});
 
-	// ============================================================
-	// Phase 1: Design System rules
-	// ============================================================
-
 	describe("design system rules", () => {
 		const minimalPage: PraxityPage[] = [
 			{
@@ -3420,7 +3397,7 @@ describe("checkCourseAccessibility", () => {
 				const ds: DesignSystemConfig = {
 					colors: {
 						background: "#ffffff",
-						text: "#999999", // ~2.8:1 contrast
+						text: "#999999",
 						accent: "#1e40af",
 						buttonBackground: "#1e40af",
 						buttonText: "#ffffff",
@@ -3440,8 +3417,8 @@ describe("checkCourseAccessibility", () => {
 						background: "#ffffff",
 						text: "#1a1a1a",
 						accent: "#1e40af",
-						buttonBackground: "#ffff00", // yellow
-						buttonText: "#ffffff", // white on yellow = bad contrast
+						buttonBackground: "#ffff00",
+						buttonText: "#ffffff",
 						success: "#16a34a",
 						error: "#dc2626",
 					},
@@ -3457,7 +3434,7 @@ describe("checkCourseAccessibility", () => {
 					colors: {
 						background: "#ffffff",
 						text: "#1a1a1a",
-						accent: "#cccccc", // very light gray on white = bad
+						accent: "#cccccc",
 						buttonBackground: "#1e40af",
 						buttonText: "#ffffff",
 						success: "#16a34a",
@@ -3545,10 +3522,6 @@ describe("checkCourseAccessibility", () => {
 			expect(report.issues.some((issue) => issue.blockId === "designSystem")).toBe(false);
 		});
 	});
-
-	// ============================================================
-	// Phase 2: Keyboard/Interaction rules
-	// ============================================================
 
 	describe("keyboard/interaction rules", () => {
 		describe("choice-option-count", () => {
@@ -3915,10 +3888,6 @@ describe("checkCourseAccessibility", () => {
 		});
 	});
 
-	// ============================================================
-	// Phase 3: Content Quality rules
-	// ============================================================
-
 	describe("content quality rules", () => {
 		describe("sentence-length-excessive", () => {
 			it("flags sentences with more than 30 words", () => {
@@ -4007,12 +3976,6 @@ describe("checkCourseAccessibility", () => {
 	});
 });
 
-/**
- * The renderer names a table from its title or its caption, whichever exists, and
- * falls back to a generic "Data table" only when neither does. The rule used to
- * fire on a missing caption alone, nagging authors who had already named the table
- * with a title.
- */
 describe("table naming", () => {
 	const tablePage = (data: Record<string, unknown>) => ({
 		id: "p1",

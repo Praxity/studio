@@ -42,9 +42,6 @@ export function AuditConfirmDialog({
 					<Button
 						color="red"
 						onClick={onConfirm}
-						// The destructive fill is `--status-error`, not the accent, so the
-						// label comes from the critical severity pair rather than the
-						// accent-text default applied to filled buttons.
 						style={{
 							background: "var(--severity-critical-badge-bg)",
 							color: "var(--severity-critical-badge-text)",

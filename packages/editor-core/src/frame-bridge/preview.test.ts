@@ -135,7 +135,6 @@ it("a preview refusal paints nothing and waits for the durable result", async ()
 	expect(frame.draft).not.toHaveBeenCalled();
 	expect(status.textContent).toBe("renderFeedback.saving");
 	preview.settle("a", true);
-	// Releases the frame's hold without claiming a refusal.
 	expect(frame.draft).toHaveBeenCalledWith(
 		{ pageId: "page", seq: 1, transactionId: "a", state: "saved", fragments: [] },
 		0,
@@ -208,7 +207,6 @@ it("a durable result that beats the preview response still releases the frame", 
 it("a reconnect resyncs the selected page and keeps a save in flight as Saving", async () => {
 	const { preview, frame, status, selectPage, announce } = fixture();
 	preview.resetDraftEpoch(1);
-	// Only the displayed frame selects a page.
 	expect(selectPage).not.toHaveBeenCalled();
 	preview.select();
 	expect(selectPage).toHaveBeenCalledTimes(1);

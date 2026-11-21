@@ -39,7 +39,6 @@ export interface AuditDocument {
 	title: string;
 	blocks: PraxityBlock[];
 	spans?: ReadonlyMap<string, BlockSpan>;
-	/** Bind source positions to their exact authoring snapshot without exposing source in issues. */
 	isCurrentSource?: (source: string) => boolean;
 	selfCheckSource?: SelfCheckAuditSource;
 }

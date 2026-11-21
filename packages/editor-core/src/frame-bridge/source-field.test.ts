@@ -611,7 +611,6 @@ it("suspend and data-only render deny field focus; resume preserves field withou
 	expect(field.disabled).toBe(true);
 	lens.render(view);
 	expect(lens.focus(target)).toBe(false);
-	// jsdom treats a tabindex as focusable even when disabled; browsers test native focus.
 	expect(document.activeElement).not.toBe(field);
 	events.mockClear();
 	field.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
@@ -801,7 +800,6 @@ it.each([false, true])(
 			event: "missing",
 			nodeIds: expect.arrayContaining([noteId]),
 		});
-		// A patcher-admitted replacement can restore geometry without replacing native text.
 		const replacement = decoy.cloneNode(true) as HTMLElement;
 		document.querySelector("main")?.append(replacement);
 		lens.admitFragment(noteId, replacement);

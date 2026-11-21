@@ -174,8 +174,6 @@ it("opaque inspection authenticates the current window, identity and one private
 		}),
 	);
 	expect(onEvent).toHaveBeenCalledOnce();
-	// Commands travel only on the admitted port. A "*" window message would reach any
-	// document the frame navigated to.
 	await vi.waitFor(() =>
 		expect(commands).toContainEqual(expect.objectContaining({ action: "render" })),
 	);
@@ -286,8 +284,6 @@ const view = (): FrameView => ({
 	focus: null,
 });
 const fixture = () => {
-	// jsdom has no layout. Give the DOM adapter rendered boxes; browser tests
-	// exercise the measured positions, including genuine zero-height boxes.
 	vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (
 		this: HTMLElement,
 	) {
@@ -368,14 +364,12 @@ it("F11 course stylesheets cannot restyle handles: an earlier per-mount layer an
 	const guard = document.head.firstElementChild;
 	const layer = guard?.textContent?.match(/^@layer (praxity-\w+) \{/u)?.[1];
 	expect(layer).toBeTruthy();
-	// Important declarations in the earliest layer outrank every later author layer.
 	expect(guard?.compareDocumentPosition(course)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
 	expect(guard?.textContent).not.toMatch(/var\(--(?:paper|edge|ink-2|accent|focus)/u);
 	expect(handle("text")?.style.getPropertyPriority("inset-block-start")).toBe("important");
 	expect(handle("text")?.style.getPropertyPriority("width")).toBe("important");
 	first.dispose();
 	expect(document.head.contains(guard)).toBe(false);
-	// A course cannot predict the next mount's layer name.
 	const second = mountPageLens({ document, view: view(), onEvent: vi.fn() });
 	disposers.push(second.dispose);
 	expect(document.head.firstElementChild?.textContent).not.toContain(`@layer ${layer} `);
@@ -489,7 +483,6 @@ it("RTL reserves the inline-start gutter and positions handles on the right", ()
 });
 
 it("WCAG 2.5.8 moves a handle beyond its line rather than overlap another handle", () => {
-	// fixture() lays the page, tabs, tab and paragraph on one box: three blocks share a line.
 	fixture();
 	const lens = mountPageLens({ document, view: view(), onEvent: vi.fn() });
 	disposers.push(lens.dispose);
@@ -525,9 +518,6 @@ it.each(["transform", "zoom"])(
 			"style",
 			kind === "zoom" ? "zoom:2" : "transform:translateY(8px)",
 		);
-		// jsdom cannot lay out a fixed containing block. Model its measured origin
-		// and scale; the browser scenarios verify genuine transform/zoom geometry.
-		// The page and tabs start above the panel, so their handles leave its line free.
 		vi.mocked(HTMLElement.prototype.getBoundingClientRect).mockImplementation(function (
 			this: HTMLElement,
 		) {
@@ -590,19 +580,15 @@ it("F1 F5 puts each tab's handle before its panel so Tab reaches every panel's c
 		Boolean(
 			handle(a)?.compareDocumentPosition(handle(b) as Node) & Node.DOCUMENT_POSITION_FOLLOWING,
 		);
-	// Sequential order: first tab, its panel's children, then the second tab.
 	expect(following("first", "text")).toBe(true);
 	expect(following("text", "second")).toBe(true);
 	expect(following("second", "other")).toBe(true);
 	expect(handle("second")?.nextElementSibling).toBe(document.getElementById("panel-second"));
-	// A tablist owns only tabs.
 	expect(document.querySelector('[role="tablist"] [data-praxity-chrome]')).toBeNull();
-	// Hidden panels keep their tab's handle reachable; its children stay hidden (F5).
 	expect(handle("second")?.hidden).toBe(false);
 	expect(handle("other")?.hidden).toBe(true);
 });
 
-// Markup as render-block-html emits it: later slides and conditional blocks start hidden.
 const revealFixture = () => {
 	fixture();
 	document.body.innerHTML = `<h1 class="praxity-page-title">Example</h1>
@@ -659,7 +645,6 @@ it("F1 keeps learner-only card controls inert while slides are laid open, restor
 	disposers.push(lens.dispose);
 	const controls = document.querySelector<HTMLElement>(".praxity-card-controls");
 	const flip = document.querySelector<HTMLElement>("[data-card-flip]");
-	// Laid open, the flip button is otherwise exposed; the controls always were.
 	expect(flip?.closest("[inert],[aria-hidden='true']")).toBe(flip);
 	expect(controls?.hasAttribute("inert")).toBe(true);
 	lens.dispose();
@@ -691,7 +676,6 @@ it("F1 F5 shows conditional blocks and their children, restoring them on disposa
 		expect(handle(id)?.hidden).toBe(false);
 		expect(lens.focus({ ...target, nodeId: id })).toBe(true);
 	}
-	// A patch that replaces the block with its hidden server form is laid open again.
 	block?.setAttribute("hidden", "");
 	lens.refresh();
 	expect(block?.hidden).toBe(false);
@@ -703,7 +687,6 @@ it("F1 measures a display:contents node, such as a matching pair, by its content
 	fixture();
 	const text = document.querySelector<HTMLElement>('p[data-node-id="text"]');
 	if (!text) throw new Error("Missing fixture text");
-	// Browsers give a display:contents element an empty box of its own.
 	text.style.display = "contents";
 	vi.mocked(HTMLElement.prototype.getBoundingClientRect).mockImplementation(function (
 		this: HTMLElement,
@@ -713,7 +696,6 @@ it("F1 measures a display:contents node, such as a matching pair, by its content
 			? new DOMRect(0, 0, 100, 100)
 			: new DOMRect(100, 100, 400, 100);
 	});
-	// jsdom has no Range layout; the browser spec measures real matching pairs.
 	const contents = vi.fn(() => new DOMRect(100, 100, 400, 40));
 	Object.defineProperty(Range.prototype, "getBoundingClientRect", {
 		configurable: true,
@@ -771,7 +753,6 @@ it("reserves a stable inspection gutter and restores the course padding on dispo
 
 it("F11 places handles inside a focusable learner container such as the main landmark", () => {
 	fixture();
-	// Compiled pages give main tabindex="-1" as the skip-link target; carousels are tabbable too.
 	document.body.innerHTML = `<main tabindex="-1">${document.body.innerHTML}</main>`;
 	vi.mocked(HTMLElement.prototype.getBoundingClientRect).mockImplementation(function (
 		this: HTMLElement,
@@ -960,7 +941,6 @@ it("F6 restores a source caret after its control is replaced", () => {
 	source.setSelectionRange(4, 8);
 	const replacement = source.cloneNode(true) as HTMLTextAreaElement;
 	source.replaceWith(replacement);
-	// Cloning trusted markup does not clone its admission.
 	expect(lens.focus({ ...target, role: "source", selection: [4, 8] })).toBe(false);
 	lens.registerControl(replacement, { ...target, role: "source" });
 	lens.refresh();
@@ -1003,7 +983,6 @@ it("inspection bridge refuses learner pages, window commands and wrong-channel o
 		action: "render",
 		view: view(),
 	};
-	// Window messages carry no command, even from the editor's exact origin and parent window.
 	window.dispatchEvent(
 		new MessageEvent("message", {
 			data: command,
@@ -1065,7 +1044,6 @@ it.each([
 		const command = { source: "praxity-editor", version: 1, ...identity };
 		port.postMessage({ ...command, action: "render", view: view() });
 		await vi.waitFor(() => expect(handle("text")).not.toBeNull());
-		// WebKit can refuse focus for multiple tasks before its next rendering opportunity.
 		const nativeFocus = HTMLElement.prototype.focus;
 		let acceptsFocus = false;
 		let entering = false;
@@ -1171,7 +1149,6 @@ it("inspection bridge drops a refused focus retry once a newer focus arrives", a
 	const command = { source: "praxity-editor", version: 1, ...identity };
 	port.postMessage({ ...command, action: "render", view: view() });
 	await vi.waitFor(() => expect(handle("tabs")).not.toBeNull());
-	// WebKit refuses the first focus; the host then asks for a different node.
 	vi.spyOn(HTMLElement.prototype, "focus").mockImplementationOnce(() => {});
 	port.postMessage({ ...command, action: "focus", requestId: 1, target });
 	port.postMessage({
@@ -1561,7 +1538,6 @@ it("07t native inspection input is suspended then resumes on its original port",
 	originalHandle?.focus();
 	await paintBarrier(2);
 	expect(events.filter(({ event }) => event === "focusChanged")).toEqual([]);
-	// Document work and its paint observation continue on the suspended port.
 	const resumeHeights = events.filter(({ event }) => event === "height").length;
 	expect(resumeHeights).toBeGreaterThan(heights);
 	port.postMessage({ ...command, action: "resume", presentationId: 1, view: view() });
@@ -1755,8 +1731,6 @@ function inspectionPort() {
 	return { command, render, paint, events };
 }
 
-// jsdom has no trusted keyboard source. Adapt native listener registration only;
-// the production trust check and dispatcher still run, alongside real MessagePorts.
 function admitTestKeys(win: Window) {
 	for (const input of [win, win.document]) {
 		const add = input.addEventListener.bind(input);
@@ -1793,7 +1767,7 @@ it.each(["suspend then swap", "swap then suspend"])(
 		let channel: string;
 		if (order === "suspend then swap") {
 			h.bridge.suspend();
-			h.frame.focus(); // A still-focused suspended frame must not regain authority.
+			h.frame.focus();
 			channel = h.bridge.prepareSwap();
 		} else {
 			channel = h.bridge.prepareSwap();
@@ -1825,7 +1799,7 @@ it("07t fix suspended inspection runs no focus command or retry", async () => {
 	const focus = vi.spyOn(HTMLElement.prototype, "focus");
 	const schedule = vi.spyOn(window, "requestAnimationFrame");
 	h.command({ action: "focus", target, requestId: 9 });
-	await h.render(); // Port order without scheduling a paint.
+	await h.render();
 	expect(focus).not.toHaveBeenCalled();
 	expect(schedule).not.toHaveBeenCalled();
 });
@@ -2256,7 +2230,6 @@ it("07t fix swap restoration receives a fresh token", async () => {
 it("07t fix pre-suspend semantic event cannot enter resumed presentation", async () => {
 	const h = reviewHost();
 	h.ready();
-	// A native focus command can queue this event before the host commits a hide/rebind.
 	h.emit({ event: "focusChanged", focus: target });
 	h.bridge.suspend();
 	resumePresentation(h.bridge, view());
@@ -2493,10 +2466,8 @@ it.each([false, true])("07e root inert across swap, hidden=%s", async (suspended
 it("07t round 2 a successor mounted while suspended consumes no editor keys", async () => {
 	admitTestKeys(window);
 	const h = inspectionPort();
-	// The host's ready handler sends suspend before the first render of a suspended bridge.
 	h.command({ action: "suspend" });
 	await h.render({ ...view(), escapeEnabled: true });
-	// Suspended reconciliation creates no handles, so the keys land on the document body.
 	expect(handle("text")).toBeNull();
 	for (const key of ["Escape", "F2", "Delete"]) {
 		const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
@@ -2558,7 +2529,6 @@ it("07t round 2 suspend releases focus after an already sent command", async () 
 	await vi.waitFor(() => expect(childHandle("tabs")).not.toBeNull());
 	const release = vi.spyOn(child.parent, "focus").mockImplementation(() => {});
 	vi.spyOn(child.document, "hasFocus").mockReturnValue(true);
-	// The controller asks for focus, then hides the view in the same task (fast switch or rebind).
 	const result = bridge.focus({ ...target, nodeId: "tabs" });
 	bridge.suspend();
 	bridge.nodes({ seq: 95, pageId: "page", fragments: [] });
@@ -2609,7 +2579,6 @@ it.each([false, true])(
 			12,
 			"backward",
 		]);
-		// A child retains activeElement when its outer document has focus elsewhere.
 		lens.focus(targetSource);
 		source.setSelectionRange(8, 12);
 		vi.mocked(document.hasFocus).mockReturnValue(false);
@@ -2638,7 +2607,6 @@ it("F10 settlement on the private port cannot reclaim focus moved after dispatch
 	h.command({ action: "focus", target: { ...target, nodeId: "tabs" }, requestId: 83 });
 	await h.render();
 	expect(document.activeElement).toBe(handle("tabs"));
-	// Cancellation never leaves a deferred attempt that could override the author.
 	await h.paint(82);
 	expect(document.activeElement).toBe(handle("tabs"));
 });

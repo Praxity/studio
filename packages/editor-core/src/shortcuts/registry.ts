@@ -70,8 +70,6 @@ export const EDITOR_SHORTCUT_REGISTRY: readonly EditorShortcut[] = [
 	{ context: "field", combo: "mod+Shift+Z", action: "redoSource" },
 ];
 
-// These contracts are implemented by the adapters' exhaustive handler records.
-// An action existing elsewhere does not make it executable in this context.
 export const EDITOR_CONTEXT_ACTIONS = {
 	outline: [
 		...navigation.map(([, action]) => action),
@@ -98,8 +96,6 @@ function normalizeCombo(combo: string): string {
 	].join("+");
 }
 
-// K2 applies in Electron too. The legacy desktop's application accelerators
-// remain separate until U20 retires that shell.
 export const BROWSER_RESERVED_SHORTCUTS = new Set([
 	"mod+d",
 	"mod+shift+d",
@@ -165,7 +161,6 @@ export function validateEditorShortcuts(
 	}
 	return errors;
 }
-/** U19 renders these exact entries; no separate documentation bindings. */
 export const editorShortcutRows = () => EDITOR_SHORTCUT_REGISTRY;
 type Key = Pick<KeyboardEvent, "key" | "ctrlKey" | "metaKey" | "altKey" | "shiftKey"> &
 	Partial<Pick<KeyboardEvent, "isComposing" | "keyCode">>;

@@ -1,13 +1,5 @@
 import type { ImagePerceptualMetadata } from "@praxity/grammar";
 
-/**
- * Analyze pixel data from a downsampled canvas to produce perceptual metadata.
- * Expects ImageData from a small canvas (64x64 recommended).
- *
- * @param imageData - ImageData from canvas.getImageData()
- * @param originalWidth - Original image width in pixels
- * @param originalHeight - Original image height in pixels
- */
 export function analyzeImageData(
 	imageData: ImageData,
 	originalWidth?: number,
@@ -26,12 +18,10 @@ export function analyzeImageData(
 		const g = data[i + 1] / 255;
 		const b = data[i + 2] / 255;
 
-		// BT.709 relative luminance
 		const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
 		lumSum += lum;
 		lumSqSum += lum * lum;
 
-		// HSL saturation
 		const max = Math.max(r, g, b);
 		const min = Math.min(r, g, b);
 		const l = (max + min) / 2;
@@ -39,7 +29,6 @@ export function analyzeImageData(
 		const sat = delta === 0 ? 0 : delta / (1 - Math.abs(2 * l - 1));
 		satSum += Math.min(sat, 1);
 
-		// Hue bucket (skip near-gray pixels)
 		if (delta > 0.05) {
 			let hue: number;
 			if (max === r) hue = ((g - b) / delta) % 6;
@@ -56,7 +45,6 @@ export function analyzeImageData(
 	const variance = lumSqSum / pixelCount - avgLum * avgLum;
 	const contrastRatio = Math.min(Math.sqrt(Math.max(0, variance)) / 0.5, 1);
 
-	// Detail density via Laplacian variance
 	const gray = new Float32Array(canvasW * canvasH);
 	for (let i = 0; i < gray.length; i++) {
 		const j = i * 4;
@@ -79,7 +67,6 @@ export function analyzeImageData(
 	const lapVariance = lapCount > 0 ? lapSqSum / lapCount - lapMean * lapMean : 0;
 	const detailDensity = 1 / (1 + Math.exp(-(lapVariance - 500) / 300));
 
-	// Dominant hue
 	let maxBucket = 0;
 	let dominantHue = 0;
 	for (let i = 0; i < 360; i++) {
@@ -101,10 +88,6 @@ export function analyzeImageData(
 	};
 }
 
-/**
- * Analyze an image from a canvas that already has the image drawn on it.
- * Use this when you already have a canvas from optimize-image.ts.
- */
 export function analyzeFromCanvas(
 	srcCanvas: HTMLCanvasElement,
 	originalWidth: number,

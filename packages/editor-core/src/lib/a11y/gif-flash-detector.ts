@@ -9,13 +9,8 @@ const MAX_SAMPLES = 65_536;
 const LUMINANCE_CHANGE = 0.1;
 const AREA_RATIO = 0.25;
 const FLASHES_PER_SECOND_LIMIT = 3;
-// Per-GIF live storage: four RGBA canvases, the largest decoded frame and
-// interlace scratch, parser estimate and fixed LZW tables. Frames decode serially.
 export const MAX_GIF_ANALYSIS_BYTES = 96 * 1024 * 1024;
 const GIF_FRAME_SCRATCH_BYTES = 64 * 1024;
-// The review measured 5.7 s for 26M frame pixels. This 200M work ceiling admits
-// ordinary recordings but bounds pathological files and loop replay (~44 s at
-// that measured rate). MAX_FRAMES also bounds tiny-frame metadata/sample work.
 const MAX_FRAME_WORK_PIXELS = 200_000_000;
 export type GifSkipReason = "too-large" | "too-many-frames" | "malformed";
 
@@ -104,16 +99,6 @@ function transitionDirections(
 	return changed / directions.length >= AREA_RATIO ? Int8Array.from(directions) : null;
 }
 
-/**
- * Conservative WCAG 2.3.1 warning heuristic, not a conformance measurement.
- * It composites GIF disposal frames and flags four general-luminance flashes in
- * any one-second window when opposing >=0.10 luminance changes overlap at least
- * 25% of sampled asset pixels. It does not implement the red-flash formula or
- * the rendered 10-degree visual-field area, and can miss background-dependent
- * transparency, sub-25%-of-asset flashes, and files above the safety caps.
- * Export blocks detected threshold exceedances as a precaution; this does not
- * establish conformance for animations the heuristic does not flag.
- */
 export function analyzeGifFlashes(bytes: Uint8Array): GifFlashAnalysis {
 	const skipped = (reason: GifSkipReason): GifFlashAnalysis => ({
 		exceedsThreshold: false,
@@ -121,7 +106,6 @@ export function analyzeGifFlashes(bytes: Uint8Array): GifFlashAnalysis {
 		analyzed: false,
 		skipped: reason,
 	});
-	// Bound parser storage as well, before copying or parsing the source.
 	if (bytes.byteLength * 32 > MAX_GIF_ANALYSIS_BYTES) return skipped("too-large");
 	try {
 		const buffer = bytes.buffer.slice(
@@ -223,7 +207,6 @@ export function analyzeGifFlashes(bytes: Uint8Array): GifFlashAnalysis {
 			Number.isFinite(cycleDuration) && cycleDuration > 0 && (loopCount === 0 || loopCount > 1)
 				? Math.min(loopCount || Infinity, 1 + Math.ceil(1000 / cycleDuration))
 				: 1;
-		// Cap source work before decoding, and count actual replay work below.
 		if (framePixels > MAX_FRAME_WORK_PIXELS) return skipped("too-many-frames");
 		if (imageFrames.length < 2) return { exceedsThreshold: false, flashCount: 0, analyzed: true };
 
@@ -282,7 +265,6 @@ export function analyzeGifFlashes(bytes: Uint8Array): GifFlashAnalysis {
 							if (opposing / directions.length >= AREA_RATIO) {
 								flashStarts.push(candidateStarted);
 								candidate = null;
-								// A complete flash must have both transitions inside the window.
 								if (
 									flashStarts.filter((start) => elapsed - start <= 1_000).length >
 									FLASHES_PER_SECOND_LIMIT
@@ -333,7 +315,6 @@ export async function findFlashingGifSources(
 	});
 
 	const flashing = new Set<string>();
-	// Serial reads/decode keep one GIF working set live; each GIF has its own budget.
 	for (const [path, rawSources] of sources) {
 		let analysis = cache.get(path);
 		if (!analysis) {

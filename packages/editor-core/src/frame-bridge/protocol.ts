@@ -21,7 +21,6 @@ export interface FrameNode {
 	name: string;
 	description: string;
 }
-/** Host projection of one admitted draft, never learner HTML or a DOM selector. */
 export interface FrameSource {
 	draftId: string;
 	nodeId: string;
@@ -41,7 +40,6 @@ export interface FrameView {
 	alwaysShowHandles: boolean;
 	platform?: "windows" | "mac";
 	escapeEnabled?: boolean;
-	/** A page view with no editor controls: learner Tab stops, clicks and hidden content stay as served. */
 	readOnly?: boolean;
 	nodes: FrameNode[];
 	selected: string[];
@@ -545,7 +543,6 @@ export function isFrameEvent(value: unknown, identity: FrameIdentity): value is 
 			return false;
 	}
 }
-/** The browser editor uses explicit HTTP origins. Opaque/file origins cannot authenticate this bridge. */
 export function checkedOrigin(origin: string): string {
 	const parsed = new URL(origin);
 	if (

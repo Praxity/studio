@@ -129,7 +129,6 @@ export function createSmartPunctuationExtension(enabled: boolean) {
 							const { state } = view;
 							const $from = state.doc.resolve(from);
 							const $to = state.doc.resolve(to);
-							// A selection across paragraphs belongs to the normal text-input path.
 							if (!$from.sameParent($to)) return false;
 							const lineStart = $from.start();
 							const lineText = $from.parent.textContent;
@@ -142,8 +141,6 @@ export function createSmartPunctuationExtension(enabled: boolean) {
 								return false;
 							}
 
-							// Only a match completed by this input may change. Loaded punctuation
-							// supplies quote context, but stays byte-for-byte intact.
 							const changes = smartPunctuationChanges(nextLineText).filter(
 								(change) =>
 									change.from < prefix.length &&
@@ -153,7 +150,6 @@ export function createSmartPunctuationExtension(enabled: boolean) {
 							if (!changes.length) return false;
 							const tr = state.tr.insertText(text, from, to);
 							let caret = lineStart + prefix.length;
-							// Apply from the end so each remaining change keeps its original offsets.
 							for (const change of changes.reverse()) {
 								tr.insertText(change.text, lineStart + change.from, lineStart + change.to);
 								caret += change.text.length - (change.to - change.from);

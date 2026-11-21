@@ -34,7 +34,6 @@ describe("reading palette contrast", () => {
 				);
 				expect(surfaces.length).toBeGreaterThanOrEqual(6);
 				for (const [surface, background] of surfaces) {
-					// Measure the resolved colour directly; a correcting helper could hide a regression.
 					expect(
 						contrastRatio(tokens[`${prefix}focus`], background),
 						`focus on ${surface}`,
@@ -52,7 +51,6 @@ describe("reading palette contrast", () => {
 			"light",
 		);
 		const contrast = ensureContrast(tokens[`${prefix}text`], tokens[`${prefix}callout-note-high`]);
-		// Published note copy is 17px/400; its project reading target is Lc90.
 		expect(Math.abs(contrast.apcaLc)).toBeGreaterThanOrEqual(90);
 	});
 	for (const palette of [
@@ -104,7 +102,6 @@ describe("reading palette contrast", () => {
 					for (const [surface, background] of surfaces) {
 						const result = ensureContrast(tokens[prefix + role], background);
 						expect(result.wcagRatio, `${role} on ${surface}: WCAG`).toBeGreaterThanOrEqual(4.5);
-						// Lc75 supports body >=18px/400 and non-body labels >=15px/400.
 						expect(Math.abs(result.apcaLc), `${role} on ${surface}: APCA`).toBeGreaterThanOrEqual(
 							75,
 						);

@@ -81,7 +81,6 @@ function metadata(
 const nonText = [wcag("1.1.1", "A")];
 const labels = [wcag("3.3.2", "A")];
 
-/** Reviewed metadata for every rule the source checker can emit. */
 export const RULE_METADATA = {
 	"choice-raw-html-footnote": metadata(
 		"assessmentInteraction",
@@ -241,7 +240,6 @@ export const RULE_METADATA = {
 	),
 	"ignored-font-setting": metadata("designSystem", "minor", "designSystem", "advisory", "high"),
 	"ignored-radius-setting": metadata("designSystem", "minor", "designSystem", "advisory", "high"),
-	// Image and media
 	"image-alt": metadata("imageMedia", "critical", "blockSettings", "conformance", "high", nonText, [
 		"Images explicitly marked decorative do not require alt text, including nested images.",
 	]),
@@ -412,7 +410,6 @@ export const RULE_METADATA = {
 		],
 	),
 
-	// Headings and structure
 	"page-title": metadata("headingsStructure", "recommended", "content", "conformance", "high", [
 		wcag("2.4.2", "A"),
 	]),
@@ -465,7 +462,6 @@ export const RULE_METADATA = {
 		],
 	),
 
-	// Links and navigation
 	"empty-link": metadata("linksNavigation", "critical", "content", "conformance", "high", [
 		wcag("2.4.4", "A"),
 		wcag("4.1.2", "A"),
@@ -528,7 +524,6 @@ export const RULE_METADATA = {
 		["Intentional terminal branches are valid when the learner can continue or return."],
 	),
 
-	// Assessment and interaction
 	"completion-gate-reason": metadata(
 		"linksNavigation",
 		"recommended",
@@ -730,7 +725,6 @@ export const RULE_METADATA = {
 		["Other visible or programmatic context may explain the scale."],
 	),
 
-	// Tables
 	"table-headers": metadata("tables", "recommended", "blockSettings", "conformance", "high", [
 		wcag("1.3.1", "A"),
 	]),
@@ -755,7 +749,6 @@ export const RULE_METADATA = {
 		],
 	),
 
-	// Content quality
 	"decorative-image-overuse": metadata(
 		"contentQuality",
 		"recommended",
@@ -795,7 +788,6 @@ export const RULE_METADATA = {
 		],
 	),
 
-	// Visual and semantic
 	"color-only-information": metadata(
 		"visualSemantic",
 		"recommended",
@@ -881,7 +873,6 @@ export const RULE_METADATA = {
 		["The item limit is cognitive-load guidance."],
 	),
 
-	// Design system
 	"theme-text-on-background-contrast": metadata(
 		"designSystem",
 		"critical",

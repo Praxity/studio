@@ -34,7 +34,6 @@ async function main() {
 	for (const [blockType, entry] of Object.entries(blocks)) {
 		const auditDate = entry.lastAuditDate;
 
-		// Validate date format to prevent argument injection via JSON values
 		if (!/^\d{4}-\d{2}-\d{2}$/.test(auditDate)) {
 			console.error(`  ⚠ Invalid audit date for ${blockType}: ${auditDate}`);
 			continue;
@@ -64,9 +63,7 @@ async function main() {
 					lastModified: lastCommit,
 				});
 			}
-		} catch {
-			// git command failed — skip
-		}
+		} catch {}
 	}
 
 	if (staleBlocks.length === 0) {

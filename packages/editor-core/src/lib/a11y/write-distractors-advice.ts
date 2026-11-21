@@ -12,7 +12,6 @@ const adviceCodes = new Set([
 	"practice-option-too-long",
 ]);
 
-/** Grammar owns quality checks and bounds. Check carries only their fixed copy and locations. */
 export function checkWriteDistractorsAccessibility(
 	pageId: string,
 	blocks: readonly PraxityBlock[],
@@ -37,13 +36,10 @@ export function checkWriteDistractorsAccessibility(
 				diagnostic.span.end > record.node.span.end
 			)
 				continue;
-			// Whitelist numeric bounds, never forward arbitrary diagnostic arguments or source.
 			const max = diagnostic.message.args.max;
 			const messageValues: Record<string, number> = typeof max === "number" ? { max } : {};
 			const message = writeDistractorsDiagnosticMessage(diagnostic.code, messageValues);
 			if (!message) throw new Error(`Missing diagnostic copy: ${diagnostic.code}`);
-			// Limits and duplicate labels remain publication-refusing grammar errors;
-			// only author-option equality is review advice.
 			issues.push({
 				rule: diagnostic.code,
 				grammarDiagnostic: diagnostic.code,

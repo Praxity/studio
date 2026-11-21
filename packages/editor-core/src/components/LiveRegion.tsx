@@ -59,8 +59,6 @@ export function LiveRegion({
 				() => {
 					if (isActive?.() === false) return;
 					setAnnounced({ ...metadata, message: entry.message, onDelivered: entry.onDelivered });
-					// Keep a queued result present before clearing for the next one.
-					// Each entry keeps its own language, urgency and focus delay.
 					timeoutRef.current = queue.current.length ? window.setTimeout(next, 150) : null;
 				},
 				Math.max(150, entry.delayMs ?? 150),
@@ -98,7 +96,6 @@ export function LiveRegion({
 }
 
 export type AnnouncementEffect = Extract<Effect, { type: "announce" }>;
-/** A1/A8: the new shell feeds only controller effects, through its interface translator. */
 export function SessionLiveRegion({
 	announcement,
 	translate,

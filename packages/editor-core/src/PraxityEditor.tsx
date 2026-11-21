@@ -33,42 +33,28 @@ const MESSAGE_MAP: Record<string, Record<string, unknown>> = {
 };
 
 export interface PraxityEditorProps {
-	/** Initial grammar source text (frontmatter + content). */
 	initialGrammar: string;
 
-	/** Feature flags. Defaults to all-off for desktop v1. */
-
-	/** UI locale. Defaults to "en". */
 	locale?: string;
 
-	/** Override i18n messages (e.g., for testing). */
 	messages?: Record<string, unknown>;
 
-	/** Called when grammar source changes. */
 	onGrammarChange?: (grammar: string) => void;
 
-	/** Optional controlled source for edits made outside the raw editor. */
 	externalGrammar?: string;
 
-	/** Called when cursor location changes (1-based line/column). */
 	onCursorChange?: (line: number, column: number) => void;
 
-	/** Called when parsed blocks update. */
 	onBlocksChange?: (blocks: PraxityBlock[]) => void;
 
-	/** Enable smart punctuation substitutions in the raw grammar editor. */
 	smartPunctuation?: boolean;
 
-	/** Enable focus mode dimming in the raw grammar editor. */
 	focusMode?: boolean;
 
-	/** Editor line length target in characters. Use 0 for unlimited width. */
 	lineLength?: 72 | 80 | 100 | 120 | 0;
 
-	/** Label for the instructor badge decoration. Defaults to "Instructor". */
 	instructorBadgeLabel?: string;
 
-	/** Show narration status markers beside narratable blocks. */
 	showNarrationControls?: boolean;
 	showNarrationLabel?: string;
 	narrationMarkers?: Record<number, NarrationMarker>;
@@ -91,10 +77,6 @@ export function PraxityEditor({
 	narrationMarkers,
 }: PraxityEditorProps) {
 	const editorRef = useRef<EditorScrollHandle>(null);
-	// Y.Doc is seeded once per mount.  `initialGrammar` is an *initial* value —
-	// we must NOT list it as a dependency, because the parent updates the prop on
-	// every keystroke (via onGrammarChange) and recreating the Y.Doc mid-session
-	// would wipe collaboration state and reset the editor.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: seed value only — used once on mount
 	const ydoc = useMemo(() => {
 		const doc = new Y.Doc();
@@ -189,8 +171,6 @@ export function PraxityEditor({
 	}, [cursorLocation, onCursorChange]);
 
 	useEffect(() => {
-		// The selector above is the effect trigger; read again here because the
-		// initial parse can update the store before mount effects finish.
 		void designVariants;
 		const store = useGrammarDocumentStore.getState();
 		const variants = store.designVariants;
@@ -214,7 +194,6 @@ export function PraxityEditor({
 			return;
 		}
 
-		// Recovery is for rendering; unrelated edits retain the author's saved numbers.
 		const design = {
 			...variants,
 			...Object.fromEntries(diagnostics.map(({ key, storedValue }) => [key, storedValue])),

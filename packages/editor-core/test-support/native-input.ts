@@ -1,6 +1,5 @@
 import { vi } from "vitest";
 
-/** jsdom seam only; browser specs prove genuine input admission. */
 export function nativeInput<T extends Document | ShadowRoot | HTMLElement>(doc: T): T {
 	const win = "defaultView" in doc ? doc.defaultView : null;
 	if (win) admit(win);

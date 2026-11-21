@@ -1,5 +1,3 @@
-// Shared types for audit panels (a11y, pedagogy, future panels)
-
 export interface GuidanceContent {
 	topic: string;
 	bullets: string[];
@@ -39,7 +37,6 @@ export interface AuditIssue {
 	pageId?: string;
 	documentId?: string;
 	documentTitle?: string;
-	/** Zero-based source line, independent of transient block IDs across lesson reads. */
 	sourceLine?: number;
 	isCurrentSource?: (source: string) => boolean;
 }
@@ -53,7 +50,6 @@ export interface NavigateToIssueRequest {
 	pageId?: string;
 	documentId?: string;
 	documentTitle?: string;
-	/** Zero-based source line, independent of transient block IDs across lesson reads. */
 	sourceLine?: number;
 	isCurrentSource?: (source: string) => boolean;
 }

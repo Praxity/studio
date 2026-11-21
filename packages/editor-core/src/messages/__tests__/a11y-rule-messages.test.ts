@@ -23,7 +23,6 @@ describe("accessibility rule messages", () => {
 		];
 
 		for (const [rule, message] of Object.entries(messages.a11yAudit.rules)) {
-			// Source diagnostic rules reuse the owning grammar catalogue, as Check does.
 			const description =
 				"description" in message
 					? message.description

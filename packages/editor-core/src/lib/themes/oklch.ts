@@ -105,7 +105,6 @@ export function srgbToWcagLuminance(hex: string): number | null {
 	return linearRgbLuminance(r, g, b);
 }
 
-// APCA-W3 intentionally uses simple 2.4 power-law linearization (not WCAG's IEC 61966-2-1 piecewise function).
 function srgbToApcaY(hex: string): number | null {
 	const rgb = hexToSrgb(hex);
 	if (!rgb) return null;

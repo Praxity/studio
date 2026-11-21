@@ -1,7 +1,3 @@
-/**
- * Screen reader announcement utility.
- * Creates/reuses a visually-hidden live region to announce messages.
- */
 export function announceToScreenReader(message: string) {
 	const id = "praxity-editor-live-region";
 	let el = document.getElementById(id);
@@ -24,7 +20,6 @@ export function announceToScreenReader(message: string) {
 		});
 		document.body.appendChild(el);
 	}
-	// Clear and re-set to trigger announcement even with same text
 	el.textContent = "";
 	requestAnimationFrame(() => {
 		el.textContent = message;

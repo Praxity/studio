@@ -32,7 +32,6 @@ export function toStableDesignJson(
 	variants: DesignVariants,
 	diagnostics: readonly DesignNumberDiagnostic[] = [],
 ): string {
-	// Raw rejected values may contain YAML alias cycles. Only recovery state belongs in this key.
 	return JSON.stringify([
 		sortObjectKeysDeep(variants),
 		diagnostics.map(({ key, value, reason }) => [key, value, reason]),

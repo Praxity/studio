@@ -181,7 +181,6 @@ function buildDesktopDecorations(
 			}
 		}
 
-		// Reader spans place badges on real page boundaries, excluding fenced examples.
 		const isPageBreak = pageNumbers.has(index);
 		const pageNumForWidget = pageNumbers.get(index) ?? 0;
 		const gutterInfo = isPageBreak

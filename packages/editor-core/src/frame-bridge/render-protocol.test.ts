@@ -120,7 +120,6 @@ it("admits feedback only with exact states and diagnostics", () => {
 	};
 	expect(isFrameEvent(message, identity)).toBe(true);
 	for (const feedback of [
-		// Save state is the controller's; a frame cannot report it.
 		{ ...message.feedback, save: "saved" },
 		{ ...message.feedback, nodes: { one: { state: "failed" } } },
 		{ ...message.feedback, failure: [{ message: false }] },

@@ -1,11 +1,6 @@
 import { Extension } from "@tiptap/core";
 import { TextSelection } from "@tiptap/pm/state";
 
-/**
- * On macOS, Cmd+Up/Down should move the cursor to the start/end of the document.
- * Without this extension, the native scroll-to-top/bottom behavior fires instead
- * because no ProseMirror keymap handler claims the shortcut.
- */
 export const MacCursorNavExtension = Extension.create({
 	name: "macCursorNav",
 

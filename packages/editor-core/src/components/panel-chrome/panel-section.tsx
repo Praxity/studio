@@ -5,7 +5,6 @@ interface PanelSectionProps {
 	title: string;
 	description?: string;
 	action?: ReactNode;
-	/** Set true for the first section in an accordion to hide the divider */
 	first?: boolean;
 	children: ReactNode;
 }

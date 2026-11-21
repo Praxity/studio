@@ -72,7 +72,6 @@
 	border: 0;
 }
 
-/* A row label names an action; stacked labels identify a field value below. */
 .rootRow .label {
 	font-size: var(--panel-value-size);
 	font-weight: 600;

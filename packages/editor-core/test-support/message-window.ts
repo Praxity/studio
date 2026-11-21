@@ -1,6 +1,3 @@
-/** DOM seam for protocol tests: jsdom cannot deliver cross-origin native messages.
- * Browser specs exercise native isTrusted, origin, source and port transfers.
- */
 export function nativeMessageWindow(win: Window): Window {
 	const listeners = new Map<EventListenerOrEventListenerObject, EventListener>();
 	return new Proxy(win, {

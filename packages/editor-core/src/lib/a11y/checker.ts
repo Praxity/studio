@@ -1,5 +1,6 @@
 import { isInlineProjectionMetadataKey } from "@praxity/shared-blocks/inline-markdown";
 import type { GifSkipReason } from "./gif-flash-detector";
+
 /**
  * Accessibility checker for Praxity courses.
  *
@@ -28,7 +29,6 @@ export interface A11yIssue {
 	outcome: A11yOutcome;
 	message: string;
 	messageValues?: Record<string, string | number>;
-	/** Reuse the editor grammar catalogue for source diagnostics. */
 	grammarDiagnostic?: string;
 	blockId?: string;
 	pageId?: string;
@@ -59,7 +59,6 @@ function addIssue(
 	});
 }
 
-/** Resolved theme colors for design system a11y checks. */
 export interface DesignSystemColors {
 	background: string;
 	text: string;
@@ -71,14 +70,13 @@ export interface DesignSystemColors {
 	warning: string;
 }
 
-/** Design system properties relevant to a11y checks. */
 export interface DesignSystemConfig {
 	typography?: unknown;
 	borderRadius?: unknown;
 	colors?: DesignSystemColors;
 	lineHeight?: number;
-	baseFontSize?: number; // in px
-	contentMaxWidth?: number; // in px
+	baseFontSize?: number;
+	contentMaxWidth?: number;
 }
 
 export interface A11yMediaAnalysis {
@@ -86,26 +84,16 @@ export interface A11yMediaAnalysis {
 	uncheckedGifSources?: ReadonlyMap<string, GifSkipReason>;
 }
 
-// Generic link text patterns (case-insensitive)
 const BAD_LINK_TEXT_RE =
 	/^(click here|here|read more|learn more|more|link|this|go|see more|download|open)$/i;
-// Bare URL used as link text
 const URL_AS_LINK_TEXT_RE = /^https?:\/\//i;
 
-// Alt text that's just a filename
 const FILENAME_ALT_RE = /^[\w-]+\.(jpe?g|png|gif|svg|webp|avif|bmp|tiff?)$/i;
 
-// Recommended maximum heading length for scannability
 const MAX_HEADING_LENGTH = 120;
 
-// Container types whose `items[].children` hold nested blocks
 export const CONTAINER_TYPES = new Set(["tabs", "accordion", "columns", "sequence"]);
 
-/**
- * Recursively collect all blocks from a page, including children nested
- * inside container blocks and assessment stem/feedback blocks.
- * Returns blocks in document order (depth-first).
- */
 export function collectAllBlocksDeep(blocks: PraxityBlock[]): PraxityBlock[] {
 	const result: PraxityBlock[] = [];
 
@@ -113,7 +101,6 @@ export function collectAllBlocksDeep(blocks: PraxityBlock[]): PraxityBlock[] {
 		result.push(block);
 		const data = block.data as Record<string, unknown>;
 
-		// Container blocks: tabs, accordion, columns, sequence
 		if (CONTAINER_TYPES.has(block.type as string)) {
 			const items = data.items as { children?: PraxityBlock[] }[] | undefined;
 			if (items) {
@@ -124,7 +111,6 @@ export function collectAllBlocksDeep(blocks: PraxityBlock[]): PraxityBlock[] {
 				}
 			}
 		}
-		// Card container: items[].front/back contain nested blocks (not items[].children)
 		if ((block.type as string) === "card") {
 			const items = data.items as
 				| {
@@ -144,7 +130,6 @@ export function collectAllBlocksDeep(blocks: PraxityBlock[]): PraxityBlock[] {
 			}
 		}
 
-		// Assessment blocks: stem + feedback contain nested blocks
 		const stem = data.stem as PraxityBlock[] | undefined;
 		if (Array.isArray(stem)) {
 			result.push(...collectAllBlocksDeep(stem));
@@ -165,10 +150,6 @@ export function collectAllBlocksDeep(blocks: PraxityBlock[]): PraxityBlock[] {
 
 	return result;
 }
-
-// ============================================================
-// Structural checks (run on Praxity JSON, no rendering)
-// ============================================================
 
 export function checkLessonTitleAccessibility(
 	frontmatter: Record<string, unknown>,
@@ -214,7 +195,6 @@ export function checkCourseAccessibility(
 					authorSource,
 				),
 			);
-		// Check page has a title
 		if (!page.title || page.title.trim() === "") {
 			addIssue(issues, {
 				severity: "serious",
@@ -227,7 +207,6 @@ export function checkCourseAccessibility(
 
 		for (const block of page.blocks) {
 			checkBlockAccessibility(block, page.id, issues, mediaAnalysis);
-			// Nested images and forward gates use the same rules as top-level blocks.
 			for (const child of collectAllBlocksDeep([block]).slice(1)) {
 				if (child.type === "image" || child.type === "logic") {
 					checkBlockAccessibility(child, page.id, issues, mediaAnalysis);
@@ -235,7 +214,6 @@ export function checkCourseAccessibility(
 			}
 		}
 
-		// Page-level checks
 		checkHeadingHierarchy(page, issues);
 		checkHeadingLength(page, issues);
 		checkDuplicateHeadings(page, issues);
@@ -250,7 +228,6 @@ export function checkCourseAccessibility(
 		checkImageClusterWithoutContext(page, issues);
 	}
 
-	// Check there are no empty pages
 	const emptyPages = pages.filter((p) => p.blocks.length === 0);
 	for (const ep of emptyPages) {
 		addIssue(issues, {
@@ -262,7 +239,6 @@ export function checkCourseAccessibility(
 		});
 	}
 
-	// Course-wide checks
 	checkDecorativeImageOveruse(pages, issues);
 	checkGlossaryCompleteness(pages, issues);
 
@@ -387,10 +363,8 @@ function checkBlockAccessibility(
 		);
 	}
 
-	// Check for link text quality in any block with TipTap HTML content
 	checkLinkTextInHtml(data.content, block.id, pageId, "data.content", issues);
 
-	// Also check stem content in assessment blocks
 	const stem = data.stem as PraxityBlock[] | undefined;
 	if (stem) {
 		for (const [index, stemBlock] of stem.entries()) {
@@ -405,8 +379,6 @@ function checkBlockAccessibility(
 		}
 	}
 
-	// Cast to string — legacy block types (mcq, narrative, etc.) may still
-	// exist in persisted course data even though they're removed from BlockType.
 	switch (block.type as string) {
 		case "logic": {
 			const actions = Array.isArray(data.actions) ? data.actions : [];
@@ -441,7 +413,6 @@ function checkBlockAccessibility(
 				});
 			}
 
-			// Check alt text quality
 			if (altText && /^(image|photo|picture|img|graphic|icon)$/i.test(altText.trim())) {
 				addIssue(issues, {
 					severity: "moderate",
@@ -452,7 +423,6 @@ function checkBlockAccessibility(
 				});
 			}
 
-			// Check alt text is a filename
 			if (altText && FILENAME_ALT_RE.test(altText.trim())) {
 				addIssue(issues, {
 					severity: "moderate",
@@ -463,7 +433,6 @@ function checkBlockAccessibility(
 				});
 			}
 
-			// Check alt text length
 			if (altText && altText.trim().length > 125) {
 				addIssue(issues, {
 					severity: "minor",
@@ -475,7 +444,6 @@ function checkBlockAccessibility(
 				});
 			}
 
-			// images-of-text: very long alt text on non-decorative image suggests image of text
 			if (altText && !decorative && altText.trim().length > 200) {
 				addIssue(
 					issues,
@@ -520,7 +488,6 @@ function checkBlockAccessibility(
 			break;
 		}
 
-		// Grammar `comparison` — opaque JSON; port imageComparison alt checks
 		case "comparison": {
 			const beforeImage = data.beforeImage as Record<string, unknown> | undefined;
 			const afterImage = data.afterImage as Record<string, unknown> | undefined;
@@ -544,7 +511,6 @@ function checkBlockAccessibility(
 					sourceLocation: "data.afterImage.altText",
 				});
 			}
-			// Also check generic images array (some comparison styles use it)
 			const compImages = data.images as Record<string, unknown>[] | undefined;
 			if (compImages) {
 				for (const [index, img] of compImages.entries()) {
@@ -577,7 +543,6 @@ function checkBlockAccessibility(
 			break;
 		}
 
-		// Grammar `hotspot` — opaque JSON; port hotgraphic/labeledGraphic alt checks
 		case "hotspot": {
 			const hsImageAlt = readAltText({ alt: data.imageAlt ?? data.backgroundImageAlt });
 			const hsImageSrc = (data.image ?? data.backgroundImage ?? data.src) as string | undefined;
@@ -592,7 +557,6 @@ function checkBlockAccessibility(
 					help: "https://www.w3.org/WAI/tutorials/images/decision-tree/",
 				});
 			}
-			// Check region/pin labels
 			const hsRegions = (data.regions ?? data.items ?? data.pins) as
 				| { label?: string; title?: string }[]
 				| undefined;
@@ -607,7 +571,6 @@ function checkBlockAccessibility(
 						pageId,
 					});
 				}
-				// Phase 2: too many hotspot regions
 				if (hsRegions.length > 12) {
 					addIssue(issues, {
 						severity: "moderate",
@@ -636,7 +599,6 @@ function checkBlockAccessibility(
 				});
 			}
 
-			// Advisory: audio description tracks for prerecorded video (WCAG 1.2.5)
 			if (block.type === "video") {
 				const captionTracks = Array.isArray(data.captionTracks) ? data.captionTracks : [];
 				const hasAudioDescription = captionTracks.some(
@@ -660,7 +622,6 @@ function checkBlockAccessibility(
 					);
 				}
 
-				// video-captions: video missing synchronized captions (distinct from transcript)
 				const hasTimedCaptions =
 					captionTracks.some(
 						(t) =>
@@ -694,7 +655,6 @@ function checkBlockAccessibility(
 				}
 			}
 
-			// audio-transcript-quality: transcript exists but is likely placeholder
 			if (block.type === "audio" && transcript && stripHtmlTags(transcript).trim().length < 50) {
 				addIssue(issues, {
 					severity: "moderate",
@@ -707,7 +667,6 @@ function checkBlockAccessibility(
 				});
 			}
 
-			// video-audio-autoplay: autoplay disrupts screen reader users
 			if (data.autoplay === true) {
 				addIssue(issues, {
 					severity: "serious",
@@ -828,7 +787,6 @@ function checkBlockAccessibility(
 			break;
 		}
 
-		// Grammar `rate` — opaque JSON; port slider-question check
 		case "rate": {
 			const rateQuestion = (data.question ?? data.prompt ?? data.label) as string | undefined;
 			if (!rateQuestion || rateQuestion.trim() === "") {
@@ -841,7 +799,6 @@ function checkBlockAccessibility(
 					pageId,
 				});
 			}
-			// Phase 2: missing endpoint labels
 			const rateLowLabel = (data.lowLabel ?? data.minLabel) as string | undefined;
 			const rateHighLabel = (data.highLabel ?? data.maxLabel) as string | undefined;
 			if (!rateLowLabel?.trim() || !rateHighLabel?.trim()) {
@@ -881,7 +838,6 @@ function checkBlockAccessibility(
 				});
 			}
 
-			// assessment-format-hint: no placeholder or hint for expected answer format
 			const placeholder = data.placeholder as string | undefined;
 			const hint = data.hint as string | undefined;
 			if ((!placeholder || placeholder.trim() === "") && (!hint || hint.trim() === "")) {
@@ -943,7 +899,6 @@ function checkBlockAccessibility(
 		}
 
 		case "assessment": {
-			// Legacy editor assessment: hotspot image alt
 			const response = data.response as
 				| { type?: string; image?: string; imageAlt?: string }
 				| undefined;
@@ -964,12 +919,10 @@ function checkBlockAccessibility(
 				}
 			}
 
-			// Grammar assessment types: single, multi, matching, sequence, freeText
 			const assessmentType = data.assessmentType as string | undefined;
 			const asmtQuestion = data.question as string | undefined;
 
 			if (assessmentType) {
-				// Empty question stem
 				if (!asmtQuestion || asmtQuestion.trim() === "") {
 					addIssue(issues, {
 						severity: "serious",
@@ -993,7 +946,6 @@ function checkBlockAccessibility(
 							pageId,
 						});
 					}
-					// Phase 2: too many options
 					if (options && options.length > 10) {
 						addIssue(issues, {
 							severity: "moderate",
@@ -1003,7 +955,6 @@ function checkBlockAccessibility(
 							pageId,
 						});
 					}
-					// Phase 2: image-only options without text labels
 					if (options?.some((o) => o.imageSrc)) {
 						const imageOnlyOptions = options.filter(
 							(o) => o.imageSrc && (!o.text || o.text.trim() === ""),
@@ -1031,7 +982,6 @@ function checkBlockAccessibility(
 							pageId,
 						});
 					}
-					// Phase 2: too many pairs
 					if (pairs && pairs.length > 8) {
 						addIssue(issues, {
 							severity: "moderate",
@@ -1078,7 +1028,6 @@ function checkBlockAccessibility(
 					checkScoredOpenFillBlank(data, block.id, pageId, issues, hasBlanks);
 				}
 
-				// Phase 2: drag variant keyboard alt — matching/sequence/fill-blank using drag
 				if (
 					(assessmentType === "matching" || assessmentType === "sequence") &&
 					data.variant === "drag"
@@ -1152,7 +1101,7 @@ function checkBlockAccessibility(
 
 		case "document": {
 			const docUrl = data.url as string;
-			if (!docUrl) break; // unconfigured block — no link rendered
+			if (!docUrl) break;
 			const title = data.title as string;
 			if (!title || title.trim() === "") {
 				addIssue(issues, {
@@ -1194,9 +1143,6 @@ function checkBlockAccessibility(
 				});
 			}
 
-			// Either one names the table — the renderer points `aria-labelledby` at
-			// whichever exists. Firing on a missing caption when the author wrote a
-			// title nagged them for work already done.
 			const title = data.title as string | undefined;
 			const hasName = Boolean(title?.trim()) || Boolean(caption?.trim());
 
@@ -1212,7 +1158,6 @@ function checkBlockAccessibility(
 				});
 			}
 
-			// empty-table-cells: check header row for empty cells
 			const headers = data.headers as string[] | undefined;
 			if (headers) {
 				const emptyHeaders = headers.filter((h) => !h || h.trim() === "");
@@ -1229,7 +1174,6 @@ function checkBlockAccessibility(
 				}
 			}
 
-			// empty-table-cells: check if >50% of all cells are empty (layout table abuse)
 			const tableRows = data.rows as string[][] | undefined;
 			if (tableRows && tableRows.length > 0) {
 				let totalCells = 0;
@@ -1255,7 +1199,6 @@ function checkBlockAccessibility(
 			break;
 		}
 
-		// Grammar `data-table` — opaque JSON; same a11y rules as legacy `table`
 		case "data-table": {
 			const highlightHeaderRow = data.highlightHeaderRow as boolean | undefined;
 			const highlightHeaderCol = data.highlightHeaderCol as boolean | undefined;
@@ -1285,7 +1228,6 @@ function checkBlockAccessibility(
 				});
 			}
 
-			// empty-table-cells: check header row for empty cells
 			const dtHeaders = data.headers as string[] | undefined;
 			if (dtHeaders) {
 				const emptyHeaders = dtHeaders.filter((h) => !h || h.trim() === "");
@@ -1303,7 +1245,6 @@ function checkBlockAccessibility(
 				}
 			}
 
-			// empty-table-cells: check if >50% of all cells are empty (layout table abuse)
 			const dtRows = data.rows as string[][] | undefined;
 			if (dtRows && dtRows.length > 0) {
 				let totalCells = 0;
@@ -1460,7 +1401,6 @@ function checkBlockAccessibility(
 			break;
 		}
 
-		// Grammar `sequence` — custom-parsed; single-item and too-many checks
 		case "sequence": {
 			const seqItems = data.items as { label?: string; children?: PraxityBlock[] }[] | undefined;
 			if (seqItems && seqItems.length === 1) {
@@ -1482,7 +1422,6 @@ function checkBlockAccessibility(
 					pageId,
 				});
 			}
-			// Phase 2: auto-advance without pause control
 			const autoAdvance = data.autoAdvance as boolean | undefined;
 			const pauseControl = data.pauseControl as boolean | undefined;
 			if (autoAdvance === true && pauseControl !== true) {
@@ -1499,13 +1438,11 @@ function checkBlockAccessibility(
 			break;
 		}
 
-		// Grammar `fill-blank` — opaque JSON; check for blanks and instructions
 		case "fill-blank": {
 			const fbContent = data.content as string | undefined;
 			const fbBlanks = data.blanks as unknown[] | undefined;
 			const fbSentence = data.sentence as string | undefined;
 
-			// Check for blanks — either a blanks array or blank markers in content
 			const hasBlanks =
 				(fbBlanks && fbBlanks.length > 0) ||
 				(fbContent && /_{4,}|\{[^{}]+\}|\[blank\]/i.test(fbContent)) ||
@@ -1522,7 +1459,6 @@ function checkBlockAccessibility(
 			}
 			checkScoredOpenFillBlank(data, block.id, pageId, issues, Boolean(hasBlanks));
 
-			// Check for instructions/context
 			const fbInstructions = (data.instructions ?? data.prompt ?? data.question) as
 				| string
 				| undefined;
@@ -1536,7 +1472,6 @@ function checkBlockAccessibility(
 					pageId,
 				});
 			}
-			// Phase 2: drag variant keyboard alt
 			const fbStyle = data.style as string | undefined;
 			if (fbStyle === "word-bank-drag") {
 				addIssue(
@@ -1557,13 +1492,11 @@ function checkBlockAccessibility(
 			break;
 		}
 
-		// Grammar `branch` — opaque JSON; check option labels and dead ends
 		case "branch": {
 			const brOptions = (data.options ?? data.choices ?? data.paths) as
 				| { label?: string; text?: string; target?: string; next?: string }[]
 				| undefined;
 			if (brOptions) {
-				// Check for generic option labels
 				const genericLabelRe = /^(option|choice)\s*[a-z0-9]*$/i;
 				const genericOptions = brOptions.filter(
 					(o) =>
@@ -1580,7 +1513,6 @@ function checkBlockAccessibility(
 					});
 				}
 
-				// Check for dead ends (options with no target/next)
 				const deadEnds = brOptions.filter((o) => !o.target?.trim() && !o.next?.trim());
 				if (deadEnds.length > 0 && deadEnds.length < brOptions.length) {
 					addIssue(issues, {
@@ -1595,18 +1527,11 @@ function checkBlockAccessibility(
 			break;
 		}
 
-		// Grammar `quote` — custom-parsed; minimal checks
 		case "quote": {
-			// quote blocks are passive content, no special a11y rules needed beyond
-			// link-text checks already handled above
 			break;
 		}
 	}
 }
-
-// ============================================================
-// Link text quality in TipTap HTML
-// ============================================================
 
 function checkLinkTextInHtml(
 	html: unknown,
@@ -1615,10 +1540,8 @@ function checkLinkTextInHtml(
 	field: string,
 	issues: A11yIssue[],
 ): void {
-	// Not every block's content is HTML: a self-check's is its structured prompt.
 	if (typeof html !== "string" || !html) return;
 
-	// Match <a ...>text</a> — extract link text
 	const linkMatches = html.matchAll(/<a\b[^>]*>(.*?)<\/a>/gi);
 	for (const match of linkMatches) {
 		const linkText = stripHtmlTags(match[1]).trim();
@@ -1667,10 +1590,6 @@ function stripHtmlTags(html: string): string {
 	return html.replace(/<[^>]*>/g, "");
 }
 
-// ============================================================
-// Page-level checks
-// ============================================================
-
 function checkHeadingHierarchy(page: PraxityPage, issues: A11yIssue[]): void {
 	const allBlocks = collectAllBlocksDeep(page.blocks);
 	const levels: { level: number; blockId: string; sourceLocation: string }[] = [];
@@ -1678,15 +1597,11 @@ function checkHeadingHierarchy(page: PraxityPage, issues: A11yIssue[]): void {
 	for (const block of allBlocks) {
 		const data = block.data as Record<string, unknown>;
 
-		// Heading blocks have an explicit level property
 		if ((block.type as string) === "heading") {
 			const level = (data.level as number) ?? 2;
 			levels.push({ level, blockId: block.id, sourceLocation: "data.level" });
 		}
 
-		// An assessment renders its question stem as a heading, and an accordion
-		// renders each section control as one. Neither is a `heading` block, so a
-		// course could skip a level through them and nothing here would notice.
 		if ((block.type as string) === "assessment" && data.stemLevel !== undefined) {
 			levels.push({
 				level: Number(data.stemLevel) || 3,
@@ -1705,7 +1620,6 @@ function checkHeadingHierarchy(page: PraxityPage, issues: A11yIssue[]): void {
 			}
 		}
 
-		// Text blocks may contain inline <h1>–<h6> tags
 		if (block.type === "text") {
 			const content = (data.content as string) ?? "";
 			const matches = content.matchAll(/<h(\d)/gi);
@@ -1734,7 +1648,6 @@ function checkHeadingHierarchy(page: PraxityPage, issues: A11yIssue[]): void {
 	}
 }
 
-/** Flag headings that exceed the recommended character limit */
 function checkHeadingLength(page: PraxityPage, issues: A11yIssue[]): void {
 	const allBlocks = collectAllBlocksDeep(page.blocks);
 
@@ -1776,23 +1689,20 @@ function checkHeadingLength(page: PraxityPage, issues: A11yIssue[]): void {
 	}
 }
 
-/** Flag multiple identical heading texts on the same page */
 function checkDuplicateHeadings(page: PraxityPage, issues: A11yIssue[]): void {
-	const headingTexts = new Map<string, string>(); // normalized text → first blockId
+	const headingTexts = new Map<string, string>();
 	const allBlocks = collectAllBlocksDeep(page.blocks);
 
 	for (const block of allBlocks) {
 		const data = block.data as Record<string, unknown>;
 		const texts: Array<{ text: string; sourceLocation: string }> = [];
 
-		// Heading blocks
 		if ((block.type as string) === "heading") {
 			const content = (data.content as string) ?? "";
 			const text = stripHtmlTags(content).trim();
 			if (text) texts.push({ text, sourceLocation: "data.content" });
 		}
 
-		// Text blocks with inline headings
 		if (block.type === "text") {
 			const content = (data.content as string) ?? "";
 			const matches = content.matchAll(/<h[1-6][^>]*>(.*?)<\/h[1-6]>/gi);
@@ -1826,19 +1736,12 @@ function checkDuplicateHeadings(page: PraxityPage, issues: A11yIssue[]): void {
 	}
 }
 
-/**
- * Flag two consecutive headings with no body content between them.
- * Intentionally walks only top-level blocks (not deep) — containers like
- * tabs/accordion provide semantic separation, so headings inside them
- * are in a different visual context.
- */
 function checkConsecutiveHeadings(page: PraxityPage, issues: A11yIssue[]): void {
 	let lastBlockWasHeadingOnly = false;
 
 	for (const block of page.blocks) {
 		const data = block.data as Record<string, unknown>;
 
-		// Heading blocks are always heading-only (they contain nothing else)
 		if ((block.type as string) === "heading") {
 			if (lastBlockWasHeadingOnly) {
 				addIssue(issues, {
@@ -1876,14 +1779,12 @@ function checkConsecutiveHeadings(page: PraxityPage, issues: A11yIssue[]): void 
 			continue;
 		}
 
-		// Any other block type breaks the heading streak
 		lastBlockWasHeadingOnly = false;
 	}
 }
 
-/** Flag pages where multiple images share identical alt text */
 function checkRepeatedAltText(page: PraxityPage, issues: A11yIssue[]): void {
-	const altTexts = new Map<string, string>(); // normalized alt → first blockId
+	const altTexts = new Map<string, string>();
 
 	for (const block of page.blocks) {
 		if (block.type !== "image") continue;
@@ -1910,19 +1811,16 @@ function checkRepeatedAltText(page: PraxityPage, issues: A11yIssue[]): void {
 	}
 }
 
-/** Flag multiple links on the same page pointing to the same URL */
 function checkDuplicateLinks(page: PraxityPage, issues: A11yIssue[]): void {
 	const allBlocks = collectAllBlocksDeep(page.blocks);
-	const seenUrls = new Map<string, string>(); // normalized URL → first blockId
+	const seenUrls = new Map<string, string>();
 
 	for (const block of allBlocks) {
 		const data = block.data as Record<string, unknown>;
 		const urls: Array<{ url: string; sourceLocation: string }> = [];
 
-		// Text blocks: extract href from <a> tags
 		if (block.type === "text") {
 			const content = (data.content as string) ?? "";
-			// Double-quote only — safe because TipTap always serializes with double quotes
 			const matches = content.matchAll(/<a\b[^>]*\bhref="([^"]*)"[^>]*>/gi);
 			for (const match of matches) {
 				if (match[1]) {
@@ -1934,13 +1832,11 @@ function checkDuplicateLinks(page: PraxityPage, issues: A11yIssue[]): void {
 			}
 		}
 
-		// Button blocks
 		if ((block.type as string) === "button") {
 			const href = data.href as string;
 			if (href) urls.push({ url: href, sourceLocation: "data.href" });
 		}
 
-		// Document blocks
 		if ((block.type as string) === "document") {
 			const url = data.url as string;
 			if (url) urls.push({ url, sourceLocation: "data.url" });
@@ -1967,7 +1863,6 @@ function checkDuplicateLinks(page: PraxityPage, issues: A11yIssue[]): void {
 	}
 }
 
-/** Flag abbreviations used without being defined on the page */
 function checkAbbreviations(page: PraxityPage, issues: A11yIssue[]): void {
 	const allBlocks = collectAllBlocksDeep(page.blocks);
 	const textParts: Array<{ blockId: string; html: string }> = [];
@@ -2014,7 +1909,6 @@ function checkAbbreviations(page: PraxityPage, issues: A11yIssue[]): void {
 	}
 }
 
-/** Flag instructions that reference visual characteristics only */
 function checkSensoryInstructions(page: PraxityPage, issues: A11yIssue[]): void {
 	const allBlocks = collectAllBlocksDeep(page.blocks);
 
@@ -2055,10 +1949,6 @@ function checkSensoryInstructions(page: PraxityPage, issues: A11yIssue[]): void 
 	}
 }
 
-/**
- * Flag video/audio blocks that are not preceded by a heading.
- * Media without a heading context is harder to understand and navigate.
- */
 function checkMediaFollowingHeading(page: PraxityPage, issues: A11yIssue[]): void {
 	let lastBlockWasHeading = false;
 
@@ -2070,7 +1960,6 @@ function checkMediaFollowingHeading(page: PraxityPage, issues: A11yIssue[]): voi
 			continue;
 		}
 
-		// Text blocks with inline headings also count
 		if (blockType === "text") {
 			const data = block.data as Record<string, unknown>;
 			const content = (data.content as string) ?? "";
@@ -2098,16 +1987,9 @@ function checkMediaFollowingHeading(page: PraxityPage, issues: A11yIssue[]): voi
 	}
 }
 
-// ============================================================
-// Phase 3: Content quality page-level checks
-// ============================================================
-
-/** Max words per sentence before flagging */
 const MAX_SENTENCE_WORDS = 30;
-/** Max words per paragraph before flagging */
 const MAX_PARAGRAPH_WORDS = 150;
 
-/** Flag text blocks with excessively long sentences */
 function checkSentenceLength(page: PraxityPage, issues: A11yIssue[]): void {
 	const allBlocks = collectAllBlocksDeep(page.blocks);
 	for (const block of allBlocks) {
@@ -2127,13 +2009,12 @@ function checkSentenceLength(page: PraxityPage, issues: A11yIssue[]): void {
 					blockId: block.id,
 					pageId: page.id,
 				});
-				break; // One flag per block is enough
+				break;
 			}
 		}
 	}
 }
 
-/** Flag text blocks with excessively long paragraphs */
 function checkParagraphLength(page: PraxityPage, issues: A11yIssue[]): void {
 	const allBlocks = collectAllBlocksDeep(page.blocks);
 	for (const block of allBlocks) {
@@ -2141,7 +2022,6 @@ function checkParagraphLength(page: PraxityPage, issues: A11yIssue[]): void {
 		const data = block.data as Record<string, unknown>;
 		const content = (data.content as string) ?? "";
 
-		// Split by paragraph tags
 		const paragraphs = content.split(/<\/p>/i).filter((p) => p.trim().length > 0);
 		for (const p of paragraphs) {
 			const text = stripHtmlTags(p).trim();
@@ -2155,13 +2035,12 @@ function checkParagraphLength(page: PraxityPage, issues: A11yIssue[]): void {
 					blockId: block.id,
 					pageId: page.id,
 				});
-				break; // One flag per block
+				break;
 			}
 		}
 	}
 }
 
-/** Flag 3+ consecutive image blocks without intervening text */
 function checkImageClusterWithoutContext(page: PraxityPage, issues: A11yIssue[]): void {
 	let consecutiveImages = 0;
 	let firstImageId = "";
@@ -2179,7 +2058,7 @@ function checkImageClusterWithoutContext(page: PraxityPage, issues: A11yIssue[])
 					blockId: firstImageId,
 					pageId: page.id,
 				});
-				consecutiveImages = 0; // Reset to avoid repeat flagging
+				consecutiveImages = 0;
 				firstImageId = "";
 			}
 		} else {
@@ -2189,11 +2068,6 @@ function checkImageClusterWithoutContext(page: PraxityPage, issues: A11yIssue[])
 	}
 }
 
-// ============================================================
-// Course-wide checks
-// ============================================================
-
-/** Flag courses where a high proportion of images are marked decorative */
 function checkDecorativeImageOveruse(pages: PraxityPage[], issues: A11yIssue[]): void {
 	let totalImages = 0;
 	let decorativeImages = 0;
@@ -2220,7 +2094,6 @@ function checkDecorativeImageOveruse(pages: PraxityPage[], issues: A11yIssue[]):
 	}
 }
 
-/** Flag orphaned glossary terms that never appear in course content */
 function checkGlossaryCompleteness(pages: PraxityPage[], issues: A11yIssue[]): void {
 	const glossaryTerms: Array<{ term: string; blockId: string }> = [];
 	const allText: string[] = [];
@@ -2260,11 +2133,6 @@ function checkGlossaryCompleteness(pages: PraxityPage[], issues: A11yIssue[]): v
 	}
 }
 
-// ============================================================
-// Design system checks
-// ============================================================
-
-/** Map contrast warning pairs to severity levels */
 const CONTRAST_SEVERITY: Record<string, A11ySeverity> = {
 	"text-on-background": "critical",
 	"button-text": "critical",
@@ -2290,7 +2158,6 @@ export function checkDesignSystemAccessibility(config: DesignSystemConfig): A11y
 			sourceLocation: warning.path,
 		});
 
-	// Contrast checks using resolved theme colors
 	if (config.colors) {
 		const warnings = checkContrastPairs(config.colors);
 		for (const warning of warnings) {
@@ -2305,7 +2172,6 @@ export function checkDesignSystemAccessibility(config: DesignSystemConfig): A11y
 		}
 	}
 
-	// Line height minimum (WCAG 1.4.12)
 	if (config.lineHeight !== undefined && config.lineHeight < 1.5) {
 		addIssue(issues, {
 			severity: "serious",
@@ -2317,7 +2183,6 @@ export function checkDesignSystemAccessibility(config: DesignSystemConfig): A11y
 		});
 	}
 
-	// Base font size minimum
 	if (config.baseFontSize !== undefined && config.baseFontSize < 16) {
 		addIssue(issues, {
 			severity: "serious",
@@ -2328,7 +2193,6 @@ export function checkDesignSystemAccessibility(config: DesignSystemConfig): A11y
 		});
 	}
 
-	// Content max width (WCAG 1.4.8 recommends ≤80 characters per line)
 	if (config.contentMaxWidth !== undefined && config.contentMaxWidth > 720) {
 		addIssue(issues, {
 			severity: "moderate",
