@@ -13,6 +13,8 @@ Display identities and caller-owned objects cannot authorize persisted identity 
 ### src/main/identity-store.ts
 
 - `fileHandles`: File identity evidence from the same opened handles as the admitted bytes.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `snapshotRecords`: Private canonical facts for validated current heads.
 - `withIdentityStoreReuse`: Retain private validation only until this save completes, independently
   of the global budget.
@@ -49,8 +51,10 @@ Display identities and caller-owned objects cannot authorize persisted identity 
   edits.
 - `recordedTargets`: Target IDs captured by the registry's private operation issuance.
 - `validatedIdentity`: The resolver's private value; public resolutions receive an independent copy.
-- `snapshotRecords`: Private bytes and hashes bind to serialized; never exposed with mutable
-  snapshots.
+- `Baseline.snapshotRecords` retains the validated canonical snapshot bytes and hashes paired with
+  `Baseline.serialized`, the `serializeIdentity(identity)` value captured when
+  `resolveAdmittedCourseIdentity` issues the result. Both remain in the private `baselines` WeakMap;
+  mutable caller-visible snapshots cannot replace these facts.
 - `readerProjections`: Captured before exposing mutable reads, so publication can detect altered
   projections.
 - `operationSnapshots`: Reconciled outside revisions become immutable parents in the same journal.
@@ -68,18 +72,24 @@ Display identities and caller-owned objects cannot authorize persisted identity 
 - `matchesIssuedIdentity`: Canonical fallback retains acceptance of harmless undefined fields and
   key order.
 - `correspondence`: Held browser fields outlive RPC replies and transient artifact rebuild gaps.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `CourseIdentitySession`: One host session owns retained admission evidence, never caller-owned
   results.
 - `invalidate`: Replacing the state also prevents an in-flight admission from repopulating it.
 - `lessonReads`: Reader-owned copies let grammar-version guards reuse the same parse.
 - `sameFiles`: Fatal UTF-8 decoding retains the BOM, so text equality proves exact admitted byte
   equality.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `assertPlainIdentityStore`: T1 isolates abandoned publications before write admission; live
   installs may still link twice.
 - `visit`: .praxity itself must be plain, but window state and local drafts are not lineage.
 - `entries`: Native spelling and directory identity change on rename or replacement; appends do not.
 - `assertCompleteInventory`: A Windows case-only rename can still resolve through its old spelling.
   Compare canonical file names, leaving rename/copy matching to the owner.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `loadStoreWithin`: Rollback can retain empty destination directories and recovery copies. Explicit
   conversion may fill an empty store, never discard identity bytes.
 - `loadStoreWithin`: A rolled-back first write never committed a namespace, even if installation
@@ -140,8 +150,13 @@ Display identities and caller-owned objects cannot authorize persisted identity 
 - `resolveAdmittedCourseIdentity`: Read and validate the approved store before acquiring the
   destination admission. Conversion may replace legacy metadata, but never an existing modern
   lineage.
-- `resolveAdmittedCourseIdentity`: The admission above binds these facts before the next await.
-  Caller-owned operation bases cannot change the graph paired with private canonical bytes.
+- `resolveAdmittedCourseIdentity` runs under `withProjectFileTransaction(courseDir, ...)`. Before
+  cloning `options.operationBase.identity` into `baseIdentity`, it calls `assertCandidateLifetime`,
+  retrieves the store-issued `Baseline`, checks its project root and `matchesIssuedIdentity`,
+  requires operation intent, rejects approved conversion, calls `assertDurableCandidate`, and
+  compares the issued and current store files. It then captures the course, heads and snapshots from
+  `baseIdentity` before the next await. Later caller mutations cannot change the graph paired with
+  the issued private canonical bytes.
 - `resolveAdmittedCourseIdentity`: Identical source can share parsing work, but each mutable lesson
   owns its tree.
 - `resolveAdmittedCourseIdentity`: Invalid lessons are opaque to a writer; only a read admission

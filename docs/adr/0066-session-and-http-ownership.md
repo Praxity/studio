@@ -14,6 +14,8 @@ The author host and learner host have different authority. Session lifecycle mus
 
 - `writeIdentityNotice`: Standalone hosts flush this notice before identity replacement.
 - `editorAssetsDir`: Only the standalone artifact supplies a browser UI build.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `runPraxityCli`: Before language validation, use the first --lang value; absent or invalid values
   fall back to en.
 - `runPraxityCli`: Argument refusals do not need the server or rendering runtime.
@@ -23,7 +25,11 @@ The author host and learner host have different authority. Session lifecycle mus
 
 - `textFile`: A FIFO must reach the regular-file check without waiting for a writer.
 - `textFile`: Three UTF-8 bytes per UTF-16 unit bounds the read even if the file grows.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `textFile`: UTF-8 cannot encode surrogates. Give these malformed encodings their own refusal.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `outputJson`: Match complete JSON escapes first so a literal backslash followed by n stays
   literal.
 - `executeCommentsCli`: Never render raw filesystem errors, paths, causes or request arguments.
@@ -42,12 +48,16 @@ The author host and learner host have different authority. Session lifecycle mus
   output.
 - `runEditCli`: Select copy before parsing: an earlier refusal must honor a later --lang.
 - `runEditCli`: A copied block's range belongs to the deepest containing source node.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### src/main/narration-authoring.ts
 
 - `snapshot`: An entry stored under its old lesson may now resolve in a different lesson.
 - `validateNarrationAsset`: Existing files only, rooted before any sidecar mutation, including
   Windows and link aliases.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `targetReplacement`: The command owns one target entry. Other entries, comments and line endings
   stay byte-identical.
 - `cleanupNarrationRecordings`: Only reserved generated pairs can be retired; the committed sidecar
@@ -66,6 +76,8 @@ The author host and learner host have different authority. Session lifecycle mus
 - `readBlockInventory`: Probe the registry rather than duplicating its eligibility rules in the
   host. This first inventory covers node edits; insertion, inline and clipboard need their own
   targets.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `readBlockInventory`: Probes use this admitted snapshot's IDs, even when they are provisional.
 - `selectPageBlocks`: Resolve pages before blocks so a missing block cannot hide another matching
   page.
@@ -92,6 +104,8 @@ The author host and learner host have different authority. Session lifecycle mus
 - `draftExport`: A new folder and exclusive files preserve both existing exports and stored drafts.
 - `draftPut`: Ownership and generation checks run under the shared write admission, including when
   separate windows submit concurrently.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `draftPut`: Lost replies do not rewrite current buckets. Legacy retries still migrate atomically.
 
 ### src/main/operations/operation-service.ts
@@ -99,6 +113,8 @@ The author host and learner host have different authority. Session lifecycle mus
 - `requestSchema`: The registry owns each operation's argument names and value constraints. Zod 4
   omits __proto__ before validating record keys; refuse it before cloning.
 - `expectedRevision`: Compare-and-set: unlike ordinary node rebasing, this binds exact file bytes.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `OperationService`: One session owns history. Clients send IDs, never executable inverse records.
 - `plan`: A direct inverse must never come from a client.
 - `plan`: A token's absolute offsets cannot be safely rebased without its base owner offset.
@@ -116,6 +132,8 @@ The author host and learner host have different authority. Session lifecycle mus
   after close, when transient pipeline listeners are gone.
 - `openBody`: The Web body delivers read errors to its consumer. Here both outcomes must wait for
   close, including completion on a non-auto-closing stream.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `ownHttpResponse`: Attach before asynchronous routing, including buffered files and event streams.
 - `ownHttpResponse`: Request-body readers may remove their own error listeners on abort. These
   owners remain until the objects are collected to handle later terminal errors.
@@ -125,10 +143,14 @@ The author host and learner host have different authority. Session lifecycle mus
 ### src/main/standalone-cli.ts
 
 - `expectedParent`: This identity belongs to this spawn, not to browser/export subprocesses.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `stop`: Includes stuck startup; a hung filesystem operation can still exceed this allowance.
 - `parentPid`: IPC retains EOF even if the launcher dies before this bootstrap runs.
 - `parentPid`: An expected PID covers early Unix reparenting; IPC EOF identifies the launcher on
   Windows.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `{ runPraxityCli }`: Keep expensive imports outside the bootstrap, including in the packaged
   artifact.
 
@@ -138,6 +160,8 @@ The author host and learner host have different authority. Session lifecycle mus
   the learner origin.
 - `serveStudioAuthorDocument`: Capture browser APIs and erase the bearer before any course element
   is parsed.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `addStudioReadModeLink`: Learner scripts and content are preserved. The mode link contains no
   editor capability.
 - `addStudioReadModeLink`: The full-viewport deck must reserve a row for Studio instead of covering
@@ -163,6 +187,8 @@ The author host and learner host have different authority. Session lifecycle mus
 
 - `studioNarrationStatus`: Browser sessions disclose availability only. Credentials never cross the
   bridge.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### src/main/studio/preview-diagnostics.ts
 
@@ -184,11 +210,15 @@ The author host and learner host have different authority. Session lifecycle mus
   introducing another boundary is an escaping edit.
 - `renderDraft`: Replace the entire source node, retaining sibling pages and real file coordinates.
   A field without a trailing newline must not swallow its sibling.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `renderDraft`: Container drafts need the same child identities as editSource's durable plan. Leaf
   and type-changing drafts keep P3a's small parse: a new container has no previous child identities
   to retain. Neither path touches a file.
 - `renderDraft`: Layout regions have no standalone node fragment. The durable path and whole-page
   compile still handle them.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `renderSmallEdit`: A suppressed event's RPC response may belong to an obsolete renderer. Keep its
   fragments eligible for the current subscription's page patch.
 - `enqueueRefresh`: Queue full input/context preparation with page compilation. A newer complete
@@ -236,10 +266,14 @@ The author host and learner host have different authority. Session lifecycle mus
   is deferred.
 - `createStudioProjectSession`: The shared draft owner passes absolute paths. Keep metadata
   admission here.
-- `createStudioProjectSession`: Saved pages were admitted at open/commit/watcher time. This path
-  never opens T1, a file, or a lock, and does not mutate the persisted draft.
-- `createStudioProjectSession`: An empty lookup alone cannot prove that an authenticated request
-  will not arrive later.
+- `createStudioProjectSession` registers the `previewRenderDraft` RPC to look up its page in
+  `goodLessons` and call `scheduler.renderDraft(request, page ?? null, draftIdentity)`. Those saved
+  pages were admitted at open, commit or watcher delivery. This handler opens no new project-file
+  admission, file or lock and does not mutate persisted drafts.
+- `createStudioProjectSession` registers `draftPersistenceReconcile` to inspect
+  `draftAttempts.get(attemptId)`. A missing entry does not prove that an earlier authenticated
+  `draftPersistenceSubmit` request cannot still arrive. Reconciliation inserts a `fenced` entry
+  before replying, so that late submission cannot begin executing the same attempt.
 - `createStudioProjectSession`: Chokidar reports renames as unlink/add, including directory moves.
 - `createStudioProjectSession`: Source, identity and context belong to one admitted revision. A
   saved operation's watcher echo has identical input and is ignored.
@@ -269,11 +303,14 @@ The author host and learner host have different authority. Session lifecycle mus
 - `handle`: A released document's bookmark must not override its retained slide fragment.
 - `handle`: Omit a fragment so native navigation carries a deck's current slide.
 - `handle`: Canvas HTML is transformed as a complete document, including on HEAD.
-- `handle`: Bound at listen time; requests whose Host or URL names another origin were refused
-  above.
+- `handle` uses the origin captured when `startStudioReadOnlyServer` binds its listener. The handler
+  rejects a request whose Host header or URL names another origin before granting resource access;
+  it never derives the allowed origin from request data.
 - `handle`: Author CSS/fonts remain captured learner resources, with only this exact CORS grant.
 - `startStudioReadOnlyServer`: Reject expectations explicitly so Node cannot send headerless 417 or
   100 responses.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### src/main/studio/review-http.ts
 
@@ -302,6 +339,8 @@ The author host and learner host have different authority. Session lifecycle mus
 - `tracksReviewStorage`: Hashes and collision tails need not retain either fixed folder's prefix.
 - `queryReviewGit`: Git can inspect metadata outside Node's fs grants. Ambient overrides must not
   redirect discovery.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `queryReviewGit`: Git docs checked: core.fsmonitor; core.pager/pager.*;
   remote.*.promisor/uploadpack, core.sshCommand/gitProxy and credential.helper (lazy fetch);
   core.alternateRefsCommand, filter.* and diff.* (not used by these index/path queries). Disable
@@ -325,6 +364,8 @@ The author host and learner host have different authority. Session lifecycle mus
   directory, flush reviews and that directory, and publish manifest then state. Ignore comes first
   because even unacknowledged private bytes can survive a crash. Windows target flushes rely on the
   NTFS metadata log; FAT/exFAT remain best effort.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `transaction`: Only a cold read whose first lock appeared retries; a full lock deadline never
   does.
 - `openReviewStore`: One durable default review per course; no state survives between admissions.
@@ -347,6 +388,8 @@ The author host and learner host have different authority. Session lifecycle mus
 - `identifyStudio`: An occupied port is untrusted. Never follow redirects or let its response stall
   startup.
 - `finish`: Close without injecting an error into a socket that Node may have detached.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `identifyStudio`: A total deadline also bounds peers that keep sending bytes without ending.
 - `end`: Drain oversized chunked uploads without retaining them. Closing while the client is still
   sending can reset its socket before it receives the 413.
@@ -362,6 +405,8 @@ The author host and learner host have different authority. Session lifecycle mus
 - `handle`: An explicit empty fragment prevents the ready URL's bearer reaching learner HTML.
 - `handle`: Six simultaneous tabs fit without replacing each other's one-use admission.
 - `send`: XHR progress delivers small records without fetch's WebKit padding workaround.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `send`: write(false) means backpressure, including a healthy large lesson. Bound queued bytes
   rather than dropping that lesson at the first false result.
 - `handle`: Share the in-flight capture so queued tabs cannot release each other's output.
@@ -373,6 +418,8 @@ The author host and learner host have different authority. Session lifecycle mus
   parsing.
 - `startStudioServer`: Reject expectations explicitly so Node cannot send headerless 417 or 100
   responses.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `close`: HTTP's callback must not gate cancellation or owned-file cleanup.
 - `close`: Existing preview leases can be released while an unrelated export is still draining.
 - `close`: Admitted preview builds may finish during close; release their late leases too.

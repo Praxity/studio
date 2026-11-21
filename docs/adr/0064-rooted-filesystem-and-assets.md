@@ -21,13 +21,21 @@ Pathnames and timestamps alone cannot establish which bytes a host is authorized
 
 - `ASSET_TIMESTAMP_SETTLE_NS`: Fractional timestamps can still repeat within a filesystem clock
   tick. Two seconds covers FAT's write tick as well as shorter NTFS clock ticks.
+  Evidence: [Microsoft, File
+  Times](https://learn.microsoft.com/en-us/windows/win32/sysinfo/file-times) specifies a two-second
+  FAT write-time resolution.
 - `stamp`: ctime and inode also catch same-size replacements with a restored mtime.
 - `canReuse`: Zero/missing inode IDs and unknown timestamp precision cannot establish freshness.
   Require observed sub-millisecond precision per file. This also bypasses FAT/exFAT stamps that have
   fractional seconds but still cannot distinguish rapid writes.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `sampleFilesystemTime`: Read-only projects still admit assets, but cannot prove timestamp
   freshness.
 - `sampleFilesystemTime`: Windows may defer timestamp updates until the writer handle closes.
+  Evidence: [Microsoft, File
+  Times](https://learn.microsoft.com/en-us/windows/win32/sysinfo/file-times) says last-write time is
+  not fully updated until all writing handles close.
 - `ProjectAssetInventory`: One project host owns this inventory; all reads retain the path
   admission.
 - `admit`: Capture this before reading. An unsafe snapshot must never become reusable just because
@@ -69,6 +77,8 @@ Pathnames and timestamps alone cannot establish which bytes a host is authorized
   process's POSIX locks, even when SQLite's connection is still open. Guard reads as well as
   deletion/replacement, before any descriptor opens. Windows uses file locks.
   https://www.sqlite.org/howtocorrupt.html#_closing_a_file_descriptor
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `assertAllowedProjectRoot`: Refuse the home ancestor even when .praxity-studio links to another
   volume.
 - `resolveExistingPathWithin`: Optional-file callers may ignore absence, but an existing dangling
@@ -76,6 +86,8 @@ Pathnames and timestamps alone cannot establish which bytes a host is authorized
 - `assertFileWritableWithin`: Replacement permissions come from the file as well as its parent
   directory.
 - `assertFileWritableWithin`: access alone permits root to replace an author's POSIX read-only file.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `waitForFileSharingRetry`: One sharing-violation budget for journaled and atomic publications.
 - `writeFileAtomicallyWithin`: Stage in the authorized directory so replacement is atomic on the
   same filesystem.
@@ -100,6 +112,8 @@ Pathnames and timestamps alone cannot establish which bytes a host is authorized
 - `checkPrivateProjectPath`: Strict stores also refuse an absent spelling with a case-folded
   sibling.
 - `checkPrivateProjectPath`: Windows directory READONLY is decorative; it does not deny writes.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `privateFolderIgnoreContent`: The last wildcard must override earlier negations; preserve the
   owner's bytes.
 
@@ -113,6 +127,8 @@ Pathnames and timestamps alone cannot establish which bytes a host is authorized
 - `createProjectAssetAdmission`: One read owns the canonical stores and lazily shared protected
   identities.
 - `assertIdentity`: Bigint dev/ino preserve the Windows file ID without number rounding.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `finish`: Bulk readers call this after their last byte read, before publishing any result.
 - `openAsset`: The caller owns the handle; admission checks the opened inode before any byte read.
 - `resolveProjectAsset`: Admit public resources by canonical path and file identity, never by their
@@ -124,6 +140,8 @@ Pathnames and timestamps alone cannot establish which bytes a host is authorized
 
 - `readAdmittedTree`: Each nested project owns its journal and lock. Release this admission before
   entering a child's, then fill the existing tree node to retain its visibility.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### src/main/workspace.ts
 

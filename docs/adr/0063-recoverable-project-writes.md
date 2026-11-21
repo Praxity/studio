@@ -31,6 +31,8 @@ Project saves coordinate participating processes and retain evidence of interrup
   plus Darwin/Windows folding. Case-sensitive Darwin directories differing only by case deliberately
   share an advisory lock. Hard-link refusal is specific; sharing contention after publication still
   retries.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `isolatedCommittedArchives`: Only archives isolated and verified by this process qualify.
   Directory identity detects replacement and added entries; byte edits stay retained until reclaim,
   which always repeats isolation and every orphan/quarantine check.
@@ -43,12 +45,19 @@ Project saves coordinate participating processes and retain evidence of interrup
   outside the project keeps authoring file APIs from opening/closing its inode, which would drop
   POSIX process locks. node:sqlite ships in the supported Node 24 runtime; no native addon is
   needed. See https://www.sqlite.org/lockingv3.html. Close older Studio versions before upgrading.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `acquireProjectLock`: Only SQLite opens cache files. Generic guarded APIs must refuse this path.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `acquireProjectLock`: A first read cannot create a lock. Its final absence check detects the first
   cross-process writer, whose cache file remains for this course's lifetime.
 - `acquireProjectLock`: BEGIN alone is deferred. Reading the schema takes a shared OS lock that
   excludes participating writers without updating the database.
-- `acquireProjectLock`: Yield while contending; SQLite's synchronous busy timeout would block the event loop.
+- `acquireProjectLock`: Yield while contending; SQLite's synchronous busy timeout would block the
+  event loop.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `isNestedProjectDirectory`: Check the journal last: it is published before capture, so a
   temporarily absent course.yaml still identifies the child's separate admission.
 - `removeAbandonedStages`: Only this project's participating writer can own a stage. After admission
@@ -60,6 +69,9 @@ Project saves coordinate participating processes and retain evidence of interrup
 - `removeAbandonedStages`: The legacy identity filename identifies this root's former staging owner.
 - `assertProjectWritesAllowed`: Node's Permission Model denies fsync even with full filesystem
   grants.
+  Evidence: [Node.js 24.22.1, File System
+  Permissions](https://nodejs.org/download/release/v24.22.1/docs/api/permissions.html#file-system-permissions)
+  lists fsync among descriptor APIs disabled under the permission model.
 - `archiveEvidence`: Older lexical basenames can be short names or Unicode filesystem aliases. The
   live spelling cannot prove their historical canonical ownership.
 - `archiveEvidence`: No publication or installation decision means this preparation changed no live
@@ -102,14 +114,20 @@ Project saves coordinate participating processes and retain evidence of interrup
 - `verifiedOrphan`: No publication or source can exist yet in a journal-only preparation. Reserved
   names alone are insufficient: unknown bytes remain inspectable.
 - `verifiedOrphan`: Unverified recovery bytes must be kept for manual inspection.
-- `verify`: Isolation and source consumption can die after either rename. These names inherit the
-  base file's byte rule; isolation copies may be incomplete.
+- `verify` inside `verifiedOrphan` strips repeated `.independent-<uuid>` and `.reclaim-<uuid>`
+  suffixes before looking up a recovery artifact in the expected-byte map. A suffixed artifact must
+  obey the same planned bytes as its unsuffixed name. `matchesPlannedBytes` requires exact bytes for
+  complete artifacts and permits only a prefix of the planned bytes for partial artifacts;
+  `.independent-` copies are partial because isolation can stop mid-copy. Unknown or differing bytes
+  remain retained.
 - `verify`: Archive inspection is observational. Only admitted cleanup marks changed captures, so a
   read cannot modify retained recovery bytes.
 - `unpublishedJournalPrefix`: Both flat and legacy writers serialize this header before any planned
   bytes.
 - `path`: Relative path; its parent directory must already exist.
 - `content`: Exact UTF-8 or binary bytes. Null deletes a file.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `expectedContent`: Null requires absence; undefined captures the current bytes under the lock.
 - `createDirectories`: Absent destination directories, published only after their recovery plan.
 - `onStep`: An awaited storage checkpoint, also used by process-death tests.
@@ -120,10 +138,14 @@ Project saves coordinate participating processes and retain evidence of interrup
 - `defaultSyncFile`: A file's bytes reach durable storage before its name or readiness is published.
 - `defaultSyncDirectory`: Windows does not expose directory fsync through Node. File flushes still
   precede rename.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `completeFileWork`: Preserve the initiating error when peers fail as a consequence. Drain every
   writer before rollback can touch their files or retire the journal.
 - `validateJournal`: Older Darwin journals retain native casing; compare without rewriting their
   checksum input.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `stageFingerprint`: Rename first, then verify in quarantine. A path writer can no longer reach the
   candidate by its old name. Preopened descriptors remain outside this contract.
 - `isolateStage`: A death between link and source retirement can leave an alias. Replace only the
@@ -154,12 +176,16 @@ Project saves coordinate participating processes and retain evidence of interrup
   another writer.
 - `recoverProjectFileJournal`: A retained capture-free preparation needs a durable rollback outcome
   too.
-- `recoverProjectFileJournal`: Preparation can create planned directories before the ready marker.
-  With every target still original, the rollback branch above is unnecessary, but these empty
-  directories still belong to the interrupted plan and must be removed.
+- `recoverProjectFileJournal` can find a preparation with no `ready` marker, no capture conflicts,
+  and every live target hash still equal to its recorded `fromHash`. No authored target needs
+  restoration in that state. The function records an abort marker if absent and removes only the
+  planned empty directories through `removePlannedDirectories` before journal cleanup, because
+  preparation can create those directories before publishing `ready`.
 - `applyProjectFilePlan`: Apply one complete plan inside an admitted write transaction. Never
   normalizes bytes.
 - `plannedTarget`: Resolve existing native basenames too, including Windows 8.3 aliases.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `applyProjectFilePlan`: Writable-path admission refuses file links before canonicalization; retain
   the author message.
 - `applyProjectFilePlan`: Both independent copies reach durable storage, with private modes, before

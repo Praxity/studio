@@ -14,6 +14,8 @@ Course markup and styles share the canvas document with Studio controls. Native 
 
 - `mountTextField`: jsdom has no layout or native trusted input. Adapt those browser boundaries; the
   actual field listeners and session remain under test.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### src/renderer/browser/canvas-text.ts
 
@@ -31,6 +33,8 @@ Course markup and styles share the canvas document with Studio controls. Native 
   figcaption. An open field replaces its run inside it; the figure keeps its captured authored name
   until its original name attributes return. Browser journeys verify focus and markup;
   NVDA/VoiceOver acceptance is separate.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `nameAll`: Keep controls outside the figure name while showing which run each edits.
 - `presentation`: Locate compiler text children so controls and list containers keep their identity.
 - `anchor`: Caption controls must not become part of the figure's caption-derived name.
@@ -60,10 +64,19 @@ Course markup and styles share the canvas document with Studio controls. Native 
 - `render`: Change the persistent error only on an outcome, never for typing or repeated renders.
 - `update`: The band owns polite announcements; this adjacent text has no live role.
 - `update`: Pointer focus precedes click in Firefox; moving its target loses that click.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `update`: The field replaces its run inside figcaption, while the figure keeps its authored name.
 - `update`: Layout pixels survive course transforms; content may shrink back to the CSS minimum.
 - `update`: Chromium commits a native IME with an untrusted compositionend.
+  Regression coverage: `apps/desktop/e2e/browser-editor/canvas-text.spec.ts`, "C04 IME composition
+  Enter is input, never save", uses Chromium CDP composition followed by native Enter. The engine
+  claim is not independently reverified in this documentation change.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `update`: Let native Tab traversal continue from the heading, including shadow roots and radios.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `update`: Keep its shadow controls out of this native traversal, then restore entry.
 - `update`: Explicit discard also releases the unload guard for navigation/reload.
 - `mountCanvasTextFields`: The author panel saves on activation. Closing on mousedown can shrink the
@@ -82,34 +95,55 @@ Course markup and styles share the canvas document with Studio controls. Native 
 - `startStudioAuthor`: Use the compiler's course appearance, even when Studio's system theme
   differs.
 - `startStudioAuthor`: The document root remains an ancestor even of protected top-layer controls.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `startStudioAuthor`: Inline important geometry wins against authored layers, animations and
   selectors.
 - `startStudioAuthor`: Reserve the localized loading label before it can move course click targets.
 - `startStudioAuthor`: Author panel decision, 2026-10-17: reserve a band and scroll it with the
   course. Floating controls covered the header; a shared status row moved the toggle. ResizeObserver
   alone left a frame of overlap after localized text wrapped.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `reservePanel`: A body positioned out of flow still needs the author's reserved header band.
 - `startStudioAuthor`: Text can wrap before ResizeObserver delivers; reserve it in the same
   microtask.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `rpc`: An absent reply is unknown, never a no-write refusal or an automatic replay.
 - `startStudioAuthor`: Authentication owns replacement. A forged fragment cannot overwrite a working
   session.
 - `listen`: Reconnection invalidates output, including changes missed in the gap.
-- `startStudioAuthor`: The current source or practice refusal; a later successful refresh replaces
-  it.
+- `startStudioAuthor` retains the current diagnostic in its `refusal` string, initially from
+  `snapshot.sourceRefusal`. Source refusal handling and a caught `practiceRefusal` update that state
+  and the polite status. A later successful `refresh` clears the retained refusal when it installs
+  an admitted build.
 - `reload`: Closing the discarded field already started the fresh build.
 - `refresh`: Removing the destination also blocks auxiliary clicks and browser link menus.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `refresh`: One wait spans discarded builds and refreshes deferred by an open field.
 - `refresh`: Rebuild from a fresh read admission, never from an event's HTML or the old artifact.
 - `refresh`: The response already passed the author projection; its bootstrap never executes twice.
 - `refresh`: Missing Fetch Metadata can send the author-entry gate on this read.
 - `refresh`: The compiler alias owns the destination and fragment for a later deck slide.
 - `refresh`: Firefox may resolve a connected head link before its replacement base takes effect.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `refresh`: Keep the current sheets active until their revision replacements are loaded.
-- `refresh`: Retain as through activation and reconciliation to avoid warnings and refetches.
+- `refresh` sets `as="style"` on each fresh-head stylesheet source link and clones it into a staged
+  `rel="preload"` link. Both the staged link and the fresh-head source keep the `as` attribute when
+  the staged link becomes `rel="stylesheet"` and head reconciliation reuses it. This keeps preload
+  destination metadata consistent through activation and avoids the recorded warnings and refetches.
 - `refresh`: Changing an inactive sheet's media makes WebKit fetch it again on activation.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `refresh`: A background tab can pause painting after its stylesheet load has completed.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `refresh`: Keep old CSS through WebKit's rendering update and head reconciliation.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `sync`: Reuse course nodes and owned buttons. Unrelated edits must not rebuild the AT buffer.
 - `sync`: Preserve unchanged content before IDs: a transient ID can be rebound after an insertion.
 - `sync`: A loaded stylesheet must stay connected while old sheets are retired.
@@ -123,20 +157,36 @@ Course markup and styles share the canvas document with Studio controls. Native 
 
 - `openBrowserEventStream`: XHR progress delivers NDJSON promptly where WebKit's fetch reader
   buffers updates.
+  Regression coverage: `apps/desktop/src/renderer/browser/event-stream.test.ts`, "delivers bytes on
+  progress, including split UTF-8, without waiting for completion" and "fetch events bypass the
+  cache without delaying document load", pins the adapter contracts; it does not establish the
+  engine-specific buffering cause.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `openBrowserEventStream`: Gecko's pre-load XHR holds document load open. Its fetch reader streams
   promptly.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `openBrowserEventStream`: Gecko can hold an identical pending stream behind the HTTP cache entry.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `progress`: XHR retains consumed text. Reconnect at the existing stream limit to release it.
 - `openBrowserEventStream`: Preserve split UTF-8 sequences and let the bridge's fatal decoder
   validate them.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `openBrowserEventStream`: Same-origin cookies are sent; the server authenticates only the bearer
   token.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### src/shared/canvas-messages.ts
 
 - `editButtonName`: Naming decision, 2026-10-17: kind and ordinal precede the literal authored
   excerpt. Rejected: collision suffixes, which authored text can copy, and replacement after text
   insertion. EN/FR unit and browser tests cover names; NVDA/VoiceOver speech acceptance is separate.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### src/shared/canvas-page-selection.ts
 

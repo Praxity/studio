@@ -12,8 +12,8 @@ Author inspection, preview and publication have different identity and content r
 
 ### src/inspection-frame.ts
 
-- `startInspectionPreview` callback: The editor bridge needs an exact HTTP parent. A packaged file renderer
-  has none.
+- `startInspectionPreview` callback: The editor bridge needs an exact HTTP parent. A packaged file
+  renderer has none.
 
 ### src/main/course-file-response.ts
 
@@ -21,8 +21,16 @@ Author inspection, preview and publication have different identity and content r
   inspection origin opaque from creation, and WebKit then matches `'self'` against nothing, refusing
   course CSS, fonts, images and media. The server's own origin grants exactly what `'self'` grants
   an unsandboxed document.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
+  Related coverage: `apps/desktop/src/main/__tests__/inspection-csp.test.ts`, "enforces an opaque
+  inspection origin even without an iframe sandbox" and "allows opaque inspection font reads only
+  within the admitted artifact", pins the response policy; the WebKit cause remains unverified.
 - `courseCsp`: Nonces are readable by same-origin documents. Every inspection response must isolate
   its document, including direct navigation and popups.
+  Related coverage: `apps/desktop/src/main/__tests__/inspection-csp.test.ts`, "enforces an opaque
+  inspection origin even without an iframe sandbox" and "allows opaque inspection font reads only
+  within the admitted artifact", pins the response policy; the WebKit cause remains unverified.
 - `serveCourseFile`: Inspection transforms captured bytes only. Learner serving retains its
   validators and ranges.
 - `serveCourseFile`: The server's bound origin, never one read from the request. Inspection names it
@@ -35,6 +43,8 @@ Author inspection, preview and publication have different identity and content r
 - `serveOpenedFile`: Transfer an admitted descriptor to the body, or close it if no body is opened.
 - `serveOpenedFile`: destroy() closes even an autoClose:false FileHandle stream. Giving the stream
   sole ownership avoids a second close, and closes only after pending IO.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### src/main/export/accessibility-enforcement.ts
 
@@ -74,12 +84,15 @@ Author inspection, preview and publication have different identity and content r
   narration targets. V8 bytes preserve undefined, Maps and RegExps without JSON collisions.
 - `retainedCourseLesson`: Replacing the owner state prevents an in-flight preparation repopulating
   it.
-- `buildAdmittedCoursePreviewInput`: Trusted host adapter: call inside the project admission that
-  issued identity. This is preview-only; publication keeps its persistence checks above.
+- `buildAdmittedCoursePreviewInput` is a trusted host adapter called inside the project admission
+  that issued its identity. This preview path uses the admitted identity without weakening the
+  persistence and publication guards in `buildExportInputFromProject`.
 
 ### src/main/export/export-project.ts
 
 - `typstExecutablePath`: Trusted host option; never accepted from renderer IPC.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `temporaryRoot`: Trusted host workspace, never renderer input.
 - `inheritWorkspaceSettings`: Trusted host policy; disable for project-rooted server sessions.
 - `manifestPolicy`: Read-only by default; persistence requires explicit writer admission.
@@ -93,13 +106,17 @@ Author inspection, preview and publication have different identity and content r
 
 - `startLine`: Original file lines, 1-based and inclusive. Never character or byte offsets.
 - `id`: Display identity; runtime tokens cannot anchor durable notes. Use ref within this snapshot.
-- `unresolvedAnchor`: Retained schema-1 field; grammar 4 uses UUID targets below.
+- `InspectionNarration.unresolvedAnchor` retains the schema-1 legacy field. Grammar 4 narration
+  instead uses `InspectionNarration.unresolvedTarget`, whose `id` and `role` identify the unresolved
+  target.
 - `blocks`: Flat preorder, including nested blocks; parentRef reconstructs the tree.
 - `walkBlocks`: Structural paths survive identity overlays and removal of legacy ID rows.
 - `walkBlocks`: Assessment prose is classified by its owning assessment projection. Rewalking
   renderer fragments would turn prompts and feedback into body text.
 - `narrationLocations`: YAML node ranges refer to actual authored sidecar entries, including
   multiline scripts.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `projectDialogue`: Inspect a resolved dialogue model, including legacy adapter turns without a
   speaker. Source coordinates come from the authored G4 fence, not model ranks.
 - `inspectProjectSnapshot`: A read-only identity overlay allocates runtime tokens. Only persisted

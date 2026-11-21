@@ -13,27 +13,40 @@ Author transports, source editing and test adapters preserve ownership rather th
 ### src/main/__tests__/cli-french-refusals.test.ts
 
 - `{ request }`: Node's HTTP interface permits TRACE, which fetch deliberately rejects.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### src/main/__tests__/fixtures/capture-reader-writer.ts
 
 - `root`: Admission canonicalizes directory aliases, including macOS /var -> /private/var. Match the
   writer's actual rename path so the capture cannot silently complete.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### src/main/__tests__/fixtures/editor-snapshot.ts
 
-- `nodeMetadataBudget`: Size caps don't block working features (owner rule): covers the longest
-  schema type (`write-distractors`) plus margin; tighten during final size work.
+- `nodeMetadataBudget` in `src/main/__tests__/fixtures/editor-snapshot.ts` is 832 bytes per
+  serialized node. It leaves room for `write-distractors`, the longest schema type, plus maximum
+  offsets and escaped labels. The test "bounds the longest schema type, maximum offsets and escaped
+  labels by construction" in `src/main/__tests__/editor-snapshot.test.ts` pins that case at 769
+  bytes before further escaped-label checks. A size threshold must not reject a supported feature.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### src/main/__tests__/fixtures/journal-writer.ts
 
 - `link`: A pending Promise alone does not keep Node alive. Hold the IPC channel open until the
   parent kills this writer at the requested fault checkpoint.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `source`: The head checkpoint follows its durable installed marker. A raw link alone is an
   unfinished installation under marker-based recovery.
 
 ### src/main/__tests__/grammar4-switch.test.ts
 
 - `root`: Two durable commits: Intel Mac max 7265.8 ms, Linux CI 944 ms; allow twice the slower run.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - The test deadline retains the evidence in `docs/context/testing-strategy.md`, run `38146537167`.
 
 ### src/main/__tests__/identity-issued-plan.test.ts
@@ -59,26 +72,35 @@ Author transports, source editing and test adapters preserve ownership rather th
 
 ### src/main/__tests__/identity-store.test.ts
 
-- `bytes`: Access times include this helper's own reads on Windows. The timestamps below detect file
-  replacement and directory creation, deletion or rewriting.
+- `bytes` in `src/main/__tests__/identity-store.test.ts` excludes access times because observing a
+  Windows file can update them. It records `mtime`, `ctime` and `birthtime` to detect replacement or
+  directory creation, deletion and rewriting.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### src/main/__tests__/inspect-blocks-cli.test.ts
 
-- The elapsed-time assertion in `inspectBlocks` coverage: In-process inspection measured 83 ms; 5 s leaves shared-runner margin.
-  Old inventory took 129 s.
+- The elapsed-time assertion in `inspectBlocks` coverage: In-process inspection measured 83 ms; 5 s
+  leaves shared-runner margin. Old inventory took 129 s.
 
 ### src/main/__tests__/inspection-csp.test.ts
 
 - `server`: WebKit matches 'self' against nothing once the iframe sandbox makes the origin opaque.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### src/main/__tests__/lesson-source-safety.test.ts
 
 - `OWNER_ONLY_MODE`: Windows maps chmod onto the read-only attribute alone: writable files report
   0o666 and writing a read-only file fails with EPERM rather than EACCES.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### src/main/__tests__/line-ending-files.test.ts
 
 - `root`: Two durable commits: Intel Mac max 7120.7 ms, Linux CI 339 ms; allow twice the slower run.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `root`: timeout: docs/context/testing-strategy.md; run 38146537167
 
 ### src/main/__tests__/operation-service.test.ts
@@ -96,18 +118,24 @@ Author transports, source editing and test adapters preserve ownership rather th
   flushes.
 - `{ session, result }`: Two durable commits: Intel Mac max 6590.8 ms, Linux CI 335 ms; allow twice
   the slower run.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `{ root, session, events }`: timeout: docs/context/testing-strategy.md; run 38146537167
 
 ### src/main/__tests__/project-lock-ownership.test.ts
 
 - `project`: Compile once; each contender still runs the real writer in a separate process.
 - `root`: Two child writers: Intel Mac max 6426.2 ms, Linux CI 876 ms; allow twice the slower run.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `root`: timeout: docs/context/testing-strategy.md; run 38146537167
 
 ### src/main/__tests__/project-os-lock.test.ts
 
 - `root`: Owner decision 2026-10-12: macOS flush timings are advisory; recovery assertions still
   run.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### src/main/__tests__/project-recovery-evidence.test.ts
 
@@ -132,6 +160,8 @@ Author transports, source editing and test adapters preserve ownership rather th
 ### src/main/__tests__/studio-review-launch.test.ts
 
 - `{ host }`: Node never sends HEAD bodies, so only the status exercises this handler.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### src/main/__tests__/write-distractors-publication.test.ts
 
@@ -163,10 +193,14 @@ Author transports, source editing and test adapters preserve ownership rather th
 - `snapshotNodeSchema`: Preserve the outline revision and source fingerprint even when they differ.
 - `snapshotNodeSchema`: Expected start/end, editable start/end; the source owns UTF-16 range
   validation.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `snapshotLessonSchema`: The source-range owner validates containment; no derived text enters the
   payload.
 - `editorSnapshotSchema`: Plain author JSON only. Both lesson and node seeds retain durable-only
   write targets.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `prepareEditorSnapshot`: Plain JSON transport: local child indexes plus parent IDs replace
   depth-dependent paths.
 - `admittedLessonRead`: The admitted source and display bindings own the parse, never a draft or
@@ -179,10 +213,14 @@ Author transports, source editing and test adapters preserve ownership rather th
 - `editorLessonProjection`: Dispatch projects the admitted lesson even when it has no presented
   document.
 - `editorDraftSeed`: Node membership binds its ranges to the admitted lesson that owns its source.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `safeJson`: Zod can discard __proto__ while cloning. Reject it, inherited objects and prototype
   names before a schema or YAML setter can interpret them.
 - `StudioEditorBridge`: Rooted browser editor APIs; persistence carries the controller's exact
   draft.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `StudioEditorBridge`: Same-revision callers share a read; newer callers share a queued refresh.
   Stale replies retry once.
 - `CanvasPageScope`: Captured compiler page identity and position, independent of course DOM
@@ -208,6 +246,8 @@ Author transports, source editing and test adapters preserve ownership rather th
   most-used panel) had no binding at all.
 - `LEGACY_BROWSER_UNAVAILABLE_SHORTCUT_IDS`: These combinations address browser tabs, windows,
   navigation, print, bookmarks or zoom.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### src/shared/module-deck.ts
 
@@ -231,6 +271,8 @@ Author transports, source editing and test adapters preserve ownership rather th
 - `timedPositions`: Map each synthesis-text position to its index in the provider's timed
   characters. Soniox returns each whitespace run, such as a paragraph break or a French NBSP, as one
   plain space, so any whitespace run matches any run, including none.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### src/shared/project-write-errors.ts
 
@@ -265,6 +307,8 @@ Author transports, source editing and test adapters preserve ownership rather th
 
 - `synchronousAdmission`: Linux admission fixtures avoid thread-pool overhead; other hosts keep
   their native IO.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `admissionNativeFilesystem`: Path admission uses the native callback API as well as fs/promises.
 - `admissionFilesystem`: Native synchronous calls avoid per-step thread-pool scheduling in admission
   tests. Real bytes and handles remain; journal suites own flush/crash durability.
@@ -305,8 +349,10 @@ Author transports, source editing and test adapters preserve ownership rather th
 
 ### src/test-utils/setup-tests.ts
 
-- The filesystem mocks in `setup-tests.ts`: macOS aliases /var to /private/var. Fault injection must match admitted
-  paths.
+- The filesystem mocks in `setup-tests.ts`: macOS aliases /var to /private/var. Fault injection must
+  match admitted paths.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 Sources: the named symbols and their comments at commit
 `bed54f6109aa4ae868c981f53233a5ee9c5afdd7`, with the corresponding

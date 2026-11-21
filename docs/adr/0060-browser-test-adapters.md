@@ -13,10 +13,14 @@ Browser tests need native engine behaviour while controlling races at external b
 ### e2e/browser-editor/accessibility.spec.ts
 
 - `test`: Prepare before listening: browser projects must not rewrite each other's active lesson.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### e2e/browser-editor/canvas-accessibility-review.spec.ts
 
 - `geometry`: One browser task measures both boxes; a save reply cannot split the observation.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `finishRefresh`: Focus blur closes the field; keep Read Updating across the pointer gesture.
   Author-panel pointer blur waits for activation so flow shrink cannot move its target.
 
@@ -24,9 +28,15 @@ Browser tests need native engine behaviour while controlling races at external b
 
 - `openField`: The product's body ResizeObserver was registered first. Read its chosen flow layout,
   before later caret reveal or the author's own scrolling changes these inputs.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `moved`: One layout snapshot avoids mixing Firefox viewport reads from different frames.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `builds`: Chromium's closed native figure name is empty. Screen-reader acceptance is checked
   separately.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### e2e/browser-editor/canvas-prose.spec.ts
 
@@ -39,29 +49,45 @@ Browser tests need native engine behaviour while controlling races at external b
 
 - The pointer-navigation test: Native context menus and Windows Firefox autoscroll consume the next
   pointer click.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### e2e/browser-editor/canvas-recovery.spec.ts
 
 - `edit`: Fulfilled document fixtures have no remote IP; Chromium otherwise blocks loopback assets.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `project`: Playwright routing doesn't expose browser-added Fetch Metadata.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### e2e/browser-editor/canvas-refresh-review.spec.ts
 
 - `projectWith`: Playwright routing doesn't expose browser-added Fetch Metadata.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `failed`: Read focus through the native getter; Playwright's own check may see the clobbered name.
 
 ### e2e/browser-editor/canvas-refresh.spec.ts
 
 - `buttons`: WebKit's locator engine itself uses the clobbered method. Read through the native API.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### e2e/browser-editor/canvas-reveal.spec.ts
 
 - `bottom`: Use whole pixels so native window-scroll rounding cannot consume the 8px gap.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### e2e/browser-editor/canvas-text.spec.ts
 
 - `response`: Fulfilled document fixtures lack an IP address for Chromium's loopback check.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `projected`: Fulfilled document fixtures lack an IP address for Chromium's loopback check.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `paragraphId`: Redirect-chain routing is engine-specific; navigate directly after admission for
   the fixture.
 
@@ -70,6 +96,8 @@ Browser tests need native engine behaviour while controlling races at external b
 - `referrers`: Route interception applies to the first URL of a redirect chain. Admit first, then
   navigate to the captured document so the hostile response is exercised.
 - `old`: A fresh navigation retains tab-scoped storage without Firefox's same-document reload race.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### e2e/browser-editor/fixtures/hostile-course.ts
 
@@ -77,6 +105,8 @@ Browser tests need native engine behaviour while controlling races at external b
   hostile there. `evaluate` bypasses CSP: use it to plant DOM, never to simulate course code.
 - `installHostileMarkup`: Declarative invokers open a modal dialog or a popover in the top layer
   without script, above the cover and the handles. They sit above the cover to take clicks.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `installHostileMarkup`: Course elements earlier in the document that guess the handles'
   description ids would win aria-describedby and rewrite what assistive technology reads.
 - `installHostileMarkup`: A course stylesheet loads before the lens mounts; any later position
@@ -87,11 +117,15 @@ Browser tests need native engine behaviour while controlling races at external b
   back to visible, and by hiding each node while its handle has state. Ancestor display:none and
   scale(0) are absent: they collapse the node itself, and a node without a box keeps a hidden
   handle.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `HOSTILE_STATE_CSS`: Course CSS that removes a node from layout while its handle, the node's
   preceding sibling, has state: focus, top-layer display, hover, selection or an open menu. Showing
   a handle would hide its node, and hiding the handle show it again. HOSTILE_HANDLE_CSS uses
   visibility for the same selectors, which keeps the layout, except `:focus`: focus cannot be undone
   for measurement, so a focused block hidden this way hides its items and their handles too .
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `drainMessages`: A parent round trip drains earlier window envelopes without an arbitrary wait.
 - `forgeLearnerDocumentMessages`: A learner page loaded into the lens frame runs before the host
   tears it down. It posts through the same WindowProxy with origin "null". `evaluate` in the lens
@@ -100,6 +134,8 @@ Browser tests need native engine behaviour while controlling races at external b
 ### e2e/browser-editor/frame-bridge.spec.ts
 
 - `reactivated`: WebKit can refuse control focus while a redundant window focus transitions.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### e2e/browser-editor/global-setup.ts
 
@@ -112,9 +148,13 @@ Browser tests need native engine behaviour while controlling races at external b
 - `courseResources`: CourseArtifactFrame's sandbox makes the inspection origin opaque from creation,
   unlike the CSP sandbox alone. WebKit then matches 'self' against nothing, so read the course
   resources it gates.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `frame`: CourseArtifactFrame keys its iframe by mode, so learner preview is a new element with the
   browser learner sandbox. Re-pointing the inspection element instead could leave macOS Chromium's
   frame handle closed just after the learner page committed.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 ### e2e/browser-editor/lens-reveal.spec.ts
 
@@ -127,23 +167,29 @@ Browser tests need native engine behaviour while controlling races at external b
 - `pair`: Top-layer handles paint in the order they were shown, whatever their z-index. Find two
   handles whose hit extensions meet outside both buttons: whichever has focus paints on top there,
   so one of the two directions needs the focused handle re-shown.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `slack`: Targets must not overlap. A 24 px circle centred on a target must not intersect another
   target; circles of two undersized targets must not intersect each other. Firefox rounds fixed
   positions by under 0.001px.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 - `misplaced`: The course's back face rises in with a transform, which makes it the handles'
   containing block until the animation ends. Replay it slowly and place the handles mid-animation,
   as a render during the reveal does.
 
 ### e2e/browser-editor/playwright.config.ts
 
-- `defineConfig`: CI's default dot reporter prints failures only at the end, so a step
-  timeout hid them.
+- `defineConfig`: CI's default dot reporter prints failures only at the end, so a step timeout hid
+  them.
 
 ### e2e/browser-editor/review-composer.spec.ts
 
 - `duplicate`: Without Web Locks each tab persists its own copy; Duplicate tab copies that store.
 - `[key, raw]`: A browser's Duplicate tab copies sessionStorage, not the shared localStorage.
   Restore the real tab-only snapshot after the first tab acknowledges.
+  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
+  independently verified.
 
 Sources: the named symbols and their comments at commit
 `bed54f6109aa4ae868c981f53233a5ee9c5afdd7`, with the corresponding
