@@ -1,11 +1,3 @@
-/**
- * Shared SCORM API discovery for the runtime bundle and published viewer.
- *
- * LMSs normally expose their API on a parent or opener window rather than on
- * the SCO itself. Keep that traversal in one place so detection cannot drift
- * between runtime initialization and accessibility resume handling.
- */
-
 export interface WindowLike {
 	API_1484_11?: unknown;
 	API?: unknown;
@@ -29,18 +21,13 @@ export type DiscoveredScormApi =
 
 const MAX_SEARCH_DEPTH = 10;
 
-/**
- * Walk the window.opener and window.parent chains looking for a named property.
- */
 export function findWindowProperty(win: WindowLike, propertyName: string): unknown {
 	try {
 		if (win.opener) {
 			const result = scanChain(win.opener, propertyName);
 			if (result) return result;
 		}
-	} catch {
-		// Cross-origin access may throw.
-	}
+	} catch {}
 
 	return scanChain(win, propertyName);
 }
@@ -52,7 +39,6 @@ function scanChain(win: WindowLike, propertyName: string): unknown {
 			const value = (current as Record<string, unknown>)[propertyName];
 			if (value) return value;
 		} catch {
-			// A cross-origin boundary ends this chain.
 			return null;
 		}
 
@@ -66,10 +52,6 @@ function scanChain(win: WindowLike, propertyName: string): unknown {
 	return null;
 }
 
-/**
- * Discover only the API required by the package. LMS compatibility aliases do
- * not identify the package version and cannot substitute for its required API.
- */
 export function findScormApi(win: WindowLike, version: ScormVersion): DiscoveredScormApi | null {
 	if (version === "2004") {
 		const api = findWindowProperty(win, "API_1484_11");
@@ -79,9 +61,6 @@ export function findScormApi(win: WindowLike, version: ScormVersion): Discovered
 	return api ? { version, api: api as Scorm12ApiLike } : null;
 }
 
-/**
- * Read the LMS entry mode after the runtime has initialized.
- */
 export function readScormEntry(discovered: DiscoveredScormApi): string | null {
 	try {
 		const entry =
@@ -94,9 +73,6 @@ export function readScormEntry(discovered: DiscoveredScormApi): string | null {
 	}
 }
 
-/**
- * Return a bookmark only when it still names a page in the current package.
- */
 export function resolveScormResumeTarget(
 	bookmark: string | null,
 	currentSlug: string,

@@ -7,8 +7,6 @@ import {
 } from "@praxity/shared-blocks/grammar-adapter";
 import { isInlineProjectionMetadataKey } from "@praxity/shared-blocks/inline-markdown";
 
-// Stage discriminators without changing caller records. Native cloning still owns
-// host objects and clone failures; descriptors keep prompt data intact for admission.
 function captureBlockTypes(value: unknown, seen = new WeakMap<object, unknown>()): unknown {
 	if (!value || typeof value !== "object") return value;
 	if (seen.has(value)) return seen.get(value);
@@ -39,8 +37,6 @@ function captureBlockTypes(value: unknown, seen = new WeakMap<object, unknown>()
 				? new Set()
 				: Object.create(Object.getPrototypeOf(value));
 	seen.set(value, staged);
-	// Route before visiting owned data: its getters and erased properties must
-	// reach the closed constructor untouched.
 	if (descriptors.type?.value === "writeDistractors") {
 		Object.defineProperties(staged, descriptors);
 		const prompt = admitWriteDistractorsPrompt(staged);
@@ -70,7 +66,6 @@ function captureBlockTypes(value: unknown, seen = new WeakMap<object, unknown>()
 	return staged;
 }
 
-/** Replace staged-answer prompts in a compiler-owned snapshot, including Map/Set entries. */
 export function constructSelfCheckPromptData<T>(value: T, componentDefaults?: unknown): T {
 	const seen = new WeakMap<object, unknown>();
 	let defaultsValidated = false;
@@ -117,8 +112,6 @@ export function constructSelfCheckPromptData<T>(value: T, componentDefaults?: un
 	}
 }
 
-// structuredClone drops symbol and nonenumerable properties. Preserve self-check refusals,
-// without evaluating getters a second time or using live values in the compiler.
 function assertCloneProperties(
 	value: unknown,
 	seen = new WeakMap<object, boolean>(),

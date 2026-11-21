@@ -10,7 +10,6 @@ export interface AuthoredContentAsset {
 	readonly manifest: CourseArtifactFile;
 }
 
-/** Call only after the pattern owner has validated and copied the payload. */
 export function encodeAuthoredContentAsset(
 	directory: "self-check" | "write-distractors",
 	callback: "__praxitySelfCheckAsset" | "__praxityWriteDistractorsAsset",

@@ -51,8 +51,6 @@ export function highlightCode(code: string, language: string): HighlightedCodeTo
 	const darkTheme = themeDictionary(DARK_THEME, prismLanguage);
 	return normalizeTokens(Prism.tokenize(code, grammar)).map((line) =>
 		line.map((token) => ({
-			// Prism inserts a newline placeholder for empty rows. The row itself
-			// supplies visual height; Copy must read only authored characters.
 			content: token.empty ? "" : token.content,
 			types: token.types,
 			light: Object.assign({}, ...token.types.map((type) => lightTheme[type])),

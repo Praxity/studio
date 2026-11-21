@@ -38,7 +38,6 @@
 		display: block !important;
 	}
 
-	/* Print both card faces in reading order. */
 	.praxity-flashcard-inner {
 		display: block;
 	}

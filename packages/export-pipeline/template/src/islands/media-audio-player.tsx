@@ -8,7 +8,6 @@ import { flushSync } from "react-dom";
 import { createRoot } from "react-dom/client";
 import { enhanceDisclosure } from "../disclosure";
 
-/** Audio blocks use the narration entry, which already owns the React player. */
 export function mountAudioPlayer(
 	mount: HTMLElement,
 	src: string,

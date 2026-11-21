@@ -7,8 +7,6 @@ export function initializeStandaloneHost(): boolean {
 		createRuntime: (page) => new LocalStorageRuntime(undefined, page.courseId, "default"),
 		prepareResume: prepareStandaloneResume,
 		installLifecycle: (_runtime, _page, environment) => {
-			// Native hrefs carry explicit arrival through middle activation and browser
-			// menus too. Arrival consumes the marker before the course becomes ready.
 			const decorate = (href: string) => {
 				const url = new URL(href, environment.location.href);
 				if (!url.searchParams.has("praxity-resume")) url.searchParams.set("praxity-resume", "0");

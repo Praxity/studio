@@ -75,7 +75,6 @@ function createRuntime(
 		}
 		if (!loading) {
 			const url = new URL(__PRAXITY_SELF_CHECK_SUPPORT__, doc.baseURI);
-			// Browsers cache failed ESM imports. A deliberate retry needs a new request.
 			const classic = doc.location.protocol === "file:";
 			if (attempt && !classic) url.searchParams.set("retry", String(attempt));
 			loading = loadBrowserModule(url.href, classic, doc)
@@ -123,7 +122,6 @@ function createRuntime(
 			owned(cancelled) && (cancelled || provider === view.__praxityBlockState),
 		read: (blockId) => {
 			const value = provider?.get(blockId);
-			// An empty held draft still needs admission so its unavailable notice stays visible.
 			return value === undefined && storageHeld(blockId) ? { ...createSelfCheckDraft() } : value;
 		},
 		write: (blockId, value) => {
@@ -138,7 +136,6 @@ function createRuntime(
 			const adapter = await support(retry);
 			if (generation !== epoch() || !owned() || provider !== view.__praxityBlockState)
 				throw new Error("ESELFCHECKCANCELLED");
-			// Held storage already refuses admission; save receipts must follow the state write.
 			return adapter.admit(reference, doc);
 		},
 		project: (blockId, result) => {
@@ -207,7 +204,6 @@ function createRuntime(
 			answer: value,
 		});
 	};
-	// The document drains UI projection, completion, interaction, reporting and status in that order.
 	session.subscribe((snapshot, committed, command) => {
 		const cancelled = snapshot.activities.every((activity) => activity.outcome === "cancelled");
 		const pass = wrap(committed, () => true, cancelled);
@@ -266,7 +262,6 @@ function createRuntime(
 						new CustomEvent("praxity:self-check-completion", {
 							detail: { blockId: activity.blockId, completed: activity.completed },
 						}),
-						// Cancellation may project controls, but cannot authorize learner writes.
 						() => pass.current() && authority(),
 						doc,
 						doc,
@@ -313,7 +308,6 @@ function createRuntime(
 	doc.addEventListener("input", capture, true);
 	return runtime;
 }
-/** Domain projection attaches only after the lightweight owner has registered. */
 function createDocumentAttachment(doc: Document, owner: SelfCheckDocument): SelfCheckAttachment {
 	const view = doc.defaultView;
 	if (!view) throw new Error("ESELFCHECKDOCUMENT");
@@ -399,7 +393,6 @@ function createDocumentAttachment(doc: Document, owner: SelfCheckDocument): Self
 				if (region) region.textContent = reason;
 			}
 		}
-		// Keep the selected recovery control in place while its request is pending.
 		recovery.hidden = !(blocked && failure) && !recovery.contains(doc.activeElement);
 		if (blocked && failure) {
 			const reference = config.selfChecks?.references.find(
@@ -479,7 +472,6 @@ function createDocumentAttachment(doc: Document, owner: SelfCheckDocument): Self
 				answer.removeAttribute("data-self-check-edited");
 			}
 		}
-		// Read the captured provider before any replay can replace opaque comparison bytes.
 		runtime.session.initialize();
 		if (!owned()) return;
 		for (const [blockId, draft] of retained) {
@@ -521,7 +513,6 @@ function createDocumentAttachment(doc: Document, owner: SelfCheckDocument): Self
 			for (const [root, layout] of retainedLayout)
 				root.style.setProperty("min-height", `${layout.height}px`);
 			const owned = owner.loadTicket();
-			// Keep the cached document's geometry until current controls finish reattaching.
 			void runtime.session.ready.then(() =>
 				view.requestAnimationFrame(() => {
 					if (owned()) releaseLayout();
@@ -554,7 +545,6 @@ function createDocumentAttachment(doc: Document, owner: SelfCheckDocument): Self
 		printFocus = null;
 		if (view.__praxitySelfCheckSession === current) delete view.__praxitySelfCheckSession;
 	};
-	// Enhanced navigation prevents its own click. Native file links join the same action owner.
 	const nativeForward = (event: MouseEvent) => {
 		if (!dependencyIds.length || event.defaultPrevented || !(event.target instanceof view.Element))
 			return;
@@ -610,7 +600,6 @@ function createDocumentAttachment(doc: Document, owner: SelfCheckDocument): Self
 				syncGate();
 				if (released && finalized) {
 					const pass = current.ticket();
-					// Finish the caller's DOM effects before any visit can check completion.
 					queueMicrotask(() => finalizeTracking(pass));
 				}
 			},
@@ -680,16 +669,13 @@ function createDocumentAttachment(doc: Document, owner: SelfCheckDocument): Self
 			} else if (reason === "hide" || current.session.startup() !== "ready")
 				retainDrafts(reason !== "hide");
 			if (reason === "provider") edits.clear();
-			// UI leases end before a replacement owner can attach, even when cancellation is queued.
 			if (reason === "dispose") finalize();
 			else if (reason !== "hide") for (const mount of mounts) mount();
 			current.session.dispose();
 		},
 		destroy: finalize,
 	} satisfies SelfCheckAttachment;
-	// Printing belongs to the permanent owner, so canonical attachment keeps its output and focus.
 	const printAnswers = new Map<HTMLElement, HTMLDivElement>();
-	// Keep the activity and intended action before remounts remove the captured control.
 	let printFocus: { root: HTMLElement; element: HTMLElement; action?: string } | null = null;
 	const printFocusChanged = (event: FocusEvent) => {
 		if (suspendedFocus && event.target !== suspendedFocus.element && event.target !== doc.body)

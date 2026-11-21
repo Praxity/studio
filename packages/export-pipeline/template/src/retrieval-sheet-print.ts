@@ -1,10 +1,7 @@
 const requests = new WeakMap<Document, { root: HTMLElement; clear(): void }>();
 
-// Some browsers omit both afterprint and the print-media exit. Bound the lifetime
-// of the scope in that case. A blocking native dialog suspends this timer.
 const PRINT_FALLBACK_MS = 5 * 60 * 1000;
 
-/** Project one connected sheet through print CSS without changing its screen DOM. */
 export function printRetrievalSheet(root: HTMLElement): void {
 	const doc = root.ownerDocument;
 	const view = doc.defaultView;
@@ -22,8 +19,6 @@ export function printRetrievalSheet(root: HTMLElement): void {
 		)
 			focusMoved = true;
 	};
-	// A page gesture means the dialog no longer owns interaction, including when
-	// policy silently ignored print(). Release scope before a repeated Print click.
 	const endOnInteraction = () => clear(false);
 	const media = view.matchMedia?.("print");
 	let timer: number | undefined;
@@ -41,8 +36,6 @@ export function printRetrievalSheet(root: HTMLElement): void {
 		media?.removeEventListener("change", mediaChanged);
 		view.clearTimeout(timer);
 		requests.delete(doc);
-		// A later course control owns its focus, even if it subsequently blurred.
-		// Destroy/pagehide never re-focus controls being retired or navigated away.
 		if (
 			restoreFocus &&
 			!focusMoved &&
@@ -59,8 +52,6 @@ export function printRetrievalSheet(root: HTMLElement): void {
 	};
 	const finished = () => clear(true);
 	const mediaChanged = (event: MediaQueryListEvent) => {
-		// Browsers can coalesce a short print session into only its exit event.
-		// Each request owns this query/listener, so any exit ends this scope.
 		if (!event.matches) finished();
 	};
 	requests.set(doc, request);

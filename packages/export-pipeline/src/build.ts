@@ -85,7 +85,6 @@ export type { ExportFormat, Scorm2004Edition } from "./scorm/types.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-/** Content-derived stylesheet names are shared by course and pattern assets. */
 export function fingerprintedStylesheetName(
 	filename: string,
 	content: string | Uint8Array,
@@ -119,7 +118,6 @@ export { selfCheckContentInput } from "./self-check.ts";
 export interface CourseExportInput {
 	courseHomeUrl?: string;
 	unresolvedNodes?: ReadonlyMap<string, UnresolvedNode>;
-	/** Explicit authored input. Never copy this channel into pages or generic configuration. */
 	selfCheckContents?: readonly SelfCheckContentInput[];
 	writeDistractorsContents?: readonly WriteDistractorsContentInput[];
 	deckDesign?: DeckDesign;
@@ -130,15 +128,10 @@ export interface CourseExportInput {
 	description?: string;
 	sourceLocale: string;
 	content: PraxityPage[];
-	/** Named declarative slide styles from grammar frontmatter. */
 	slideStyles?: Record<string, SlideStyleDef>;
-	/** Pre-computed CSS custom properties (--praxity-* keys). */
 	cssVars?: Record<string, string>;
-	/** Dark-mode CSS custom properties for automatic system color mode. */
 	darkCssVars?: Record<string, string>;
-	/** camelCase theme values for internal lookups (imageFilterSvgDefs, font selection, etc.). */
 	theme?: Record<string, string>;
-	/** Normalized body and h1-h6 font configuration. */
 	typography?: TypographyVariants;
 	defaultImageTreatment?: ImageTreatment;
 	imageEffects?: ImageEffectsMap;
@@ -152,11 +145,7 @@ export interface CourseExportInput {
 		/** @deprecated Branding follows course navigation on every page. */
 		scope?: "all-pages" | "title-only";
 	};
-	/** The author's chosen nav archetype. Widened from 3 values to the full
-	 *  NavArchetype union — the exporter could not previously represent `slides`,
-	 *  the product's default, so it silently exported as `sidebar`. */
 	navigationStyle?: NavArchetype;
-	// Individual nav toggles customise the archetype; they no longer pick it.
 	navToggles?: {
 		navOutline?: boolean;
 		navHamburgerMenu?: boolean;
@@ -188,13 +177,8 @@ export interface CourseExportInput {
 	completionMethod?: "allPages" | "percentage" | "quiz";
 	completionThreshold?: number;
 	requireKnowledgeChecks?: boolean;
-	/**
-	 * Course pass mark as a percentage (above 0 through 100). SCORM and xAPI exports
-	 * report pass/fail from the score on required, automatically scored questions.
-	 */
 	passingScore?: number;
 	completionQuizId?: string;
-	/** xAPI LRS configuration baked into the export. */
 	xapiConfig?: {
 		endpoint: string;
 		auth: string;
@@ -202,11 +186,8 @@ export interface CourseExportInput {
 		actorMode: "lms" | "manual";
 		actor?: { name: string; mbox: string };
 	};
-	/** Formatted estimated duration string (e.g., "~12 min"). */
 	estimatedDuration?: string;
-	/** Whether the glossary tab is enabled in course settings. */
 	glossaryTabEnabled?: boolean;
-	/** Resource entries for the published resources page. */
 	resourceEntries?: Array<{
 		title: string;
 		description: string;
@@ -215,11 +196,8 @@ export interface CourseExportInput {
 		lessonTitle?: string;
 		lessonSlug?: string;
 	}>;
-	/** Whether the resources tab is enabled in course settings. */
 	resourcesTabEnabled?: boolean;
-	/** Section rhythm mode for section-based visual grouping. */
 	sectionRhythm?: "uniform" | "alternate" | "manual";
-	/** Canonical divider style between sections. */
 	dividerStyle?:
 		| "none"
 		| "thin"
@@ -232,19 +210,12 @@ export interface CourseExportInput {
 		| "blend";
 	/** @deprecated Use dividerStyle. SVG shape for section transitions. */
 	sectionTransition?: "none" | "wave" | "angle" | "curve" | "squiggle" | "gradient" | "blend";
-	/** Background texture overlay for published sections. */
 	texture?: "none" | "grain" | "noise" | "paper";
-	/** Default transition for Slides blocks when per-block transition is unset. */
 	slideTransition?: "none" | "fade" | "slide" | "zoom";
-	/** Entrance animation applied to blocks in the published output. */
 	motionEntrance?: "none" | "fade" | "slide" | "scale";
-	/** Whether list-like items reveal sequentially. */
 	motionStagger?: "none" | "sequential";
-	/** Hover interaction style applied to published image blocks. */
 	imageHoverEffect?: "none" | "lift" | "tilt" | "glow";
-	/** Default published appearance mode. */
 	colorMode?: "light" | "dark" | "auto";
-	/** Pre-derived section palette CSS vars. */
 	sectionPalettes?: {
 		light: {
 			background: string;
@@ -295,11 +266,8 @@ export interface CourseExportInput {
 			border: string;
 		};
 	};
-	/** Section palettes used when automatic colour mode switches to dark. */
 	darkSectionPalettes?: CourseExportInput["sectionPalettes"];
-	/** Inject the review-only comment sidebar into standalone HTML output. */
 	reviewMode?: boolean;
-	/** ISO expiry displayed in the review sidebar footer. */
 	reviewExpiresAt?: string;
 }
 
@@ -315,20 +283,15 @@ export interface DesktopExportInput {
 		sectionPalettes?: CourseExportInput["sectionPalettes"];
 		darkSectionPalettes?: CourseExportInput["sectionPalettes"];
 		moduleDeck?: ModuleDeckOptions;
-		/** Fraction (0–1); legacy percentages above 1 through 100 are also accepted. */
 		completionThreshold: number;
 		requireKnowledgeChecks?: boolean;
-		/** Pass mark as a fraction (above 0 through 1); legacy percentages up to 100 are accepted. */
 		passingScore?: number;
 	};
 	resolvedAssets: Map<string, Uint8Array>;
-	/** Digests captured with the host-admitted bytes. */
 	resolvedAssetDigests?: ReadonlyMap<string, string>;
 	viewerVersion: string;
 	locale: string;
-	/** Inject the review-only comment sidebar into standalone HTML output. */
 	reviewMode?: boolean;
-	/** ISO expiry displayed in the review sidebar footer. */
 	reviewExpiresAt?: string;
 }
 
@@ -336,26 +299,18 @@ export interface BuildOptions {
 	mode?: "source" | "desktop";
 	format: ExportFormat;
 	scorm2004Edition?: Scorm2004Edition;
-	/** Timeout in milliseconds for the build (default: 120000) */
 	timeout?: number;
-	/** Required in desktop mode — path to resources/export-assets. */
 	prebuiltAssetsDir?: string;
-	/** Required in desktop mode — absolute path to the active project directory. */
 	projectDir?: string;
-	/** Host-owned workspace for recoverable temporary artifacts. */
 	temporaryRoot?: string;
-	/** Optional progress callback. Called with the current step and percent completion. */
 	onProgress?: (step: string, percent: number) => void;
 }
 
 export type CompileCourseOptions = Omit<BuildOptions, "format" | "scorm2004Edition">;
 
 export interface ExportResult {
-	/** The packaged export. */
 	zip: Buffer;
-	/** Number of pages in the course */
 	pageCount: number;
-	/** Format used */
 	format: ExportFormat;
 }
 
@@ -426,13 +381,6 @@ export interface CoursePreviewDeployment {
 	dispose(): Promise<void>;
 }
 
-/**
- * Remove an export temp dir reliably. The previous `fs.remove(dir).catch(()=>{})`
- * silently swallowed transient EBUSY/ENOTEMPTY errors from async file-handle
- * release, leaking `praxity-export-*` dirs into the OS temp dir on every export.
- * Native fs.rm with retries handles the transient case; a persistent failure is
- * logged (not fatal — a leaked temp dir must not fail an otherwise-good export).
- */
 async function removeTempDir(dir: string): Promise<void> {
 	try {
 		await rm(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
@@ -524,7 +472,6 @@ async function loadSchemaFiles(
 			}
 		}
 		if (files.length > 0) {
-			// LOM headers refer to license.txt; never replace an incomplete prepared set silently.
 			files.push({
 				name: "license.txt",
 				content: await readFile(path.join(schemaDir, "..", "license.txt")),
@@ -687,7 +634,6 @@ function createCourseArtifactManifestFromFiles(
 	});
 }
 
-/** Editor contexts may be empty; every publication format uses this admission. */
 export async function preparePublicationContext(course: CourseExportInput | DesktopExportInput) {
 	const context = await createCourseContext(course);
 	if (context.pages.length === 0) {
@@ -780,12 +726,9 @@ async function compileCourseArtifact(
 				builtDesktopCss = true;
 			}
 		} else {
-			// 1. Pre-build full and Mantine-free CSS bundles into temp public/.
-			//    Font files are copied to public/fonts/.
 			fontPreloads = await buildExportCssBundle(publicDir, normalizedCourse.typography);
 		}
 
-		// 2. Resolve assets (download remote files, rewrite URLs)
 		const assetsDir = path.join(publicDir, "assets");
 		const resolvedPages =
 			mode === "desktop"
@@ -849,7 +792,6 @@ async function compileCourseArtifact(
 		);
 		reportProgress("Resolving course assets", 20);
 
-		// 3. Resolve the shared stylesheet, course shell, hosts, and islands.
 		let viewerCssPath: string;
 		let deckCssPath: string | null = null;
 		let retrievalSheetCssPath: string | null = null;
@@ -886,9 +828,7 @@ async function compileCourseArtifact(
 			let currentHash: string | undefined;
 			try {
 				currentHash = await computeViewerSourceHash();
-			} catch {
-				// An unavailable source hash remains a cache miss; rebuild as before.
-			}
+			} catch {}
 			const cached = currentHash ? await readCachedViewer(VIEWER_CACHE_DIR, currentHash) : null;
 			const prebuiltManifest = cached?.manifest;
 			if (cached && prebuiltManifest) {
@@ -917,7 +857,6 @@ async function compileCourseArtifact(
 				islandManifest = built.manifest;
 				hostRuntimePaths = built.hostPaths;
 
-				// Cache the rebuilt viewer so subsequent publishes skip the rebuild.
 				try {
 					await cacheViewerBundle(
 						VIEWER_CACHE_DIR,
@@ -926,7 +865,6 @@ async function compileCourseArtifact(
 						currentHash ?? (await computeViewerSourceHash()),
 					);
 				} catch (cacheErr) {
-					// Non-fatal — publish continues, just won't cache
 					console.warn("[publish] Could not cache viewer bundle:", cacheErr);
 				}
 			}
@@ -1108,7 +1046,6 @@ async function compileCourseArtifact(
 			};
 		}
 
-		// 4. Generate HTML pages directly to dist/
 		const htmlConfig: Parameters<typeof generateHtmlPages>[0] = {
 			courseHomeUrl: normalizedCourse.courseHomeUrl,
 			id: normalizedCourse.id,
@@ -1257,7 +1194,6 @@ async function compileCourseArtifact(
 			islandManifest.courseRuntimeLicense,
 		);
 		const notices = islandManifest.thirdPartyNotices;
-		// CSS is shared by every course. Island files retain their own dependency selection.
 		const noticeKeys = new Set([
 			"@mantine/core",
 			...(notices.outputs[islandManifest.css] ?? []),
@@ -1288,7 +1224,6 @@ async function compileCourseArtifact(
 		}
 		for (const name of noticeKeys) await writePackageNotice(distDir, notices.packages[name]);
 
-		// 6. Copy CSS, fonts, and assets from temp public/ to dist/.
 		await fs.copy(publicDir, distDir, { overwrite: false });
 		reportProgress("Copying bundle assets", 75);
 		const pageCount = resolvedContent.length;
@@ -1326,7 +1261,6 @@ async function compileCourseArtifact(
 	}
 }
 
-// null restores the default destination for LMS formats and previews.
 function withDeploymentHead(
 	filePath: string,
 	html: string,
@@ -1724,7 +1658,6 @@ export async function deployCourse(
 	}
 }
 
-/** Build and package a SCORM/xAPI/HTML course. */
 export async function buildScormPackage(
 	course: CourseExportInput | DesktopExportInput,
 	options: BuildOptions,
@@ -1771,9 +1704,7 @@ function inferBrandLogoExtension(url: string, contentType: string | null): strin
 		const parsed = new URL(url);
 		const ext = path.extname(parsed.pathname).toLowerCase();
 		if (ext) return ext;
-	} catch {
-		// Ignore invalid URL and fall back to .png.
-	}
+	} catch {}
 	return ".png";
 }
 

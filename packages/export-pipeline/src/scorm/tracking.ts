@@ -1,55 +1,22 @@
-/**
- * Course tracking logic that sits on top of a SCORMRuntime implementation.
- *
- * Handles page-visit tracking, interaction scoring, and automatic completion
- * detection based on configurable criteria (all pages, percentage, or quiz).
- */
-
 import { DEFAULT_COMPLETION_THRESHOLD } from "@praxity/shared-blocks/constants";
 import { type CourseOutcome, writeCourseOutcome } from "@praxity/shared-blocks/learner-block-state";
 import type { InteractionRecord, SCORMRuntime, TrackInteractionOptions } from "./types.ts";
 
-/** The pass mark as the manifest declares it, so the LMS and the SCO agree at the boundary. */
 export function passMarkPercent(value: number): number {
 	return Math.min(100, Math.round(value * 100) / 100);
 }
 
-// ---------------------------------------------------------------------------
-// Configuration
-// ---------------------------------------------------------------------------
-
 export interface TrackingConfig {
-	/** Total number of pages in the course. */
 	totalPages: number;
-	/** How completion is determined. */
 	completionMethod: "allPages" | "percentage" | "quiz";
-	/**
-	 * For "percentage" method: the minimum percentage of pages (0-100) that
-	 * must be visited to trigger completion.
-	 */
 	completionThreshold?: number;
-	/**
-	 * Minimum score (0-100) required to pass: for the "quiz" method, or the
-	 * course pass mark when `scoredAssessmentIds` is set.
-	 */
 	passMark?: number;
-	/**
-	 * Required, automatically scored questions and groups that make up the course
-	 * score. With `passMark`, pass/fail is decided once every one has a submitted
-	 * answer, from the average of their latest scores.
-	 */
 	scoredAssessmentIds?: string[];
-	/** Legacy page slugs mapped to their durable page IDs. */
 	pageAliases?: Record<string, string>;
-	/** Required scored questions/groups that must pass as well as the page rule. */
 	requiredAssessmentIds?: string[];
-	/** SCORM keeps a score-changing authored retry incomplete while reporting the score. */
 	deferRetryableFailure?: boolean;
-	/** Hosts may display the outcome without persisting or reporting it. */
 	reportOutcome?: boolean;
-	/** Finality comes from the host's existing saved answers, including authored retries. */
 	isAssessmentFinal?: (id: string) => boolean;
-	/** Hosts supply saved answers; the tracker owns their finality decision. */
 	getAssessmentState?: (id: string) => unknown;
 }
 
@@ -61,10 +28,6 @@ interface CourseResult {
 
 type TrackerOutcome = CourseOutcome & { result?: CourseResult | null };
 
-// ---------------------------------------------------------------------------
-// CourseTracker
-// ---------------------------------------------------------------------------
-
 export class CourseTracker {
 	private runtime: SCORMRuntime;
 	private config: TrackingConfig;
@@ -74,19 +37,12 @@ export class CourseTracker {
 		this.config = config;
 	}
 
-	/**
-	 * Record a page visit and re-evaluate completion.
-	 */
 	trackPageVisit(pageId: string, bookmark = pageId): void {
 		this.runtime.trackPageVisit(pageId);
 		this.runtime.setBookmark(bookmark);
 		this.checkCompletion();
 	}
 
-	/**
-	 * Record an interaction (e.g. quiz answer), recalculate the score,
-	 * persist it to the runtime, and re-evaluate completion.
-	 */
 	trackInteraction(
 		id: string,
 		response: string,
@@ -101,15 +57,10 @@ export class CourseTracker {
 		this.checkCompletion();
 	}
 
-	/**
-	 * Average the latest scored attempt for each interaction ID.
-	 * Returns 0 when there are no interactions with scores.
-	 */
 	calculateScore(): number {
 		return this.average([...this.latestScored().values()]);
 	}
 
-	/** Recompute the authored outcome; pending answers have no learner-visible result. */
 	getOutcome(): { score: number; passed: boolean } | undefined {
 		const { result } = this.outcome("display");
 		return result ? { score: result.score, passed: result.passed } : undefined;
@@ -152,20 +103,13 @@ export class CourseTracker {
 		return latest;
 	}
 
-	/**
-	 * Evaluate whether the course should be marked as completed, passed, or
-	 * failed based on the configured completion method.
-	 */
 	checkCompletion(): void {
 		writeCourseOutcome(this.runtime, this.outcome("check"));
 	}
 
-	/** Commit preparation preserves the adapter's existing write log. */
 	prepareCommit(): void {
 		writeCourseOutcome(this.runtime, this.outcome("prepareCommit"));
 	}
-
-	// ---- private completion strategies ------------------------------------
 
 	private pageRuleMet(): boolean {
 		const aliases = this.config.pageAliases ?? {};
@@ -195,15 +139,12 @@ export class CourseTracker {
 			for (const member of result?.memberIds ?? [id]) {
 				const record = latest.get(member);
 				if (!record) continue;
-				// Member submissions commit before their delayed aggregate event. A newer
-				// member makes that aggregate pending, including its last successful retry.
 				if (
 					interactions.lastIndexOf(record) > interactions.lastIndexOf(result as InteractionRecord)
 				)
 					pending = true;
 				if (record.correct === true) continue;
 				const limit = record.maxAttempts ?? 1;
-				// A finite limit without a saved count cannot establish an available retry.
 				const used = record.attemptsUsed ?? limit;
 				if (limit === 0 || used < limit) retryable = true;
 			}
@@ -223,12 +164,6 @@ export class CourseTracker {
 		);
 	}
 
-	/**
-	 * Completion follows the page rule; pass/fail follows the score. Runtimes with a
-	 * separate success status report both. SCORM 1.2 has one status, and "completed"
-	 * would end the attempt before a result exists, so it stays "incomplete" until
-	 * the course has a final failure, or passes with the page rule met.
-	 */
 	outcome(
 		intent:
 			| "check"
@@ -278,7 +213,6 @@ export class CourseTracker {
 		const ids = authored
 			? (this.config.scoredAssessmentIds ?? [])
 			: [...new Set(interactions.map((record) => record.id))];
-		// Undefined while unanswered; null while a newer group member awaits its aggregate.
 		const result = authored
 			? ids.every((id) => latest.has(id))
 				? this.courseResult(
@@ -299,13 +233,10 @@ export class CourseTracker {
 		if (intent === "display") return { result };
 		if (intent === "score")
 			return {
-				// A partial authored score would let the LMS judge pass/fail early.
 				score: this.config.reportOutcome !== false ? result?.score : undefined,
 			};
 		const completionMet = authored ? requiredMet && this.pageRuleMet() : true;
 		const success = result ? (result.passed ? "passed" : "failed") : "unknown";
-		// Combined-status Finish retains failure; separate-success Finish retains
-		// only retryable incomplete, preserving its final-failure completion override.
 		const courseFailure = result
 			? !result.passed && (!this.runtime.setSuccess || this.retryPending(result))
 			: undefined;
@@ -313,8 +244,6 @@ export class CourseTracker {
 		const separateSuccess =
 			!!this.runtime.setSuccess && (!legacyQuiz || this.config.deferRetryableFailure);
 		if (separateSuccess) {
-			// Success first, so a completion report carries the current result. Reporting it on
-			// every check also tells the runtime a pass mark is active (see SCORM 2004 exit).
 			completion =
 				completionMet && !(result !== undefined && this.retryPending(result))
 					? "completed"

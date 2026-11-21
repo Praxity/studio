@@ -82,9 +82,7 @@ function readRate(): number {
 function writeRate(rate: number): void {
 	try {
 		sessionStorage.setItem(RATE_STORAGE_KEY, String(rate));
-	} catch {
-		// Playback still works when an LMS blocks storage.
-	}
+	} catch {}
 }
 
 function focusTargets(): HTMLElement[] {

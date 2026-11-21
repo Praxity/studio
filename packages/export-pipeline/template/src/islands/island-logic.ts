@@ -6,9 +6,7 @@ export function attachIsland() {
 	if (raw) {
 		try {
 			initDomLogicRuntime(JSON.parse(raw));
-		} catch {
-			// Server-rendered content remains usable if the exported config is corrupt.
-		}
+		} catch {}
 	}
 }
 declare global {

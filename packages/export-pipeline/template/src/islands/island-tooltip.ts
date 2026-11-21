@@ -27,9 +27,7 @@ if (rawConfig) {
 				label: config.strings.fullGlossary,
 			};
 		}
-	} catch {
-		// Keep the tooltip usable without the optional assistive cue.
-	}
+	} catch {}
 }
 export function attachIsland() {
 	initInlineTooltips(definitionCue, newTabText, glossary);

@@ -34,7 +34,6 @@ async function directoryInputs(source: string, prefix: string): Promise<DesktopE
 	return files;
 }
 
-/** File inputs copied by preparation, separate from generated viewer/CSS outputs. */
 async function desktopExportCopyInputs(): Promise<DesktopExportInputFile[]> {
 	return [
 		...IMAGE_CODEC_ASSETS.map((specifier) => ({
@@ -57,7 +56,6 @@ async function desktopExportCopyInputs(): Promise<DesktopExportInputFile[]> {
 	];
 }
 
-/** Preparation and provenance consumers use exactly the same owned input rules. */
 export async function desktopExportInputs(): Promise<DesktopExportInputFile[]> {
 	return [...(await desktopExportCopyInputs()), ...(await desktopCssInputs())];
 }
@@ -71,7 +69,6 @@ export async function prepareDesktopExportInputs(outputDir: string): Promise<voi
 	await prepareDesktopCssAssets(outputDir);
 }
 
-/** Required paths come from preparation owners, never from a directory being checked. */
 export async function preparedExportAssetPaths(outputDir: string): Promise<string[]> {
 	const manifest = await readViewerManifest(outputDir);
 	return [
@@ -85,7 +82,6 @@ export async function preparedExportAssetPaths(outputDir: string): Promise<strin
 	].sort();
 }
 
-/** Verify the prepared inputs shipped to desktop and standalone exports. */
 export async function verifyPreparedExportAssets(
 	outputDir: string,
 	appVersion?: string,

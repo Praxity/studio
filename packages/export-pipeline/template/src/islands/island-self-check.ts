@@ -163,7 +163,6 @@ function mount(root: HTMLElement, runtime: SelfCheckRuntime): () => void {
 			const admitted = await pending;
 			pass = ticket();
 			const current = runtime.session.read(blockId);
-			// The admission receipt includes queued retries and rejects intervening commands.
 			if (
 				!pass.current() ||
 				!admitted ||
@@ -252,7 +251,6 @@ function enhance(root: HTMLElement): () => void {
 			cleanup = next;
 			const owner = root.ownerDocument.defaultView?.__praxitySelfCheckDocument;
 			const current = owner?.loadTicket();
-			// Replacement mounts every sibling synchronously before publishing readiness.
 			queueMicrotask(() => {
 				if (current?.() && owner?.current === runtime) runtime.session.startup("ready");
 			});

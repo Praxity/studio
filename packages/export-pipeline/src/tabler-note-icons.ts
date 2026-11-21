@@ -51,7 +51,6 @@ function collectNotes(value: unknown, notes: Array<Record<string, unknown>>): vo
 	}
 }
 
-/** Embed only the Tabler path data referenced by this course. */
 export async function embedTablerNoteIcons(
 	pages: PraxityPage[],
 	catalogPath?: string,
@@ -77,7 +76,6 @@ export async function embedTablerNoteIcons(
 	}
 }
 
-/** Load the build-time catalogs and embed only icons referenced by this course. */
 export async function embedTablerInlineIcons(
 	pages: PraxityPage[],
 	outlineCatalogPath?: string,

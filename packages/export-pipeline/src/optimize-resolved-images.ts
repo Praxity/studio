@@ -9,7 +9,6 @@ import { defaultImageResultCache, type ImageResultCache } from "./image-result-c
 
 type BrandLogo = CourseConfig["brandLogo"];
 
-/** Rewrite compiler-owned local assets, leaving authored bytes and paths alone. */
 export async function optimizeResolvedImages(
 	pages: PraxityPage[],
 	styleCarrier: PraxityPage,
@@ -65,9 +64,7 @@ export async function optimizeResolvedImages(
 				let optimized: Uint8Array | undefined;
 				try {
 					optimized = await imageCache.optimize(bytes, codecDir);
-				} catch {
-					// Unsupported or corrupt source images keep their original bytes.
-				}
+				} catch {}
 				let next: string | undefined;
 				if (optimized && optimized.length < bytes.length) {
 					const hash = crypto.createHash("sha256").update(optimized).digest("hex").slice(0, 24);

@@ -22,9 +22,6 @@ function deadline(entry: Entry): number {
 	return Math.min(entry.requestedAt + QUIET_WINDOW_MS, entry.startedAt + MAX_WAIT_MS);
 }
 
-/** A page gets one leading job per burst, then waits for 100 ms of quiet,
- * with another compile at least every 400 ms while edits continue.
- * The clock is supplied by the host; this queue owns no timers or compiler. */
 export class CompileQueue {
 	private readonly entries = new Map<string, Entry>();
 	private running: CompileJob | null = null;
@@ -56,7 +53,6 @@ export class CompileQueue {
 		}
 	}
 
-	/** Redo output suppressed by a draft without opening another leading slot. */
 	retry(job: CompileJob): void {
 		const entry = this.entries.get(job.pageId);
 		if (!entry || entry.seq !== job.seq || entry.pending || this.running?.pageId === job.pageId)
@@ -65,7 +61,6 @@ export class CompileQueue {
 		entry.requestedAt = this.now();
 	}
 
-	/** Earliest wake-up, or null while running/idle. The visible page wins ties. */
 	readyAt(): number | null {
 		if (this.running) return null;
 		let earliest: number | null = null;

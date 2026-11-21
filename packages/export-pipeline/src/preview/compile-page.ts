@@ -89,8 +89,6 @@ export function compilePage(context: CourseContext, pageId: string): CompiledPag
 	const deps = {
 		...getPageDependencies(context, pageId, "fragments"),
 		...getPageDependencies(context, pageId, "page-frame"),
-		// The effective locale, frame navigation and module capability union also
-		// affect node HTML. Another page can introduce an island in this document.
 		manifest: digest({
 			locale: page.locale ?? prepared.config.sourceLocale,
 			moduleDeck: !!prepared.config.moduleDeck,
@@ -113,7 +111,6 @@ export function compilePage(context: CourseContext, pageId: string): CompiledPag
 			local.set(pageId, previous);
 			return previous;
 		}
-		// Keep shared fragment bytes while binding the delivery to the latest seq.
 		const next = { ...previous, seq: context.seq, documentSlug: entry.documentSlug };
 		if (next.seq >= previous.seq) cache.set(pageId, next);
 		local.set(pageId, next);
@@ -159,7 +156,6 @@ export function renderNode(
 	pageId: string,
 	nodeId: string,
 	block?: PraxityBlock,
-	/** Latest admitted siblings, when the whole context refresh is queued. */
 	pageBlocks?: readonly PraxityBlock[],
 ): Fragment {
 	if (block) block = cloneAdmittedSelfCheckData(block);
@@ -175,7 +171,6 @@ export function renderNode(
 						),
 					},
 		);
-		// Admit replacement prompts against their captured Content before rendering.
 		admitWriteDistractorsRuntime(
 			admittedPages,
 			context.writeDistractorsRuntime,
@@ -216,7 +211,6 @@ export function renderNode(
 							),
 				}
 			: page;
-	// A fragment cannot add a private store to a host admitted without that policy.
 	const admittedPolicy = compileBlockStatePolicy(
 		prepared.config.pages.flatMap((page) => page.blocks),
 	);
@@ -234,15 +228,11 @@ export function renderNode(
 				"draft.blockStatePolicy",
 				page.locale ?? prepared.config.sourceLocale,
 			);
-	// A draft may introduce an island. Plan the substituted page/module before
-	// rendering; all layout, group, visibility and footnote facts use that draft.
 	const available = context.htmlOutput
 		? availableIslandNames(context.htmlOutput.islandAssets)
 		: true;
 	const draftPlan =
 		block || pageBlocks ? planPageRuntime(prepared.config, draft, available) : runtime;
-	// Existing module capabilities remain admitted; only the draft page can add
-	// capabilities. Removed capabilities do not affect this node's HTML.
 	const plan =
 		(block || pageBlocks) && prepared.config.moduleDeck
 			? {
@@ -301,7 +291,6 @@ export function compileDocument(
 	return { ...renderDocumentFrame(context, slug, prepared, contents), pages };
 }
 
-/** Shell and deck regions can change without compiling hidden page bodies. */
 export function compileDocumentFrame(
 	context: CourseContext,
 	slug: string,
@@ -357,9 +346,6 @@ function renderDocumentFrame(
 	});
 	if (seen.size !== replacements.length) throw new Error("Missing HTML fragment marker.");
 
-	// The inert config JSON changes with every edit. In a patched inspection only the
-	// inspection runtime's logic overlay reads it (course scripts don't run under its
-	// nonce), so it is left out: a shell is stale only when its markup or head changes.
 	const shellDigest = digest(
 		shell.replace(/<script id="praxity-config" type="application\/json">[\s\S]*?<\/script>/, ""),
 	);

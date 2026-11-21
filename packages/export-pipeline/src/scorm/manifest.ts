@@ -3,16 +3,6 @@ import { join, relative, sep } from "node:path";
 import { passMarkPercent } from "./tracking.ts";
 import type { ExportFormat, Scorm2004Edition } from "./types";
 
-// See docs/context/scorm-xapi-standards.md for spec references
-
-// ---------------------------------------------------------------------------
-// XML escaping
-// ---------------------------------------------------------------------------
-
-/**
- * Escape the five XML special characters so that arbitrary strings can be
- * safely embedded in XML attribute values and text nodes.
- */
 export function escapeXml(str: string): string {
 	return str
 		.replace(/&/g, "&amp;")
@@ -22,17 +12,6 @@ export function escapeXml(str: string): string {
 		.replace(/'/g, "&apos;");
 }
 
-// ---------------------------------------------------------------------------
-// File enumeration
-// ---------------------------------------------------------------------------
-
-/**
- * Recursively walk `distDir` and return every file as a relative path
- * (e.g. `"index.html"`, `"_astro/chunk.js"`).
- *
- * - Hidden files/directories (names starting with `.`) are skipped.
- * - Results are sorted alphabetically for deterministic output.
- */
 export async function enumerateFiles(distDir: string): Promise<string[]> {
 	const results: string[] = [];
 
@@ -55,18 +34,6 @@ export async function enumerateFiles(distDir: string): Promise<string[]> {
 	return results;
 }
 
-// ---------------------------------------------------------------------------
-// Manifest generation
-// ---------------------------------------------------------------------------
-
-/**
- * Generate an `imsmanifest.xml` string for the given export format.
- *
- * - `scorm12`  -- SCORM 1.2 manifest (`imscp_rootv1p1p2`, `adlcp_rootv1p2`)
- * - `scorm2004` -- SCORM 2004 manifest (`imscp_v1p1`, `adlcp_v1p3`)
- * - `xapi`     -- Same as SCORM 2004 (xAPI courses are often SCORM-wrapped for LMS delivery)
- * - `web`      -- Returns an empty string (standalone web builds need no manifest)
- */
 export function generateManifest(
 	format: ExportFormat,
 	courseId: string,
@@ -74,7 +41,6 @@ export function generateManifest(
 	files: string[],
 	frontmatter?: ManifestFrontmatter,
 	scorm2004Edition: Scorm2004Edition = "3rd",
-	/** Course pass mark (0-100) for LMS-side judgement; omitted for completion-only courses. */
 	passingScore?: number,
 ): string {
 	const safeTitle = escapeXml(courseTitle);
@@ -89,7 +55,6 @@ export function generateManifest(
 		return buildScorm12Manifest(courseId, safeTitle, fileElements, lomXml, passMark);
 	}
 
-	// scorm2004 and xapi both use the SCORM 2004 manifest structure
 	return buildScorm2004Manifest(
 		courseId,
 		safeTitle,
@@ -99,10 +64,6 @@ export function generateManifest(
 		passMark,
 	);
 }
-
-// ---------------------------------------------------------------------------
-// Template helpers
-// ---------------------------------------------------------------------------
 
 export interface ManifestFrontmatter {
 	title?: string;

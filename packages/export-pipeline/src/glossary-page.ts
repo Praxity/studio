@@ -19,10 +19,6 @@ interface GlossaryPageOptions {
 	terms: GlossaryPageTerm[];
 }
 
-/**
- * Generate the body HTML for the glossary page.
- * Returns an empty string when no terms are provided.
- */
 export function generateGlossaryPageHtml(opts: GlossaryPageOptions): string {
 	const { terms } = opts;
 	if (terms.length === 0) return "";
@@ -54,10 +50,8 @@ export function generateGlossaryPageHtml(opts: GlossaryPageOptions): string {
 		</div>`;
 }
 
-/** Inline tooltip triggers, as emitted by the grammar and the rich editor. */
 const TOOLTIP_TRIGGER = /<span[^>]*\bdata-tooltip-content="([^"]*)"[^>]*>([\s\S]*?)<\/span>/gi;
 
-/** The term is written back out through escapeHtml, so it must arrive as plain text. */
 function toPlainText(html: string): string {
 	return html
 		.replace(/<[^>]+>/g, "")
@@ -69,12 +63,6 @@ function toPlainText(html: string): string {
 		.trim();
 }
 
-/**
- * Collect glossary entries from the inline tooltips authored in page content.
- * Walks rich block data at any nesting depth, leaving literal blocks intact.
- * First definition of a term wins; matching is
- * case-insensitive so "PPE" and "ppe" are one entry.
- */
 export function collectGlossaryTerms(
 	pages: Array<{ id: string; title: string; blocks: unknown }>,
 ): GlossaryPageTerm[] {
@@ -117,7 +105,6 @@ export function collectGlossaryTerms(
 			const htmlFields = Array.isArray(owner._htmlFields) ? owner._htmlFields : [];
 			for (const [key, entry] of Object.entries(owner)) {
 				if (isInlineProjectionMetadataKey(key, { keepDisplay: true })) continue;
-				// Grammar marks HTML-valued fields where it projects them. Other labels stay raw.
 				visit(
 					entry,
 					page,

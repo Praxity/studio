@@ -6,8 +6,6 @@ import type { HighlightData, RetrievalSheetData } from "@praxity/shared-blocks/t
 import { validateContent as validateHighlightContent } from "learning-patterns/patterns/highlight/logic.js";
 import { validateContent } from "learning-patterns/patterns/retrieval-sheet/logic.js";
 
-/** Raw compiled input has no guaranteed source coordinates. Expose structural
- * paths and a localization reference, never authored fields or guessed spans. */
 export class PracticeAdmissionError extends Error {
 	readonly messageRef;
 	constructor(
@@ -24,8 +22,6 @@ export class PracticeAdmissionError extends Error {
 	}
 }
 
-/** Raw compiled callers do not have the source reader's shape/blank-field admission.
- * Upstream owns schema limits, IDs and cross-field validation; never expose its errors. */
 export function assertRetrievalSheetData(
 	data: unknown,
 	blockId: string,
@@ -48,7 +44,6 @@ export function assertRetrievalSheetData(
 	}
 }
 
-/** Compiled highlight content uses upstream validation, with content-free Studio errors. */
 export function assertHighlightData(
 	data: unknown,
 	blockId: string,

@@ -6,7 +6,6 @@ import {
 	type WriteDistractorsRules,
 } from "@praxity/shared-blocks/write-distractors-content";
 
-/** Presentation receives admitted label comparisons, never raw authored Content. */
 export function renderDistractorComparison(
 	result: ReturnType<WriteDistractorsRules["comparison"]>,
 	lang: string,

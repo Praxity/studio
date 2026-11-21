@@ -7,7 +7,6 @@ export function declaredCourseActivityId(courseId: string, activityBase?: string
 export function isAbsoluteIri(value: unknown): value is string {
 	if (typeof value !== "string" || !/^[A-Za-z][A-Za-z0-9+.-]*:/.test(value) || /\s/.test(value))
 		return false;
-	// Not URL.canParse: LMS browsers older than Safari 17 / Chrome 120 lack it.
 	try {
 		new URL(value);
 		return true;

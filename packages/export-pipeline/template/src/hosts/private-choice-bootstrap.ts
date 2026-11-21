@@ -4,8 +4,6 @@ import type { privacySupport } from "./privacy-support";
 type Create = typeof privacySupport.createPrivateBlockStateRuntime;
 type Args = Parameters<Create>;
 
-/** Observe the existing store's identity admission, without a second identity
- * lookup that could mint an attempt early or consume its new-attempt cleanup. */
 export function createPrivateChoiceProvider(args: Args, create: Create) {
 	let identified = false;
 	const runtime = new Proxy(args[0], {

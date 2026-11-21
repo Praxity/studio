@@ -31,7 +31,6 @@ declare global {
 	}
 }
 
-/** One provider activation owns every continuation, including work before the runtime attaches. */
 function createSelfCheckDocument(doc: Document, build: string, waitForHost: boolean) {
 	const view = doc.defaultView;
 	if (!view) throw new Error("ESELFCHECKDOCUMENT");
@@ -111,7 +110,6 @@ function createSelfCheckDocument(doc: Document, build: string, waitForHost: bool
 		writeThrough = false,
 	) => {
 		if (disposed || (!force && replacement === provider)) return;
-		// The first host install admits input made before any provider owned learner state.
 		const initialRatings =
 			!force && !providerInstalled && provider === undefined && replacement
 				? Array.from(pendingRatings).filter(([, gesture]) => gesture.current())
@@ -131,7 +129,6 @@ function createSelfCheckDocument(doc: Document, build: string, waitForHost: bool
 			enumerable: descriptor?.enumerable ?? true,
 			get: () => provider,
 			set: (replacement: LearnerBlockStateRuntime | undefined) => {
-				// Revoke before an injected setter can call back into learner effects.
 				assign(replacement, false, true);
 			},
 		});
@@ -274,7 +271,6 @@ function createSelfCheckDocument(doc: Document, build: string, waitForHost: bool
 								value: provider,
 							},
 				);
-			// Cancellation drains through the session FIFO before the registry is released.
 			revoke("dispose", () => {
 				listeners.clear();
 				view.removeEventListener("pagehide", hide);

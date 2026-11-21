@@ -24,11 +24,9 @@ function legacyBaseIndex(hex: string): number {
 	);
 }
 
-/** Generate a Mantine-compatible light-to-dark palette with even OKLCH lightness steps. */
 export function generateColorShades(hex: string): string[] {
 	const seed = normalizeHex(hex) ?? DEFAULT_COLOR;
 	const [L, C, H] = hexToOklch(seed);
-	// Preserve the seed's historical shade index so existing Mantine role lookups move less.
 	const baseIndex = legacyBaseIndex(seed);
 	const step = Math.min(
 		MAX_LIGHTNESS_STEP,

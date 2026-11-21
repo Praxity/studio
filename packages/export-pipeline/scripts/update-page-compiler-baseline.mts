@@ -1,15 +1,3 @@
-/**
- * Run from the repository root:
- * pnpm exec tsx packages/export-pipeline/scripts/update-page-compiler-baseline.mts
- *
- * Baseline changes need a reviewed design reason. Review every changed entry;
- * never regenerate merely to make a failing compiler test pass.
- * Hash emitted full-build HTML, never compileDocument/compilePage results.
- * Bundle URLs, font preloads and build-only image hints are normalized to P2's
- * renderer-only fixture configuration.
- * Fixture asset references are round-tripped through offline relative URLs;
- * this baseline covers renderer bytes, not downloaded asset bytes.
- */
 import { createHash } from "node:crypto";
 import { writeFile } from "node:fs/promises";
 import { extname, resolve } from "node:path";
@@ -24,9 +12,7 @@ import { compilerFixture, compilerIslandAssets } from "../tests/fixtures/page-co
 
 const hash = (html: string) => createHash("sha256").update(html).digest("hex");
 
-/** Match the renderer-only fixture assets in both capture and compiler checks. */
 export function normalizeRendererAssets(html: string): string {
-	// The fixture omits this deployment owner; its presence and URL are not renderer bytes.
 	return html
 		.replace(
 			/^<script(?: defer)? src="self-check-lifetime-[A-Z0-9]{8}\.classic\.js"><\/script>\n/gm,
@@ -38,8 +24,6 @@ export function normalizeRendererAssets(html: string): string {
 		});
 }
 
-// These fixtures have no authored loading hints or icon nodes. The build adds
-// them after adaptation; P2's renderer-only input intentionally has neither.
 function rendererMetadata(value: unknown): unknown {
 	if (Array.isArray(value)) return value.map(rendererMetadata);
 	if (value === null || typeof value !== "object") return value;
@@ -57,7 +41,6 @@ function rendererMetadata(value: unknown): unknown {
 	);
 }
 
-/** Slice source bytes at DOM locations; serializing the DOM would change HTML. */
 export function bodyHashes(html: string, pageIds: readonly string[], deck: boolean) {
 	const bodies: Record<string, string> = {};
 	const dom = new JSDOM(html, { includeNodeLocations: true });
@@ -65,7 +48,6 @@ export function bodyHashes(html: string, pageIds: readonly string[], deck: boole
 		for (const pageId of pageIds) {
 			const element = dom.window.document.getElementById(deck ? pageId : "main-content");
 			if (!element) continue;
-			// jsdom's declarations expose the generic node location, even for elements.
 			const location = dom.nodeLocation(element) as ReturnType<JSDOM["nodeLocation"]> & {
 				startTag?: { endOffset: number };
 				endTag?: { startOffset: number };

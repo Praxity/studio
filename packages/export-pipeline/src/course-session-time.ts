@@ -1,6 +1,5 @@
 type SessionStorage = Pick<Storage, "getItem" | "setItem">;
 
-/** The current tab's course reading session, independent of LMS completion. */
 export function readCourseSessionTime(
 	courseId: string,
 	now: number,

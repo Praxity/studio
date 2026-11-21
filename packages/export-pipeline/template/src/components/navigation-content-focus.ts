@@ -1,4 +1,3 @@
-/** CSS fallback for browsers without checkVisibility. */
 function cssVisible(element: HTMLElement | null): boolean {
 	if (!element) return true;
 	const style = element.ownerDocument.defaultView?.getComputedStyle(element);
@@ -9,7 +8,6 @@ function cssVisible(element: HTMLElement | null): boolean {
 	);
 }
 
-/** Arrival never sends focus into hidden author content or a closed disclosure. */
 export function resumeFocusTarget(content: HTMLElement, headings = "h1, h2"): HTMLElement {
 	return (
 		[...content.querySelectorAll<HTMLElement>(headings)].find((heading) => {
@@ -24,7 +22,6 @@ export function resumeFocusTarget(content: HTMLElement, headings = "h1, h2"): HT
 	);
 }
 
-/** Temporarily orient content without changing authored keyboard navigation. */
 export function focusNavigationContent(target: HTMLElement, main: HTMLElement): () => void {
 	const tabindex = target.getAttribute("tabindex");
 	const hadClass = target.classList.contains("praxity-navigation-focus");

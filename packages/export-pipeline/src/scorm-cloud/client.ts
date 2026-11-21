@@ -1,7 +1,5 @@
 const BASE_URL = "https://cloud.scorm.com/api/v2";
 
-// --- Types ---
-
 export interface PollOptions {
 	maxAttempts?: number;
 	intervalMs?: number;
@@ -382,9 +380,6 @@ export class ScormCloudClient {
 			lastAccessDate: raw.lastAccessDate,
 		};
 
-		// SCORM Cloud nests runtime data at different paths depending on configuration:
-		// - Single SCO: activityDetails.runtime
-		// - Multi SCO: activityDetails.children[0].runtime
 		// biome-ignore lint/suspicious/noExplicitAny: external API response shape
 		const actDetails = raw.activityDetails as any;
 		const runtimeSource = actDetails?.runtime ?? actDetails?.children?.[0]?.runtime;

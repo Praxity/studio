@@ -13,13 +13,11 @@ export interface LessonHeading {
 	time?: string;
 }
 
-/** Decorate either a page heading or its folded assessment-group title. */
 export function renderHeadingLabels(
 	headingHtml: string,
 	lesson?: LessonHeading,
 	blockKicker = "",
 ): string {
-	// Lesson frontmatter wins over the kicker in legacy heading data.
 	const kicker = lesson?.kicker?.trim()
 		? escapeHtml(fullyDecodeEntities(lesson.kicker.trim()))
 		: blockKicker;

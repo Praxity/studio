@@ -1,7 +1,6 @@
 import { findWindowProperty, type WindowLike } from "../api-discovery";
 import type { RuntimeCommitPreparation } from "../types";
 
-/** Shared by every runtime in one LMS launch, including cached documents. */
 export interface ScormSessionState extends RuntimeCommitPreparation {
 	initialized: boolean;
 	closed: boolean;
@@ -9,7 +8,6 @@ export interface ScormSessionState extends RuntimeCommitPreparation {
 	commitRefused?: boolean;
 	startedAt?: number;
 	successTracked?: boolean;
-	/** CourseTracker's failure status that explicit Finish must preserve. */
 	courseFailure?: boolean;
 	pendingCompletion?: "incomplete" | "completed" | "passed" | "failed";
 	attemptId?: string;
@@ -26,12 +24,10 @@ interface SessionApi {
 const SESSION_STORE = "__praxityScormSessions";
 type SessionStore = WeakMap<object, ScormSessionState>;
 
-/** Termination closes communication for every adapter in the launch. */
 export function sessionAllowsCalls(state: ScormSessionState | null): boolean {
 	return !!state && !state.closed;
 }
 
-/** A refused save leaves LMS state unknown; reopening owns recovery. */
 export function commitScormSession(
 	state: ScormSessionState,
 	commit: () => string | undefined,
@@ -40,9 +36,7 @@ export function commitScormSession(
 	const view = win as unknown as Window & typeof globalThis;
 	try {
 		if (commit() === "true") return true;
-	} catch {
-		// A thrown commit has the same unknown persistence outcome as a refusal.
-	}
+	} catch {}
 	state.closed = state.commitRefused = true;
 	state.terminationSucceeded = false;
 	view?.dispatchEvent?.(new view.Event("praxity:scorm-session-ended"));
@@ -61,14 +55,11 @@ function createWindowStore(win: WindowLike | undefined): SessionStore | null {
 			if (!candidate || candidate === win) continue;
 			const owner = candidate as Record<string, unknown>;
 			return (owner[SESSION_STORE] ??= new WeakMap()) as SessionStore;
-		} catch {
-			// A restricted parent may still expose the API; try another window.
-		}
+		} catch {}
 	}
 	return null;
 }
 
-/** Read the shared record without creating bookkeeping on an unstarted API. */
 export function getSessionState(
 	api: object | null | undefined,
 	win: WindowLike | undefined = globalThis.window,
@@ -96,17 +87,14 @@ export function writeSessionState(
 		closed: false,
 		terminationSucceeded: false,
 	};
-	// Initialize owns a fresh session's clock and completion state.
 	if (initialized && !state.initialized) {
 		state.startedAt = state.pendingCompletion = state.courseFailure = undefined;
 	}
 	state.initialized = initialized && !state.closed;
 	storeSessionState(api, state, win);
-	// A document-local record cannot close adapters retained from older pages.
 	return getSessionState(api, win) === state ? state : null;
 }
 
-/** Index preserves a live session; only a successfully closed launch gets a fresh record. */
 export function resetScormSessions(win: WindowLike): void {
 	for (const name of ["API", "API_1484_11"]) {
 		resetSessionState(findWindowProperty(win, name) as object | null, win);
@@ -116,14 +104,10 @@ export function resetScormSessions(win: WindowLike): void {
 export function resetSessionState(api: object | null, win: WindowLike): void {
 	if (!api) return;
 	const state = getSessionState(api, win);
-	// Retained adapters keep a closed record when index starts another launch.
 	if (state && !state.closed) {
-		// The old document must not prepare a later document's commit.
 		state.prepareCommit = undefined;
 		if (!state.initialized) return;
 		const sessionApi = api as SessionApi;
-		// SCORM 1.2 RTE 3.3.3: 301; 2004 RTE 3.1.7.2.8: 122.
-		// Only "not initialized" proves that a persistent API has started another launch.
 		if (sessionApi.LMSGetValue) {
 			sessionApi.LMSGetValue("cmi.core.lesson_status");
 			if (String(sessionApi.LMSGetLastError?.()) !== "301") return;
@@ -147,7 +131,6 @@ function storeSessionState(
 	try {
 		(api as SessionApi).__praxityScormSession = state;
 	} catch {
-		// Non-extensible API objects share the record on the LMS window instead.
 		(sessionStore(win) ?? createWindowStore(win))?.set(api, state);
 	}
 }

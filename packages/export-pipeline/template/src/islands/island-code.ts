@@ -30,9 +30,7 @@ export function initCodeEnhancements(): void {
 					2_000,
 					current,
 				);
-			} catch {
-				// Keep the usable code fallback when clipboard permission is unavailable.
-			}
+			} catch {}
 		});
 	});
 }

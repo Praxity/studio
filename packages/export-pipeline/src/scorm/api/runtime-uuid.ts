@@ -1,6 +1,5 @@
 export function runtimeUuid(): string {
 	if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
-	// LMS pages served over HTTP lack randomUUID, but still expose getRandomValues.
 	const bytes = crypto.getRandomValues(new Uint8Array(16));
 	bytes[6] = (bytes[6] & 0x0f) | 0x40;
 	bytes[8] = (bytes[8] & 0x3f) | 0x80;

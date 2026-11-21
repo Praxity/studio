@@ -1,6 +1,3 @@
-// Adapted from learning-patterns/patterns/highlight/enhance.js at
-// b3f82d2415982da20dda28b61770d7e85084901b. Copyright (c) 2026 Ariel Harlap.
-// MIT licensed; see LICENSE in this folder. Studio owns this presentation.
 import { getHighlightStrings } from "@praxity/shared-blocks/i18n/highlight-strings";
 import { labelWithSeparator } from "@praxity/shared-blocks/i18n/label-separator";
 import { resolveLocale } from "@praxity/shared-blocks/i18n/locale";
@@ -14,7 +11,6 @@ import { HIGHLIGHT_ADDED_ATTRIBUTES, HIGHLIGHT_RESULT_ATTRIBUTES } from "./recov
 type Instance = { destroy(): void };
 const instances = new WeakMap<HTMLElement, Instance>();
 
-/** Each mount owns only memory. Attach validates the literal presentation before mutation. */
 export function enhanceHighlight(root: HTMLElement): Instance {
 	const existing = instances.get(root);
 	if (existing) return existing;
@@ -81,7 +77,6 @@ export function enhanceHighlight(root: HTMLElement): Instance {
 		)
 	)
 		throw new Error("Invalid highlight passage markup");
-	// Capture controls that initial projection will hide before changing their visibility.
 	const focusedBeforeAttach = doc.activeElement;
 	const hidesFocus = [answer, restart, summary, limit, ...feedback].some((node) =>
 		node.contains(focusedBeforeAttach),
@@ -100,7 +95,6 @@ export function enhanceHighlight(root: HTMLElement): Instance {
 		const guarded = (event: Event) => {
 			if (current()) handler(event);
 		};
-		// Record removal first so a partially throwing registration also rolls back.
 		removals.push(() => target.removeEventListener(type, guarded));
 		target.addEventListener(type, guarded);
 	}
@@ -204,7 +198,6 @@ export function enhanceHighlight(root: HTMLElement): Instance {
 		restart.hidden = false;
 		answer.hidden = false;
 		answer.open = true;
-		// A synchronous host callback may destroy this mount or take focus during projection.
 		if (
 			current() &&
 			(doc.activeElement === focused || (focused === submit && doc.activeElement === doc.body))
@@ -266,7 +259,6 @@ export function enhanceHighlight(root: HTMLElement): Instance {
 			});
 		});
 		listen(submit, "click", show);
-		// Holding Enter on Check repeats onto Start over after the focus handoff.
 		listen(restart, "keydown", (event) => {
 			if ((event as KeyboardEvent).repeat) event.preventDefault();
 		});
@@ -291,7 +283,6 @@ export function enhanceHighlight(root: HTMLElement): Instance {
 			move(0);
 	} catch (error) {
 		instance.destroy();
-		// The adapter restores the baseline; bootstrap fills the local failure notice.
 		answer.hidden = false;
 		throw error;
 	}

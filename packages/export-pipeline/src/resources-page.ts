@@ -19,7 +19,6 @@ interface ResourcesPageOptions {
 	locale?: string;
 }
 
-/** Extract uppercase file extension from URL (e.g. "PDF" from ".../file.pdf"). */
 function getFileTypeBadge(url: string): string | undefined {
 	try {
 		const pathname = new URL(url).pathname;
@@ -32,16 +31,11 @@ function getFileTypeBadge(url: string): string | undefined {
 	}
 }
 
-/**
- * Generate the body HTML for the resources page.
- * Returns an empty string when no entries are provided.
- */
 export function generateResourcesPageHtml(opts: ResourcesPageOptions): string {
 	const { entries } = opts;
 	const strings = getStrings(opts.locale ?? "en");
 	if (entries.length === 0) return "";
 
-	// Group by type
 	const files = entries.filter((e) => e.resourceType === "file");
 	const links = entries.filter((e) => e.resourceType === "link");
 	const lessonPdfs = entries.filter((e) => e.resourceType === "lessonPdf");

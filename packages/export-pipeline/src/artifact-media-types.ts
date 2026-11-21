@@ -1,4 +1,3 @@
-/** Media types for exported files, shared by Node exporters and review Workers. */
 export const ARTIFACT_MEDIA_TYPES: Readonly<Record<string, string>> = {
 	".aac": "audio/aac",
 	".avif": "image/avif",
