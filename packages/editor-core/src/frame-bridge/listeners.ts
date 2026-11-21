@@ -1,4 +1,3 @@
-/** Shared admission for native listeners and framework event adapters. */
 export function isTrustedEditorInput(
 	event: { isTrusted: boolean; target: EventTarget | null },
 	doc: Document,
@@ -10,7 +9,6 @@ export function isTrustedEditorInput(
 	);
 }
 
-/** Input admission belongs here so adapters cannot forget the trust boundary. */
 export function listenEditorInput<K extends keyof DocumentEventMap>(
 	doc: Document,
 	type: K,
@@ -27,7 +25,6 @@ export function listenEditorInput<K extends keyof DocumentEventMap>(
 	return () => target.removeEventListener(type, listener, capture);
 }
 
-/** Exact origin and window reference, checked before parsing any envelope. */
 export function listenFrameMessages(
 	win: Window,
 	origin: string,
@@ -48,7 +45,6 @@ export function listenFrameMessages(
 	return () => win.removeEventListener("message", listener);
 }
 
-/** The port stays in the bridge closure; only the admitted document holds the other end. */
 export function listenPrivatePort(port: MessagePort, receive: (event: MessageEvent) => void) {
 	port.addEventListener("message", receive);
 	port.start();

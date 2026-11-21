@@ -61,11 +61,6 @@ export function AuditIssueCard({
 				}
 			}}
 			style={{
-				// Was `--praxity-editor-*`, a hardcoded One-Dark/One-Light palette
-				// scoped to `[data-editor-theme]`. The desktop app never sets that
-				// attribute, so every one of these resolved to nothing: the cards had
-				// no border and no surface, and the visited/dismissed states were
-				// invisible. `--panel-*` cascades from the active desktop theme.
 				border: issue.isDismissed
 					? "1px dashed var(--panel-control-border-color)"
 					: "1px solid var(--panel-control-border-color)",
@@ -83,8 +78,6 @@ export function AuditIssueCard({
 					aria-hidden="true"
 					style={{
 						background: `var(${tokenPrefix}-${severityToken}-badge-bg)`,
-						// White failed on the lighter severity fills; the badge text is
-						// now derived alongside the badge background.
 						color: `var(${tokenPrefix}-${severityToken}-badge-text)`,
 					}}
 				>

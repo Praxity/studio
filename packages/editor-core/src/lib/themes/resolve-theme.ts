@@ -13,13 +13,6 @@ export interface SectionPalette {
 
 export type SectionPalettes = Record<SectionPaletteName, SectionPalette>;
 
-/**
- * Derive section palette colors from a theme's base colors.
- *
- * Each palette is a set of CSS custom properties that override the theme
- * defaults within a <section> element. Text colors are auto-derived to meet
- * WCAG 2.x 4.5:1 contrast ratio against the section background.
- */
 export function deriveSectionPalettes(opts: {
 	background: string;
 	text: string;
@@ -136,7 +129,6 @@ function deriveSectionBackgroundOklch(
 	if (c < 0.01 && accentHex && isHexColor(accentHex)) {
 		const accent = srgbToOklch(accentHex);
 		if (accent.c < 0.01) {
-			// Both base and accent are achromatic — stay achromatic (e.g. Minimal)
 			c = 0;
 		} else {
 			h = accent.h;
@@ -183,9 +175,6 @@ function deriveSectionSurface(sectionBgHex: string, liftOverride?: number): stri
 	const sectionBg = srgbToOklch(sectionBgHex);
 	if (sectionBg.l > 0.7) return sectionBgHex;
 
-	// Use a larger lift for very dark backgrounds to ensure card boundaries
-	// are perceptible (target >= 1.3:1 surface-to-background contrast).
-	// At low L values, L+0.06 only produces ~1.15:1 due to luminance compression.
 	const lift = liftOverride ?? (sectionBg.l < 0.4 ? 0.12 : 0.06);
 	const clipped = gamutClipOklch(sectionBg.l + lift, sectionBg.c * 0.85, sectionBg.h);
 	return oklchToSrgb(clipped.l, clipped.c, clipped.h);
@@ -280,8 +269,6 @@ function deriveAccentForBackground(accent: string, bg: string): string {
 
 	return bgIsLight ? "#000000" : "#ffffff";
 }
-
-// --- Color math helpers ---
 
 function parseHexToRgb(hex: string): [number, number, number] | null {
 	const cleaned = hex.replace("#", "");

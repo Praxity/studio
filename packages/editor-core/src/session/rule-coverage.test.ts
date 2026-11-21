@@ -38,7 +38,6 @@ function uncovered(
 }
 
 it("every interaction-rule ID has a public-interface test or an explicit owner and deferral reason", () => {
-	// Use the pinned inventory unless an explicit spec path is supplied.
 	const path = process.env.PRAXITY_INTERACTION_RULES;
 	const ids = path
 		? [
@@ -57,7 +56,6 @@ it("every interaction-rule ID has a public-interface test or an explicit owner a
 		expect(reason.trim().length).toBeGreaterThan(30);
 	for (const id of [
 		...Array.from({ length: 9 }, (_, i) => `M${i + 1}`),
-		// Owner 2026-10-14: D16 covers per-save/discard undo; session grouping waits for U7 slice 04a.
 		...Array.from({ length: 17 }, (_, i) => `D${i + 1}`),
 		...Array.from({ length: 8 }, (_, i) => `A${i + 1}`),
 		...Array.from({ length: 11 }, (_, i) => `G${i + 1}`),

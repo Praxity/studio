@@ -230,7 +230,6 @@ it.each([
 	(_name, destination, expected) => {
 		let state = send(createSession(), { type: "openSource", seed }).state;
 		state = send(state, { type: "changeDraft", text: "Changed", selection: [7, 7] }).state;
-		// 09e moves native focus before sending select on the same port.
 		state = send(state, { type: "focusChanged", focus: after }).state;
 		state = send(state, { type: "select", focus: after }).state;
 		expect(state.selected).toEqual(["after"]);
@@ -239,7 +238,6 @@ it.each([
 		expect(deferred(settled.effects).expect).toEqual([after]);
 		expect(settled.state.history[0]?.selectionBefore?.selected).toEqual(["note"]);
 		expect(settled.state.selected).toEqual(expected);
-		// Delete may arrive before the queued focus command and its acknowledgement.
 		const deletion = send(settled.state, {
 			type: "selectionOperation",
 			operation: "deleteBlocks",

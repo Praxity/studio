@@ -10,7 +10,6 @@ import type { SelfCheckAuditSource } from "./self-check-advice";
 const normalized = (text: string) =>
 	text.normalize("NFC").toLowerCase().replace(/\s+/gu, " ").trim();
 
-/** Author review only; issues contain locations and fixed copy, never authored excerpts. */
 export function checkRetrievalSheetAccessibility(
 	pageId: string,
 	blocks: readonly PraxityBlock[],
@@ -19,7 +18,6 @@ export function checkRetrievalSheetAccessibility(
 	const issues: A11yIssue[] = [];
 	for (const record of read.nodes.values()) {
 		if (record.role || record.node.type !== "retrieval-sheet") continue;
-		// Grammar owns blanks, limits and malformed source. Never add advice to a refusal.
 		if (record.node.status !== "resolved") continue;
 		const sourceSpan = read.spans.get(record.id);
 		if (!sourceSpan) throw new Error("retrieval-sheet-identity-invalid");
@@ -29,7 +27,6 @@ export function checkRetrievalSheetAccessibility(
 			const span = spans.get(candidate.id);
 			return span?.startLine === sourceSpan.startLine && span.endLine === sourceSpan.endLine;
 		});
-		// The source read can include several pages. Only audit activities on this page.
 		if (!block) continue;
 		let content: ReturnType<typeof readRetrievalSheetContent>;
 		try {

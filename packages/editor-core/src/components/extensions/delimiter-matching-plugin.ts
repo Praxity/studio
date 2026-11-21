@@ -262,10 +262,6 @@ function buildDecorations(
 					button.textContent = "\u25b8";
 					button.dataset.foldOpener = String(pair.openerFrom);
 					const toggle = () => {
-						// The widget key carries the folded state, so this dispatch
-						// replaces the button rather than reusing it — which is what keeps
-						// `aria-expanded` honest no matter which path did the folding.
-						// Replacing it also drops focus, so hand it back to the new node.
 						const hadFocus = document.activeElement === button;
 						editorView.dispatch(
 							editorView.state.tr.setMeta(delimiterMatchingPluginKey, {
@@ -281,16 +277,10 @@ function buildDecorations(
 							)
 							?.focus();
 					};
-					// mousedown only cancels the selection change, so clicking a caret
-					// still does not pull focus out of the editor; the toggle runs on click.
 					button.addEventListener("mousedown", (event) => {
 						event.preventDefault();
 					});
 					button.addEventListener("click", toggle);
-					// The caret sits inside the contenteditable, so ProseMirror's keymap
-					// saw these keys first: the fold was mouse-only, and Enter split the
-					// line under a focused caret. Activate here and keep the keys out of
-					// the document.
 					button.addEventListener("keydown", (event) => {
 						if (event.key !== "Enter" && event.key !== " ") return;
 						event.preventDefault();
@@ -299,10 +289,6 @@ function buildDecorations(
 					});
 					return button;
 				},
-				// The key has to carry everything `toDOM` renders. Keyed widgets are
-				// compared by key alone, so a key of position only meant the button was
-				// reused across a fold and kept its draw-time `aria-expanded`, and could
-				// even be handed to a different block that moved onto the position.
 				{ side: -1, key: `fold-${pair.openerFrom}-${pair.keyword}-${isFolded}` },
 			),
 		);
@@ -451,7 +437,6 @@ export function createDelimiterMatchingPlugin(options: DelimiterMatchingOptions)
 				return delimiterMatchingPluginKey.getState(state)?.decorations ?? DecorationSet.empty;
 			},
 			handleClick(view, pos, event) {
-				// Don't interfere if clicking the fold caret itself.
 				if (
 					event.target instanceof HTMLElement &&
 					event.target.closest(".praxity-raw-fold-caret")
@@ -462,20 +447,17 @@ export function createDelimiterMatchingPlugin(options: DelimiterMatchingOptions)
 				const pluginState = delimiterMatchingPluginKey.getState(view.state);
 				if (!pluginState) return false;
 
-				// Find which line was clicked.
 				const clickedLine = pluginState.analysis.lines.find(
 					(line) => pos >= line.nodePos && pos < line.nodePos + line.nodeSize,
 				);
 				if (!clickedLine) return false;
 
-				// Check if this line is a folded opener.
 				const foldedPair = pluginState.analysis.pairs.find(
 					(pair) =>
 						pair.openerLine === clickedLine.index && pluginState.foldedOpeners.has(pair.openerFrom),
 				);
 				if (!foldedPair) return false;
 
-				// Auto-expand the collapsed block.
 				view.dispatch(
 					view.state.tr.setMeta(delimiterMatchingPluginKey, {
 						type: "toggle-fold",
@@ -484,7 +466,7 @@ export function createDelimiterMatchingPlugin(options: DelimiterMatchingOptions)
 					} satisfies DelimiterPluginMeta),
 				);
 
-				return false; // Let the click also place the cursor.
+				return false;
 			},
 			handleKeyDown(view, event) {
 				if (event.key !== "F8") return false;

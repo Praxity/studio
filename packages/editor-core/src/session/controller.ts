@@ -108,7 +108,6 @@ export const sameDraftTarget = (a: DraftSeed, b: DraftSeed): boolean => {
 	);
 };
 
-/** Acknowledgements are client bookkeeping, not a change to the stored draft payload. */
 export function draftPersistencePayload(draft: Draft) {
 	const {
 		persistenceVersion: _version,
@@ -138,7 +137,6 @@ const courseParams = [
 	"draftName",
 ];
 
-/** Consumption projected to the frame; only this owner knows the active layer. */
 export function canEscape(state: Session): boolean {
 	return !state.pending && state.layers.at(-1)?.kind !== "page";
 }
@@ -151,13 +149,11 @@ export function nextDraftValidationAt(state: Session): number {
 		: Infinity;
 }
 
-/** A6: the shell clock wakes only when background speech can leave the typing queue. */
 export function nextBackgroundAnnouncementAt(state: Session): number {
 	const due = Math.min(...state.background.map((entry) => entry.due));
 	return active(state) && state.lastKeyAt !== null ? Math.max(due, state.lastKeyAt + 2000) : due;
 }
 
-/** Effects are instructions to adapters. Dispatch never writes, fetches or touches a frame. */
 export function dispatch(
 	previous: Session,
 	command: Command,
@@ -181,7 +177,6 @@ export function dispatch(
 		role: "source",
 		selection: draft.selection,
 	});
-	// History targets Page handles that survive source-field closure.
 	const sourceHistorySnapshot = () => {
 		const draft = active(state);
 		if (state.lens !== "page" || !draft) return;
@@ -366,7 +361,6 @@ export function dispatch(
 		if (exit.kind === "stay") {
 			if (draft) {
 				const target = draftFocus(draft);
-				// A refused departure or newer typing can retain the field after focus selected elsewhere.
 				if (state.lens === "page" && !state.layers.some((layer) => layer.kind === "source")) {
 					selected(target);
 					state.layers.push({ kind: "source", draftId: draft.id });
@@ -463,7 +457,6 @@ export function dispatch(
 			expect: owner(nativeSelection ?? source),
 			...(selectionBefore ? { selectionBefore } : {}),
 		};
-		// Native Tab has already selected its destination before the commit request.
 		if (nativeSelection) selected(nativeSelection);
 		effects.push({ type: "post", method: "operationApply", request });
 	};
@@ -523,7 +516,6 @@ export function dispatch(
 		)
 			throw new Error("Committed draft source unavailable");
 		Object.assign(draft, seed);
-		// A superseding own edit may replace saved source; normalization alone never moves native undo.
 		if (
 			seed.baseRevision !== acknowledgement.receiptRevision &&
 			seed.expectedText !== acknowledgement.receiptText
@@ -551,7 +543,6 @@ export function dispatch(
 				persist(draft);
 				continue;
 			}
-			// Only a contiguous own write can authorize changed target bytes without D11.
 			acknowledgement.revision = file.toRevision;
 			delete acknowledgement.expectedText;
 		}
@@ -607,8 +598,6 @@ export function dispatch(
 				"wrapInColumns",
 			].includes(operation)
 		) {
-			// A pinned selection can move while focus is on another node. The
-			// operation's survivor then owns focus, within the original UI context.
 			const original = before.selected.includes(before.focus.nodeId)
 				? before.focus.nodeId
 				: result.focus.nodeId;
@@ -733,7 +722,6 @@ export function dispatch(
 			if (!files.some((f) => f.path === file.path)) files.push(structuredClone(file));
 		}
 		if (destination) {
-			// Insertion boundaries have no source slice; node targets remain fully guarded.
 			const base = files.find((f) => f.path === destination.target.file);
 			if (base && base.baseRevision !== destination.baseRevision)
 				throw new Error("Destination revision differs from selection revision");
@@ -1106,7 +1094,6 @@ export function dispatch(
 				break;
 			delete state.pendingDraftPersistence[command.id];
 			const draft = state.drafts[command.id];
-			// A matching predecessor success supplies the next metadata CAS guard, even after validation.
 			if (command.ok && draft) {
 				draft.persistedVersion = pending.version;
 				delete state.restoredDraftVersions?.[command.id];
@@ -1402,7 +1389,6 @@ export function dispatch(
 				if (seq !== undefined) state.revisionSeqs[file.path] = seq;
 			}
 			const beforeSelection = pending.selectionBefore ?? selectionSnapshot(state);
-			// The registry has already chosen F8's survivor or deletion fallback.
 			const focusTarget = { ...result.focus, role: "handle" as const };
 			if (result.files.some((file) => file.edits.length > 0))
 				pushHistory({
@@ -1456,7 +1442,6 @@ export function dispatch(
 					draft.diagnostics = result.diagnostics;
 					draft.status = draft.text === "" ? "clean" : "orphaned";
 				}
-				// A write acknowledged after more typing must not close or reset that field.
 				if (changedWhileSaving) {
 					persist(draft);
 					finish({ kind: "stay" }, focusTarget, draft, source);
@@ -1504,7 +1489,6 @@ export function dispatch(
 						deps.translate,
 					),
 				);
-			// A proven seed supersedes any resolution requested from the pre-save guard.
 			for (const file of outsideFiles) resolveDrafts(file);
 			break;
 		}
@@ -1553,7 +1537,6 @@ export function dispatch(
 						state.activeDraft = null;
 					}
 					const restored = structuredClone(entry.draft);
-					// Discard deleted the acknowledged record; undo must persist it again.
 					restored.persistedGeneration = -1;
 					restored.persistedVersion = -1;
 					state.drafts[restored.id] = restored;
@@ -1831,14 +1814,12 @@ export function dispatch(
 							(entry) => entry.operations.at(-1)?.transactionId === command.result.transactionId,
 						)
 					: undefined;
-			// Durable state settles now; focus-dependent selection waits for the native owner.
 			state.replyFocus = {
 				requestId: effect.requestId,
 				snapshot: selectionSnapshot(state),
 				historyEntryId: entry?.id,
 			};
 			state.focus = beforeReply.focus;
-			// G10 protects an open field even when its native focus is declined.
 			if (!state.activeDraft) {
 				state.selected = beforeReply.selected;
 				state.selection = beforeReply.selection;
@@ -1851,7 +1832,6 @@ export function dispatch(
 	return { state, effects, consumed: command.type === "escape" && canEscape(previous) };
 }
 
-/** One history supplies the toolbar and dialog; adapters render the message refs. */
 export function historyView(state: Session, deps: Pick<Dependencies, "translate" | "nameOfFocus">) {
 	const summary = (entry: HistoryEntry) =>
 		deps.translate({

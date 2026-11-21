@@ -10,8 +10,6 @@ import type { connectPageFrame } from "./transport";
 type DraftRequest = { seq: number; transactionId: string; nodeId: string; source: string };
 type SaveState = "saving" | "saved" | "refused";
 
-/** Only the authenticated host stream enters here. Frame events return on its private bridge.
- * Save state is the controller's durable result, reported through `settle`; the frame only paints. */
 export function connectRenderPreview(options: {
 	pageId: string;
 	frame: ReturnType<typeof connectPageFrame>;
@@ -19,11 +17,9 @@ export function connectRenderPreview(options: {
 	selectPage: (pageId: string) => Promise<unknown>;
 	onError: (error: unknown) => void;
 	onShellStale?: () => void;
-	/** The course's page list changed, so this page's document is out of date. */
 	onPagesChanged?: () => void;
 	status?: HTMLElement;
 	translate?: (key: string, values?: Record<string, string>) => string;
-	/** Delayed speech acknowledges delivery or cancellation through the third argument. */
 	announce?: (
 		message: string,
 		reference?: Message,
@@ -36,13 +32,9 @@ export function connectRenderPreview(options: {
 	let announcedFailure = "";
 	let shownSave: SaveState = "saved";
 	const transactions = new Set<string>();
-	// Durable operations started here and not yet settled by the controller, with their node.
 	const saving = new Map<string, string>();
-	// Nodes whose latest durable result was a refusal. Another node's save leaves them refused.
 	const refused = new Set<string>();
-	// Preview-refused drafts the frame still holds unpainted, by sequence.
 	const held = new Map<string, number>();
-	// Durable results that arrived while their preview request was still in flight.
 	const previewing = new Map<string, boolean | undefined>();
 	function release(transactionId: string, seq: number, ok: boolean) {
 		options.frame.draft(
@@ -61,14 +53,11 @@ export function connectRenderPreview(options: {
 		if (options.status && options.translate) {
 			const text = options.translate(`renderFeedback.${save}`);
 			if (options.status.textContent !== text) options.status.textContent = text;
-			// Only settled outcomes reach the live region; Saving… stays visual.
 			if (save !== shownSave && save !== "saving")
 				options.announce?.(text, { key: `renderFeedback.${save}`, params: {} });
 		}
 		shownSave = save;
 	}
-	// Grammar diagnostics name their op.diagnostic catalogue entry. The frame shows that
-	// text in the author's language; a code without an entry keeps the compiler's message.
 	function localized(diagnostic: PreviewCompileDiagnostic): PreviewCompileDiagnostic {
 		const ref = diagnostic.messageRef;
 		if (!ref?.key.startsWith("grammar.v4.") || !options.translate) return diagnostic;
@@ -130,14 +119,11 @@ export function connectRenderPreview(options: {
 	status();
 	return {
 		receive,
-		/** Make this frame the scheduler's visible page. Only the displayed frame selects. */
 		select(resync = false) {
 			if (disposed || (selected && !resync)) return;
 			selected = true;
 			select();
 		},
-		/** A new stream lost the old one's events: drop drafts and resync the page.
-		 * Saves in flight stay Saving… until the controller settles them. */
 		resetDraftEpoch(next: number) {
 			if (disposed || next <= epoch) return;
 			epoch = next;
@@ -162,8 +148,6 @@ export function connectRenderPreview(options: {
 				);
 			}
 		},
-		/** Submit complete node source, including its authored closer, before the durable request.
-		 * A preview refusal paints nothing and leaves the save to `settle`. */
 		async renderDraft(
 			request: DraftRequest,
 			render: (
@@ -202,10 +186,6 @@ export function connectRenderPreview(options: {
 				throw error;
 			}
 		},
-		/** The durable result for a transaction begun by `renderDraft`. The scheduler's own
-		 * acknowledgement repaints accepted drafts; this releases preview-refused ones.
-		 * Left for U7, which wires the draft controller: settles that arrive out of order for
-		 * one node, and a refused node that an outside edit deletes (it stays refused). */
 		settle(transactionId: string, ok: boolean) {
 			const nodeId = saving.get(transactionId);
 			if (disposed || nodeId === undefined) return;
@@ -218,7 +198,6 @@ export function connectRenderPreview(options: {
 			else if (previewing.has(transactionId)) previewing.set(transactionId, ok);
 			status();
 		},
-		/** The author discarded this node's draft, so its refusal no longer applies. */
 		revert(nodeId: string) {
 			if (disposed || !refused.delete(nodeId)) return;
 			status();

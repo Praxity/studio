@@ -3,8 +3,6 @@ import { createSession, dispatch } from "../session";
 import type { AuthorOperationResult, Command, Dependencies, Effect, Focus } from "../session/types";
 import { type FrameEventBody, type FrameFocus, type FrameView, mountPageLens } from "./index";
 
-// Port of the adopted focus-model's frame-side cases. The oracle is each journey's
-// literal Delete target, not the delivery matcher. Both port directions stay FIFO.
 type Move = "after" | "note" | "note handle" | "blank" | "host";
 type Action =
 	| "D13"
@@ -42,8 +40,6 @@ for (const action of ["D13", "Escape", "Mod+Enter", "G10", "history"] as const) 
 	}
 }
 
-// F8/G9: cancelling native delivery cannot change the survivor recorded for Redo.
-// Exercise an old acknowledgement before, during and after the next delivery.
 for (const departure of ["blank", "host", "after"] as const)
 	for (const staleAt of [
 		"undo pending",
@@ -235,11 +231,9 @@ for (const action of ["stay", "refused", "open", "refused range", "retained leav
 	for (const moves of [[], ["after"], ["host"], ["blank"], ["after", "note"]] as Move[][])
 		journeys.push({ action, moves, deletes: null });
 
-// Returning to the original admitted handle can accept the new field's reply.
 for (const moves of [["note handle"], ["after", "note handle"]] as Move[][])
 	journeys.push({ action: "open", moves, deletes: null });
 
-// 09e reports native Tab focus before its select event commits the dirty field.
 for (const [moves, deletes] of [
 	[[], "after"],
 	[["after"], "after"],
@@ -513,7 +507,6 @@ for (const journey of journeys) {
 									owner.nodeId ? [{ file: owner.file, nodeId: owner.nodeId }] : [],
 								),
 							});
-						// Native control focus also acquires its browsing context in the real iframe.
 						if (applied) inFrame = true;
 						if (reports.length === before) reports.push(null);
 					} else if (step === "report") {
@@ -564,7 +557,6 @@ for (const journey of journeys) {
 				if (
 					["stay", "refused", "open", "refused range", "retained leave"].includes(journey.action)
 				) {
-					// F8 stay and M8 open retain a field. Returning cannot expose another node to Delete.
 					const owner = journey.action === "open" ? after : note;
 					lens.render(view());
 					lens.focus({ ...owner, role: "source" });
@@ -586,7 +578,6 @@ for (const journey of journeys) {
 					native instanceof HTMLButtonElement &&
 					["note", "after", "page"].includes(native.getAttribute("aria-label") ?? "");
 				const deletes = inFrame && isHandle ? state.selected.join("+") : null;
-				// G2 pins an accepted range even when a later Tab-like focus move follows it.
 				let expected = journey.deletes;
 				if (journey.action === "G10" && journey.moves.includes("after")) {
 					const delivery = trace.indexOf("focus"),

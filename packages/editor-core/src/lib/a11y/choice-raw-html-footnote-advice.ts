@@ -3,7 +3,6 @@ import { isInlineHtml } from "@praxity/content-model/inline-preparation";
 import type { AssessmentBlockData, PraxityBlock } from "@praxity/shared-blocks/types";
 import type { A11yIssue } from "./checker";
 
-/** Source advice stays independent of material signatures and their DOM runtime. */
 export function checkChoiceRawHtmlFootnotes(
 	pageId: string,
 	blocks: readonly PraxityBlock[],

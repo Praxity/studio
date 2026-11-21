@@ -1,6 +1,5 @@
 import type { Command } from "../session/types";
 export type FrameShortcutAction = "toggle" | "selectAll" | "moveUp" | "moveDown" | "delete";
-/** Both outline and handle adapters use U2's owning commands. */
 export function frameShortcutCommand(action: FrameShortcutAction | "membershipToggle"): Command {
 	switch (action) {
 		case "toggle":

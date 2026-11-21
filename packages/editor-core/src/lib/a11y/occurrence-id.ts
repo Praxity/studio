@@ -4,7 +4,6 @@ function part(value: string): string {
 	return encodeURIComponent(value);
 }
 
-/** Identity for one authored-source result. Evidence text and scan order are deliberately absent. */
 export function buildA11yOccurrenceId(
 	issue: Pick<A11yIssue, "rule" | "pageId" | "blockId" | "sourceLocation">,
 ): string {

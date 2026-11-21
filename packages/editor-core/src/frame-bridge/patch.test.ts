@@ -165,7 +165,6 @@ it("shows Updating after 400 ms, then clears it even when compile has no changed
 it("keeps the last render on failure and exposes a localized banner and node description", () => {
 	const { patcher, text } = fixture();
 	patcher.nodes({ pageId: "page", seq: 1, fragments: [fragment("one", "Good")] });
-	// Replacement patterns in a diagnostic stay literal; the banner claims nothing about saving.
 	const message = "Invalid lesson near $& and $' and $`";
 	patcher.failed({ pageId: "page", seq: 2, diagnostics: [{ message }] });
 	expect(text("one")).toBe("Good");
@@ -246,7 +245,6 @@ it("a read-only page view keeps focus inside the innermost patched node", () => 
 	});
 	lens.fragmentElement("outer");
 	document.querySelector<HTMLElement>('a[href="#y"]')?.focus();
-	// The patched node loses its second control. Counting in the outer node would land on "After".
 	patcher.nodes({
 		pageId: "page",
 		seq: 1,

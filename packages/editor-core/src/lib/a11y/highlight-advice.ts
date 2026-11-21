@@ -3,7 +3,6 @@ import type { PraxityBlock } from "@praxity/shared-blocks/types";
 import type { A11yIssue } from "./checker";
 import type { SelfCheckAuditSource } from "./self-check-advice";
 
-/** Explicit author Check only. Refused source belongs to grammar, never this advice. */
 export function checkHighlightAccessibility(
 	pageId: string,
 	blocks: readonly PraxityBlock[],
@@ -21,7 +20,6 @@ export function checkHighlightAccessibility(
 			const span = spans.get(candidate.id);
 			return span?.startLine === sourceSpan.startLine && span.endLine === sourceSpan.endLine;
 		});
-		// A source read can include several pages and use different editor identities.
 		if (!block) continue;
 		try {
 			readHighlightContent(read, record.id);

@@ -191,8 +191,6 @@ export function normalizeDesignVariants(design: unknown): DesignVariants {
 			: typeof rawDesign.blockSpacing === "string"
 				? (LEGACY_BLOCK_SPACING_MAP[rawDesign.blockSpacing] ?? DEFAULT_DESIGN_VARIANTS.blockSpacing)
 				: DEFAULT_DESIGN_VARIANTS.blockSpacing;
-	// Not a nav key: the glossary page survives an archetype change, so it must not be
-	// reset from a nav preset like the keys in BOOLEAN_NAV_KEYS are.
 	const glossaryPage = typeof rawDesign.glossaryPage === "boolean" ? rawDesign.glossaryPage : true;
 	const navArchetype =
 		typeof rawDesign.navArchetype === "string" && NAV_ARCHETYPES.has(rawDesign.navArchetype)
@@ -204,11 +202,6 @@ export function normalizeDesignVariants(design: unknown): DesignVariants {
 			: undefined;
 	const resolvedNavArchetype =
 		navArchetype === "custom" ? (navArchetypeBase ?? "sidebar") : navArchetype;
-	// The enum-valued nav keys default from the archetype for the same reason the
-	// boolean ones do (see the loop below). Reading the global default table here
-	// meant a `slides` course silently resolved `navProgressStyle: "bar"` instead
-	// of the preset's `"dots"`, so CourseViewer never rendered ProgressDots at all
-	// — the dots were absent from the DOM, not hidden by CSS.
 	const navArchetypePreset = getNavPreset(resolvedNavArchetype ?? "sidebar");
 	const navOutlinePosition =
 		typeof rawDesign.navOutlinePosition === "string" &&
@@ -272,7 +265,6 @@ export function normalizeDesignVariants(design: unknown): DesignVariants {
 		DEFAULT_DESIGN_VARIANTS.colorBackgroundDark ??
 		DEFAULT_DARK_BACKGROUND;
 	const colorBackground = colorMode === "dark" ? colorBackgroundDark : colorBackgroundLight;
-	// Pairing migration reads persisted fields before palette defaults are merged.
 	const typography = normalizeTypography(inputDesign.typography);
 
 	const result: DesignVariants = {
@@ -327,13 +319,8 @@ export function normalizeDesignVariants(design: unknown): DesignVariants {
 		glossaryPage,
 		brand: normalizeBrand(rawDesign.brand),
 	};
-	// Retired persisted setting: old .prax files may still carry it, but it must
-	// not be normalized back into editor state or saved again.
 	delete (result as unknown as Record<string, unknown>).showBrandingPill;
 
-	// Defaults for unset nav keys come from the archetype's preset. Filling
-	// sidebar defaults here reads as explicit author overrides downstream and
-	// silently cancels `navArchetype` (e.g. frontmatter-only `slides`).
 	for (const key of BOOLEAN_NAV_KEYS) {
 		const presetValue = navArchetypePreset[key as keyof typeof navArchetypePreset];
 		result[key] =
@@ -344,8 +331,6 @@ export function normalizeDesignVariants(design: unknown): DesignVariants {
 						: DEFAULT_DESIGN_VARIANTS[key]) as DesignVariants[typeof key]);
 	}
 
-	// Defaults belong to the effective navigation resolver, not authored lesson data.
-	// Materializing them here would override course settings on any later design edit.
 	for (const key of [
 		...NAV_PRESET_KEYS,
 		"navLayout",

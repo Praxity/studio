@@ -170,7 +170,6 @@ export function DesignSystemPanel({
 	const keywordsWithVariants = useMemo(
 		() =>
 			Array.from(manifest.values()).filter(
-				// Fill-blank modes change answer syntax and need question-specific choices.
 				(entry) =>
 					entry.variants.length > 0 && entry.layer !== "content" && entry.keyword !== "fill-blank",
 			),
@@ -267,13 +266,10 @@ export function DesignSystemPanel({
 			...THEME_PRESET_DEFAULTS[presetId],
 			palette: presetId,
 		};
-		// Palette and pairing changes preserve authored presentation and inheritance.
 		for (const key of presentationKeys) delete patch[key];
 		updateDesignVariants(patch);
 	};
 
-	// The palette the checker measures, so the panel's contrast readouts and the
-	// audit panel can never disagree about what a colour resolves to.
 	const statusPalettes = useMemo(
 		() => ({ light: resolvePalette(variants, false), dark: resolvePalette(variants, true) }),
 		[variants],
@@ -581,11 +577,6 @@ export function DesignSystemPanel({
 					{numberDiagnostic("accentHue")}
 				</PanelField>
 
-				{/* Status colours sit in Basic → Colors, alongside the other theme
-				    colours, because that is where an author looks after the
-				    accessibility checker reports "Success on background contrast
-				    ratio is …". Until now the checker named colours the panel had no
-				    control for. */}
 				<div className={styles.statusColorGroup}>
 					<p className={styles.statusColorHeading}>{t("subStatusColors")}</p>
 					<p className={styles.statusColorHint}>{t("statusColorsDescription")}</p>
@@ -1023,11 +1014,6 @@ export function DesignSystemPanel({
 	);
 }
 
-/**
- * WCAG 1.4.3 threshold for normal-sized status text, and the same number
- * `checkContrastPairs` requires of the status colours, so the readout below
- * a swatch says exactly what the accessibility checker would say about it.
- */
 const STATUS_COLOR_MIN_RATIO = 4.5;
 
 interface StatusColorFieldProps {
@@ -1047,8 +1033,6 @@ function StatusColorField({ label, value, background, onChange }: StatusColorFie
 		<PanelField label={label}>
 			<PanelColorField value={value} onChange={onChange} label={label} />
 			{formattedRatio ? (
-				// Verdict is carried by the wording and the icon, not by the colour of
-				// the text, so it survives greyscale and colour-vision deficiency.
 				<p className={styles.contrastReadout} data-state={passes ? "pass" : "fail"}>
 					{passes ? (
 						<IconCheck size={13} stroke={2.5} aria-hidden />

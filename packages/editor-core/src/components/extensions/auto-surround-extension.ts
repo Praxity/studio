@@ -37,10 +37,6 @@ export const AutoSurroundExtension = Extension.create({
 
 					const { from, to } = state.selection;
 					const tr = state.tr;
-					// Insert closing first (at `to`), then opening (at `from`).
-					// This order avoids position shift for the second insert.
-					// Uses insertText instead of replaceWith/schema.text to
-					// safely handle selections spanning paragraph boundaries.
 					tr.insertText(closing, to);
 					tr.insertText(openChar, from);
 					dispatch(tr);
@@ -60,7 +56,6 @@ export const AutoSurroundExtension = Extension.create({
 						if (!closing) return false;
 						if (view.state.selection.empty) return false;
 
-						// Delegate to the command for testability
 						return extension.editor.commands.surroundSelection(text);
 					},
 				},

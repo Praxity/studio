@@ -89,9 +89,7 @@ it.each(["blank", "last"] as const)(
 		if (departure === "last") send({ type: "focusChanged", focus: { ...note, nodeId: "last" } });
 		removed = true;
 		const deletion = reply();
-		// Native blank-page input cancels F8. No focusChanged comes from BODY.
 		ack(deletion, false);
-		// The author focuses After, then explicitly undoes and redoes the deletion.
 		send({ type: "select", focus: after });
 		send({ type: "undo", inTextField: false });
 		removed = false;

@@ -61,7 +61,6 @@ export function startInspectionFrame(
 		focusRetry = undefined;
 		focusRetryTask = undefined;
 	};
-	// Every event after `ready` travels on this private port, never as a window message.
 	const keys = new MessageChannel();
 	const emit = (event: FrameEventBody) => {
 		if (!presenting && isPresentationEvent(event)) return;
@@ -84,10 +83,7 @@ export function startInspectionFrame(
 				presenting = false;
 				cancelFocus();
 				lens?.suspend();
-				// Port order releases native focus even if an earlier focus command just landed.
 				if (frameWindow.document.hasFocus()) frameWindow.parent.focus();
-				// WebKit needs the child root inert as well as the host iframe.
-				// The nonce CSP keeps course scripts from clearing or replacing this root.
 				frameWindow.document.documentElement.inert = true;
 				break;
 			case "resume":
@@ -141,7 +137,6 @@ export function startInspectionFrame(
 				break;
 			case "focus": {
 				if (!presenting) break;
-				// A newer focus supersedes the old one, which the host has already settled.
 				cancelFocus();
 				const generation = focusGeneration;
 				const report = (success: boolean) => {
@@ -163,7 +158,6 @@ export function startInspectionFrame(
 					if (success || command.preserveFocus || command.expect || !lens?.canFocus(command.target))
 						report(success);
 					else {
-						// WebKit may refuse an available control across several frame-entry paints.
 						focusRetry = frameWindow.requestAnimationFrame(() => {
 							if (generation !== focusGeneration) return;
 							focusRetryTask = setTimeout(() => {
@@ -191,11 +185,9 @@ export function startInspectionFrame(
 				break;
 		}
 	};
-	// Commands arrive only on the port the host admitted, never as window messages.
 	const removeCommands = listenPrivatePort(keys.port1, receive);
 	const unloading = () => emit({ event: "unloading" });
 	frameWindow.addEventListener("pagehide", unloading);
-	// A document still waiting for subresources may leave without pagehide.
 	const beforeUnload = () => {
 		if (frameWindow.document.readyState !== "complete") unloading();
 	};
@@ -216,7 +208,6 @@ export function startInspectionFrame(
 	};
 }
 
-/** Retained by the editor shell across frame loads; the session owns view and focus. */
 export function connectPageFrame(
 	options: FrameIdentity & {
 		window: Window;
@@ -227,8 +218,6 @@ export function connectPageFrame(
 		onEscape?: (command: { type: "escape" }) => boolean;
 	},
 ) {
-	// "null" describes the sandboxed realm; it is never an identity. Admission
-	// still requires the current WindowProxy, fresh channel and one private port.
 	const origin = options.frameOrigin === "null" ? "null" : checkedOrigin(options.frameOrigin);
 	let identity: FrameIdentity = { channel: options.channel, pageId: options.pageId };
 	let view = structuredClone(options.view);
@@ -260,8 +249,6 @@ export function connectPageFrame(
 			request.resolve(success);
 		}
 	};
-	// Only the admitted document holds the other end. A window message would reach
-	// whatever document the frame navigated to.
 	const send = (command: FrameCommandBody) =>
 		keyPort?.postMessage({
 			source: "praxity-editor",
@@ -273,8 +260,6 @@ export function connectPageFrame(
 	const receive = (event: MessageEvent) => {
 		if (!isFrameEvent(event.data, identity)) return;
 		const message = event.data;
-		// Only the private bridge port carries editor authority. A correctly
-		// shaped postMessage from the authentic course window is insufficient.
 		if (message.event !== "ready") return;
 		if (message.event === "ready") {
 			if (connected || event.ports.length !== 1) return;
@@ -411,7 +396,6 @@ export function connectPageFrame(
 			view = structuredClone(next);
 			if (connected) send({ action: "render", view });
 		},
-		/** Bind a fresh presentation explicitly; data-only renders cannot grant authority. */
 		resume(next: FrameView) {
 			if (!isFrameView(next) || next.pageId !== options.pageId)
 				throw new Error("Invalid frame view");
@@ -421,12 +405,10 @@ export function connectPageFrame(
 			presenting = true;
 			if (connected) send({ action: "resume", view, presentationId });
 		},
-		/** End presentation without ending document admission. */
 		suspend() {
 			presenting = false;
 			finishFocus(false);
 			restoreAfterSwap = false;
-			// Relinquish native frame focus without inventing a controller focus target.
 			if (options.window.document.activeElement === options.frame) options.frame.blur();
 			if (connected) send({ action: "suspend" });
 		},
@@ -460,8 +442,6 @@ export function connectPageFrame(
 			removePort = null;
 			keyPort?.close();
 			keyPort = null;
-			// A WindowProxy survives navigation. The old document can still queue
-			// ready envelopes during a swap, so it must not know the next channel.
 			identity = { ...identity, channel: options.window.crypto.randomUUID() };
 			return identity.channel;
 		},

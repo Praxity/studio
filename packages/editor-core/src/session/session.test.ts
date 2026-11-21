@@ -264,7 +264,6 @@ function harness(options = {}) {
 	const send = (command: Command) => {
 		const result = dispatch(state, command, { ...dependencies, now: clock });
 		state = result.state;
-		// This fixture's native adapter accepts focus; cancellation is covered in reply-focus.test.ts.
 		const focus = result.effects.filter((effect) => effect.type === "focus").at(-1);
 		if (focus?.type === "focus" && focus.requestId)
 			state = dispatch(
@@ -503,7 +502,6 @@ for (const direction of ["undo", "redo"] as const) {
 			text: "Keep my open draft",
 			selection: [2, 5],
 		});
-		// History restores the stored edit's selection while the unrelated draft stays open.
 		expect(s.state.selected).toEqual([storedFocus.nodeId]);
 		expect(s.state.focus?.nodeId).toBe(storedFocus.nodeId);
 		expect(s.state.history[0].historyIds).toEqual(["service-tx"]);
@@ -569,7 +567,6 @@ it("I4 replacement commits focus the durable draft seed when its previous displa
 });
 
 describe("session rules", () => {
-	// The ledger's source proof is absence after deletion, never the former node's text.
 	it.each(
 		(
 			[
@@ -1691,7 +1688,6 @@ describe("drafts, focus and history through dispatch", () => {
 		expect(h.state.focus).toEqual(opener);
 		expect(h.state.history).toHaveLength(1);
 	});
-	// Owner 2026-10-14: D16 session grouping waits until after the editor switch, U7 slice 04a.
 	it("D14 D16: consecutive saves each retain one service ID and allow undo", () => {
 		const h = harness();
 		h.send({ type: "openSource", seed });
@@ -2024,7 +2020,6 @@ describe("drafts, focus and history through dispatch", () => {
 		});
 		expect(h.state.drafts[draftId].baseRevision).toBe("r2");
 	});
-	// Owner 2026-10-14: D16 session grouping waits until after the editor switch, U7 slice 04a.
 	it("D16: an outside change advances the epoch of the next saved history entry", () => {
 		const h = harness();
 		h.send({ type: "openSource", seed });
