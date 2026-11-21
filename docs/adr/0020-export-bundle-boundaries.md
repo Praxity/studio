@@ -14,6 +14,8 @@ Exported courses run in browsers and LMS frames with different loading, focus an
 
 - Remove an export temp dir reliably. The previous `fs.remove(dir).catch(()=>{})` silently swallowed transient EBUSY/ENOTEMPTY errors from async file-handle release, leaking `praxity-export-*` dirs into the OS temp dir on every export. Native fs.rm with retries handles the transient case; a persistent failure is logged (not fatal; a leaked temp dir must not fail an otherwise-good export). Governed code: `packages/export-pipeline/src/build.ts`, `removeTempDir`.
 
+  Evidence: the code comment this replaced (commit bed54f6); not independently verified.
+
 - LOM headers refer to license.txt; never replace an incomplete prepared set silently. Governed code: `packages/export-pipeline/src/build.ts`, `loadSchemaFiles`.
 
 - Every file a viewer manifest references, relative to the assets directory with forward slashes. Copy and verify through this list so a new asset field (as `resume` was) cannot be missed by one consumer. Governed code: `packages/export-pipeline/src/bundle-viewer.ts`, `viewerManifestAssetPaths`.
@@ -33,6 +35,8 @@ Exported courses run in browsers and LMS frames with different loading, focus an
 - Only SCORM hosts import the shared classic asset. Other hosts and the shell retain normal imports, so their output has no SCORM dependency or guard. Governed code: `packages/export-pipeline/src/bundle-viewer.ts`, `bundleViewer`.
 
 - Chromium file:// refuses module imports. Keep the same island entries in classic bundles. Governed code: `packages/export-pipeline/src/bundle-viewer.ts`, `bundleViewer`.
+
+  Evidence: the code comment this replaced (commit bed54f6); not independently verified.
 
 - HTML compilation must not load the native bundler to discover this asset name. Governed code: `packages/export-pipeline/src/patterns/write-distractors/assets.ts`, `WRITE_DISTRACTORS_STYLESHEET`.
 

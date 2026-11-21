@@ -24,6 +24,8 @@ Exported courses run in browsers and LMS frames with different loading, focus an
 
 - Browsers withhold cross-origin CSS rules; exported course sheets are same-origin. Governed code: `packages/export-pipeline/template/review-comments.js`, `collect`.
 
+  Evidence: the code comment this replaced (commit bed54f6); not independently verified.
+
 - In-memory retries freeze the full command until a durable acknowledgement or refusal. Governed code: `packages/export-pipeline/template/review-comments.js`, `mutateThread`.
 
 - Deck signals after activating the slide, then finishes its own focus synchronously. Governed code: `packages/export-pipeline/template/review-comments.js`, `finishPendingJump`.
@@ -31,6 +33,8 @@ Exported courses run in browsers and LMS frames with different loading, focus an
 - One owner for browser records. Storage events never change an open session. Governed code: `packages/export-pipeline/template/review-comments.js`, `mountReviewTools`.
 
 - Quota only blocks puts. Always attempt removal, including memory-only keys. Governed code: `packages/export-pipeline/template/review-comments.js`, `remove`.
+
+  Evidence: the code comment this replaced (commit bed54f6); not independently verified.
 
 - A conflict fork must sort after the value just observed, even in the same millisecond. Governed code: `packages/export-pipeline/template/review-comments.js`, `writeDraftLocked`.
 

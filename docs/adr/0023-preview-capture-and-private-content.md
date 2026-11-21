@@ -40,13 +40,19 @@ Exported courses run in browsers and LMS frames with different loading, focus an
 
 - Glossary terms come from the inline tooltips in page content. Aggregate in prepareCourse after page splitting so entries carry the right page title and slug. Governed code: `packages/export-pipeline/src/preview/course-context.ts`, `prepareCourse`.
 
-- Stage discriminators without changing caller records. Native cloning still owns host objects and clone failures; descriptors keep prompt data intact for admission. Governed code: `packages/export-pipeline/src/self-check-prompt.ts`, `captureBlockTypes`.
+- In `packages/export-pipeline/src/self-check-prompt.ts`, `captureBlockTypes` reads an enumerable accessor-backed block `type` once and stages that value as a data property on a new record. It leaves the caller's record unchanged. If the captured type is `writeDistractors`, it copies the original property descriptors onto that staged record and calls `admitWriteDistractorsPrompt` before recursively visiting its properties.
 
-- Route before visiting owned data: its getters and erased properties must reach the closed constructor untouched. Governed code: `packages/export-pipeline/src/self-check-prompt.ts`, `captureBlockTypes`.
+- `admitWriteDistractorsPrompt` delegates to `constructWriteDistractorsPromptBlock` in `packages/shared-blocks/src/write-distractors-prompt.ts`. That constructor must inspect the original nested `data` and `content` descriptors, own keys and prototypes. It rejects accessors, symbol keys, nonenumerable properties, unexpected fields such as `rightAnswer`, and non-plain prototypes. An earlier traversal could invoke a data getter; an earlier `structuredClone` could erase symbol keys, nonenumerable fields and prototype information that admission needs to reject. Only the captured block `type` accessor may be read before that admission. Other host objects and clone failures remain subject to the later native clone in `cloneAdmittedSelfCheckData`.
+
+  Evidence: `packages/export-pipeline/src/__tests__/write-distractors-reader.test.ts`, "routes a single captured discriminator before zero-read prompt validation at %s" and "refuses %s before capture, sanitization and draft substitution". These tests check that the block type is read once, data getters are never called, and the listed malformed properties are refused.
 
 - structuredClone drops symbol and nonenumerable properties. Preserve self-check refusals, without evaluating getters a second time or using live values in the compiler. Governed code: `packages/export-pipeline/src/self-check-prompt.ts`, `assertCloneProperties`.
 
-- Inspect before copying: structuredClone would discard unknown own keys and prototypes. Governed code: `packages/export-pipeline/src/write-distractors.ts`, `record`.
+  Evidence: the code comment this replaced (commit bed54f6); not independently verified.
+
+- Inspect the full own-key set and prototype before copying. structuredClone can erase symbol keys, nonenumerable fields and custom prototype information that admission must inspect. Governed code: `packages/export-pipeline/src/write-distractors.ts`, `record`.
+
+  Evidence: the code comment this replaced (commit bed54f6); not independently verified.
 
 ## Consequences
 
