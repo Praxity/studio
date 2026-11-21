@@ -21,7 +21,6 @@ async function openTranscript(page: Page) {
 }
 const frenchNamesSource =
 	"# Ponctuation française\n\n::: categorize Classez chaque énoncé : fait ou opinion ? {shuffle=false}\n:: Fait\n- Le rapport a été remis vendredi.\n:: Opinion\n- Je trouve que le rapport manque de détails.\n:::\n";
-// Literal leadership content checks the design owner's two transcript layouts.
 const leadershipSource =
 	"# Vérifiez : quel style ?\n\n::: categorize Classez chaque réplique selon le style qu'elle illustre. {width=wide shuffle=false}\n:: Assertif\n- J'ai besoin du rapport jeudi pour le présenter vendredi. Est-ce réaliste pour toi ?\n- Je ne suis pas d'accord avec cette option. Voici pourquoi, et j'aimerais entendre ton point de vue.\n:: Agressif\n- C'est n'importe quoi. Tu n'as rien compris, comme d'habitude.\n:: Passif\n- Non, non, ce n'est pas grave, je vais rester ce soir pour finir ta partie.\n:: Passif-agressif\n- Merci d'être enfin arrivé. On commençait à croire que tu avais oublié la réunion.\n:::\n";
 const source =
@@ -38,11 +37,9 @@ test.beforeAll(async () => {
 			);
 			course.id = `block-rendering-${key}`;
 			course.colorMode = colorMode;
-			// The specs give pixel expectations at a 16px root; shipped courses default to 17px.
 			course.cssVars = {
 				...course.cssVars,
 				"--praxity-font-size-base": locale === "leadership" ? "17px" : "16px",
-				// Supply the authored accent so the note does not use the bare CSS fallback.
 				"--praxity-color-accent": colorMode === "dark" ? "#dc8fff" : "#6b21a8",
 				...(locale === "leadership"
 					? {
@@ -63,8 +60,6 @@ test.beforeAll(async () => {
 							: source,
 				).pages[0].blocks,
 			);
-			// Stored group instructions form one narration segment with its title.
-			// G4 has no instructions part, so project the converted prose into that model field.
 			const groupIndex = blocks.findIndex((block) => block.type === "assessmentGroup");
 			if (groupIndex >= 0) {
 				const instructions = blocks[groupIndex + 1];
@@ -336,12 +331,10 @@ for (const transcript of [false, true]) {
 					const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
 					while (walker.nextNode()) {
 						const node = walker.currentNode;
-						// An authored hyphen is an allowed break in Passif-agressif.
 						for (const word of (node.textContent ?? "").matchAll(/[^\s-]+/gu)) {
 							const range = document.createRange();
 							range.setStart(node, word.index);
 							range.setEnd(node, word.index + word[0].length);
-							// WebKit includes a zero-width caret at an authored hyphen break.
 							const rects = [...range.getClientRects()].filter(
 								(rect) => rect.width > 0 && rect.height > 0,
 							);
@@ -403,8 +396,6 @@ for (const width of [1280, 390]) {
 			for (const header of geometry.headers.slice(2))
 				expect(header).toBeCloseTo(geometry.headers[1], 0);
 		} else {
-			// A scrolling statement column hid the last answers on phones. Keep the
-			// wide table above; at this width every statement and labeled answer fits.
 			expect(geometry.scroll).toBe(false);
 			for (const row of await table.locator("tbody tr").all()) {
 				await expect(row.locator("th")).toHaveCSS("display", "block");
@@ -420,7 +411,6 @@ for (const width of [1280, 390]) {
 						const style = getComputedStyle(node, "::before");
 						return { content: style.content, height: Number.parseFloat(style.height) };
 					});
-					// Gecko serializes attr() rather than the resolved generated text.
 					expect(["attr(data-category)", JSON.stringify(category)]).toContain(label.content);
 					expect(label.height).toBeGreaterThan(0);
 					const bounds = await cell.locator("input").boundingBox();
@@ -467,7 +457,6 @@ for (const locale of ["en", "fr"]) {
 			await expect(first).toBeFocused();
 			await expect(first).toHaveCSS("outline-offset", "2px");
 			await expectFocusRing(first, 2);
-			// WebKit scrolls the focused card flush with the scrollport's edge.
 			await first.evaluate((element) => element.scrollIntoView({ block: "center" }));
 			await expectUnclippedRing(first);
 			const heights = await cards.evaluateAll((elements) =>

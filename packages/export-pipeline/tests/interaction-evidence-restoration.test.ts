@@ -101,7 +101,6 @@ function ordinaryRead(raw: string) {
 	store.setItem(key, raw);
 	return runtime(store).getInteractions();
 }
-// Base controls use the actual old reader, so absence fails assertions, never imports.
 const read = xapi.readXapiInteractionEvidence ?? ordinaryRead;
 
 function scorm(format: string, raw: string) {

@@ -50,7 +50,6 @@ const course: CourseExportInput = {
 	],
 };
 
-/** The same course graded against a pass mark, which adds mastery and sequencing elements. */
 const passMarkCourse: CourseExportInput = {
 	...course,
 	passingScore: 50,
@@ -191,7 +190,6 @@ describe("ADL-derived SCORM package conformance checks", () => {
 	it("ships the complete publisher IMS sequencing schemas and distribution notices", async () => {
 		const result = await buildScormPackage(course, { format: "scorm2004" });
 		const zip = new AdmZip(result.zip);
-		// https://www.imsglobal.org/xsd/<filename>, retrieved 2026-10-19, exact bytes.
 		for (const [file, sha256] of [
 			["imsss_v1p0.xsd", "62f77530b4898d88470778b73c95bd7acfdc86617ef65e7a6cd39b85542c2f67"],
 			[
@@ -254,7 +252,6 @@ describe("ADL-derived SCORM package conformance checks", () => {
 		const result = await buildScormPackage(course, { format: "scorm2004" });
 		const xml = new AdmZip(result.zip).readFile("xml.xsd");
 		expect(xml).not.toBeNull();
-		// https://www.w3.org/2001/03/xml.xsd, retrieved 2026-10-19.
 		expect(
 			createHash("sha256")
 				.update(xml as Buffer)
@@ -352,7 +349,6 @@ describe("ADL-derived SCORM package conformance checks", () => {
 			for (const element of Array.from(document.getElementsByTagName("*"))) {
 				for (const node of [element, ...Array.from(element.attributes)]) {
 					const namespace = node.namespaceURI;
-					// XML, namespace declarations and XSI are built-in XML machinery.
 					if (
 						!namespace ||
 						[

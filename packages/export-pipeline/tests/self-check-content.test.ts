@@ -210,7 +210,6 @@ it("captures per-activity assets and invalidates retained contexts on model and 
 	expect(firstAsset.bytes.toString()).not.toContain("MUTATED");
 	const original = first.pages[0].blocks.find((block) => block.type === "selfCheck");
 	if (!original) throw new Error("Missing original fixture");
-	// Even a model-only draft has unchanged prompt data and must wait for refresh.
 	expect(renderNode(first, first.pages[0].id, original.id, original).html).toContain(
 		"data-self-check-context-pending",
 	);

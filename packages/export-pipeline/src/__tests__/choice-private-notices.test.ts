@@ -122,7 +122,6 @@ for (const locale of ["en", "fr"] as const)
 		it("announces the first deliberate failure after passive failure, then once per recovery", () => {
 			const f = fixture(locale);
 			try {
-				// An unrelated status inside the root must never be adopted.
 				f.node("mode").parentElement!.append(f.win.document.querySelector("#unrelated")!);
 				f.result({ status: "not-saved", code: "storage-unavailable" });
 				const update = installPrivateChoiceNotices(f.win.document);
@@ -249,7 +248,6 @@ it("settles a rejected privacy-support load into silent failure after runtime-re
 		const loaded = new Promise<typeof privacySupport>((_resolve, fail) => {
 			reject = fail;
 		});
-		// Match the bootstrap's promise ordering exactly.
 		const ready = loaded.then(
 			() => {},
 			() => {},

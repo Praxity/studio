@@ -9,7 +9,6 @@ import { compilerIslandAssets } from "./fixtures/page-compiler";
 const observed = vi.hoisted(
 	() => new Map<string, { question: ChoiceStateQuestion; signature: string } | undefined>(),
 );
-// Observe the component boundary while mounting the real assessment controls.
 vi.mock("@praxity/shared-blocks/blocks/assessment", async (original) => {
 	const actual = await original<typeof import("@praxity/shared-blocks/blocks/assessment")>();
 	return {

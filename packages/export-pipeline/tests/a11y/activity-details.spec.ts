@@ -306,7 +306,6 @@ for (const locale of ["en", "fr"] as const) {
 						expect(await link.textContent()).toBe(
 							locale === "en" ? name : name.replace(" :", "\u00a0:"),
 						);
-						// Firefox loses precision when Playwright serializes the rectangle coordinates.
 						const targetHeight = await link.evaluate(
 							(element) => element.getBoundingClientRect().height,
 						);
@@ -351,7 +350,6 @@ for (const locale of ["en", "fr"] as const) {
 	}
 	for (const dark of [false, true]) {
 		for (const width of [1280, 390]) {
-			// Separate independent journeys: WebKit's light desktop frame waits exhaust a combined 30s test.
 			const open = async (page: Page) => {
 				await page.setViewportSize({ width, height: 900 });
 				await page.emulateMedia({ reducedMotion: "reduce" });

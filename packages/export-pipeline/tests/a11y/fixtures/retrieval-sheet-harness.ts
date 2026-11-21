@@ -11,15 +11,12 @@ import { renderRetrievalSheet } from "../../../src/patterns/retrieval-sheet/rend
 import { planPageRuntime } from "../../../src/runtime-plan";
 import { readCachedViewer, VIEWER_CACHE_DIR } from "../../../src/viewer-cache";
 
-// A direct renderer harness, never an admission exception in the compiler.
 export async function writeRetrievalSheetHarness(
 	directory: string,
 	enhanced = false,
 	printFixtures = false,
 ): Promise<void> {
 	await buildExportCssBundle(directory);
-	// The suite's global setup (or focused runner) prepares the viewer once.
-	// Worker restarts reuse those bytes; no full viewer build happens in this file.
 	const prepared =
 		process.env.PRAXITY_RETRIEVAL_ASSETS_DIR ??
 		(await readCachedViewer(VIEWER_CACHE_DIR, await computeViewerSourceHash()))?.directory;
@@ -164,8 +161,6 @@ export async function writeRetrievalSheetHarness(
 					},
 					true,
 				);
-				// Renderer-only fixture: real publication guards remain active. Feed the
-				// literal baseline into the production document/stylesheet path.
 				const html = generateHtmlPage({
 					config,
 					page: emptyPage,

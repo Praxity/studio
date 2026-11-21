@@ -33,12 +33,9 @@ async function ensureDesktopExportAssets(): Promise<void> {
 	try {
 		await assertViewerAssetsCurrent(DESKTOP_EXPORT_ASSETS_DIR);
 		return;
-	} catch {
-		// Missing or stale generated assets must be rebuilt from the current source.
-	}
+	} catch {}
 
 	console.log("[export-pipeline] Desktop export assets missing or stale — running prebuild…");
-	// The desktop prebuild command, run through Node: Windows has no pnpm executable to spawn.
 	execFileSync(process.execPath, ["--import", "tsx", "scripts/prebuild-viewer.ts"], {
 		cwd: DESKTOP_DIR,
 		stdio: "inherit",
@@ -82,8 +79,6 @@ export async function loadGrammarFixture(
 
 export async function loadAuthoringCatalogFixture(): Promise<LoadedGrammarFixture> {
 	const fixture = await loadSourceFixture(authoringCatalogSource());
-	// Stemless assessments remain a supported stored model. G4 authored hotspots
-	// require a question, so retain the publisher fallback case at its interface.
 	const legacy = fixture.pages.find((page) => page.title === "Catalog legacy hotspot");
 	if (!legacy) throw new Error("Missing stemless hotspot catalog page");
 	const ids = new Set(

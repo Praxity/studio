@@ -140,7 +140,6 @@ it("dispatches the public sheet through renderBlockHtml", () => {
 	expect(html).not.toMatch(/data-(completed|attempted|signed|paid)/);
 });
 
-// Raw compiled callers can bypass the source group-membership validator.
 for (const locale of ["en", "fr"]) {
 	it.each([
 		{ shape: "nested sheet", member: sheet.id, blocks: [outer] },

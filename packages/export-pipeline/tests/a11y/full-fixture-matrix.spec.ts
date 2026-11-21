@@ -1,7 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { assertAxeScenario, readFullFixtureVariantUrl, waitForHydration } from "./helpers";
 
-// The base export is light with sidebar navigation; axe-scan.spec.ts scans every page of it.
 const FULL_FIXTURE_VARIANTS = ["theme-dark", "nav-minimal"];
 
 test.describe("full fixture a11y matrix", () => {

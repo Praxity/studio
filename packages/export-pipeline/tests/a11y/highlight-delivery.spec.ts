@@ -28,7 +28,6 @@ test.beforeAll(async ({ browser }) => {
 		format: "esm",
 		outfile: join(directory, "island-highlight.js"),
 	});
-	// Keep the production adapter; replace only its enhancer at the dependency seam.
 	const failing = await build({
 		entryPoints: [entry],
 		bundle: true,
@@ -113,7 +112,6 @@ test.beforeAll(async ({ browser }) => {
 	});
 	await new Promise<void>((done) => server.listen(0, "127.0.0.1", done));
 	url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-	// Warm fonts and the scanner outside each failure-state timing budget.
 	const warm = await browser.newPage();
 	await warm.goto(`${url}/key-en-light.html`);
 	await warm.evaluate(() => document.fonts.ready);
@@ -205,8 +203,6 @@ test("ESM delivery attaches memory-only controls silently", async ({ page }) => 
 test("offline file delivery uses the classic highlight adapter", async ({ page }) => {
 	await page.goto(pathToFileURL(join(directory, "key-en-light.html")).href);
 	await expect(page.locator('[data-island="highlight"]')).toHaveAttribute("data-hydrated", "");
-	// Firefox does not expose every file:// script through Playwright request events.
-	// Only the executed classic bundle publishes this adapter on window.
 	expect(await page.evaluate(() => typeof window.PraxityHighlightIsland?.attachIsland)).toBe(
 		"function",
 	);
@@ -328,7 +324,6 @@ for (const failure of ["tampered text", "listener registration"] as const)
 				.evaluate((chunk, failure) => {
 					if (failure === "tampered text") chunk.textContent += " altered";
 					else {
-						// The native registration boundary fails after earlier listeners were installed.
 						chunk.addEventListener = () => {
 							throw new Error("registration");
 						};

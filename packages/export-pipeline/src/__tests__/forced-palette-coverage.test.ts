@@ -5,8 +5,6 @@ import ts from "typescript";
 import { describe, expect, it } from "vitest";
 import { viewerSourceFiles } from "../bundle-viewer";
 
-// Only statements executed on the branch count: a callback, nested condition or
-// unawaited promise cannot stand in for an assertion of the no-palette rendering.
 function unassertedBranches(source: string, requireBranch = false): number {
 	const file = ts.createSourceFile("spec.ts", source, ts.ScriptTarget.Latest, true);
 	let missing = 0;
@@ -59,8 +57,6 @@ function unassertedBranches(source: string, requireBranch = false): number {
 			const call = statement.expression.expression;
 			if (!ts.isCallExpression(call) || !ts.isIdentifier(call.expression)) continue;
 			if (call.expression.text === "expectForcedEmulationInert") return true;
-			// expectFocusRing's normal-palette path owns the >=3:1 floor. A literal
-			// true third argument selects forced-palette behavior instead.
 			if (
 				call.expression.text === "expectFocusRing" &&
 				call.arguments.length >= 2 &&
@@ -103,8 +99,6 @@ function unassertedBranches(source: string, requireBranch = false): number {
 	return missing + Number(requireBranch && noPaletteBranches === 0);
 }
 
-// These journeys assert the same semantics, geometry or visible indicator in both
-// palettes. New emulating specs require a palette branch unless reviewed here.
 const PALETTE_INDEPENDENT_SPECS = new Map([
 	[
 		"deck/highlight-acceptance.spec.ts",
@@ -130,7 +124,6 @@ const PALETTE_INDEPENDENT_SPECS = new Map([
 ]);
 
 function emulatesForcedColors(source: string): boolean {
-	// Include named/indirect media objects conservatively, not only inline options.
 	if (!/\bforcedColors\b/.test(source)) return false;
 	const file = ts.createSourceFile("spec.ts", source, ts.ScriptTarget.Latest, true);
 	let emulates = false;
@@ -250,12 +243,8 @@ const REVIEW_CLIENT = "packages/export-pipeline/template/review-comments.js";
 
 function unexpectedForcedColors(source: string, filename: string): boolean {
 	if (PALETTE_OWNERS.has(filename)) return false;
-	// One explicit exception: this observer query invalidates marker geometry.
-	// It never reads matches or chooses palette-specific rendering. Remove only
-	// that one literal, so any additional reference still fails ownership.
 	if (filename === REVIEW_CLIENT)
 		source = source.replace(/^\s*"\(forced-colors: active\)",\r?$/m, "");
-	// Join adjacent quoted fragments to catch the reviewed split-literal query.
 	return /forced-colors/i.test(source.replace(/["'`]\s*\+\s*["'`]/g, ""));
 }
 
@@ -307,7 +296,6 @@ describe("published forced-color runtime ownership", () => {
 
 	it("covers the bundler's complete runtime source inventory", async () => {
 		const root = path.resolve(import.meta.dirname, "../../../..");
-		// bundle-viewer.test.ts checks this inventory against every bundle's metafile.
 		const inputs = (await viewerSourceFiles())
 			.map((filename) => path.relative(root, filename).replaceAll("\\", "/"))
 			.filter(isRuntimeTs);

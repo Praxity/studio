@@ -70,7 +70,6 @@ test("dropdown blanks retain distractors, support keyboard answers, retry and re
 		"a longer distractor that needs more room",
 	]);
 	await fields.first().focus();
-	// Native select type-ahead works without automating an operating-system popup.
 	await page.keyboard.press("r");
 	await expect(fields.first()).toHaveValue("red");
 	await page.keyboard.press("Tab");

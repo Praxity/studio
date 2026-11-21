@@ -69,7 +69,6 @@ export function designColorsTypographyFixtures(): Array<{
 		const parsed = readLesson(
 			serializeFrontmatter({ title: "Design audit", lang: "en", design }, SOURCE),
 		);
-		// Stored text HTML uses this existing error renderer; inert previews do not run learner validation.
 		parsed.blocks.push({
 			id: "error-color-sample",
 			type: "text",

@@ -53,7 +53,6 @@ it.each(["numeric", "likert", "stars", "emoji", "slider"])(
 			expect(set).toHaveBeenCalledExactlyOnceWith("rating", { value: 3 });
 			expect(document.querySelector('[data-completed="true"]')).not.toBeNull();
 			expect(showRequiredValidation()).toBe(false);
-			// A second attachment cannot consume the same gesture again.
 			initRatingEnhancements()();
 			expect(set).toHaveBeenCalledTimes(1);
 			dispose();

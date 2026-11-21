@@ -148,7 +148,6 @@ test("SCORM resumes an exact module page and glossary never calls LMSInitialize"
 	await expect(page).toHaveURL(`${url}/${pages[5].slug}.html`);
 	await waitForHydration(page);
 	await expect(page.locator(".praxity-pages-position")).toHaveText("Page 2 of 2");
-	// The canonical page title differs from the authored H1 in this fixture.
 	const summary = page.locator(".praxity-resume-summary");
 	await expect(summary).toHaveText("Resumed at page 6 of 8: Module 2 page 1");
 	await expect(summary).toMatchAriaSnapshot(
@@ -282,7 +281,6 @@ for (const direction of ["ltr", "rtl"]) {
 			const overflow = await link.evaluate((element) => {
 				const range = document.createRange();
 				range.selectNodeContents(element);
-				// Clip actual label text by 2px, well beyond the rounding tolerance.
 				element.style.width = `${range.getBoundingClientRect().width - 2}px`;
 				const bounds = element.getBoundingClientRect();
 				const text = range.getBoundingClientRect();

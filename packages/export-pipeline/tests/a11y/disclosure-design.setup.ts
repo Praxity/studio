@@ -48,7 +48,6 @@ export default async function setup() {
 				if (config) inventories[name] = JSON.parse(config[1]).pages;
 			}
 		}
-		// Keep this block suite independent of unrelated deck and authoring fixtures.
 		for (const { route, course: fixture } of [
 			containerLayoutsFixture(),
 			...designContainerSurfaceFixtures(),
@@ -57,7 +56,6 @@ export default async function setup() {
 			new AdmZip(result.zip).extractAllTo(resolve(directory, route), true);
 		}
 		const server = createServer((request, response) => {
-			// Reproduce a learner's CSP-blocked third-party embed deterministically.
 			response.setHeader(
 				"Content-Security-Policy",
 				"frame-src 'self'; img-src 'self' data: https://i.ytimg.com",

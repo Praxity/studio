@@ -18,8 +18,6 @@ import {
 } from "./helpers";
 
 async function previousOutlineLink(page: Page, browserName: string) {
-	// Safari's default Tab order includes links with Option (Alt).
-	// https://support.apple.com/guide/safari/keyboard-shortcuts-and-gestures-cpsh003/mac
 	await page.keyboard.press(
 		browserName === "webkit" && process.platform === "darwin" ? "Alt+Shift+Tab" : "Shift+Tab",
 	);
@@ -198,8 +196,6 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
 	});
 }
 
-// Native scrolling is not reported by getAnimations(). Record requests before
-// any runtime loads so rule 12 can check the reduced-motion contract too.
 function recordSmoothScroll() {
 	const state = window as Window & { motionScrollViolations?: string[] };
 	if (state.motionScrollViolations) return;
@@ -235,7 +231,6 @@ test.beforeEach(async ({ page }) => {
 	await page.evaluate(recordSmoothScroll);
 });
 
-// The outline is navigation, not an assessment result: its check means Visited.
 for (const presentation of ["pages", "deck"] as const) {
 	for (const palette of ["ink", "forest", "plum", "clay", "clear"] as const) {
 		for (const mode of ["light", "dark"] as const) {
@@ -271,7 +266,6 @@ for (const presentation of ["pages", "deck"] as const) {
 							await page.locator("#deck-outline-toggle").click();
 						} else {
 							await page.locator("[data-nav-menu-toggle]:visible").click();
-							// Drawer entry transfers focus on the next animation frame.
 							await expect(outline.locator('a[aria-current="page"]')).toBeFocused();
 						}
 					};
@@ -283,7 +277,6 @@ for (const presentation of ["pages", "deck"] as const) {
 							await expect(row.locator(".praxity-nav-marker-spacer > svg")).toBeHidden();
 						}
 					}
-					// Visit two rows through the real navigation, retaining the title/status names.
 					const secondUrl = await rows.nth(1).getAttribute("href");
 					if (!secondUrl) throw new Error("Missing second outline destination");
 					await rows.nth(1).click();
@@ -294,7 +287,6 @@ for (const presentation of ["pages", "deck"] as const) {
 						await page.waitForURL(`${base}/lectures-complementaires.html`);
 					await open();
 					if (width === 640) {
-						// 1280px at 200% browser zoom has a 640 CSS-pixel layout viewport.
 						await page.evaluate(() => {
 							document.documentElement.style.fontSize = "32px";
 						});
@@ -369,7 +361,6 @@ for (const presentation of ["pages", "deck"] as const) {
 							weight: style.fontWeight,
 						};
 					});
-					// Only overflowing outlines may leave room for a scrollbar before the divider.
 					expect.soft(geometry.left, "current row spans full sidebar width").toBeCloseTo(0, 0);
 					expect.soft(geometry.right, "current row reaches sidebar end").toBeCloseTo(0, 0);
 					expect.soft(geometry.left, "accent sits at sidebar left edge").toBeCloseTo(0, 0);
@@ -435,7 +426,6 @@ for (const presentation of ["pages", "deck"] as const) {
 							.toBeLessThanOrEqual(1);
 						expect.soft(row.clipped, "titles wrap instead of truncating").toBe(false);
 					}
-					// Reach the first row by keyboard; programmatic focus can retain mouse modality.
 					await rows.nth(1).focus();
 					await previousOutlineLink(page, browserName);
 					await page.evaluate(
@@ -511,8 +501,6 @@ interface DesignCourse {
 }
 
 function courses(): DesignCourse[] {
-	// Maintainer courses stay outside the repository. The capture runner exports a
-	// scratch copy and supplies its URLs; CI exercises the public fixtures instead.
 	const evidence = process.env.PRAXITY_DESIGN_SYSTEM_ENV;
 	if (evidence) return JSON.parse(readFileSync(evidence, "utf8")) as DesignCourse[];
 	const env = readTestEnv();
@@ -781,7 +769,6 @@ async function inspect(page: Page) {
 					break;
 				}
 			}
-			// Image overlay labels may truncate only when their full text is also visible below.
 			const style = getComputedStyle(element);
 			const caption = element.closest("figure")?.querySelector("figcaption");
 			const preservedLabel =
@@ -932,7 +919,6 @@ async function inspect(page: Page) {
 					style.borderBottomLeftRadius,
 				];
 				for (const radius of radii) {
-					// Generated circles use their own dimensions, not the host's box.
 					const round =
 						["50%", "999px"].includes(radius) &&
 						(e.matches(".praxity-assessment-choice-option .praxity-choice-status") ||
@@ -984,7 +970,6 @@ async function inspect(page: Page) {
 												iterations[index % iterations.length],
 									),
 					);
-				// The browser owns active timing, including WAAPI effects and CSS repetition.
 				const activeTimings = e.getAnimations().flatMap((animation) => {
 					const effect = animation.effect;
 					if (
@@ -998,8 +983,7 @@ async function inspect(page: Page) {
 				const active = activeTimings.map((timing) =>
 					timing.iterations === Infinity
 						? Infinity
-						: // Browser timings in seconds can leave a last-digit binary roundoff at 300ms.
-							Math.max(
+						: Math.max(
 								0,
 								Number(((timing.delay ?? 0) + Number(timing.activeDuration)).toPrecision(15)),
 							),
@@ -1057,7 +1041,6 @@ async function inspect(page: Page) {
 						(count, index) =>
 							count > 1 && motion.animationName.split(",")[index]?.trim() !== "none",
 					) || activeTimings.some((timing) => (timing.iterations ?? 1) > 1);
-				// Only progress indicators may use a long, linear animation. They still stop in reduced motion.
 				const progress =
 					e.matches(
 						"progress, [role=progressbar], .praxity-scroll-progress-bar, .praxity-scroll-progress-fill",
@@ -1149,7 +1132,6 @@ async function inspect(page: Page) {
 				"button, input:not([type=hidden]), select, textarea, summary, [role=button], [role=tab], a[href]",
 			),
 		).filter(visible)) {
-			// Choice labels stretch their activation pseudo-element across the option.
 			const target = e.matches("input[type=radio], input[type=checkbox]")
 				? (e.closest(".praxity-assessment-choice-option") ??
 					e.closest(".praxity-ag-radio-row") ??
@@ -1243,7 +1225,6 @@ async function inspect(page: Page) {
 	return result;
 }
 
-// Zero is an edge treatment, never a second control radius.
 test("reading geometry top-aligns unequal cards within each grid row", async ({ page }) => {
 	await page.setViewportSize({ width: 1280, height: 844 });
 	await page.goto(`${readTestEnv().url}/reading-geometry/reading-geometry.html`);
@@ -1296,8 +1277,6 @@ test("reading geometry spaces divided items from both rules at 390px", async ({ 
 			children.map((child) => {
 				const bounds = child.getBoundingClientRect();
 				const style = getComputedStyle(child);
-				// Heading font bounds can exceed their 1.2 line box. Measure reading
-				// space from the laid-out line box, not the font's invisible ascenders.
 				const first = child.firstElementChild?.getBoundingClientRect();
 				const last = child.lastElementChild?.getBoundingClientRect();
 				const start =
@@ -1478,7 +1457,6 @@ async function inspectRadiusRoles(page: Page) {
 						Number.parseFloat(style.marginInlineStart) >= 0),
 			);
 			const attachedTab =
-				// Only the panel's joined edge is straight; disclosure buttons have four corners.
 				element.matches("[role=tab]") &&
 				!!element.closest(".praxity-tabs-block, .praxity-tabs-static") &&
 				!element.classList.contains("praxity-disclosure-trigger");
@@ -1908,7 +1886,6 @@ for (const width of [1280, 390]) {
 			"10px",
 		);
 		await expect(page.locator(".praxity-rating").first()).toHaveCSS("border-radius", "16px");
-		// Firefox does not implement `pretty`; it keeps the default wrap there.
 		if (await page.evaluate(() => CSS.supports("text-wrap", "pretty")))
 			await expect(page.locator(".praxity-choice-label").first()).toHaveCSS(
 				"text-wrap-style",
@@ -2035,7 +2012,6 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
 				),
 			),
 		);
-		// Set the preference before rendering so a media change cannot hide Mantine's timing.
 		await page.emulateMedia({ reducedMotion });
 		await page.setContent(`<style>${library}${blocks}</style>
 			<main data-praxity-root><div class="praxity-block-assessment">${controls}</div></main>`);
@@ -2406,7 +2382,6 @@ test("published motion stops decorative loops and shows reduced-motion end state
 	await expect(page.locator("#motion-end")).toHaveCSS("opacity", "1");
 });
 
-// Exercise the authored activity contract through the compiled learner output.
 async function openFeedbackQuestion(page: Page, width: number, authored = true, required = true) {
 	await page.setViewportSize({ width, height: 844 });
 	await page.route("**/activity-bugs-en/activity-fixes.html", async (route) => {
@@ -2444,7 +2419,6 @@ async function openFeedbackQuestion(page: Page, width: number, authored = true, 
 	await block.getByRole("radio", { name: "Interrupt", exact: true }).check();
 	await block.locator("[data-assessment-submit]").focus();
 	await page.keyboard.press("Enter");
-	// Continue discovers its next target after the submitted render commits.
 	await page.evaluate(
 		() =>
 			new Promise<void>((resolve) =>
@@ -2472,7 +2446,6 @@ for (const width of [1280, 390]) {
 			await expect.soft(summary).toHaveCSS(`border-${side}-width`, "0px");
 		const retry = block.getByRole("button", { name: "Try again", exact: true });
 		await expect(retry).toBeFocused();
-		// WebKit's programmatic focus uses its native outline until keyboard traversal.
 		await page.keyboard.press("Tab");
 		await page.keyboard.press("Shift+Tab");
 		await expect(retry).toBeFocused();
@@ -2505,8 +2478,6 @@ for (const width of [1280, 390]) {
 			const retry = block.getByRole("button", { name: "Try again", exact: true });
 			await expect(retry).toHaveAttribute("data-variant", "outline");
 			for (const action of await block.locator("button:visible").all()) {
-				// Firefox protocol quads lose precision when subtracting large
-				// positions (44 becomes 43.999969). DOMRect retains the CSS size.
 				const bounds = await action.evaluate((element) => {
 					const rect = element.getBoundingClientRect();
 					return { width: rect.width, height: rect.height };
@@ -2683,7 +2654,6 @@ test("a confirming provider stays visible beyond the embed fallback deadline", a
 	await embed.scrollIntoViewIfNeeded();
 	await expect(embed).toHaveAttribute("data-hydrated", "");
 	await expect(embed.locator("iframe").contentFrame().getByText("Loaded provider")).toBeVisible();
-	// Real elapsed time establishes that confirmation cancelled the fallback timer.
 	await page.waitForTimeout(3200);
 	await expect(embed.locator("iframe")).toBeVisible();
 	await expect(
@@ -2780,8 +2750,6 @@ for (const width of [1280, 390]) {
 				const gap = adjacent
 					? adjacent.getBoundingClientRect().top - e.getBoundingClientRect().bottom
 					: null;
-				// Closed option boxes have short side borders joining their horizontal edges.
-				// Two unjoined horizontal rules within 12px are the phone regression.
 				const parallelRules =
 					adjacent &&
 					gap !== null &&
@@ -2915,7 +2883,6 @@ async function* inspectPages(page: Page, course: DesignCourse, width: number) {
 				await page.evaluate((index) => {
 					const deck = document.querySelector<HTMLElement>(".praxity-deck");
 					if (deck) deck.dataset.panel = "closed";
-					// Inspection mode visits gated content without changing learner answers.
 					Array.from(document.querySelectorAll<HTMLElement>(".deck-slide")).forEach((e, i) => {
 						e.hidden = i !== index;
 						e.inert = i !== index;
@@ -3070,8 +3037,6 @@ test("dark choice result borders differ by at least 15 Delta E OK", async ({ pag
 	expect(100 * Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2])).toBeGreaterThanOrEqual(15);
 });
 
-// Sections 5 (reading interactions) and 6 (activities) own these block controls.
-// Keep the original 44px assertion for those batches to enable.
 test.fixme("44px targets across remaining reading interactions (section 5)", async ({ page }) => {
 	for (const width of [1280, 390])
 		for (const course of courses())
@@ -3079,8 +3044,6 @@ test.fixme("44px targets across remaining reading interactions (section 5)", asy
 				expect.soft(result.failures[7], `${entry}: 44px targets`).toEqual([]);
 });
 
-// A group's authored H1 is inside its padded activity header. Sections 6 (activities)
-// and 7 (deck) own moving that title into the common slide title row.
 test("activity-group slide titles share the deck title row (sections 6 and 7)", async ({
 	page,
 }) => {
@@ -3222,7 +3185,6 @@ for (const width of [1280, 390]) {
 		try {
 			await expect.soft(button).toHaveCSS("transform", "matrix(0.96, 0, 0, 0.96, 0, 0)");
 		} finally {
-			// Release off the link so this test never leaves the local fixture.
 			await page.mouse.move(0, 0);
 			await page.mouse.up();
 		}
@@ -3247,7 +3209,6 @@ for (const width of [1280, 390]) {
 	});
 }
 
-// Review DK1-DK5: phone transcript margins and one action for each intent.
 test("deck transcript sheet keeps 16px phone text margins", async ({ page }) => {
 	await page.setViewportSize({ width: 390, height: 844 });
 	await page.goto(`${readTestEnv().url}/design-deck-narrated/introduction.html`);
@@ -3309,7 +3270,6 @@ test("deck uses one play control and hides the timeline without narration", asyn
 test("deck hides the timeline on a silent slide and completion within a narrated module", async ({
 	page,
 }) => {
-	// Supply an authored silent slide through the published configuration boundary.
 	await page.route("**/design-deck-narrated/introduction.html*", async (route) => {
 		const response = await route.fetch();
 		const body = await response.text();

@@ -470,7 +470,6 @@ test("a correct chosen row carries its verdict and feedback", async ({ page }) =
 		await island.scrollIntoViewIfNeeded();
 		await expect(island).toHaveAttribute("data-hydrated", "");
 		const row = island.locator(".praxity-assessment-choice-option").first();
-		// Exercise the desktop mark column even in the compact two-question fixture.
 		await island.locator(":scope > .praxity-block-assessment").evaluate((element) => {
 			(element as HTMLElement).style.maxWidth = "none";
 			(element as HTMLElement).style.width = "800px";

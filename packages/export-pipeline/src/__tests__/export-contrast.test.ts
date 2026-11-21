@@ -250,8 +250,6 @@ describe("export text-role contrast floor", () => {
 	});
 
 	it("aliases Mantine's dimmed token to the corrected muted role", () => {
-		// `c="dimmed"` is used 32 times across learner-facing blocks and never passed
-		// through this floor: Mantine's #868e96 is 3.16:1 on the default surface.
 		const corrected = enforceDesignTokenContrast({
 			"--praxity-color-background": "#faf9f7",
 			"--praxity-color-surface": "#faf9f7",

@@ -77,7 +77,6 @@ for (const mode of ["pages", "deck"] as const) {
 		test.describe(`${mode} ${format}`, () => {
 			test.beforeEach(async ({ context }) => {
 				if (format === "html") return;
-				// Persist the LMS location across document loads and fresh launch tabs.
 				await context.addInitScript((format) => {
 					const key = `lms:${location.pathname.split("/")[1]}`;
 					const values: Record<string, string> = JSON.parse(localStorage.getItem(key) ?? "{}");
@@ -142,7 +141,6 @@ for (const mode of ["pages", "deck"] as const) {
 				await page.goto(`${base}/${mode}-${format}/index.html`);
 				await atPage(page, "First page");
 				await next(page);
-				// Gecko's automation reload navigates history-replaced URLs through about:blank.
 				await Promise.all([page.waitForNavigation(), page.evaluate(() => location.reload())]);
 				await atPage(page, "Second page");
 				const reloadedCueCount = await page
@@ -160,7 +158,6 @@ for (const mode of ["pages", "deck"] as const) {
 				await page.goto(`${base}/${mode}-${format}/index.html`);
 				await atPage(page, "First page");
 				await next(page);
-				// This fixture's LMS saves on Commit, so finish the document exit before closing its tab.
 				await page.goto(`${base}/outside.html`);
 				await expect(page).toHaveTitle("Outside course");
 				await page.close();

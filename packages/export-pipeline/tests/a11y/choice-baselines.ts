@@ -1,8 +1,5 @@
 import type { Locator } from "@playwright/test";
 
-// A zero-size inline box exposes the actual text baseline, independent of glyph
-// ascent or the line box's top. The generated key is measured with an equivalent
-// text child; its dimensions must stay identical while the probe is installed.
 export async function choiceBaselines(rows: Locator) {
 	return rows.evaluateAll((elements) =>
 		elements.map((row) => {

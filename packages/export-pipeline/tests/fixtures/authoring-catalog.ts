@@ -2,7 +2,6 @@ import { readFileSync } from "node:fs";
 import { readLesson } from "@praxity/grammar";
 import { withFixtureSetting } from "../../../grammar/__tests__/helpers/lesson-fixture.ts";
 
-/** Expectations are hand-written learner semantics, independent of the manifest. */
 export const AUTHORING_CATALOG = [
 	{ keyword: "heading", type: "heading", selector: "h2", texts: ["Section title"] },
 	{ keyword: "text", type: "text", selector: "p", texts: ["Write your content here."] },
@@ -220,7 +219,6 @@ export function catalogSlug(keyword: string, serialized = false): string {
 	return catalogTitle(keyword, serialized).toLowerCase().replaceAll(" ", "-");
 }
 
-/** C5 converted original and serialized starters independently before the cutover. */
 export function catalogStarter(keyword: string, serialized = false): string {
 	const read = readLesson(authoringCatalogSource());
 	const title = catalogTitle(keyword, serialized);
@@ -239,7 +237,6 @@ export function authoringCatalogSource(): string {
 		"utf8",
 	);
 }
-/** CSS effects need the compiled stylesheet in a real browser. */
 export const AUTHORING_VISUAL_CASES = [
 	{
 		keyword: "note",

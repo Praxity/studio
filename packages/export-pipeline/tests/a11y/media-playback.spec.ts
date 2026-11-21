@@ -7,7 +7,6 @@ test("narration advances and ends naturally without a Firefox audio device", asy
 	playwright,
 	launchOptions,
 }) => {
-	// Reproduce a CI host with no audio output, keeping the project's media prefs.
 	const browser = await playwright[browserName].launch({
 		...launchOptions,
 		...(browserName === "firefox"
@@ -21,7 +20,6 @@ test("narration advances and ends naturally without a Firefox audio device", asy
 	});
 	try {
 		const page = await browser.newPage();
-		// Stable play/pause/resume must not race the short completion fixture.
 		await page.route(/\.(?:mp3|wav)(?:\?.*)?$/, (route) =>
 			route.fulfill({ contentType: "audio/wav", body: silentWav(60) }),
 		);
@@ -54,7 +52,6 @@ test("narration advances and ends naturally without a Firefox audio device", asy
 			.toBeGreaterThan(pausedTime);
 		await page.close();
 
-		// A fresh context keeps natural completion on the original short media.
 		const completionPage = await browser.newPage();
 		await completionPage.goto(`${readTestEnv().url}/sidebar-narration/narrated-slide.html`);
 		await waitForHydration(completionPage);

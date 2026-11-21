@@ -10,7 +10,6 @@ import {
 } from "../published-disclosure-markup.ts";
 import { renderBlockHtml } from "../render-block-html.ts";
 
-// Literal markup contracts, independent of the production helpers.
 const chevron =
 	'<svg class="praxity-disclosure-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m9 5 7 7-7 7"/></svg>';
 const plus =
@@ -191,7 +190,6 @@ describe("published disclosure markup characterisation", () => {
 	});
 });
 
-// The server has no authored open/closed option; enhancement owns these states.
 it.each([false, true])("keeps literal accordion markup when enhanced open=%s", (open) => {
 	document.body.innerHTML = renderBlockHtml(
 		block("accordion", {

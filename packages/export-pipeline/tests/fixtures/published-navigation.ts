@@ -39,7 +39,6 @@ export const test = base.extend<Record<never, never>, { publishedNavigation: str
 								...page.data,
 								narrationAudio: "https://navigation.example/fixture.wav",
 							};
-							// Narrate titles only, so one completed segment advances one slide.
 							for (const block of page.blocks) block.data.narrationDisabled = true;
 						}
 					}

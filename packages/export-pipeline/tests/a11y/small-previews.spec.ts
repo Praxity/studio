@@ -65,7 +65,6 @@ for (const entry of AUTHORING_CATALOG.filter((entry) => entry.type === "assessme
 				await page.evaluate(() => document.fonts.ready);
 				bodies.push(
 					await card.evaluate((node) => {
-						// Compare body geometry at one content width, independent of preview navigation.
 						(node as HTMLElement).style.width = "700px";
 						(node as HTMLElement).style.maxWidth = "none";
 						return Array.from(
@@ -180,8 +179,6 @@ for (const config of NAV_CONFIGS) {
 			() => (window as typeof window & { __previewHeights: number[] }).__previewHeights.length,
 		);
 		expect(messageCount).toBeGreaterThan(0);
-		// Advance rendering callbacks across a declared window. A feedback loop
-		// can resend height without changing the iframe's final geometry.
 		await page.evaluate(() => {
 			const probe = window as typeof window & { __previewObservationComplete: boolean };
 			probe.__previewObservationComplete = false;
@@ -271,7 +268,6 @@ test("small preview keeps plain sections and wide images within stage gutters", 
 	);
 	await expect(page.locator(".praxity-section")).toHaveCount(0);
 	const main = await page.locator("#main-content").boundingBox();
-	// Read the rendered rectangle directly to avoid protocol quad subtraction.
 	const image = await page
 		.locator(".praxity-block-feature-width")
 		.first()
@@ -283,8 +279,6 @@ test("small preview keeps plain sections and wide images within stage gutters", 
 	expect(main.width).toBeLessThan(960);
 	expect(main.x).toBeGreaterThanOrEqual(32);
 	expect(image?.width).toBe(896);
-	// Centring a ch-sized reading column produces fractional layout positions.
-	// Compare its breakout origin within half a physical pixel on every engine.
 	const halfDevicePixel = await page.evaluate(() => 0.5 / devicePixelRatio);
 	expect(Math.abs(image.x - 32)).toBeLessThanOrEqual(halfDevicePixel);
 	await page.screenshot({ path: test.info().outputPath("small-preview-sections.png") });

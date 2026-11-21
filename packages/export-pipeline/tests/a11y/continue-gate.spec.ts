@@ -57,7 +57,6 @@ test("pointer, Enter, AT-style activation, modified click, shortcut, swipe and o
 	page,
 }) => {
 	const next = page.locator(".praxity-nav-next[data-continue-button]");
-	// Playwright intentionally refuses pointer activation of aria-disabled controls.
 	await next.dispatchEvent("click", { button: 0 });
 	await next.focus();
 	await page.keyboard.press("Enter");

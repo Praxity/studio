@@ -166,7 +166,6 @@ for (const entry of AUTHORING_VISUAL_CASES) {
 			expect(appearances.subtle.shadow).not.toBe("none");
 			expect(appearances.elevated.shadow).not.toBe(appearances.subtle.shadow);
 		} else if (entry.parameter === "transition") {
-			// Small previews omit the runtime: every authored card remains readable.
 			for (const appearance of Object.values(appearances)) {
 				expect(appearance.transition).toBe("0s");
 				expect(appearance.opacity).toBe("1");

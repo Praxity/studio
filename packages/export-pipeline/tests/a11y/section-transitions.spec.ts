@@ -42,7 +42,6 @@ test.describe("section transitions", () => {
 		await page.keyboard.press("Enter");
 		await expect(page.locator(`[id="${targetId}"]`).getByRole("heading")).toBeFocused();
 		expect(await tick.boundingBox()).toEqual(before);
-		// Make the document scrollable without changing the progress owner.
 		await page.locator("#main-content").evaluate((main) => {
 			main.style.minHeight = "3000px";
 		});
@@ -79,7 +78,6 @@ test.describe("section transitions", () => {
 		await expect
 			.poll(async () =>
 				fill.evaluate((element) => {
-					// The TOC scroll and resize can schedule another progress update after state was read.
 					const expected = window.scrollY / (document.documentElement.scrollHeight - innerHeight);
 					const value = Number(element.parentElement?.getAttribute("aria-valuenow"));
 					const scale = new DOMMatrixReadOnly(getComputedStyle(element).transform).a;
@@ -127,7 +125,6 @@ test.describe("section transitions", () => {
 	});
 
 	test("multi-section page renders every section visibly", async ({ page }) => {
-		// All authored sections remain visible in the plain reading column.
 		await page.goto(`${readTestEnv().url}/oneof-group/page-3.html`, {
 			waitUntil: "domcontentloaded",
 		});

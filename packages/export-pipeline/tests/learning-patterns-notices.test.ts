@@ -14,7 +14,6 @@ it("emits the pinned learning-patterns MIT text and version through the viewer n
 	);
 	const require = createRequire(entry);
 	const license = await readFile(require.resolve("learning-patterns/LICENSE"), "utf8");
-	// SHA-256 of the upstream LICENSE at the reviewed pin, independent of collector output.
 	expect(createHash("sha256").update(license).digest("hex")).toBe(
 		"d817c04f10efaffd1ab6dba0792a6567dce98f8ab41e86c64833a7b9cff7ecc5",
 	);
@@ -44,7 +43,6 @@ it("emits the pinned learning-patterns MIT text and version through the viewer n
 			"learning-patterns/patterns/self-check/logic.js",
 			"learning-patterns/patterns/self-check/strings.js",
 		]);
-		// bundleViewer uses this collector on its esbuild metafiles before writing its manifest.
 		const notices = await collectRuntimeNotices([result.metafile], directory);
 		expect(notices.outputs["self-check.js"]).toEqual(["learning-patterns@0.1.0"]);
 		const notice = notices.packages["learning-patterns@0.1.0"];

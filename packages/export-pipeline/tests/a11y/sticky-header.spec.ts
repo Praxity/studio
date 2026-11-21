@@ -11,7 +11,6 @@ for (const width of [1280, 390]) {
 			await page.goto(url);
 			const header = page.locator(".praxity-top-bar-fallback").filter({ visible: true });
 			await expect(header).toBeVisible();
-			// Make this navigation fixture long enough to exercise real document scrolling.
 			await page.locator("#main-content").evaluate((main) => {
 				for (let index = 0; index < 50; index++) {
 					const paragraph = document.createElement("p");

@@ -37,8 +37,6 @@ export function designContainerSurfaceFixtures(): Array<{
 				grammar,
 			),
 		);
-		// Retain the one-column surface samples supported by the publisher's
-		// stored model; G4 source accepts card grids with two to four columns.
 		for (const block of parsed.blocks) {
 			if (block.type !== "card") continue;
 			const items = block.data.items as Array<{ label: string }>;

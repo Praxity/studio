@@ -106,23 +106,15 @@ const TEST_ISLAND_ENTRIES = [
 const TEST_ISLAND_FILES = Object.fromEntries(
 	TEST_ISLAND_ENTRIES.map((entry) => [entry, `${entry}-TEST.js`]),
 ) as Record<IslandManifestEntryName, string>;
-// Size caps don't block working features (owner rule): SHA-256 pair verification in the host bundle; tighten during final size work.
 const HOST_GZIP_BUDGETS: Record<ViewerHostName, number> = {
-	// Owner rule: activation measured 13,274 B gzip; add 1 KiB rounded up to 256 B.
 	standalone: 14336,
-	// Owner rule: activation measured 16,572 B gzip; add 1 KiB rounded up to 256 B.
 	electronPreview: 17664,
-	// Owner rule: studio#76 deck reload fix measured 16,908 B gzip; add 1 KiB rounded up to 256 B.
 	xapi: 18176,
-	// Owner size-limits rule 2026-10-24, PR #42: 24,121 B + 2 KiB, rounded up to 256 B.
 	scorm12: 26368,
-	// Owner size-limits rule 2026-10-24, PR #42: 15,968 B + 2 KiB, rounded up to 256 B.
 	scorm2004: 18176,
 };
 
-// owner 2026-10-11: raised for S9b; size optimisation at the end
 const LOGIC_INITIAL_RAW_CEILING = 30_976;
-// Owner 2026-10-16: S14b reporting-destination types rename minified identifiers, 12,287 -> 12,288 B gzip.
 const NAV_INITIAL_GZIP_CEILING = 13 * 1024;
 
 afterEach(async () => {
@@ -382,7 +374,6 @@ async function assertBufferedPrivateHost(
 		});
 		expect(state.get("check")).toEqual(draft);
 		if (hostName === "scorm12" && !fallback) {
-			// The adapter owns append validation and the accepted-row high water.
 			lmsData.set("cmi.interactions._count", "4");
 			lmsData.set("cmi.interactions.3.id", "earlier-public");
 			win.__praxityRuntime.trackInteraction("public-one", "PUBLIC REPORT");
@@ -446,7 +437,6 @@ async function writeAssetPaths(outDir: string, relativePaths: Iterable<string>):
 }
 
 async function isolatedViewerSources(complete = false) {
-	// Import a private package-layout copy so hash regressions cannot race live builds.
 	const root = await realpath(await mkdtemp(path.join(os.tmpdir(), "viewer-sources-")));
 	tempDirs.push(root);
 	const repoRoot = path.resolve(import.meta.dirname, "../../../..");
@@ -681,7 +671,7 @@ describe("computeViewerSourceHash", () => {
 		expect(added).not.toBe(before);
 		expect(await readCachedViewer(cache, added)).toBeNull();
 		await cacheViewerBundle(cache, assets, manifest, added);
-		await writeFile(target, "other"); // Same-size edit, without relying on timestamps/watchers.
+		await writeFile(target, "other");
 		const edited = await computeHash();
 		expect(edited).not.toBe(added);
 		expect(await readCachedViewer(cache, edited)).toBeNull();
@@ -727,7 +717,6 @@ describe("computeViewerSourceHash", () => {
 		const css = ".pattern-closure-probe { color: rgb(1, 2, 3); }";
 		const catalogPath = "css-sources/patterns/example/nested/style.css";
 
-		// Compile one isolated fixture shared by inventory, deployment and refusal checks.
 		beforeAll(async () => {
 			const isolated = await isolatedViewerSources(true);
 			root = isolated.root;
@@ -754,7 +743,6 @@ describe("computeViewerSourceHash", () => {
 				path.join(pattern, "nested/unselected.css"),
 				".unselected-pattern-style {color: red}",
 			);
-			// Only explicit imports select output; the inventory must not create entries.
 			await writeFile(
 				path.join(pipeline, "template/src/islands/island-card.ts"),
 				'import "../../../src/patterns/example/enhance.ts";',
@@ -763,7 +751,6 @@ describe("computeViewerSourceHash", () => {
 				path.join(pipeline, "template/src/styles/viewer.css"),
 				'@import "../../../src/patterns/example/nested/style.css";',
 			);
-			// This imported helper is deliberately outside every hashed root/file.
 			await writeFile(
 				path.join(pipeline, "src/unhashed-helper.ts"),
 				'globalThis.__unhashedProbe = "outside-roots";',
@@ -779,7 +766,6 @@ describe("computeViewerSourceHash", () => {
 
 			assets = await import(pathToFileURL(path.join(pipeline, "src/export-assets.ts")).href);
 			await assets.prepareDesktopExportInputs(output);
-			// Source and desktop resolve the same emitted closure, including pattern code/data/CSS.
 			await cacheViewerBundle(
 				path.join(pipeline, "prebuilt"),
 				output,
@@ -842,8 +828,6 @@ describe("computeViewerSourceHash", () => {
 				pathToFileURL(path.join(root, "packages/export-pipeline/src/bundle-viewer.ts")).href
 			);
 			const hashInputs = await viewer.viewerSourceFiles();
-			// Workspace dependency symlinks resolve to the real repo; compare their
-			// inputs with the corresponding source copies in this isolated tree.
 			const repoRoot = path.resolve(import.meta.dirname, "../../../..");
 			const fixtureInputs = inputs.map((input) =>
 				input.startsWith(`${repoRoot}${path.sep}`)
@@ -1321,7 +1305,6 @@ describe("computeViewerSourceHash", () => {
 					};
 					const set = (key: string, value: string) => {
 						error = "0";
-						// Moodle SCORM 2004 rejects suspend data beyond its 64,000-character format limit.
 						if (
 							format === "scorm2004" &&
 							key === "cmi.suspend_data" &&
@@ -1487,15 +1470,6 @@ describe("computeViewerSourceHash", () => {
 		});
 
 		it("budgets the entire highlight initial JS closure with default navigation", async () => {
-			// Size caps don't block working features (owner rule): SHA-256 pair verification in the host bundle; tighten during final size work.
-			// Earlier full enhancer maxima: page 43,137 B gzip; deck 135,602 B gzip.
-			// Owner C5 previously measured
-			// 39,577 / 131,639 B; HL04 caps were 36,864 / 129,024 B.
-			// Recovery measures at most 138,176 B gzip for the deck; add 1 KiB rounded up to 256 B.
-			// Size caps don't block working features (owner rule): group refusal/rollback runtime measures 44,590 B gzip for the page; add 1 KiB rounded up to 256 B, tighten during final size work.
-			// Owner rule: activation measured page 48,487 and deck 141,555 B gzip; add 1 KiB rounded up to 256 B.
-			// Owner size-limits rule 2026-10-24, PR #42: deck 142,663 B + 2 KiB, rounded up to 256 B.
-			// Owner size-limits rule: raise byte caps generously when they block working features; size work last. SCORM commit refusal measures 49,741 B gzip; add 2 KiB rounded up to 256 B.
 			const caps = { page: 51_968, deck: 144_896 };
 			const page = {
 				id: "highlight-page",
@@ -1539,7 +1513,6 @@ describe("computeViewerSourceHash", () => {
 								),
 							)
 						).reduce((sum, bytes) => sum + bytes, 0);
-						// Report every exceeded format in one run.
 						expect
 							.soft(
 								gzip,
@@ -1620,7 +1593,6 @@ describe("computeViewerSourceHash", () => {
 				expect(
 					gzip,
 					`distractors ${classic ? "classic" : "ESM"} initial full island closure gzip bytes`,
-					// Size caps don't block working features (owner rule); tighten during final size work. Candidate: Web Crypto digest instead of @noble/hashes, but crypto.subtle needs a secure context, so plain-HTTP LMS hosts need a fallback first.
 				).toBeLessThanOrEqual(23_040);
 				for (const file of (result.manifest.writeDistractorsSupport ?? []).filter(
 					(file) => file.endsWith(".classic.js") === classic,
@@ -1686,7 +1658,6 @@ describe("computeViewerSourceHash", () => {
 				.filter((input) => !input.includes("node_modules") && /\.[cm]?[jt]sx?$/.test(input))
 				.map((input) => path.relative(repoRoot, input).replaceAll("\\", "/"));
 			expect(runtimeInputs.filter((input) => !scansLearnerAuthority(input))).toEqual([]);
-			// Removing a package from the scan must expose a real input, not merely a planted path.
 			expect(
 				runtimeInputs.filter(
 					(input) =>
@@ -1771,12 +1742,9 @@ describe("computeViewerSourceHash", () => {
 			).toBeDefined();
 			expect(result.manifest).not.toHaveProperty("legacy");
 			const viewerCss = await readFile(result.cssPath, "utf-8");
-			// Owner 2026-10-19: main styling plus palette gates measure 31,871 B gzip; 1,153 B headroom.
-			// Keep main's 33,024 B cap; tighten during final size work.
 			expect(gzipSync(viewerCss).byteLength).toBeLessThanOrEqual(33_024);
 			const deckCss = await readFile(result.deckCssPath, "utf-8");
 			expect(result.manifest.deckCss).toBe(path.basename(result.deckCssPath));
-			// Size caps don't block working features (owner rule): distinct deck focus rings measured 2,845 B gzip; tighten during final size work.
 			expect(gzipSync(deckCss).byteLength).toBeLessThanOrEqual(4_096);
 			expect(deckCss).toContain(".praxity-deck");
 			expect(deckCss).toContain("@media print");
@@ -1808,7 +1776,6 @@ describe("computeViewerSourceHash", () => {
 				scorm2004: [sessionFilename],
 			});
 			const session = await readFile(path.join(outDir, sessionFilename as string), "utf-8");
-			// Size caps don't block working features (owner rule): outcome owner refactor measured 2,480 B gzip; tighten during final size work.
 			expect(gzipSync(session).byteLength, "SCORM support gzip bytes").toBeLessThanOrEqual(
 				3.5 * 1024,
 			);
@@ -1837,7 +1804,6 @@ describe("computeViewerSourceHash", () => {
 			expect(shell.toString("utf-8")).not.toContain("praxity-resume-prefix");
 			expect(shell.toString("utf-8")).not.toMatch(/\breact(?:-dom)?\b/iu);
 			expect(shell.toString("utf-8")).not.toMatch(/\bmantine\b/iu);
-			// owner 2026-10-11: raised for S9b lifetime enforcement; size optimisation at the end
 			expect(gzipSync(shell).byteLength).toBeLessThanOrEqual(5.75 * 1024);
 			const writtenManifest = JSON.parse(await readFile(result.manifestPath, "utf-8")) as {
 				hosts: unknown;
@@ -1882,7 +1848,6 @@ describe("computeViewerSourceHash", () => {
 			expect(result.manifest.islands["island-assessment-group"]).toMatch(
 				/^island-assessment-group-/u,
 			);
-			// Highlight has its own full-closure budget; this ceiling is retrieval-only.
 			const retrievalFiles = islandFilesForEntries(result.manifest, [
 				"island-loader",
 				"island-retrieval-sheet",
@@ -1908,7 +1873,6 @@ describe("computeViewerSourceHash", () => {
 			).reduce((total, file) => total + file.byteLength, 0);
 			expect(cardBytes).toBeLessThan(64 * 1024);
 			const groupFiles = islandFilesForEntries(result.manifest, ["island-assessment-group"]);
-			// Package the generator for offline use, but charge it only after a download click.
 			const downloadChunk = groupFiles.find((file) =>
 				file.startsWith("chunks/text-response-download-"),
 			);
@@ -1943,17 +1907,9 @@ describe("computeViewerSourceHash", () => {
 					islandFiles.map((file) => readFile(path.join(islandsDir, file))),
 				);
 				const bytes = files.reduce((total, file) => total + file.byteLength, 0);
-				// Reflection-journal combined downloads and partial-save/resume need more first-render code.
-				// owner 2026-10-11: raised for S9b lifetime enforcement; size optimisation at the end
-				// owner 2026-10-17: allow 18 KiB with margin; measured 2026-10-18: owner 4,217 bytes, rating total 16,636.
 				if (island === "island-highlight") {
-					// Owner C5: 25,209 B measured + 1 KiB, rounded up to 256 B.
-					// Owner C5: focus restoration adds 2,541 B across the two adapters.
-					// Measured 27,750 B + 1 KiB, rounded up to 256 B. Full page/deck caps stay unchanged.
 					expect(bytes, `${island} initial raw bytes`).toBeLessThanOrEqual(28_928);
-				}
-				// Size caps don't block working features (owner rule): submission timer cleanup (studio#78) measures 26,257 B raw; add 1 KiB rounded up to 256 B, tighten during final size work.
-				else
+				} else
 					expect(bytes, `${island} initial raw bytes`).toBeLessThan(
 						island === "island-self-check"
 							? SELF_CHECK_INITIAL_RAW_CEILING
@@ -1976,8 +1932,6 @@ describe("computeViewerSourceHash", () => {
 					),
 				)
 			).reduce((total, file) => total + file.byteLength, 0);
-			// Size caps don't block working features (owner rule): Check scroll with shared outcomes measured 30,343 B raw; tighten during final size work.
-			// Add 1 KiB and round up to 256 B, matching the CSS budget allowance.
 			expect(navBytes).toBeLessThan(31_488);
 			const navGzipBytes = (
 				await Promise.all(
@@ -2014,7 +1968,6 @@ describe("computeViewerSourceHash", () => {
 					),
 				)
 			).reduce((total, bytes) => total + bytes, 0);
-			// Recovery's shared closure measures 82,156 B gzip; add 1 KiB rounded up to 256 B.
 			expect(narrationGzipBytes).toBeLessThan(83_200);
 			for (const file of narrationFiles) {
 				expect(await readFile(path.join(islandsDir, file), "utf-8")).not.toContain("mantine");
@@ -2027,8 +1980,6 @@ describe("computeViewerSourceHash", () => {
 					),
 				)
 			).reduce((total, bytes) => total + bytes, 0);
-			// owner 2026-10-11: raise size limits when they block working features; size optimisation at the end.
-			// Recovery measures 256,599 B gzip; add 1 KiB rounded up to 256 B.
 			expect(assessmentGzipBytes).toBeLessThan(257_792);
 			expect(navFiles.length).toBeLessThan(result.manifest.islandFiles.length);
 			for (const file of navFiles) {

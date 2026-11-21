@@ -6,11 +6,6 @@ export function resolveXmllint(env: NodeJS.ProcessEnv = process.env): string {
 	return env.PRAXITY_XMLLINT ?? "xmllint";
 }
 
-/**
- * Rustici's licence forbids redistribution, so the drivers are never committed.
- * PRAXITY_RUSTICI_DRIVERS names a folder holding scorm12/ and scorm2004/, which
- * lets every worktree share one local copy; otherwise the gitignored folder is used.
- */
 export function rusticiDriverDir(
 	format: "scorm12" | "scorm2004",
 	env: NodeJS.ProcessEnv = process.env,

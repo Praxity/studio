@@ -253,8 +253,6 @@ for (const small of [false, true]) {
 						Number.parseFloat(style.borderRightWidth) -
 						Number.parseFloat(style.paddingLeft) -
 						Number.parseFloat(style.paddingRight);
-					// Measure the published 45ch contract independently, using the surrounding
-					// body font rather than the card heading or the target's own CSS width.
 					const probe = document.createElement("div");
 					probe.style.cssText =
 						"position:absolute;visibility:hidden;width:45ch;max-width:none;padding:0;border:0;font:inherit";

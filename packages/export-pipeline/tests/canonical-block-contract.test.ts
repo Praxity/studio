@@ -44,7 +44,6 @@ describe("canonical block contracts retained from the React projections", () => 
 			"utf8",
 		);
 		const rule = css.match(/\.praxity-quote\s*\{([^}]*)\}/)?.[1];
-		// The border and indent identify the quotation; generated marks are redundant.
 		expect(rule).not.toMatch(/\bbackground(?:-color)?\s*:/);
 		expect(rule).toMatch(/border-inline-start\s*:/);
 		expect(css).not.toContain(".praxity-quote::before");

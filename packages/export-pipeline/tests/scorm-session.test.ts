@@ -14,7 +14,6 @@ describe("SCORM communication session", () => {
 			expect(readSessionState(api, first)).toBe(false);
 			writeSessionState(api, true, first);
 			expect(readSessionState(api, next)).toBe(true);
-			// Index alone does not prove the LMS started another launch.
 			resetSessionState(api, next);
 			expect(readSessionState(api, first)).toBe(true);
 		},

@@ -18,8 +18,6 @@ let page: Page;
 const evidence = process.env.PRAXITY_HIGHLIGHT_EVIDENCE_DIR;
 
 async function waitForFonts(): Promise<void> {
-	// Force layout and bound this no-script fixture's font-readiness check.
-	// A pending fonts.ready promise must not consume the entire setup hook.
 	await expect
 		.poll(
 			() =>
@@ -145,7 +143,6 @@ for (const mode of ["key", "evidence"]) {
 		await page.setViewportSize({ width: 1280, height: 1000 });
 		await page.goto(`${url}/${mode}-en-light.html`);
 		await page.evaluate((memoryCopy) => {
-			// Plant checked UI and a failure notice without importing an enhancer.
 			const root = document.querySelector("[data-highlight]")!;
 			(root.querySelector("[data-highlight-flow]") as HTMLElement).hidden = false;
 			const status = root.querySelector("[data-highlight-status]")!;
@@ -191,7 +188,6 @@ for (const mode of ["key", "evidence"]) {
 					? join(evidence, `${mode}-${format}.pdf`)
 					: testInfo.outputPath(`${mode}-${format}.pdf`);
 				await page.pdf({ path, format });
-				// Poppler is optional for suite portability; print visibility above is mandatory.
 				if (process.env.PRAXITY_PDFTOTEXT) {
 					const text = execFileSync(process.env.PRAXITY_PDFTOTEXT, ["-enc", "UTF-8", path, "-"], {
 						encoding: "utf8",
@@ -218,7 +214,6 @@ test("French baseline wraps at 400% with text spacing and reduced motion", async
 	await page.setViewportSize({ width: 320, height: 900 });
 	await page.goto(`${url}/evidence-fr-dark.html`);
 	await page.locator("details summary").click();
-	// addStyleTag waits for a script-driven load event in a no-JavaScript context.
 	await page.evaluate(() => {
 		const style = document.createElement("style");
 		style.textContent =
@@ -243,7 +238,6 @@ test("owned CSS keeps hidden controls hidden and forced-colour verdicts distinct
 		{ marked: true, outcome: "correct" },
 		{ marked: false, outcome: "missed" },
 	]);
-	// Apply a real checked outcome to the same passage spans without importing an enhancer.
 	await page.evaluate((items) => {
 		(document.querySelector("[data-highlight-flow]") as HTMLElement).hidden = false;
 		for (const item of items) {

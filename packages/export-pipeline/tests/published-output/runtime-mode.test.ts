@@ -14,12 +14,10 @@ describe("Page-level content integrity", () => {
 		for (const page of build.pages) {
 			const root = page.document.querySelector("#main-content");
 			if (!root) continue;
-			// Remove all heading elements, then check if remaining content has text
 			const clone = root.cloneNode(true) as Element;
 			for (const h of clone.querySelectorAll("h1, h2, h3, h4, h5, h6")) {
 				h.remove();
 			}
-			// Also remove empty metadata blocks (variable, logic, etc.)
 			for (const empty of clone.querySelectorAll("[data-block-type]")) {
 				if ((empty.textContent ?? "").trim().length === 0) {
 					empty.remove();
@@ -38,7 +36,6 @@ describe("Page-level content integrity", () => {
 			const pageBlocks = build.blocks.filter((b) => b.entryName === page.entryName);
 			const visibleBlocks = pageBlocks.filter((b) => !METADATA_ONLY_TYPES.has(b.type));
 			if (visibleBlocks.length === 0 && pageBlocks.length > 0) {
-				// Page has blocks but they're all metadata — check the page still has content
 				const root = page.document.querySelector("#main-content");
 				const bodyText = (root?.textContent ?? "").trim();
 				expect(
@@ -78,8 +75,6 @@ describe("Runtime plan packaging", () => {
 				(b) => b.entryName === page.entryName && b.element.hasAttribute("data-island"),
 			);
 			for (const block of islandBlocks) {
-				// Assessment is the React block island. Media and the other DOM islands
-				// read server-rendered content and attributes rather than hydrating JSON.
 				if (block.element.getAttribute("data-island") !== "assessment") {
 					expect(block.element.hasAttribute("data-block-json")).toBe(false);
 					continue;

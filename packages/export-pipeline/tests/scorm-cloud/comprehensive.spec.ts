@@ -1,10 +1,3 @@
-/**
- * Comprehensive SCORM Cloud test using the full grammar fixture.
- * Tests containers, multiple assessment types, assessment groups,
- * and navigation style variants.
- *
- * Run with: SCORM_CLOUD_FULL=true npx playwright test --config tests/scorm-cloud/playwright.config.ts comprehensive.spec.ts
- */
 import { type Browser, chromium, expect, test } from "@playwright/test";
 import { ScormCloudClient } from "../../src/scorm-cloud/client";
 import { buildScormCloudFixtures } from "./fixture";
@@ -62,8 +55,6 @@ test.afterAll(async () => {
 	if (browser) await browser.close();
 });
 
-// --- Tests ---
-
 test("navigates all pages and answers automatable assessments", async () => {
 	const regId = `praxity-comprehensive-${Date.now()}`;
 	await client.createRegistration(regId, courseId, "comprehensive-learner");
@@ -91,7 +82,6 @@ test("navigates all pages and answers automatable assessments", async () => {
 test.describe
 	.serial("navigation style variants", () => {
 		test.beforeAll(async () => {
-			// Free the course slot used by the comprehensive fixture
 			if (courseId) {
 				try {
 					await client.deleteCourse(courseId);
@@ -102,8 +92,6 @@ test.describe
 
 		for (const navStyle of ["sidebar", "bottomBar", "none"] as const) {
 			test(`${navStyle} navigation renders and allows page traversal`, async () => {
-				// Use the MINIMAL fixture (4 pages) — fast to build and upload.
-				// Each variant uploads its own course and deletes it afterward.
 				const fixtures = await buildScormCloudFixtures({
 					navigationStyle: navStyle,
 				});

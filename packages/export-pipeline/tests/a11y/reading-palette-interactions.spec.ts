@@ -83,9 +83,6 @@ for (const locale of ["en", "fr"] as const) {
 			await next.press("Enter");
 			await page.waitForURL(nextUrl);
 			await waitForHydration(page);
-			// Arrival orients through heading focus alone. Without session storage the
-			// focus request cannot cross the document load, so arrival behaves like a
-			// direct visit and the reader starts at the document title.
 			const heading = page.locator("#main-content h1").first();
 			await expect(heading).toHaveText(
 				locale === "en" ? "Check your understanding" : "Vérifiez votre compréhension",
@@ -144,9 +141,6 @@ test("Guided Larger text keeps its French name and pressed state without live sp
 test("Reading guide still dims inactive content and clears the effect when disabled", async ({
 	page,
 }) => {
-	// A compact no-hover page that fits without scrolling intentionally leaves all
-	// rows readable. Linux headless Firefox reports no hover (Mozilla bug 2037020),
-	// so exercise the guide on a scrollable page rather than assuming mouse input.
 	await page.setViewportSize({ width: 1280, height: 500 });
 	const baseUrl = readThemeVariantUrl("light");
 	if (!baseUrl) throw new Error("Missing reading fixture");
@@ -340,8 +334,6 @@ for (const theme of THEMES) {
 				.filter({ hasText: "Which answer is correct?" });
 			await assessmentIsland.scrollIntoViewIfNeeded();
 			await expect(assessmentIsland).toHaveAttribute("data-hydrated", "");
-			// Minimal light and Plum dark cover the shared answer cycle across both modes
-			// and the distinctive serif/font fallback. Every palette retains its layout checks.
 			const answerJourney =
 				(theme.id === "clean" && mode === "light") || (theme.id === "darkroom" && mode === "dark");
 			if (answerJourney) {

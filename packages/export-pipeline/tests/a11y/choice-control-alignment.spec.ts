@@ -18,8 +18,6 @@ async function readMeasurements(path: string): Promise<Array<unknown>> {
 	}
 }
 
-// Zero-width baseline probes expose the font's ex/cap metrics without relying
-// on the height of a line box or the particular letters in an answer.
 async function markerMeasurements(card: Locator) {
 	return card.locator(".praxity-assessment-choice-option").evaluateAll((rows) =>
 		rows.map((row, index) => {
@@ -108,9 +106,6 @@ for (const condition of markerConditions) {
 			scale: 1,
 			...condition,
 		};
-		// Below 360 px, --type-body clamps to 16 px while the key stays 15 px, leaving
-		// 0.5 * |key cap - text x-height| = 1.07 px. 1.25 px holds that worst case.
-		// See packages/shared-blocks/src/reading-rhythm.css:190.
 		const levelLimit = settings.large ? 1.5 : settings.width < 360 ? 1.25 : 1;
 		const context = await browser.newContext({
 			viewport: { width: settings.width, height: 900 },
@@ -195,8 +190,6 @@ for (const condition of markerConditions) {
 		};
 		try {
 			if (settings.name === "light-1280") {
-				// WebKit can reuse a warmed preload without invoking a late route.
-				// Hold the loader before this context's first course navigation.
 				let intercepted = false;
 				let release = () => {};
 				const gate = new Promise<void>((resolve) => {
@@ -275,10 +268,6 @@ for (const condition of markerConditions) {
 			}
 			if (settings.name === "light-1280") {
 				await open();
-				// Use the composer harness's real review store and pin overlay on
-				// the published document, with its assets still served by the fixture.
-				// Keep the shell disabled for this pin geometry capture and execute
-				// only the review bootstrap.
 				const html = (await (await page.request.get(published)).text())
 					.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
 					.replace(/\b(href|src)="([^"]+)"/g, (original, attribute, value: string) => {
@@ -288,7 +277,6 @@ for (const condition of markerConditions) {
 					});
 				const review = await servedReview("en");
 				try {
-					// Keep course styles and fonts on the review document's origin.
 					await page.route("**/__choice_alignment/**", async (route) => {
 						const asset = new URL(route.request().url());
 						const response = await route.fetch({
@@ -320,8 +308,6 @@ for (const condition of markerConditions) {
 					await page.getByRole("button", { name: "Pin", exact: true }).click();
 					const target = await card.locator(".praxity-choice-label").first().boundingBox();
 					if (!target) throw new Error("Missing option A pin target");
-					// Locator.click treats the disabled radio's label as disabled.
-					// A real pointer can still pin its text through the capture listener.
 					await page.mouse.click(target.x + target.width / 2, target.y + target.height / 2);
 					await expect(page.locator(".prx-review-composer")).toBeVisible();
 					await page
@@ -408,13 +394,8 @@ async function geometry(options: Locator) {
 			const inlineLineHeight = choiceLabel
 				? Number.parseFloat(getComputedStyle(choiceLabel).lineHeight)
 				: declaredLineHeight;
-			// The nested choice span can have a taller line height than Mantine's
-			// label and expands the actual first line box. Native labels use their
-			// own line height because they have no nested choice span.
 			const lineHeight = Math.max(declaredLineHeight, inlineLineHeight);
 			if (!Number.isFinite(lineHeight)) throw new Error("Label has no measurable line height");
-			// Mantine's block label box starts at its first line box. Glyph bounds
-			// differ across font engines, so alignment uses the CSS line box.
 			const firstLineCenter =
 				labelBox.top +
 				Number.parseFloat(style.borderTopWidth) +
@@ -461,7 +442,6 @@ async function checkedColors(input: Locator) {
 			context.fillRect(0, 0, 1, 1);
 		}
 		const surrounding = hex();
-		// Canvas converts rgb/oklch to the same sRGB bytes and composites alpha.
 		const paint = (color: string, background: string, opacity = 1) => {
 			context.globalAlpha = 1;
 			context.fillStyle = background;
@@ -525,8 +505,6 @@ async function waitForControlPaint(page: Page): Promise<void> {
 				)
 				.evaluateAll((elements) =>
 					elements.some((element) => {
-						// Animation reports alone can miss a newly selected fill. Resolve
-						// its owning CSS token and wait for the actual painted colour too.
 						const probe = document.createElement("span");
 						probe.hidden = true;
 						probe.style.backgroundColor = "var(--praxity-color-accent)";
@@ -534,7 +512,6 @@ async function waitForControlPaint(page: Page): Promise<void> {
 						const pendingFill = Array.from(element.querySelectorAll("input:checked")).some(
 							(control) => {
 								const row = control.closest(".praxity-assessment-choice-option");
-								// Baseline captures have no painted control in the unknown row.
 								if (row?.querySelector(".praxity-choice-key-spacer")) return false;
 								const key = row?.querySelector(".praxity-choice-key");
 								row?.append(probe);
@@ -575,15 +552,12 @@ async function selectThroughRowAndWrapper(rows: Locator): Promise<void> {
 	if (!bounds) throw new Error("Missing choice row bounds");
 	await row.click({ position: { x: bounds.width - 14, y: bounds.height - 10 } });
 	await expect(input, "Selecting row padding selects its control").toBeChecked();
-	// The letter key/checkbox remains a direct target within the full row label.
 	await clearSelection();
 	const controlBounds = await row
 		.locator(".praxity-choice-key, input[type=checkbox]")
 		.boundingBox();
 	const rowBounds = await row.boundingBox();
 	if (!controlBounds || !rowBounds) throw new Error("Missing choice control bounds");
-	// The invisible native radio covers the key, so hit its painted position
-	// through the enclosing label rather than asking the key to receive events.
 	await row.click({
 		position: {
 			x: controlBounds.x - rowBounds.x + controlBounds.width / 2,
@@ -604,8 +578,6 @@ test("choice paint waits for the generated key fill even without animation repor
 	await page.addStyleTag({
 		content: ".praxity-choice-key { transition: background-color 1s linear; }",
 	});
-	// Reproduce missing browser animation reports while the real CSS colour
-	// transition still runs. The measurement must wait for the selected fill.
 	await assessment.locator(".praxity-assessment-choice-option").evaluateAll((rows) => {
 		for (const row of rows) row.getAnimations = () => [];
 	});
@@ -660,8 +632,6 @@ for (const width of [1280, 390]) {
 					const label = document.querySelector(".praxity-choice-label");
 					if (!label) throw new Error("Missing server-rendered option label");
 					const style = getComputedStyle(label);
-					// fonts.ready also waits for document loading. The paused deferred
-					// loader deliberately keeps that pending until SSR is measured.
 					await document.fonts.load(
 						`${style.fontWeight} ${style.fontSize} ${style.fontFamily}`,
 						label.textContent ?? "First answer",
@@ -703,7 +673,6 @@ for (const width of [1280, 390]) {
 					await target.screenshot({ path: resolve(SHOTS, `${PHASE}-${name}`) });
 				}
 			};
-			// Keep all requested visual evidence even when the first geometry check fails.
 			await screenshot(single, "selected-single");
 			await screenshot(multiple, "selected-multiple");
 			await single.locator("input").nth(2).check();
@@ -751,7 +720,6 @@ for (const width of [1280, 390]) {
 				}
 				expect.soft(geometryByChoice[group][0].lines, "First answer is one line").toBe(1);
 				expect.soft(geometryByChoice[group][2].lines, "Long answer wraps").toBeGreaterThan(1);
-				// Submitted choices now take the status ink, preserving readable selection.
 				for (const property of ["fill", "boundary", "mark"] as const) {
 					expect
 						.soft(disabled[group][property], `Submitted ${property} avoids Mantine disabled grey`)

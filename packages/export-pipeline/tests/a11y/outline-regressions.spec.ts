@@ -66,8 +66,6 @@ for (const presentation of ["pages", "deck"] as const) {
 					}
 				} else if (width === 320) {
 					await page.locator("[data-nav-menu-toggle]:visible").click();
-					// Drawer entry moves focus on the next frame. Let that finish
-					// before exercising keyboard navigation between rows.
 					await expect(sidebar.locator('a[aria-current="page"]')).toBeFocused();
 				}
 				await expect(sidebar).toBeVisible();
@@ -76,7 +74,6 @@ for (const presentation of ["pages", "deck"] as const) {
 				);
 				await page.evaluate(() => document.fonts.ready);
 				await rows.nth(1).focus();
-				// Safari's Option+Tab includes native links on macOS.
 				const tab = browserName === "webkit" && process.platform === "darwin" ? "Alt+Tab" : "Tab";
 				await page.keyboard.press(`Shift+${tab}`);
 				await expect(rows.first()).toBeFocused();

@@ -155,7 +155,6 @@ function setup(audio = true, localCount = 3) {
 			},
 		],
 	}));
-	// These journeys exercise an author who explicitly opts into automatic advancement.
 	document.body.innerHTML = `<script id="praxity-config" type="application/json">${JSON.stringify({ courseId: "deck-course", deckPages: pages, sourceLocale: "en", deckDesign: { autoAdvance: true } })}</script>
 	<div class="praxity-deck"><nav id="deck-controls"></nav><span id="deck-advance-status"></span><div class="deck-workspace"><div id="deck-more-below" hidden></div><main id="main-content"><div id="deck-slides">${pages
 		.slice(0, localCount)
@@ -286,7 +285,6 @@ it.each([null, "0"])(
 		expect(heading.className).toBe("authored-heading");
 		document.getElementById("deck-previous")?.click();
 		next.click();
-		// History departure need not focus another control or deliver blur.
 		history.replaceState(null, "", "#slide-1");
 		window.dispatchEvent(new PopStateEvent("popstate"));
 		expect(heading.getAttribute("tabindex")).toBe(tabindex);
@@ -374,7 +372,6 @@ it.each([
 			locale === "fr" ? "Slide 2, Verrouillé" : "Slide 2, Locked",
 		);
 		expect(locked?.getAttribute("data-visited")).toBe("false");
-		// Repeated rendering must not append the state twice.
 		document.querySelector<HTMLButtonElement>("#deck-outline-toggle")?.click();
 		expect(visited?.getAttribute("aria-label")).toBe(`Slide 1, Assessment, ${visitedLabel}`);
 	},
@@ -1114,7 +1111,6 @@ it.each(["assessment", "assessmentGroup"])(
 			).toBe(true);
 			docSpy.mockRestore();
 			winSpy.mockRestore();
-			// Published head host precedes the body-end island loader.
 			cleanup = initDeck();
 			const pause = vi.mocked(mountDeckNarration).mock.results.at(-1)?.value.pause;
 			pause.mockClear();
@@ -1575,7 +1571,6 @@ it("closes mobile More on outside pointer, Escape or focus leaving without a cli
 	outline.focus();
 	summary.focus();
 	expect(summary.getAttribute("aria-expanded")).toBe("true");
-	// WebKit focuses the enclosing controls landmark when a More button is pressed.
 	const controls = document.createElement("nav");
 	controls.tabIndex = -1;
 	root.append(controls);
@@ -1675,7 +1670,6 @@ it.each(["first-module.html#slide-2", "slide-1.html#slide-2"])(
 		history.replaceState(null, "", "/second-module.html?praxity-inspect=1#slide-3");
 		window.__praxityDecoratePageHref = vi.fn((value) => value);
 		window.__praxityNavigatePageHref = vi.fn(() => true);
-		// Authored links are server-rendered before the deck starts.
 		const link = document.createElement("a");
 		link.href = href;
 		document.querySelector(".praxity-deck")?.append(link);
@@ -1713,7 +1707,6 @@ it("keeps authored fragment navigation behind gates and ignores unrelated paths 
 	]) {
 		link.href = href;
 		const click = new MouseEvent("click", { bubbles: true, cancelable: true });
-		// Observe the runtime's decision, then suppress jsdom's native navigation.
 		const observe = vi.fn((event: Event) => {
 			expect(event.defaultPrevented).toBe(false);
 			event.preventDefault();
@@ -1731,7 +1724,6 @@ it("resolves controls bound at their render point and leaves unbound content to 
 	cleanup = initDeck();
 	const slide = document.querySelector('[data-deck-slide="slide-1"]');
 	assert(slide);
-	// No deck, main or document listener delegates clicks any more.
 	const stray = document.createElement("a");
 	stray.href = "#slide-2";
 	slide.append(stray);
@@ -1744,7 +1736,6 @@ it("resolves controls bound at their render point and leaves unbound content to 
 	stray.dispatchEvent(click);
 	expect(observe).toHaveBeenCalledOnce();
 	expect(document.querySelector<HTMLElement>('[data-deck-slide="slide-2"]')?.hidden).toBe(true);
-	// An island that clones authored feedback binds its links; nested text resolves to the link.
 	const feedback = document.createElement("span");
 	feedback.innerHTML = '<a href="#slide-2"><strong>Practice</strong> slide</a>';
 	slide.append(feedback);
@@ -1782,11 +1773,9 @@ it("resolves links React renders after the deck starts, once per activation", ()
 	}
 	renderIsland(mount, createElement(Question));
 	cleanup = initDeck();
-	// Feedback appears after submission, so the deck never saw this link.
 	flushSync(() => submit());
 	const link = mount.querySelector("a");
 	assert(link);
-	// A control may also carry its own binding; the activation still runs once.
 	bindDeckControls(mount);
 	const pushState = vi.spyOn(history, "pushState");
 	const click = new MouseEvent("click", { bubbles: true, cancelable: true });
@@ -1820,7 +1809,6 @@ it.each([
 				"en",
 			);
 		}
-		// Another module retains audio in the full-course config.
 		expect(pages[2].segments[0].src).toBeTruthy();
 		const config = document.getElementById("praxity-config");
 		assert(config);

@@ -12,11 +12,6 @@ const ROUNDTRIP_FIXTURE = resolve(
 	"../../../docs/test-fixtures/renderer-fidelity.prax",
 );
 
-/**
- * The editor preview, the desktop page preview, and the published viewer all
- * feed grammar through readSource → adaptGrammarPreviewBlocks → the shared
- * blocks. Asserting on that chain covers all three at once.
- */
 function chain(source: string): PraxityBlock[] {
 	return adaptGrammarPreviewBlocks(readSource(source).blocks);
 }

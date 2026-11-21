@@ -29,7 +29,6 @@ function lms(format: "scorm12" | "scorm2004") {
 		if (match) {
 			const index = Number(match[1]);
 			const count = Number(values.get("cmi.objectives._count"));
-			// Moodle scorm_13.js: duplicate ids and changing a saved id are refused.
 			if (
 				refuseId ||
 				(format === "scorm2004" &&

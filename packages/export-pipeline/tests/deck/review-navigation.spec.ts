@@ -116,7 +116,6 @@ for (const [width, height] of [
 				await expect(page.locator(".prx-review-sidebar")).toBeVisible();
 				await page.locator("#prx-review-text").scrollIntoViewIfNeeded();
 			}
-			// toBeVisible alone does not detect another panel intercepting the button.
 			for (const id of ["deck-previous", "deck-next"]) {
 				await expect
 					.poll(() =>
@@ -133,7 +132,6 @@ for (const [width, height] of [
 									[0.8, 0.8],
 								].every(([x, y]) => {
 									const hit = document.elementFromPoint(r.left + r.width * x, r.top + r.height * y);
-									// Disabled controls have pointer-events:none; their navigation row receives the hit.
 									return (
 										button.contains(hit) ||
 										(button.hasAttribute("disabled") && hit === button.parentElement)

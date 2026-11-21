@@ -6,7 +6,6 @@ const needsEvidence = (title: string) =>
 	title.startsWith("typing while restore support loads") ||
 	title === "edits survive support failure with a draft";
 
-/** Synthetic fixture evidence only; never enabled in published runtime. */
 export async function instrumentSelfCheckEdit(page: Page, info: TestInfo) {
 	if (!needsEvidence(info.title)) return;
 	const documents: unknown[] = [];
@@ -94,7 +93,6 @@ export async function instrumentSelfCheckEdit(page: Page, info: TestInfo) {
 			});
 		});
 	});
-	// The caller attaches the terminal DOM/state even when the literal title fails.
 }
 
 export async function attachSelfCheckEdit(page: Page, info: TestInfo) {

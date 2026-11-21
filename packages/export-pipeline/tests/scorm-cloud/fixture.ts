@@ -7,7 +7,6 @@ export interface ScormCloudFixtures {
 	scorm2004Zip: Buffer;
 	pageCount: number;
 	scoredQuestionCount: number;
-	/** The completion method used to build this fixture. */
 	completionMethod?: "allPages" | "percentage" | "quiz";
 }
 
@@ -194,8 +193,6 @@ function createRequiredBlocksCourse(): { pages: PraxityPage[]; scoredQuestionCou
 			title: "Quiz",
 			blocks: [
 				{
-					// Logic block: unconditionally require the assessment below.
-					// Conditions array is empty so the rule always fires on page load.
 					id: "logic-require-assessment",
 					type: "logic",
 					data: {
@@ -367,9 +364,6 @@ function createLogicRulesCourse(): { pages: PraxityPage[]; scoredQuestionCount: 
 			title: "Quiz",
 			blocks: [
 				{
-					// Logic block: if the assessment is passed, jump to the summary page.
-					// If the condition is not met (incorrect answer), linear navigation
-					// proceeds to the remediation page instead.
 					id: "logic-jump-on-correct",
 					type: "logic",
 					data: {
@@ -417,7 +411,6 @@ function createLogicRulesCourse(): { pages: PraxityPage[]; scoredQuestionCount: 
 					},
 				},
 				{
-					// Exercise logic, assessment, and rating islands on one page.
 					id: "b-logic-confidence-rating",
 					type: "rating",
 					data: {
@@ -561,7 +554,6 @@ export interface FixtureOptions {
 	full?: boolean;
 	navigationStyle?: NonNullable<CourseExportInput["navigationStyle"]>;
 	navToggles?: CourseExportInput["navToggles"];
-	/** Which course variant to build. Defaults to "minimal". */
 	variant?: "minimal" | "required" | "quizCompletion" | "logic" | "logicPersistence";
 }
 
@@ -574,13 +566,8 @@ export async function buildScormCloudFixtures(opts?: FixtureOptions): Promise<Sc
 
 	const variant = opts?.variant ?? "minimal";
 
-	// Legacy: opts.full loads the grammar fixture regardless of variant.
 	if (opts?.full) {
 		fullFixture = await loadGrammarFixture();
-		// This runtime fixture originally fits SCORM 1.2's fixed state budget.
-		// Give its public model deterministic test IDs; preserve every reference,
-		// including option IDs and rendered data-node-id attributes. UUID capacity
-		// remains covered by the storage-risk and overflow contracts.
 		const identifiers = new Map<string, string>();
 		const collect = (value: unknown): void => {
 			if (!value || typeof value !== "object") return;

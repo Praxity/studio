@@ -3,7 +3,6 @@ import AdmZip from "adm-zip";
 import { buildScormPackage, type CourseExportInput } from "../../src/build";
 import { serveFixtureBytes } from "./http-bytes";
 
-/** Serve the compiled package, including its fonts and hydration assets. */
 export async function publishedCourseServer(course: CourseExportInput) {
 	const result = await buildScormPackage(course, { mode: "source", format: "html" });
 	const files = new Map<string, Buffer>(

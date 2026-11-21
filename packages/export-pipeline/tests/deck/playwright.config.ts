@@ -14,7 +14,6 @@ export default defineConfig({
 	projects: [
 		{
 			name: "chromium",
-			// Only Chromium accepts --mute-audio; Linux WebKit refuses to launch with it.
 			use: { ...devices["Desktop Chrome"], launchOptions: { args: ["--mute-audio"] } },
 		},
 		{ name: "webkit", use: { ...devices["Desktop Safari"] } },
@@ -24,7 +23,6 @@ export default defineConfig({
 				...devices["Desktop Firefox"],
 				launchOptions: {
 					firefoxUserPrefs: {
-						// Gecko must advance its real media clock without opening an audio device.
 						"media.default_volume": "0.0",
 					},
 				},

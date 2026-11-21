@@ -2,7 +2,6 @@ import { readFileSync } from "node:fs";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Locator, type Page } from "@playwright/test";
 
-// Firefox uses 1/60px layout units; serialized rectangle differences can fall one unit short.
 export const LAYOUT_UNIT = 1 / 60;
 
 export function textFitsWithin(element: Locator): Promise<boolean> {
@@ -10,8 +9,6 @@ export function textFitsWithin(element: Locator): Promise<boolean> {
 		const bounds = button.getBoundingClientRect();
 		const range = document.createRange();
 		range.selectNodeContents(button);
-		// Linux WebKit measured RTL text ending at 296.0000305px inside a 296px link,
-		// a 0.00003px serialization overrun. Allow only one layout unit on either edge.
 		return [...range.getClientRects()].every(
 			(rect) =>
 				rect.width === 0 ||
@@ -51,8 +48,6 @@ const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"];
 
 const pageSelectorCache = new Map<string, CoursePageMeta>();
 
-// SSR selector inventory for direct addressing. Visibility and hydration are
-// still checked in the browser; compiled absence cannot be a timing miss.
 export const DISCOVERY_SELECTORS = [
 	"[data-block-type='accordion']",
 	"[data-block-type='accordion'] button, [data-block-type='accordion'] summary",
@@ -161,14 +156,10 @@ export function readThemeVariantUrl(name: string): string | undefined {
 	return readVariantEnv().themeVariants[name];
 }
 
-// Waits for the shell and navigation only. Reveal lazy blocks and await their own
-// data-hydrated marker before interacting with or measuring their rendered content.
 export async function waitForHydration(page: Page): Promise<void> {
 	await page.waitForSelector("html.praxity-js-loaded", { timeout: 15_000 });
 
 	await expect(page.locator('[data-island="nav"]:not([data-hydrated])')).toHaveCount(0);
-	// Hydration can finish during an authored entrance. Measure contrast after
-	// visible rows reach their final opacity, keeping off-screen rows pending.
 	await expect
 		.poll(() =>
 			page.locator('[data-entrance="visible"]').evaluateAll((elements) =>
@@ -185,8 +176,6 @@ export async function waitForHydration(page: Page): Promise<void> {
 }
 
 export async function waitForSettledStyles(page: Page): Promise<void> {
-	// Visibility and hydration precede the final paint. Include ancestors via
-	// document.getAnimations(), and recheck after another frame for chained motion.
 	await expect
 		.poll(() =>
 			page.evaluate(async () => {
@@ -273,13 +262,7 @@ function formatAxeViolations(
 export async function assertAxeScenario(page: Page, scenarioKey: string): Promise<void> {
 	const results = await analyzeAxe(
 		page,
-		new AxeBuilder({ page })
-			.withTags(AXE_TAGS)
-			// Courses embed third-party players. Without this, axe descends into their
-			// cross-origin documents and reports violations in markup we cannot fix --
-			// and only when the embed happens to have loaded, so the suite fails about
-			// one run in three. Our own iframe elements are still checked.
-			.setLegacyMode(),
+		new AxeBuilder({ page }).withTags(AXE_TAGS).setLegacyMode(),
 	);
 	expect(
 		results.violations,
@@ -305,8 +288,6 @@ export async function findPageWithSelector(
 	for (const candidate of candidates) {
 		await page.goto(`${baseUrl}/${candidate.slug}.html`);
 		await waitForHydration(page);
-		// Hydrate only an owning island. Generated controls must not be probed
-		// before its import has completed, nor should unrelated blocks be woken.
 		const ownerSelector = selector.match(/^\[data-(?:block-type|island)=[^\]]+\]/)?.[0];
 		const target = page.locator(selector).first();
 		const owners =
@@ -334,25 +315,5 @@ export function normalizeHeadingText(value: string): string {
 	return normalizeText(value).toLowerCase();
 }
 
-/**
- * Reason string for skipping sequential-Tab assertions outside Chromium.
- *
- * Playwright's WebKit ships WebKit's default focus model: Tab reaches form fields
- * only, and skips `<a href>` and `<button>` entirely. Verified 2026-08 with a probe
- * page containing all three -- Chromium tabbed link -> button -> input, WebKit tabbed
- * to the input alone. On real macOS this is governed by two *user settings* (System
- * Settings -> Keyboard -> Keyboard Navigation, and Safari -> Settings -> Advanced ->
- * "Press Tab to highlight each item on a webpage"), neither of which Playwright
- * exposes, so a Tab-order assertion here measures the harness, not the page.
- *
- * Do NOT "fix" this by adding `tabindex="0"` to native controls -- that is a widely
- * circulated non-fix, unreliable even in Safari, and it breaks roving-tabindex
- * widgets. See `/a11y` sections 2.1 and 5. WebKit tab-order verification is manual,
- * with Full Keyboard Access on.
- *
- * Everything else in this suite -- axe, contrast, landmarks, headings, interactions,
- * text spacing -- still runs in both engines, which is where the WebKit-only defect
- * classes actually show up.
- */
 export const WEBKIT_TAB_ORDER_SKIP =
 	"Sequential Tab order is a macOS/Safari user setting Playwright's WebKit cannot represent";

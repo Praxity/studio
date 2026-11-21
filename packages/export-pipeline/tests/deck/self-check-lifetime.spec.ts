@@ -660,7 +660,6 @@ for (const format of ["html", "scorm12", "scorm2004", "file"] as const)
 					};
 				});
 			await settled(page);
-			// Complete current hydration frames before forcing the retained observer delivery.
 			await page.evaluate(
 				() =>
 					new Promise<void>((resolve) =>

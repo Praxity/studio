@@ -191,7 +191,6 @@ describe("published media island", () => {
 		const cleanup = initMediaEnhancements();
 		if (!iframe.contentWindow) throw new Error("Missing activated Vimeo iframe");
 		const postMessage = vi.spyOn(iframe.contentWindow, "postMessage").mockImplementation(() => {});
-		// Navigation replaces the iframe window; Vimeo is initialized when the player loads.
 		iframe.dispatchEvent(new Event("load"));
 
 		expect(postMessage).toHaveBeenCalledWith(

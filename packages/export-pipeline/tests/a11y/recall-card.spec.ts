@@ -93,8 +93,6 @@ for (const mode of ["light", "dark"]) {
 			const heading = card.locator(".praxity-flashcard-face-heading");
 			const before = await heading.evaluate((e) => e.getBoundingClientRect().top);
 			await toggle.focus();
-			// Pause the real transitions in the activation turn, before slow
-			// cross-engine assertions can outlast its 200ms duration.
 			await toggle.evaluate((button) => {
 				(button as HTMLButtonElement).click();
 				for (const animation of button.nextElementSibling?.getAnimations() ?? []) animation.pause();
@@ -140,7 +138,6 @@ for (const mode of ["light", "dark"]) {
 			);
 			expect(transforms.every((transform) => !transform.startsWith("matrix3d"))).toBe(true);
 			await capture(page, card, `${mode}-${width}-answer`);
-			// Safari's Option+Tab includes native links on macOS.
 			await toggle.press(
 				browserName === "webkit" && process.platform === "darwin" ? "Alt+Tab" : "Tab",
 			);
@@ -150,7 +147,6 @@ for (const mode of ["light", "dark"]) {
 			await expect(toggle).toBeFocused();
 			await expect(toggle).toHaveText("I have my answer");
 			await expect(answer).toBeHidden();
-			// Hiding the answer does not undo the existing completion credit.
 			await expect(root).toHaveAttribute("data-flipped-count", "1");
 		});
 	}

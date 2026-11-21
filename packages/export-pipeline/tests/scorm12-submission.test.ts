@@ -66,8 +66,6 @@ function lms() {
 }
 afterEach(() => vi.unstubAllGlobals());
 
-// The capacity reviews used unrelated UUIDs, one page per four-option question,
-// a short readable response and every page visited before answering.
 it.each([4, 6, 8, 10, 12, 14, 16, 18, 20])(
 	"restores equal answer and row counts for %i UUID questions under the real cap",
 	(count) => {
@@ -121,7 +119,6 @@ it.each([4, 6, 8, 10, 12, 14, 16, 18, 20])(
 			);
 			expect(ids.filter((id) => restored.get(id) !== undefined)).toHaveLength(accepted);
 			expect(reload.getInteractions()).toHaveLength(accepted);
-			// Twelve questions must fit; larger attempts may refuse, never orphan an answer.
 			expect(accepted).toBeGreaterThanOrEqual(Math.min(count, 12));
 			if (accepted === count) expect(values["cmi.core.lesson_status"]).toBe("completed");
 		} finally {
@@ -220,8 +217,6 @@ it.each(["ordinary", "private", "buffered-pending", "buffered-ready"])(
 			}
 			const draft = answer([uuid("selected")], false);
 			provider.set("q", draft);
-			// Opaque data keeps its existing uncompressed size contract. Leave room
-			// for the checked state alone, but not its additional interaction row.
 			const custom = { blockState: { q: draft }, padding: "x".repeat(3500) };
 			runtime.setSuspendData(JSON.stringify(custom));
 			const before = values["cmi.suspend_data"];
@@ -233,7 +228,6 @@ it.each(["ordinary", "private", "buffered-pending", "buffered-ready"])(
 				}),
 			).toBe(true);
 			expect(values["cmi.suspend_data"]).toBe(before);
-			// A second, unrelated current response can be too large even with compression.
 			const noise = Array.from({ length: 200 }, (_, n) =>
 				createHash("sha256").update(String(n)).digest("hex"),
 			).join("");

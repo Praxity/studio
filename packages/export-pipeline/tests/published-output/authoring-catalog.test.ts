@@ -154,7 +154,6 @@ describe("static assessment accessibility and escaping", () => {
 		expect(
 			controls.map((node) => node.querySelector("button")?.getAttribute("aria-label")),
 		).toEqual(["Valve", "Panel"]);
-		// Hydration replaces these nodes, so a focusable fallback would drop the learner's focus.
 		expect(controls.every((node) => node.querySelector("button")?.hasAttribute("disabled"))).toBe(
 			true,
 		);

@@ -73,7 +73,6 @@ for (const width of [1280, 390]) {
 			}
 			if (kind === "bracket") expect(style.border).toBe("solid");
 			if (kind === "highlight") {
-				// Resolve the expected 20% accent/status mix through the browser's colour engine.
 				const expected = await span.evaluate((element) => {
 					const mods = element.getAttribute("data-doodle-mods") ?? "";
 					const role = mods.includes("green")

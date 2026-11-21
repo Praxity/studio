@@ -31,10 +31,6 @@ import {
 import { generateHtmlPages } from "../html-pages";
 import { LocalStorageRuntime } from "../scorm/local-storage-runtime";
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
 function makeConfig(overrides: Partial<CourseConfig> = {}): CourseConfig {
 	return {
 		id: "course-1",
@@ -332,9 +328,7 @@ it.each(["( )", "[ ]"])("excludes ungraded %s choices from course gates", (marke
 });
 
 it.each([
-	// The prefix ends with a non-breaking space so NVDA keeps the gap before the title.
 	["en", "Resumed at page 1 of 1: Introduction", "Resumed at page 1 of 1: "],
-	// French also keeps the colon on the same line with a non-breaking space.
 	["fr", "Reprise à la page 1 sur 1 : Introduction", "Reprise à la page 1 sur 1 : "],
 ])(
 	"compiles the %s Pages resume cue from the shared template",
@@ -613,10 +607,6 @@ function inlineExecutableScripts(html: string): string[] {
 		.map((match) => match[0]);
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
 describe("generateHtmlIndex", () => {
 	it.each([
 		{ name: "index", generate: generateHtmlIndex },
@@ -654,9 +644,6 @@ describe("generateHtmlIndex", () => {
 		expect(html).toContain("url=/c/slug/intro.html");
 	});
 
-	// index.html is the SCORM launch file and the review-share entry point, so it
-	// carries ?embed=1, ?minimal=1 and review tokens that the viewer reads. A bare
-	// meta-refresh dropped them, while the page-N shims already preserved them.
 	it("forwards the query string and hash like the page-N shims do", () => {
 		const html = generateHtmlIndex("intro");
 		expect(parseShellConfigFromHtml(html)).toMatchObject({
@@ -778,8 +765,6 @@ describe("generateHtmlPage", () => {
 	});
 
 	it("never hides the nav fallback on a static page (regression: #991 broke SCORM nav)", () => {
-		// With interactive shell controls disabled, the static page links are the
-		// navigation and must stay visible without an island.
 		const config = makeStaticConfig({
 			totalPages: 3,
 			pages: [
@@ -800,9 +785,7 @@ describe("generateHtmlPage", () => {
 			slugList: makeSlugList(config),
 			slugMap: makeSlugMap(config),
 		});
-		// The fallback nav is present with real cross-page links...
 		expect(html).toContain('class="praxity-outline-fallback"');
-		// ...and the anti-flash hide rule is NOT shipped on static pages.
 		expect(html).not.toContain('[data-island="nav"]:not([data-hydrated])');
 		expect(html).not.toContain("classList.add('praxity-js')");
 	});
@@ -1312,7 +1295,6 @@ describe("generateHtmlPage", () => {
 		const html = renderPage({ navigationStyle: "slides" });
 		expect(html).toContain('id="praxity-config"');
 		expect(html).toContain("application/json");
-		// Should include page metadata
 		expect(html).toContain("Introduction");
 		expect(html).toContain("page-1");
 	});
@@ -2064,7 +2046,6 @@ describe("generateHtmlPage", () => {
 	});
 
 	it("omits island runtime assets on an explicitly static text-only page", () => {
-		// Static blocks and disabled interactive shell controls need no islands.
 		const html = renderPage({
 			navigationStyle: "sidebar",
 			navToggles: STATIC_NAV_TOGGLES,
@@ -2325,8 +2306,6 @@ describe("course CSS", () => {
 		expect(accentText).toBeDefined();
 		expect(contrastRatio(accentText ?? "", "#fafafa")).toBeGreaterThanOrEqual(4.5);
 		expect(css).toContain("--praxity-font-family: 'Source Sans 3', sans-serif;");
-		// The selector also carries Mantine's own, so the token aliases we set there
-		// are not outranked by Mantine's defaults.
 		expect(css).toContain(":root, :root[data-mantine-color-scheme] {");
 	});
 
@@ -2964,16 +2943,12 @@ describe("generateHtmlPages", () => {
 
 		const files = await fs.readdir(tmpDir);
 		expect(files).toContain("index.html");
-		// Should have index + 2 canonical slug pages + 1 numbered alias redirect
 		expect(files.length).toBeGreaterThanOrEqual(4);
 
-		// Index should redirect
 		const indexHtml = await fs.readFile(path.join(tmpDir, "index.html"), "utf-8");
 		expect(indexHtml).toContain("http-equiv");
 
 		const introHtml = await fs.readFile(path.join(tmpDir, "intro.html"), "utf-8");
-		// Both pages are text-only, so they render static (see the islands/static
-		// split above) — the assertion is that the files exist and are well-formed.
 		expect(introHtml).toContain("<!doctype html>");
 		expect(introHtml).toContain("praxity-page-nav-fallback");
 		expect(introHtml).toContain('<div class="praxity-layout-wrapper">');
@@ -3771,12 +3746,6 @@ describe("nav placement and skip links", () => {
 });
 
 describe("nav archetype → body layout class", () => {
-	// The exporter used to reverse-infer the layout from individual nav toggles.
-	// That inference could not express `minimal` (its preset turns off outline,
-	// prev/next and edge arrows, so the `none` branch claimed it) or `embedded`
-	// (absent from the chain), and it downgraded a course to `sidebar` whenever an
-	// author adjusted a toggle — including a brand-new project, which scaffolds as
-	// `slides`. Pin every archetype to its own class.
 	const cases: [NonNullable<CourseConfig["navigationStyle"]>, string][] = [
 		["sidebar", "praxity-layout-sidebar"],
 		["bottomBar", "praxity-layout-bottombar"],
@@ -3794,8 +3763,6 @@ describe("nav archetype → body layout class", () => {
 		});
 
 		it(`keeps ${archetype} intact when nav toggles are also set`, () => {
-			// The slides preset's toggle combination previously *was* the only way to
-			// reach praxity-layout-slides; toggles must no longer override the choice.
 			const html = renderPage({
 				navigationStyle: archetype,
 				navToggles: { navOutline: true, navPrevNext: true, navEdgeArrows: false },
@@ -3880,7 +3847,6 @@ describe("nav archetype → body layout class", () => {
 		});
 		const counter = new JSDOM(html).window.document.querySelector(".praxity-slide-counter");
 
-		// Each page is a full document, so the counter is never a status message.
 		expect(counter?.hasAttribute("role")).toBe(false);
 		expect(counter?.hasAttribute("aria-label")).toBe(false);
 		expect(counter?.hasAttribute("aria-live")).toBe(false);
@@ -4020,9 +3986,6 @@ describe("archetype-driven navigation emission", () => {
 	});
 
 	it("omits the no-JS fallback nav for the none archetype", () => {
-		// `none` means no navigation chrome. The fallback IS the navigation on static
-		// pages, so leaving it in shipped a full page list on every text-only page of
-		// a course that asked for none.
 		const html = renderPage({ navigationStyle: "none" });
 		expect(html).not.toContain("praxity-outline-fallback");
 		expect(html).not.toContain("praxity-page-nav-fallback");
@@ -4055,8 +4018,6 @@ describe("authored page headings", () => {
 	});
 
 	it("leaves the heading alone when the first block already repeats the title", () => {
-		// The author's own heading block carries the title; a hidden duplicate would
-		// make assistive tech announce it twice.
 		const config = makeStaticConfig({
 			pages: [
 				{
@@ -4100,7 +4061,6 @@ describe("page-N aliases", () => {
 			expect(pageOne.indexOf('<script src="course-shell.js"></script>')).toBeLessThan(
 				pageOne.indexOf('http-equiv="refresh"'),
 			);
-			// A duplicate of the real page would carry the course chrome.
 			expect(pageOne).not.toContain("praxity-page-nav-fallback");
 
 			const pageTwo = await fs.readFile(path.join(tmpDir, "page-2.html"), "utf-8");
@@ -4264,8 +4224,6 @@ describe("corner artwork", () => {
 			legalComments: "none",
 		});
 		const css = shared.outputFiles[0].text;
-		// Owner 2026-10-19: main styling plus palette gates measure 31,871 B gzip; 1,153 B headroom.
-		// Keep main's 33,024 B cap; tighten during final size work.
 		expect(gzipSync(css).byteLength).toBeLessThanOrEqual(33_024);
 		expect(
 			gzipSync(css + decorated).byteLength - gzipSync(css + plain).byteLength,

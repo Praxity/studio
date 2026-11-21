@@ -10,7 +10,6 @@ const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../.
 let root = "";
 let refusal = "";
 
-// Build once through the production owner, with an unlisted upstream helper.
 beforeAll(async () => {
 	root = await mkdtemp(path.join(tmpdir(), "learning-patterns-inspection-"));
 	await mkdir(path.join(root, "apps/desktop/src"), { recursive: true });

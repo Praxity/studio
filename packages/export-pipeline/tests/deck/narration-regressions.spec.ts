@@ -140,8 +140,6 @@ test.beforeAll(async () => {
 			return;
 		}
 		if (gate && fixturePath.endsWith(".mp3")) {
-			// WebKit's media loader can bypass browser routing. Hold and fail the
-			// actual HTTP response so metadata and playback observe the same outcome.
 			await gate.ready;
 			if (gate.unavailable) {
 				res.writeHead(503);

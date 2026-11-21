@@ -32,9 +32,6 @@ function fixture(id: string, deck: boolean): CourseExportInput {
 }
 
 it("records every P2 baseline hash from full build output", async () => {
-	// Images exercise build-added hints in HTML and deck JSON; documents include
-	// index and numbered redirects that compileDocument alone does not emit.
-	// T50 round 2 renames the serialized media action key to mediaOpen.
 	expect(await recordBaseline([fixture("deck", true), fixture("pages", false)])).toEqual({
 		deck: {
 			bodies: {
@@ -88,8 +85,6 @@ it("omits the three inert choice fact fields from recorded document hashes", asy
 			},
 		},
 	];
-	// Frozen renderer fixture bytes, including the question/group configuration
-	// apart from the same three fields excluded by the page-compiler guard.
 	expect((await recordBaseline([input])).choice.documents["tiny-page.html"]).toBe(
 		"a21f9338625453cbb6b090d402c5da81ee757764f32aae0132691dc8957ca27b",
 	);

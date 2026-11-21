@@ -97,7 +97,6 @@ const capturedOutput = {
 };
 const invariant = stagedAnswerOutputInvariant("WD");
 const { scan, scanRuntimeAsset, assertOutput } = invariant;
-// Preserve Map/Set keys, values and non-enumerable Error text when scanning actual results.
 const serialize = (value: unknown) =>
 	JSON.stringify(value, (_key, item) => {
 		if (item instanceof Map) return [...item];
@@ -127,8 +126,6 @@ function activities(value: unknown): PraxityBlock[] {
 	if ("type" in value && value.type === "writeDistractors") return [value as PraxityBlock];
 	return Object.values(value).flatMap(activities);
 }
-// Cards share one root. Remove sibling activities so a front refusal cannot
-// accidentally stand in for proof that the back also refuses publication.
 function placement(blocks: PraxityBlock[], control: string) {
 	const selected = activities(blocks).find((block) => serialize(block).includes(control));
 	const parent = blocks.find((block) =>
@@ -285,7 +282,6 @@ it.each(locales)(
 		});
 		for (const block of activities(changed.blocks))
 			expect(readWriteDistractorsContent(changed, block.id).rightAnswer).toContain("_EDITED");
-		// A hidden-only edit must leave both narration text and recording fingerprints identical.
 		for (const block of activities(read.blocks)) {
 			const segments = extractNarrationSegments("Practice", {}, [block], {}, locale);
 			const title = segments.find((segment) => segment.blockId === block.id);
@@ -536,7 +532,6 @@ it("quoted unresolved-node diagnostics refuse without publishing hidden author t
 	);
 });
 
-// Compile each real package and both native PDFs once, outside per-test timing.
 const published: Array<{
 	name: string;
 	bytes: Buffer;
@@ -600,8 +595,6 @@ beforeAll(async () => {
 			await artifact.dispose();
 		}
 	}
-	// The web fixture also exercises an emoji unsupported by bundled PDF fonts.
-	// Native publication uses the same marked fields with supported font characters.
 	const lessonInputs = locales.map((locale) => {
 		const read = readLesson(source(locale).replaceAll(" 😀", ""), {
 			ids: (node, role) => `pdf-${locale}-${node.span.start}-${role ?? node.kind}`,
@@ -700,7 +693,6 @@ it.each([false, true])(
 it.each(["source", "identity"])(
 	"%s hardlink and symlink aliases cannot re-enter public assets",
 	async (name) => {
-		// Unsupported lessons stay opaque to writes; model a previously saved store for alias checks.
 		await persistLegacyPendingFixture(root);
 		const identityBefore = await readIdentityFixture(root);
 		const snapshots = join(root, ".praxity/identity/snapshots");
@@ -722,7 +714,6 @@ it.each(["source", "identity"])(
 					await refusal(`${name}/${kind}`, admit, {
 						code: name === "source" ? "asset-source-refused" : "asset-internal-refused",
 					});
-				// The host must retain the same asset boundary after publication lifts.
 				await refusal(`${name}/${kind}/host`, () => buildCourseExportInput(previewOptions()), {
 					code: name === "source" ? "asset-source-refused" : "asset-internal-refused",
 				});

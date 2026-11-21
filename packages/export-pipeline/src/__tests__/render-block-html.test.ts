@@ -194,7 +194,6 @@ describe("dialogue", () => {
 		expect(turns.map((turn) => turn.getAttribute("data-side"))).toEqual(["start", "end", "start"]);
 		expect(turns[0].querySelector("bdi")?.textContent).toBe("Roger");
 		expect(turns[0].querySelector("img")?.getAttribute("alt")).toBe("");
-		// WebKit + VoiceOver read alt="" images inside a figure by file name without it.
 		expect(turns[0].querySelector("img")?.getAttribute("role")).toBe("presentation");
 		expect(doc.querySelector("ol")?.getAttribute("role")).toBe("list");
 		expect(turns[0].querySelector("em")?.textContent).toBe("there");
@@ -809,12 +808,6 @@ describe("image comparison", () => {
 	});
 });
 
-/**
- * This markup is the pre-hydration shell: the React viewer owns answering,
- * submitting, feedback and scoring. Shipped with live inputs it was a form a
- * learner could fill in that could never be submitted — no submit control, no
- * feedback, answers gone at the next page.
- */
 describe("static assessment shell", () => {
 	const choiceBlock = {
 		id: "blk1",
@@ -992,18 +985,6 @@ describe("static assessment shell", () => {
 	});
 });
 
-/**
- * A media block used to append `<h3 class="praxity-sr-only">Continue after
- * video</h3>`. It put a phantom section in the heading outline with nothing
- * under it — on a page whose first real section was an h2, a screen-reader user
- * browsing by heading hit an h3 between the page title and the first section.
- * The block is already a labelled region, which is what AT navigates past, and
- * the string was hardcoded English with no French entry.
- *
- * The register in `.claude/skills/a11y` records "every media embed needs a
- * following heading" as refuted: 2.4.1 asks for a mechanism to bypass repeated
- * blocks, not this technique.
- */
 describe("media blocks and the heading outline", () => {
 	it("renders Markdown links in image captions", () => {
 		const html = renderBlockHtml({
@@ -1029,7 +1010,6 @@ describe("media blocks and the heading outline", () => {
 					data: { src: "/assets/image.png", altText: "A chart", decorative },
 				} as unknown as PraxityBlock),
 			).window.document.querySelector("figure img");
-		// WebKit + VoiceOver read alt="" images inside a figure by file name.
 		expect(render(true)?.getAttribute("alt")).toBe("");
 		expect(render(true)?.getAttribute("role")).toBe("presentation");
 		expect(render(false)?.getAttribute("alt")).toBe("A chart");

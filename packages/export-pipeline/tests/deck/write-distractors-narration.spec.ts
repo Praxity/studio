@@ -22,7 +22,6 @@ let url: string;
 let server: Server;
 
 test.beforeAll(async ({ browser }) => {
-	// Keep the engine's cold start in shared setup, outside each case's 2 s budget.
 	const warmup = await browser.newPage();
 	await warmup.close();
 	directory = await mkdtemp(join(tmpdir(), "distractor-narration-"));
@@ -55,7 +54,6 @@ test.beforeAll(async ({ browser }) => {
 			nextSentence: "Next sentence",
 			followNarration: "Follow narration",
 		};
-		// The prepared runtime fixture retains the real compiler's publication refusal.
 		await writeFile(
 			join(directory, `${locale}-narration.html`),
 			html
@@ -188,7 +186,6 @@ for (const locale of ["en", "fr"] as const)
 							.getByRole("button", { name: locale === "en" ? "Yes" : "Oui", exact: true })
 							.click();
 				}
-				// Settle the real audio before the per-case timing budget.
 				await page.getByRole("button", { name: "Listen", exact: true }).click();
 				await expect
 					.poll(() =>
@@ -240,7 +237,6 @@ for (const locale of ["en", "fr"] as const)
 
 test.describe("timed nested Follow", () => {
 	test.beforeEach(async ({ page }) => {
-		// As in card-narration.spec.ts, drive media events without a decoder clock.
 		await page.addInitScript(() => {
 			HTMLMediaElement.prototype.play = async () => {};
 		});
@@ -253,7 +249,6 @@ test.describe("timed nested Follow", () => {
 		await page.getByRole("button", { name: "Nested practice", exact: true }).press("Enter");
 		await page.getByRole("button", { name: "Listen", exact: true }).press("Enter");
 		await page.locator("audio[data-narration-player]").evaluate((audio) => {
-			// Native seeking can stay at zero without playback; control the clock too.
 			Object.defineProperty(audio, "currentTime", { value: 0, writable: true });
 		});
 	});
@@ -325,7 +320,6 @@ test.describe("timed nested Follow", () => {
 			await expect(nested).not.toContainText("NESTED_LABEL");
 		};
 		await assertPracticeUntouched();
-		// Exercise the player's end handlers even when native playback cannot advance.
 		await page.locator("audio[data-narration-player]").evaluate(async (node) => {
 			const audio = node as HTMLAudioElement;
 			audio.currentTime = 1;

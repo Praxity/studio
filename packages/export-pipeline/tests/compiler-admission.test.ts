@@ -66,7 +66,6 @@ function replacePath(block: PraxityBlock, path: string[], value: unknown): Praxi
 	return block;
 }
 
-// Grammar selects the setting slots to attack. Accepted paths below are independent literals.
 const attackedPaths = [
 	...Object.keys(BLOCK_SCHEMA["self-check"].settings).map((key) => [
 		"data",
@@ -120,7 +119,6 @@ for (const [index, path] of unknownPaths.entries())
 		depth: index % 3,
 	});
 
-// Wrong scalar types and constrained strings are specified independently of the constructor.
 const invalidScalars: [string[], unknown][] = [
 	[["data", "layoutMode"], 1],
 	[["data", "entrance"], 1],
@@ -454,7 +452,6 @@ describe("constructed compiler self-check records", () => {
 								frontmatter: {
 									title: "Admission",
 									lang: "en",
-									// Direct host input deliberately bypasses source validation.
 									design: { componentDefaults: input.componentDefaults ?? {} } as never,
 								},
 								config: { completionThreshold: 0.8 },
@@ -512,7 +509,6 @@ describe("constructed compiler self-check records", () => {
 									: `node-${node.span.start}`,
 				},
 			);
-			// Stable fixture allocation must distinguish the item from its parent.
 			expect(read.blocks.filter((block) => block.type === "selfCheck")).toHaveLength(1);
 			const block = read.blocks.find((block) => block.type === "selfCheck");
 			if (!block) throw new Error("Missing fixture self-check.");
@@ -842,7 +838,6 @@ describe("compiler self-check admission", () => {
 	it.each(["fresh", "captured", "refresh"] as const)(
 		"derives glossary terms from admitted content in a %s context",
 		async (entry) => {
-			// Old host records may carry derived terms even after the input field is removed.
 			const input = {
 				...course([
 					selfCheck(prompt),
@@ -921,7 +916,6 @@ describe("compiler unresolved-node admission", () => {
 		await expect(
 			createCourseContext({
 				...course(),
-				// Deliberately model a host still passing source-quoting diagnostics.
 				unresolvedNodes: new Map([["self-check", diagnostic]]) as never,
 			}),
 		).rejects.toMatchObject({

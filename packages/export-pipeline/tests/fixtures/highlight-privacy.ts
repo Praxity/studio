@@ -33,7 +33,6 @@ export function highlightPrivacyMarkup(): string {
 		.join("");
 }
 
-/** Exercise both mounted instances, including the hidden one, checking every stage. */
 export function exerciseHighlightPrivacy(
 	doc: Document,
 	check: () => void,
@@ -68,7 +67,6 @@ export function highlightPrivacyChoice(): string {
 	return renderBlockHtml(choice);
 }
 
-/** The actual preview compiler owns the wrappers and admitted source projection. */
 export async function highlightPrivacyPreview(
 	courseId: string,
 	pageId: string,

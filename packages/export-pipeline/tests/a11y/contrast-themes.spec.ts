@@ -145,8 +145,6 @@ test.describe("theme variants", () => {
 		await radio.check();
 		const key = page.locator(".praxity-choice-key").first();
 
-		// The authored red is contrast-corrected to #d8293b; the painted key's
-		// fill and border must both use that correction.
 		await expect
 			.poll(() =>
 				key.evaluate((node, expected) => {
@@ -314,7 +312,6 @@ test.describe("theme variants", () => {
 							activityBorder,
 						};
 					});
-					// Forced colours use the browser's system palette; retain the boundary checks below.
 					if (forcedColors === "none")
 						expect(normalizeColor(colors.border)).toBe(normalizeColor(colors.activityBorder));
 					expect(
@@ -398,7 +395,6 @@ test.describe("theme variants", () => {
 			page.evaluate(async () => {
 				const selected = document.querySelector('[data-contrast-probe="selected"]');
 				if (!selected) throw new Error("Missing selected contrast probe");
-				// Selection and contrast changes both transition the row's border and fill.
 				await Promise.all(
 					selected
 						.getAnimations()
@@ -467,9 +463,6 @@ test.describe("theme variants", () => {
 
 		await page.emulateMedia({ contrast: "more" });
 		if (browserName === "firefox") {
-			// Playwright 1.59 / firefox-1511 updates matchMedia for contrast emulation
-			// without restyling existing sheets. A new document applies the preference.
-			// Recreate the same probes and keep every contrast and axe assertion below.
 			await page.reload({ waitUntil: "domcontentloaded" });
 			await waitForHydration(page);
 			await waitForAssessmentHydration(page);

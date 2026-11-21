@@ -55,7 +55,6 @@ test("signed methods retain one Tab entry and arrow discovery without changing t
 	await page.keyboard.press("Home");
 	await page.keyboard.press("Enter");
 	await page.keyboard.press("Space");
-	// ARIA-disabled still allows a pointer event; the owning action must guard it.
 	await draw.evaluate((element: HTMLButtonElement) => element.click());
 	await draw.dispatchEvent("click");
 	const drawBox = await draw.boundingBox();
@@ -78,7 +77,6 @@ test("signed methods retain one Tab entry and arrow discovery without changing t
 	await page.keyboard.press("Shift+Tab");
 	await page.keyboard.press("Home");
 	await expect(draw).toHaveAttribute("aria-selected", "true");
-	// The enhanced signature creates no navigation landmarks of its own.
 	await expect(signature.getByRole("region")).toHaveCount(0);
 });
 

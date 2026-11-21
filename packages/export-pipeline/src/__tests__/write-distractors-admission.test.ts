@@ -127,7 +127,6 @@ it("renders the direct prompt without author Content", () => {
 	expect(html).not.toMatch(/HiddenRight|HiddenLabel|HiddenOption/);
 });
 
-// Raw compiled callers can bypass the source group-membership validator.
 for (const locale of ["en", "fr"]) {
 	it.each([
 		{ shape: "nested distractors", member: distractors.id, blocks: [outer] },
@@ -195,7 +194,6 @@ it.each([null, undefined])(
 				message: "Invalid write-distractors prompt data.",
 			}),
 		);
-		// A valid distractors keeps the compiled logic scan active while it visits malformed data.
 		expect(() =>
 			prepareHtmlCourse({
 				id: "course",

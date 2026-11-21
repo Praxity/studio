@@ -19,16 +19,11 @@ const files = new Map<string, Buffer>();
 type Format = "scorm12" | "scorm2004";
 type Mode = "pages" | "guided" | "static";
 
-// The French title reproduces "compositi / on" at 320px with Larger text. The code URL has
-// no break opportunity, so only overflow-wrap can keep it inside the 320px reflow width.
 const wrapTitles: Record<string, string> = {
 	en: "Building from a composition",
 	fr: "Construire à partir d’une composition",
 };
 const wrapUrl = `https://praxity.example/${"publishedconfiguration".repeat(6)}`;
-// This non-dictionary word fits a full line but cannot fit after its preceding word.
-// Sans is narrower than the former Book default. Keep the fixture's combined
-// heading wider than a phone line while this individual word still fits whole.
 const fittingWord = "qqqqqqqqqqqqqqqq";
 
 function course(mode: Mode, locale: string, gated = false, wrap = false): CourseExportInput {
@@ -65,8 +60,6 @@ function course(mode: Mode, locale: string, gated = false, wrap = false): Course
 	};
 }
 
-// A local same-origin LMS keeps the SCO's CMI data over iframe unload and relaunch.
-// Entry is supplied for each new session, while Commit persists location, exit and suspend data.
 function lmsHtml(): string {
 	return `<!doctype html><html lang="en"><title>Local LMS</title><style>body{margin:0}</style><body><iframe title="Course" style="width:100%;height:100dvh;border:0"></iframe><script>
 const params = new URLSearchParams(location.search);
@@ -128,7 +121,6 @@ test.beforeAll(async () => {
 			await artifact.dispose();
 		}
 	}
-	// Exercise authored name overrides and absent headings without changing canonical titles.
 	for (const mode of ["pages", "guided"] as const) {
 		for (const variant of ["label", "labelledby", "missing", "fr-label"] as const) {
 			for (const format of ["scorm12", "scorm2004"] as const) {
@@ -154,7 +146,6 @@ test.beforeAll(async () => {
 			}
 		}
 	}
-	// The standard theme's display face and h1 size leave "composition" wider than a 320px line.
 	const standard = extractDesktopDesignFromFrontmatter({
 		design: {
 			...DEFAULT_DESIGN_VARIANTS,
@@ -292,7 +283,6 @@ async function next(frame: Frame, mode: Mode, place: number) {
 }
 
 async function messages(frame: Frame): Promise<string[]> {
-	// Wait past the old 500ms resume timer to detect duplicate product writes as well.
 	await frame.waitForTimeout(650);
 	return frame.evaluate(() => (window as unknown as { resumeMessages: string[] }).resumeMessages);
 }
@@ -314,7 +304,6 @@ async function checkCuePresentation(page: Page, frame: Frame, selector: string) 
 			surface = surface.parentElement;
 		}
 		const toHex = (color: string) => {
-			// Read rendered sRGB bytes for both RGB and OKLCH computed colours.
 			const canvas = document.createElement("canvas");
 			canvas.width = canvas.height = 1;
 			const context = canvas.getContext("2d");
@@ -342,8 +331,6 @@ async function checkCuePresentation(page: Page, frame: Frame, selector: string) 
 	expect(contrastRatio(appearance.foreground, appearance.background)).toBeGreaterThanOrEqual(4.5);
 	expect(appearance.outline).toBe("solid");
 	expect(appearance.outlineWidth).toBe("2px");
-	// The cue keeps body tracking, not the heading's display tracking, and starts
-	// on the same edge as the text it introduces.
 	const layout = await cue.evaluate((element) => {
 		const textLeft = (node: Node) => {
 			const range = document.createRange();
@@ -367,10 +354,8 @@ async function checkCuePresentation(page: Page, frame: Frame, selector: string) 
 				const style = getComputedStyle(document.activeElement ?? document.body);
 				return { style: style.outlineStyle, offset: Number.parseFloat(style.outlineOffset) };
 			});
-		// A printed page shows no focus ring around the title.
 		await page.emulateMedia({ media: "print" });
 		expect((await focusRing()).style).toBe("none");
-		// High-contrast rings stay outside the heading's glyphs.
 		await page.emulateMedia({ media: "screen", forcedColors: "active" });
 		if (!(await forcedPalette(frame))) {
 			const focused = frame.locator(":focus");
@@ -408,7 +393,6 @@ async function checkCuePresentation(page: Page, frame: Frame, selector: string) 
 			);
 		}),
 	).toBe(true);
-	// Moving focus to a reading preference never dismisses the arrival cue.
 	await expect(cue).toBeVisible();
 	await page.emulateMedia({ media: "print" });
 	await expect(cue).toBeHidden();
@@ -418,7 +402,6 @@ async function checkCuePresentation(page: Page, frame: Frame, selector: string) 
 	await page.emulateMedia({ media: "screen", forcedColors: "active" });
 	await expect(cue).toBeVisible();
 	await page.emulateMedia({ forcedColors: "none" });
-	// A top-layer cue cannot scroll the LMS's outer document; align its frame first.
 	if (sheetWasOpen) {
 		const host = await frame.frameElement();
 		await host.evaluate((element) => {
@@ -538,8 +521,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 		await expect(heading).toHaveText("Resumed at page 4 of 5: Place 4");
 		await expect(heading).toBeFocused();
 		await expect(page.locator('[data-island="nav"]')).toHaveCount(0);
-		// Firefox does not report local script loads through Playwright's request
-		// events. Verify the loaded classic entry and its resulting focus instead.
 		const cueScript = page.locator('script[src*="course-resume-"]');
 		await expect(cueScript).toHaveCount(1);
 		await expect(cueScript).not.toHaveAttribute("type", "module");
@@ -588,8 +569,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 					await expect(heading).toHaveAccessibleName("Authored heading");
 					await expect(heading).toHaveText("Place 4");
 					await expect(heading).not.toBeFocused();
-					// In slide layouts the summary sits outside the padded slide; it must
-					// still line up with the heading it introduces.
 					const [summaryBox, headingBox] = await Promise.all([
 						summary.boundingBox(),
 						heading.boundingBox(),
@@ -1054,9 +1033,6 @@ for (const format of ["scorm12", "scorm2004"] as const) {
 	});
 }
 
-// Pages loads a full document per page: the focused heading orients, and no live
-// message repeats it. Guided heading focus also leaves the live region alone;
-// the named slide region carries its position.
 for (const mode of ["pages", "guided"] as const) {
 	for (const locale of ["en", "fr"]) {
 		test(`${mode} ${locale} ordinary Next, Previous and Back focus the heading without a live message`, async ({
@@ -1095,7 +1071,6 @@ for (const mode of ["pages", "guided"] as const) {
 			await expect(heading(3)).toHaveText("Place 3");
 			await ready(frame, mode);
 			expect(await messages(frame)).toEqual([]);
-			// Position stays discoverable in the page controls.
 			await expect(frame.locator(".praxity-pages-position").first()).toHaveText(
 				locale === "fr" ? "Page 3 sur 5" : "Page 3 of 5",
 			);
@@ -1151,8 +1126,6 @@ for (const mode of ["pages", "guided"] as const) {
 						return words;
 					};
 					const rendered = measureWords();
-					// Unwrapped widths are the words' natural widths. A drawn hyphen makes the
-					// wrapped fragments wider than that; an unmarked break does not.
 					(element as HTMLElement).style.whiteSpace = "nowrap";
 					const natural = measureWords();
 					(element as HTMLElement).style.whiteSpace = "";
@@ -1184,7 +1157,6 @@ for (const mode of ["pages", "guided"] as const) {
 				});
 				await page.screenshot({ path: testInfo.outputPath(`${mode}-${locale}-${larger}.png`) });
 				for (const measured of [heading, link, fit]) {
-					// Course headings retain authored language and never add automatic hyphens.
 					expect(measured.lang).toBe(locale);
 					expect(measured.hyphens).toBe("manual");
 					expect(measured.overflowWrap).toBe("break-word");
@@ -1193,7 +1165,6 @@ for (const mode of ["pages", "guided"] as const) {
 					expect(measured.right).toBeLessThanOrEqual(320);
 					expect(measured.words.filter((word) => word.hyphenated)).toEqual([]);
 				}
-				// A word that fits the line stays whole; long words and URLs still reflow.
 				expect(
 					heading.words.filter(
 						(word) => word.natural <= heading.width && word.lines > 1 && !word.hyphenated,
@@ -1207,7 +1178,6 @@ for (const mode of ["pages", "guided"] as const) {
 				expect(word?.natural).toBeLessThanOrEqual(fit.width);
 				expect(word?.lines).toBe(1);
 				expect(link.words[0].lines).toBeGreaterThan(1);
-				// Code still wraps by overflow-wrap but never gains an inserted hyphen.
 				expect(await url.locator("code").evaluate((code) => getComputedStyle(code).hyphens)).toBe(
 					"manual",
 				);
@@ -1252,7 +1222,6 @@ for (const mode of ["pages", "guided", "static"] as const) {
 			const errors: string[] = [];
 			page.on("pageerror", (error) => errors.push(error.message));
 			const prefix = `/${mode}-en-false-html/`;
-			// Pages uses its native document fallback when file origins reject islands.
 			const navigationMode = transport === "file" && mode === "pages" ? "static" : mode;
 			let entry = `${base}${prefix}index.html`;
 			if (transport === "file") {
@@ -1273,8 +1242,6 @@ for (const mode of ["pages", "guided", "static"] as const) {
 			await page.goto(entry);
 			await ready(page.mainFrame(), navigationMode);
 			for (const place of [2, 3]) await next(page.mainFrame(), navigationMode, place);
-			// Gecko's automation reload classifies history-replaced URLs as navigation.
-			// Exercise the native document reload used by learners instead.
 			await Promise.all([page.waitForNavigation(), page.evaluate(() => location.reload())]);
 			await ready(page.mainFrame(), navigationMode);
 			const heading = page.locator("main h1:visible").first();
@@ -1288,14 +1255,12 @@ for (const mode of ["pages", "guided", "static"] as const) {
 			).toHaveLength(0);
 			expect(errors).toEqual([]);
 			expect(network).toEqual([]);
-			// Returning through index uses the bookmark too, including local-file aliases.
 			await page.goto(entry);
 			await ready(page.mainFrame(), navigationMode);
 			await expect(page.locator("main h1:visible").first()).toHaveText(
 				`Resumed at ${mode === "guided" ? "slide" : "page"} 3 of 5: Place 3`,
 			);
 			await expect(page.locator("main h1:visible").first()).toBeFocused();
-			// An explicit first-page route matches SCORM's bypass without erasing visits.
 			await page.goto(`${entry}?praxity-page=place-1`);
 			await ready(page.mainFrame(), navigationMode);
 			await expect(page.locator("main h1:visible").first()).toHaveText("Place 1");

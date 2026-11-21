@@ -194,7 +194,6 @@ function launch(format: Format, evidence = false, history = false) {
 		provider.set("q", answer(history ? changed : signature));
 		runtime.trackInteraction("q", "a", true, 100);
 		runtime.trackInteraction("a", "answer", true, 100);
-		// Retain ordinary outcome reporting alongside the injected provider evidence.
 		win.__praxityTracker = new CourseTracker(runtime, {
 			totalPages: 2,
 			completionMethod: "allPages",
@@ -216,7 +215,6 @@ function launch(format: Format, evidence = false, history = false) {
 	};
 }
 
-/** Keep the group owner's dispatch refusal and stage/report/save order. */
 function submit(host: ReturnType<typeof launch>, detail: Record<string, unknown> = {}) {
 	const event = new host.win.CustomEvent("praxity:assessment-group-complete", {
 		detail: {

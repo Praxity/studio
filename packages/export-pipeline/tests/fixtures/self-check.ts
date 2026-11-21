@@ -1,7 +1,6 @@
 import type { PraxityBlock } from "@praxity/shared-blocks/types";
 import { type SelfCheckContentInput, selfCheckContentInput } from "../../src/build";
 
-/** Direct compiler fixtures explicitly supply authored content, separate from prompts. */
 export function fixtureSelfCheckInputs(blocks: readonly PraxityBlock[]): SelfCheckContentInput[] {
 	const visit = (value: unknown): SelfCheckContentInput[] => {
 		if (!value || typeof value !== "object") return [];
@@ -28,7 +27,7 @@ export function fixtureSelfCheckInputs(blocks: readonly PraxityBlock[]): SelfChe
 				];
 			} catch {
 				return [];
-			} // Malformed prompt tests must reach compiler admission.
+			}
 		}
 		return Object.values(value).flatMap(visit);
 	};
