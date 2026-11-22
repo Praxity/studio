@@ -6,7 +6,7 @@ import type { Draft } from "@praxity/editor-core/session";
 import { afterEach, expect, it, vi } from "vitest";
 import { LocalEditorStore } from "../operations/local-editor-store";
 import { createStudioProjectSession } from "../studio/project-session";
-import { type StudioServer, startStudioServer } from "../studio/server";
+import { sessionResult } from "./fixtures/studio-session";
 
 const fault = vi.hoisted(() => ({
 	cleanup: false,
@@ -115,19 +115,6 @@ async function fixture() {
 	await writeFile(join(root, "a.prax"), "# First\n\nOriginal\n");
 	return { root, store: new LocalEditorStore(root) };
 }
-async function rpc(server: StudioServer, method: string, args: unknown) {
-	const token = new URLSearchParams(new URL(server.readyUrl).hash.slice(1)).get("session");
-	const response = await fetch(`${server.origin}/api/rpc`, {
-		method: "POST",
-		headers: {
-			Origin: server.origin,
-			Authorization: `Bearer ${token}`,
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify({ method, args }),
-	});
-	return { status: response.status, ...(await response.json()) };
-}
 it("D3 typed seam retains stored version facts for a missing metadata prerequisite", async () => {
 	const { store } = await fixture();
 	await store.draftPut({ draft });
@@ -222,16 +209,8 @@ it("D3 typed delete acknowledges absence and a committed cleanup warning", async
 	});
 	expect(await store.draftList()).toEqual([]);
 });
-it("D3 project service and HTTP retain corruption rather than bad request schema", async () => {
+it("D3 successive project services retain corruption rather than bad request schema", async () => {
 	const { root } = await fixture();
-	const ui = await mkdtemp(join(tmpdir(), "draft-outcome-ui-"));
-	roots.push(ui);
-	await writeFile(join(ui, "index.html"), "<!doctype html><title>Test</title>");
-	await writeFile(join(ui, "canvas.js"), "void 0;");
-	await writeFile(
-		join(ui, "canvas.sha256"),
-		"4f56045c295617d094843daf46a0b666472d5613d232b9fe302224248ed4d362\n",
-	);
 	await mkdir(join(root, ".praxity/local/drafts"), { recursive: true });
 	await writeFile(join(root, ".praxity/local/drafts/file-" + "a".repeat(64) + ".json"), "{");
 	const project = await createStudioProjectSession(root, "test");
@@ -249,15 +228,13 @@ it("D3 project service and HTTP retain corruption rather than bad request schema
 		status: "refused",
 		reason: "corrupt-storage",
 	});
-	const server = await startStudioServer({
-		projectDir: root,
-		editorAssetsDir: ui,
-		appVersion: "test",
-	});
-	sessions.push(server);
-	const serverLifetime = (await rpc(server, "draftPersistenceSession", {})).result;
+	const replacement = await createStudioProjectSession(root, "test");
+	sessions.push(replacement);
+	const serverLifetime = (await replacement.invoke("draftPersistenceSession", {})) as {
+		serviceId: string;
+	};
 	expect(
-		await rpc(server, "draftPersistenceSubmit", {
+		await sessionResult(replacement, "draftPersistenceSubmit", {
 			...serverLifetime,
 			attemptId: randomUUID(),
 			operation: { action: "remove", file: "a.prax", id: draft.id },

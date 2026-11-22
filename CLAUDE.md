@@ -4,7 +4,7 @@ If `AGENTS.local.md` exists, read it before starting for maintainer planning, lo
 
 Praxity Studio authors accessible eLearning from grammar 4 source. Authors preview locally and export SCORM without sending course or learner data to Praxity Studio.
 
-The supported host is the standalone CLI and thin canvas. The Electron app, React editor shell, preload and desktop IPC have been removed. `praxity studio <course> --no-open` serves Read mode at `/`; its Edit text link admits the author document. Tag `v0.3.0` preserves the old desktop release but predates durable editor drafts. Recover those drafts through `praxity recovery`; see `docs/prax-format/cli.md` for listing and plain-text export.
+The supported host is the standalone CLI and local Read preview. The Electron app, React editor shell, preload and desktop IPC have been removed. `praxity studio <course> --no-open` serves Read mode at `/`; `--review` enables local review comments. Source changes use `praxity edit`, including `--rendered`. Tag `v0.3.0` preserves the old desktop release but predates durable editor drafts. Recover those drafts through `praxity recovery`; see `docs/prax-format/cli.md` for listing and plain-text export.
 
 ## Commands
 

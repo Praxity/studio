@@ -143,7 +143,7 @@ test("packaged recovery and Studio tolerate foreign, malformed and unreadable dr
 					let output = "";
 					let errors = "";
 					const finish = () => {
-						const match = output.match(/http:\/\/127\.0\.0\.1:\d+\/#session=[\w-]+/);
+						const match = output.match(/http:\/\/127\.0\.0\.1:\d+\//);
 						if (match && errors.endsWith("\n")) {
 							clearTimeout(timer);
 							resolve({ url: match[0], errors });
@@ -172,7 +172,9 @@ test("packaged recovery and Studio tolerate foreign, malformed and unreadable dr
 				assert.equal(ready.errors.trim().split("\n").length, 1);
 				const response = await fetch(ready.url);
 				assert.equal(response.status, 200);
-				assert.match(await response.text(), /Edit text/);
+				const html = await response.text();
+				assert.match(html, /Saved text\./);
+				assert.doesNotMatch(html, /praxity-studio-edit-link/);
 			} finally {
 				if (child.connected) child.disconnect();
 				await stopped;
@@ -274,7 +276,7 @@ test("packaged studio starts with the real canvas bytes", async () => {
 			});
 			child.stdout.on("data", (bytes) => {
 				output += bytes;
-				if (/http:\/\/127\.0\.0\.1:\d+\/#session=/.test(output)) {
+				if (/http:\/\/127\.0\.0\.1:\d+\//.test(output)) {
 					clearTimeout(timer);
 					resolve();
 				}

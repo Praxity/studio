@@ -1101,6 +1101,7 @@ export async function createStudioProjectSession(
 	});
 
 	return {
+		registeredMethods: [...methods.keys()],
 		cancelExport: () => exports?.cancel(),
 		readSnapshot,
 		identityReview,

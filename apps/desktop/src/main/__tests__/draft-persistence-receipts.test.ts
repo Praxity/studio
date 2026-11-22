@@ -230,94 +230,28 @@ it("D3 a new service lifetime cannot certify an old registry from its empty map"
 	).toEqual({ ...identity, state: "unavailable", reason: "service-lifetime" });
 	expect(await replacement.invoke("draftList", {})).toEqual([draft]);
 });
-async function rpc(server: StudioServer, method: string, args: unknown) {
-	const token = new URLSearchParams(new URL(server.readyUrl).hash.slice(1)).get("session");
-	const response = await fetch(`${server.origin}/api/rpc`, {
-		method: "POST",
-		headers: {
-			Origin: server.origin,
-			Authorization: `Bearer ${token}`,
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify({ method, args }),
-	});
-	return { status: response.status, ...(await response.json()) };
-}
-it("D3 a reply lost before execution is reconciled before the real HTTP request arrives", async () => {
-	const { root, session } = await fixture();
-	await session.close();
-	const ui = await mkdtemp(join(tmpdir(), "draft-receipt-ui-"));
-	roots.push(ui);
-	await writeFile(join(ui, "index.html"), "<!doctype html><title>Test</title>");
-	await writeFile(join(ui, "canvas.js"), "void 0;");
-	await writeFile(
-		join(ui, "canvas.sha256"),
-		"4f56045c295617d094843daf46a0b666472d5613d232b9fe302224248ed4d362\n",
-	);
-	const server = await startStudioServer({
-		projectDir: root,
-		editorAssetsDir: ui,
-		appVersion: "test",
-	});
-	sessions.push(server);
-	const serviceId = (await rpc(server, "draftPersistenceSession", {})).result.serviceId;
-	const identity = { serviceId, attemptId: randomUUID() };
-	const body = JSON.stringify({
-		method: "draftPersistenceSubmit",
-		args: { ...identity, operation: { action: "put", draft } },
-	});
-	const token = new URLSearchParams(new URL(server.readyUrl).hash.slice(1)).get("session");
-	const received = deferred<{ status: number | undefined; result: unknown }>();
-	const late = request(
-		`${server.origin}/api/rpc`,
-		{
-			method: "POST",
-			headers: {
-				Origin: server.origin,
-				Authorization: `Bearer ${token}`,
-				"Content-Type": "application/json",
-				"Content-Length": Buffer.byteLength(body),
-			},
-		},
-		(response) => {
-			let bytes = "";
-			response.on("data", (chunk) => {
-				bytes += chunk;
-			});
-			response.on("end", () =>
-				received.resolve({ status: response.statusCode, result: JSON.parse(bytes).result }),
-			);
-		},
-	);
-	late.on("error", (error) => received.resolve({ status: 0, result: String(error) }));
-	late.write(body.slice(0, -1));
-	try {
-		expect(
-			await rpc(server, "draftPersistenceReconcile", {
-				...identity,
-				operation: { action: "put", draft },
-			}),
-		).toMatchObject({
-			status: 200,
-			result: { ...identity, state: "fenced" },
-		});
-		expect(
-			await rpc(server, "draftPersistenceSubmit", {
-				serviceId,
-				attemptId: randomUUID(),
-				operation: { action: "remove", file: "a.prax", id: "author" },
-			}),
-		).toMatchObject({ result: { state: "terminal", outcome: { status: "succeeded" } } });
-		late.end(body.slice(-1));
-		expect(await received.promise).toEqual({
-			status: 200,
-			result: { ...identity, state: "fenced" },
-		});
-		expect(await rpc(server, "draftList", {})).toMatchObject({ result: [] });
-	} finally {
-		late.destroy();
-	}
+it("D3 a delayed submit remains fenced after reconciliation and a later removal", async () => {
+	const { session, lifetime } = await fixture();
+	const identity = { ...lifetime, attemptId: randomUUID() };
+	const late = () =>
+		session.invoke("draftPersistenceSubmit", { ...identity, operation: { action: "put", draft } });
+	expect(
+		await session.invoke("draftPersistenceReconcile", {
+			...identity,
+			operation: { action: "put", draft },
+		}),
+	).toEqual({ ...identity, state: "fenced" });
+	expect(
+		await session.invoke("draftPersistenceSubmit", {
+			...lifetime,
+			attemptId: randomUUID(),
+			operation: { action: "remove", file: "a.prax", id: "author" },
+		}),
+	).toMatchObject({ state: "terminal", outcome: { status: "succeeded" } });
+	expect(await late()).toEqual({ ...identity, state: "fenced" });
+	expect(await session.invoke("draftList", {})).toEqual([]);
 });
+
 it("D3 malformed receipt identity and changed payload schema never write", async () => {
 	const { session, lifetime } = await fixture();
 	for (const args of [

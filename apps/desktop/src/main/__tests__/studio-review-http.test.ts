@@ -1310,7 +1310,7 @@ describe("author listener isolation", () => {
 					headers: { Origin: server.origin, "Content-Type": "application/json", ...credential },
 					body: path === "/api/rpc" ? '{"method":"courseLoad","args":{}}' : undefined,
 				});
-				expect(response.status).toBe(401);
+				expect(response.status).toBe(path === "/api/rpc" ? 405 : 404);
 			}
 	});
 });

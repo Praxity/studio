@@ -20,7 +20,6 @@ import { persistFixtureIdentity } from "../../test-utils/identity-fixture";
 import { buildCourseExportInput } from "../export/build-export-input-from-project";
 import { resolveLessonSources } from "../lesson-source";
 import { createStudioProjectSession } from "../studio/project-session";
-import { type StudioServer, startStudioServer } from "../studio/server";
 
 const roots: string[] = [];
 const sessions: { close(): Promise<void> }[] = [];
@@ -102,37 +101,11 @@ afterEach(async () => {
 	await Promise.all(sessions.splice(0).map((session) => session.close()));
 	await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
-async function rpc(server: StudioServer, method: string, args: unknown) {
-	const token = new URLSearchParams(new URL(server.readyUrl).hash.slice(1)).get("session");
-	const response = await fetch(`${server.origin}/api/rpc`, {
-		method: "POST",
-		headers: {
-			Origin: server.origin,
-			Authorization: `Bearer ${token}`,
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify({ method, args }),
-	});
-	return { status: response.status, ...(await response.json()) };
-}
+
 it.each(["manifestEdit", "draftPut"] as const)(
 	"%s RPC refuses nested prototype records before writing",
 	async (method) => {
-		const { root, draft } = await fixture();
-		const editorAssetsDir = await mkdtemp(join(tmpdir(), "studio-prototype-ui-"));
-		roots.push(editorAssetsDir);
-		await writeFile(join(editorAssetsDir, "index.html"), "<!doctype html><title>Test</title>");
-		await writeFile(join(editorAssetsDir, "canvas.js"), "void 0;");
-		await writeFile(
-			join(editorAssetsDir, "canvas.sha256"),
-			"4f56045c295617d094843daf46a0b666472d5613d232b9fe302224248ed4d362\n",
-		);
-		const server = await startStudioServer({
-			projectDir: root,
-			editorAssetsDir,
-			appVersion: "test",
-		});
-		sessions.push(server);
+		const { root, session, draft } = await fixture();
 		const before = await bytes(root);
 		for (const key of ["__proto__", "constructor", "prototype"]) {
 			const params = JSON.parse(`{"${key}":1}`);
@@ -157,59 +130,48 @@ it.each(["manifestEdit", "draftPut"] as const)(
 								],
 							},
 						};
-			expect((await rpc(server, method, input)).status, `${method} ${key}`).toBe(400);
+			await expect(session.invoke(method, input), `${method} ${key}`).rejects.toThrow();
 			expect(await bytes(root)).toEqual(before);
 		}
 	},
 );
-it("D17 drafts and clipboard survive a restart on a different port", async () => {
+it("D17 drafts and clipboard survive a session restart", async () => {
 	const { root, session, draft } = await fixture();
-	await session.close();
-	const editorAssetsDir = await mkdtemp(join(tmpdir(), "studio-local-ui-"));
-	roots.push(editorAssetsDir);
-	await writeFile(join(editorAssetsDir, "index.html"), "<!doctype html><title>Test</title>");
-	await writeFile(join(editorAssetsDir, "canvas.js"), "void 0;");
-	await writeFile(
-		join(editorAssetsDir, "canvas.sha256"),
-		"4f56045c295617d094843daf46a0b666472d5613d232b9fe302224248ed4d362\n",
-	);
-	const first = await startStudioServer({ projectDir: root, editorAssetsDir, appVersion: "test" });
-	sessions.push(first);
-	expect((await rpc(first, "draftPut", { draft })).status).toBe(200);
+	const first = session;
+	await first.invoke("draftPut", { draft });
 	const clipboard = {
 		file: draft.file,
 		nodeIds: [draft.target.kind === "node" ? draft.target.nodeId : randomUUID()],
 		text: draft.expectedText,
 	};
-	expect((await rpc(first, "clipboardPut", { clipboard })).status).toBe(200);
+	await first.invoke("clipboardPut", { clipboard });
 	const before = await bytes(root);
 	for (const path of [["design", "__proto__"], ["constructor"], ["design", "toString"]]) {
-		expect(
-			(
-				await rpc(first, "manifestEdit", {
-					file: "course.yaml",
-					baseRevision: digest(""),
-					path,
-					value: "x",
-				})
-			).status,
-		).toBe(400);
+		await expect(
+			first.invoke("manifestEdit", {
+				file: "course.yaml",
+				baseRevision: digest(""),
+				path,
+				value: "x",
+			}),
+		).rejects.toThrow();
 	}
 	for (const method of ["draftList", "clipboardGet", "clipboardDiscard", "assetList"]) {
-		expect((await rpc(first, method, JSON.parse('{"__proto__":{}}'))).status).toBe(400);
+		await expect(first.invoke(method, JSON.parse('{"__proto__":{}}'))).rejects.toThrow();
 	}
 	expect(await bytes(root)).toEqual(before);
-	const second = await startStudioServer({ projectDir: root, editorAssetsDir, appVersion: "test" });
-	sessions.push(second);
 	await first.close();
-	expect(second.origin).not.toBe(first.origin);
-	expect((await rpc(second, "draftList", {})).result).toEqual([draft]);
-	expect((await rpc(second, "clipboardGet", {})).result).toEqual(clipboard);
-	expect((await rpc(second, "draftResolve", { draft })).result.kind).toBe("unchanged");
-	expect((await rpc(second, "draftDelete", { file: draft.file, id: draft.id })).status).toBe(200);
-	expect((await rpc(second, "clipboardDiscard", {})).status).toBe(200);
-	expect((await rpc(second, "draftList", {})).result).toEqual([]);
-	expect((await rpc(second, "clipboardGet", {})).result).toBeNull();
+	const second = await createStudioProjectSession(root, "test");
+	sessions.push(second);
+	expect(await second.invoke("draftList", {})).toEqual([draft]);
+	expect(await second.invoke("clipboardGet", {})).toEqual(clipboard);
+	expect(((await second.invoke("draftResolve", { draft })) as { kind: string }).kind).toBe(
+		"unchanged",
+	);
+	await second.invoke("draftDelete", { file: draft.file, id: draft.id });
+	await second.invoke("clipboardDiscard", {});
+	expect(await second.invoke("draftList", {})).toEqual([]);
+	expect(await second.invoke("clipboardGet", {})).toBeNull();
 }, 25_000);
 it.each(["unrelated", "changed", "removed"])(
 	"D11 resolves an %s outside edit without writing",

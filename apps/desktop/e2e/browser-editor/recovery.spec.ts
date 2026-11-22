@@ -10,7 +10,7 @@ import {
 } from "../../src/test-utils/interrupted-project-write";
 
 for (const target of ["lesson.prax", "course.yaml"]) {
-	test(`editor open recovers a dead writer's ${target} and loads the original lesson`, async ({
+	test(`Read startup recovers a dead writer's ${target} and loads the original lesson`, async ({
 		page,
 	}) => {
 		const parent = await mkdtemp(

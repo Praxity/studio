@@ -171,7 +171,7 @@ it("refuses aliased draft storage before creating any exported files", async () 
 	});
 	if (studio.studioServer) servers.push(studio.studioServer);
 	expect(studio.exitCode, studio.stderr).toBe(0);
-	expect(studio.stdout).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/#session=/);
+	expect(studio.stdout).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/\n$/);
 	expect(studio.stderr).toContain("praxity recovery list");
 	expect(await readdir(outside)).toEqual([]);
 });

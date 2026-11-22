@@ -6,7 +6,9 @@ import { afterEach, expect, it, vi } from "vitest";
 import { runPraxityCli } from "../cli";
 import en from "../cli-messages/en.json";
 import fr from "../cli-messages/fr.json";
+import { createStudioProjectSession } from "../studio/project-session";
 import { type StudioServer, startStudioServer } from "../studio/server";
+import { sessionResult } from "./fixtures/studio-session";
 
 const mocks = vi.hoisted(() => ({ exportProject: vi.fn() }));
 vi.mock("../export/export-project", () => ({
@@ -186,9 +188,9 @@ it.each([
 	["/missing", "GET", {}, "La ressource n’est pas disponible"],
 	["/api/identity", "POST", {}, "La route d’identité exige GET"],
 	["/", "POST", {}, "Le lancement exige GET"],
-	["/api/rpc", "GET", {}, "L’appel RPC exige POST"],
-	["/api/rpc", "POST", {}, "L’appel RPC exige l’origine de l’éditeur"],
-	["/api/session", "GET", {}, "La clé d’accès de la session est requise"],
+	["/api/rpc", "GET", {}, "La ressource n’est pas disponible"],
+	["/api/rpc", "POST", {}, "Les fichiers statiques sont en lecture seule"],
+	["/api/session", "GET", {}, "La ressource n’est pas disponible"],
 	["/missing", "GET", { Origin: "https://example.invalid" }, "L’origine n’est pas autorisée"],
 	["/missing", "TRACE", {}, "La méthode HTTP n’est pas disponible"],
 	["/canvas", "GET", {}, "L’autorisation de lancement du canevas est requise"],
@@ -333,73 +335,28 @@ it.each([
 		{ method: "projectReadTextFile", args: { relativePath: "narration.yaml" } },
 		"ENOENT : les métadonnées du projet sont absentes",
 	],
-] as const)(
-	"localizes POST %s session refusal body=%j (Origin, bearer, JSON; fr)",
-	async (url, body, message) => {
-		const f = await fixture();
-		const result = await runPraxityCli(["studio", f.projectDir, "--lang", "fr"], {
-			...runtime,
-			editorAssetsDir: f.editorAssetsDir,
-		});
-		if (!result.studioServer) throw new Error(result.stderr);
-		servers.push(result.studioServer);
-		const response = await fetch(result.studioServer.origin + url, {
-			method: "POST",
-			headers: {
-				Origin: result.studioServer.origin,
-				Authorization: `Bearer ${new URL(result.studioServer.readyUrl).hash.slice("#session=".length)}`,
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify(body),
-		});
-		expect((await response.json()).error.message).toBe(message);
-	},
-);
-
-it.each([
-	[{}, "{}", "Utilisez application/json"],
-	[
-		{ "Content-Type": "application/json", "Content-Encoding": "gzip" },
-		"{}",
-		"Les corps de requête encodés ne sont pas acceptés",
-	],
-	[{ "Content-Type": "application/json" }, "{", "La requête doit contenir du JSON UTF-8 valide"],
-	[{ "Content-Type": "application/json" }, "{}", "La requête ne respecte pas le schéma d’entrée"],
-	[
-		{ "Content-Type": "application/json" },
-		JSON.stringify({ method: "canvasTextSnapshot", args: {} }),
-		"Le canevas exige une page autorisée",
-	],
-] as const)(
-	"localizes POST /api/rpc refusal headers=%j body=%j (Origin, bearer; fr)",
-	async (headers, body, message) => {
-		const f = await fixture();
-		const server = await startStudioServer({ ...f, appVersion: "0.3.0", locale: "fr" });
-		servers.push(server);
-		const { request } = await import("node:http");
-		const text = await new Promise<string>((resolve, reject) => {
-			const req = request(
-				`${server.origin}/api/rpc`,
-				{
-					method: "POST",
-					headers: {
-						Origin: server.origin,
-						Authorization: `Bearer ${new URL(server.readyUrl).hash.slice("#session=".length)}`,
-						...headers,
-					},
-				},
-				(res) => {
-					let data = "";
-					res.on("data", (chunk) => (data += chunk));
-					res.on("end", () => resolve(data));
-				},
-			);
-			req.on("error", reject);
-			req.end(body);
-		});
-		expect(JSON.parse(text).error.message).toBe(message);
-	},
-);
+] as const)("localizes retained %s session refusal body=%j (fr)", async (url, body, message) => {
+	const f = await fixture();
+	const result = await runPraxityCli(["studio", f.projectDir, "--lang", "fr"], {
+		...runtime,
+		editorAssetsDir: f.editorAssetsDir,
+	});
+	if (!result.studioServer) throw new Error(result.stderr);
+	servers.push(result.studioServer);
+	const session = await createStudioProjectSession(
+		f.projectDir,
+		"test",
+		undefined,
+		undefined,
+		"fr",
+	);
+	try {
+		const response = await sessionResult(session, body.method, body.args);
+		expect(response.error.message).toBe(message);
+	} finally {
+		await session.close();
+	}
+});
 
 it.each([
 	["en", "Project has no readable lessons"],
