@@ -43,7 +43,7 @@ Project saves coordinate participating processes and retain evidence of interrup
   death. The lock database stores no owner record. The course's file journal is separate. This
   private cache file must never be unlinked/replaced: Unix locks belong to its inode. Keeping it
   outside the project keeps authoring file APIs from opening/closing its inode, which would drop
-  POSIX process locks. node:sqlite ships in the supported Node 24 runtime; no native addon is
+  POSIX process locks. node:sqlite ships in the supported Node 24 and 26 runtimes; no native addon is
   needed. See https://www.sqlite.org/lockingv3.html. Close older Studio versions before upgrading.
   Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
   independently verified.

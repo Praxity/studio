@@ -72,8 +72,23 @@ const event = (draft, event_name = "pull_request") => ({
 	event: { pull_request: { draft } },
 });
 const browserJobs = ["published-output-a11y", "published-output-deck", "browser-editor"];
-const fastJobs = ["changes", "fast-checks", "node-checks", "affected-test", "merge-gate"];
-const fullJobs = ["changes", "fast-checks", "node-checks", "test", ...browserJobs, "merge-gate"];
+const fastJobs = [
+	"changes",
+	"fast-checks",
+	"node-checks",
+	"node26-cli-proof",
+	"affected-test",
+	"merge-gate",
+];
+const fullJobs = [
+	"changes",
+	"fast-checks",
+	"node-checks",
+	"node26-cli-proof",
+	"test",
+	...browserJobs,
+	"merge-gate",
+];
 const events = [
 	["PR draft", event(true), {}, fastJobs],
 	["PR ready", event(false), {}, fastJobs],
@@ -134,20 +149,26 @@ const snapshot = (github = event(false, "schedule"), browser = "true") => ({
 		},
 	},
 	...Object.fromEntries(
-		["fast-checks", "node-checks", "test", "affected-test", ...browserJobs, "format-contracts"].map(
-			(name) => [
-				name,
-				{
-					result:
-						name === "format-contracts" ||
-						(github.event_name === "pull_request"
-							? name === "test" || browserJobs.includes(name)
-							: name === "affected-test")
-							? "skipped"
-							: "success",
-				},
-			],
-		),
+		[
+			"fast-checks",
+			"node-checks",
+			"node26-cli-proof",
+			"test",
+			"affected-test",
+			...browserJobs,
+			"format-contracts",
+		].map((name) => [
+			name,
+			{
+				result:
+					name === "format-contracts" ||
+					(github.event_name === "pull_request"
+						? name === "test" || browserJobs.includes(name)
+						: name === "affected-test")
+						? "skipped"
+						: "success",
+			},
+		]),
 	),
 });
 const nodeScript = (step) => {
@@ -286,9 +307,9 @@ test("PR Vitest invokes the existing selector alone against the pinned PR base",
 });
 
 for (const [mode, expected] of [
-	["full", ["changes", "fast-checks", "node-checks", "test", "merge-gate"]],
+	["full", ["changes", "fast-checks", "node-checks", "node26-cli-proof", "test", "merge-gate"]],
 	["affected", fastJobs],
-	["empty", ["changes", "fast-checks", "node-checks", "merge-gate"]],
+	["empty", ["changes", "fast-checks", "node-checks", "node26-cli-proof", "merge-gate"]],
 ]) {
 	test(`PR selection ${mode} allocates exactly its jobs and requires their success`, () => {
 		for (const draft of [true, false]) {
