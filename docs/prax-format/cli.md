@@ -216,16 +216,16 @@ Studio prints its ready URL and serves the learner page in Read mode. `--no-open
 prints the URL without opening a browser. `--port` accepts a loopback port from
 1 to 65535. An explicit `--port` always wins; a busy `--port` refuses startup.
 
-Without `--port`, Studio derives an editor port in 45000–45999 from the canonical
+Without `--port`, Studio derives a Studio port in 45000–45999 from the canonical
 course directory, using the first four SHA-256 bytes as an unsigned big-endian
 integer, modulo 1000, plus 45000. Windows paths are lowercased before hashing.
 The separate learner listener prefers that port plus 1000, in 46000–46999.
 Both origins stay stable across restarts at the same course path, without running
 `praxity init` or writing port metadata. Moving the course changes its default.
 Different paths can hash to the same ports. These ranges avoid Rubato's reserved
-41700–41999 editor ports and their learner offsets. If the default editor port
+41700–41999 ports and their learner offsets. If the default Studio port
 cannot bind, including when busy or reserved by the OS, Studio uses an OS-assigned
-editor port and prints a localized notice on stderr. Its learner preference stays
+Studio port and prints a localized notice on stderr. Its learner preference stays
 unchanged.
 
 These default ranges overlap Linux's default ephemeral range, 32768–60999.
@@ -241,7 +241,7 @@ review toggle and composer warn that earlier drafts may be unavailable and new
 drafts may not survive a restart.
 The same learner fallback and draft notices apply to the default learner port.
 Published comments remain in the course's review store on either port. Explicit
-editor ports never fall back.
+Studio ports never fall back.
 For compatibility with earlier explicit-port launches, `--port N` without
 `--review` keeps an OS-assigned learner port. Persistent comment drafts need a
 stable learner origin only in review mode.
@@ -277,8 +277,7 @@ with `limit_reached` without saving changes. There is no archive command in this
 version.
 
 The Read document carries captured page context and loads the shipped review
-assets. Edit mode stays unchanged; its Read link returns to review-enabled Read
-mode. Without `--review`, Studio behaves as before. Local feedback and its
+assets. Without `--review`, Studio behaves as before. Local feedback and its
 capability never enter ordinary HTML or SCORM exports. `--lang fr` selects French
 CLI notices. The same option selects CLI refusal messages and Studio HTTP error
 messages; error codes stay unchanged.
@@ -364,7 +363,7 @@ For annotations, `praxity inspect <course> --text-fields --json` returns only
 the schema, transient identity status, whole-file revisions in `files[]`, and
 `textFields[]`. It skips the per-block operation eligibility probes.
 `praxity inspect <course> --blocks --json` also skips the probes and returns
-`textFields[]` from the canvas binding owner. Each entry has the rendered `nodeId`,
+`textFields[]` from the rendered-field binding owner. Each entry has the rendered `nodeId`,
 lesson `file`, `field`, source `ownerId`, source `kind`, current raw inline `text`,
 character `range`, whole-file `fileRevision`, and a part `name` where applicable.
 Authored assessment feedback also carries optional presentation data in `feedback`:
@@ -389,10 +388,10 @@ praxity edit . setText --at <rendered-node-id> --rendered --arg field=<field> --
 ```
 
 After reviewing the dry run, repeat without `--dry-run`. Rendered-field edits use
-the canvas's descriptor, expected-text and whole-file guards. They preserve source
+the rendered-field descriptor, expected-text and whole-file guards. They preserve source
 bytes outside the field and update identity snapshots and the lesson head. No
 other `.praxity/` files change. Missing, ambiguous, forbidden, structurally changed and stale
-targets refuse without writes. No bearer token is needed. Ordinary source UUID
+targets refuse without writes. Ordinary source UUID
 selectors retain their existing behavior, including when their IDs coincide with
 rendered IDs. `--rendered` explicitly selects rendered-field admission for `setText
 --at`; it requires `--expect-revision`. Rendered-only IDs use that admission even
@@ -450,7 +449,7 @@ the warning on stderr.
 
 Open `praxity studio <course> --review` to write comments in the browser. Its
 default ports stay stable for the course's canonical path; `--port` overrides
-the editor port. Browser-local drafts need the same learner origin. A learner
+the Studio port. Browser-local drafts need the same learner origin. A learner
 port fallback prints a warning because earlier drafts may be unavailable and
 new drafts may not survive a restart. Published comments stay in the review store.
 
@@ -897,13 +896,13 @@ Stable error codes are:
 
 Course practice admission failures include the source file, line, column and
 diagnostic code in the message. `--lang en|fr` selects the author advice language
-independently of the course language. Studio export RPC accepts an optional
+independently of the course language. The retained internal Studio export service accepts an optional
 `locale: "en" | "fr"` for the same advice, defaulting to English.
 
-For write-distractors tracking or gating refusals, the Studio RPC returns error
+For write-distractors tracking or gating refusals, the internal Studio service returns error
 code `practice-no-tracking`; the CLI returns `export_failed`. Private-choice
 practice-only refusals retain `export_failed` in both hosts. The difference comes
-from the RPC's explicit mapping of `practice-no-tracking` to a structured export
+from the internal service's explicit mapping of `practice-no-tracking` to a structured export
 error; the other cases use the generic export failure handler. Their messages
 retain the admission diagnostic code and source location.
 

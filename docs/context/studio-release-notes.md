@@ -5,7 +5,7 @@ The desktop workflow no longer publishes.
 
 ## Unreleased
 
-`praxity studio` opens the thin canvas in Read mode. Browser text editing is removed. Use `praxity edit`, including `--rendered`, for guarded source changes. The legacy browser editor and Electron application are removed, including desktop IPC sharing, auto-update and desktop packaging. Existing course and identity files stay in place. Previous desktop workflows remain at `v0.3.0`; converter tags are unchanged. CLI export, `inspect --schema 1`, identity and narration commands remain supported.
+`praxity studio` opens the local Read preview. Browser text editing is removed. Use `praxity edit`, including `--rendered`, for guarded source changes. The legacy browser editor and Electron application are removed, including desktop IPC sharing, auto-update and desktop packaging. Existing course and identity files stay in place. Previous desktop workflows remain at `v0.3.0`; converter tags are unchanged. CLI export, `inspect --schema 1`, identity and narration commands remain supported.
 
 Save open edits before upgrading. Durable drafts from the retired editor remain in `.praxity/local/drafts/`; `v0.3.0` predates that storage. Use `praxity recovery list <course-directory>` to list them and `praxity recovery export-drafts <course-directory> <new-directory>` to copy every draft into a separate plain text file. The destination must be new. Recovery preserves saved source and stored drafts; it does not apply draft text to the course. Studio prints the retained count and recovery command at startup. Add `--lang fr` for French notices.
 

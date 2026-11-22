@@ -69,8 +69,8 @@ async function start(review = true) {
 		dom.window.document.getElementById("praxity-review-config")?.textContent ?? "null",
 	);
 	dom.window.close();
-	const authorToken = new URLSearchParams(new URL(server.readyUrl).hash.slice(1)).get("session");
-	expect(authorToken).toBeTruthy();
+	const authorToken = "a".repeat(43);
+	expect(new URL(server.readyUrl).hash).toBe("");
 	expect(html).not.toContain(authorToken);
 	return { result, server, response, html, config, authorToken };
 }

@@ -700,7 +700,7 @@ it.each(["en", "fr"] as const)(
 			exportAssetsDir: join(import.meta.dirname, "../../../resources/export-assets"),
 		});
 		servers.push(server);
-		const token = new URL(server.readyUrl).hash.slice("#session=".length);
+		const token = "a".repeat(43);
 		const read = await fetch(`${server.origin}/launch?canvas=read`);
 		expect(read.status).toBe(200);
 		expect(await read.text()).toContain("Beta paragraph about tools.");

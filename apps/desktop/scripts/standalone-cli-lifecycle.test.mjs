@@ -298,8 +298,8 @@ child.once('exit', (code) => process.exit(code ?? 1));
 		};
 		let origin;
 		const ready = async () => {
-			await waitFor("/#session=");
-			const url = new URL(stdout.match(/http:\/\/127\.0\.0\.1:\d+\/#session=[\w-]+/)[0]);
+			await waitFor("/\n");
+			const url = new URL(stdout.match(/http:\/\/127\.0\.0\.1:\d+\//)[0]);
 			origin = url.origin;
 			assert.equal((await fetch(origin)).status, 200);
 		};
@@ -434,13 +434,13 @@ child.once('exit', (code) => process.exit(code ?? 1));
 		const cli = await start(t, "normal", false, { ready: false, args: ["studio"] });
 		await cli.closed;
 		await assert.rejects(
-			cli.waitFor("/#session="),
-			/CLI closed before \/#session=.*Missing project directory/s,
+			cli.waitFor("http://127.0.0.1:"),
+			/CLI closed before http:.*Missing project directory/s,
 		);
 		await cli.closed;
 		await assert.rejects(
-			cli.waitFor("/#session="),
-			/CLI closed before \/#session=.*Missing project directory/s,
+			cli.waitFor("http://127.0.0.1:"),
+			/CLI closed before http:.*Missing project directory/s,
 		);
 	});
 
@@ -452,9 +452,9 @@ child.once('exit', (code) => process.exit(code ?? 1));
 			env: { TEST_STARTUP: "hung" },
 		});
 		await cli.waitFor("test-startup-hung");
-		const ready = cli.waitFor("/#session=");
+		const ready = cli.waitFor("http://127.0.0.1:");
 		cli.child.stdout.destroy();
-		await assert.rejects(ready, /CLI closed before \/#session=.*test-startup-hung/s);
+		await assert.rejects(ready, /CLI closed before http:.*test-startup-hung/s);
 		assert.equal(cli.child.exitCode, null);
 		assert.equal(cli.child.signalCode, null);
 	});
@@ -516,7 +516,7 @@ child.once('exit', (code) => process.exit(code ?? 1));
 			});
 			assert.deepEqual(await cli.exited, [1, null]);
 			assert.match(cli.stderr(), /PRAXITY_PARENT_PID/);
-			assert.ok(!cli.stdout().includes("/#session="));
+			assert.ok(!cli.stdout().includes("http://127.0.0.1:"));
 		}
 	});
 
@@ -619,7 +619,7 @@ child.once('exit', (code) => process.exit(code ?? 1));
 				assert.deepEqual(await cli.exited, [null, "SIGKILL"]);
 				await cli.waitFor("test-exit=129");
 				await cli.closed;
-				assert.ok(!cli.stdout().includes("/#session="));
+				assert.ok(!cli.stdout().includes("http://127.0.0.1:"));
 				assert.equal(cli.stderr(), "");
 			});
 		}

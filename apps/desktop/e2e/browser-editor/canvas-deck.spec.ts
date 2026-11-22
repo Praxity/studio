@@ -40,7 +40,7 @@ test("top-level learner deck is ready, navigates and keeps isolated browser stat
 	page,
 	request,
 }, testInfo) => {
-	const ready = process.env.PRAXITY_BROWSER_READY_URL ?? "";
+	const ready = `${process.env.PRAXITY_BROWSER_READY_URL ?? ""}#session=${"a".repeat(43)}`;
 	const token = new URL(ready).hash.slice("#session=".length);
 	await page.goto(`${origin}/api/identity`);
 	await page.evaluate(() => localStorage.setItem("author-state-control", "author-only"));

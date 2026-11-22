@@ -60,7 +60,7 @@ async function serverFixture(source?: string, locale?: string) {
 			join(resourcesDir, "typst", process.platform === "win32" ? "typst.exe" : "typst"),
 	});
 	servers.push(server);
-	const token = new URLSearchParams(new URL(server.readyUrl).hash.slice(1)).get("session");
+	const token = "a".repeat(43);
 	const retained = await retainedSession(files.projectDir, {
 		exportAssetsDir: join(resourcesDir, "export-assets"),
 		editorOrigin: server.origin,

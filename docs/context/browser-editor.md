@@ -1,6 +1,6 @@
 # Local Read preview and review comments
 
-Studio runs through the standalone CLI and local Read preview. `pnpm build:cli` packages the native text adapter in `dist/studio-cli/editor/`; missing or substituted canvas bytes refuse startup before listening.
+Studio runs through the standalone CLI and local Read preview. `pnpm build:cli` still packages and verifies the retired native text adapter in `dist/studio-cli/editor/` before listening, but the browser never executes it. Removing those packaged assets is a separate change.
 
 `praxity studio <folder> [--review] [--port <n>] [--no-open]` starts a foreground server. The printed ready URL opens `/`, which enters Read mode on the separate learner origin. Source changes use `praxity edit`, including `--rendered`. Browser Edit mode, its author document, generic RPC transport and identity confirmation endpoint are removed. Ctrl+C closes listeners, subscriptions and watchers and waits for admitted file operations. Export, inspect, identity and narration use the standalone CLI.
 
@@ -193,7 +193,7 @@ there is no browser confirmation route.
 and expire after 30 seconds. The launch listener retains the process probe at
 `GET /api/identity` and calls `canvasPreviewBuild` internally. It never dispatches
 browser RPCs. Old author `/canvas/...` URLs and `/launch?canvas=1` refuse.
-Read launches clear the session fragment before leaving the launch origin.
+Read launches use an explicit empty fragment before leaving the launch origin.
 Concurrent document navigations share an in-flight build; invalid document
 admissions retry through the root without author credentials.
 
@@ -218,19 +218,18 @@ capability for that file. Downloads validate the captured path and size and send
 an attachment response with exact MIME, nosniff and no-referrer. They expose no RPC.
 The CLI exports saved source. The session service remains available internally;
 browser RPC and event-stream routes are removed.
-Cancellation announces completion and leaves no new output. Browser settings
-cannot persist or bypass the policy.
+Cancellation leaves no new output. Internal session commands cannot persist or bypass the policy.
 Narration status reports environment credential availability and region only;
-no key crosses the bridge and synthesis remains deferred.
+no key is returned and synthesis remains deferred.
 
 ## Isolated preview and media
 
 The second loopback listener serves only capability-authorized `assets/` files
 and captured compiled artifact manifests. Media and preview capabilities differ
-from each other and from the editor bearer. It accepts GET/HEAD, rejects bearer
+from each other. It accepts GET/HEAD, rejects bearer
 headers and RPC, validates Host/Origin, and sends nosniff, no-store, no-referrer,
 exact MIME and single byte ranges. Raw authored assets receive a sandbox CSP
-without script permission. Only media reads grant CORS to the exact editor origin.
+without script permission. Only media reads grant CORS to the exact launch origin.
 
 An optional `review: { store, capability }` server option enables comments-only
 HTTP routes on this learner listener. It is absent by default; `--review` enables it and the Read-page bootstrap. The caller mints a fresh

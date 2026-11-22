@@ -165,7 +165,6 @@ it.each(["UTF-8", "identity", "manifest"])(
 			exportAssetsDir: join(import.meta.dirname, "../../../resources/export-assets"),
 		});
 		sessions.push(server);
-		const token = new URLSearchParams(new URL(server.readyUrl).hash.slice(1)).get("session");
 		const path =
 			failure === "UTF-8"
 				? join(root, "lesson.prax")

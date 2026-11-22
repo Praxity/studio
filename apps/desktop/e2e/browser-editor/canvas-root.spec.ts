@@ -10,7 +10,7 @@ test("concurrent root tabs recover replaced and busy admissions into Read mode",
 		standaloneSource: "# Concurrent launch\n\nLearner text.\n",
 	});
 	try {
-		const ready = process.env.PRAXITY_BROWSER_READY_URL ?? "";
+		const ready = `${process.env.PRAXITY_BROWSER_READY_URL ?? ""}#session=${"a".repeat(43)}`;
 		const tabs = await Promise.all(Array.from({ length: 6 }, () => context.newPage()));
 		let release: (() => void) | undefined;
 		const bothLaunched = new Promise<void>((resolve) => {
@@ -59,7 +59,7 @@ for (const deck of [false, true]) {
 				: { standaloneSource: "# Opening slide\n\nLearner text.\n" },
 		);
 		try {
-			const ready = process.env.PRAXITY_BROWSER_READY_URL ?? "";
+			const ready = `${process.env.PRAXITY_BROWSER_READY_URL ?? ""}#session=${"a".repeat(43)}`;
 			const editor = new URL(ready).origin;
 			const token = new URL(ready).hash.slice("#session=".length);
 			const file = join(

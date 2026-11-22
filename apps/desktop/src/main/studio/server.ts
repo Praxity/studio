@@ -292,7 +292,6 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 			}
 			throw error;
 		}
-		const token = randomBytes(32).toString("base64url");
 		const pending = new Set<Promise<void>>();
 		let closing = false;
 		const canvasAdmissions = new Map<string, { expires: number }>();
@@ -539,7 +538,6 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 					error: {
 						code,
 						message,
-						...(code === "identity_retirement_pending" ? { reviewUrl: "/launch" } : {}),
 						...(plainStorePath !== undefined
 							? {
 									messageRef: {
@@ -602,7 +600,7 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 		let closePromise: Promise<void> | undefined;
 		return {
 			origin,
-			readyUrl: `${origin}/#session=${token}`,
+			readyUrl: `${origin}/`,
 			close() {
 				closePromise ??= (async () => {
 					closing = true;

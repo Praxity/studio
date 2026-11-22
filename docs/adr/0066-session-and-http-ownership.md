@@ -382,6 +382,11 @@ browser source-write transport. Its former constraints remain historical rationa
 
 ### src/main/studio/server.ts
 
+Historical scope: the `end`, `send`, author-fragment and identity-review entries
+below record the retired browser author transport. Their original reasoning is
+preserved; they do not require routes, tokens or event streams in the Read host.
+The same-site document guard remains on Read launch and one-use admission.
+
 - `__PRAXITY_CANVAS_SHA256__`: Replaced with a build-owned literal in the standalone CLI; never read
   from the environment.
 - `DEFAULT_PORT_START`: Avoid Rubato's reserved 41700-41999 ports and their +1000 learner ports.
@@ -398,12 +403,13 @@ browser source-write transport. Its former constraints remain historical rationa
 - `startStudioServer`: Claim the port before identity persistence, preview compilation and watcher
   startup.
 - `startStudioServer`: Refuse linked lineage before temporary-output setup can touch the sidecar.
-- `requireLocalLaunch`: Isolated Read uses another loopback port; its Edit link is a same-site
-  navigation.
+- `requireLocalLaunch`: Historically, isolated Read used another loopback port and its Edit link
+  was a same-site document navigation. Read launch and admission retain that document-only guard.
 - `retryCanvasNavigation`: Stale document links restart admission after the active build settles.
-- `redirectCanvasDocument`: Issue author fragments only after compilation; Read clears them before
-  changing origin.
-- `handle`: An explicit empty fragment prevents the ready URL's bearer reaching learner HTML.
+- `redirectCanvasDocument` (historical): Author fragments were issued only after compilation;
+  Read cleared them before changing origin. Current redirects use an explicit empty fragment.
+- `handle` (historical): An explicit empty fragment prevented the ready URL's bearer reaching learner HTML.
+  The ready URL no longer carries a bearer.
 - `handle`: Six simultaneous tabs fit without replacing each other's one-use admission.
 - `send`: XHR progress delivers small records without fetch's WebKit padding workaround.
   Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
@@ -443,7 +449,7 @@ browser source-write transport. Its former constraints remain historical rationa
 - The lifecycle bundle calls the real project-session interface through a test-only
   stdin/stdout adapter after browser RPC retirement. It preserves each launcher's
   original IPC or PID-watch contract, so test commands cannot accidentally turn a
-  no-IPC watchdog check into an IPC-disconnect check. Production has no such adapter.
+  no-IPC watchdog check into an IPC-disconnect check. Production has no such adapter. The export and preview methods driven by this fixture are unreachable from the browser; retire the fixture commands with those internal APIs.
 
 Sources: the named symbols and their comments at commit
 `bed54f6109aa4ae868c981f53233a5ee9c5afdd7`, with the corresponding

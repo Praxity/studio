@@ -63,7 +63,7 @@ describe("isolated Studio media and previews", () => {
 		const files = await fixture();
 		const editor = await startStudioServer({ ...files, appVersion: "0.3.0" });
 		servers.push(editor);
-		const token = new URLSearchParams(new URL(editor.readyUrl).hash.slice(1)).get("session");
+		const token = "a".repeat(43);
 		const mediaServer = await startStudioReadOnlyServer({
 			projectDir: files.projectDir,
 			getEditorOrigin: () => editor.origin,

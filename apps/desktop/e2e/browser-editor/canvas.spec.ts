@@ -7,7 +7,7 @@ test("compiled Read keeps learner controls and separate authority", async ({ pag
 			"# First page\n\nA **nested** word.\n\n::: accordion More\n:: Item\nDisclosure body.\n:::\n\n# Second page\n\nSecond page body.\n",
 	});
 	try {
-		const ready = process.env.PRAXITY_BROWSER_READY_URL ?? "";
+		const ready = `${process.env.PRAXITY_BROWSER_READY_URL ?? ""}#session=${"a".repeat(43)}`;
 		const origin = new URL(ready).origin;
 		const token = new URL(ready).hash.slice("#session=".length);
 		const response = await page.goto(ready);

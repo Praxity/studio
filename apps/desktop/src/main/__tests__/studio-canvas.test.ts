@@ -164,12 +164,7 @@ it.each([false, true])("admits captured deck=%s scope and resources", async (dec
 	const second = new TextDecoder("utf-8", { ignoreBOM: true }).decode(
 		await (await fetch(new URL("second.html", first))).arrayBuffer(),
 	);
-	expect(
-		second.replace(
-			/<style data-praxity-studio-read>[\s\S]*?<\/style><div class="praxity-studio-read-tools">[\s\S]*?<\/div>/,
-			"",
-		),
-	).toBe(files["second.html"]);
+	expect(second).toBe(files["second.html"]);
 	expect(server.hasCanvasDocument(plain.pathname)).toBe(true);
 	expect(server.hasCanvasDocument(new URL("style.css", plain).pathname)).toBe(false);
 	expect(

@@ -47,11 +47,9 @@ for (const width of [1280, 390]) {
 		});
 		try {
 			expect(result.exitCode, result.stderr).toBe(0);
-			const authorToken = new URLSearchParams(new URL(result.stdout.trim()).hash.slice(1)).get(
-				"session",
-			);
-			expect(authorToken).toBeTruthy();
-			await page.goto(result.stdout.trim());
+			const authorToken = "a".repeat(43);
+			expect(new URL(result.stdout.trim()).hash).toBe("");
+			await page.goto(`${result.stdout.trim()}#session=${authorToken}`);
 			await expect(page.getByRole("link", { name: "Edit text", exact: true })).toHaveCount(0);
 			await expect.poll(() => assets.length).toBe(2);
 			expect(assets.sort()).toEqual([

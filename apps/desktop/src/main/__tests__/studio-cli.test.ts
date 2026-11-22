@@ -201,7 +201,7 @@ describe("studio command", () => {
 		expect(JSON.parse(result.stdout).error.code).toBe("invalid_arguments");
 	});
 
-	it("prints the fragment capability ready URL after admission and honours --no-open", async () => {
+	it("prints the Read preview ready URL after admission and honours --no-open", async () => {
 		const { editorAssetsDir, projectDir } = await fixture();
 		for (const noOpen of [true, false]) {
 			const result = await runPraxityCli(["studio", projectDir, ...(noOpen ? ["--no-open"] : [])], {
@@ -210,14 +210,14 @@ describe("studio command", () => {
 			});
 			expect(result.exitCode).toBe(0);
 			expect(result.stderr).toBe("");
-			expect(result.stdout).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/#session=[A-Za-z0-9_-]{43}\n$/);
+			expect(result.stdout).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/\n$/);
 			expect(result.openBrowser).toBe(!noOpen);
 			if (!result.studioServer) throw new Error("CLI did not retain its foreground server");
 			servers.push(result.studioServer);
 			expect((await fetch(result.studioServer.origin, { redirect: "manual" })).status).toBe(303);
 			await result.studioServer.close();
 		}
-		expect(servers[0].readyUrl.split("#")[1]).not.toBe(servers[1].readyUrl.split("#")[1]);
+		expect(servers.every((server) => new URL(server.readyUrl).hash === "")).toBe(true);
 	});
 
 	it("accepts --port and binds exactly that port", async () => {

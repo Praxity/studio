@@ -75,8 +75,7 @@ async function running(preview = false) {
 			: {}),
 	});
 	servers.push(server);
-	const token = new URLSearchParams(new URL(server.readyUrl).hash.slice(1)).get("session");
-	if (!token) throw new Error("Fixture session capability is missing");
+	const token = "a".repeat(43);
 	retained.set(
 		server,
 		await retainedSession(files.projectDir, {
@@ -181,7 +180,7 @@ afterEach(async () => {
 	await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
 
-describe("Studio HTTP boundary", () => {
+describe("Studio launch HTTP boundary and retained project session", () => {
 	it("root launches Read mode without forwarding the session fragment or serving the retired shell", async () => {
 		const { server, token } = await running();
 		const response = await probe(server, "/");
@@ -217,13 +216,69 @@ describe("Studio HTTP boundary", () => {
 			).status,
 		).toBe(403);
 	});
-	it("Read compilation clears the session fragment before leaving the editor origin", async () => {
+	it("Read compilation uses an empty fragment before leaving the launch origin", async () => {
 		const { server, token } = await running(true);
 		const launch = await probe(server, "/launch?canvas=read");
 		const built = await probe(server, String(launch.headers.location));
 		expect(built.status).toBe(303);
 		expect(String(built.headers.location)).toMatch(/\?praxity-resume=0#$/);
 		expect(String(built.headers.location)).not.toContain(token);
+	});
+	it("refuses captured author documents and sends old encoded launches to Read", async () => {
+		const { server, token } = await running(true);
+		const launch = await probe(server, "/launch?canvas=read");
+		const built = await probe(server, String(launch.headers.location));
+		expect(built.status).toBe(303);
+		const read = new URL(String(built.headers.location));
+		expect(read.origin).not.toBe(server.origin);
+		expect(read.pathname).toMatch(/^\/canvas\/preview\/.+\.html$/);
+		expect((await fetch(read)).status).toBe(200);
+		const headers = {
+			Authorization: `Bearer ${token}`,
+			"Sec-Fetch-Site": "same-origin",
+			"Sec-Fetch-Mode": "navigate",
+			"Sec-Fetch-Dest": "document",
+		};
+		for (const method of ["GET", "HEAD"]) {
+			const author = await probe(server, read.pathname, { method, headers });
+			expect(author.status).toBe(404);
+		}
+		const captured = read.pathname.slice("/canvas".length);
+		const oldLaunch = await probe(server, `/launch?canvas=${encodeURIComponent(captured)}`, {
+			headers,
+		});
+		expect(oldLaunch.status).toBe(303);
+		const destination = new URL(String(oldLaunch.headers.location));
+		expect(destination.origin).toBe(read.origin);
+		expect(destination.pathname).toBe(read.pathname);
+		expect(destination.hash).toBe("");
+	});
+	it("admits same-site documents and refuses same-site fetches at launch and admission", async () => {
+		const { server } = await running(true);
+		const documentHeaders = {
+			"Sec-Fetch-Site": "same-site",
+			"Sec-Fetch-Mode": "navigate",
+			"Sec-Fetch-Dest": "document",
+		};
+		const launch = await probe(server, "/launch?canvas=read", { headers: documentHeaders });
+		expect(launch.status).toBe(303);
+		const admission = String(launch.headers.location);
+		for (const [mode, dest] of [
+			["cors", "empty"],
+			["navigate", "empty"],
+			["cors", "document"],
+		]) {
+			for (const route of ["/launch?canvas=read", admission]) {
+				const refused = await probe(server, route, {
+					headers: { ...documentHeaders, "Sec-Fetch-Mode": mode, "Sec-Fetch-Dest": dest },
+				});
+				expect(refused.status).toBe(403);
+				expect(refused.headers.location).toBeUndefined();
+			}
+		}
+		const built = await probe(server, admission, { headers: documentHeaders });
+		expect(built.status).toBe(303);
+		expect(new URL(String(built.headers.location)).origin).not.toBe(server.origin);
 	});
 	it("refuses retired browser write routes with the former author capability", async () => {
 		const { server, token, projectDir } = await running(true);
@@ -252,16 +307,7 @@ describe("Studio HTTP boundary", () => {
 			});
 			expect(response.status).toBe(405);
 		}
-		for (const method of [
-			"projectSave",
-			"courseWriteLesson",
-			"operationApply",
-			"canvasTextApply",
-			"manifestEdit",
-			"draftPut",
-			"historyApply",
-			"narrationScriptWrite",
-		]) {
+		for (const method of (await testSession(server)).session.registeredMethods) {
 			const response = await rpc(server, token, method, {
 				grammar: "# Replaced",
 				expectedGrammar: source,
@@ -280,7 +326,7 @@ describe("Studio HTTP boundary", () => {
 		}
 		expect(await readFile(join(projectDir, "second.prax"), "utf8")).toBe(before);
 	});
-	it("identifies the admitted course without revealing its session capability", async () => {
+	it("identifies the admitted course without credentials", async () => {
 		const { server, projectDir } = await running();
 		const response = await probe(server, "/api/identity");
 		expect(response.status).toBe(200);
@@ -343,7 +389,7 @@ describe("Studio HTTP boundary", () => {
 		}
 	});
 
-	it("binds the requested loopback port without changing the session capability", async () => {
+	it("binds the requested loopback port with a plain ready URL", async () => {
 		const { server: temporary } = await running();
 		const port = Number(new URL(temporary.origin).port);
 		await temporary.close();
@@ -353,7 +399,7 @@ describe("Studio HTTP boundary", () => {
 		expect(server.origin).toBe(`http://127.0.0.1:${port}`);
 		expect((await probe(server, "/")).status).toBe(303);
 		expect((await probe(server, "/api/session")).status).toBe(404);
-		expect(server.readyUrl).toMatch(/\/#session=[A-Za-z0-9_-]{43}$/);
+		expect(server.readyUrl).toBe(`${server.origin}/`);
 	}, 15_000);
 
 	it("reports a retryable file-sharing save refusal and succeeds after release", async () => {
@@ -522,7 +568,7 @@ describe("Studio HTTP boundary", () => {
 	it("binds loopback, bootstraps manifest order even for identical lessons, and refuses retired shell and project assets", async () => {
 		const { server, token, projectDir } = await running();
 		expect(new URL(server.origin).hostname).toBe("127.0.0.1");
-		expect(token).toMatch(/^[A-Za-z0-9_-]{43}$/);
+		expect(new URL(server.readyUrl).hash).toBe("");
 		const page = await probe(server, "/");
 		expect(page.status).toBe(303);
 		expect(page.text).not.toContain(token);
@@ -785,7 +831,7 @@ describe("Studio startup admission", () => {
 		await writeFile(join(stage, "second.prax"), "RECOVERY BYTES");
 		const server = await startStudioServer({ ...files, appVersion: "test" });
 		servers.push(server);
-		const token = new URL(server.readyUrl).hash.slice("#session=".length);
+		const token = "a".repeat(43);
 		const snapshot = await retainedSnapshot(server);
 		expect(JSON.parse(snapshot.text).result.project.grammar).toBe(original);
 		for (const [method, args] of [

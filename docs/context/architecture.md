@@ -1,6 +1,6 @@
 # Architecture
 
-Praxity Studio hosts grammar 4 projects through the standalone CLI and thin canvas. A project contains `.prax` source, course metadata, assets and `.praxity/identity/`. Preview and export remain local.
+Praxity Studio hosts grammar 4 projects through the standalone CLI and local Read preview. A project contains `.prax` source, course metadata, assets and `.praxity/identity/`. Preview and export remain local.
 
 ## Authoring flow
 
@@ -12,7 +12,7 @@ Praxity Studio hosts grammar 4 projects through the standalone CLI and thin canv
   -> local project files
 ```
 
-- `apps/desktop/` owns the standalone CLI, thin canvas, authenticated server, filesystem access, preview services and export commands. Its directory name is retained.
+- `apps/desktop/` owns the standalone CLI, Read preview server, filesystem access, preview services and export commands. Its directory name is retained.
 - `packages/content-model/` owns dependency-free block data types, constants, and inline grammar formatting.
 - `packages/editor-core/` owns the grammar editor, panels, document store, accessibility checker, and adapter-backed editor features.
 - `packages/grammar/` owns grammar 4 tokenization, the lossless tree, schema and `readLesson()` renderer projection. Hosts retain source bytes; source edits do not regenerate the document from renderer blocks.
@@ -86,13 +86,12 @@ session invalidation revokes a prepared transition. Saved and parsed draft scope
 both switch to durable bindings. Pairs describe author selection, focus and open
 drafts only. They never enter stored snapshots, lineage, executable history,
 narration/review targets, preview events or frame commands. Reads suppress them.
-The operation and history RPCs return the pairs on the authenticated author
-origin. `editorChanged` and `/api/session.editorSeq` fence delayed replies by
-sequence; the browser also checks its connection epoch and disposal, without
-retrying a write. The controller applies pairs before reading durable seeds and
-omits the metadata from history. `openSource.displayId` associates an ID-free
-draft with its display node in session memory; persistence keeps its guarded
-target. New-editor DOM attachment remains a separate host slice.
+Historical browser transport: operation and history RPCs returned correspondence
+on the authenticated author origin. Sequence numbers and connection epochs fenced
+delayed replies without retrying writes. The controller applied pairs before reading
+durable seeds and omitted them from history. Browser RPC and event transport are
+retired. Internal session services still retain correspondence and guarded draft
+targets; they expose no browser write route.
 The store retains per-snapshot validation proofs within a 16 MiB payload budget
 and an eight-course LRU limit. Every load still reads the complete store through
 the existing path guards. A proof binds the exact admitted UTF-8 bytes' SHA-256,
@@ -523,7 +522,7 @@ adapters pass the put effect's `expectedVersion` to `draftPut` and reply with it
 request ID and submitted generation. Identical in-flight blurs keep that request.
 The unmounted U7 project/lesson adapters, persistence queue, staged host and
 outline have been retired. The retained session and frame modules still support
-the legacy inspection/preview imports. The thin canvas never mounts those
+the legacy inspection/preview imports. The Read preview never mounts those
 adapters and never calls draft persistence or draft rendering. Existing local
 records remain untouched.
 
@@ -587,7 +586,7 @@ clipboard history remain a separate slice.
 `praxity edit` translates one source-node selector into an S1 request. Dry runs
 use `resolve`; writes use `apply`. An explicit expected file revision is checked
 inside the service admission and refuses rebasing. I4 installs source and identity
-in the same T1 transaction. Neither CLI nor canvas edits write review metadata.
+in the same T1 transaction. CLI source edits do not write review metadata.
 Read-only block inspection reports source-tree addresses, UUIDs, inclusive line
 ranges, labels and schema settings. `--eligibility` opts into registry probes for
 single-node eligibility; the default omits the operation list.
@@ -917,7 +916,7 @@ as other routes.
 
 `GET /launch` redirects to `/launch?canvas=read#` with no-store and no-referrer
 headers. Read compilation requires a one-use admission and local Fetch Metadata.
-The final redirect clears the session fragment before crossing to the separate
+The final redirect uses an explicit empty fragment before crossing to the separate
 learner listener. Generic browser RPC, session snapshot, event-stream and identity
 confirmation routes are removed. Review comments use their own learner-origin
 routes and capability.
@@ -976,7 +975,7 @@ The main rendering contexts are:
 | HTML and SCORM islands runtime | `packages/export-pipeline/template/src/islands/` | Server-rendered blocks with targeted interactive islands |
 | HTML and SCORM static/no-JS runtime | `packages/export-pipeline/src/html-gen.ts` | Server-rendered semantic block HTML |
 
-The canvas compiles the saved project into an immutable artifact. Read mode loads that artifact as the top-level learner document. Browser Edit mode and its author projection are removed. The CLI session retains its preview scheduler and captured inspection support. The old React frame host, detached Electron preview window and preview IPC are removed.
+Studio compiles the saved project into an immutable artifact. The Read preview loads that artifact as the top-level learner document. Browser Edit mode and its author projection are removed. The CLI session retains its preview scheduler and captured inspection support. The old React frame host, detached Electron preview window and preview IPC are removed.
 
 The shared `math/render-math.ts` owns inline and display equation output for compiled
 artifacts and shared block projections. It emits native MathML once, preserving the
@@ -1196,5 +1195,5 @@ An active `disableCompletion` rule gates forward progress from its page. `LogicE
 
 - Sanitize user HTML before `dangerouslySetInnerHTML` with the shared sanitizer.
 - Accept embed URLs only through `isSafeEmbedUrl()`; embeds must use HTTPS third-party origins.
-- Admit author RPCs with the exact loopback Host, editor Origin and bearer. Learner documents receive no write capability.
+- Keep launch requests behind the exact loopback Host, Origin and local document admission guards. Browser author RPCs are retired; learner documents receive no source-write capability.
 - Treat local project paths as untrusted input. Resolve and validate paths before reading or writing.
