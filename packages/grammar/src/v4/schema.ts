@@ -2289,6 +2289,7 @@ export function generateBlocksIndex() {
 				turnInto: TURN_INTO[id],
 				wrapIn: WRAP_IN[id],
 			})),
+			childDefinitions: { back: publishedDefinition(backDefinition) },
 			spotSettings: Object.fromEntries(
 				Object.entries(SPOT_SETTINGS).map(([name, { accepts: _accepts, ...setting }]) => [
 					name,

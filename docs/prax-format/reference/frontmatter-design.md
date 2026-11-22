@@ -171,8 +171,8 @@ and `#aabbccdd` are refused with a field message; the saved colour stays unchang
 
 - `density`: `compact | comfortable | spacious`
 - `blockSpacing`: `compact | default | spacious`
-- `sectionGap` (number)
-- `sectionRhythmMode`: `uniform | alternate | manual`
+- `sectionGap` (number, retired): retained in source with no current export effect.
+- `sectionRhythmMode` (retired): retained legacy metadata; export always uses uniform sections.
 - `contentMaxWidth` (number)
 - `borderRadius` (number, retired): retained in source but ignored. Export and Check
   report `ignored-radius-setting` once per authored course or lesson setting.
@@ -203,10 +203,8 @@ assessments, and assessment groups. Heading adjacency wins when a heading introd
 heavy block. `density` continues to control component-owned internal spacing and does
 not shrink touch targets or reading rhythm. `blockSpacing` scales the gaps while
 preserving the differences between adjacency types: `compact` uses two-thirds of
-the default spacing and `spacious` uses five-thirds. `sectionGap` controls
-alternate/manual section-band separation: values up to `3` are proportional
-multipliers; pixel-era values such as `48` are normalized against the former 48px
-default and then applied to the body-relative `section` token.
+the default spacing and `spacious` uses five-thirds. `sectionGap` is retained
+legacy metadata with no current export effect.
 
 ## Navigation
 
@@ -255,44 +253,22 @@ platform through `prefers-contrast` and `forced-colors`; there is no course-leve
 ## Visual effects
 
 - `shadowIntensity`: `flat | subtle | elevated`
-- `dividerStyle`: `none | thin | gradient | ornamental | wave | angle | curve | squiggle | blend`
-- `backgroundTexture`: `none | grain | paper | noise`
+- `dividerStyle` (retired): `none | thin | gradient | ornamental | wave | angle | curve | squiggle | blend`
+- `backgroundTexture` (retired): `none | grain | paper | noise`
 - `highlightStyle`: `none | marker | gradient | scribble`
 
-`dividerStyle` inserts decorative separators before subsequent H2 sections within
-a page, including pages with uniform colours. `none` removes them. With alternate
-or explicitly assigned section palettes, separators mark the palette boundaries.
-An explicit `{palette=warm}` on `---` starts a coloured band even with `uniform` rhythm.
-In uniform rhythm, an unmarked opening section keeps the page background.
-The setting applies in small previews and full preview. It does not change an
-explicit `---` divider block.
+Course-wide `dividerStyle` and `backgroundTexture` are retained legacy metadata
+with no current export effect. Export uses no automatic section separators,
+section transitions or background texture. This does not change explicit `---`
+divider blocks or their authored palettes; see [document structure](document-structure.md).
 
 ## Image effects
 
-`imageEffects` supports keyed effect objects. A key's presence enables the effect.
-
-| Effect key | Values | Default intensity |
-|---|---|---|
-| `grayscale` | `intensity: 0–100` percent | `100` |
-| `colorWash` | `intensity: 0–100` percent; `color`: CSS hex | `40`; color `#4269d0` |
-| `accentLighting` | `intensity: 0–100` percent | `30` |
-| `progressiveBlur` | `intensity: 0–24` px | `8` |
-| `accentBlur` | `intensity: 0–16` px | `6` |
-| `motionBlur` | `intensity: 0–30` px; `direction`: `0`, `45`, `90`, or `135` degrees | `10`; direction `0` |
-| `grain` | `intensity: 0–100` percent | `25` |
-| `halftone` | `intensity: 2–16` px | `6` |
-| `dithering` | `intensity: 0–100` percent | `50` |
-
-When multiple effects are present, the runtime composites them in this order: grayscale, color
-wash, progressive blur, accent blur, motion blur, grain, halftone, dithering, then accent
-lighting. If more than one blur is active, each blur is reduced to 60% intensity, except the exact
-progressive-blur plus motion-blur pair, which stacks without attenuation. Only the first texture
-in compositing order is kept: grain before halftone before dithering.
-
-Also available:
-
-- `imageEffectsAuto` (boolean)
-- Legacy: `imageStyle`, `imageHoverEffect`
+Course-wide `imageEffects`, `imageEffectsAuto`, `imageStyle` and `imageHoverEffect`
+are retained legacy metadata with no current export effect. Export applies no
+default image treatment or automatic effects. Their saved keys do not enable
+compositing or effect intensities. Per-image block settings have their own
+[image reference](blocks-content.md#image).
 
 ## Animation
 
@@ -347,25 +323,15 @@ Outer block width uses `width`; card surface treatment still uses `style`.
 title: Incident Response Essentials
 lang: en
 design:
-  palette: waves
+  palette: ink
   colorMode: auto
-  accentHue: 205
   typography:
     pairing: sans
     fontDisplay: swap
-  headingSize: 1.1
-  lineHeight: 1.6
-  density: comfortable
-  sectionGap: 1.1
-  contentMaxWidth: 880
-  borderRadius: 10
   navArchetype: sidebar
   navOutline: true
   navPrevNext: true
   navProgressStyle: segments
-  shadowIntensity: subtle
-  dividerStyle: thin
-  backgroundTexture: grain
   highlightStyle: marker
   motionEntrance: fade
   motionStagger: sequential
@@ -373,27 +339,13 @@ design:
   colorBackgroundDark: "#0f172a"
   colorText: "#0f172a"
   colorAccent: "oklch(54.6% 0.215 262.9)"
-  colorButtonBackground: "#1d4ed8"
-  colorButtonText: "#ffffff"
   colorSuccess: "#15803d"
   colorWarning: "#b45309"
   colorError: "#b91c1c"
-  imageEffects:
-    grain:
-      intensity: 20
-  imageEffectsAuto: true
   brand:
     logoUrl: /assets/logo-light.svg
     logoDarkUrl: /assets/logo-dark.svg
     logoPlacement: header
-  componentDefaults:
-    card:
-      layout: slides
-      width: narrow
-    comparison:
-      layout: side-by-side
-    image:
-      size: medium
 ---
 ```
 

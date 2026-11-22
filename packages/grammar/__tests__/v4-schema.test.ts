@@ -2,7 +2,14 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { getManifest, getOptionValue, isOptionImplemented } from "../src/manifest";
 import { tokenizeLesson } from "../src/v4/lex";
-import { BLOCK_SCHEMA, getDefinition, INLINE_HELPERS, suggestType } from "../src/v4/schema";
+import {
+	BLOCK_SCHEMA,
+	type BlockDefinition,
+	generateBlocksIndex,
+	getDefinition,
+	INLINE_HELPERS,
+	suggestType,
+} from "../src/v4/schema";
 import { analyzeLessonTree, type TreeNode } from "../src/v4/tree";
 
 const parse = (source: string) =>
@@ -35,6 +42,27 @@ const types = [
 ];
 
 describe("G4 schema public interface", () => {
+	it("publishes definitions for every declared schema-backed child", () => {
+		const index = generateBlocksIndex();
+		const published = new Set([
+			...index.blocks.map((definition: { id: string }) => definition.id),
+			...Object.keys(index.childDefinitions ?? {}),
+		]);
+		const check = (definition: BlockDefinition) => {
+			for (const child of definition.allowedChildren) {
+				if (getDefinition(child)) expect(published.has(child), child).toBe(true);
+			}
+			if (definition.itemDefinition) check(definition.itemDefinition);
+		};
+		for (const definition of Object.values(BLOCK_SCHEMA)) check(definition);
+		expect(index.blocks.some((definition: { id: string }) => definition.id === "back")).toBe(false);
+		expect(index.childDefinitions?.back).toMatchObject({
+			insertTemplate: "::: back\nBack\n:::\n",
+			subject: { kind: "none", required: false },
+			settings: { width: { values: ["narrow", "wide", "full", "breakout"] } },
+		});
+	});
+
 	it.each(types)("%s insert template parses without diagnostics", (type) => {
 		const definition = BLOCK_SCHEMA[type];
 		expect(definition).toBeDefined();
