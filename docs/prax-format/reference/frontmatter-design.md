@@ -171,7 +171,7 @@ and `#aabbccdd` are refused with a field message; the saved colour stays unchang
 
 - `density`: `compact | comfortable | spacious`
 - `blockSpacing`: `compact | default | spacious`
-- `sectionGap` (number)
+- `sectionGap` (number, retired): retained in source with no current export effect.
 - `sectionRhythmMode` (retired): retained legacy metadata; export always uses uniform sections.
 - `contentMaxWidth` (number)
 - `borderRadius` (number, retired): retained in source but ignored. Export and Check
@@ -204,8 +204,7 @@ heavy block. `density` continues to control component-owned internal spacing and
 not shrink touch targets or reading rhythm. `blockSpacing` scales the gaps while
 preserving the differences between adjacency types: `compact` uses two-thirds of
 the default spacing and `spacious` uses five-thirds. `sectionGap` is retained
-legacy metadata for retired alternate/manual section bands; it does not restore
-those bands in current exports.
+legacy metadata with no current export effect.
 
 ## Navigation
 
@@ -254,8 +253,8 @@ platform through `prefers-contrast` and `forced-colors`; there is no course-leve
 ## Visual effects
 
 - `shadowIntensity`: `flat | subtle | elevated`
-- `dividerStyle`: `none | thin | gradient | ornamental | wave | angle | curve | squiggle | blend`
-- `backgroundTexture`: `none | grain | paper | noise`
+- `dividerStyle` (retired): `none | thin | gradient | ornamental | wave | angle | curve | squiggle | blend`
+- `backgroundTexture` (retired): `none | grain | paper | noise`
 - `highlightStyle`: `none | marker | gradient | scribble`
 
 Course-wide `dividerStyle` and `backgroundTexture` are retained legacy metadata
@@ -324,21 +323,15 @@ Outer block width uses `width`; card surface treatment still uses `style`.
 title: Incident Response Essentials
 lang: en
 design:
-  palette: waves
+  palette: ink
   colorMode: auto
-  accentHue: 205
   typography:
     pairing: sans
     fontDisplay: swap
-  headingSize: 1.1
-  lineHeight: 1.6
-  density: comfortable
-  contentMaxWidth: 880
   navArchetype: sidebar
   navOutline: true
   navPrevNext: true
   navProgressStyle: segments
-  shadowIntensity: subtle
   highlightStyle: marker
   motionEntrance: fade
   motionStagger: sequential
@@ -346,8 +339,6 @@ design:
   colorBackgroundDark: "#0f172a"
   colorText: "#0f172a"
   colorAccent: "oklch(54.6% 0.215 262.9)"
-  colorButtonBackground: "#1d4ed8"
-  colorButtonText: "#ffffff"
   colorSuccess: "#15803d"
   colorWarning: "#b45309"
   colorError: "#b91c1c"
@@ -355,14 +346,6 @@ design:
     logoUrl: /assets/logo-light.svg
     logoDarkUrl: /assets/logo-dark.svg
     logoPlacement: header
-  componentDefaults:
-    card:
-      layout: slides
-      width: narrow
-    comparison:
-      layout: side-by-side
-    image:
-      size: medium
 ---
 ```
 

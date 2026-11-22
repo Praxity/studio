@@ -182,6 +182,8 @@ Ownership guards and equivalence checks must fail closed without confusing gener
 - `assertExportCommands.commands`: Scan every language and prose with the same detector, including prefixed executables.
 - `assertExportCommands.equal`: Even an unparsed Markdown construct must not hide an export from the guard.
 
+- 2026-11-22: Replace the skill's planned-rederivation wording with one exact command sentence, allowed only when init requires rederivation and the person confirms in this conversation that the course has never been published. The October 19 wording assumed an unavailable CLI flag; `apps/desktop/src/main/identity-init-cli.ts` now accepts `--rederive --confirm-unpublished` and refuses rederivation without confirmation. Keep the all-skills guard: neither flag may appear outside that agreed sentence, and mutations removing conversational confirmation or the CLI confirmation flag must fail.
+
 ### `scripts/preflight-gates.mts`
 
 - `collectGatePreflight.credentialsPath`: Worktrees have no .env; PRAXITY_ENV_FILE points at the clone that holds it.

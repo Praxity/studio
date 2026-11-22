@@ -66,7 +66,7 @@ test("choice guidance names Rubato's assessment-writing skill instead of a host 
 	assert.doesNotMatch(guidance, /\]\(\.\.\/\.\.\//);
 });
 
-test("the build order attacks choice questions before identity and marks rederivation planned", () => {
+test("the build order attacks choice questions before identity and gates rederivation on confirmation", () => {
 	const skill = skills.find(({ path }) => path === "SKILL.md").text;
 	const order = skill.split("## Build or change a course")[1].split("Write source this way")[0];
 	const attack = order.indexOf("`assessment-writing` skill");
@@ -74,8 +74,8 @@ test("the build order attacks choice questions before identity and marks rederiv
 		attack > 0 && attack < order.indexOf("Record identity"),
 		"probe choices before identity and export",
 	);
-	assert.match(skill, /Rederivation is planned; the current CLI doesn't accept it\./);
-	assert.match(skill, /has never been published, stop and let the person decide\./);
+	assert.ok(skill.includes(confirmation));
+	assert.doesNotMatch(skill, /Rederivation is planned/);
 });
 
 test("skill links resolve inside the installed prax-format folder", () => {
@@ -159,7 +159,7 @@ test("publishing requires the assessment skill at the exact Rubato revision sele
 	}
 });
 const confirmation =
-	"Never pass `--rederive` unless the person has confirmed in this conversation that no version of the course was published.";
+	"Only when init requires rederivation and the person has confirmed in this conversation that no version of the course was ever published, run `praxity identity init <course> --rederive --confirm-unpublished`.";
 const praxityCommands =
 	/(?<![\w-])(?:"(?:[^"\r\n`]*[/\\])?praxity"|'(?:[^'\r\n`]*[/\\])?praxity'|[^\s"'`;&|]*[/\\]praxity|praxity)\s+(identity\s+init|export)\b([^\r\n`;&|]*)/g;
 
@@ -212,7 +212,9 @@ function assertExportCommands(text) {
 }
 
 function assertRederivation(text) {
-	assert.ok(!text.replaceAll(confirmation, "").includes("--rederive"));
+	const remaining = text.replaceAll(confirmation, "");
+	assert.ok(!remaining.includes("--rederive"));
+	assert.ok(!remaining.includes("--confirm-unpublished"));
 }
 
 test("every shipped export has preceding flagless init for the same course", () => {
@@ -297,6 +299,32 @@ test("command guards reject the required mutations", async (t) => {
 	]) {
 		await t.test(name, () =>
 			assert.throws(() => assertExportCommands(text), assert.AssertionError),
+		);
+	}
+	for (const [name, instruction] of [
+		[
+			"missing conversational confirmation",
+			confirmation.replace("the person has confirmed in this conversation that ", ""),
+		],
+		[
+			"published course",
+			confirmation.replace(
+				"no version of the course was ever published",
+				"the course was published",
+			),
+		],
+		["missing confirmation flag", confirmation.replace(" --confirm-unpublished", "")],
+		[
+			"unguarded rederivation command",
+			"praxity identity init <course> --rederive --confirm-unpublished",
+		],
+		["stray confirmation flag", "--confirm-unpublished"],
+	]) {
+		await t.test(name, () =>
+			assert.throws(
+				() => assertRederivation(`${confirmation}\n${instruction}`),
+				assert.AssertionError,
+			),
 		);
 	}
 	await t.test("stray --rederive", () =>
