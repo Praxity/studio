@@ -25,7 +25,7 @@ test("compiled Read keeps learner controls and separate authority", async ({ pag
 		expect(await page.content()).not.toContain(token);
 		expect(await page.locator("script[src]").count()).toBeGreaterThan(0);
 
-		const disclosure = page.getByRole("button", { name: "More", exact: false });
+		const disclosure = page.getByRole("button", { name: "Item", exact: true });
 		await disclosure.click();
 		await expect(disclosure).toHaveAttribute("aria-expanded", "true");
 		await page.locator("a.praxity-nav-next").click();
