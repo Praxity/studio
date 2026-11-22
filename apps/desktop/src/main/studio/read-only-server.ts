@@ -13,6 +13,7 @@ import { openProjectAsset } from "../project-assets";
 import { withProjectFileTransaction } from "../project-file-transactions";
 import { ownHttpResponse, ResponseStreamOwner, sendResponse } from "../response-stream";
 import { addStudioReadModeLink } from "./author-document";
+import { addStudioReviewBootstrap } from "./review-bootstrap";
 import { createReviewHttp } from "./review-http";
 import type { ReviewStore } from "./review-store";
 
@@ -296,7 +297,8 @@ export async function startStudioReadOnlyServer(options: {
 				const captured = new TextDecoder("utf-8", { ignoreBOM: true }).decode(
 					await response.arrayBuffer(),
 				);
-				const html = await addStudioReadModeLink(captured, editUrl, reviewPage);
+				const linked = await addStudioReadModeLink(captured, editUrl);
+				const html = reviewPage ? await addStudioReviewBootstrap(linked, reviewPage) : linked;
 				response = new Response(req.method === "HEAD" ? null : html, { headers: response.headers });
 				response.headers.delete("Content-Length");
 				response.headers.delete("ETag");

@@ -25,6 +25,7 @@ import { COURSE_CSP } from "../course-file-response";
 import type { CanvasPreviewDescriptor, HostedCourseDeployment } from "../course-preview-service";
 import { addStudioReadModeLink } from "../studio/author-document";
 import { startStudioReadOnlyServer } from "../studio/read-only-server";
+import { addStudioReviewBootstrap } from "../studio/review-bootstrap";
 import { openReviewStore } from "../studio/review-store";
 import { defaultStudioPort } from "../studio/server";
 
@@ -956,3 +957,66 @@ it("CLI rejects duplicate review flags and documents opt-in in EN/FR", async () 
 		expect(help.stdout).toContain(locale === "fr" ? "commentaires" : "review comments");
 	}
 });
+
+it.each(["en", "fr"] as const)(
+	"bootstraps the same review payload without an Edit link in %s",
+	async (locale) => {
+		const source = `<!doctype html><html lang="${locale}"><head><title>Course</title></head><body><p>Captured &amp; unchanged</p></body></html>`;
+		const review = {
+			reviewId,
+			capability: "</script>&\u2028\u2029",
+			page: {
+				lessonId: "lesson-one",
+				pageId: "page-one",
+				pageIds: ["page-one", "page-two"],
+				pageIndex: 0,
+				sourceRevisions: { "b.prax": "source-b", "a.prax": "source-a" },
+			},
+			pages: [{ id: "page-one", href: "index.html", title: "Sort <seedlings>" }],
+			draftOriginChanged: true,
+		};
+		const html = await addStudioReviewBootstrap(source, review);
+		const linked = await addStudioReadModeLink(source, `${editorOrigin}/launch`, review);
+		expect(config(html)).toEqual(config(linked));
+		expect(config(html)).toMatchObject({
+			schema: 1,
+			reviewId,
+			capability: review.capability,
+			endpoint: `/api/reviews/${reviewId}`,
+			locale,
+			pages: review.pages,
+			draftOriginChanged: true,
+			page: {
+				lessonId: "lesson-one",
+				pageId: "page-one",
+				pageIds: ["page-one", "page-two"],
+				pageIndex: 0,
+				revision: "2468b077321b458bffd8924f4e7a4285bb879e55582703193b5f978590323661",
+			},
+		});
+		const dom = new JSDOM(html);
+		try {
+			const doc = dom.window.document;
+			expect(
+				doc.querySelector(
+					".praxity-studio-edit-link, .praxity-studio-read-tools, [data-praxity-studio-read]",
+				),
+			).toBeNull();
+			const json = doc.getElementById("praxity-review-config");
+			expect(json?.textContent).not.toMatch(/[<>&\u2028\u2029]/u);
+			expect(doc.querySelector('link[rel="stylesheet"]')?.getAttribute("href")).toBe(
+				"/_praxity/review/review-comments.css",
+			);
+			expect(doc.querySelector("script[defer]")?.getAttribute("src")).toBe(
+				"/_praxity/review/review-comments.js",
+			);
+			const assets = html.match(
+				/<script type="application\/json" id="praxity-review-config">.*?<\/script><link[^>]+><script[^>]+><\/script>/s,
+			)?.[0];
+			expect(assets).toBeDefined();
+			expect(html.replace(assets ?? "", "")).toBe(source);
+		} finally {
+			dom.window.close();
+		}
+	},
+);

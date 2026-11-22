@@ -10,6 +10,8 @@ The author host and learner host have different authority. Session lifecycle mus
 
 ## Decision
 
+2026-11-22: `studio/review-bootstrap.ts` now owns the Read review payload and assets, independently of Edit-link composition, ahead of removing the browser editor. This extraction preserves response bytes and headers.
+
 ### src/main/cli.ts
 
 - `writeIdentityNotice`: Standalone hosts flush this notice before identity replacement.
