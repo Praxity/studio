@@ -1826,11 +1826,6 @@
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
-		"name": "D17 drafts and clipboard survive a session restart",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5024 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
 		"name": "draft and clipboard persistence are gitignored inside an author's own project",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5017 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
@@ -1941,11 +1936,6 @@
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/studio-preview.test.ts",
-		"name": "isolated Studio media and previews > compiles unsaved source through the retained session, without ancestor inheritance or source writes",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 7398 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-preview.test.ts",
 		"name": "isolated Studio media and previews > logs the preview failure cause while keeping the RPC error generic",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5073 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
@@ -2026,11 +2016,6 @@
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
-		"name": "Studio HTTP boundary > refuses duplicate Origin or authorization headers",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3250 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
 		"name": "Studio HTTP boundary > rejects Origin http://evil.example, even with the capability",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2409 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
@@ -2061,8 +2046,11 @@
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
-		"name": "Studio HTTP boundary > subscribes to external changes and closes listeners idempotently",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3643 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+		"name": "Studio launch HTTP boundary and retained project session > subscribes to external changes and closes listeners idempotently",
+		"reason": "CI run 45080769805 measured 3424 ms in shard and 2284 ms alone; reduce subscription lifecycle setup below the 2000 ms budget.",
+		"added": "2026-11-22",
+		"run": "45080769805",
+		"backlog": "Studio backlog: subscription lifecycle test exceeds the slow-test budget (2026-11-22, expires 2026-12-06)"
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
