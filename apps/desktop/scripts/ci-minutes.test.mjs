@@ -733,14 +733,18 @@ test("root Node checks run once while Vitest shards bypass the local test prefix
 	const nodeSteps = Object.values(ci.jobs).flatMap((job) =>
 		(job.steps ?? []).filter((step) => /node --test\b/.test(step.run ?? "")),
 	);
-	assert.equal(nodeSteps.length, 3);
+	assert.equal(nodeSteps.length, 4);
 	const tarball = nodeJob.steps.find(
 		(step) => step.name === "Verify npm tarball installation and exports",
 	);
 	assert.match(tarball.run, /prepare:typst/);
 	assert.match(tarball.run, /build:cli/);
 	assert.match(tarball.run, /--test-name-pattern='portable CLI exports'.*standalone-cli.proof.mjs/);
-	assert.ok(nodeSteps.every((step) => nodeJob.steps.includes(step)));
+	assert.ok(
+		nodeSteps.every(
+			(step) => nodeJob.steps.includes(step) || ci.jobs["node26-cli-proof"].steps.includes(step),
+		),
+	);
 	for (const event_name of ["pull_request", "workflow_dispatch", "schedule"])
 		assert.equal(enabled(nodeJob.if.slice(3, -2), { event_name }, { code: "true" }), true);
 	assert.equal(nodeJob["runs-on"], "ubuntu-24.04");
@@ -2237,4 +2241,27 @@ test("all Linux workflows detect Vitest aliases and default config consumers", (
 		"pnpm test:affected --vitest-only --select-only --base main",
 	])
 		assert.equal(runsSlowReporter({ run: command }), false, command);
+});
+
+test("Node 26 proves the Linux npm tarball after building on the developer pin", () => {
+	const job = ci.jobs["node26-cli-proof"];
+	assert.equal(job["runs-on"], "ubuntu-24.04");
+	assert.equal(job.strategy, undefined);
+	assert.equal(job.if, ci.jobs["node-checks"].if);
+	const steps = job.steps;
+	const setups = steps.filter((step) => step.uses?.startsWith("actions/setup-node@"));
+	assert.deepEqual(
+		setups.map((step) => step.with["node-version"]),
+		["24.22.1", "26.13.1"],
+	);
+	const build = steps.findIndex((step) => step.run === "pnpm build:cli");
+	const runtime = steps.indexOf(setups[1]);
+	const proof = steps.findIndex((step) => step.name === "Verify npm tarball on Node 26");
+	assert.ok(build > steps.indexOf(setups[0]) && build < runtime && runtime < proof);
+	assert.match(
+		steps[proof].run,
+		/--test-name-pattern='portable CLI exports'.*standalone-cli.proof.mjs/,
+	);
+	assert.ok(ci.jobs["merge-gate"].needs.includes("node26-cli-proof"));
+	assert.match(ci.jobs["merge-gate"].steps[0].run, /'node26-cli-proof': outputs.code === 'true'/);
 });

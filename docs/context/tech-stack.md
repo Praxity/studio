@@ -2,7 +2,7 @@
 
 ## Product stack
 
-- **Host:** Node 24 standalone CLI, local HTTP services and a native DOM canvas adapter.
+- **Host:** Node 24 or 26 standalone CLI, local HTTP services and a native DOM canvas adapter.
 - **Shared UI/runtime:** React 19, Mantine 9 and Tabler remain in learner rendering and retained editor-core libraries. The Electron and raw source editor hosts are removed.
 - **Grammar:** TypeScript grammar 4 tokenizer, lossless tree and reader with `yaml` for frontmatter.
 - **Course rendering:** Desktop previews and published output use canonical compiled server HTML with planner-selected islands from `packages/export-pipeline`. Shared React block and navigation components live in `packages/shared-blocks`.

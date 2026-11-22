@@ -516,7 +516,8 @@ test("portable CLI exports and preserves identities outside the checkout", async
 				"#!/usr/bin/env node\n",
 			),
 		);
-		assert.equal(manifest.engines.node, ">=24.22.1 <25");
+		assert.equal(manifest.engines.node, ">=24.22.1 <27");
+		assert.equal(inventory.node, ">=24.22.1 <27");
 		assert.deepEqual(manifest.bundleDependencies, ["isomorphic-dompurify", "jsdom"]);
 		for (const name of ["LICENSE", "LICENSING.md"]) {
 			assert.deepEqual(

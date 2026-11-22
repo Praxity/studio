@@ -13,6 +13,7 @@ import {
 	verifyPreparedExportAssets,
 } from "../../../packages/export-pipeline/src/export-assets";
 import { assertLearningPatternsBundleInputs } from "../../../scripts/learning-patterns-admission.mjs";
+import { STANDALONE_NODE_RANGE } from "../src/main/node-runtime";
 import {
 	filesIn,
 	inventoryPayload,
@@ -287,7 +288,7 @@ await writeFile(
 			),
 			bundleDependencies: ["isomorphic-dompurify", "jsdom"],
 			type: "module",
-			engines: { node: ">=24.22.1 <25" },
+			engines: { node: STANDALONE_NODE_RANGE },
 		},
 		null,
 		2,
@@ -325,7 +326,7 @@ const inventory = {
 	sourceTreeDirty: Boolean(
 		execFileSync("git", ["status", "--porcelain"], { cwd: repoDir, encoding: "utf8" }).trim(),
 	),
-	node: ">=24.22.1 <25",
+	node: STANDALONE_NODE_RANGE,
 	buildNode: process.version,
 	entrypoint: "praxity.mjs",
 	legal: legalFiles.map((filename) => `legal/${filename}`),

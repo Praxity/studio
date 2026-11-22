@@ -1,7 +1,15 @@
 import { execFile } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { supportsStandaloneNode } from "./node-runtime";
 import type { StudioServer } from "./studio/server";
+
+if (!supportsStandaloneNode(process.version)) {
+	process.stderr.write(
+		"Studio requires Node 24.22.1 or later in 24.x, or Node 26.x.\nStudio nécessite Node 24.22.1 ou une version ultérieure de 24.x, ou Node 26.x.\n",
+	);
+	process.exit(1);
+}
 
 const args = process.argv.slice(2);
 const expectedParent = process.env.PRAXITY_PARENT_PID;

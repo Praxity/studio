@@ -787,7 +787,8 @@ are unaffected. Equations also need an authored text alternative before they pri
 
 ## Standalone package
 
-An integrator can supply the standalone Studio package with Node 24.22.1. Keep
+An integrator can supply the standalone Studio package with Node 24.22.1 or later in
+24.x, or Node 26.x (`>=24.22.1 <27` in npm; the CLI refuses Node 25). Keep
 `praxity.mjs`, its generated chunks, `editor/`, `export-assets/`, `typst/`, and `node_modules/` together. Studio does not need
 to be installed. The command and JSON results are the same:
 
