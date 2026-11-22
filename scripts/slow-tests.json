@@ -1826,7 +1826,7 @@
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
-		"name": "D17 drafts and clipboard survive a restart on a different port",
+		"name": "D17 drafts and clipboard survive a session restart",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5024 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
 	{
@@ -1941,7 +1941,7 @@
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/studio-preview.test.ts",
-		"name": "isolated Studio media and previews > compiles unsaved source through authenticated RPC, without ancestor inheritance or source writes",
+		"name": "isolated Studio media and previews > compiles unsaved source through the retained session, without ancestor inheritance or source writes",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 7398 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
 	{
@@ -1973,11 +1973,6 @@
 		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
 		"name": "Studio HTTP boundary > binds the requested loopback port without changing the session capability",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4553 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
-		"name": "Studio HTTP boundary > bounds concurrent authenticated event streams",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4373 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
@@ -2031,28 +2026,8 @@
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
-		"name": "Studio HTTP boundary > refuses duplicate Origin or authorization headers and malformed UTF-8",
+		"name": "Studio HTTP boundary > refuses duplicate Origin or authorization headers",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3250 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
-		"name": "Studio HTTP boundary > rejects authorization \"\" on RPC, session reads and event streams",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3617 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
-		"name": "Studio HTTP boundary > rejects authorization \"Basic abc\" on RPC, session reads and event streams",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3128 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
-		"name": "Studio HTTP boundary > rejects authorization \"Bearer \" on RPC, session reads and event streams",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2715 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
-		"name": "Studio HTTP boundary > rejects authorization \"Bearer wrong\" on RPC, session reads and event streams",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5008 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
@@ -2063,11 +2038,6 @@
 		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
 		"name": "Studio HTTP boundary > rejects Origin http://localhost:1, even with the capability",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5024 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
-		"name": "Studio HTTP boundary > rejects oversized declared and chunked bodies, malformed JSON, and wrong media types",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3203 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
@@ -2091,7 +2061,7 @@
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
-		"name": "Studio HTTP boundary > streams external changes, disposes the subscription, and closes listeners idempotently",
+		"name": "Studio HTTP boundary > subscribes to external changes and closes listeners idempotently",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3643 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
 	{

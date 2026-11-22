@@ -75,7 +75,7 @@ async function start(review = true) {
 	return { result, server, response, html, config, authorToken };
 }
 
-it("CLI prints the ready URL and serves Read bootstrap, assets and the author page", async () => {
+it("CLI prints the ready URL and serves Read bootstrap and assets without an author page", async () => {
 	const first = sharedReview;
 	expect(first.config.capability).toMatch(/^[A-Za-z0-9_-]{43}$/);
 	expect(first.config.endpoint).toBe(`/api/reviews/${first.config.reviewId}`);
@@ -92,13 +92,18 @@ it("CLI prints the ready URL and serves Read bootstrap, assets and the author pa
 	});
 	expect(listed.status).toBe(200);
 	expect(await listed.text()).not.toContain(first.authorToken);
-	const author = await fetch(
+	const legacy = await fetch(
 		`${first.server.origin}/launch?canvas=${encodeURIComponent(new URL(first.response.url).pathname.slice(7))}`,
 	);
-	const authorHtml = await author.text();
-	expect(authorHtml).not.toContain("praxity-review-config");
-	expect(authorHtml).not.toContain("/_praxity/review/");
-	expect(authorHtml).toContain(first.response.url.split("?")[0]);
+	expect(new URL(legacy.url).origin).toBe(new URL(first.response.url).origin);
+	expect(await legacy.text()).toContain("praxity-review-config");
+	expect(
+		(
+			await fetch(`${first.server.origin}${new URL(first.response.url).pathname}`, {
+				redirect: "manual",
+			})
+		).status,
+	).toBe(404);
 });
 
 it("CLI restart remints its capability with the same durable review and refuses the old capability", async () => {

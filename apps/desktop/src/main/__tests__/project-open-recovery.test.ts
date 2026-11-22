@@ -47,7 +47,7 @@ async function fixture() {
 }
 
 it.each(["lesson.prax", "course.yaml"])(
-	"praxity studio recovers a dead writer's %s before discovery and serves the editor snapshot",
+	"praxity studio recovers a dead writer's %s before discovery and serves Read",
 	async (target) => {
 		const { root, editorAssetsDir } = await fixture();
 		await interruptProjectWrite(
@@ -63,13 +63,11 @@ it.each(["lesson.prax", "course.yaml"])(
 		expect(result.exitCode, result.stderr).toBe(0);
 		if (!result.studioServer) throw new Error(result.stderr);
 		const server = result.studioServer;
-		const token = new URLSearchParams(new URL(server.readyUrl).hash.slice(1)).get("session");
 		const before = await projectDiskSnapshot(root);
-		const response = await fetch(`${server.origin}/api/session`, {
-			headers: { Origin: server.origin, Authorization: `Bearer ${token}` },
-		});
+		const response = await fetch(server.readyUrl);
 		expect(response.status).toBe(200);
-		expect((await response.json()).result.project.grammar).toBe(source);
+		expect(await response.text()).toContain("Original body.");
+		expect(await readFile(join(root, "lesson.prax"), "utf8")).toBe(source);
 		expect(await readFile(join(root, "course.yaml"), "utf8")).toBe(manifest);
 		await expect(readFile(join(root, ".praxity-transaction.json"))).rejects.toMatchObject({
 			code: "ENOENT",

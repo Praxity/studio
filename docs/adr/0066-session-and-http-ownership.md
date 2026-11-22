@@ -156,6 +156,17 @@ The author host and learner host have different authority. Session lifecycle mus
 - `{ runPraxityCli }`: Keep expensive imports outside the bootstrap, including in the packaged
   artifact.
 
+### Retired author projection
+
+The 2026-11-22 owner decision removes `src/main/studio/author-document.ts` and
+browser source-write transport. Its former constraints remain historical rationale:
+
+- The author projection accepted only captured compiler HTML and kept course
+  resources on the learner origin.
+- It captured browser APIs and erased the bearer before parsing course elements.
+- The capability-free Edit link reserved a row above plain Read and deck headers;
+  review moved that link into its header. The link and reserved row are removed.
+
 ### src/main/studio/review-bootstrap.ts
 
 - `addStudioReviewBootstrap`: Hash the captured source set; the manifest does not map lesson IDs to
@@ -426,6 +437,13 @@ The author host and learner host have different authority. Session lifecycle mus
   course's Git history.
 - `recordOutputStage`: Persist before opening the stage, so even a hard exit leaves a recovery
   receipt.
+
+### 2026-11-22 lifecycle fixture decision
+
+- The lifecycle bundle calls the real project-session interface through a test-only
+  stdin/stdout adapter after browser RPC retirement. It preserves each launcher's
+  original IPC or PID-watch contract, so test commands cannot accidentally turn a
+  no-IPC watchdog check into an IPC-disconnect check. Production has no such adapter.
 
 Sources: the named symbols and their comments at commit
 `bed54f6109aa4ae868c981f53233a5ee9c5afdd7`, with the corresponding

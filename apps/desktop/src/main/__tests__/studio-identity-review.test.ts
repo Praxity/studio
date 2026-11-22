@@ -81,19 +81,6 @@ async function bytes(root: string, prefix = ""): Promise<Record<string, string>>
 	return result;
 }
 
-function documentRequest(url: string, headers: Record<string, string> = {}) {
-	return new Promise<{ status: number | undefined; html: string }>((resolve, reject) => {
-		get(url, { headers }, (response) => {
-			const chunks: Buffer[] = [];
-			response.on("data", (chunk) => chunks.push(chunk));
-			response.on("error", reject);
-			response.on("end", () =>
-				resolve({ status: response.statusCode, html: Buffer.concat(chunks).toString("utf8") }),
-			);
-		}).on("error", reject);
-	});
-}
-
 it.each(cases)(
 	"holds %s without changing source, identity or snapshots",
 	async (_name, before, after) => {

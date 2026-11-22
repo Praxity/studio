@@ -93,6 +93,36 @@ process.stdout.write('advice=' + report.issues.filter(issue => issue.rule === 'c
 								loader: "ts",
 							}),
 						);
+						builder.onLoad({ filter: /[/\\]studio[/\\]project-session\.ts$/ }, async (args) => ({
+							contents:
+								(await readFile(args.path, "utf8")).replace(
+									"export async function createStudioProjectSession(",
+									"async function createLifecycleSession(",
+								) +
+								`
+export async function createStudioProjectSession(...args: Parameters<typeof createLifecycleSession>) {
+  const session = await createLifecycleSession(...args);
+  let pending = '';
+  const invoke = async (message) => {
+    try {
+      const result = await session.invoke(message.method, message.args);
+      process.stdout.write('test-invoke=' + JSON.stringify({ lifecycleRequest: message.lifecycleRequest, result }) + '\\n');
+    } catch (error) {
+      process.stdout.write('test-invoke=' + JSON.stringify({ lifecycleRequest: message.lifecycleRequest, error: String(error) }) + '\\n');
+    }
+  };
+  const receive = data => {
+    pending += data.toString();
+    const lines = pending.split('\\n');
+    pending = lines.pop();
+    for (const line of lines) void invoke(JSON.parse(line));
+  };
+  process.stdin.on('data', receive);
+  return { ...session, async close() { process.stdin.off('data', receive); process.stdin.pause(); await session.close(); } };
+}
+`,
+							loader: "ts",
+						}));
 						builder.onResolve({ filter: /^(isomorphic-dompurify|jsdom)$/ }, (args) => ({
 							path: pathToFileURL(
 								args.path === "isomorphic-dompurify"
@@ -187,8 +217,9 @@ process.on('exit', (code) => process.stdout.write('test-exit=' + code + '\\n'));
 import { spawn } from 'node:child_process';
 const child = spawn(process.execPath, process.argv.slice(2), {
   env: { ...process.env, ...(process.env.TEST_PARENT === 'identity' ? { PRAXITY_PARENT_PID: String(process.pid) } : {}) },
-  detached: true, windowsHide: true, stdio: ['ignore', 'inherit', 'inherit', ['identity', 'none'].includes(process.env.TEST_PARENT) ? 'ignore' : 'ipc'],
+  detached: true, windowsHide: true, stdio: ['pipe', 'inherit', 'inherit', ['identity', 'none'].includes(process.env.TEST_PARENT) ? 'ignore' : 'ipc'],
 });
+process.stdin.pipe(child.stdin);
 process.send({ pid: child.pid });
 child.once('exit', (code) => process.exit(code ?? 1));
 `,
@@ -219,7 +250,7 @@ child.once('exit', (code) => process.exit(code ?? 1));
 				TEST_PROJECT: project,
 				...options.env,
 			},
-			stdio: ["ignore", "pipe", "pipe", "ipc"],
+			stdio: ["pipe", "pipe", "pipe", "ipc"],
 		});
 		let stdout = "";
 		let stderr = "";
@@ -266,36 +297,54 @@ child.once('exit', (code) => process.exit(code ?? 1));
 			});
 		};
 		let origin;
-		let token;
 		const ready = async () => {
 			await waitFor("/#session=");
 			const url = new URL(stdout.match(/http:\/\/127\.0\.0\.1:\d+\/#session=[\w-]+/)[0]);
 			origin = url.origin;
-			token = new URLSearchParams(url.hash.slice(1)).get("session");
 			assert.equal((await fetch(origin)).status, 200);
 		};
-		const rpc = async (method, args) => {
-			const response = await fetch(`${origin}/api/rpc`, {
-				signal: requests.signal,
-				method: "POST",
-				headers: {
-					Origin: origin,
-					Authorization: `Bearer ${token}`,
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({ method, args }),
+		let nextRequest = 0;
+		const invoke = (method, args) =>
+			new Promise((resolve, reject) => {
+				const lifecycleRequest = String(++nextRequest);
+				let pending = "";
+				const cleanup = () => {
+					child.stdout.off("data", receive);
+					child.off("close", closed);
+				};
+				const receive = (data) => {
+					pending += data.toString();
+					const lines = pending.split("\n");
+					pending = lines.pop();
+					for (const line of lines) {
+						if (!line.startsWith("test-invoke=")) continue;
+						const message = JSON.parse(line.slice("test-invoke=".length));
+						if (message.lifecycleRequest !== lifecycleRequest) continue;
+						cleanup();
+						if (message.error) reject(new Error(message.error));
+						else resolve(message.result);
+					}
+				};
+				const closed = () => {
+					cleanup();
+					reject(new Error("Lifecycle process closed"));
+				};
+				child.stdout.on("data", receive);
+				child.once("close", closed);
+				child.stdin.write(`${JSON.stringify({ lifecycleRequest, method, args })}\n`, (error) => {
+					if (error) {
+						cleanup();
+						reject(error);
+					}
+				});
 			});
-			const body = await response.json();
-			assert.equal(response.status, 200, JSON.stringify(body));
-			return body.result;
-		};
 		if (options.ready !== false) await ready();
 		return {
 			child,
 			exited,
 			closed,
 			waitFor,
-			rpc,
+			invoke,
 			origin,
 			stdout: () => stdout,
 			stderr: () => stderr,
@@ -335,7 +384,7 @@ child.once('exit', (code) => process.exit(code ?? 1));
 	}
 	async function preview(cli) {
 		const prior = new Set(await previewFolders());
-		const result = await cli.rpc("coursePreviewBuild", {
+		const result = await cli.invoke("coursePreviewBuild", {
 			request: {
 				scope: "lesson",
 				lessonFilename: "lesson.prax",
@@ -534,7 +583,7 @@ child.once('exit', (code) => process.exit(code ?? 1));
 		const cli = await start(t, "error", false, { env: { TEST_EXPORT: "gated" } });
 		const folders = await preview(cli);
 		const exporting = cli
-			.rpc("exportScorm", { format: "html", scope: "lesson", lessonFilename: "lesson.prax" })
+			.invoke("exportScorm", { format: "html", scope: "lesson", lessonFilename: "lesson.prax" })
 			.catch(() => {});
 		await cli.waitFor("test-export-staged");
 		assert.ok((await stagedExports()).length > 0);
@@ -600,7 +649,7 @@ child.once('exit', (code) => process.exit(code ?? 1));
 			});
 			const folders = await preview(cli);
 			const exporting = cli
-				.rpc("exportScorm", { format: "html", scope: "lesson", lessonFilename: "lesson.prax" })
+				.invoke("exportScorm", { format: "html", scope: "lesson", lessonFilename: "lesson.prax" })
 				.catch(() => {});
 			await cli.waitFor("test-export-staged");
 			assert.ok((await stagedExports()).length > 0);
@@ -640,7 +689,7 @@ child.once('exit', (code) => process.exit(code ?? 1));
 		});
 		const folders = await preview(cli);
 		const exporting = cli
-			.rpc("exportScorm", {
+			.invoke("exportScorm", {
 				format: "html",
 				scope: "lesson",
 				lessonFilename: "lesson.prax",
@@ -667,7 +716,7 @@ child.once('exit', (code) => process.exit(code ?? 1));
 		});
 		const folders = await preview(cli);
 		const exporting = cli
-			.rpc("exportScorm", {
+			.invoke("exportScorm", {
 				format: "html",
 				scope: "lesson",
 				lessonFilename: "lesson.prax",

@@ -1165,29 +1165,6 @@ it.each(["en", "fr"])("lists visible pages with refreshed filter counts (%s)", a
 		expect(node.classList.contains("prx-review-action")).toBe(true);
 });
 
-it.each(["en", "fr"].flatMap((locale) => [false, true].map((deck) => ({ locale, deck }))))(
-	"keeps the editor link name and URL in the review header ($locale, deck=$deck)",
-	async ({ locale, deck }) => {
-		const server = fakeServer();
-		const label = locale === "fr" ? "Modifier le texte" : "Edit text";
-		const { doc } = await open(server, locale, deck ? jumpDeckMarkup : undefined, (dom) => {
-			const tools = dom.window.document.createElement("div");
-			tools.className = "praxity-studio-read-tools";
-			const link = dom.window.document.createElement("a");
-			link.className = "praxity-studio-edit-link";
-			link.href = "http://127.0.0.1:9000/launch?canvas=lesson%2Fone";
-			link.textContent = label;
-			tools.append(link);
-			dom.window.document.body.prepend(tools);
-		});
-		const link = doc.querySelector(".prx-review-header a");
-		expect(link?.textContent).toBe(label);
-		expect(link?.getAttribute("href")).toBe("http://127.0.0.1:9000/launch?canvas=lesson%2Fone");
-		expect(doc.querySelectorAll(".praxity-studio-edit-link")).toHaveLength(1);
-		expect(doc.querySelector(".praxity-studio-read-tools")).toBeNull();
-	},
-);
-
 it.each(["en", "fr"])(
 	"renders generic %s actor labels, every message and the resolver",
 	async (locale) => {

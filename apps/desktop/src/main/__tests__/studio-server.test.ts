@@ -202,6 +202,10 @@ describe("Studio HTTP boundary", () => {
 			expect(navigation.text).toBe("");
 			expect(JSON.stringify(navigation)).not.toContain(token);
 		}
+		expect(
+			(await probe(server, "/launch?canvas=read", { headers: { "Sec-Fetch-Site": "cross-site" } }))
+				.status,
+		).toBe(403);
 		const launch = await probe(server, "/launch?canvas=read");
 		expect(launch.status).toBe(303);
 		expect(launch.headers.location).toMatch(/^\/canvas\?admission=[A-Za-z0-9_-]{43}$/);
@@ -324,7 +328,7 @@ describe("Studio HTTP boundary", () => {
 	);
 
 	it("launches Read admission with a private redirect", async () => {
-		const { server, token } = await running();
+		const { server } = await running();
 		const allowedHeaders: Record<string, string>[] = [{}, { Origin: server.origin }];
 		for (const headers of allowedHeaders) {
 			const response = await probe(server, "/launch", { headers });
@@ -367,7 +371,7 @@ describe("Studio HTTP boundary", () => {
 	}, 20_000);
 
 	it("refreshes the session snapshot after its initial lesson is removed", async () => {
-		const { server, token, projectDir } = await running();
+		const { server, projectDir } = await running();
 		await rm(join(projectDir, "second.prax"));
 		await writeFile(join(projectDir, "course.yaml"), "title: Test\nlessons: [first.prax]\n");
 		const response = await retainedSnapshot(server);
@@ -378,9 +382,10 @@ describe("Studio HTTP boundary", () => {
 	it.each(["unknown", "100-continue"])(
 		"applies private headers to early Expect responses: %s",
 		async (expectation) => {
-			const { server, token } = await running();
-			const fixture = await testSession(server);
-			const mediaOrigin = fixture.readOnly.origin;
+			const { server } = await running(true);
+			const launch = await probe(server, "/launch?canvas=read");
+			const built = await probe(server, String(launch.headers.location));
+			const mediaOrigin = new URL(String(built.headers.location)).origin;
 			for (const origin of [server.origin, mediaOrigin]) {
 				const response = await probe({ ...server, origin }, "/missing", {
 					headers: { Expect: expectation },
@@ -885,7 +890,6 @@ describe("Studio startup admission", () => {
 		await rm(join(files.projectDir, "first.prax"));
 		const server = await startStudioServer({ ...files, appVersion: "test" });
 		servers.push(server);
-		const token = new URL(server.readyUrl).hash.slice("#session=".length);
 		const result = await retainedSnapshot(server);
 		expect(JSON.parse(result.text).result.project.lessonFilename).toBe("second.prax");
 	});

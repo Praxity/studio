@@ -172,7 +172,9 @@ test("packaged recovery and Studio tolerate foreign, malformed and unreadable dr
 				assert.equal(ready.errors.trim().split("\n").length, 1);
 				const response = await fetch(ready.url);
 				assert.equal(response.status, 200);
-				assert.match(await response.text(), /Edit text/);
+				const html = await response.text();
+				assert.match(html, /Saved text\./);
+				assert.doesNotMatch(html, /praxity-studio-edit-link/);
 			} finally {
 				if (child.connected) child.disconnect();
 				await stopped;
