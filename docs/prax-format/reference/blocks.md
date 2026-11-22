@@ -13,6 +13,10 @@ node docs/prax-format/scripts/generate-block-index.mjs
 | Questions and groups | [Questions and groups](blocks-assessments.md) |
 | Tasks, retrieval sheets, highlight practice, write-distractors, signatures and rules | [Interactive blocks](blocks-interactive.md) |
 
+`blocks` lists the main block definitions. `childDefinitions` describes additional
+child-only nodes. A child definition is permitted only where its parent lists it
+in `allowedChildren`; `back` is allowed only in a cards item, at most once.
+
 ## Shared block settings
 
 These settings apply to blocks, images, headings, dividers, items and back faces when their reference section links here. Page and rule settings are listed separately. Keys are case-sensitive. Boolean keys can stand alone for true.

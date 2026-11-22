@@ -9504,6 +9504,130 @@
       "label": "grammar.v4.type.heading"
     }
   ],
+  "childDefinitions": {
+    "back": {
+      "parts": [],
+      "partLabels": {},
+      "allowedChildren": [
+        "body",
+        "heading",
+        "image",
+        "divider",
+        "list",
+        "table",
+        "block",
+        "part",
+        "recovery"
+      ],
+      "childCounts": [],
+      "insertTemplate": "::: back\nBack\n:::\n",
+      "subject": {
+        "kind": "none",
+        "required": false,
+        "label": "grammar.v4.subject.none"
+      },
+      "settings": {
+        "width": {
+          "type": "enum",
+          "values": [
+            "narrow",
+            "wide",
+            "full",
+            "breakout"
+          ],
+          "helper": {
+            "kind": "enum",
+            "options": [
+              {
+                "value": "narrow",
+                "icon": "adjustments",
+                "label": "grammar.v4.value.width.narrow"
+              },
+              {
+                "value": "wide",
+                "icon": "adjustments",
+                "label": "grammar.v4.value.width.wide"
+              },
+              {
+                "value": "full",
+                "icon": "adjustments",
+                "label": "grammar.v4.value.width.full"
+              },
+              {
+                "value": "breakout",
+                "icon": "adjustments",
+                "label": "grammar.v4.value.width.breakout"
+              }
+            ]
+          },
+          "label": "grammar.v4.setting.width"
+        },
+        "name": {
+          "type": "name",
+          "label": "grammar.v4.setting.name"
+        },
+        "hide": {
+          "type": "boolean",
+          "helper": {
+            "kind": "toggle"
+          },
+          "label": "grammar.v4.setting.hide"
+        },
+        "visible": {
+          "type": "string",
+          "label": "grammar.v4.setting.visible"
+        },
+        "entrance": {
+          "type": "enum",
+          "values": [
+            "none",
+            "fade",
+            "slide",
+            "scale"
+          ],
+          "default": "none",
+          "helper": {
+            "kind": "enum",
+            "options": [
+              {
+                "value": "none",
+                "icon": "adjustments",
+                "label": "grammar.v4.value.entrance.none"
+              },
+              {
+                "value": "fade",
+                "icon": "adjustments",
+                "label": "grammar.v4.value.entrance.fade"
+              },
+              {
+                "value": "slide",
+                "icon": "adjustments",
+                "label": "grammar.v4.value.entrance.slide"
+              },
+              {
+                "value": "scale",
+                "icon": "adjustments",
+                "label": "grammar.v4.value.entrance.scale"
+              }
+            ]
+          },
+          "label": "grammar.v4.setting.entrance"
+        },
+        "level": {
+          "type": "integer",
+          "helper": {
+            "kind": "stepper"
+          },
+          "min": 1,
+          "max": 6,
+          "exclusiveMin": false,
+          "step": 1,
+          "label": "grammar.v4.setting.level"
+        }
+      },
+      "label": "grammar.v4.type.back"
+    }
+  },
   "spotSettings": {
     "shape": {
       "type": "enum",

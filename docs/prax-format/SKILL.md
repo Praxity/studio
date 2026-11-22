@@ -101,7 +101,7 @@ Run `praxity identity init <course>` before every export and before opening Stud
 
 Never pass `--rederive` unless the person has confirmed in this conversation that no version of the course was published.
 
-Rederivation is planned; the current CLI doesn't accept it. Today, when init says a rewritten course needs new identity and it has never been published, stop and let the person decide.
+When init requires rederivation after a rewrite, ask the person to confirm that no version of the course has ever been published. Only after that confirmation, run `praxity identity init <course> --rederive --confirm-unpublished`. This replaces unmatched IDs, so earlier learner records will not map to the new blocks. It cannot bypass corrupt or missing established identity. See [content identity](reference/content-identity.md).
 
 ## Export
 
