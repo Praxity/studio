@@ -43,7 +43,9 @@ fall back to the title stored with the thread.
 The client reads only the typed inert JSON script, then removes the element and
 keeps the configuration in its closure. It lists the whole review, grouped by page
 with the current page first. Open, Resolved and All filters stack vertically,
-show their refreshed counts and announce the selected count. Show on page opens the owning lesson page or deck slide
+show their refreshed counts and announce the selected count. A Written by select
+narrows the list to threads with a message from one author label (You, Agent or
+Local user); the status counts and announcement follow it. Show on page opens the owning lesson page or deck slide
 and focuses the target; missing targets retain their messages and resolution state.
 Deck arrival waits for the owning slide's activation signal, then focuses after
 Deck's own orientation. A newer jump, a conflicting ready Deck activation or
@@ -52,6 +54,9 @@ outside pointer/key/focus input cancels the pending arrival and removes
 Deck's access notice owns refusal feedback. Its synchronous orientation focus
 does not cancel an accepted arrival.
 The header has the single Expand/Collapse comments control; the footer shows local review status.
+While collapsed, Pin and the toggle show Tabler pin and message-circle icons, with the
+comment count as a badge on the toggle. Their labels expand on hover, keyboard focus and
+while Pin is pressed, stay in the accessible name, and skip the transition under reduced motion.
 Edit text keeps its destination in the review header. Plain Read uses a fixed styled link with a reserved row above the shell; both retain a 44 px target and visible focus, including forced colours.
 Off-page threads show “On another page” until their page is active; they never resolve or mark the current page.
 Replies show compact localized times and generic labels derived from actor ID and
@@ -66,15 +71,32 @@ the empty/count status even if nothing changed. Polls skip only the current
 generation's in-flight list; a superseded request cannot block later polls, and
 create acknowledgement cannot end the timer chain. Unchanged responses leave the list DOM alone. Thread IDs and versions retain
 controls, focus, scroll and unsent text; older responses cannot replace newer data.
-Reply text and frozen request retries stay in memory for this page session and
-are lost when the document closes or reloads. New-comment drafts keep the rules below.
-Cross-document Show on page uses a native modal dialog before discarding any reply
-text or pending retry; Cancel or Escape returns focus to Show on page. A frozen
+Unsent reply text is kept per thread under `praxity-review-reply:<reviewId>:<threadId>`
+in the same storage as new-comment drafts, as plain last-write-wins text. A reload
+restores it and reopens that reply form; a confirmed send removes it. A restored
+reply identical to one of the viewer's own messages in that thread is dropped, because
+a reload during its save left text the server had already accepted. When storage
+fails, the memory fallback keeps it for the page session and the reply hint says so.
+Frozen request retries stay in memory for this page session. New-comment drafts keep the rules below.
+Cross-document Show on page uses a native modal dialog before discarding reply text
+that is not in browser storage, or a pending retry; Cancel or Escape returns focus to Show on page. A frozen
 reply is read-only, and a frozen Reopen keeps Retry available even after a refresh
 shows the committed result. Retry replays the original receipt before another action can start.
 The Read-mode CSP omits `allow-modals`, so `beforeunload` cannot show a leave prompt.
-Ordinary course links, Edit text, Back, reload and closing can discard session-only
+Ordinary course links, Edit text, Back, reload and closing can discard unsaved
 replies and retries without a prompt. Course links are not intercepted by the dialog.
+Text inside an open host popover is in the top layer, above the review UI. The
+selection Comment button and markers for targets inside it move into that popover,
+fixed to the viewport. Show on page reopens a closed popover around its target, and
+Cancel or Escape in the composer reopens a light-dismiss popover that opening the
+modal composer closed. A host with stepped or hidden content may set
+`data-review-reveal-event="<name>"` on the review script; before revealing a target
+that is not visible, Show on page dispatches that event on `document` with the target
+element as `detail`, so the host can show the step first.
+`template/review-notes-panel.js` is an optional host module. Given a header button
+whose `popovertarget` names a manual popover, `mountNotesPanel(button, { sibling })`
+closes it on Escape, returns focus to the button when it closes from inside, closes
+the sibling popover when either opens, and `setCount(n)` fills a `[data-notes-badge]`.
 Comment on… opens a native target picker, including selected
 text, the whole page, top-level blocks and their nested order items, tab titles
 and accordion summaries. Labels contain authored text only. Known renderer
