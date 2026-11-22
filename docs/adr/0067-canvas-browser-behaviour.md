@@ -10,6 +10,8 @@ Course markup and styles share the canvas document with Studio controls. Native 
 
 ## Decision
 
+2026-11-22: `studio/review-bootstrap.ts` now owns the Read review payload and assets, independently of Edit-link composition, ahead of removing the browser editor. This extraction preserves response bytes and headers.
+
 ### src/renderer/browser/canvas-text.test.ts
 
 - `mountTextField`: jsdom has no layout or native trusted input. Adapt those browser boundaries; the
