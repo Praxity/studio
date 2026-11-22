@@ -940,9 +940,10 @@ path guards also refuse cache paths. On macOS, closing an unrelated descriptor
 for the SQLite inode can cancel the process's POSIX locks. Path exclusion prevents
 Studio's authoring APIs from doing that. See [SQLite descriptor and inode cautions](https://www.sqlite.org/howtocorrupt.html).
 
-In Node 24, `node:sqlite` has stability 1.2, release candidate, rather than stability
-2. It remains experimental. See [the pinned Node API](https://nodejs.org/download/release/v24.22.1/docs/api/sqlite.html).
-It was chosen because the shipped Node runtime already provide OS
+In the supported Node 24 and 26 runtimes, `node:sqlite` has stability 1.2, release
+candidate, rather than stability 2. It remains experimental. See [the pinned Node 24 API](https://nodejs.org/download/release/v24.22.1/docs/api/sqlite.html)
+and [Node 26 API](https://nodejs.org/download/release/v26.13.1/docs/api/sqlite.html).
+It was chosen because the supported Node runtimes already provide OS
 advisory locks without a native addon, stale-lock inference or heartbeat recovery.
 Every Node upgrade must check module availability, `DatabaseSync`
 open/close and `BEGIN EXCLUSIVE` on an empty file, cross-process exclusion,
