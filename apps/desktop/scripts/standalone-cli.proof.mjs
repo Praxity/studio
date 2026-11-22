@@ -453,6 +453,7 @@ test("portable CLI exports and preserves identities outside the checkout", async
 		let bundle = path.join(root, "tool with spaces");
 		await cp(new URL("../../../dist/studio-cli", import.meta.url), bundle, { recursive: true });
 		const inventory = JSON.parse(await readFile(path.join(bundle, "inventory.json"), "utf8"));
+		assert.equal(inventory.name, "@praxity/studio");
 		assert.equal(inventory.distribution, "npm-tarball");
 		assert.equal(inventory.entrypoint, "praxity.mjs");
 		assert.equal(inventory.platform, process.platform);
@@ -508,6 +509,7 @@ test("portable CLI exports and preserves identities outside the checkout", async
 		assert.deepEqual(inventory.legal, ["legal/LICENSE", "legal/LICENSING.md"]);
 		assert.deepEqual(await filesIn(path.join(bundle, "legal")), ["LICENSE", "LICENSING.md"]);
 		const manifest = JSON.parse(await readFile(path.join(bundle, "package.json"), "utf8"));
+		assert.equal(manifest.name, "@praxity/studio");
 		assert.equal(manifest.license, "MIT");
 		assert.equal(manifest.private, true);
 		assert.deepEqual(manifest.bin, { praxity: "praxity.mjs" });
@@ -566,13 +568,15 @@ test("portable CLI exports and preserves identities outside the checkout", async
 		const packed = JSON.parse(
 			npm("npm", ["pack", "--json", "--pack-destination", root], bundle),
 		)[0];
+		assert.equal(packed.name, "@praxity/studio");
+		assert.equal(packed.filename, `praxity-studio-${manifest.version}.tgz`);
 		npm(
 			"npm",
 			["install", "--offline", "--no-audit", "--no-fund", path.join(root, packed.filename)],
 			install,
 		);
 		npm("npx", ["--no-install", "praxity", "--help"], install);
-		bundle = path.join(install, "node_modules/@praxity/studio-cli");
+		bundle = path.join(install, "node_modules/@praxity/studio");
 		for (const dependency of inventory.dependencies)
 			for (const notice of dependency.notices)
 				await readFile(path.join(bundle, notice)).catch(async (error) => {
