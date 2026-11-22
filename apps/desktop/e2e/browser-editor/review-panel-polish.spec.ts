@@ -244,10 +244,8 @@ for (const locale of ["en", "fr"] as const) {
 					closeBox.y < titleBox.y + titleBox.height,
 			).toBe(true);
 			const chooseBox = await controls[1].boundingBox(),
-				pinBox = await controls[2].boundingBox(),
-				editBox = await controls[3].boundingBox();
+				pinBox = await controls[2].boundingBox();
 			expect(chooseBox?.y).toBe(pinBox?.y);
-			if (locale === "en") expect(editBox?.y).toBe(chooseBox?.y);
 			await compose(page);
 			const dialog = page.getByRole("dialog", { name: copy.title, exact: true });
 			await expect(dialog).toBeVisible();

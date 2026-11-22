@@ -9,6 +9,7 @@ import { persistFixtureIdentity } from "../../test-utils/identity-fixture";
 import { runPraxityCli } from "../cli";
 import { StudioExportService } from "../studio/export-service";
 import { startStudioServer } from "../studio/server";
+import { retainedSession } from "./fixtures/studio-session";
 
 const roots: string[] = [];
 const servers: { close(): Promise<void> }[] = [];
@@ -60,19 +61,16 @@ async function serverFixture(source?: string, locale?: string) {
 	});
 	servers.push(server);
 	const token = new URLSearchParams(new URL(server.readyUrl).hash.slice(1)).get("session");
-	const rpc = async (method: string, args: unknown = {}) => {
-		const response = await fetch(`${server.origin}/api/rpc`, {
-			method: "POST",
-			headers: {
-				Origin: server.origin,
-				Authorization: `Bearer ${token}`,
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({ method, args }),
-		});
-		return { status: response.status, ...(await response.json()) };
-	};
-	return { ...files, server, token, rpc };
+	const retained = await retainedSession(files.projectDir, {
+		exportAssetsDir: join(resourcesDir, "export-assets"),
+		editorOrigin: server.origin,
+		typstExecutablePath:
+			process.env.PRAXITY_TEST_TYPST ??
+			join(resourcesDir, "typst", process.platform === "win32" ? "typst.exe" : "typst"),
+	});
+	servers.push(retained);
+	const rpc = retained.invoke;
+	return { ...files, server, token, rpc, session: retained.session, retained };
 }
 afterEach(async () => {
 	vi.unstubAllEnvs();
@@ -180,6 +178,7 @@ describe("Studio exports", () => {
 				const files = await serverFixture(source, locale);
 				fixtures.push(files);
 				servers.splice(servers.indexOf(files.server), 1);
+				servers.splice(servers.indexOf(files.retained), 1);
 				roots.splice(roots.indexOf(files.root), 1);
 				for (const format of ["html", "pdf"])
 					for (const scope of ["course", "lesson"])
@@ -214,7 +213,7 @@ describe("Studio exports", () => {
 			);
 		}, 120_000);
 		afterAll(async () => {
-			await Promise.all(fixtures.map((f) => f.server.close()));
+			await Promise.all(fixtures.flatMap((f) => [f.server.close(), f.retained.close()]));
 			await Promise.all(fixtures.map((f) => rm(f.root, { recursive: true, force: true })));
 		});
 		for (const locale of ["en", "fr"])
@@ -264,6 +263,7 @@ describe("Studio exports", () => {
 			);
 			fixtures.push(files);
 			servers.splice(servers.indexOf(files.server), 1);
+			servers.splice(servers.indexOf(files.retained), 1);
 			roots.splice(roots.indexOf(files.root), 1);
 			return files.rpc("exportScorm", { format: "html", scope: "course" });
 		}
@@ -297,6 +297,7 @@ describe("Studio exports", () => {
 			const files = await serverFixture(retrievalSource, locale === "fr" ? "en" : "fr");
 			retrievalFixtures.push(files);
 			servers.splice(servers.indexOf(files.server), 1);
+			servers.splice(servers.indexOf(files.retained), 1);
 			roots.splice(roots.indexOf(files.root), 1);
 			for (const format of ["html", "pdf"] as const) {
 				for (const scope of ["course", "lesson"] as const) {
@@ -317,7 +318,9 @@ describe("Studio exports", () => {
 		}
 	});
 	afterAll(async () => {
-		await Promise.all(retrievalFixtures.map((files) => files.server.close()));
+		await Promise.all(
+			retrievalFixtures.flatMap((files) => [files.server.close(), files.retained.close()]),
+		);
 		await Promise.all(
 			retrievalFixtures.map((files) => rm(files.root, { recursive: true, force: true })),
 		);
@@ -418,7 +421,7 @@ describe("Studio exports", () => {
 		});
 	}
 	it("writes HTML ZIP and native PDF under exports and authenticates attachment downloads", async () => {
-		const { rpc, projectDir, server, token } = await serverFixture();
+		const { rpc, projectDir, server, token, session } = await serverFixture();
 		for (const format of ["html", "pdf"] as const) {
 			const response = await rpc("exportScorm", { format, scope: "course" });
 			expect(response.status, JSON.stringify(response)).toBe(200);
@@ -455,7 +458,7 @@ describe("Studio exports", () => {
 						headers: { Authorization: `Bearer ${cap}` },
 					})
 				).status,
-			).toBe(401);
+			).toBe(404);
 		}
 		await expect(readFile(join(projectDir, "course.yaml"))).rejects.toMatchObject({
 			code: "ENOENT",
@@ -546,7 +549,7 @@ describe("Studio exports", () => {
 		expect((await readdir(join(projectDir, "exports"))).length).toBe(1);
 	});
 	it("discloses environment credential availability without exposing or persisting secrets", async () => {
-		const { rpc, projectDir, server, token } = await serverFixture();
+		const { rpc, projectDir, server, token, session } = await serverFixture();
 		vi.stubEnv("SONIOX_API_KEY", "");
 		vi.stubEnv("SONIOX_REGION", "eu");
 		expect((await rpc("narrationStatus")).result).toEqual({
@@ -567,10 +570,8 @@ describe("Studio exports", () => {
 			region: "jp",
 			disclosureRequired: true,
 		});
-		const snapshot = await (
-			await fetch(`${server.origin}/api/session`, { headers: { Authorization: `Bearer ${token}` } })
-		).text();
-		expect(snapshot).not.toContain("SYNTHETIC-SECRET");
+		const snapshot = await session.readSnapshot();
+		expect(JSON.stringify(snapshot)).not.toContain("SYNTHETIC");
 		expect((await rpc("narrationConfigure", { apiKey: "SYNTHETIC-SECRET" })).status).toBe(404);
 		expect(await readdir(projectDir)).not.toContain("settings.json");
 	});
@@ -581,11 +582,13 @@ describe("highlight RPC publication", () => {
 	beforeAll(async () => {
 		files = await serverFixture("# Practice\n::: highlight Title\n:: Target {key}\n:::\n");
 		servers.splice(servers.indexOf(files.server), 1);
+		servers.splice(servers.indexOf(files.retained), 1);
 		roots.splice(roots.indexOf(files.root), 1);
 	});
 	afterAll(async () => {
 		if (!files) return;
 		await files.server.close();
+		await files.retained.close();
 		await rm(files.root, { recursive: true, force: true });
 	});
 	it.each(["html", "pdf"] as const)(

@@ -8,7 +8,6 @@ import { startJourney } from "./global-setup";
 const leadership = process.env.PRAXITY_CANVAS_DECK_COURSE;
 const firstTitle = leadership ? "Conversations difficiles au travail" : "Opening slide";
 const secondTitle = leadership ? "Naviguer dans le parcours" : "Second slide";
-const secondHeadingPosition = leadership ? 5 : 3;
 const editLabel = leadership ? "Modifier le texte" : "Edit text";
 let stop: (() => Promise<void>) | undefined;
 let origin = "";

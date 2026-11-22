@@ -401,7 +401,7 @@ async function launchPorts(
 ) {
 	const result = await runPraxityCli(["studio", projectDir, "--no-open", ...args], {
 		appVersion: "0.3.0",
-		exportAssetsDir: files.assetsDir,
+		exportAssetsDir: fileURLToPath(new URL("../../../resources/export-assets/", import.meta.url)),
 		editorAssetsDir: files.editorAssetsDir,
 	});
 	if (result.studioServer) cleanups.push(() => result.studioServer?.close() ?? Promise.resolve());
@@ -955,6 +955,10 @@ it.each(["en", "fr"] as const)(
 			draftOriginChanged: true,
 		};
 		const html = await addStudioReviewBootstrap(source, review);
+		expect(config(html).blockNames).toEqual(
+			(locale === "fr" ? reviewFr : reviewEn).pedagogyAudit.blockTypes,
+		);
+		expect(config(html).limits).toEqual(REVIEW_LIMITS);
 		expect(config(html)).toMatchObject({
 			schema: 1,
 			reviewId,

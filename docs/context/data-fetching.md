@@ -1,6 +1,6 @@
 # Data fetching in editor-core
 
-The standalone CLI uses local service owners; the thin canvas uses the authenticated, rooted Studio HTTP API. The Electron bridge and renderer shell are retired. Retained editor-core components and hooks own their loading, error, and mutation state. `PraxityEditor` has no query provider.
+The standalone CLI uses local service owners; Read preview uses a local Studio listener; review comments use their own learner-origin capability. The Electron bridge and renderer shell are retired. Retained editor-core components and hooks own their loading, error, and mutation state. `PraxityEditor` has no query provider.
 
 Document text, selection, and undo belong to editor state. Use the grammar document store for source text and parsed blocks, Zustand for shared panel state, and React state for state local to one component.
 

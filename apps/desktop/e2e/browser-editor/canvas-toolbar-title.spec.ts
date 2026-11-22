@@ -5,7 +5,7 @@ import { expect, test } from "@playwright/test";
 import { startJourney } from "./global-setup";
 
 for (const language of ["en", "fr"] as const) {
-	test(`long toolbar titles truncate in Read and Edit (${language})`, async ({ page }) => {
+	test(`long toolbar titles truncate in Read (${language})`, async ({ page }) => {
 		const title = `${"ABCDEFGHIJKLMNOPQRSTUVWXYZ".repeat(4)}AB`;
 		expect(title).toHaveLength(106);
 		const fixture = await mkdtemp(join(tmpdir(), "toolbar-title-"));
@@ -21,13 +21,9 @@ for (const language of ["en", "fr"] as const) {
 			const stop = await startJourney(page.context(), { courseFixture: fixture });
 			try {
 				const ready = process.env.PRAXITY_BROWSER_READY_URL ?? "";
-				for (const mode of ["Read", "Edit"] as const) {
+				for (const mode of ["Read"] as const) {
 					await page.setViewportSize({ width: 1280, height: 900 });
-					await page.goto(mode === "Read" ? ready : `${new URL(ready).origin}/launch?canvas=1`);
-					if (mode === "Edit")
-						await expect(page.getByRole("status")).toHaveText(
-							language === "fr" ? "Connect\u00e9" : "Connected",
-						);
+					await page.goto(ready);
 					const position = page.locator(".praxity-toolbar-position");
 					for (const width of [1280, 390]) {
 						await page.setViewportSize({ width, height: 900 });
@@ -37,10 +33,6 @@ for (const language of ["en", "fr"] as const) {
 						const buttons = page.locator(".praxity-top-bar .praxity-a11y-pill button");
 						expect(await buttons.count()).toBeGreaterThan(0);
 						for (const button of await buttons.all()) {
-							if (mode === "Edit") {
-								await expect(button).toBeHidden();
-								continue;
-							}
 							await expect(button).toBeVisible();
 							const box = await button.boundingBox();
 							if (!box) throw new Error("Reading-preferences button has no box");
@@ -58,12 +50,6 @@ for (const language of ["en", "fr"] as const) {
 							width === 390 ? page.locator(".praxity-toolbar-context") : position;
 						await expect(position).toHaveAttribute("title", title);
 						await expect(position).toHaveCSS("text-overflow", "ellipsis");
-						if (mode === "Edit" && width === 390) {
-							await expect(page.locator(".praxity-top-bar-fallback")).toBeHidden();
-							await expect(visibleTitle).toHaveAttribute("title", title);
-							await expect(visibleTitle).toHaveCSS("text-overflow", "ellipsis");
-							continue;
-						}
 						await expect(visibleTitle).toHaveAttribute("title", title);
 						await expect(visibleTitle).toBeVisible();
 						await expect(visibleTitle).toHaveCSS("text-overflow", "ellipsis");

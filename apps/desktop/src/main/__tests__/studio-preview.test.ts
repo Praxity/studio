@@ -8,6 +8,7 @@ import type { CoursePreviewDeployment } from "@praxity/export-pipeline";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { startStudioReadOnlyServer } from "../studio/read-only-server";
 import { startStudioServer } from "../studio/server";
+import { retainedSession } from "./fixtures/studio-session";
 
 const roots: string[] = [];
 const servers: Array<{ close(): Promise<void> }> = [];
@@ -47,16 +48,7 @@ describe("isolated Studio media and previews", () => {
 			exportAssetsDir: join(files.root, "missing-export-assets"),
 		});
 		servers.push(server);
-		const token = new URLSearchParams(new URL(server.readyUrl).hash.slice(1)).get("session");
-		const response = await fetch(`${server.origin}/api/rpc`, {
-			method: "POST",
-			headers: {
-				Origin: server.origin,
-				Authorization: `Bearer ${token}`,
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({ method: "coursePreviewBuild", args: {} }),
-		});
+		const response = await fetch(`${server.origin}/launch?canvas=read`);
 		expect(response.status).toBe(500);
 		expect(await response.json()).toEqual({
 			ok: false,
@@ -72,10 +64,12 @@ describe("isolated Studio media and previews", () => {
 		const editor = await startStudioServer({ ...files, appVersion: "0.3.0" });
 		servers.push(editor);
 		const token = new URLSearchParams(new URL(editor.readyUrl).hash.slice(1)).get("session");
-		const snapshot = await (
-			await fetch(`${editor.origin}/api/session`, { headers: { Authorization: `Bearer ${token}` } })
-		).json();
-		const media = snapshot.result.mediaBaseUrl as string;
+		const mediaServer = await startStudioReadOnlyServer({
+			projectDir: files.projectDir,
+			getEditorOrigin: () => editor.origin,
+		});
+		servers.push(mediaServer);
+		const media = mediaServer.mediaBaseUrl;
 		const readOnlyOrigin = new URL(media).origin;
 		expect(readOnlyOrigin).not.toBe(editor.origin);
 		await writeFile(join(files.projectDir, "assets", "audio.mp3"), "0123456789");
@@ -116,7 +110,7 @@ describe("isolated Studio media and previews", () => {
 					headers: { Authorization: `Bearer ${mediaToken}` },
 				})
 			).status,
-		).toBe(401);
+		).toBe(404);
 		expect((await fetch(`${editor.origin}/media/${mediaToken}/assets/audio.mp3`)).status).toBe(404);
 		expect((await fetch(`${editor.origin}/assets/audio.mp3`)).status).toBe(404);
 	});
@@ -285,7 +279,7 @@ describe("isolated Studio media and previews", () => {
 			expect((await fetch(lease.entryUrl)).status).toBe(404);
 		},
 	);
-	it("compiles unsaved source through authenticated RPC, without ancestor inheritance or source writes", async () => {
+	it("compiles unsaved source through the retained session, without ancestor inheritance or source writes", async () => {
 		const files = await fixture();
 		const original = await readFile(join(files.projectDir, "lesson.prax"), "utf8");
 		const server = await startStudioServer({
@@ -294,19 +288,12 @@ describe("isolated Studio media and previews", () => {
 			exportAssetsDir: fileURLToPath(new URL("../../../resources/export-assets/", import.meta.url)),
 		});
 		servers.push(server);
-		const token = new URLSearchParams(new URL(server.readyUrl).hash.slice(1)).get("session");
-		const rpc = async (method: string, args: unknown) => {
-			const response = await fetch(`${server.origin}/api/rpc`, {
-				method: "POST",
-				headers: {
-					Origin: server.origin,
-					Authorization: `Bearer ${token}`,
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({ method, args }),
-			});
-			return { status: response.status, ...(await response.json()) };
-		};
+		const retained = await retainedSession(files.projectDir, {
+			editorOrigin: server.origin,
+			exportAssetsDir: fileURLToPath(new URL("../../../resources/export-assets/", import.meta.url)),
+		});
+		servers.push(retained);
+		const rpc = retained.invoke;
 		expect(
 			(
 				await rpc("coursePreviewBuild", {

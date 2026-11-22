@@ -158,7 +158,8 @@ The author host and learner host have different authority. Session lifecycle mus
 
 ### src/main/studio/review-bootstrap.ts
 
-- `addStudioReviewBootstrap`: Hash the sorted captured source revisions, rather than the build revision, so review anchors survive rebuilds and include changes in other lessons.
+- `addStudioReviewBootstrap`: Hash the captured source set; the manifest does not map lesson IDs to
+  source paths.
 
 ### src/main/studio/export-service.ts
 

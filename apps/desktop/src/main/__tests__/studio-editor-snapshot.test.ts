@@ -16,6 +16,7 @@ import type { StudioEvent } from "../studio/project-session";
 import { createStudioProjectSession } from "../studio/project-session";
 import { startStudioServer } from "../studio/server";
 import { nodeMetadataBudget } from "./fixtures/editor-snapshot";
+import { sessionResult } from "./fixtures/studio-session";
 
 const source =
 	"\uFEFF---\r\ntitle: Lesson\r\n---\r\n\r\n# Page\r\n\r\n::: note\r\nText\r\n:::\r\n\r\nTail without newline";
@@ -65,33 +66,14 @@ afterEach(async () => {
 	await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
 
-it("D1 D2 I4 admits exact CRLF node and whole-file seeds through the rooted RPC", async () => {
+it("D1 D2 I4 admits exact CRLF node and whole-file seeds through the rooted session", async () => {
 	const root = await projectFixture();
-	const ui = await mkdtemp(join(tmpdir(), "studio-editor-snapshot-ui-"));
-	roots.push(ui);
-	await writeFile(join(ui, "index.html"), "<!doctype html><title>Test</title>");
-	await writeFile(join(ui, "canvas.js"), "void 0;");
-	await writeFile(
-		join(ui, "canvas.sha256"),
-		"4f56045c295617d094843daf46a0b666472d5613d232b9fe302224248ed4d362\n",
-	);
 	const flushes = { syncFile: vi.fn(async () => {}), syncDirectory: vi.fn(async () => {}) };
-	const server = await withProjectFileFlushes(flushes, () =>
-		startStudioServer({ projectDir: root, editorAssetsDir: ui, appVersion: "test" }),
-	);
-	sessions.push(server);
-	const token = new URLSearchParams(new URL(server.readyUrl).hash.slice(1)).get("session");
+	const session = await createStudioProjectSession(root, "test");
+	sessions.push(session);
 	const rpc = async (args: unknown) => {
-		const response = await fetch(`${server.origin}/api/rpc`, {
-			method: "POST",
-			headers: {
-				Origin: server.origin,
-				Authorization: `Bearer ${token}`,
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({ method: "editorSnapshot", args }),
-		});
-		return { status: response.status, body: await response.json() };
+		const response = await sessionResult(session, "editorSnapshot", args);
+		return { status: response.status, body: response };
 	};
 	const response = await rpc({});
 	expect(response.status).toBe(200);
@@ -132,82 +114,35 @@ it("D1 D2 I4 admits exact CRLF node and whole-file seeds through the rooted RPC"
 		expect(refused.status).toBe(400);
 		expect(JSON.stringify(refused.body)).not.toContain("Text");
 	}
-	const headers = {
-		Origin: server.origin,
-		Authorization: `Bearer ${token}`,
-		"Content-Type": "application/json",
-	};
-	const send = async (
-		body: string,
-		custom: Record<string, string> = headers,
-		origin = server.origin,
-	) => {
-		const result = await fetch(`${origin}/api/rpc`, { method: "POST", headers: custom, body });
-		return {
-			status: result.status,
-			body: result.headers.get("content-type")?.includes("application/json")
-				? await result.json()
-				: await result.text(),
-		};
-	};
 	for (const args of ['{"__proto__":{}}', '{"constructor":1}', "null", "[]", '"x"']) {
-		expect(await send(`{"method":"editorSnapshot","args":${args}}`)).toEqual({
-			status: 400,
-			body: {
-				ok: false,
-				error: { code: "bad_schema", message: "Request does not match the input schema" },
-			},
-		});
+		await expect(session.invoke("editorSnapshot", JSON.parse(args))).rejects.toThrow();
 	}
-	for (const body of [
-		'{"method":"editorSnapshot"}',
-		'{"method":"editorSnapshot","args":{},"extra":1}',
-	])
-		expect((await send(body)).status).toBe(400);
-	const body = '{"method":"editorSnapshot","args":{}}';
-	for (const Authorization of ["", "Bearer wrong"])
-		expect((await send(body, { ...headers, Authorization })).status).toBe(401);
-	for (const Origin of ["", "null", "http://127.0.0.1:1"])
-		expect((await send(body, { ...headers, Origin })).status).toBe(403);
-	const state = await fetch(`${server.origin}/api/session`, { headers });
-	const courseOrigin = new URL((await state.json()).result.mediaBaseUrl).origin;
-	expect((await send(body, { ...headers, Origin: courseOrigin })).status).toBe(403);
-	expect((await send(body, { ...headers, Origin: courseOrigin }, courseOrigin)).status).toBe(403);
-	const events = await fetch(`${server.origin}/api/events`, {
-		headers: { ...headers, Origin: courseOrigin },
-	});
-	expect(events.status).toBe(403);
-	await events.body?.cancel();
 	for (const [transactionId, previous, text] of [
 		["http-one", "Text", "One"],
 		["http-two", "One", "Two"],
 	]) {
 		flushes.syncFile.mockClear();
 		flushes.syncDirectory.mockClear();
-		const committed = await send(
-			JSON.stringify({
-				method: "operationApply",
-				args: {
-					transactionId,
-					operation: "editSource",
-					files: [{ path: lesson.file, baseRevision: note.seed.baseRevision }],
-					targets: [
-						{
-							file: lesson.file,
-							ref: note.seed.target,
-							expectedText: `::: note\r\n${previous}\r\n:::\r\n`,
-						},
-					],
-					args: { text: `::: note\r\n${text}\r\n` },
-				},
+		const committed = await withProjectFileFlushes(flushes, () =>
+			sessionResult(session, "operationApply", {
+				transactionId,
+				operation: "editSource",
+				files: [{ path: lesson.file, baseRevision: note.seed.baseRevision }],
+				targets: [
+					{
+						file: lesson.file,
+						ref: note.seed.target,
+						expectedText: `::: note\r\n${previous}\r\n:::\r\n`,
+					},
+				],
+				args: { text: `::: note\r\n${text}\r\n` },
 			}),
 		);
-		expect(committed.body).toMatchObject({ ok: true, result: { ok: true } });
+		expect(committed).toMatchObject({ ok: true, result: { ok: true } });
 		expect(flushes.syncFile).toHaveBeenCalled();
 		expect(flushes.syncDirectory).toHaveBeenCalled();
 	}
-	const latest = await fetch(`${server.origin}/api/session`, { headers });
-	expect((await latest.json()).result.editorSeq).toBe(2);
+	expect((await session.readSnapshot()).editorSeq).toBe(2);
 	expect((await rpc({})).body.result.seq).toBe(2);
 });
 
@@ -227,6 +162,7 @@ it.each(["UTF-8", "identity", "manifest"])(
 			projectDir: root,
 			editorAssetsDir: ui,
 			appVersion: "test",
+			exportAssetsDir: join(import.meta.dirname, "../../../resources/export-assets"),
 		});
 		sessions.push(server);
 		const token = new URLSearchParams(new URL(server.readyUrl).hash.slice(1)).get("session");
@@ -247,15 +183,7 @@ it.each(["UTF-8", "identity", "manifest"])(
 						? "{broken SECRET-AUTHOR-SOURCE"
 						: "title: [broken SECRET-AUTHOR-SOURCE\n",
 			);
-			const response = await fetch(`${server.origin}/api/rpc`, {
-				method: "POST",
-				headers: {
-					Origin: server.origin,
-					Authorization: `Bearer ${token}`,
-					"Content-Type": "application/json",
-				},
-				body: '{"method":"editorSnapshot","args":{}}',
-			});
+			const response = await fetch(`${server.origin}/launch?canvas=read`);
 			expect(response.status).toBe(failure === "manifest" ? 400 : 500);
 			const error = await response.json();
 			expect(error).toMatchObject({ ok: false, error: { message: "Project operation failed" } });

@@ -974,7 +974,7 @@ retain the original file style.
 
 The module-deck compiler applies the content-model `supportsDeckPassGate` response-type restriction. Unsupported authored Pass gates produce a localized compiler error. Group and automatic-answer validation remain separate compiler rules.
 
-The thin canvas calls the rooted authenticated HTTP session. Learner HTML stays on the read-only origin; author documents strip course scripts and run only Studio's nonce-bearing text adapter. `GET /` enters Read mode through `/launch` admission. The old browser shell, Electron main entry, preload, windows and IPC are removed. `pnpm build:cli` packages canvas assets and export support; it refuses startup if the canvas digest does not match. See [browser editor status](browser-editor.md).
+The Read preview loads captured learner HTML on a separate listener. The launch listener exposes no browser source-write RPC or author projection. `GET /` enters Read mode through `/launch` admission. The old browser shell, Electron main entry, preload, windows and IPC are removed. `pnpm build:cli` packages canvas assets and export support; it refuses startup if the canvas digest does not match. See [browser editor status](browser-editor.md).
 
 `praxity studio <folder> --port <n>` binds exactly that port on `127.0.0.1`.
 Without `--port`, the OS assigns a port. An occupied requested port fails without
@@ -1052,7 +1052,7 @@ The main rendering contexts are:
 | HTML and SCORM islands runtime | `packages/export-pipeline/template/src/islands/` | Server-rendered blocks with targeted interactive islands |
 | HTML and SCORM static/no-JS runtime | `packages/export-pipeline/src/html-gen.ts` | Server-rendered semantic block HTML |
 
-The canvas compiles the saved project into an immutable artifact. Read mode loads that artifact as the top-level learner document; Edit mode projects it through `author-document.ts` on the authenticated editor origin. The CLI session retains its preview scheduler and captured inspection support. The old React frame host, detached Electron preview window and preview IPC are removed.
+The canvas compiles the saved project into an immutable artifact. Read mode loads that artifact as the top-level learner document. Browser Edit mode and its author projection are removed. The CLI session retains its preview scheduler and captured inspection support. The old React frame host, detached Electron preview window and preview IPC are removed.
 
 The shared `math/render-math.ts` owns inline and display equation output for compiled
 artifacts and shared block projections. It emits native MathML once, preserving the

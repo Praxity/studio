@@ -2,6 +2,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { expect, type Page, test } from "@playwright/test";
 import type { SCORMRuntime } from "../../../../packages/export-pipeline/src/scorm/types";
+import { createStudioProjectSession } from "../../src/main/studio/project-session";
 import { canvasMessages } from "../../src/shared/canvas-messages";
 import { startJourney } from "./global-setup";
 
@@ -44,7 +45,9 @@ for (const [lang, width, theme] of [
 		const stops: (() => Promise<void>)[] = [];
 		let file = "";
 		let invalidFile = "";
-		let authorUrl = "";
+		let readyUrl = "";
+		let invalidReady = "";
+		let invalidRoot = "";
 		let readUrl = "";
 		let page: Page;
 		let invalidPage: Page;
@@ -61,24 +64,22 @@ for (const [lang, width, theme] of [
 		test.beforeAll(async ({ browser }) => {
 			for (const authored of [initial, updated]) {
 				stops.push(await startJourney(browser, { standaloneSource: authored }));
-				const origin = new URL(process.env.PRAXITY_BROWSER_READY_URL ?? "").origin;
 				const sourceFile = join(process.env.PRAXITY_BROWSER_PROJECT ?? "", "second.prax");
 				const prepared = await browser.newPage({
 					viewport: { width, height: 900 },
 					colorScheme: theme,
 				});
-				await prepared.goto(`${origin}/launch?canvas=1`);
-				await expect(prepared.locator("#studio-status")).toHaveText(messages.connected);
+				await prepared.goto(process.env.PRAXITY_BROWSER_READY_URL ?? "");
 				if (authored === initial) {
 					page = prepared;
 					file = sourceFile;
-					authorUrl = page.url();
-					const read = page.getByRole("link", { name: messages.read, exact: true });
-					await expect(read).toHaveAttribute("href", /canvas\/preview/);
-					readUrl = (await read.getAttribute("href")) ?? "";
+					readyUrl = process.env.PRAXITY_BROWSER_READY_URL ?? "";
+					readUrl = page.url();
 				} else {
 					invalidPage = prepared;
 					invalidFile = sourceFile;
+					invalidReady = process.env.PRAXITY_BROWSER_READY_URL ?? "";
+					invalidRoot = process.env.PRAXITY_BROWSER_PROJECT ?? "";
 				}
 			}
 		});
@@ -90,17 +91,6 @@ for (const [lang, width, theme] of [
 		async function restoreSource(authored: string) {
 			await page.goto("about:blank");
 			if ((await readFile(file, "utf8")) !== authored) await writeFile(file, authored);
-		}
-		async function openEdit() {
-			await restoreSource(initial);
-			await page.goto(authorUrl, { waitUntil: "domcontentloaded" });
-			await expect(page.locator("#studio-status")).toHaveText(messages.connected);
-			await expect(page.locator("[data-highlight]")).toHaveCount(1);
-			await expect(chunk()).toHaveText(initialText);
-			await expect(page.getByRole("button", { name: messages.enter, exact: true })).toHaveAttribute(
-				"aria-pressed",
-				"true",
-			);
 		}
 		async function expectReadReady() {
 			await expect(page.locator("[data-highlight]")).toHaveAttribute("data-highlight-enhanced", "");
@@ -117,48 +107,14 @@ for (const [lang, width, theme] of [
 			await watchStorage(page);
 		}
 
-		async function expectSourceOnly(target = page) {
-			const edits = target.getByRole("button", { name: /^(Edit|Modifier) .*\d+\s*:/u });
-			await expect(edits).toHaveCount(1);
-			await expect(edits).toHaveAccessibleName(
-				lang === "en" ? "Edit heading 1: Practice" : "Modifier le titre 1 : Practice",
-			);
-			expect(await target.evaluate(() => Reflect.get(window, "__praxityRuntime"))).toBeUndefined();
-			const root = target.locator("[data-highlight]");
-			await expect(root).not.toHaveAttribute("data-highlight-enhanced");
-			await expect(root.locator("[data-highlight-memory-notice]")).toHaveCount(0);
-			await expect(root.locator("[data-node-id]")).toHaveCount(0);
-		}
-
-		test("Edit exposes only the page heading control", async () => {
-			await openEdit();
-			await expectSourceOnly();
-		});
-
-		test("script-stripped baseline has no bindings or notice", async () => {
-			await openEdit();
-			const root = page.locator("[data-highlight]");
-			const answer = root.locator("[data-highlight-fallback]");
-			await expect(answer).toBeVisible();
-			await expect(answer).not.toHaveAttribute("open");
-			await expect(answer.locator("summary")).toHaveText(lang === "fr" ? "Réponse" : "Answer");
-			await expect(root.locator("[data-highlight-check]")).toBeHidden();
-			await expect(root.locator("[data-highlight-restart]")).toBeHidden();
-			await expect(root.locator("[data-highlight-enhanced]")).toHaveCount(0);
-			await expect(root.locator("[data-highlight-chunk][role=button]")).toHaveCount(0);
-			await expectSourceOnly();
-		});
-
 		test("valid source refreshes the highlight", async () => {
-			await openEdit();
 			await writeFile(file, updated);
+			await page.goto(readyUrl);
 			await expect(chunk()).toHaveText(updatedText);
 			await expect(page.locator("[data-highlight-fallback]")).toContainText(updatedText);
 			await expect(page.locator("[data-highlight-fallback]")).not.toContainText(initialText);
 			await expect(page.locator("[data-highlight-print-answer]")).toContainText(updatedText);
 			await expect(page.locator("[data-highlight-print-answer]")).not.toContainText(initialText);
-			await expect(page.locator("#studio-status")).toHaveText(messages.connected);
-			await expectSourceOnly();
 		});
 
 		test("invalid source retains the last good highlight and recovers", async () => {
@@ -166,36 +122,40 @@ for (const [lang, width, theme] of [
 			const file = invalidFile;
 			expect(await readFile(file, "utf8")).toBe(updated);
 			await expect(chunk(page)).toHaveText(updatedText);
-			await expect(page.getByRole("button", { name: messages.enter, exact: true })).toHaveAttribute(
-				"aria-pressed",
-				"true",
-			);
-			await expectSourceOnly(page);
 			const root = page.locator("[data-highlight]");
 			const good = await root.innerHTML();
 			await writeFile(file, updated.replace("{key}", '{key="true"}'));
-			await expect(page.locator("#studio-status")).toHaveText(
-				(lang === "fr"
-					? "second.prax, ligne 9, colonne 38 : "
-					: "second.prax, line 9, column 35: ") + messages.sourceError,
-			);
-			await expect(page.getByRole("button", { name: /^(Edit|Modifier) .*\d+\s*:/u })).toHaveCount(
-				0,
-			);
+			const session = await createStudioProjectSession(invalidRoot, "test");
+			try {
+				const snapshot = (await session.invoke(
+					"canvasTextSnapshot",
+					{},
+					{
+						editorSeq: 0,
+						file: "second.prax",
+						lessonId: "lesson",
+						pageId: "page",
+						pageIds: ["page"],
+						pageIndex: 0,
+					},
+				)) as { sourceRefusal?: string };
+				expect(snapshot.sourceRefusal).toBe(
+					(lang === "fr"
+						? "second.prax, ligne 9, colonne 38 : "
+						: "second.prax, line 9, column 35: ") + messages.sourceError,
+				);
+			} finally {
+				await session.close();
+			}
 			expect(await root.innerHTML()).toBe(good);
 			await writeFile(file, recovered);
+			await page.goto(invalidReady);
 			await expect(chunk(page)).toHaveText(recoveredText);
 			await expect(root.locator("[data-highlight-passage]")).not.toContainText(updatedText);
 			await expect(page.locator("[data-highlight-fallback]")).toContainText(recoveredText);
 			await expect(page.locator("[data-highlight-fallback]")).not.toContainText(updatedText);
 			await expect(page.locator("[data-highlight-print-answer]")).toContainText(recoveredText);
 			await expect(page.locator("[data-highlight-print-answer]")).not.toContainText(updatedText);
-			await expect(page.locator("#studio-status")).toHaveText(messages.connected);
-			await expect(page.getByRole("link", { name: messages.read, exact: true })).toHaveAttribute(
-				"href",
-				/canvas\/preview/,
-			);
-			await expectSourceOnly(page);
 		});
 
 		test("Read marks, checks and resets without changing stored state", async () => {

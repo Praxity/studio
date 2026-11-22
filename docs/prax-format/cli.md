@@ -47,35 +47,14 @@ Use `git status --ignored` to list recovery copies excluded by Git, or
 
 ## Initialize content identity
 
-Studio preserves the saved identity when opening changed source would retire IDs.
-Read mode previews the current source without saving those IDs. Entering Edit text
-lists the affected file, page, block label and its old line when known. The author
-can continue by confirming that the course has not been published. This has the
-same effect as `identity init --rederive --confirm-unpublished`. Close returns to
-Read without changing identity. Undo the source edit to retain the existing IDs,
-or run `praxity identity init <course>` to inspect the refusal. Additions that
-preserve every existing ID still save identity without asking. While confirmation
-is pending, identity-writing Studio RPCs refuse with `identity_retirement_pending`.
-A source change after review requires a new review.
-Duplicate-only and invalid results remain transient when Studio opens a course.
-If a recorded edit makes a lesson invalid, Studio saves the source and reports
-diagnostics. Its stored identity stays unchanged until the lesson parses again.
-Invalid lessons do not block edits to valid lessons. Design-only metadata edits
-also save invalid source while preserving its line endings and stored identity.
-Duplicates alone do not trigger a retirement review. Background author refreshes
-also render current source transiently. The next author write refuses until the
-retirements are reviewed. Review changes keeps typed text available to copy and
-requires explicit discard before navigating to the review page.
-A full-source save that would itself remove saved content refuses and lists the
-affected entries without changing storage. Keep that text or make the change in
-the canvas, where Studio records the operation. This refusal does not send the
-author to a review of unchanged disk source.
-When duplicates coexist with retirements, Studio lists only the retirements and
-uses the same mixed advice as initialization: make the text unique, run plain
-initialization, and rederive remaining changes only if the course has never been published. Confirmation
-remains unavailable, including through its endpoint, until ambiguity is resolved.
-Previously saved provisional pending identities are discarded when the extra
-copy is removed or reworded. They do not trigger a Studio retirement gate.
+Studio preserves saved identity when opening changed source would retire IDs.
+Read previews the current source without saving those IDs. Run
+`praxity identity init <course>` to inspect identity refusals. If the course has
+never been published, `--rederive --confirm-unpublished` explicitly accepts
+re-derivation. For published courses, preserve the existing IDs and resolve the
+reported changes before writing identity. Browser preview has no identity
+confirmation form or source-write API. Source edits use `praxity edit`, including
+`--rendered`; its revision and identity guards remain in force.
 
 ```sh
 praxity identity init <course> [--rederive --confirm-unpublished] [--lang en|fr]

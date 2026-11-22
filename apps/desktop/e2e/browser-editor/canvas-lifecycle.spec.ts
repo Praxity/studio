@@ -5,7 +5,6 @@ import { startJourney } from "./global-setup";
 
 const source =
 	"# First page\n\n## Original heading\n\nBody.\n\n# Second page\n\n## Other heading\n\nSecond body.\n";
-const origin = () => new URL(process.env.PRAXITY_BROWSER_READY_URL ?? "").origin;
 const ready = () => process.env.PRAXITY_BROWSER_READY_URL ?? "";
 const project = () => process.env.PRAXITY_BROWSER_PROJECT ?? "";
 async function open(page: Page) {
@@ -61,11 +60,18 @@ test("nine tabs closed before their build replies leave four live revisions", as
 			await tab.route("**/canvas?admission=*", async (route) => {
 				const response = await route.fetch({ maxRedirects: 0 });
 				urls.push(response.headers().location);
+				await route.abort();
 				arrived();
 			});
-			void tab.goto(ready()).catch(() => {});
+			const launch = await request.get(new URL("/launch?canvas=read", ready()).href, {
+				maxRedirects: 0,
+			});
+			const navigation = expect(
+				tab.goto(new URL(launch.headers().location, ready()).href),
+			).rejects.toThrow();
 			await built;
 			await tab.close();
+			await navigation;
 		}
 		expect(new Set(urls).size).toBe(9);
 		const statuses = [];
