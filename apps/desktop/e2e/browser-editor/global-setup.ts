@@ -102,7 +102,7 @@ export async function startJourney(
 				});
 				child.stdout.on("data", (bytes) => {
 					output += bytes.toString();
-					const ready = output.match(/http:\/\/127\.0\.0\.1:\d+\/#session=[a-zA-Z0-9_-]+/);
+					const ready = output.match(/http:\/\/127\.0\.0\.1:\d+\//);
 					if (ready) {
 						clearTimeout(timer);
 						resolveReady(ready[0]);

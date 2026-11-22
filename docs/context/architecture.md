@@ -1,6 +1,6 @@
 # Architecture
 
-Praxity Studio hosts grammar 4 projects through the standalone CLI and thin canvas. A project contains `.prax` source, course metadata, assets and `.praxity/identity/`. Preview and export remain local.
+Praxity Studio hosts grammar 4 projects through the standalone CLI and local Read preview. A project contains `.prax` source, course metadata, assets and `.praxity/identity/`. Preview and export remain local.
 
 ## Authoring flow
 
@@ -12,7 +12,7 @@ Praxity Studio hosts grammar 4 projects through the standalone CLI and thin canv
   -> local project files
 ```
 
-- `apps/desktop/` owns the standalone CLI, thin canvas, authenticated server, filesystem access, preview services and export commands. Its directory name is retained.
+- `apps/desktop/` owns the standalone CLI, Read preview server, filesystem access, preview services and export commands. Its directory name is retained.
 - `packages/content-model/` owns dependency-free block data types, constants, and inline grammar formatting.
 - `packages/editor-core/` owns the grammar editor, panels, document store, accessibility checker, and adapter-backed editor features.
 - `packages/grammar/` owns grammar 4 tokenization, the lossless tree, schema and `readLesson()` renderer projection. Hosts retain source bytes; source edits do not regenerate the document from renderer blocks.
@@ -86,13 +86,12 @@ session invalidation revokes a prepared transition. Saved and parsed draft scope
 both switch to durable bindings. Pairs describe author selection, focus and open
 drafts only. They never enter stored snapshots, lineage, executable history,
 narration/review targets, preview events or frame commands. Reads suppress them.
-The operation and history RPCs return the pairs on the authenticated author
-origin. `editorChanged` and `/api/session.editorSeq` fence delayed replies by
-sequence; the browser also checks its connection epoch and disposal, without
-retrying a write. The controller applies pairs before reading durable seeds and
-omits the metadata from history. `openSource.displayId` associates an ID-free
-draft with its display node in session memory; persistence keeps its guarded
-target. New-editor DOM attachment remains a separate host slice.
+Historical browser transport: operation and history RPCs returned correspondence
+on the authenticated author origin. Sequence numbers and connection epochs fenced
+delayed replies without retrying writes. The controller applied pairs before reading
+durable seeds and omitted them from history. Browser RPC and event transport are
+retired. Internal session services still retain correspondence and guarded draft
+targets; they expose no browser write route.
 The store retains per-snapshot validation proofs within a 16 MiB payload budget
 and an eight-course LRU limit. Every load still reads the complete store through
 the existing path guards. A proof binds the exact admitted UTF-8 bytes' SHA-256,
@@ -382,8 +381,8 @@ named parse failures. Runtime IDs are display-only; unstored write targets remai
 null.
 `block-inspection.ts` assembles the author outline from one complete I4 read
 view in a rooted read transaction. Manifest order precedes unlisted lessons.
-`editorSnapshot` accepts strictly empty input through the authenticated editor
-RPC. Course and learner origins cannot access that RPC or its event stream.
+`editorSnapshot` accepts strictly empty input through the internal session API.
+There is no browser RPC or event-stream route.
 The existing `editorChanged` event invalidates it after session writes and
 outside admissions, including preview failures. Its sequence and the snapshot's
 sequence come from the operation owner inside their admissions.
@@ -394,20 +393,16 @@ Page lens binds the rendered heading and its handle to that page ID. A host must
 use the page entry for page-title editing, rather than joining the raw heading
 fragment's reader ID to an outline row. This keeps every reader ID in its
 admitted mappings without inventing a second source target for the page line.
-The legacy browser snapshot transport is removed. The canvas uses the rooted snapshot and text-operation methods below.
+The browser snapshot transport is removed. The rooted snapshot and text-operation
+methods remain available internally until the dead session APIs are pruned.
 
 `apps/desktop/src/main/operations/operation-service.ts` owns session operations.
-Canvas HTTP requests also require `X-Praxity-Canvas`, naming an admitted captured
-author-document path. The read-only artifact owner resolves that path to the
-compiler's lesson and page identities and page position. Operation admission filters snapshot
-bindings to that page and refuses cross-page writes, including within one lesson.
-For a captured `deck` runtime, the document contains every slide in its lesson,
-so the same admission includes all of that lesson's pages and refuses other lessons.
-The scope comes from captured compiler metadata, never course DOM markers.
-Retained page identity takes precedence over position when an agent inserts a page;
-position is only the fallback for a retired transient identity after a title edit.
+An optional captured page scope still filters internal field bindings to a
+compiler-admitted page and refuses cross-page writes. Deck scope includes every
+page in its lesson. Read uses captured scope for review and revision fallback;
+no browser request can invoke a text write.
 
-The canvas uses `canvasTextSnapshot` with empty arguments and `canvasTextApply`
+The internal session retains `canvasTextSnapshot` with empty arguments and `canvasTextApply`
 with `{transactionId, operation: "setText", file, nodeId, baseRevision, expectedText, field, text}`.
 The snapshot returns raw inline text, its exact UTF-16 range, the whole-file
 SHA-256, and rendered and owning node IDs. The operation package's descriptor
@@ -433,21 +428,8 @@ Figure captions retain a separate body ID and `text` binding per authored
 run. Their renderer projections carry those IDs beside the image, never the
 figure's ID as a combined text field. Missing, empty and duplicate media caption
 parts have no canvas binding. Cross-run inline tokens retain the combined figure
-projection without ambiguous field locators. The canvas offers subject, caption,
-paragraph, list-item and choice-label buttons, using unique compiler-owned
-locators inside block wrappers. Authored feedback presentations require the canvas
-browser to place their rows before offering buttons.
-Choice labels locate their text span, keeping the input and label container in
-place while editing and refreshing. After a save,
-the acknowledgement's compiler fragments refresh the field's rendered children,
-after the existing inspection-markup owner strips unsafe markup and binds native
-fragments to the author page. The acknowledgement's identity correspondence
-promotes temporary display IDs before the next edit. Missing render output falls
-back to the saved-page refresh without retrying the write.
-The acknowledgement's recorded source edits also retain the field's exact saved
-bytes and translate the remaining bindings' ranges through the existing source
-edit owners. An immediate second edit therefore keeps CRLF and mixed endings
-even before the background page refresh finishes.
+projection without ambiguous field locators. The CLI's `edit --rendered` workflow uses these admitted bindings independently
+of the retired browser controls.
 Generated or translated defaults and the generated "I don't know" option have no
 source field. Option markers, answer flags, response settings and sibling feedback
 remain outside label fields. Pasted answer markers refuse. Paragraph fields exclude
@@ -473,7 +455,7 @@ LF textarea input at their retained text boundaries, including mixed endings
 when a wrap is deleted or inserted. Unmatched replacement wraps retain ordinal
 endings when their count is unchanged; new wraps use the field/file ending.
 `setText` shares this
-validation in the operation owner for CLI, agent and canvas callers. Author
+validation in the operation owner for CLI, agent and internal session callers. Author
 input returns `empty-text`, `line-break`, `unsupported-syntax`, `list-marker` or
 `settings`; forged fields return `not-allowed` and malformed envelopes return
 `invalid-args`. The captured raw field text is also required and checked inside
@@ -485,60 +467,9 @@ unchanged.
 Successful scalar edits preserve descendants' IDs and use normal I4 snapshot and
 lesson-head persistence. No canvas draft persistence or structural RPC is added.
 
-`renderer/browser/canvas-text.ts` owns the native single-field adapter. Each
-snapshot binding locates one rendered text run. Its adjacent
-Edit button and labelled textarea live in a reference-owned shadow root with a
-manual top-layer popover. A flow spacer reserves their measured height. Studio's
-default theme tokens are resolved by the host, independent of course CSS.
-Enter and blur coalesce into one immutable submission; composition never commits
-on Enter. Paragraph instructions document native Shift+Enter for a wrapped line.
-Escape cancels before a save. Pending fields stay read-only, connected
-and unchanged. Refusals retain exact input; explicit reload requires inline
-confirmation. Unknown transport outcomes check a fresh admitted snapshot before
-offering a retry of the same immutable transaction. A failed read keeps retry
-disabled. A committed acknowledgement or cancellation refreshes the saved page
-through the existing preview build owner and a fresh read admission. The
-`editorChanged` stream invalidates output without acknowledging a write.
-An open field defers document replacement, including outside changes and late
-compilations. Source bindings are checked across the build; a changed generation
-or admitted source discards it. Reconnection also invalidates saved output.
-Blur preserves moved focus, including course controls replaced by the refresh.
-Enter and Escape return to the refreshed button. A retired runtime ID may use
-the admitted field's source position to restore focus only, never to admit a write.
-
-Unchanged input closes with no RPC. Refused/unknown text remains kept across
-subsequent input and pending saves. Navigation awaits the pending submission;
-leaving or Escape then requires the same inline explicit-discard flow as Reload.
-Pending saves and kept text register an unload refusal. Top-level `_top` and
-`_parent` links use the same pending-save guard as ordinary navigation. A new save retires any older discard
-confirmation. A corrected value still saves on author departure; Studio's own
-focus moves and moves within the field's recovery controls never save. The inline
-confirmation is a group named by its question, exposed when Keep editing receives
-focus, without a second live announcement. A departure while that confirmation
-is open never saves. Pointer interactions with the panel, including nonfocusable
-instructions, are internal interactions in WebKit too. Escape works throughout
-the panel, and composition suppresses the panel's Tab handler.
-Open native fields move outside course ancestors before focus and remain
-connected beside the document root until close. A same-tree `aria-owns` relation
-at the heading's flow spacer preserves accessibility reading order while the
-shadow root and top layer protect the field. Browser accessibility trees cover
-that order; real assistive-technology acceptance remains separate.
-Critical root visibility/interactivity properties
-remain owned, preventing CSS-triggered blur saves even at the document root.
-Root zoom also remains owned. Active geometry clamps into the viewport and
-scrolls internally when taller than it. Focus reveals off-screen Edit buttons
-without moving an already visible pointer target before its click.
-Tab and Shift+Tab resume
-native course traversal at the heading's flow spacer, preserving its position
-while the open field remains protected.
-Compiler block wrappers locate admitted bindings without
-letting an unrelated duplicate node marker suppress the real button. A qualified
-duplicate or unmapped wrapper reports a localized mapping refusal rather than
-silently removing editing access.
-
-The browser session exposes `operationApply` and read-only `operationResolve`
-with the grammar operation request, and `historyApply` with
-`{transactionId, historyId, direction: "undo" | "redo"}`.
+The browser text adapter is retired. Its source files and unused bundle remain
+until packaging cleanup. The internal session still exposes `operationApply`,
+`operationResolve` and `historyApply`; the browser has no route to invoke them.
 Node targets require exact `expectedText`. UUIDs locate current nodes;
 ID-free fingerprints must have exactly one match. Changed slices refuse with
 `conflict`, missing IDs with `orphaned`, and duplicate matches with `ambiguous`.
@@ -565,8 +496,8 @@ token offsets refuse with `stale`; rebasing them needs additional base guards.
 Manifest and course targets also await their host adapters. A mutation to an
 indirectly selected lesson requires that lesson's client revision binding.
 
-The browser's `browser.editor` bridge exposes the operation RPCs and S2's local
-storage and metadata APIs. `LocalEditorStore` journals draft buckets at
+The internal session retains operation, local storage and metadata APIs; they
+have no browser transport. `LocalEditorStore` journals draft buckets at
 `.praxity/local/drafts/file-<sha256-of-filename>.json` and the clipboard at
 `.praxity/local/clipboard.json`. These versioned, strict records survive changes
 to the browser origin and server port. Schema 2 draft buckets contain the lesson
@@ -591,7 +522,7 @@ adapters pass the put effect's `expectedVersion` to `draftPut` and reply with it
 request ID and submitted generation. Identical in-flight blurs keep that request.
 The unmounted U7 project/lesson adapters, persistence queue, staged host and
 outline have been retired. The retained session and frame modules still support
-the legacy inspection/preview imports. The thin canvas never mounts those
+the legacy inspection/preview imports. The Read preview never mounts those
 adapters and never calls draft persistence or draft rendering. Existing local
 records remain untouched.
 
@@ -655,7 +586,7 @@ clipboard history remain a separate slice.
 `praxity edit` translates one source-node selector into an S1 request. Dry runs
 use `resolve`; writes use `apply`. An explicit expected file revision is checked
 inside the service admission and refuses rebasing. I4 installs source and identity
-in the same T1 transaction. Neither CLI nor canvas edits write review metadata.
+in the same T1 transaction. CLI source edits do not write review metadata.
 Read-only block inspection reports source-tree addresses, UUIDs, inclusive line
 ranges, labels and schema settings. `--eligibility` opts into registry probes for
 single-node eligibility; the default omits the operation list.
@@ -974,28 +905,21 @@ retain the original file style.
 
 The module-deck compiler applies the content-model `supportsDeckPassGate` response-type restriction. Unsupported authored Pass gates produce a localized compiler error. Group and automatic-answer validation remain separate compiler rules.
 
-The thin canvas calls the rooted authenticated HTTP session. Learner HTML stays on the read-only origin; author documents strip course scripts and run only Studio's nonce-bearing text adapter. `GET /` enters Read mode through `/launch` admission. The old browser shell, Electron main entry, preload, windows and IPC are removed. `pnpm build:cli` packages canvas assets and export support; it refuses startup if the canvas digest does not match. See [browser editor status](browser-editor.md).
+The Read preview loads captured learner HTML on a separate listener. The launch listener exposes no browser source-write RPC or author projection. `GET /` enters Read mode through `/launch` admission. The old browser shell, Electron main entry, preload, windows and IPC are removed. `pnpm build:cli` packages canvas assets and export support; it refuses startup if the canvas digest does not match. See [browser editor status](browser-editor.md).
 
 `praxity studio <folder> --port <n>` binds exactly that port on `127.0.0.1`.
-Without `--port`, the OS assigns a port. An occupied requested port fails without
-fallback. A bounded `GET /api/identity` request identifies another Studio by its
-canonical course directory; an unrecognized listener is reported as another program.
-Identity requests pass the same exact Host and supplied Origin checks as other routes.
+Without `--port`, Studio uses a course-specific default and falls back to a temporary
+port if unavailable. An occupied requested port fails without fallback. A bounded
+`GET /api/identity` request identifies another Studio by its canonical course
+directory. Identity requests pass the same exact Host and supplied Origin checks
+as other routes.
 
-`GET /launch` has no side effects and returns `303 See Other` with
-`Location: /#session=<token>`, `Cache-Control: no-store` and
-`Referrer-Policy: no-referrer`. It accepts no bearer capability and sends no CORS
-headers. Static project actions can commit `http://127.0.0.1:<port>/launch` as their
-preview URL while each Studio process still generates a fresh session token.
-The exact Host and supplied Origin checks apply before the redirect, preserving
-DNS rebinding protection. A web page can navigate to `/launch`, but cross-origin
-fetches cannot read the response or its Location, including with manual redirects.
-
-The trade-off is that any local process able to make HTTP requests to loopback can
-obtain the session token through `/launch`. This is the same local trust boundary
-as reading the course files directly; web pages cannot obtain the token. The
-read-only preview/media origin keeps its separate random port and capabilities.
-RPC, session reads and events still require the editor's bearer capability.
+`GET /launch` redirects to `/launch?canvas=read#` with no-store and no-referrer
+headers. Read compilation requires a one-use admission and local Fetch Metadata.
+The final redirect uses an explicit empty fragment before crossing to the separate
+learner listener. Generic browser RPC, session snapshot, event-stream and identity
+confirmation routes are removed. Review comments use their own learner-origin
+routes and capability.
 
 Standalone Studio cancellation reaches the atomic output write. Shutdown closes
 owned preview resources while admitted exports drain, with the existing ten-second
@@ -1021,7 +945,7 @@ New Project and sample creation accept an existing empty folder. They build the 
 Grammar 4 source
   -> saved project snapshot
        -> compileCourse() -> immutable learner artifact
-            -> top-level learner Read document and isolated author projection
+            -> top-level learner Read document
             -> deployCourse() -> HTML, review, or LMS package
   -> live lesson source + compileCourse() -> retained authoring artifact lease
        -> inert page-list card frames and sidebar one-page frame
@@ -1048,11 +972,10 @@ The main rendering contexts are:
 | Context | Entry point | Renderer |
 |---|---|---|
 | Canvas Read | `apps/desktop/src/main/studio/read-only-server.ts` | Captured learner document and runtime |
-| Canvas Edit | `apps/desktop/src/main/studio/author-document.ts` | Script-stripped author document and native text adapter |
 | HTML and SCORM islands runtime | `packages/export-pipeline/template/src/islands/` | Server-rendered blocks with targeted interactive islands |
 | HTML and SCORM static/no-JS runtime | `packages/export-pipeline/src/html-gen.ts` | Server-rendered semantic block HTML |
 
-The canvas compiles the saved project into an immutable artifact. Read mode loads that artifact as the top-level learner document; Edit mode projects it through `author-document.ts` on the authenticated editor origin. The CLI session retains its preview scheduler and captured inspection support. The old React frame host, detached Electron preview window and preview IPC are removed.
+Studio compiles the saved project into an immutable artifact. The Read preview loads that artifact as the top-level learner document. Browser Edit mode and its author projection are removed. The CLI session retains its preview scheduler and captured inspection support. The old React frame host, detached Electron preview window and preview IPC are removed.
 
 The shared `math/render-math.ts` owns inline and display equation output for compiled
 artifacts and shared block projections. It emits native MathML once, preserving the
@@ -1272,5 +1195,5 @@ An active `disableCompletion` rule gates forward progress from its page. `LogicE
 
 - Sanitize user HTML before `dangerouslySetInnerHTML` with the shared sanitizer.
 - Accept embed URLs only through `isSafeEmbedUrl()`; embeds must use HTTPS third-party origins.
-- Admit author RPCs with the exact loopback Host, editor Origin and bearer. Learner documents receive no write capability.
+- Keep launch requests behind the exact loopback Host, Origin and local document admission guards. Browser author RPCs are retired; learner documents receive no source-write capability.
 - Treat local project paths as untrusted input. Resolve and validate paths before reading or writing.

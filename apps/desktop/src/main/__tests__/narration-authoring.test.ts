@@ -30,7 +30,9 @@ import {
 	writeNarrationAuthoring,
 } from "../narration-authoring";
 import { withProjectFileTransaction } from "../project-file-transactions";
+import { createStudioProjectSession } from "../studio/project-session";
 import { startStudioServer } from "../studio/server";
+import { sessionResult } from "./fixtures/studio-session";
 
 const roots: string[] = [];
 const runtime = { appVersion: "test", exportAssetsDir: "unused" };
@@ -385,12 +387,7 @@ it.each(["en", "fr"] as const)(
 			join(editorAssetsDir, "canvas.sha256"),
 			"4f56045c295617d094843daf46a0b666472d5613d232b9fe302224248ed4d362\n",
 		);
-		const server = await startStudioServer({
-			projectDir: root,
-			editorAssetsDir,
-			appVersion: "test",
-			exportAssetsDir: join(import.meta.dirname, "../../../resources/export-assets"),
-		});
+		const session = await createStudioProjectSession(root, "test", undefined, undefined, locale);
 		try {
 			const attemptedSource = JSON.stringify({
 				...sidecar,
@@ -402,21 +399,12 @@ it.each(["en", "fr"] as const)(
 					},
 				},
 			});
-			const token = new URLSearchParams(new URL(server.readyUrl).hash.slice(1)).get("session");
-			const response = await fetch(`${server.origin}/api/rpc`, {
-				method: "POST",
-				headers: {
-					Origin: server.origin,
-					Authorization: `Bearer ${token}`,
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					method: "narrationAuthoringWrite",
-					args: { source: attemptedSource, expectedSource: savedSource },
-				}),
+			const response = await sessionResult(session, "narrationAuthoringWrite", {
+				source: attemptedSource,
+				expectedSource: savedSource,
 			});
 			expect(response.status).toBe(422);
-			expect(await response.json()).toEqual({
+			expect({ ok: response.ok, error: response.error }).toEqual({
 				ok: false,
 				error: {
 					code: "narration_target_unresolved",
@@ -428,7 +416,7 @@ it.each(["en", "fr"] as const)(
 				},
 			});
 		} finally {
-			await server.close();
+			await session.close();
 		}
 		expect(await readFile(join(root, "narration.yaml"), "utf8")).toBe(savedSource);
 		const preview = await buildCourseExportInput({

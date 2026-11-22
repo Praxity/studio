@@ -1,11 +1,10 @@
-import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import { readFile, realpath, stat } from "node:fs/promises";
 import { createServer, type IncomingMessage, request, type ServerResponse } from "node:http";
 import type { Socket } from "node:net";
 import path from "node:path";
 import { createTranslator } from "use-intl/core";
 import { ZodError, z } from "zod";
-import type { CanvasPageScope } from "../../shared/editor-session";
 import { studioPortSchema } from "../../shared/ipc-schemas";
 import { isDesktopSubPath } from "../../shared/path-utils";
 import {
@@ -26,19 +25,14 @@ import {
 	withProjectFileTransaction,
 } from "../project-file-transactions";
 import { ownHttpResponse } from "../response-stream";
-import { serveStudioAuthorDocument } from "./author-document";
-import { renderIdentityReview } from "./identity-review";
 import { createStudioProjectSession, StudioSessionError } from "./project-session";
 import { startStudioReadOnlyServer } from "./read-only-server";
 import { prepareStudioTemporaryOutputs } from "./temporary-outputs";
 
 declare const __PRAXITY_CANVAS_SHA256__: string;
 
-const MAX_BODY_BYTES = 10_500_000;
-const MAX_QUEUED_EVENT_BYTES = 20_000_000;
 const DEFAULT_PORT_START = 45000;
 const DEFAULT_PORT_COUNT = 1000;
-const RPC_ENVELOPE = z.object({ method: z.string().min(1).max(80), args: z.unknown() }).strict();
 const STUDIO_IDENTITY = z
 	.object({
 		service: z.literal("praxity-studio"),
@@ -140,56 +134,6 @@ function identifyStudio(port: number): Promise<string | null> {
 		req.once("socket", (socket) => socket.once("error", () => finish(null)));
 		req.end();
 	});
-}
-
-async function readBody(
-	req: IncomingMessage,
-	t: ReturnType<typeof createTranslator>,
-): Promise<unknown> {
-	if (!/^application\/json(?:\s*;\s*charset=utf-8)?$/i.test(req.headers["content-type"] ?? "")) {
-		reject(415, "media_type", t("serverRefusals.mediaType"));
-	}
-	if (req.headers["content-encoding"] && req.headers["content-encoding"] !== "identity") {
-		reject(415, "content_encoding", t("serverRefusals.encoding"));
-	}
-	if (Number(req.headers["content-length"]) > MAX_BODY_BYTES) {
-		reject(413, "body_too_large", t("serverRefusals.bodySize"));
-	}
-	const body = await new Promise<Buffer>((resolve, rejectBody) => {
-		let size = 0;
-		let oversized = false;
-		const chunks: Buffer[] = [];
-		const cleanup = () => {
-			req.removeListener("data", data);
-			req.removeListener("end", end);
-			req.removeListener("error", fail);
-			req.removeListener("aborted", abort);
-		};
-		const fail = (error: Error) => {
-			cleanup();
-			rejectBody(error);
-		};
-		const abort = () => fail(new RequestError(400, "request_aborted", t("serverRefusals.aborted")));
-		const data = (chunk: Buffer) => {
-			size += chunk.byteLength;
-			if (size > MAX_BODY_BYTES) {
-				oversized = true;
-				chunks.length = 0;
-			} else chunks.push(chunk);
-		};
-		const end = () => {
-			cleanup();
-			if (oversized)
-				rejectBody(new RequestError(413, "body_too_large", t("serverRefusals.bodySize")));
-			else resolve(Buffer.concat(chunks));
-		};
-		req.on("data", data).once("end", end).once("error", fail).once("aborted", abort);
-	});
-	try {
-		return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(body));
-	} catch {
-		reject(400, "invalid_json", t("serverRefusals.json"));
-	}
 }
 
 async function uiFiles(editorAssetsDir: string, t: ReturnType<typeof createTranslator>) {
@@ -348,11 +292,9 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 			}
 			throw error;
 		}
-		const token = randomBytes(32).toString("base64url");
-		const streams = new Set<ServerResponse>();
 		const pending = new Set<Promise<void>>();
 		let closing = false;
-		const canvasAdmissions = new Map<string, { read: boolean; expires: number }>();
+		const canvasAdmissions = new Map<string, { expires: number }>();
 		function expireCanvasAdmissions() {
 			for (const [route, admission] of canvasAdmissions)
 				if (admission.expires <= Date.now()) canvasAdmissions.delete(route);
@@ -382,16 +324,6 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 			"Cross-Origin-Opener-Policy": "same-origin",
 		};
 
-		function authenticate(req: IncomingMessage) {
-			const supplied = req.headers.authorization ?? "";
-			const expected = `Bearer ${token}`;
-			if (
-				Buffer.byteLength(supplied) !== Buffer.byteLength(expected) ||
-				!timingSafeEqual(Buffer.from(supplied), Buffer.from(expected))
-			) {
-				reject(401, "unauthorized", t("serverRefusals.capability"));
-			}
-		}
 		function requireLocalLaunch(req: IncomingMessage) {
 			const sameSiteDocument =
 				req.headers["sec-fetch-site"] === "same-site" &&
@@ -404,20 +336,6 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 			)
 				reject(403, "origin_forbidden", t("serverRefusals.localLaunch"));
 		}
-		async function serveIdentityGate(req: IncomingMessage, res: ServerResponse) {
-			requireLocalLaunch(req);
-			const review = await session.identityReview();
-			if (!review.retirements.length) return false;
-			const page = renderIdentityReview(review, token);
-			res.setHeader(
-				"Content-Security-Policy",
-				csp.replace("script-src 'self'", `script-src 'nonce-${page.nonce}'`),
-			);
-			res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-			res.end(page.html);
-			return true;
-		}
-
 		async function retryCanvasNavigation(req: IncomingMessage, res: ServerResponse) {
 			if (req.method !== "GET" || req.headers["sec-fetch-dest"] !== "document") return false;
 			await canvasBuilding;
@@ -426,11 +344,9 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 			return true;
 		}
 
-		function redirectCanvasDocument(res: ServerResponse, read: boolean, entry: string) {
+		function redirectCanvasDocument(res: ServerResponse, entry: string) {
 			res.writeHead(303, {
-				Location: read
-					? `${readOnly.origin}/canvas${entry}?praxity-resume=0#`
-					: `/launch?canvas=${encodeURIComponent(entry)}`,
+				Location: `${readOnly.origin}/canvas${entry}?praxity-resume=0#`,
 			});
 			res.end();
 		}
@@ -453,7 +369,7 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 				if (!["GET", "HEAD", "POST"].includes(req.method ?? ""))
 					reject(405, "http_method", t("serverRefusals.method"));
 				const route = req.url ?? "";
-				if (route === "/") {
+				if (route === "/" || route === "/launch") {
 					if (req.method !== "GET") reject(405, "http_method", t("serverRefusals.launchGet"));
 					res.writeHead(303, { Location: "/launch?canvas=read#" });
 					res.end();
@@ -470,15 +386,14 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 					}
 					if (
 						encodeURIComponent(target) !== encoded ||
-						(target !== "1" &&
-							target !== "read" &&
+						(target !== "read" &&
 							!readOnly.hasCanvasDocument(target) &&
 							!readOnly.currentCanvasDocument(target))
 					)
 						reject(404, "not_found", t("serverRefusals.resource"));
-					const compile = target === "1" || target === "read";
-					if (target !== "read" && (await serveIdentityGate(req, res))) return;
-					let destination = `/canvas${readOnly.currentCanvasDocument(target) ?? target}#session=${token}`;
+					const compile = target === "read";
+					requireLocalLaunch(req);
+					let destination = `${readOnly.origin}/canvas${readOnly.currentCanvasDocument(target) ?? target}?praxity-resume=0#`;
 					if (compile) {
 						expireCanvasAdmissions();
 						if (canvasAdmissions.size >= 8) {
@@ -487,7 +402,6 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 						}
 						destination = `/canvas?admission=${randomBytes(32).toString("base64url")}`;
 						canvasAdmissions.set(destination, {
-							read: target === "read",
 							expires: Date.now() + 30_000,
 						});
 					}
@@ -497,91 +411,9 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 					res.end();
 					return;
 				}
-				if (route === "/launch") {
-					if (req.method !== "GET") reject(405, "http_method", t("serverRefusals.launchGet"));
-					if (await serveIdentityGate(req, res)) return;
-					res.writeHead(303, { Location: "/launch?canvas=1" });
-					res.end();
-					return;
-				}
-				if (route === "/api/identity/confirm") {
-					if (req.method !== "POST")
-						reject(405, "http_method", t("serverRefusals.confirmationPost"));
-					if (req.headers.origin !== origin)
-						reject(403, "origin_required", t("serverRefusals.confirmationOrigin"));
-					authenticate(req);
-					const { revision } = z
-						.object({ revision: z.string().regex(/^[a-f0-9]{64}$/) })
-						.strict()
-						.parse(await readBody(req, t));
-					await session.confirmIdentityRetirements(revision);
-					res.writeHead(303, { Location: "/launch" });
-					res.end();
-					return;
-				}
 				if (route === "/api/identity") {
 					if (req.method !== "GET") reject(405, "http_method", t("serverRefusals.identityGet"));
 					json(res, 200, { service: "praxity-studio", projectDir: projectRoot });
-					return;
-				}
-				if (route === "/api/rpc") {
-					if (req.method !== "POST") reject(405, "http_method", t("serverRefusals.rpcPost"));
-					if (req.headers.origin !== origin)
-						reject(403, "origin_required", t("serverRefusals.rpcOrigin"));
-					authenticate(req);
-					const input = RPC_ENVELOPE.parse(await readBody(req, t));
-					let canvasPageScope: CanvasPageScope | undefined;
-					if (input.method === "canvasTextSnapshot" || input.method === "canvasTextApply") {
-						const documentPath = req.headers["x-praxity-canvas"];
-						canvasPageScope =
-							typeof documentPath === "string" && documentPath.startsWith("/canvas/")
-								? readOnly.canvasPageScope(documentPath.slice("/canvas".length))
-								: undefined;
-						if (!canvasPageScope) reject(403, "canvas_page_required", t("serverRefusals.page"));
-					}
-					let result = await session.invoke(input.method, input.args, canvasPageScope);
-					if (input.method === "canvasPreviewBuild") {
-						const documentPath = req.headers["x-praxity-canvas"];
-						const previous =
-							typeof documentPath === "string" && documentPath.startsWith("/canvas/")
-								? documentPath.slice("/canvas".length)
-								: undefined;
-						if (previous) {
-							const current = readOnly.currentCanvasDocument(previous) ?? previous;
-							result = { ...(result as object), pageId: readOnly.canvasPageScope(current)?.pageId };
-						}
-					}
-					json(res, 200, { ok: true, result });
-					return;
-				}
-				if (route === "/api/session" || route === "/api/events") {
-					if (req.method !== "GET") reject(405, "http_method", t("serverRefusals.apiGet"));
-					authenticate(req);
-					if (route === "/api/session") {
-						json(res, 200, {
-							ok: true,
-							result: { ...(await session.readSnapshot()), mediaBaseUrl: readOnly.mediaBaseUrl },
-						});
-						return;
-					}
-					if (streams.size >= 8) reject(429, "stream_limit", t("serverRefusals.streams"));
-					res.writeHead(200, { "Content-Type": "application/x-ndjson; charset=utf-8" });
-					streams.add(res);
-					const send = (event: unknown) => {
-						if (res.destroyed || res.writableEnded) return;
-						const line = `${JSON.stringify(event)}\n`;
-						if (res.writableLength + Buffer.byteLength(line) > MAX_QUEUED_EVENT_BYTES)
-							res.destroy();
-						else res.write(line);
-					};
-					send({ type: "ready" });
-					const heartbeat = setInterval(() => send({ type: "heartbeat" }), 15_000);
-					const unsubscribe = session.subscribe(send);
-					res.once("close", () => {
-						clearInterval(heartbeat);
-						unsubscribe();
-						streams.delete(res);
-					});
 					return;
 				}
 				if (req.method !== "GET" && req.method !== "HEAD")
@@ -594,7 +426,6 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 						reject(401, "unauthorized", t("serverRefusals.admission"));
 					}
 					requireLocalLaunch(req);
-					const read = admission.read;
 					canvasAdmissions.delete(route);
 					if (req.method !== "GET") reject(405, "http_method", t("serverRefusals.canvasGet"));
 					if (canvasBuilding) {
@@ -603,7 +434,7 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 						const entry = await canvasBuilding;
 						if (!entry || signal.aborted || closing)
 							reject(503, "session_closed", t("serverRefusals.cancelled"));
-						redirectCanvasDocument(res, read, entry);
+						redirectCanvasDocument(res, entry);
 						return;
 					}
 					if (!preview) reject(503, "preview_unavailable", t("serverRefusals.preview"));
@@ -622,7 +453,7 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 						const page = built.pages[0];
 						if (!page) reject(404, "not_found", t("serverRefusals.noPage"));
 						const entry = new URL(`${encodeURIComponent(page.slug)}.html`, built.entryUrl);
-						redirectCanvasDocument(res, read, entry.pathname);
+						redirectCanvasDocument(res, entry.pathname);
 						completedEntry = entry.pathname;
 					} finally {
 						canvasBuilding = undefined;
@@ -631,30 +462,7 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 					return;
 				}
 				if (route.startsWith("/canvas/")) {
-					if (req.headers["sec-fetch-dest"] === "empty") requireLocalLaunch(req);
-					else if (await serveIdentityGate(req, res)) return;
-					const requested = new URL(route, origin);
-					const relativeUrl = requested.pathname.slice("/canvas".length);
-					if (!readOnly.hasCanvasDocument(relativeUrl)) {
-						const current = readOnly.currentCanvasDocument(relativeUrl);
-						if (current) {
-							res.writeHead(303, { Location: `/canvas${current}${requested.search}` });
-							res.end();
-							return;
-						}
-					}
-					const html = await readOnly.readCanvasDocument(relativeUrl, signal);
-					if (html === null) reject(404, "not_found", t("serverRefusals.resource"));
-					const response = await serveStudioAuthorDocument(
-						new Request(`${origin}${route}`, { method: req.method }),
-						html,
-						`${readOnly.origin}/canvas${relativeUrl}`,
-						canvasScript,
-					);
-					for (const [name, value] of response.headers) res.setHeader(name, value);
-					res.writeHead(200);
-					res.end(req.method === "HEAD" ? undefined : await response.text());
-					return;
+					reject(404, "not_found", t("serverRefusals.resource"));
 				}
 				if (await retryCanvasNavigation(req, res)) return;
 				reject(404, "not_found", t("serverRefusals.resource"));
@@ -730,7 +538,6 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 					error: {
 						code,
 						message,
-						...(code === "identity_retirement_pending" ? { reviewUrl: "/launch" } : {}),
 						...(plainStorePath !== undefined
 							? {
 									messageRef: {
@@ -793,12 +600,11 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 		let closePromise: Promise<void> | undefined;
 		return {
 			origin,
-			readyUrl: `${origin}/#session=${token}`,
+			readyUrl: `${origin}/`,
 			close() {
 				closePromise ??= (async () => {
 					closing = true;
 					session.cancelExport();
-					for (const stream of streams) stream.end();
 					const stopped = new Promise<void>((resolve, rejectClose) =>
 						server.close((error) => (error ? rejectClose(error) : resolve())),
 					);

@@ -2,7 +2,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test } from "@playwright/test";
-import { canvasMessages } from "../../src/shared/canvas-messages";
+import { createStudioProjectSession } from "../../src/main/studio/project-session";
 import { startJourney } from "./global-setup";
 
 const expected = {
@@ -11,107 +11,75 @@ const expected = {
 };
 
 for (const locale of ["en", "fr"] as const) {
-	for (const recovery of ["refresh", "reload", "edit-link"] as const) {
-		test(`${locale}: source refusal and ${recovery} recover the same lesson`, async ({
-			browser,
-			page,
-		}) => {
-			const fixture = await mkdtemp(
-				join(process.env.PRAXITY_TEST_ARTIFACTS ?? tmpdir(), "source-error-"),
+	test(`${locale}: located source refusal and repaired Read retain the same lesson`, async ({
+		browser,
+		page,
+	}) => {
+		const fixture = await mkdtemp(
+			join(process.env.PRAXITY_TEST_ARTIFACTS ?? tmpdir(), "source-error-"),
+		);
+		let stop: (() => Promise<void>) | undefined;
+		let session: Awaited<ReturnType<typeof createStudioProjectSession>> | undefined;
+		try {
+			const original = await readFile(
+				new URL("./fixtures/source-error-feedback-after-options.prax", import.meta.url),
+				"utf8",
 			);
-			let stop: (() => Promise<void>) | undefined;
-			try {
-				const original = await readFile(
-					new URL("./fixtures/source-error-feedback-after-options.prax", import.meta.url),
-					"utf8",
-				);
-				const source = original.replace(
-					"# Page d-c1.prax",
-					"# Lesson opening\n\nOpening text.\n\n# Page d-c1.prax",
-				);
-				await writeFile(
-					join(fixture, "course.yaml"),
-					`title: Example\nlocale: ${locale}\nlessons: [intro.prax, lesson.prax]\n`,
-				);
-				await writeFile(
-					join(fixture, "intro.prax"),
-					"---\ntitle: Introduction\n---\n# First course page\n\nIntro.\n",
-				);
-				await writeFile(join(fixture, "lesson.prax"), source);
-				stop = await startJourney(browser, { courseFixture: fixture });
-				const origin = new URL(process.env.PRAXITY_BROWSER_READY_URL ?? "").origin;
-				await page.goto(`${origin}/launch?canvas=read`);
-				await page.getByRole("link", { name: "d-c1.prax", exact: true }).click();
-				await page.getByRole("link", { name: "Page d-c1.prax", exact: true }).click();
-				await expect(
-					page.getByRole("heading", { name: "Page d-c1.prax", exact: true }),
-				).toBeVisible();
-				await page.getByRole("link", { name: canvasMessages[locale].enter, exact: true }).click();
-				const status = page.locator("#studio-status");
-				await expect(status).toHaveText(expected[locale]);
-				await expect(status).toHaveAttribute("aria-live", "polite");
-				await expect(status).not.toContainText(/grammar\.v4|rt-|Datenschutz|bartholomew/);
-				await expect(page.getByRole("button", { name: /^(Edit|Modifier) / })).toHaveCount(1);
-				const toggle = page.getByRole("button", {
-					name: canvasMessages[locale].enter,
-					exact: true,
-				});
-				await toggle.click();
-				await expect(status).toHaveText(expected[locale]);
-				await toggle.click();
-				await expect(status).toHaveText(expected[locale]);
-				await page.reload();
-				await expect(status).toHaveText(expected[locale]);
-				const authorUrl = page.url();
-				const readUrl = await page
-					.getByRole("link", { name: canvasMessages[locale].read, exact: true })
-					.getAttribute("href");
-				if (!readUrl) throw new Error("Missing Read destination");
-				await writeFile(
-					join(process.env.PRAXITY_BROWSER_PROJECT ?? "", "lesson.prax"),
-					source.replace(/^(correct:.*|incorrect:.*)\r?\n/gmu, ""),
-				);
-				await expect(status).toHaveText(canvasMessages[locale].connected);
-				await expect(page).not.toHaveURL(authorUrl);
-				if (recovery === "reload") {
-					for (let revision = 0; revision < 3; revision++) {
-						const previousUrl = page.url();
-						await writeFile(
-							join(process.env.PRAXITY_BROWSER_PROJECT ?? "", "intro.prax"),
-							`# First course page\n\nOutside change ${revision}.\n`,
-						);
-						await expect(page).not.toHaveURL(previousUrl);
-						await expect(status).toHaveText(canvasMessages[locale].connected);
-					}
-					await page.evaluate((url) => history.replaceState(null, "", url), authorUrl);
-					const response = await page.reload();
-					expect(response?.request().redirectedFrom()?.url()).toBe(authorUrl);
-				}
-				if (recovery === "edit-link") {
-					await page.goto(readUrl);
-					await page.getByRole("link", { name: canvasMessages[locale].enter, exact: true }).click();
-				}
-				await expect(status).toHaveText(canvasMessages[locale].connected);
-				await expect(
-					page.getByRole("heading", { name: "Page d-c1.prax", exact: true }),
-				).toBeVisible();
-				await expect(
-					page.getByRole("heading", { name: "First course page", exact: true }),
-				).toHaveCount(0);
-				await expect(
-					page.getByRole("heading", { name: "Lesson opening", exact: true }),
-				).toHaveCount(0);
-				await expect(
-					page.getByRole("button", {
-						name: `${locale === "en" ? "Edit paragraph 1: " : "Modifier le paragraphe 1 : "}Intro paragraph.`,
-						exact: true,
-					}),
-				).toBeVisible();
-			} finally {
-				await page.goto("about:blank");
-				await stop?.();
-				await rm(fixture, { recursive: true, force: true });
-			}
-		});
-	}
+			const source = original.replace(
+				"# Page d-c1.prax",
+				"# Lesson opening\n\nOpening text.\n\n# Page d-c1.prax",
+			);
+			await writeFile(
+				join(fixture, "course.yaml"),
+				`title: Example\nlocale: ${locale}\nlessons: [intro.prax, lesson.prax]\n`,
+			);
+			await writeFile(
+				join(fixture, "intro.prax"),
+				"---\ntitle: Introduction\n---\n# First course page\n\nIntro.\n",
+			);
+			await writeFile(join(fixture, "lesson.prax"), source);
+			stop = await startJourney(browser, { courseFixture: fixture });
+			const root = process.env.PRAXITY_BROWSER_PROJECT ?? "";
+			session = await createStudioProjectSession(root, "test", undefined, undefined, locale);
+			const scope = {
+				editorSeq: 0,
+				file: "lesson.prax",
+				lessonId: "lesson",
+				pageId: "page",
+				pageIds: ["page"],
+				pageIndex: 0,
+			};
+			const refused = (await session.invoke("canvasTextSnapshot", {}, scope)) as {
+				sourceRefusal?: string;
+			};
+			expect(refused.sourceRefusal).toBe(expected[locale]);
+			expect(refused.sourceRefusal).not.toMatch(/grammar\.v4|rt-|Datenschutz|bartholomew/);
+			expect(await readFile(join(root, "lesson.prax"), "utf8")).toBe(source);
+			await writeFile(
+				join(root, "lesson.prax"),
+				source.replace(/^(correct:.*|incorrect:.*)\r?\n/gmu, ""),
+			);
+			expect(
+				((await session.invoke("canvasTextSnapshot", {}, scope)) as { sourceRefusal?: string })
+					.sourceRefusal,
+			).toBeUndefined();
+			await page.goto(process.env.PRAXITY_BROWSER_READY_URL ?? "");
+			await page.getByRole("link", { name: "d-c1.prax", exact: true }).click();
+			await page.getByRole("link", { name: "Page d-c1.prax", exact: true }).click();
+			await expect(
+				page.getByRole("heading", { name: "Page d-c1.prax", exact: true }),
+			).toBeVisible();
+			await expect(
+				page.getByRole("heading", { name: "First course page", exact: true }),
+			).toHaveCount(0);
+			await expect(page.getByRole("heading", { name: "Lesson opening", exact: true })).toHaveCount(
+				0,
+			);
+		} finally {
+			await session?.close();
+			await page.goto("about:blank");
+			await stop?.();
+			await rm(fixture, { recursive: true });
+		}
+	});
 }

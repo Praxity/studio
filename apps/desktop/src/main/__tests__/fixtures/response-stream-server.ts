@@ -64,9 +64,7 @@ function midBody(url: string, headers?: Record<string, string>): Promise<Incomin
 await persistFixtureIdentity(projectDir);
 const server = await startStudioReadOnlyServer({ projectDir, getEditorOrigin: () => "" });
 const editor = await startStudioServer({ projectDir, editorAssetsDir, appVersion: "0.3.0" });
-const token = new URLSearchParams(new URL(editor.readyUrl).hash.slice(1)).get("session");
-const openResponse = (url: string) =>
-	midBody(url, url.startsWith(editor.origin) ? { Authorization: `Bearer ${token}` } : undefined);
+const openResponse = (url: string) => midBody(url);
 const deploymentStreams = new Set<import("node:stream").Readable>();
 let latestPreviewStream: import("node:stream").Readable | undefined;
 const deployment: CoursePreviewDeployment = {
@@ -114,7 +112,7 @@ const urls = [
 	hosted.entryUrl,
 	`${server.mediaBaseUrl}assets/large.mp4`,
 	downloadUrl,
-	`${editor.origin}/api/events`,
+	server.registerDownload(download, "second.zip", bytes.length),
 ];
 try {
 	const failed = await midBody(hosted.entryUrl);
@@ -127,8 +125,10 @@ try {
 		const responses = await Promise.all(urls.map(openResponse));
 		for (const response of responses) response.destroy();
 	}
-	const events = await midBody(`${editor.origin}/api/events`, { Authorization: `Bearer ${token}` });
-	events.destroy();
+	const interruptedDownload = await midBody(
+		server.registerDownload(download, "second.zip", bytes.length),
+	);
+	interruptedDownload.destroy();
 	const preview = await midBody(hosted.entryUrl);
 	await hosted.release();
 	preview.destroy();

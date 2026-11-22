@@ -8,10 +8,10 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { persistFixtureIdentity, readIdentityFixture } from "../../test-utils/identity-fixture";
-import type { OperationService } from "../operations/operation-service";
 import { projectLockCacheDirectory } from "../path-security";
 import { createStudioProjectSession } from "../studio/project-session";
 import { type StudioServer, startStudioServer } from "../studio/server";
+import { retainedSession } from "./fixtures/studio-session";
 
 const faults = vi.hoisted(() => ({ cleanup: false, renameBusy: false }));
 vi.mock("node:fs/promises", async (importOriginal) => {
@@ -34,6 +34,7 @@ const scratch = process.env.PRAXITY_TEST_ARTIFACTS ?? tmpdir();
 const roots: string[] = [];
 const servers: StudioServer[] = [];
 const children: ChildProcess[] = [];
+const retained = new Map<StudioServer, Awaited<ReturnType<typeof retainedSession>>>();
 const source = "---\ntitle: Same lesson\n---\n\n# Hello\n";
 
 async function fixture(manifest = "title: Test\nlessons: [second.prax, first.prax]\n") {
@@ -74,8 +75,20 @@ async function running(preview = false) {
 			: {}),
 	});
 	servers.push(server);
-	const token = new URLSearchParams(new URL(server.readyUrl).hash.slice(1)).get("session");
-	if (!token) throw new Error("Fixture session capability is missing");
+	const token = "a".repeat(43);
+	retained.set(
+		server,
+		await retainedSession(files.projectDir, {
+			editorOrigin: server.origin,
+			...(preview
+				? {
+						exportAssetsDir: fileURLToPath(
+							new URL("../../../resources/export-assets/", import.meta.url),
+						),
+					}
+				: {}),
+		}),
+	);
 	return { ...files, server, token };
 }
 
@@ -127,6 +140,29 @@ function rpc(
 	});
 }
 
+async function testSession(server: StudioServer) {
+	let fixture = retained.get(server);
+	if (!fixture) {
+		const { projectDir } = JSON.parse((await probe(server, "/api/identity")).text);
+		fixture = await retainedSession(projectDir, {
+			editorOrigin: server.origin,
+			appVersion: "test",
+		});
+		retained.set(server, fixture);
+	}
+	return fixture;
+}
+async function service(server: StudioServer, _token: string, method: string, args: unknown) {
+	const response = await (await testSession(server)).invoke(method, args);
+	return { status: response.status, text: JSON.stringify(response) };
+}
+async function retainedSnapshot(server: StudioServer) {
+	return {
+		status: 200,
+		text: JSON.stringify({ result: await (await testSession(server)).session.readSnapshot() }),
+	};
+}
+
 afterEach(async () => {
 	faults.renameBusy = false;
 	faults.cleanup = false;
@@ -138,11 +174,13 @@ afterEach(async () => {
 			await exited;
 		}),
 	);
+	await Promise.all([...retained.values()].map((fixture) => fixture.close()));
+	retained.clear();
 	await Promise.all(servers.splice(0).map((server) => server.close()));
 	await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
 
-describe("Studio HTTP boundary", () => {
+describe("Studio launch HTTP boundary and retained project session", () => {
 	it("root launches Read mode without forwarding the session fragment or serving the retired shell", async () => {
 		const { server, token } = await running();
 		const response = await probe(server, "/");
@@ -163,6 +201,10 @@ describe("Studio HTTP boundary", () => {
 			expect(navigation.text).toBe("");
 			expect(JSON.stringify(navigation)).not.toContain(token);
 		}
+		expect(
+			(await probe(server, "/launch?canvas=read", { headers: { "Sec-Fetch-Site": "cross-site" } }))
+				.status,
+		).toBe(403);
 		const launch = await probe(server, "/launch?canvas=read");
 		expect(launch.status).toBe(303);
 		expect(launch.headers.location).toMatch(/^\/canvas\?admission=[A-Za-z0-9_-]{43}$/);
@@ -174,7 +216,7 @@ describe("Studio HTTP boundary", () => {
 			).status,
 		).toBe(403);
 	});
-	it("Read compilation clears the session fragment before leaving the editor origin", async () => {
+	it("Read compilation uses an empty fragment before leaving the launch origin", async () => {
 		const { server, token } = await running(true);
 		const launch = await probe(server, "/launch?canvas=read");
 		const built = await probe(server, String(launch.headers.location));
@@ -182,68 +224,109 @@ describe("Studio HTTP boundary", () => {
 		expect(String(built.headers.location)).toMatch(/\?praxity-resume=0#$/);
 		expect(String(built.headers.location)).not.toContain(token);
 	});
-	it("C03 admits only authenticated, single-field canvas saves over HTTP", async () => {
-		const { server, token, projectDir } = await running(true);
-		const built = JSON.parse((await rpc(server, token, "coursePreviewBuild", {})).text).result;
-		const url = new URL(`${encodeURIComponent(built.pages[1].slug)}.html`, built.entryUrl);
-		const scope = { "X-Praxity-Canvas": `/canvas${url.pathname}` };
-		expect((await rpc(server, token, "canvasTextSnapshot", {})).status).toBe(403);
-		expect(
-			(
-				await rpc(
-					server,
-					token,
-					"canvasTextSnapshot",
-					{},
-					{ "X-Praxity-Canvas": "/canvas/preview/forged.html" },
-				)
-			).status,
-		).toBe(403);
-		const response = await rpc(server, token, "canvasTextSnapshot", {}, scope);
-		expect(response.status).toBe(200);
-		const snapshot = JSON.parse(response.text).result as Awaited<
-			ReturnType<OperationService["canvasTextSnapshot"]>
-		>;
-		expect(snapshot.fields.every((field) => field.file === "first.prax")).toBe(true);
-		const field = snapshot.fields.find((field) => field.file === "first.prax");
-		if (!field) throw new Error("Missing generated title");
-		const input = {
-			transactionId: randomUUID(),
-			operation: "setText",
-			file: field.file,
-			nodeId: field.nodeId,
-			baseRevision: field.baseRevision,
-			expectedText: field.text,
-			field: field.field,
-			text: "Updated title",
+	it("refuses captured author documents and sends old encoded launches to Read", async () => {
+		const { server, token } = await running(true);
+		const launch = await probe(server, "/launch?canvas=read");
+		const built = await probe(server, String(launch.headers.location));
+		expect(built.status).toBe(303);
+		const read = new URL(String(built.headers.location));
+		expect(read.origin).not.toBe(server.origin);
+		expect(read.pathname).toMatch(/^\/canvas\/preview\/.+\.html$/);
+		expect((await fetch(read)).status).toBe(200);
+		const headers = {
+			Authorization: `Bearer ${token}`,
+			"Sec-Fetch-Site": "same-origin",
+			"Sec-Fetch-Mode": "navigate",
+			"Sec-Fetch-Dest": "document",
 		};
-		const before = (await readIdentityFixture(projectDir)).files;
-		expect((await rpc(server, "wrong", "canvasTextApply", input)).status).toBe(401);
-		expect(
-			(await rpc(server, token, "canvasTextApply", input, { Origin: "http://localhost:1" })).status,
-		).toBe(403);
-		const forged = await rpc(
-			server,
-			token,
-			"canvasTextApply",
-			{
-				...input,
-				operation: "editSource",
-				text: "",
-			},
-			scope,
-		);
-		expect(JSON.parse(forged.text).result).toMatchObject({ ok: false });
-		expect((await readIdentityFixture(projectDir)).files).toEqual(before);
-		expect(await readFile(join(projectDir, "first.prax"), "utf8")).toBe(source);
-		const saved = await rpc(server, token, "canvasTextApply", input, scope);
-		expect(JSON.parse(saved.text).result).toMatchObject({ ok: true });
-		expect(await readFile(join(projectDir, "first.prax"), "utf8")).toBe(
-			"---\ntitle: Same lesson\n---\n\n# Updated title\n",
-		);
-		expect(await readFile(join(projectDir, "second.prax"), "utf8")).toBe(source);
+		for (const method of ["GET", "HEAD"]) {
+			const author = await probe(server, read.pathname, { method, headers });
+			expect(author.status).toBe(404);
+		}
+		const captured = read.pathname.slice("/canvas".length);
+		const oldLaunch = await probe(server, `/launch?canvas=${encodeURIComponent(captured)}`, {
+			headers,
+		});
+		expect(oldLaunch.status).toBe(303);
+		const destination = new URL(String(oldLaunch.headers.location));
+		expect(destination.origin).toBe(read.origin);
+		expect(destination.pathname).toBe(read.pathname);
+		expect(destination.hash).toBe("");
 	});
-	it("identifies the admitted course without revealing its session capability", async () => {
+	it("admits same-site documents and refuses same-site fetches at launch and admission", async () => {
+		const { server } = await running(true);
+		const documentHeaders = {
+			"Sec-Fetch-Site": "same-site",
+			"Sec-Fetch-Mode": "navigate",
+			"Sec-Fetch-Dest": "document",
+		};
+		const launch = await probe(server, "/launch?canvas=read", { headers: documentHeaders });
+		expect(launch.status).toBe(303);
+		const admission = String(launch.headers.location);
+		for (const [mode, dest] of [
+			["cors", "empty"],
+			["navigate", "empty"],
+			["cors", "document"],
+		]) {
+			for (const route of ["/launch?canvas=read", admission]) {
+				const refused = await probe(server, route, {
+					headers: { ...documentHeaders, "Sec-Fetch-Mode": mode, "Sec-Fetch-Dest": dest },
+				});
+				expect(refused.status).toBe(403);
+				expect(refused.headers.location).toBeUndefined();
+			}
+		}
+		const built = await probe(server, admission, { headers: documentHeaders });
+		expect(built.status).toBe(303);
+		expect(new URL(String(built.headers.location)).origin).not.toBe(server.origin);
+	});
+	it("refuses retired browser write routes with the former author capability", async () => {
+		const { server, token, projectDir } = await running(true);
+		const before = await readFile(join(projectDir, "second.prax"), "utf8");
+		for (const route of [
+			"/api/rpc",
+			"/api/identity/confirm",
+			"/api/session",
+			"/api/events",
+			"/canvas",
+			"/canvas/preview/old/page.html",
+			"/launch?canvas=1",
+		]) {
+			const response = await probe(server, route, {
+				method: "POST",
+				headers: {
+					Origin: server.origin,
+					Authorization: `Bearer ${token}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					method: "projectSave",
+					args: { source: "# Replaced" },
+					revision: "a".repeat(64),
+				}),
+			});
+			expect(response.status).toBe(405);
+		}
+		for (const method of (await testSession(server)).session.registeredMethods) {
+			const response = await rpc(server, token, method, {
+				grammar: "# Replaced",
+				expectedGrammar: source,
+			});
+			expect(response.status).toBe(405);
+		}
+		for (const route of [
+			"/api/session",
+			"/api/events",
+			"/launch?canvas=1",
+			"/canvas/preview/old/page.html",
+		]) {
+			expect(
+				(await probe(server, route, { headers: { Authorization: `Bearer ${token}` } })).status,
+			).toBe(404);
+		}
+		expect(await readFile(join(projectDir, "second.prax"), "utf8")).toBe(before);
+	});
+	it("identifies the admitted course without credentials", async () => {
 		const { server, projectDir } = await running();
 		const response = await probe(server, "/api/identity");
 		expect(response.status).toBe(200);
@@ -290,13 +373,13 @@ describe("Studio HTTP boundary", () => {
 		},
 	);
 
-	it("launches the author admission with a private redirect", async () => {
-		const { server, token } = await running();
+	it("launches Read admission with a private redirect", async () => {
+		const { server } = await running();
 		const allowedHeaders: Record<string, string>[] = [{}, { Origin: server.origin }];
 		for (const headers of allowedHeaders) {
 			const response = await probe(server, "/launch", { headers });
 			expect(response.status).toBe(303);
-			expect(response.headers.location).toBe("/launch?canvas=1");
+			expect(response.headers.location).toBe("/launch?canvas=read#");
 			expect(response.headers["cache-control"]).toBe("no-store");
 			expect(response.headers["referrer-policy"]).toBe("no-referrer");
 			expect(
@@ -304,14 +387,9 @@ describe("Studio HTTP boundary", () => {
 			).toEqual([]);
 			expect(response.text).toBe("");
 		}
-		const snapshot = await probe(server, "/api/session", {
-			headers: { Authorization: `Bearer ${token}` },
-		});
-		expect(snapshot.status).toBe(200);
-		expect(JSON.parse(snapshot.text).result.project.grammar).toBe(source);
 	});
 
-	it("binds the requested loopback port without changing the session capability", async () => {
+	it("binds the requested loopback port with a plain ready URL", async () => {
 		const { server: temporary } = await running();
 		const port = Number(new URL(temporary.origin).port);
 		await temporary.close();
@@ -320,8 +398,8 @@ describe("Studio HTTP boundary", () => {
 		servers.push(server);
 		expect(server.origin).toBe(`http://127.0.0.1:${port}`);
 		expect((await probe(server, "/")).status).toBe(303);
-		expect((await probe(server, "/api/session")).status).toBe(401);
-		expect(server.readyUrl).toMatch(/\/#session=[A-Za-z0-9_-]{43}$/);
+		expect((await probe(server, "/api/session")).status).toBe(404);
+		expect(server.readyUrl).toBe(`${server.origin}/`);
 	}, 15_000);
 
 	it("reports a retryable file-sharing save refusal and succeeds after release", async () => {
@@ -329,22 +407,20 @@ describe("Studio HTTP boundary", () => {
 		faults.renameBusy = true;
 		const grammar = `${source}\nDraft paragraph.\n`;
 		const args = { grammar, expectedGrammar: source };
-		const response = await rpc(server, token, "projectSave", args);
+		const response = await service(server, token, "projectSave", args);
 		expect(response.status).toBe(503);
 		expect(JSON.parse(response.text).error.code).toBe("EFILEBUSY");
 		expect(await readFile(join(projectDir, "second.prax"), "utf8")).toBe(source);
 		faults.renameBusy = false;
-		expect((await rpc(server, token, "projectSave", args)).status).toBe(200);
+		expect((await service(server, token, "projectSave", args)).status).toBe(200);
 		expect(await readFile(join(projectDir, "second.prax"), "utf8")).toBe(grammar);
 	}, 20_000);
 
 	it("refreshes the session snapshot after its initial lesson is removed", async () => {
-		const { server, token, projectDir } = await running();
+		const { server, projectDir } = await running();
 		await rm(join(projectDir, "second.prax"));
 		await writeFile(join(projectDir, "course.yaml"), "title: Test\nlessons: [first.prax]\n");
-		const response = await probe(server, "/api/session", {
-			headers: { Authorization: `Bearer ${token}` },
-		});
+		const response = await retainedSnapshot(server);
 		expect(response.status).toBe(200);
 		expect(JSON.parse(response.text).result.project.lessonFilename).toBe("first.prax");
 	});
@@ -352,11 +428,10 @@ describe("Studio HTTP boundary", () => {
 	it.each(["unknown", "100-continue"])(
 		"applies private headers to early Expect responses: %s",
 		async (expectation) => {
-			const { server, token } = await running();
-			const snapshot = await probe(server, "/api/session", {
-				headers: { Authorization: `Bearer ${token}` },
-			});
-			const mediaOrigin = new URL(JSON.parse(snapshot.text).result.mediaBaseUrl).origin;
+			const { server } = await running(true);
+			const launch = await probe(server, "/launch?canvas=read");
+			const built = await probe(server, String(launch.headers.location));
+			const mediaOrigin = new URL(String(built.headers.location)).origin;
 			for (const origin of [server.origin, mediaOrigin]) {
 				const response = await probe({ ...server, origin }, "/missing", {
 					headers: { Expect: expectation },
@@ -398,7 +473,7 @@ describe("Studio HTTP boundary", () => {
 		"keeps schema errors distinct from project errors named by input keys: %s",
 		async (key) => {
 			const { server, token } = await running();
-			const response = await rpc(server, token, "projectSave", {
+			const response = await service(server, token, "projectSave", {
 				grammar: source,
 				expectedGrammar: source,
 				[key]: true,
@@ -409,13 +484,13 @@ describe("Studio HTTP boundary", () => {
 	);
 	it("admits only rooted metadata baselines, with strict schemas and explicit absence", async () => {
 		const { server, token, projectDir } = await running();
-		const baseline = await rpc(server, token, "projectReadTextFile", {
+		const baseline = await service(server, token, "projectReadTextFile", {
 			relativePath: "course.yaml",
 		});
 		expect(JSON.parse(baseline.text).result).toBe(
 			"title: Test\nlessons: [second.prax, first.prax]\n",
 		);
-		const missing = await rpc(server, token, "projectReadTextFile", {
+		const missing = await service(server, token, "projectReadTextFile", {
 			relativePath: "narration.yaml",
 		});
 		expect(missing.status).toBe(404);
@@ -426,11 +501,13 @@ describe("Studio HTTP boundary", () => {
 			"first.prax",
 			"assets/evil.html",
 		]) {
-			expect((await rpc(server, token, "projectReadTextFile", { relativePath })).status).toBe(400);
+			expect((await service(server, token, "projectReadTextFile", { relativePath })).status).toBe(
+				400,
+			);
 		}
 		expect(
 			(
-				await rpc(server, token, "projectReadTextFile", {
+				await service(server, token, "projectReadTextFile", {
 					relativePath: "course.yaml",
 					extra: true,
 				})
@@ -439,7 +516,8 @@ describe("Studio HTTP boundary", () => {
 		await writeFile(join(projectDir, "narration.yaml"), "version: 1\n");
 		expect(
 			JSON.parse(
-				(await rpc(server, token, "projectReadTextFile", { relativePath: "narration.yaml" })).text,
+				(await service(server, token, "projectReadTextFile", { relativePath: "narration.yaml" }))
+					.text,
 			).result,
 		).toBe("version: 1\n");
 	});
@@ -450,7 +528,7 @@ describe("Studio HTTP boundary", () => {
 			["course.yaml", "title: Test\nlessons: [second.prax, first.prax]\n"],
 			["narration.yaml", "version: 1\n"],
 		]) {
-			const response = await rpc(server, token, "projectReadTextFile", {
+			const response = await service(server, token, "projectReadTextFile", {
 				relativePath: join(projectDir, filename),
 			});
 			expect(response.status).toBe(200);
@@ -462,7 +540,7 @@ describe("Studio HTTP boundary", () => {
 			join(projectDir, ".praxity", "content-identity.json"),
 		]) {
 			expect(
-				(await rpc(server, token, "projectReadTextFile", { relativePath: filename })).status,
+				(await service(server, token, "projectReadTextFile", { relativePath: filename })).status,
 			).toBe(400);
 		}
 	});
@@ -473,14 +551,14 @@ describe("Studio HTTP boundary", () => {
 			const outside = join(root, "private.yaml");
 			await writeFile(outside, "private credential\n");
 			await symlink(outside, join(projectDir, "narration.yaml"));
-			const escaped = await rpc(server, token, "projectReadTextFile", {
+			const escaped = await service(server, token, "projectReadTextFile", {
 				relativePath: absolute ? join(projectDir, "narration.yaml") : "narration.yaml",
 			});
 			expect(escaped.status).toBe(403);
 			expect(JSON.parse(escaped.text).error.code).toBe("path_forbidden");
 			expect(escaped.text).not.toContain("private credential");
 			await rm(outside);
-			const dangling = await rpc(server, token, "projectReadTextFile", {
+			const dangling = await service(server, token, "projectReadTextFile", {
 				relativePath: absolute ? join(projectDir, "narration.yaml") : "narration.yaml",
 			});
 			expect(dangling.status).toBe(403);
@@ -490,14 +568,12 @@ describe("Studio HTTP boundary", () => {
 	it("binds loopback, bootstraps manifest order even for identical lessons, and refuses retired shell and project assets", async () => {
 		const { server, token, projectDir } = await running();
 		expect(new URL(server.origin).hostname).toBe("127.0.0.1");
-		expect(token).toMatch(/^[A-Za-z0-9_-]{43}$/);
+		expect(new URL(server.readyUrl).hash).toBe("");
 		const page = await probe(server, "/");
 		expect(page.status).toBe(303);
 		expect(page.text).not.toContain(token);
 		expect(page.text).not.toContain(projectDir);
-		const session = await probe(server, "/api/session", {
-			headers: { Authorization: `Bearer ${token}` },
-		});
+		const session = await retainedSnapshot(server);
 		expect(session.status).toBe(200);
 		expect(JSON.parse(session.text).result.project).toMatchObject({
 			projectPath: projectDir,
@@ -536,7 +612,7 @@ describe("Studio HTTP boundary", () => {
 		}
 	});
 
-	it("refuses duplicate Origin or authorization headers and malformed UTF-8", async () => {
+	it("refuses duplicate Origin or authorization headers", async () => {
 		const { server, token } = await running();
 		const common = ["Host", new URL(server.origin).host, "Content-Type", "application/json"];
 		for (const repeated of [
@@ -557,16 +633,6 @@ describe("Studio HTTP boundary", () => {
 			});
 			expect(result.status).toBe(400);
 		}
-		const badUtf8 = await probe(server, "/api/rpc", {
-			method: "POST",
-			headers: {
-				Origin: server.origin,
-				Authorization: `Bearer ${token}`,
-				"Content-Type": "application/json",
-			},
-			body: Buffer.from([0x7b, 0x22, 0xc0, 0xaf, 0x22, 0x3a, 0x31, 0x7d]),
-		});
-		expect(badUtf8.status).toBe(400);
 	});
 
 	it("bounds HTTP headers while retaining the private response policy on parser rejection", async () => {
@@ -584,7 +650,7 @@ describe("Studio HTTP boundary", () => {
 	it("loads courses without rewriting a missing course identity or inheriting a parent workspace", async () => {
 		const { server, token, projectDir, root } = await running();
 		await writeFile(join(root, "workspace.yaml"), "locale: fr\n");
-		const result = await rpc(server, token, "courseLoad", { courseDir: projectDir });
+		const result = await service(server, token, "courseLoad", { courseDir: projectDir });
 		expect(result.status).toBe(200);
 		const course = JSON.parse(result.text).result;
 		expect(course.manifestSource).toBe("title: Test\nlessons: [second.prax, first.prax]\n");
@@ -622,37 +688,6 @@ describe("Studio HTTP boundary", () => {
 		},
 	);
 
-	it("requires Origin on RPC, allows its absence only on authenticated reads, and refuses preflight", async () => {
-		const { server, token } = await running();
-		const body = JSON.stringify({ method: "configRead", args: {} });
-		expect(
-			(
-				await probe(server, "/api/rpc", {
-					method: "POST",
-					headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-					body,
-				})
-			).status,
-		).toBe(403);
-		const preflight = await probe(server, "/api/rpc", {
-			method: "OPTIONS",
-			headers: { Origin: server.origin, "Access-Control-Request-Method": "POST" },
-		});
-		expect(preflight.status).toBe(405);
-		expect(preflight.headers["access-control-allow-origin"]).toBeUndefined();
-	});
-
-	it.each(["", "Bearer wrong", "Basic abc", "Bearer "])(
-		"rejects authorization %j on RPC, session reads and event streams",
-		async (Authorization) => {
-			const { server, token } = await running();
-			expect((await rpc(server, token, "configRead", {}, { Authorization })).status).toBe(401);
-			for (const path of ["/api/session", "/api/events"]) {
-				expect((await probe(server, path, { headers: { Authorization } })).status).toBe(401);
-			}
-		},
-	);
-
 	it("refuses non-allowlisted methods, unsupported HTTP methods and bad schemas without writes", async () => {
 		const { server, token, projectDir } = await running();
 		for (const method of [
@@ -664,7 +699,7 @@ describe("Studio HTTP boundary", () => {
 			"constructor",
 			"toString",
 		]) {
-			expect((await rpc(server, token, method, {})).status).toBe(404);
+			expect((await service(server, token, method, {})).status).toBe(404);
 		}
 		for (const args of [
 			null,
@@ -679,47 +714,13 @@ describe("Studio HTTP boundary", () => {
 				extra: true,
 			},
 		]) {
-			expect((await rpc(server, token, "courseWriteLesson", args)).status).toBe(400);
+			expect((await service(server, token, "courseWriteLesson", args)).status).toBe(400);
 		}
 		for (const method of ["DELETE", "PUT", "PATCH", "GET", "HEAD"]) {
-			expect((await probe(server, "/api/rpc", { method })).status).toBe(405);
+			expect((await probe(server, "/api/rpc", { method })).status).toBe(
+				["GET", "HEAD"].includes(method) ? 404 : 405,
+			);
 		}
-		expect(await readFile(join(projectDir, "second.prax"), "utf8")).toBe(source);
-	});
-
-	it("rejects oversized declared and chunked bodies, malformed JSON, and wrong media types", async () => {
-		const { server, token, projectDir } = await running();
-		const headers = {
-			Origin: server.origin,
-			Authorization: `Bearer ${token}`,
-			"Content-Type": "application/json",
-		};
-		expect(
-			(
-				await probe(server, "/api/rpc", {
-					method: "POST",
-					headers: { ...headers, "Content-Length": "99999999" },
-				})
-			).status,
-		).toBe(413);
-		expect(
-			(
-				await probe(server, "/api/rpc", {
-					method: "POST",
-					headers,
-					chunks: Array(12).fill(" ".repeat(1_000_000)),
-				})
-			).status,
-		).toBe(413);
-		expect((await probe(server, "/api/rpc", { method: "POST", headers, body: "{" })).status).toBe(
-			400,
-		);
-		expect(
-			(await rpc(server, token, "configRead", {}, { "Content-Type": "text/plain" })).status,
-		).toBe(415);
-		expect(
-			(await rpc(server, token, "configRead", {}, { "Content-Encoding": "gzip" })).status,
-		).toBe(415);
 		expect(await readFile(join(projectDir, "second.prax"), "utf8")).toBe(source);
 	});
 
@@ -732,20 +733,24 @@ describe("Studio HTTP boundary", () => {
 			"second.prax:stream.prax",
 			"missing.prax",
 		]) {
-			const result = await rpc(server, token, "courseReadLesson", {
+			const result = await service(server, token, "courseReadLesson", {
 				courseDir: projectDir,
 				filename,
 			});
 			expect([400, 403, 404]).toContain(result.status);
 		}
 		expect(
-			(await rpc(server, token, "courseReadLesson", { courseDir: root, filename: "second.prax" }))
-				.status,
+			(
+				await service(server, token, "courseReadLesson", {
+					courseDir: root,
+					filename: "second.prax",
+				})
+			).status,
 		).toBe(403);
 		const next = `${source}\nEdited paragraph.\n`;
 		expect(
 			(
-				await rpc(server, token, "courseWriteLesson", {
+				await service(server, token, "courseWriteLesson", {
 					courseDir: projectDir,
 					filename: "second.prax",
 					grammar: next,
@@ -756,7 +761,7 @@ describe("Studio HTTP boundary", () => {
 		expect(await readFile(join(projectDir, "second.prax"), "utf8")).toBe(next);
 		expect(
 			(
-				await rpc(server, token, "courseWriteLesson", {
+				await service(server, token, "courseWriteLesson", {
 					courseDir: projectDir,
 					filename: "second.prax",
 					grammar: "# Stale",
@@ -765,80 +770,39 @@ describe("Studio HTTP boundary", () => {
 			).status,
 		).toBe(409);
 		expect(await readFile(join(projectDir, "second.prax"), "utf8")).toBe(next);
-		expect(
-			(await probe(server, "/api/session", { headers: { Authorization: `Bearer ${token}` } })).text,
-		).toContain("Edited");
+		expect((await retainedSnapshot(server)).text).toContain("Edited");
 	});
 
-	it("streams external changes, disposes the subscription, and closes listeners idempotently", async () => {
+	it("subscribes to external changes and closes listeners idempotently", async () => {
 		const { server, token, projectDir } = await running();
-		const abort = new AbortController();
-		const response = await fetch(`${server.origin}/api/events`, {
-			headers: { Authorization: `Bearer ${token}` },
-			signal: abort.signal,
+		const session = (await testSession(server)).session;
+		const changes: unknown[] = [];
+		let changed = (_event: unknown) => {};
+		const delivered = new Promise<unknown>((resolve) => {
+			changed = resolve;
 		});
-		expect(response.status).toBe(200);
-		expect(response.headers.get("content-type")).toContain("application/x-ndjson");
-		expect(response.headers.get("cache-control")).toBe("no-store");
-		if (!response.body) throw new Error("Event stream has no body");
-		const reader = response.body.getReader();
-		const first = new TextDecoder().decode((await reader.read()).value);
-		expect(first).toBe('{"type":"ready"}\n');
-		expect(first.indexOf("\n")).toBeGreaterThan(0);
-		expect(JSON.parse(first.slice(0, first.indexOf("\n")))).toEqual({ type: "ready" });
+		const unsubscribe = session.subscribe((event) => {
+			changes.push(event);
+			if (event.type === "grammarChanged") changed(event);
+		});
 		const externalSource = source.replace(
 			"Hello",
 			`External ${"texte français 世界 ".repeat(10_000)}`,
 		);
 		await writeFile(join(projectDir, "second.prax"), externalSource);
-		let received = "";
-		let change: { grammar: string } | undefined;
-		const decoder = new TextDecoder();
-		while (!change) {
-			const packet = await reader.read();
-			if (packet.done) throw new Error("Event stream closed before delivering the complete lesson");
-			received += decoder.decode(packet.value, { stream: true });
-			change = received
-				.split("\n")
-				.slice(0, -1)
-				.map((line) => JSON.parse(line))
-				.find((event) => event.type === "grammarChanged");
-		}
-		expect(change.grammar).toBe(externalSource);
-		expect(received).not.toContain(token);
-		abort.abort();
+		expect(await delivered).toMatchObject({ type: "grammarChanged", grammar: externalSource });
+		expect(JSON.stringify(changes)).not.toContain(token);
+		unsubscribe();
 		await server.close();
 		await server.close();
 		await expect(fetch(`${server.origin}/`)).rejects.toThrow();
 	}, 15_000);
 
-	it("bounds concurrent authenticated event streams", async () => {
-		const { server, token } = await running();
-		const controllers = Array.from({ length: 8 }, () => new AbortController());
-		try {
-			const responses = await Promise.all(
-				controllers.map((controller) =>
-					fetch(`${server.origin}/api/events`, {
-						headers: { Authorization: `Bearer ${token}` },
-						signal: controller.signal,
-					}),
-				),
-			);
-			expect(responses.map((response) => response.status)).toEqual(Array(8).fill(200));
-			expect(
-				(await probe(server, "/api/events", { headers: { Authorization: `Bearer ${token}` } }))
-					.status,
-			).toBe(429);
-		} finally {
-			for (const controller of controllers) controller.abort();
-		}
-	});
-
 	it("does not expose a capability in project files or through a public bootstrap", async () => {
 		const { server, token, projectDir } = await running();
 		const manifest = await readFile(join(projectDir, "course.yaml"), "utf8");
 		expect(manifest).toBe("title: Test\nlessons: [second.prax, first.prax]\n");
-		expect((await probe(server, "/api/session")).status).toBe(401);
+		expect((await probe(server, "/api/session")).status).toBe(404);
 		expect((await probe(server, `/#session=${token}`)).text).not.toContain(token);
 	});
 });
@@ -867,10 +831,8 @@ describe("Studio startup admission", () => {
 		await writeFile(join(stage, "second.prax"), "RECOVERY BYTES");
 		const server = await startStudioServer({ ...files, appVersion: "test" });
 		servers.push(server);
-		const token = new URL(server.readyUrl).hash.slice("#session=".length);
-		const snapshot = await probe(server, "/api/session", {
-			headers: { Authorization: `Bearer ${token}` },
-		});
+		const token = "a".repeat(43);
+		const snapshot = await retainedSnapshot(server);
 		expect(JSON.parse(snapshot.text).result.project.grammar).toBe(original);
 		for (const [method, args] of [
 			["configRead", {}],
@@ -879,7 +841,7 @@ describe("Studio startup admission", () => {
 			["courseReadLesson", { courseDir: files.projectDir, filename: "second.prax" }],
 			["projectReadTextFile", { relativePath: "course.yaml" }],
 		] as const)
-			expect((await rpc(server, token, method, args)).status).toBe(200);
+			expect((await service(server, token, method, args)).status).toBe(200);
 		expect(await readFile(join(files.projectDir, "second.prax"), "utf8")).toBe(original);
 		expect(await readFile(join(stage, "second.prax"), "utf8")).toBe("RECOVERY BYTES");
 		expect((await readIdentityFixture(files.projectDir)).files).toEqual(identity.files);
@@ -891,7 +853,7 @@ describe("Studio startup admission", () => {
 			const grammar = `${source}\nCommitted paragraph.\n`;
 			faults.cleanup = true;
 			const args = { courseDir: projectDir, filename: "second.prax" };
-			const saved = await rpc(server, token, method, {
+			const saved = await service(server, token, method, {
 				...(method === "courseWriteLesson" ? args : {}),
 				grammar,
 				expectedGrammar: source,
@@ -899,12 +861,12 @@ describe("Studio startup admission", () => {
 			expect(saved.status).toBe(200);
 			expect(JSON.parse(saved.text).result.cleanupError).toContain("Stage cleanup denied");
 			expect(await readFile(join(projectDir, "second.prax"), "utf8")).toBe(grammar);
-			const read = await rpc(server, token, "courseReadLesson", args);
+			const read = await service(server, token, "courseReadLesson", args);
 			expect(read.status).toBe(503);
 			expect(JSON.parse(read.text).error.code).toBe("ERECOVERYREQUIRED");
 			expect(read.text).toContain("save or the next write");
 			const nextGrammar = `${grammar}\nNext paragraph.\n`;
-			const next = await rpc(server, token, method, {
+			const next = await service(server, token, method, {
 				...(method === "courseWriteLesson" ? args : {}),
 				grammar: nextGrammar,
 				expectedGrammar: grammar,
@@ -937,7 +899,7 @@ describe("Studio startup admission", () => {
 			["courseReadLesson", { courseDir: projectDir, filename: "second.prax" }],
 			["projectSave", { grammar: "# Refused\n", expectedGrammar: source }],
 		] as const) {
-			const result = await rpc(server, token, method, args);
+			const result = await service(server, token, method, args);
 			expect(result.status).toBe(503);
 			expect(JSON.parse(result.text).error.code).toBe("EPROJECTBUSY");
 		}
@@ -947,7 +909,7 @@ describe("Studio startup admission", () => {
 		await exited;
 		expect(
 			(
-				await rpc(server, token, "courseReadLesson", {
+				await service(server, token, "courseReadLesson", {
 					courseDir: projectDir,
 					filename: "second.prax",
 				})
@@ -974,10 +936,7 @@ describe("Studio startup admission", () => {
 		await rm(join(files.projectDir, "first.prax"));
 		const server = await startStudioServer({ ...files, appVersion: "test" });
 		servers.push(server);
-		const token = new URL(server.readyUrl).hash.slice("#session=".length);
-		const result = await probe(server, "/api/session", {
-			headers: { Authorization: `Bearer ${token}` },
-		});
+		const result = await retainedSnapshot(server);
 		expect(JSON.parse(result.text).result.project.lessonFilename).toBe("second.prax");
 	});
 

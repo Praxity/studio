@@ -16,14 +16,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
+import reviewEn from "@praxity/editor-core/messages/en" with { type: "json" };
 import reviewFr from "@praxity/editor-core/messages/fr" with { type: "json" };
-import { REVIEW_TEXT_RULES } from "@praxity/review-share/review";
+import { REVIEW_LIMITS, REVIEW_TEXT_RULES } from "@praxity/review-share/review";
 import { JSDOM } from "jsdom";
 import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest";
 import { runPraxityCli } from "../cli";
 import { COURSE_CSP } from "../course-file-response";
 import type { CanvasPreviewDescriptor, HostedCourseDeployment } from "../course-preview-service";
-import { addStudioReadModeLink } from "../studio/author-document";
 import { startStudioReadOnlyServer } from "../studio/read-only-server";
 import { addStudioReviewBootstrap } from "../studio/review-bootstrap";
 import { openReviewStore } from "../studio/review-store";
@@ -401,23 +401,17 @@ async function launchPorts(
 ) {
 	const result = await runPraxityCli(["studio", projectDir, "--no-open", ...args], {
 		appVersion: "0.3.0",
-		exportAssetsDir: files.assetsDir,
+		exportAssetsDir: fileURLToPath(new URL("../../../resources/export-assets/", import.meta.url)),
 		editorAssetsDir: files.editorAssetsDir,
 	});
 	if (result.studioServer) cleanups.push(() => result.studioServer?.close() ?? Promise.resolve());
 	expect(result.exitCode, result.stderr).toBe(0);
 	if (!result.studioServer) throw new Error("Studio did not start");
-	const session = await fetch(`${result.studioServer.origin}/api/session`, {
-		headers: { Authorization: `Bearer ${new URL(result.studioServer.readyUrl).hash.slice(9)}` },
-	});
-	expect(session.status).toBe(200);
-	const snapshot = await session.json();
+	const read = await fetch(result.studioServer.readyUrl);
+	expect(read.status).toBe(200);
 	return {
 		result,
-		ports: [
-			Number(new URL(result.studioServer.origin).port),
-			Number(new URL(snapshot.result.mediaBaseUrl).port),
-		],
+		ports: [Number(new URL(result.studioServer.origin).port), Number(new URL(read.url).port)],
 	};
 }
 
@@ -679,25 +673,10 @@ it("source revision ignores build changes and includes edits in another lesson",
 	expect(page.revision).toBe("78a9683728561ff96f76689632b5fc411fc917964738c09f2e425cc8c2b58ae8");
 });
 
-it("default-off Read preserves captured bytes and the localized editor destination", async () => {
+it("default-off Read preserves captured bytes without editor chrome", async () => {
 	const { readUrl, server } = await running(false);
 	const html = await (await fetch(readUrl)).text();
-	const dom = new JSDOM(html);
-	try {
-		const link = dom.window.document.querySelector(".praxity-studio-edit-link");
-		expect(link?.textContent).toBe("Modifier le texte");
-		expect(link?.getAttribute("href")).toBe(
-			`${editorOrigin}/launch?canvas=${encodeURIComponent(new URL(readUrl).pathname.slice(7))}`,
-		);
-	} finally {
-		dom.window.close();
-	}
-	expect(
-		html.replace(
-			/<style data-praxity-studio-read>[\s\S]*?<\/style><div class="praxity-studio-read-tools">[\s\S]*?<\/div>/,
-			"",
-		),
-	).toBe(captured);
+	expect(html).toBe(captured);
 	for (const method of ["GET", "POST"]) {
 		const response = await fetch(`${server.origin}/_praxity/review/review-comments.js`, { method });
 		expect(response.status).toBe(method === "GET" ? 404 : 405);
@@ -755,7 +734,7 @@ it.each(["review-comments.js", "review-comments.css"])(
 
 it("serializes script delimiters safely and refuses an invalid local configuration", async () => {
 	const hostile = "</script><script>throw 1</script>&\u2028\u2029";
-	const html = await addStudioReadModeLink(captured, `${editorOrigin}/launch`, {
+	const html = await addStudioReviewBootstrap(captured, {
 		reviewId,
 		capability: hostile,
 		page: undefined,
@@ -976,14 +955,18 @@ it.each(["en", "fr"] as const)(
 			draftOriginChanged: true,
 		};
 		const html = await addStudioReviewBootstrap(source, review);
-		const linked = await addStudioReadModeLink(source, `${editorOrigin}/launch`, review);
-		expect(config(html)).toEqual(config(linked));
+		expect(config(html).blockNames).toEqual(
+			(locale === "fr" ? reviewFr : reviewEn).pedagogyAudit.blockTypes,
+		);
+		expect(config(html).limits).toEqual(REVIEW_LIMITS);
 		expect(config(html)).toMatchObject({
 			schema: 1,
 			reviewId,
 			capability: review.capability,
 			endpoint: `/api/reviews/${reviewId}`,
 			locale,
+			blockNames: (locale === "fr" ? reviewFr : reviewEn).pedagogyAudit.blockTypes,
+			limits: REVIEW_LIMITS,
 			pages: review.pages,
 			draftOriginChanged: true,
 			page: {
@@ -1014,9 +997,16 @@ it.each(["en", "fr"] as const)(
 				/<script type="application\/json" id="praxity-review-config">.*?<\/script><link[^>]+><script[^>]+><\/script>/s,
 			)?.[0];
 			expect(assets).toBeDefined();
+			expect(html.indexOf(assets ?? "")).toBe(source.indexOf("<head>") + "<head>".length);
 			expect(html.replace(assets ?? "", "")).toBe(source);
 		} finally {
 			dom.window.close();
 		}
 	},
 );
+
+it("inserts review assets immediately after an explicit body with an implied head", async () => {
+	const source = '<!doctype html><html lang="en"><body><p>Course</p></body></html>';
+	const html = await addStudioReviewBootstrap(source, { reviewId, capability, page: undefined });
+	expect(html).toContain('<body><script type="application/json" id="praxity-review-config">');
+});

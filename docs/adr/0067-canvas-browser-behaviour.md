@@ -2,15 +2,21 @@
 
 ## Status
 
-Accepted. Records existing behaviour; no executable code change.
+Accepted. Browser-editing provisions are superseded by the 2026-11-22 owner decision.
+Retained page-selection provisions still apply.
 
 ## Context
 
-Course markup and styles share the canvas document with Studio controls. Native focus, layout and resource loading differ across browsers.
+The retired browser editor shared course markup and styles with Studio controls.
+Native focus, layout and resource loading differed across browsers.
 
 ## Decision
 
-2026-11-22: `studio/review-bootstrap.ts` now owns the Read review payload and assets, independently of Edit-link composition, ahead of removing the browser editor. This extraction preserves response bytes and headers.
+2026-11-22, owner: Studio has no browser editor. `praxity studio` remains Read
+preview with optional `--review` comments. Source changes use `praxity edit`,
+including `--rendered`. The renderer text-control, style, focus and author-refresh
+provisions below retain historical rationale. They do not require browser editing
+to remain available. Shared operation, inspection and review owners remain.
 
 ### src/renderer/browser/canvas-text.test.ts
 

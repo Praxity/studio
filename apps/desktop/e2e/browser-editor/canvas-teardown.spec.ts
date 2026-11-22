@@ -21,15 +21,15 @@ for (const scope of ["page", "second page", "context"] as const) {
 			entered = resolve;
 		});
 		let completed = false;
-		await (scope === "context" ? context : target).route("**/api/session", async (route) => {
+		await (scope === "context" ? context : target).route("**/api/identity", async (route) => {
 			entered();
 			await held;
 			const response = await route.fetch();
-			expect(response.status()).toBe(401);
+			expect(response.status()).toBe(200);
 			await route.fulfill({ response });
 			completed = true;
 		});
-		const navigation = target.goto(`${origin}/api/session`);
+		const navigation = target.goto(`${origin}/api/identity`);
 		await routed;
 		let stopped = false;
 		const stopping = stop().then(() => {
