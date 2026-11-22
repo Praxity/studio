@@ -182,6 +182,27 @@ describe("Studio HTTP boundary", () => {
 		expect(String(built.headers.location)).toMatch(/\?praxity-resume=0#$/);
 		expect(String(built.headers.location)).not.toContain(token);
 	});
+	it("refuses retired browser write routes with the former author capability", async () => {
+		const { server, token, projectDir } = await running(true);
+		const before = await readFile(join(projectDir, "second.prax"), "utf8");
+		for (const route of ["/api/rpc", "/api/identity/confirm"]) {
+			const response = await probe(server, route, {
+				method: "POST",
+				headers: {
+					Origin: server.origin,
+					Authorization: `Bearer ${token}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					method: "projectSave",
+					args: { source: "# Replaced" },
+					revision: "a".repeat(64),
+				}),
+			});
+			expect(response.status).toBe(405);
+		}
+		expect(await readFile(join(projectDir, "second.prax"), "utf8")).toBe(before);
+	});
 	it("C03 admits only authenticated, single-field canvas saves over HTTP", async () => {
 		const { server, token, projectDir } = await running(true);
 		const built = JSON.parse((await rpc(server, token, "coursePreviewBuild", {})).text).result;

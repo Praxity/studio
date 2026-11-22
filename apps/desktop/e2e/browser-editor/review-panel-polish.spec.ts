@@ -45,7 +45,6 @@ for (const locale of ["en", "fr"] as const) {
 						close: "Fermer les commentaires",
 						choose: "Commenter…",
 						pin: "Repère",
-						edit: "Modifier le texte",
 						whole: "Toute la page",
 						next: "Suivant",
 						title: "Commentaire sur toute la page",
@@ -57,7 +56,6 @@ for (const locale of ["en", "fr"] as const) {
 						close: "Close comments",
 						choose: "Comment on…",
 						pin: "Pin",
-						edit: "Edit text",
 						whole: "Whole page",
 						next: "Next",
 						title: "Comment on whole page",
@@ -221,7 +219,6 @@ for (const locale of ["en", "fr"] as const) {
 				page.getByRole("button", { name: copy.close, exact: true }),
 				page.getByRole("button", { name: copy.choose, exact: true }),
 				page.getByRole("button", { name: copy.pin, exact: true }),
-				page.getByRole("link", { name: copy.edit, exact: true }),
 			];
 			await controls[0].focus();
 			for (const control of controls.slice(1)) {

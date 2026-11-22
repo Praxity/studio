@@ -2,155 +2,32 @@ import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { expect, type Page, test } from "@playwright/test";
 import { startJourney } from "./global-setup";
-import { captureJourneyRequests } from "./journey-diagnostics";
 
 const source =
 	"# First page\n\n## Original heading\n\nBody.\n\n# Second page\n\n## Other heading\n\nSecond body.\n";
 const origin = () => new URL(process.env.PRAXITY_BROWSER_READY_URL ?? "").origin;
 const ready = () => process.env.PRAXITY_BROWSER_READY_URL ?? "";
 const project = () => process.env.PRAXITY_BROWSER_PROJECT ?? "";
-const field = (page: Page) => page.getByRole("textbox", { name: "Heading text", exact: true });
-const edit = (page: Page, heading: string) =>
-	page.getByRole("button", { name: `Edit heading 2: ${heading}`, exact: true });
 async function open(page: Page) {
-	await page.goto(`${origin()}/launch?canvas=1`);
-	await expect(page.getByRole("status").filter({ hasText: /^Connected$/ })).toHaveText("Connected");
+	await page.goto(ready());
 }
 async function save(page: Page, before: string, after: string) {
-	await edit(page, before).click();
-	await field(page).fill(after);
-	const url = page.url();
-	await page.keyboard.press("Enter");
-	await expect(page).not.toHaveURL(url);
-	await expect(page.getByRole("link", { name: "Read mode", exact: true })).toHaveAttribute(
-		"href",
-		/praxity-resume=0/,
+	const file = join(
+		project(),
+		(await readdir(project())).includes("lesson.prax") ? "lesson.prax" : "second.prax",
 	);
+	await writeFile(file, (await readFile(file, "utf8")).replace(before, after));
+	await open(page);
 }
 
-test("a stream dropped after hosting and before reply still allows a second exact save", async ({
-	page,
-}) => {
-	await page.addInitScript(`
-        const nativeFetch = window.fetch.bind(window);
-        window.fetch = (url, options) => {
-            if (!String(url).endsWith('/api/events')) return nativeFetch(url, options);
-            const connection = new AbortController();
-            window.disconnectEvents = () => connection.abort();
-            return nativeFetch(url, { ...options, signal: AbortSignal.any([options.signal, connection.signal]) });
-        };
-        const nativeOpen = XMLHttpRequest.prototype.open;
-        XMLHttpRequest.prototype.open = function(...args) {
-            if (String(args[1]).endsWith('/api/events')) window.disconnectEvents = () => this.abort();
-            return nativeOpen.apply(this, args);
-        };
-    `);
-	const stop = await startJourney(page.context(), { standaloneSource: source });
-	try {
-		await open(page);
-		let disconnected = false;
-		const releases: string[] = [];
-		page.on("request", (request) => {
-			if (
-				request.url().endsWith("/api/rpc") &&
-				request.postDataJSON().method === "coursePreviewRelease"
-			)
-				releases.push(request.url());
-		});
-		await page.route("**/api/rpc", async (route) => {
-			if (route.request().postDataJSON().method !== "canvasPreviewBuild" || disconnected)
-				return route.continue();
-			const response = await route.fetch();
-			disconnected = true;
-			await page.evaluate(() =>
-				(window as unknown as { disconnectEvents(): void }).disconnectEvents(),
-			);
-			await route.fulfill({ response });
-		});
-		await save(page, "Original heading", "Saved once");
-		expect((await page.request.get(page.url(), { maxRedirects: 0 })).status()).toBe(200);
-		await save(page, "Saved once", "Saved twice");
-		expect(await readFile(join(project(), "second.prax"), "utf8")).toBe(
-			source.replace("Original heading", "Saved twice"),
-		);
-		expect(releases).toEqual([]);
-	} finally {
-		await stop();
-	}
-});
-
-test("an open field on another lesson saves after six revisions evict its document", async ({
-	page,
-	context,
-}) => {
-	const stop = await startJourney(page.context());
-	try {
-		await writeFile(join(project(), "second.prax"), source);
-		await writeFile(
-			join(project(), "first.prax"),
-			"# Other lesson\n\n## Held heading\n\nHeld body.\n",
-		);
-		await page.goto(`${origin()}/launch?canvas=1`);
-		await expect(
-			page.getByRole("heading", { name: "Some blocks would get new IDs", exact: true }),
-		).toBeVisible();
-		await expect(page.locator("main > ul > li")).toHaveText([
-			"first.prax: First; First; Line unknown",
-			"first.prax: First; title; Line unknown",
-			"first.prax: First; Original body.; Line unknown",
-			"second.prax: First; First; Line unknown",
-			"second.prax: First; title; Line unknown",
-			"second.prax: First; Original body.; Line unknown",
-		]);
-		await page
-			.getByRole("button", { name: "I haven't published this course: continue.", exact: true })
-			.click();
-		await expect(page.getByRole("status").filter({ hasText: /^Connected$/ })).toHaveText(
-			"Connected",
-		);
-		await save(page, "Original heading", "Established heading");
-		const other = await context.newPage();
-		await other.goto(`${origin()}/launch?canvas=1`);
-		await other.getByRole("link", { name: "Read mode", exact: true }).click();
-		await other.goto(new URL("other-lesson.html", other.url()).href);
-		await other.getByRole("link", { name: "Edit text", exact: true }).click();
-		await edit(other, "Held heading").click();
-		await field(other).fill("Held exact *text*");
-		const old = other.url();
-		let heading = "Established heading";
-		for (let i = 0; i < 6; i++) {
-			await save(page, heading, `Saved ${i}`);
-			heading = `Saved ${i}`;
-		}
-		expect((await other.request.get(old, { maxRedirects: 0 })).status()).toBe(303);
-		await other.keyboard.press("Enter");
-		await expect(other.getByRole("status").filter({ hasText: /^Saved$/ })).toHaveText("Saved");
-		expect(await readFile(join(project(), "first.prax"), "utf8")).toBe(
-			"# Other lesson\n\n## Held exact *text*\n\nHeld body.\n",
-		);
-	} finally {
-		await stop();
-	}
-});
-
-test("released Read Next, Edit and author reload land on the same second page", async ({
-	page,
-	context,
-}) => {
+test("released Read Next and reload land on the same second page", async ({ page, context }) => {
 	const stop = await startJourney(page.context(), { standaloneSource: source });
 	try {
 		await open(page);
 		const read = await context.newPage();
-		await read.goto(
-			(await page.getByRole("link", { name: "Read mode", exact: true }).getAttribute("href")) ?? "",
-		);
+		await read.goto(page.url());
 		const oldRead = read.url();
 		const oldSecond = new URL("second-page.html", oldRead).href;
-		const author = await context.newPage();
-		await author.goto(oldSecond);
-		await author.getByRole("link", { name: "Edit text", exact: true }).click();
-		const oldAuthor = author.url();
-		await author.close();
 		let heading = "Original heading";
 		for (let i = 0; i < 6; i++) {
 			await save(page, heading, `Fresh ${i}`);
@@ -161,17 +38,7 @@ test("released Read Next, Edit and author reload land on the same second page", 
 		await expect(read.getByRole("heading", { name: "Second page", exact: true })).toBeVisible();
 		await read.reload();
 		await read.goto(oldSecond);
-		await read.getByRole("link", { name: "Edit text", exact: true }).click();
-		await expect(edit(read, "Other heading")).toBeVisible();
-		await read.goto(oldAuthor);
-		await read.reload();
-		await expect(edit(read, "Other heading")).toBeVisible();
-		await save(read, "Other heading", "Saved from released page");
-		expect(await readFile(join(project(), "second.prax"), "utf8")).toBe(
-			source
-				.replace("Original heading", "Fresh 5")
-				.replace("Other heading", "Saved from released page"),
-		);
+		await expect(read.getByRole("heading", { name: "Other heading", exact: true })).toBeVisible();
 	} finally {
 		await stop();
 	}
@@ -186,23 +53,17 @@ test("nine tabs closed before their build replies leave four live revisions", as
 	try {
 		for (let i = 0; i < 9; i++) {
 			const tab = await context.newPage();
-			await open(tab);
+			await writeFile(join(project(), "second.prax"), `# Page\n\n## Start ${i + 1}\n\nBody.\n`);
 			let arrived = () => {};
 			const built = new Promise<void>((resolve) => {
 				arrived = resolve;
 			});
-			await tab.route("**/api/rpc", async (route) => {
-				if (route.request().postDataJSON().method !== "canvasPreviewBuild") return route.continue();
-				const response = await route.fetch();
-				const descriptor = (await response.json()).result;
-				expect(descriptor).not.toHaveProperty("leaseId");
-				const url = new URL(`${descriptor.pages[0].slug}.html`, descriptor.entryUrl);
-				urls.push(`${url.origin}/canvas${url.pathname}`);
+			await tab.route("**/canvas?admission=*", async (route) => {
+				const response = await route.fetch({ maxRedirects: 0 });
+				urls.push(response.headers().location);
 				arrived();
 			});
-			await edit(tab, `Start ${i}`).click();
-			await field(tab).fill(`Start ${i + 1}`);
-			await tab.keyboard.press("Enter");
+			void tab.goto(ready()).catch(() => {});
 			await built;
 			await tab.close();
 		}
@@ -287,7 +148,10 @@ for (const deck of [false, true])
 	});
 
 for (const count of [2, 3])
-	test(`${count} authors keep Read Next correct through six saves`, async ({ page, context }) => {
+	test(`${count} Read tabs keep Next correct through six source edits`, async ({
+		page,
+		context,
+	}) => {
 		const stop = await startJourney(page.context(), { standaloneSource: source });
 		try {
 			await open(page);
@@ -304,7 +168,7 @@ for (const count of [2, 3])
 			for (let i = 0; i < 6; i++) {
 				await save(authors[i % count], heading, `Shared ${i}`);
 				heading = `Shared ${i}`;
-				for (const tab of authors) await expect(edit(tab, heading)).toBeVisible();
+
 				await reader.locator("a.praxity-nav-next").click();
 				await expect(
 					reader.getByRole("heading", { name: "Second page", exact: true }),
@@ -370,9 +234,7 @@ test("a released deck document keeps its slide fragment through the 303", async 
 		await open(page);
 		await save(page, "Authored heading", "Established heading");
 		const reader = await context.newPage();
-		await reader.goto(
-			(await page.getByRole("link", { name: "Read mode", exact: true }).getAttribute("href")) ?? "",
-		);
+		await reader.goto(page.url());
 		await expect(reader.locator(".praxity-deck")).toHaveAttribute("data-ready", "true");
 		await reader.locator("#deck-next").click();
 		await expect(reader.getByRole("heading", { name: "Second slide", exact: true })).toBeVisible();
@@ -394,92 +256,20 @@ test("a released deck document keeps its slide fragment through the 303", async 
 	}
 });
 
-test("idle Read tabs survive a closed author and retain Next and Edit", async ({
-	page,
-	context,
-}) => {
+test("idle Read tabs survive a closed launcher and retain Next", async ({ page, context }) => {
 	const stop = await startJourney(page.context(), { standaloneSource: source });
 	try {
 		const launched = await context.newPage();
 		await launched.goto(ready());
 		await open(page);
 		const read = await context.newPage();
-		await read.goto(
-			(await page.getByRole("link", { name: "Read mode", exact: true }).getAttribute("href")) ?? "",
-		);
+		await read.goto(page.url());
 		await page.close();
 		for (const tab of [launched, read]) {
 			await tab.locator("a.praxity-nav-next").click();
 			await expect(tab.getByRole("heading", { name: "Second page", exact: true })).toBeVisible();
-			await tab.getByRole("link", { name: "Edit text", exact: true }).click();
-			await expect(edit(tab, "Other heading")).toBeVisible();
 		}
 	} finally {
 		await stop();
-	}
-});
-
-test.describe("fifty saves across three authors and two Read tabs", () => {
-	test.describe.configure({ mode: "serial" });
-	let stop: () => Promise<void>;
-	let requests: ReturnType<typeof captureJourneyRequests>;
-	let authors: Page[];
-	let readers: Page[];
-	let heading = "Original heading";
-	const urls: string[] = [];
-	test.beforeAll(async ({ browser }) => {
-		stop = await startJourney(browser, { standaloneSource: source });
-		authors = await Promise.all(Array.from({ length: 3 }, () => browser.newPage()));
-		for (const page of authors) await open(page);
-		readers = await Promise.all(Array.from({ length: 2 }, () => browser.newPage()));
-		for (const page of readers) await page.goto(ready());
-	});
-	test.beforeEach(() => {
-		requests = captureJourneyRequests(origin());
-	});
-	test.afterEach(async () => {
-		requests.mark("before-teardown");
-		await test.info().attach("journey-server-requests", {
-			body: requests.finish(),
-			contentType: "application/json",
-		});
-	});
-	test.afterAll(async () => {
-		await Promise.all([...authors, ...readers].map((page) => page.close()));
-		await stop();
-	});
-	for (let batch = 0; batch < 10; batch++) {
-		test(`saves ${batch * 5 + 1} through ${batch * 5 + 5} stay within four hosted revisions`, async () => {
-			for (let n = batch * 5; n < batch * 5 + 5; n++) {
-				const author = authors[n % 3];
-				await expect(edit(author, heading)).toBeVisible();
-				const next = `Save ${n}`;
-				await save(author, heading, next);
-				heading = next;
-				urls.push(author.url());
-				const files = await readdir(join(project(), ".praxity/studio-tmp"));
-				const receipt = files.find((file) => /^\d+-/.test(file));
-				if (!receipt) throw new Error("Missing temporary-output receipt");
-				const temporary = await readFile(
-					join(project(), ".praxity/studio-tmp", receipt, "workspace"),
-					"utf8",
-				);
-				for (const tab of authors) await expect(edit(tab, heading)).toBeVisible();
-				await expect.poll(async () => (await readdir(temporary)).length).toBeLessThanOrEqual(4);
-				if (n >= 3) expect((await readdir(temporary)).length).toBe(4);
-				for (const url of urls.slice(-4))
-					expect((await author.request.get(url, { maxRedirects: 0 })).status()).toBe(200);
-				if (n >= 4)
-					expect((await author.request.get(urls[n - 4], { maxRedirects: 0 })).status()).toBe(303);
-				for (const read of readers) {
-					await read.reload();
-					await read.locator("a.praxity-nav-next").click();
-					await expect(
-						read.getByRole("heading", { name: "Second page", exact: true }),
-					).toBeVisible();
-					await read.goBack();
-				}
-			}
-		});
 	}
 });

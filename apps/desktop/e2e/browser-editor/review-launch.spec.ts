@@ -52,7 +52,7 @@ for (const width of [1280, 390]) {
 			);
 			expect(authorToken).toBeTruthy();
 			await page.goto(result.stdout.trim());
-			await expect(page.getByRole("link", { name: "Edit text", exact: true })).toBeVisible();
+			await expect(page.getByRole("link", { name: "Edit text", exact: true })).toHaveCount(0);
 			await expect.poll(() => assets.length).toBe(2);
 			expect(assets.sort()).toEqual([
 				"/_praxity/review/review-comments.css",
@@ -77,10 +77,7 @@ for (const width of [1280, 390]) {
 				).not.toContain(authorToken);
 			}
 			await expect(page.getByText("Second body.", { exact: true })).toBeVisible();
-			await page.getByRole("link", { name: "Edit text", exact: true }).click();
-			await expect(page.getByRole("link", { name: "Read mode", exact: true })).toBeVisible();
-			await expect(page.locator("#praxity-review-config")).toHaveCount(0);
-			await page.getByRole("link", { name: "Read mode", exact: true }).click();
+			await page.goto(result.stdout.trim());
 			await expect(page.locator(".prx-review-sidebar")).toHaveCount(1);
 			await expect(page.locator("#praxity-review-config")).toHaveCount(0);
 			expect(new URL(page.url()).origin).toBe(new URL(readUrl).origin);

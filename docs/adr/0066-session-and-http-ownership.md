@@ -156,22 +156,9 @@ The author host and learner host have different authority. Session lifecycle mus
 - `{ runPraxityCli }`: Keep expensive imports outside the bootstrap, including in the packaged
   artifact.
 
-### src/main/studio/author-document.ts
+### src/main/studio/review-bootstrap.ts
 
-- `serveStudioAuthorDocument`: Projects only admitted captured HTML. All course resources stay on
-  the learner origin.
-- `serveStudioAuthorDocument`: Capture browser APIs and erase the bearer before any course element
-  is parsed.
-  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
-  independently verified.
-- `addStudioReadModeLink`: Learner scripts and content are preserved. The mode link contains no
-  editor capability.
-- `addStudioReadModeLink`: The full-viewport deck must reserve a row for Studio instead of covering
-  its header.
-- `addStudioReadModeLink`: Reserve a row in plain Read; the review client moves this same link into
-  its header.
-- `addStudioReadModeLink`: Hash the captured source set; the manifest does not map lesson IDs to
-  source paths.
+- `addStudioReviewBootstrap`: Hash the sorted captured source revisions, rather than the build revision, so review anchors survive rebuilds and include changes in other lessons.
 
 ### src/main/studio/export-service.ts
 

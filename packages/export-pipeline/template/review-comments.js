@@ -1097,15 +1097,8 @@
 		} else {
 			header.append(title, toggle);
 		}
-		var editLink = document.querySelector(".praxity-studio-edit-link");
 		var headerActions = anchors ? element("div", "prx-review-header-actions") : header;
 		if (anchors) header.append(headerActions);
-		if (editLink) {
-			var readTools = editLink.closest(".praxity-studio-read-tools");
-			editLink.classList.add("prx-review-action");
-			headerActions.append(editLink);
-			readTools?.remove();
-		}
 		var deckIcon;
 		if (isDeck) {
 			deckIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
