@@ -1,6 +1,6 @@
 # Praxity Studio
 
-Local authoring and export for grammar 4 eLearning courses. Studio runs through the standalone CLI and a thin browser canvas.
+Local authoring and export for grammar 4 eLearning courses. Studio runs through the standalone CLI (`@praxity/studio`, command `praxity`) and a thin browser canvas.
 
 ```sh
 pnpm install --frozen-lockfile

@@ -265,7 +265,7 @@ await writeFile(
 	path.join(outputDir, "package.json"),
 	JSON.stringify(
 		{
-			name: "@praxity/studio-cli",
+			name: "@praxity/studio",
 			version,
 			private: true,
 			bin: { praxity: "praxity.mjs" },
@@ -318,7 +318,7 @@ const sourceRevision = execFileSync("git", ["rev-parse", "HEAD"], {
 }).trim();
 const inventory = {
 	schemaVersion: 1,
-	name: "@praxity/studio-cli",
+	name: "@praxity/studio",
 	version,
 	distribution: "npm-tarball",
 	license: "MIT",
