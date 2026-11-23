@@ -201,48 +201,70 @@ test("packaged recovery and Studio tolerate foreign, malformed and unreadable dr
 	}
 });
 
-test("packaged studio starts without an editor payload", async () => {
-	const artifact = fileURLToPath(new URL("../../../dist/studio-cli/", import.meta.url));
-	const root = await mkdtemp(path.join(os.tmpdir(), "studio-canvas-valid-"));
-	await assert.rejects(readdir(path.join(artifact, "editor")), { code: "ENOENT" });
-	await writeFile(path.join(root, "lesson.prax"), "# Canvas\n\nLearner text.\n");
-	const child = spawn(
-		process.execPath,
-		[path.join(artifact, "praxity.mjs"), "studio", root, "--no-open"],
-		{
-			windowsHide: true,
-			stdio: ["ignore", "pipe", "pipe", "ipc"],
-		},
-	);
-	const stopped = new Promise((resolve) => child.once("exit", resolve));
-	try {
-		await new Promise((resolve, reject) => {
-			let output = "";
-			let errors = "";
-			const timer = setTimeout(() => reject(new Error(`Startup timeout: ${errors}`)), 20_000);
-			child.once("error", reject);
-			child.once("close", (code) => {
-				clearTimeout(timer);
-				reject(new Error(`Startup exited ${code}: ${errors}`));
-			});
-			child.stderr.on("data", (bytes) => {
-				errors += bytes;
-			});
-			child.stdout.on("data", (bytes) => {
-				output += bytes;
-				if (/http:\/\/127\.0\.0\.1:\d+\//.test(output)) {
+for (const review of [false, true]) {
+	test(`packaged studio serves Read with review=${review} without an editor payload`, async () => {
+		const artifact = fileURLToPath(new URL("../../../dist/studio-cli/", import.meta.url));
+		const root = await mkdtemp(path.join(os.tmpdir(), "studio-preview-valid-"));
+		await assert.rejects(readdir(path.join(artifact, "editor")), { code: "ENOENT" });
+		await writeFile(path.join(root, "lesson.prax"), "# Preview\n\nLearner text.\n");
+		await writeFile(path.join(root, "course.yaml"), "title: Preview\nlessons: [lesson.prax]\n");
+		const child = spawn(
+			process.execPath,
+			[
+				path.join(artifact, "praxity.mjs"),
+				"studio",
+				root,
+				"--no-open",
+				...(review ? ["--review"] : []),
+			],
+			{ windowsHide: true, stdio: ["ignore", "pipe", "pipe", "ipc"] },
+		);
+		const stopped = new Promise((resolve) => child.once("exit", resolve));
+		try {
+			const ready = await new Promise((resolve, reject) => {
+				let output = "";
+				let errors = "";
+				const timer = setTimeout(() => reject(new Error(`Startup timeout: ${errors}`)), 20_000);
+				child.once("error", reject);
+				child.once("close", (code) => {
 					clearTimeout(timer);
-					resolve();
-				}
+					reject(new Error(`Startup exited ${code}: ${errors}`));
+				});
+				child.stderr.on("data", (bytes) => {
+					errors += bytes;
+				});
+				child.stdout.on("data", (bytes) => {
+					output += bytes;
+					const match = output.match(/http:\/\/127\.0\.0\.1:\d+\//);
+					if (match) {
+						clearTimeout(timer);
+						resolve(match[0]);
+					}
+				});
 			});
-		});
-		assert.ok((await readdir(path.join(root, ".praxity"))).includes("identity"));
-	} finally {
-		if (child.connected) child.disconnect();
-		await stopped;
-		await rm(root, { recursive: true, force: true });
-	}
-});
+			const response = await fetch(ready, { signal: AbortSignal.timeout(20_000) });
+			assert.equal(response.status, 200);
+			const html = await response.text();
+			assert.match(html, /Learner text\./);
+			assert.equal(html.includes('id="praxity-review-config"'), review);
+			if (review) {
+				for (const name of ["review-comments.js", "review-comments.css"]) {
+					const asset = await fetch(new URL(`/_praxity/review/${name}`, response.url), {
+						signal: AbortSignal.timeout(20_000),
+					});
+					assert.equal(asset.status, 200, name);
+					assert.ok((await asset.text()).trim().length > 0, name);
+				}
+			}
+			assert.ok((await readdir(path.join(root, ".praxity"))).includes("identity"));
+		} finally {
+			if (child.connected) child.disconnect();
+			await stopped;
+			await rm(root, { recursive: true, force: true });
+		}
+	});
+}
+
 function rasterFixture() {
 	const chunk = (type, data) => {
 		const body = Buffer.concat([Buffer.from(type), data]);

@@ -442,16 +442,13 @@ describe("studio command", () => {
 	);
 
 	it("returns startup errors without a ready URL or listener", async () => {
-		const result = await runPraxityCli(["studio", ".", "--no-open"], runtime);
+		const { projectDir } = await fixture();
+		const missing = join(projectDir, "missing");
+		const result = await runPraxityCli(["studio", missing, "--no-open"], runtime);
 		expect(result.exitCode).toBe(1);
 		expect(result.studioServer).toBeUndefined();
-		expect(result.stdout).not.toContain("#session=");
-		expect(result.stderr).toContain("Browser editor assets are unavailable");
-		const desktop = await runPraxityCli(["studio", "."], {
-			appVersion: "0.3.0",
-			exportAssetsDir: "unused",
-		});
-		expect(desktop.exitCode).toBe(1);
-		expect(JSON.parse(desktop.stdout).error.code).toBe("editor_assets_missing");
+		expect(result.stdout).not.toContain("http://127.0.0.1:");
+		expect(JSON.parse(result.stdout).error.code).toBe("project_not_found");
+		expect(result.stderr).toContain(`Project directory is unavailable: ${missing}`);
 	});
 });
