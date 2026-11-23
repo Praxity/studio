@@ -256,12 +256,19 @@ async function errorExecution(
 			command,
 			locale,
 		);
-	if (
-		error instanceof CourseHomeUrlError ||
-		(error instanceof Error && error.cause instanceof CourseHomeUrlError)
-	) {
+	const manifestError =
+		error instanceof CourseHomeUrlError
+			? error
+			: error instanceof Error && error.cause instanceof CourseHomeUrlError
+				? error.cause
+				: null;
+	if (manifestError) {
 		return errorExecution(
-			new CliError("project_invalid", new CourseHomeUrlError(locale).message, 1),
+			new CliError(
+				"project_invalid",
+				new CourseHomeUrlError(locale, manifestError.field).message,
+				1,
+			),
 			command,
 			locale,
 		);

@@ -14,6 +14,7 @@ packages/
   editor-core/
   export-pipeline/
   review-share/
+  course-help/
   format-renderers/
 ```
 
