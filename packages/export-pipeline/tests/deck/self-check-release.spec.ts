@@ -7,8 +7,8 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { createLearnerState } from "@praxity/shared-blocks/learner-state";
 import AdmZip from "adm-zip";
-import { runPraxityCli } from "../../../../apps/desktop/src/main/cli";
-import { persistFixtureIdentity } from "../../../../apps/desktop/src/test-utils/identity-fixture";
+import { runPraxityCli } from "../../../../apps/cli/src/main/cli";
+import { persistFixtureIdentity } from "../../../../apps/cli/src/test-utils/identity-fixture";
 import { compileCourse, deployCourse } from "../../src/build";
 import { releaseCourse, releaseExpected, releaseSource } from "../fixtures/self-check-release";
 
@@ -33,7 +33,7 @@ test.beforeAll(async () => {
 					appVersion: "test",
 					exportAssetsDir: join(
 						import.meta.dirname,
-						"../../../../apps/desktop/resources/export-assets",
+						"../../../../apps/cli/resources/export-assets",
 					),
 				},
 			);

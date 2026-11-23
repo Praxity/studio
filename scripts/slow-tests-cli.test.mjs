@@ -70,7 +70,7 @@ test("confirmation CLI reports asynchronous startup failures", () => {
 
 for (const [file, args, diagnostic] of [
 	["scripts/confirm-slow-tests.mjs", [], /Slow-test confirmation infrastructure failed/],
-	["apps/desktop/scripts/test-affected.mjs", ["--invalid-option"], /Summary: FAIL selection/],
+	["apps/cli/scripts/test-affected.mjs", ["--invalid-option"], /Summary: FAIL selection/],
 ]) {
 	test(`symlinked ${file} still runs its CLI`, () => {
 		const dir = mkdtempSync(resolve(tmpdir(), "slow-cli-"));

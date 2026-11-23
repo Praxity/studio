@@ -64,7 +64,7 @@ async function hydrateGraphic(page: Page) {
 		.toBeGreaterThan(0);
 	const islandsDir = resolve(
 		import.meta.dirname,
-		"../../../../apps/desktop/resources/export-assets/islands",
+		"../../../../apps/cli/resources/export-assets/islands",
 	);
 	const filename = readdirSync(islandsDir).find((entry) =>
 		/^island-labeled-graphic-[A-Z0-9]{8}\.js$/u.test(entry),

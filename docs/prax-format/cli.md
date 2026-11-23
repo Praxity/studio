@@ -411,11 +411,11 @@ prints one schema-1 object. Success has `schema`, `ok: true`, `dryRun`, `operati
 `intent`, `mapping`, `summary`, `diagnostics` and `focus`. Those operation fields
 follow the shared operation contract. Refusal has `schema`, `ok: false`, `code`
 and localized `message`; operational failures also have `details.reason`.
-The strict consumer schema is `apps/desktop/src/shared/edit-cli-schema.ts`.
+The strict consumer schema is `apps/cli/src/shared/edit-cli-schema.ts`.
 Session transaction IDs, history IDs and executable inverse records are omitted.
 Newly allocated identities can differ between dry runs.
 
-The exit-code table is owned by `editExitCodes` in `apps/desktop/src/main/edit-cli.ts`
+The exit-code table is owned by `editExitCodes` in `apps/cli/src/main/edit-cli.ts`
 and printed by `praxity edit --help`.
 
 | Exit | Result |
@@ -588,7 +588,7 @@ Storage errors omit their private paths and causes.
 
 `praxity comments --help [--lang en|fr]` prints the four command lines above and
 the following code line, translated in French. The exit table and help are owned
-by `commentsExitCodes` in `apps/desktop/src/main/comments-cli.ts`.
+by `commentsExitCodes` in `apps/cli/src/main/comments-cli.ts`.
 
 ```text
 Comments exit codes: 0=ok, 1=failed, 2=invalid-args, 3=stale_version, 4=not_found, 5=forbidden, 6=request_id_reused, 7=wrong_review, 8=invalid_input, 9=snapshot_changed, 10=invalid_cursor, 11=text-file-missing, 12=text-file-unreadable, 13=invalid-utf8, 14=empty-text, 15=whitespace-only, 16=text-too-large, 17=lone-surrogate, 18=list-too-large, 19=corrupt-json, 20=invalid-state, 21=newer-schema, 22=unsafe-path, 23=read-only, 24=disk-error, 25=interrupted-write, 26=tracked-storage, 27=not-initialized, 28=busy, 29=recovery-required, 30=git-unavailable, 31=filesystem-unsupported, 32=course-not-found, 33=course-not-directory, 34=course-manifest-missing, 35=course-manifest-not-file, 36=limit_reached.

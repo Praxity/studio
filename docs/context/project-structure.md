@@ -4,7 +4,7 @@ Praxity is a pnpm workspace centred on the standalone Studio CLI.
 
 ```text
 apps/
-  desktop/
+  cli/
 packages/
   content-model/
   grammar/
@@ -19,9 +19,9 @@ packages/
 
 ## Apps
 
-### `apps/desktop/`
+### `apps/cli/`
 
-The standalone CLI and local Read preview host. The directory keeps its historical name.
+The standalone CLI and local Read preview host.
 
 - `src/main/`: CLI, rooted HTTP services, filesystem transactions, operations, identity, narration and export.
 - `src/main/export/`: local export owners shared by CLI and server.

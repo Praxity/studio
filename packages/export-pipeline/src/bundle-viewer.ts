@@ -566,7 +566,7 @@ export async function viewerSourceFiles(): Promise<string[]> {
 		]);
 
 	const supplementalNotices = await readdir(
-		path.resolve(__dirname, "../../../apps/desktop/resources/third-party-notices"),
+		path.resolve(__dirname, "../../../apps/cli/resources/third-party-notices"),
 		{ recursive: true, withFileTypes: true },
 	);
 	const allFiles = [

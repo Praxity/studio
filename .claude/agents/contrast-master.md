@@ -611,7 +611,7 @@ Design systems should expose motion preferences:
 
 ### Praxity-specific: Mantine theme
 
-Review the theme configuration for the target being audited. Canvas controls and `canvas-styles.ts` were retired on 2026-11-22. Check retained theme consumers in `apps/desktop/src/renderer/themes/` in light and dark mode. Learner assessment islands use `packages/shared-blocks/src/viewer/MantineIslandProvider.tsx`. Check resolved colors in the rendered state:
+Review the theme configuration for the target being audited. Canvas controls and `canvas-styles.ts` were retired on 2026-11-22. Check retained theme consumers in `apps/cli/src/renderer/themes/` in light and dark mode. Learner assessment islands use `packages/shared-blocks/src/viewer/MantineIslandProvider.tsx`. Check resolved colors in the rendered state:
 1. Check `colors` object: every shade used for text-on-background must meet contrast
 2. Check `primaryColor` and `primaryShade`: the primary color is used for links, buttons, and focus, so verify it against all background variants
 3. Check `fontSizes`: ensure text at the smallest font size still meets 4.5:1 with the intended color

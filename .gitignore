@@ -3,10 +3,10 @@ AGENTS.local.md
 
 # Dependencies
 node_modules/
-apps/desktop/resources/typst/
-apps/desktop/resources/typst-arm64/
-apps/desktop/resources/typst-x64/
-apps/desktop/resources/.typst-cache/
+apps/cli/resources/typst/
+apps/cli/resources/typst-arm64/
+apps/cli/resources/typst-x64/
+apps/cli/resources/.typst-cache/
 .pnpm-store/
 
 # Build

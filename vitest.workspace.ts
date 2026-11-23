@@ -13,7 +13,7 @@ export const workspaceProjects = [
 	"packages/format-renderers",
 	"packages/review-share",
 
-	"apps/desktop",
+	"apps/cli",
 ] as const;
 
 export default defineConfig({

@@ -6,7 +6,7 @@ import { readLesson, readWriteDistractorsContent } from "@praxity/grammar";
 import { extractNarrationSegments } from "@praxity/shared-blocks/narration";
 import { writeDistractorsContentRevision } from "@praxity/shared-blocks/write-distractors-content";
 import { afterAll, beforeAll, expect, it } from "vitest";
-import { projectText } from "../../../../apps/desktop/src/main/export/inspect-project-v1";
+import { projectText } from "../../../../apps/cli/src/main/export/inspect-project-v1";
 import {
 	compileCourse,
 	compilePage,

@@ -42,7 +42,7 @@ beforeAll(async () => {
 		"packages/content-model",
 		"packages/export-pipeline/node_modules",
 		"packages/export-pipeline/src/scorm",
-		"apps/desktop/resources/third-party-notices",
+		"apps/cli/resources/third-party-notices",
 	]) {
 		await mkdir(path.dirname(path.join(root, relative)), { recursive: true });
 		await symlink(path.join(repo, relative), path.join(root, relative), "dir");

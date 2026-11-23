@@ -5,7 +5,7 @@ import { pathToFileURL } from "node:url";
 import ts from "typescript";
 
 const newEditor =
-	/^(?:packages\/editor-core\/src\/(?:frame-bridge|session|editing)\/|packages\/editor-core\/src\/components\/LiveRegion\.tsx$|apps\/desktop\/src\/renderer\/editing\/)/;
+	/^(?:packages\/editor-core\/src\/(?:frame-bridge|session|editing)\/|packages\/editor-core\/src\/components\/LiveRegion\.tsx$|apps\/cli\/src\/renderer\/editing\/)/;
 const trustEditor = /^packages\/editor-core\/src\/(?:frame-bridge|shortcuts|session)\//;
 const trustAttribute = /\b(?:data-praxity-[\w-]+|data-focus-role|data-node-id)\b/i;
 const trustDataset = /^(?:praxity.*|focusRole|nodeId)$/;

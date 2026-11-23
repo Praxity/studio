@@ -14,17 +14,17 @@ Vendored source and notices:
 - packages/export-pipeline/schemas/ -> packages/export-pipeline/schemas/license.txt.
   IMS, ADL, IEEE LOM and W3C schemas retain their embedded notices and the
   terms identified in that file. Schema-bearing exports include license.txt.
-- apps/desktop/resources/third-party-notices/ -> the upstream licence and notice
+- apps/cli/resources/third-party-notices/ -> the upstream licence and notice
   files in each subdirectory. These cover image-codecs, react-remove-scroll-bar,
   saxes, typst-assets-0.15.1 and Feather. Image codec versions, source URLs and hashes
   are recorded in image-codecs/PROVENANCE.md. Typst's full NOTICE includes
   its bundled fonts' notices.
-- apps/desktop/resources/sample-course/ -> TABLER-LICENSE.txt in that directory
+- apps/cli/resources/sample-course/ -> TABLER-LICENSE.txt in that directory
   covers the adapted Tabler book-2 icons in course-logo-light.svg and
   course-logo-dark.svg, under MIT. The Studio screenshots are Praxity-authored.
 - packages/shared-blocks/src/blocks/shared-blocks.css -> the signature cursor
   adapts Feather v4.29.2 edit-2, under MIT. Its full terms are in
-  apps/desktop/resources/third-party-notices/feather-icons@4.29.2/LICENSE.
+  apps/cli/resources/third-party-notices/feather-icons@4.29.2/LICENSE.
   Source: https://github.com/feathericons/feather/blob/v4.29.2/icons/edit-2.svg.
   The adaptation rounds the arc radius, shortens the closing segment and adds
   a contrasting stroke. Exports containing this CSS retain the full terms in
@@ -35,7 +35,7 @@ Vendored source and notices:
   packages/export-pipeline/template/src/components/course-completion-result.ts
   contain copied or adapted Tabler Icons 3.46.0 SVG paths, under MIT, including
   test fixtures and native navigation artwork. Their full terms are in
-  apps/desktop/resources/sample-course/TABLER-LICENSE.txt. Source:
+  apps/cli/resources/sample-course/TABLER-LICENSE.txt. Source:
   https://github.com/tabler/tabler-icons/tree/v3.46.0/icons/outline.
   Installed Tabler icons retain their package terms through export notices.
 - packages/grammar/__tests__/fixtures/v4/leadership/ -> the attribution and
@@ -51,11 +51,11 @@ Vendored source and notices:
 
 Prepared third-party assets, generated during builds:
 
-- apps/desktop/resources/typst/ -> LICENSE, NOTICE and FONT-NOTICE for Typst
+- apps/cli/resources/typst/ -> LICENSE, NOTICE and FONT-NOTICE for Typst
   and its bundled fonts; mitex/LICENSE for MiTeX. Theme fonts from Fontsource
   retain their upstream OFL texts in fonts/<family>/LICENSE. Preparation copies
   these terms from the pinned distributions and dependency packages.
-- apps/desktop/resources/export-assets/ -> viewer-manifest.json records the
+- apps/cli/resources/export-assets/ -> viewer-manifest.json records the
   upstream licence texts for runtime dependencies, Fontsource fonts and
   Tabler icons. Exports emit their selected notices under third-party-notices/.
   Image codec notices come from the image-codecs directory above. Packaged

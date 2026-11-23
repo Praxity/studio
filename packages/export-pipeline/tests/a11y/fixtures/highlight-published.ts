@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import AdmZip from "adm-zip";
 import { build } from "esbuild";
-import { persistFixtureIdentity } from "../../../../../apps/desktop/src/test-utils/identity-fixture";
+import { persistFixtureIdentity } from "../../../../../apps/cli/src/test-utils/identity-fixture";
 
 const checkout = fileURLToPath(new URL("../../../../../", import.meta.url));
 export const highlightXapi = {
@@ -17,7 +17,7 @@ export const highlightXapi = {
 
 export async function highlightPublisher(
 	directory: string,
-	preparedAssets = join(checkout, "apps/desktop/resources/export-assets"),
+	preparedAssets = join(checkout, "apps/cli/resources/export-assets"),
 ) {
 	const assets = join(directory, "assets");
 	await cp(preparedAssets, assets, { recursive: true });
@@ -29,8 +29,8 @@ export async function highlightPublisher(
 			contents: `
 import {readFile,writeFile} from 'node:fs/promises';
 import AdmZip from ${JSON.stringify(createRequire(join(checkout, "packages/export-pipeline/package.json")).resolve("adm-zip"))};
-import {runPraxityCli} from './apps/desktop/src/main/cli';
-import {buildCourseExportInput} from './apps/desktop/src/main/export/build-export-input-from-project';
+import {runPraxityCli} from './apps/cli/src/main/cli';
+import {buildCourseExportInput} from './apps/cli/src/main/export/build-export-input-from-project';
 import {compileCourse,deployCourse} from './packages/export-pipeline/src/build';
 const [project,format,output]=process.argv.slice(2);
 async function publish() {

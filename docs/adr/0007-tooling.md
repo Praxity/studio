@@ -45,7 +45,7 @@ Ownership guards and equivalence checks must fail closed without confusing gener
 - `checkSelfCheckOwners.nativePdfSite`: Both lexical branches are required. The same lookup outside answer-sheet admission refuses.
 - `checkSelfCheckOwners.visit`: The `distractorHiddenKeys` declaration owns guard vocabulary and is exempt from detection of authored Content.
 - `checkSelfCheckOwners.visit`: The `value.kind` discriminator in `packages/shared-blocks/src/self-check-state.ts` validates saved state and does not read a source node.
-- `checkSelfCheckOwners.visit`: The admitted `read` and `identity` cache writes in `apps/desktop/src/main/studio/project-session.ts` retain author-session state. The export-input owner subsequently constructs the prompt projection; caching alone does not publish Content.
+- `checkSelfCheckOwners.visit`: The admitted `read` and `identity` cache writes in `apps/cli/src/main/studio/project-session.ts` retain author-session state. The export-input owner subsequently constructs the prompt projection; caching alone does not publish Content.
 - `checkSelfCheckOwners.visit`: Published islands load browser URLs; they cannot resolve Node grammar modules.
 - `checkSelfCheckOwners.visit`: The dynamic loader in `scripts/install-internal-studio.mjs` imports installer APIs from the reviewed Rubato checkout.
 - `checkSelfCheckOwners.visit.computedDataKey`: Unknown keys could select raw Content. Restrict this fail-closed rule to pattern block-data reads; ordinary indexed presentation records stay usable.
@@ -186,7 +186,7 @@ Ownership guards and equivalence checks must fail closed without confusing gener
 - `assertExportCommands.commands`: Scan every language and prose with the same detector, including prefixed executables.
 - `assertExportCommands.equal`: Even an unparsed Markdown construct must not hide an export from the guard.
 
-- 2026-11-22: Replace the skill's planned-rederivation wording with one exact command sentence, allowed only when init requires rederivation and the person confirms in this conversation that the course has never been published. The October 19 wording assumed an unavailable CLI flag; `apps/desktop/src/main/identity-init-cli.ts` now accepts `--rederive --confirm-unpublished` and refuses rederivation without confirmation. Keep the all-skills guard: neither flag may appear outside that agreed sentence, and mutations removing conversational confirmation or the CLI confirmation flag must fail.
+- 2026-11-22: Replace the skill's planned-rederivation wording with one exact command sentence, allowed only when init requires rederivation and the person confirms in this conversation that the course has never been published. The October 19 wording assumed an unavailable CLI flag; `apps/cli/src/main/identity-init-cli.ts` now accepts `--rederive --confirm-unpublished` and refuses rederivation without confirmation. Keep the all-skills guard: neither flag may appear outside that agreed sentence, and mutations removing conversational confirmation or the CLI confirmation flag must fail.
 
 ### `scripts/preflight-gates.mts`
 

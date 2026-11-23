@@ -4,7 +4,7 @@ import { defineConfig } from "vitest/config";
 
 const bundledTypst = fileURLToPath(
 	new URL(
-		`../../apps/desktop/resources/typst/typst${process.platform === "win32" ? ".exe" : ""}`,
+		`../../apps/cli/resources/typst/typst${process.platform === "win32" ? ".exe" : ""}`,
 		import.meta.url,
 	),
 );

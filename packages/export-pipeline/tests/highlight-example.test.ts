@@ -4,7 +4,7 @@ import { readLesson, validateCourse } from "@praxity/grammar";
 import { adaptGrammarPreviewBlocks } from "@praxity/shared-blocks/grammar-adapter";
 import { JSDOM } from "jsdom";
 import { expect, it } from "vitest";
-import { readCourseManifestData } from "../../../apps/desktop/src/main/course-manifest-io";
+import { readCourseManifestData } from "../../../apps/cli/src/main/course-manifest-io";
 import { renderBlockHtml } from "../src/render-block-html";
 
 it.each([

@@ -96,7 +96,7 @@ try {
 		format: "html",
 		prebuiltAssetsDir:
 			generatedAssetsDir ??
-			path.resolve(import.meta.dirname, "../../../apps/desktop/resources/export-assets"),
+			path.resolve(import.meta.dirname, "../../../apps/cli/resources/export-assets"),
 		projectDir: sourceDir,
 		onProgress: (step, percent) => console.log(`  ${percent}% — ${step}`),
 	});

@@ -12,7 +12,7 @@ each token is actually used.
 
 ## Decision
 
-In `apps/desktop/src/renderer/themes/theme-factory.ts`:
+In `apps/cli/src/renderer/themes/theme-factory.ts`:
 
 - `readableOn` tries multiple foreground candidates before lightness correction.
   Lightening white cannot improve its contrast on a light badge. Including black
@@ -45,15 +45,15 @@ In `apps/desktop/src/renderer/themes/theme-factory.ts`:
   therefore use the harder surface, while the thumb chooses between white and
   near-black rather than inheriting `accentText`.
 
-In `apps/desktop/src/renderer/themes/types.ts`, `controlBorder` is an interactive
+In `apps/cli/src/renderer/themes/types.ts`, `controlBorder` is an interactive
 boundary held to 3:1. `border` and `borderSubtle` describe decorative dividers.
 `controlBg`, `accentOnSurface` and `focusRingInner` retain the separate roles
 specified above.
 
-In `apps/desktop/src/renderer/themes/registry.ts`, `familyOrder` places the app's
+In `apps/cli/src/renderer/themes/registry.ts`, `familyOrder` places the app's
 own theme first. Sorting it below other families made the default appear missing.
 
-In `apps/desktop/src/renderer/themes/__tests__/theme-contrast.test.ts`, `PAIRS`
+In `apps/cli/src/renderer/themes/__tests__/theme-contrast.test.ts`, `PAIRS`
 covered the combinations rendered by the retired `apps/desktop/src/shared/canvas-styles.ts`. The browser canvas controls were removed on 2026-11-22; retain these contrast roles for surviving theme consumers.
 Text uses 4.5:1 under WCAG 1.4.3; control boundaries and focus indicators use 3:1
 under WCAG 1.4.11.

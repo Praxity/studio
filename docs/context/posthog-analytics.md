@@ -3,11 +3,11 @@
 Use the root `.env` values `POSTHOG_HOST`, `POSTHOG_PROJECT_ID`, and
 `POSTHOG_ADMIN_API_KEY` for manual HogQL queries. Keep their values out of logs,
 commits, and chat output. The desktop capture and source-map keys in
-`apps/desktop/.env` are for the application and release build, not analytics
+`apps/cli/.env` are for the application and release build, not analytics
 queries.
 
 Event names and properties live in
-`apps/desktop/src/main/telemetry-catalog.md`. Query the project through PostHog's
+`apps/cli/src/main/telemetry-catalog.md`. Query the project through PostHog's
 HogQL endpoint:
 
 ```bash

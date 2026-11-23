@@ -25,7 +25,7 @@ import {
 
 import { validateCheckouts } from "./equivalence/provenance.mjs";
 
-const require = createRequire(new URL("../apps/desktop/package.json", import.meta.url));
+const require = createRequire(new URL("../apps/cli/package.json", import.meta.url));
 const AdmZip = require("adm-zip");
 const zip = (files) => {
 	const archive = new AdmZip();
@@ -215,7 +215,7 @@ test("missing stage owner fails loudly naming its path and required entry", asyn
 		assert.equal(result.status, 1);
 		assert.match(
 			result.stderr,
-			/Required owner apps\/desktop\/src\/main\/export\/build-export-input-from-project.ts::buildCourseExportInput/,
+			/Required owner apps\/cli\/src\/main\/export\/build-export-input-from-project.ts::buildCourseExportInput/,
 		);
 	} finally {
 		await rm(root, { recursive: true, force: true });

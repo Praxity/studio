@@ -20,21 +20,18 @@ import { splitBlocksIntoPages } from "@praxity/shared-blocks/viewer/split-pages"
 import AdmZip from "adm-zip";
 import { JSDOM } from "jsdom";
 import { beforeAll, expect, it, vi } from "vitest";
-import { runPraxityCli } from "../../../apps/desktop/src/main/cli";
-import { buildCourseExportInput } from "../../../apps/desktop/src/main/export/build-export-input-from-project";
-import { ProjectAssetInventory } from "../../../apps/desktop/src/main/export/project-asset-inventory";
-import { resolveLessonSources } from "../../../apps/desktop/src/main/lesson-source";
-import {
-	openProjectAsset,
-	resolveProjectAsset,
-} from "../../../apps/desktop/src/main/project-assets";
-import { PreviewScheduler } from "../../../apps/desktop/src/main/studio/preview-scheduler";
+import { runPraxityCli } from "../../../apps/cli/src/main/cli";
+import { buildCourseExportInput } from "../../../apps/cli/src/main/export/build-export-input-from-project";
+import { ProjectAssetInventory } from "../../../apps/cli/src/main/export/project-asset-inventory";
+import { resolveLessonSources } from "../../../apps/cli/src/main/lesson-source";
+import { openProjectAsset, resolveProjectAsset } from "../../../apps/cli/src/main/project-assets";
+import { PreviewScheduler } from "../../../apps/cli/src/main/studio/preview-scheduler";
 import {
 	type NarrationSidecarV2,
 	resolveLessonNarration,
 	serializeNarrationSidecarV2,
-} from "../../../apps/desktop/src/shared/narration-sidecar";
-import { persistFixtureIdentity } from "../../../apps/desktop/src/test-utils/identity-fixture";
+} from "../../../apps/cli/src/shared/narration-sidecar";
+import { persistFixtureIdentity } from "../../../apps/cli/src/test-utils/identity-fixture";
 import { buildCoursePdfSource } from "../../format-renderers/src/pipelines/course-pdf";
 import {
 	type CourseExportInput,
@@ -107,7 +104,7 @@ beforeAll(async () => {
 	const root = await mkdtemp(join(tmpdir(), "self-check-output-invariant-"));
 	const runtime = {
 		appVersion: "test",
-		exportAssetsDir: resolve(import.meta.dirname, "../../../apps/desktop/resources/export-assets"),
+		exportAssetsDir: resolve(import.meta.dirname, "../../../apps/cli/resources/export-assets"),
 	};
 	const previewOptions = {
 		projectDir: root,

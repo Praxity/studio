@@ -12,7 +12,7 @@ if (mode === "prepare") {
 	const { prepareDesktopExportInputs } = source("./packages/export-pipeline/src/export-assets.ts");
 	await bundleViewer(output);
 	await prepareDesktopExportInputs(output);
-	const pkg = JSON.parse(await readFile(path.join(checkout, "apps/desktop/package.json"), "utf8"));
+	const pkg = JSON.parse(await readFile(path.join(checkout, "apps/cli/package.json"), "utf8"));
 	await writeFile(
 		path.join(output, "viewer.version.json"),
 		JSON.stringify({
@@ -22,7 +22,7 @@ if (mode === "prepare") {
 		}),
 	);
 } else if (mode === "export") {
-	const { exportProject } = source("./apps/desktop/src/main/export/export-project.ts");
+	const { exportProject } = source("./apps/cli/src/main/export/export-project.ts");
 	const { DEFAULT_PROJECT_CONFIG } = source("./packages/editor-core/src/types/project.ts");
 	const result = await exportProject({
 		projectDir,
@@ -35,7 +35,7 @@ if (mode === "prepare") {
 		exportAssetsDir: assets,
 		temporaryRoot: path.dirname(output),
 	});
-	const require = createRequire(path.join(checkout, "apps/desktop/package.json"));
+	const require = createRequire(path.join(checkout, "apps/cli/package.json"));
 	const AdmZip = require("adm-zip");
 	await writeFile(path.join(path.dirname(output), "export.zip"), result.zip);
 	new AdmZip(result.zip).extractAllTo(output);

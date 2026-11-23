@@ -15,7 +15,7 @@ const mappings = [
 		],
 	],
 	[
-		"apps/desktop/resources/third-party-notices/",
+		"apps/cli/resources/third-party-notices/",
 		[
 			"upstream licence and notice",
 			"image-codecs",
@@ -25,17 +25,17 @@ const mappings = [
 			"Feather",
 		],
 	],
-	["apps/desktop/resources/sample-course/", ["TABLER-LICENSE.txt", "Tabler", "MIT"]],
+	["apps/cli/resources/sample-course/", ["TABLER-LICENSE.txt", "Tabler", "MIT"]],
 	[
 		"packages/grammar/__tests__/fixtures/v4/leadership/",
 		["00-avant-de-commencer.prax", "CC BY 4.0", "https://doi.org/10.5281/zenodo.14714410"],
 	],
 	[
-		"apps/desktop/resources/typst/",
+		"apps/cli/resources/typst/",
 		["LICENSE, NOTICE and FONT-NOTICE", "mitex/LICENSE", "OFL", "fonts/<family>/LICENSE"],
 	],
 	[
-		"apps/desktop/resources/export-assets/",
+		"apps/cli/resources/export-assets/",
 		["viewer-manifest.json", "upstream licence texts", "third-party-notices/"],
 	],
 	["docs/prax-format/", ["docs/prax-format/LICENSE", "CC BY 4.0", "CC0 1.0", "MIT"]],
@@ -50,7 +50,7 @@ const mappings = [
 			"4.29.2",
 			"edit-2",
 			"MIT",
-			"apps/desktop/resources/third-party-notices/feather-icons@4.29.2/LICENSE",
+			"apps/cli/resources/third-party-notices/feather-icons@4.29.2/LICENSE",
 		],
 	],
 	...[
@@ -60,7 +60,7 @@ const mappings = [
 		"packages/export-pipeline/template/src/components/course-completion-result.ts",
 	].map((path) => [
 		path,
-		["Tabler", "3.46.0", "MIT", "apps/desktop/resources/sample-course/TABLER-LICENSE.txt"],
+		["Tabler", "3.46.0", "MIT", "apps/cli/resources/sample-course/TABLER-LICENSE.txt"],
 	]),
 ];
 
@@ -99,7 +99,7 @@ test("signature cursor records its source beside the unchanged geometry", async 
 
 test("cursor notice retains the complete pinned upstream MIT text", async () => {
 	const license = await readFile(
-		new URL("apps/desktop/resources/third-party-notices/feather-icons@4.29.2/LICENSE", root),
+		new URL("apps/cli/resources/third-party-notices/feather-icons@4.29.2/LICENSE", root),
 	);
 	assert.equal(
 		createHash("sha256").update(license.toString("utf8").replaceAll("\r\n", "\n")).digest("hex"),

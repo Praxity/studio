@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { optimizeImage } from "../optimize-image";
 import { readImageDimensions } from "../published-images";
 
-const opaquePng = new URL("../../../../apps/desktop/resources/icon.png", import.meta.url);
+const opaquePng = new URL("../../../../apps/cli/resources/icon.png", import.meta.url);
 const widePng = new URL("./fixtures/opaque-wide.png", import.meta.url);
 const orientedJpeg = new URL("./fixtures/oriented-jpeg.jpg", import.meta.url);
 const transparentPng = Buffer.from(

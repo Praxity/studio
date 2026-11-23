@@ -131,7 +131,7 @@ An automated suite that runs only Chromium cannot catch these. If the project's 
 
 ### 2.3 Match VoiceOver testing to the application
 
-For published output, Read preview and review in Safari, run Guidepup `voiceOverTest` with Playwright `browserName: "webkit"`. Start Read preview with `praxity studio <course> --no-open`; exercise Read navigation and review comments with `--review`. Run browser journeys with `pnpm --filter @praxity/desktop e2e:browser-editor` in all three engines.
+For published output, Read preview and review in Safari, run Guidepup `voiceOverTest` with Playwright `browserName: "webkit"`. Start Read preview with `praxity studio <course> --no-open`; exercise Read navigation and review comments with `--review`. Run browser journeys with `pnpm --filter @praxity/cli e2e:browser-editor` in all three engines.
 
 For embedded preview pane entry and exit, use core Guidepup against the actual host application. Maintainers: read the VoiceOver runbook reached through `AGENTS.local.md` first. Browser-only checks cannot verify host pane focus transitions. Record application and browser versions, actual speech and focus.
 

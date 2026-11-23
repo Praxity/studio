@@ -25,7 +25,7 @@ A review is done when every item in the review checklist at the end has an answe
 
 - **Components**: review controls live in `packages/export-pipeline/template/review-comments.js`; learner islands use Mantine v9.
 - **Styling**: use the retained review stylesheet and canonical learner styles.
-- **Tokens**: use the token owner for the interface being changed. Shared theme values remain in `apps/desktop/src/renderer/themes/`. Check light and dark mode.
+- **Tokens**: use the token owner for the interface being changed. Shared theme values remain in `apps/cli/src/renderer/themes/`. Check light and dark mode.
 - **Icons**: `@tabler/icons-react` at `size={20}` and `stroke={1.5}` for toolbar icons.
 - **Fonts**: system font stack (`system-ui, -apple-system, sans-serif`). No web fonts.
 - **No Tailwind, no CSS-in-JS, no styled-components.**
@@ -131,7 +131,7 @@ Literal colors are allowed only in `packages/editor-core/src/styles/editor-token
 - Test narrow viewports, zoom and embedded preview pane resizing.
 - Preserve native selection, paste, undo and composition in review comment fields.
 - Keep unsubmitted review text and error recovery controls reachable without taking moved focus.
-- Run affected specs with `pnpm --filter @praxity/desktop e2e:browser-editor` in Chromium, Firefox and WebKit. Real screen-reader evidence follows `/a11y`.
+- Run affected specs with `pnpm --filter @praxity/cli e2e:browser-editor` in Chromium, Firefox and WebKit. Real screen-reader evidence follows `/a11y`.
 
 ## Design anti-patterns
 

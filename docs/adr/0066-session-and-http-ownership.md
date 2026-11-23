@@ -463,9 +463,9 @@ The same-site document guard remains on Read launch and one-use admission.
 
 Sources: the named symbols and their comments at commit
 `bed54f6109aa4ae868c981f53233a5ee9c5afdd7`, with the corresponding
-interface tests in `apps/desktop/src/` and browser and tooling tests in
-`apps/desktop/e2e/` and `apps/desktop/scripts/`. Paths above are relative
-to `apps/desktop/`. These records preserve the existing rationale; they do
+interface tests in `apps/cli/src/` and browser and tooling tests in
+`apps/cli/e2e/` and `apps/cli/scripts/`. Paths above are relative
+to `apps/cli/`. These records preserve the existing rationale; they do
 not establish new platform guarantees.
 
 ## Consequences

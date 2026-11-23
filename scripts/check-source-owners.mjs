@@ -18,13 +18,13 @@ export const sourceOwnerAllowlist = [
 		String.raw`/[\u0000-\u001f\u007f-\u009f\u061c\u200b-\u200f\u202a-\u202e\u2060\u2066-\u2069\ufeff]/gu`,
 		String.raw`/\\(?:["\\/bfnrt]|u[0-9a-fA-F]{4})|[\u007f-\u009f\u061c\u200b-\u200f\u202a-\u202e\u2060\u2066-\u2069\ufeff]/gu`,
 	].map((expression) => ({
-		path: "apps/desktop/src/main/comments-cli.ts",
+		path: "apps/cli/src/main/comments-cli.ts",
 		expression,
 		reason:
 			"Comment output escapes invisible characters, including BOM, for agent transcripts. It never detects or parses Prax source.",
 	})),
 	{
-		path: "apps/desktop/src/main/init-course.ts",
+		path: "apps/cli/src/main/init-course.ts",
 		expression: 'original.startsWith("\\uFEFF")',
 		reason:
 			"Init preserves the optional BOM of VS Code JSONC settings. It never reads or parses Prax source.",
@@ -98,12 +98,12 @@ export const selfCheckAuthorOwners = [
 	"packages/editor-core/src/lib/a11y/retrieval-sheet-advice.ts",
 	"packages/editor-core/src/lib/a11y/highlight-advice.ts",
 	"packages/editor-core/src/lib/a11y/write-distractors-advice.ts",
-	"apps/desktop/src/main/identity-store.ts",
-	"apps/desktop/src/main/lesson-source.ts",
-	"apps/desktop/src/main/operations/",
-	"apps/desktop/src/main/studio/preview-scheduler.ts",
-	"apps/desktop/src/shared/editor-session.ts",
-	"apps/desktop/src/shared/self-check-narration-advice.ts",
+	"apps/cli/src/main/identity-store.ts",
+	"apps/cli/src/main/lesson-source.ts",
+	"apps/cli/src/main/operations/",
+	"apps/cli/src/main/studio/preview-scheduler.ts",
+	"apps/cli/src/shared/editor-session.ts",
+	"apps/cli/src/shared/self-check-narration-advice.ts",
 ];
 const testPath = /(?:^|\/)(?:__tests__|tests|e2e|fixtures|test-utils)(?:\/|$)|\.(?:test|spec)\./;
 
@@ -819,7 +819,7 @@ export function checkSelfCheckOwners(path, source, program) {
 	}
 	function revisionAdmission(node) {
 		if (
-			path !== "apps/desktop/src/main/export/build-export-input-from-project.ts" ||
+			path !== "apps/cli/src/main/export/build-export-input-from-project.ts" ||
 			node.getText(file) !== "read.tree.stream.source"
 		)
 			return false;
@@ -853,7 +853,7 @@ export function checkSelfCheckOwners(path, source, program) {
 	}
 	const failures = [];
 	const admittedAccessor = (name) =>
-		path === "apps/desktop/src/main/export/build-export-input-from-project.ts" &&
+		path === "apps/cli/src/main/export/build-export-input-from-project.ts" &&
 		["readSelfCheckContent", "readWriteDistractorsContent"].includes(name);
 	function authorBinding(node) {
 		if (!ts.isImportSpecifier(node) && !ts.isExportSpecifier(node)) return false;
@@ -919,7 +919,7 @@ export function checkSelfCheckOwners(path, source, program) {
 	}
 	function preparedMergeSite(node, owner) {
 		return (
-			path === "apps/desktop/src/main/export/build-export-input-from-project.ts" &&
+			path === "apps/cli/src/main/export/build-export-input-from-project.ts" &&
 			owner.contentName === "writeDistractorsContents" &&
 			ts.isPropertyAccessExpression(node) &&
 			node.getText(file) === `prepared.${owner.contentName}` &&
@@ -942,14 +942,14 @@ export function checkSelfCheckOwners(path, source, program) {
 				if (ts.isFunctionDeclaration(owner)) return names.includes(owner.name?.text);
 			return false;
 		};
-		if (path === "apps/desktop/src/main/export/build-export-input-from-project.ts")
+		if (path === "apps/cli/src/main/export/build-export-input-from-project.ts")
 			return (
 				expression === "selfChecks.writeDistractorsContents" &&
 				parent ===
 					"pdfWriteDistractorsInputs(selfChecks.writeDistractorsContents, options.includeAnswerSheet)" &&
 				withinFunction(["buildLessonInputFromProject", "prepareCourseLesson"])
 			);
-		if (path === "apps/desktop/src/main/export/export-project.ts")
+		if (path === "apps/cli/src/main/export/export-project.ts")
 			return (
 				expression === "lesson.writeDistractorsContents" &&
 				parent === "lesson.writeDistractorsContents ?? []" &&
@@ -1018,7 +1018,7 @@ export function checkSelfCheckOwners(path, source, program) {
 		)
 			return;
 		if (
-			path === "apps/desktop/src/main/studio/project-session.ts" &&
+			path === "apps/cli/src/main/studio/project-session.ts" &&
 			[
 				"goodLessons.set(file, structuredClone(read))",
 				"lessons.set(file, good ? structuredClone(good) : { ...read, blocks: [], pages: [] })",
@@ -1244,25 +1244,25 @@ const displayIdOwners = {
 		"packages/shared-blocks/src/narration.ts",
 		"packages/content-identity/src/files.ts",
 		"packages/content-identity/src/resolve.ts",
-		"apps/desktop/src/shared/narration-sidecar.ts",
-		"apps/desktop/src/shared/edit-cli-schema.ts",
+		"apps/cli/src/shared/narration-sidecar.ts",
+		"apps/cli/src/shared/edit-cli-schema.ts",
 	],
 };
 
 const identityWriterOwners = {
 	resolveCourseIdentity: [
-		"apps/desktop/src/main/lesson-source.ts",
-		"apps/desktop/src/main/operations/operation-service.ts",
+		"apps/cli/src/main/lesson-source.ts",
+		"apps/cli/src/main/operations/operation-service.ts",
 	],
 	persistCourseIdentity: [
-		"apps/desktop/src/main/lesson-source.ts",
-		"apps/desktop/src/main/operations/operation-service.ts",
-		"apps/desktop/src/main/export/build-export-input-from-project.ts",
-		"apps/desktop/src/main/studio/project-session.ts",
+		"apps/cli/src/main/lesson-source.ts",
+		"apps/cli/src/main/operations/operation-service.ts",
+		"apps/cli/src/main/export/build-export-input-from-project.ts",
+		"apps/cli/src/main/studio/project-session.ts",
 	],
 	resolveLessonSourcesForWrite: [
-		"apps/desktop/src/main/export/build-export-input-from-project.ts",
-		"apps/desktop/src/main/studio/project-session.ts",
+		"apps/cli/src/main/export/build-export-input-from-project.ts",
+		"apps/cli/src/main/studio/project-session.ts",
 	],
 };
 
@@ -1274,10 +1274,10 @@ export function checkIdentityWriterImports(path, source, program) {
 			source,
 			program,
 			{
-				reclaimProtectedArchives: ["apps/desktop/src/main/identity-store.ts"],
+				reclaimProtectedArchives: ["apps/cli/src/main/identity-store.ts"],
 			},
 			{
-				definition: "apps/desktop/src/main/project-file-transactions.ts",
+				definition: "apps/cli/src/main/project-file-transactions.ts",
 				module: /(?:^|\/)project-file-transactions(?:\.[cm]?[jt]s)?(?:[?#].*)?$/u,
 				barrels: [],
 				message: "protected archive deletion belongs only to I4",
@@ -1288,8 +1288,8 @@ export function checkIdentityWriterImports(path, source, program) {
 			source,
 			program,
 			{
-				planInverseGroup: ["apps/desktop/src/main/operations/operation-service.ts"],
-				consumeInverseGroupIdentity: ["apps/desktop/src/main/operations/operation-service.ts"],
+				planInverseGroup: ["apps/cli/src/main/operations/operation-service.ts"],
+				consumeInverseGroupIdentity: ["apps/cli/src/main/operations/operation-service.ts"],
 			},
 			{
 				definition: "packages/operations/src/index.ts",
@@ -1300,7 +1300,7 @@ export function checkIdentityWriterImports(path, source, program) {
 			},
 		),
 		...checkOwnedImports(path, source, program, identityWriterOwners, {
-			definition: "apps/desktop/src/main/identity-store.ts",
+			definition: "apps/cli/src/main/identity-store.ts",
 			module: /(?:^|\/)(?:identity-store|lesson-source)(?:\.[cm]?[jt]s)?(?:[?#].*)?$/u,
 			barrels: [],
 			message: "import identity writers by name in their allowed write owners",
@@ -1332,7 +1332,7 @@ function checkProductionImports(path, source, program) {
 					? literal(node.propertyName)
 					: undefined;
 		if (
-			path.startsWith("apps/desktop/src/") &&
+			path.startsWith("apps/cli/src/") &&
 			["createRequire", "getBuiltinModule", "require"].includes(name)
 		) {
 			const line = file.getLineAndCharacterOfPosition(node.getStart(file)).line + 1;
@@ -1350,7 +1350,7 @@ function checkProductionImports(path, source, program) {
 			? resolve(dirname(path), text).replaceAll("\\", "/")
 			: text;
 		if (
-			path === "apps/desktop/src/main/project-file-transactions.ts" &&
+			path === "apps/cli/src/main/project-file-transactions.ts" &&
 			target &&
 			/(?:^|\/)(?:identity-[^/]+|identity\/.*|(?:@praxity|packages)\/content-identity(?:\/.*)?)$/iu.test(
 				target,
@@ -1375,7 +1375,7 @@ function checkProductionImports(path, source, program) {
 						node.exportClause.elements.length > 0 &&
 						node.exportClause.elements.every((binding) => binding.isTypeOnly)));
 		if (
-			/^apps\/desktop\/src\/(?:shared|main)\//u.test(path) &&
+			/^apps\/cli\/src\/(?:shared|main)\//u.test(path) &&
 			target &&
 			/^(?:@praxity\/editor-core\/frame-bridge|.*\/editor-core\/src\/frame-bridge)(?:\/index(?:\.[cm]?[jt]s)?)?(?:[?#].*)?$/u.test(
 				target,

@@ -12,7 +12,7 @@ Praxity Studio hosts grammar 4 projects through the standalone CLI and local Rea
   -> local project files
 ```
 
-- `apps/desktop/` owns the standalone CLI, Read preview server, filesystem access, preview services and export commands. Its directory name is retained.
+- `apps/cli/` owns the standalone CLI, Read preview server, filesystem access, preview services and export commands. Its directory name is retained.
 - `packages/content-model/` owns dependency-free block data types, constants, and inline grammar formatting.
 - `packages/editor-core/` owns the grammar editor, panels, document store, accessibility checker, and adapter-backed editor features.
 - `packages/grammar/` owns grammar 4 tokenization, the lossless tree, schema and `readLesson()` renderer projection. Hosts retain source bytes; source edits do not regenerate the document from renderer blocks.
@@ -283,7 +283,7 @@ identity only; existing `.praxity/review/` files remain byte-identical. There is
 no review baseline initialization, refresh, hunk generation or note resolution.
 
 `.praxity/review` stays protected by T1 and remains evidence of an established
-course for identity admission. `apps/desktop/src/shared/review/model.ts` keeps
+course for identity admission. `apps/cli/src/shared/review/model.ts` keeps
 only the schema-1 run and state parsers and their types. I4 recovery uses them to
 verify live review files before reclaiming protected archives. A queued run
 also requires a valid state in the same course namespace. Missing or invalid
@@ -327,7 +327,7 @@ admitted mappings without inventing a second source target for the page line.
 The browser snapshot transport is removed. The rooted snapshot and text-operation
 methods remain available internally until the dead session APIs are pruned.
 
-`apps/desktop/src/main/operations/operation-service.ts` owns session operations.
+`apps/cli/src/main/operations/operation-service.ts` owns session operations.
 An optional captured page scope still filters internal field bindings to a
 compiler-admitted page and refuses cross-page writes. Deck scope includes every
 page in its lesson. Read uses captured scope for review and revision fallback;
@@ -890,7 +890,7 @@ The main rendering contexts are:
 
 | Context | Entry point | Renderer |
 |---|---|---|
-| Canvas Read | `apps/desktop/src/main/studio/read-only-server.ts` | Captured learner document and runtime |
+| Canvas Read | `apps/cli/src/main/studio/read-only-server.ts` | Captured learner document and runtime |
 | HTML and SCORM islands runtime | `packages/export-pipeline/template/src/islands/` | Server-rendered blocks with targeted interactive islands |
 | HTML and SCORM static/no-JS runtime | `packages/export-pipeline/src/html-gen.ts` | Server-rendered semantic block HTML |
 
@@ -904,7 +904,7 @@ without separator text; the code island reconstructs Copy text from source rows.
 
 The compiler loads on demand. A delayed project-open warmup was tested and removed: it shortened first preview but introduced a 403–619 ms main-process pause while editing. Do not reintroduce background compiler imports without responsiveness evidence. Measure cold import and warm compilation separately before adding artifact caches or incremental compilation.
 
-The headless command in `apps/desktop/src/main/cli.ts` calls the
+The headless command in `apps/cli/src/main/cli.ts` calls the
 Electron-free `exportProject()` module. The standalone Node entry bundles this same
 CLI and export path with the desktop viewer assets and Node sanitizer dependencies.
 It reads `.prax` files, `course.yaml`, project and immediate-parent workspace settings,

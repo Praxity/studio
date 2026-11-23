@@ -9,12 +9,12 @@ import DurationSequencer, { FileTimingReporter } from "./vitest-sequencer.ts";
 const root = resolve(".");
 const spec = (name) => ({ moduleId: resolve(root, name) });
 const context = (index, count) => ({ config: { root, shard: { index, count } } });
-const files = ["a", "b", "c", "d", "new"].map((name) => spec(`apps/desktop/${name}.test.ts`));
+const files = ["a", "b", "c", "d", "new"].map((name) => spec(`apps/cli/${name}.test.ts`));
 const timings = {
-	"apps/desktop/a.test.ts": 16,
-	"apps/desktop/b.test.ts": 14,
-	"apps/desktop/c.test.ts": 11,
-	"apps/desktop/d.test.ts": 9,
+	"apps/cli/a.test.ts": 16,
+	"apps/cli/b.test.ts": 14,
+	"apps/cli/c.test.ts": 11,
+	"apps/cli/d.test.ts": 9,
 };
 
 test("duration shards assign the longest known files to the least loaded shard", async () => {
@@ -79,7 +79,7 @@ test("the committed timing map assigns every measured file exactly once", async 
 
 test("shards with different runtime worker counts assign every file exactly once", async () => {
 	const map = JSON.parse(readFileSync(new URL("./vitest-timings.json", import.meta.url), "utf8"));
-	const input = [...Object.keys(map.files).map(spec), spec("apps/desktop/unmeasured.test.ts")];
+	const input = [...Object.keys(map.files).map(spec), spec("apps/cli/unmeasured.test.ts")];
 	const assigned = (
 		await Promise.all(
 			[2, 4, 2, 2].map((maxWorkers, index) =>
@@ -106,7 +106,7 @@ test("unknown files use Vitest's default sharding without changing the input", a
 	}
 	assert.deepEqual(
 		files.map((file) => file.moduleId),
-		["a", "b", "c", "d", "new"].map((name) => resolve(root, `apps/desktop/${name}.test.ts`)),
+		["a", "b", "c", "d", "new"].map((name) => resolve(root, `apps/cli/${name}.test.ts`)),
 	);
 });
 
@@ -116,7 +116,7 @@ test("CI timing JSON lines refresh the map without depending on human console fo
 	reporter.onInit({ config: { root }, logger: { log: (line) => log.push(line) } });
 	reporter.onTestModuleEnd({ moduleId: files[0].moduleId, diagnostic: () => ({ duration: 16.2 }) });
 	assert.deepEqual(timingMap(timingEntries(`2026-10-17T00:00:00Z ${log[0]}`)), {
-		"apps/desktop/a.test.ts": 17,
+		"apps/cli/a.test.ts": 17,
 	});
 });
 
@@ -136,30 +136,25 @@ test("refresh accepts Vitest JSON reports and bootstraps measured legacy CI logs
 			JSON.stringify({
 				testResults: [
 					{
-						name: ["", "home", "runner", "work", "studio", "apps", "desktop", "a.test.ts"].join(
-							"/",
-						),
+						name: ["", "home", "runner", "work", "studio", "apps", "cli", "a.test.ts"].join("/"),
 						startTime: 100,
 						endTime: 119,
 					},
 				],
 			}),
 		),
-		[{ file: "apps/desktop/a.test.ts", duration: 19 }],
+		[{ file: "apps/cli/a.test.ts", duration: 19 }],
 	);
 	assert.deepEqual(
-		timingEntries(
-			"2026-10-17T00:00:00Z  +  desktop  a.test.ts (2 tests) 31ms",
-			() => "apps/desktop",
-		),
-		[{ file: "apps/desktop/a.test.ts", duration: 31 }],
+		timingEntries("2026-10-17T00:00:00Z  +  desktop  a.test.ts (2 tests) 31ms", () => "apps/cli"),
+		[{ file: "apps/cli/a.test.ts", duration: 31 }],
 	);
 	assert.deepEqual(
 		timingMap([
-			{ file: "apps/desktop/a.test.ts", duration: 19 },
-			{ file: "apps/desktop/a.test.ts", duration: 31 },
+			{ file: "apps/cli/a.test.ts", duration: 19 },
+			{ file: "apps/cli/a.test.ts", duration: 31 },
 		]),
-		{ "apps/desktop/a.test.ts": 31 },
+		{ "apps/cli/a.test.ts": 31 },
 	);
 });
 
@@ -169,7 +164,7 @@ test("refresh refuses missing timings, invalid paths and invalid durations", () 
 	for (const file of [
 		"../a.test.ts",
 		"apps/../a.test.ts",
-		"apps/desktop/../../a.test.ts",
+		"apps/cli/../../a.test.ts",
 		["C:", "a.test.ts"].join("/"),
 		"apps/a.ts",
 	])

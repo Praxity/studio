@@ -469,7 +469,7 @@ async function isolatedViewerSources(complete = false) {
 		"packages/shared-blocks/src",
 		"packages/export-pipeline/template/src",
 		"packages/export-pipeline/src/scorm",
-		"apps/desktop/resources/third-party-notices",
+		"apps/cli/resources/third-party-notices",
 	]) {
 		await mkdir(path.join(root, directory), { recursive: true });
 	}
@@ -480,8 +480,8 @@ async function isolatedViewerSources(complete = false) {
 	);
 	if (complete) {
 		await cp(
-			path.join(repoRoot, "apps/desktop/resources/third-party-notices"),
-			path.join(root, "apps/desktop/resources/third-party-notices"),
+			path.join(repoRoot, "apps/cli/resources/third-party-notices"),
+			path.join(root, "apps/cli/resources/third-party-notices"),
 			{ recursive: true },
 		);
 		for (const pkg of ["export-pipeline", "shared-blocks", "grammar", "content-model"]) {

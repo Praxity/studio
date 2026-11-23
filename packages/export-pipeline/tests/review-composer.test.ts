@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { JSDOM } from "jsdom";
 import { afterEach, expect, it, vi } from "vitest";
-import { refusalStatuses } from "../../../apps/desktop/src/main/studio/review-http";
+import { refusalStatuses } from "../../../apps/cli/src/main/studio/review-http";
 import reviewEn from "../../editor-core/src/messages/en.json" with { type: "json" };
 import reviewFr from "../../editor-core/src/messages/fr.json" with { type: "json" };
 import type { ReviewAnchor } from "../../review-share/src/review";

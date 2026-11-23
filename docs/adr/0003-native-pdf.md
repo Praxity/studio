@@ -125,7 +125,7 @@ Native workbooks preserve authored meaning through Typst, including shaping, hea
 
 ### `packages/format-renderers/vitest.config.ts`
 
-- `bundledTypst`: Native PDF tests compile with the Typst that ships in the app. It exists after `pnpm --filter @praxity/desktop prepare:typst`, which `dev` and `build` also run.
+- `bundledTypst`: Native PDF tests compile with the Typst that ships in the app. It exists after `pnpm --filter @praxity/cli prepare:typst`, which `dev` and `build` also run.
 - `test.testTimeout`: Real Typst compiles take a few seconds each, longer on a loaded machine.
 
 Sources: the corresponding comments and implementations at commit `bed54f6109aa4ae868c981f53233a5ee9c5afdd7`, and the regression cases in `packages/format-renderers/__tests__/`.

@@ -1,30 +1,30 @@
 {
-	"apps/desktop/scripts/benchmark-compile-scheduler.mts": [
+	"apps/cli/scripts/benchmark-compile-scheduler.mts": [
 		"@praxity/grammar/src/operations/contract.ts"
 	],
-	"apps/desktop/src/main/__tests__/desktop-export-input.test.ts": [
+	"apps/cli/src/main/__tests__/desktop-export-input.test.ts": [
 		"@praxity/grammar/src/v4/lex/index.ts"
 	],
-	"apps/desktop/src/main/__tests__/editor-snapshot.test.ts": ["@praxity/grammar/src/v4/schema.ts"],
-	"apps/desktop/src/main/__tests__/fixtures/editor-snapshot.ts": [
+	"apps/cli/src/main/__tests__/editor-snapshot.test.ts": ["@praxity/grammar/src/v4/schema.ts"],
+	"apps/cli/src/main/__tests__/fixtures/editor-snapshot.ts": [
 		"@praxity/grammar/src/v4/lex/index.ts",
 		"@praxity/grammar/src/v4/schema.ts",
 		"@praxity/grammar/src/v4/tree/index.ts",
 		"@praxity/operations/src/ranges.ts"
 	],
-	"apps/desktop/src/main/__tests__/identity-store.test.ts": ["@praxity/grammar/src/read-lesson.ts"],
-	"apps/desktop/src/main/__tests__/operation-service.test.ts": [
+	"apps/cli/src/main/__tests__/identity-store.test.ts": ["@praxity/grammar/src/read-lesson.ts"],
+	"apps/cli/src/main/__tests__/operation-service.test.ts": [
 		"@praxity/grammar/src/operations/contract.ts"
 	],
-	"apps/desktop/src/main/edit-cli.ts": ["@praxity/grammar/src/operations/contract.ts"],
-	"apps/desktop/src/main/identity-store.ts": [
+	"apps/cli/src/main/edit-cli.ts": ["@praxity/grammar/src/operations/contract.ts"],
+	"apps/cli/src/main/identity-store.ts": [
 		"@praxity/grammar/src/operations/contract.ts",
 		"@praxity/grammar/src/read-lesson.ts",
 		"@praxity/grammar/src/v4/lex/index.ts",
 		"@praxity/grammar/src/v4/to-blocks.ts",
 		"@praxity/grammar/src/v4/tree/index.ts"
 	],
-	"apps/desktop/src/main/operations/block-inspection.ts": [
+	"apps/cli/src/main/operations/block-inspection.ts": [
 		"@praxity/content-identity/src/files.ts",
 		"@praxity/grammar/src/operations/contract.ts",
 		"@praxity/grammar/src/v4/lex/index.ts",
@@ -32,26 +32,24 @@
 		"@praxity/grammar/src/v4/tree/index.ts",
 		"@praxity/operations/src/ranges.ts"
 	],
-	"apps/desktop/src/main/operations/canvas-text-bindings.ts": [
+	"apps/cli/src/main/operations/canvas-text-bindings.ts": [
 		"@praxity/grammar/src/operations/contract.ts",
 		"@praxity/grammar/src/v4/tree/index.ts",
 		"@praxity/operations/src/ranges.ts"
 	],
-	"apps/desktop/src/main/operations/local-editor-store.ts": [
-		"@praxity/content-identity/src/files.ts"
-	],
-	"apps/desktop/src/main/operations/operation-service.ts": [
+	"apps/cli/src/main/operations/local-editor-store.ts": ["@praxity/content-identity/src/files.ts"],
+	"apps/cli/src/main/operations/operation-service.ts": [
 		"@praxity/grammar/src/operations/contract.ts",
 		"@praxity/operations/src/ranges.ts"
 	],
-	"apps/desktop/src/shared/editor-session.ts": [
+	"apps/cli/src/shared/editor-session.ts": [
 		"@praxity/grammar/src/operations/contract.ts",
 		"@praxity/grammar/src/v4/schema.ts",
 		"@praxity/grammar/src/v4/tree/types.ts",
 		"@praxity/operations/src/ranges.ts"
 	],
-	"apps/desktop/src/shared/editor-source.ts": ["@praxity/grammar/src/line-endings.ts"],
-	"apps/desktop/src/shared/review/model.ts": ["@praxity/content-identity/src/files.ts"],
+	"apps/cli/src/shared/editor-source.ts": ["@praxity/grammar/src/line-endings.ts"],
+	"apps/cli/src/shared/review/model.ts": ["@praxity/content-identity/src/files.ts"],
 	"packages/content-identity/__tests__/page-history.test.ts": [
 		"@praxity/grammar/src/v4/lex/index.ts",
 		"@praxity/grammar/src/v4/schema.ts",

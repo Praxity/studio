@@ -3,7 +3,7 @@
 ## Token reference
 
 Studio ships a local Read preview and optional review comments. The thin-canvas controls and `canvas-styles.ts` were retired on 2026-11-22.
-Retained theme definitions live in `apps/desktop/src/renderer/themes/`.
+Retained theme definitions live in `apps/cli/src/renderer/themes/`.
 The native textarea and protected shadow controls were removed with the browser editor.
 The component and panel guidance below is historical guidance for retained
 editor-core components. Do not rebuild retired panels.
