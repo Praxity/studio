@@ -86,7 +86,7 @@ export function buildVitestPlan(paths, context, options = {}) {
 			})
 		)
 			return fullVitestPlan();
-		const steps = buildPlan(paths, context, options).filter((step) =>
+		const steps = buildPlan(paths, context, { ...options, full: true }).filter((step) =>
 			step.id.startsWith("vitest-"),
 		);
 		for (const step of steps) {
@@ -215,10 +215,34 @@ export function matchedFilters(paths, context) {
 	);
 }
 
+function listBrowserCases(suite, projects) {
+	const root = resolve(import.meta.dirname, "../../../packages/export-pipeline");
+	const require = createRequire(resolve(root, "package.json"));
+	return execFileSync(
+		process.execPath,
+		[
+			require.resolve("@playwright/test/cli"),
+			"test",
+			`--config=tests/${suite}/playwright.config.ts`,
+			"--list",
+			"--reporter=list",
+			...projects,
+		],
+		{ cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+	);
+}
+
 export function buildPlan(
 	changed,
 	context,
-	{ engines = "chromium", deleted = [], outputMap = outputCoverage } = {},
+	{
+		engines = "chromium",
+		deleted = [],
+		outputMap = outputCoverage,
+		list = listBrowserCases,
+		full = false,
+		log = console.log,
+	} = {},
 ) {
 	if (!["chromium", "all"].includes(engines)) throw new Error("--engines must be chromium or all");
 	const paths = unique(changed.map((path) => path.replaceAll("\\", "/")));
@@ -319,26 +343,58 @@ export function buildPlan(
 		pnpm("vitest-format", "exec", "vitest", "run", ...vitest, "--project", "grammar");
 
 	const suites = { a11y: new Set(), deck: new Set() };
-	let unmapped = false;
+	const explicit = { a11y: new Set(), deck: new Set() };
+	const unmapped = [];
+	const widened = { a11y: [], deck: [] };
 	for (const path of paths) {
 		if (!matchedFilters([path], context).output) continue;
 		const spec = path.match(/^packages\/export-pipeline\/tests\/(a11y|deck)\/(.+)\.spec\.ts$/);
 		if (spec && !deleted.includes(path)) {
 			suites[spec[1]].add(spec[2]);
+			explicit[spec[1]].add(spec[2]);
 			continue;
 		}
 		const entry = outputMap.find((entry) => matches(path, entry.paths));
 		if (!entry) {
-			unmapped = true;
+			unmapped.push(path);
 			continue;
 		}
-		for (const suite of ["a11y", "deck"]) for (const spec of entry[suite]) suites[suite].add(spec);
+		for (const suite of ["a11y", "deck"]) {
+			for (const spec of entry[suite]) suites[suite].add(spec);
+			if (entry[suite].includes("*")) widened[suite].push(path);
+		}
 	}
-	if (filters.output && unmapped) for (const suite of Object.values(suites)) suite.add("*");
-	if (css) suites.a11y.add("contrast-themes");
+	if (filters.output && unmapped.length) for (const suite of Object.values(suites)) suite.add("*");
+	if (css) {
+		suites.a11y.add("contrast-themes");
+		explicit.a11y.add("contrast-themes");
+	}
 	const projects = (engines === "all" ? ["chromium", "firefox", "webkit"] : ["chromium"]).map(
 		(engine) => `--project=${engine}`,
 	);
+	if (!full) {
+		for (const [suite, specs] of Object.entries(suites)) {
+			if (!specs.has("*")) continue;
+			try {
+				const output = list(suite, projects);
+				const total = output.match(/^Total: (\d+) tests?\b/m);
+				if (!total) throw new Error("Playwright listing has no Total count");
+				log(
+					`${suite}: whole suite selects ${total[1]} cases (Playwright listing, including skipped cases).`,
+				);
+			} catch (error) {
+				log(`${suite}: count unavailable: ${error.stderr?.toString().trim() || error.message}`);
+			}
+			if (unmapped.length) log(`Unmapped changed paths: ${unmapped.join(", ")}`);
+			if (widened[suite].length)
+				log(`Coverage map requests full suite: ${widened[suite].join(", ")}`);
+			log(
+				`Only the rest of the suite is left to the merge candidate's CI; edited specs and CSS contrast still run locally. Use --full only when CI reports a failure in this suite or the controller asks.`,
+			);
+			specs.clear();
+			for (const spec of explicit[suite]) specs.add(spec);
+		}
+	}
 	if (suites.deck.size && !steps.some((step) => step.id === "viewer-assets"))
 		pnpm("viewer-assets", "--filter", "@praxity/export-pipeline", "prebuild:client");
 	for (const [suite, specs] of Object.entries(suites)) {
@@ -377,7 +433,7 @@ export function buildPlan(
 	return steps;
 }
 
-export async function runPlan(steps, execute) {
+export async function runPlan(steps, execute, { full = false, log = console.log } = {}) {
 	mkdirSync(tmpdir(), { recursive: true });
 	if (process.env.PRAXITY_TEST_ARTIFACTS)
 		mkdirSync(process.env.PRAXITY_TEST_ARTIFACTS, { recursive: true });
@@ -387,6 +443,11 @@ export async function runPlan(steps, execute) {
 			results.push({ id: step.id, code: await execute(step) });
 		} catch (error) {
 			results.push({ id: step.id, code: 1, error: error.message });
+		}
+		if (!full && results.at(-1).code !== 0) {
+			const skipped = steps.slice(results.length).map((step) => step.id);
+			if (skipped.length) log(`Skipped after ${step.id} failed: ${skipped.join(", ")}`);
+			break;
 		}
 	}
 	return results;
@@ -479,6 +540,7 @@ async function main() {
 		options: {
 			base: { type: "string", default: "origin/main" },
 			"dry-run": { type: "boolean", default: false },
+			full: { type: "boolean", default: false },
 			engines: { type: "string", default: "chromium" },
 			files: { type: "string", multiple: true },
 			"vitest-only": { type: "boolean", default: false },
@@ -490,6 +552,7 @@ async function main() {
 		throw new Error("--files is only supported with --dry-run for sample diffs");
 	if ((values["select-only"] || values["affected-only"]) && !values["vitest-only"])
 		throw new Error("Selection modes require --vitest-only");
+	const full = values.full || process.env.CI === "true";
 	const root = resolve(import.meta.dirname, "../../..");
 	let paths = [];
 	let deleted = [];
@@ -501,6 +564,7 @@ async function main() {
 		steps = (values["vitest-only"] ? buildVitestPlan : buildPlan)(paths, context, {
 			engines: values.engines,
 			deleted,
+			full,
 		});
 		console.log(`CI filters: ${JSON.stringify(matchedFilters(paths, context))}`);
 	} catch (error) {
@@ -543,8 +607,10 @@ async function main() {
 		console.log(`Summary: dry run, ${runnable.length} commands`);
 		return;
 	}
-	const results = await runPlan(runnable, (step) =>
-		step.id.startsWith("vitest-") ? executeVitest(step, root) : execute(step, root),
+	const results = await runPlan(
+		runnable,
+		(step) => (step.id.startsWith("vitest-") ? executeVitest(step, root) : execute(step, root)),
+		{ full },
 	);
 	console.log("\nSummary:");
 	for (const result of results)
@@ -552,7 +618,9 @@ async function main() {
 			`  ${result.code === 0 ? "PASS" : "FAIL"} ${result.id} (${result.code})${result.error ? `: ${result.error}` : ""}`,
 		);
 	const failed = results.filter((result) => result.code !== 0);
-	console.log(`${results.length - failed.length} passed, ${failed.length} failed`);
+	console.log(
+		`${results.length - failed.length} passed, ${failed.length} failed, ${runnable.length - results.length} not run`,
+	);
 	process.exitCode = failed.length ? 1 : 0;
 }
 

@@ -8,7 +8,7 @@ description: Shipping Studio changes. Read before pushing a branch or opening a 
 ## Checks
 
 1. Fix formatting and import order only in changed files with `pnpm exec biome check --write <changed files>`. Keep `--write` scoped; `pnpm lint:fix` rewrites the whole repository.
-2. For code changes, run `pnpm test:affected` and read its selected checks and results. It selects lint, typechecks and tests from CI filters and the diff against `origin/main`. Follow `docs/context/testing-strategy.md` for required change-specific gates, including SCORM/export and complete browser coverage.
+2. For code changes, run `pnpm test:affected` and read its selected checks and results. It selects lint, typechecks and tests from CI filters and the diff against `origin/main`. Local runs stop at the first failure and report steps left unrun. When a change selects the whole a11y or deck suite, a local run skips that complete suite, prints the paths that selected it and its case count, and leaves the rest of the suite to the merge candidate's CI. Edited browser specs and contrast-themes for CSS still run locally. Use `--full` only when CI reports a failure in that suite or the controller asks; it runs all selected steps and continues after failures. CI always runs every selected step and the complete suites. Follow `docs/context/testing-strategy.md` for required change-specific gates, including SCORM/export and complete browser coverage.
 3. For Read preview, review or inspection changes, also run affected specs with `pnpm --filter @praxity/desktop e2e:browser-editor`.
 
 Docs-only means no changed file matches the `changes` job's `code` filter in `.github/workflows/ci.yml`:

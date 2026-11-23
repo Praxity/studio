@@ -583,7 +583,12 @@ The complete export suite supplements cross-project related tests so desktop
 importers remain selected. Explicit prefix coverage maps unknown filenames and
 non-JS inputs to both complete published browser suites. Missing fallback coverage
 or CI output admission fails selection with the path and rule. Existing narrower
-browser mappings continue to follow the CI output filter.
+browser mappings continue to follow the CI output filter. When a change selects the whole a11y or deck suite, local affected runs print the
+paths that selected it and its Playwright case count, then leave the rest of the
+suite to the merge candidate's CI. Edited browser specs and `contrast-themes` for
+CSS still run locally. A failed listing reports that the count is unavailable
+and why. Use `--full` only when CI reports a failure in that suite or the
+controller asks. CI always runs every selected step and the complete suites.
 The viewer source hash recursively includes code, CSS, literal data and browser
 asset extensions under `src/patterns/`, including test-named code. Dotfiles and
 editor debris are excluded; symlinked pattern directories refuse with a diagnostic.

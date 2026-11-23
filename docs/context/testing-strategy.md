@@ -12,14 +12,28 @@ Read, review and inspection trust checks.
 The stopped U7 staged host, outline and source-host browser specs are retired;
 shared frame/inspection, transport and published-output tests remain.
 
-Browser suites use Chromium; `--engines all` adds Firefox and WebKit. Unmapped published-output changes outside the guarded runtime roots run both complete suites.
+Local runs stop at the first failed step, list the steps left unrun and include
+that count in the summary. CI always runs every selected step and the complete
+suites. Use `--full` only when CI reports a failure in that suite or the controller
+asks; it includes complete browser selections and continues after failures.
+
+Browser suites use Chromium; `--engines all` adds Firefox and WebKit. When a change
+selects the whole a11y or deck suite, a local run skips that complete suite,
+prints the paths that selected it and its case count, and leaves the rest of the
+suite to the merge candidate's CI. Edited browser specs and `contrast-themes` for
+CSS still run locally. Counts come from Playwright's `--list` for the selected
+engines and include skipped cases. Listing starts no browser. If listing fails
+or has no total, the output reports that the count is unavailable and why.
+Unmapped published-output changes outside the guarded runtime roots select both
+complete suites.
 The learner-authority roots (including `export-pipeline/src/patterns/`) and
 ownership/routing scripts have exhaustive prefix coverage: unknown paths select
 both complete published browser suites. A missing fallback map or CI output-filter
 admission fails selection with the changed path; existing narrower browser mappings
 continue to follow the CI filter. Those changes run the export-pipeline tests,
 including bundle closure and byte budgets, in addition to cross-project related
-tests and the mapped a11y/deck journeys. Every code change runs the real source-owner
+tests and the mapped a11y/deck journeys. Complete browser selections follow the
+local deferral rule above. Every code change runs the real source-owner
 command, including desktop export-input and format-renderers changes.
 CSS changes always run both CSS budget files and theme contrast; affected packages and their dependents get typechecks. Candidate and nightly CI run the full gates.
 

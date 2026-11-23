@@ -20,7 +20,7 @@ Scripts live in the root `package.json`. Use pnpm, never npm or yarn.
 - Reproduce a bug or identify its root cause before changing code.
 - Build the smallest verifiable vertical slice.
 - For browser-test worker iteration, use the affected-file selection and complete-gate rules in `docs/context/testing-strategy.md`.
-- Run the smallest relevant test while working, then `pnpm test:affected` before reporting. Follow `/verify-and-ship` for checks and PR flow. CI runs the full merge-candidate gate. Docs-only changes need no build gate.
+- Run the smallest relevant test while working, then `pnpm test:affected` before reporting. Follow `/verify-and-ship` for checks and PR flow. Local affected runs stop at the first failure. When a change selects the whole a11y or deck suite, a local run skips that complete suite, prints the paths that selected it and its case count, and leaves the rest of the suite to the merge candidate's CI. Edited browser specs and contrast-themes for CSS still run locally. Use `--full` only when CI reports a failure in that suite or the controller asks; it runs all selected steps and continues after failures. CI always runs every selected step and the complete suites. Docs-only changes need no build gate.
 - The `.claude/agents` accessibility and design reviewers use `model: sonnet`. These agents run on Sonnet regardless of other model routing.
 - Keep canonical docs current. Use PRs to describe contributor work; maintainers keep planning and task records as directed by `AGENTS.local.md`.
 
