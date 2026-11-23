@@ -9,6 +9,7 @@ import {
 	buildPlan,
 	buildVitestPlan,
 	changedFiles,
+	estimateCases,
 	execute,
 	loadContext,
 	matchedFilters,
@@ -18,7 +19,7 @@ import { outputCoverage } from "./test-affected-output-map.mjs";
 
 const root = resolve(import.meta.dirname, "../../..");
 const context = await loadContext(root);
-const plan = (files, options) => buildPlan(files, context, options);
+const plan = (files, options) => buildPlan(files, context, { full: true, ...options });
 const command = (steps, id) => steps.find((step) => step.id === id)?.args;
 
 for (const path of [
@@ -409,7 +410,7 @@ test("filters come from workflow YAML, including dotfiles and future filters", (
 		),
 		undefined,
 	);
-	assert.ok(buildPlan(["custom/.hidden.ts"], custom).find((s) => s.id === "deck"));
+	assert.ok(buildPlan(["custom/.hidden.ts"], custom, { full: true }).find((s) => s.id === "deck"));
 	assert.throws(() => buildPlan([], { ...context, filters: {} }), /code.*output.*format/);
 });
 
@@ -471,7 +472,7 @@ test("git includes committed, staged, unstaged, untracked and both renamed paths
 	}
 });
 
-test("runner continues after failures and returns a failing summary", async () => {
+test("full runner continues after failures and returns a failing summary", async () => {
 	const executed = [];
 	const result = await runPlan(
 		[
@@ -482,6 +483,7 @@ test("runner continues after failures and returns a failing summary", async () =
 			executed.push(step.id);
 			return step.id === "first" ? 7 : 0;
 		},
+		{ full: true },
 	);
 	assert.deepEqual(executed, ["first", "second"]);
 	assert.deepEqual(result, [
@@ -636,4 +638,124 @@ test("runPlan creates missing temp and PRAXITY_TEST_ARTIFACTS folders before any
 	});
 	assert.deepEqual(results, [{ id: "probe", code: 0 }]);
 	assert.deepEqual(seen, [[true, true]]);
+});
+
+for (const throws of [false, true]) {
+	test(`local runner stops after ${throws ? "an exception" : "a failed step"} and reports skipped steps`, async () => {
+		const executed = [];
+		const messages = [];
+		const results = await runPlan(
+			[{ id: "first" }, { id: "second" }, { id: "third" }],
+			async (step) => {
+				executed.push(step.id);
+				if (throws) throw new Error("broken");
+				return 7;
+			},
+			{ full: false, log: (message) => messages.push(message) },
+		);
+		assert.deepEqual(executed, ["first"]);
+		assert.deepEqual(results, [
+			throws ? { id: "first", code: 1, error: "broken" } : { id: "first", code: 7 },
+		]);
+		assert.match(messages.join("\n"), /Skipped after first failed: second, third/);
+	});
+}
+
+test("local widened suites report estimates and changed-path reasons without changing narrow selections", () => {
+	const messages = [];
+	const path = ".github/workflows/ci.yml";
+	const local = plan([path], { full: false, log: (message) => messages.push(message) });
+	for (const suite of ["a11y", "deck"]) {
+		assert.equal(command(local, suite), undefined);
+		assert.match(messages.join("\n"), new RegExp(`${suite}:.*estimated [1-9]\\d* cases`));
+	}
+	assert.match(messages.join("\n"), /Unmapped changed paths: \.github\/workflows\/ci.yml/);
+	assert.match(messages.join("\n"), /merge candidate's CI/);
+	assert.match(messages.join("\n"), /loops and skips are not expanded/);
+	assert.deepEqual(
+		plan(["packages/shared-blocks/src/viewer/deck-shell.css"], { full: false }),
+		plan(["packages/shared-blocks/src/viewer/deck-shell.css"]),
+	);
+});
+
+test("explicit full coverage mappings are also omitted locally with their reason", () => {
+	const messages = [];
+	const path = "packages/export-pipeline/src/patterns/text/future.json";
+	const steps = plan([path], { full: false, log: (message) => messages.push(message) });
+	assert.equal(command(steps, "a11y"), undefined);
+	assert.equal(command(steps, "deck"), undefined);
+	assert.match(
+		messages.join("\n"),
+		/Coverage map requests full suite: packages\/export-pipeline\/src\/patterns\/text\/future.json/,
+	);
+});
+
+test("CI=true preserves full plans and continues after failure without an explicit flag", async (t) => {
+	const saved = process.env.CI;
+	process.env.CI = "true";
+	t.after(() => {
+		if (saved === undefined) delete process.env.CI;
+		else process.env.CI = saved;
+	});
+	for (const paths of [
+		["packages/grammar/src/parser.ts"],
+		[".github/workflows/ci.yml"],
+		["packages/export-pipeline/src/patterns/text/future.json"],
+	]) {
+		assert.equal(JSON.stringify(buildPlan(paths, context)), JSON.stringify(plan(paths)));
+	}
+	const executed = [];
+	const results = await runPlan([{ id: "one" }, { id: "two" }], (step) => {
+		executed.push(step.id);
+		return 7;
+	});
+	assert.deepEqual(executed, ["one", "two"]);
+	assert.deepEqual(results, [
+		{ id: "one", code: 7 },
+		{ id: "two", code: 7 },
+	]);
+});
+
+test("CLI --full restores widened suites; local dry-run reports their omission", () => {
+	const run = (ci, ...args) =>
+		spawnSync(
+			process.execPath,
+			[
+				resolve(root, "apps/desktop/scripts/test-affected.mjs"),
+				"--dry-run",
+				"--files",
+				"packages/grammar/src/parser.ts",
+				...args,
+			],
+			{ encoding: "utf8", env: { ...process.env, CI: ci } },
+		);
+	const local = run("");
+	assert.equal(local.status, 0, local.stderr);
+	assert.doesNotMatch(local.stdout, /\[(a11y|deck)\]/);
+	assert.match(local.stdout, /estimated [1-9]\d* cases/);
+	const full = run("", "--full");
+	assert.equal(full.status, 0, full.stderr);
+	assert.match(full.stdout, /\[a11y\]/);
+	assert.match(full.stdout, /\[deck\]/);
+	assert.doesNotMatch(full.stdout, /estimated/);
+	const ci = run("true");
+	assert.equal(ci.status, 0, ci.stderr);
+	assert.equal(ci.stdout, full.stdout);
+	assert.equal(run("true", "--vitest-only").stdout, run("", "--full", "--vitest-only").stdout);
+});
+
+test("case estimates read current spec declarations and scale by selected engines", (t) => {
+	const dir = mkdtempSync(join(tmpdir(), "affected-count-"));
+	t.after(() => rmSync(dir, { recursive: true, force: true }));
+	const file = join(dir, "example.spec.ts");
+	writeFileSync(
+		file,
+		'test.describe("group", () => { test("one", () => {}); test.skip("two", () => {}); test.skip(true, "condition"); });',
+	);
+	assert.equal(estimateCases(dir, "chromium"), 2);
+	assert.equal(estimateCases(dir, "all"), 6);
+	writeFileSync(file, 'for (const name of ["a", "b"]) { test(`case ${name}`, () => {}); }');
+	assert.equal(estimateCases(dir, "chromium"), 1);
+	writeFileSync(join(dir, "helper.ts"), 'test("not a spec", () => {});');
+	assert.equal(estimateCases(dir, "chromium"), 1);
 });

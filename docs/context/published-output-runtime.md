@@ -583,7 +583,9 @@ The complete export suite supplements cross-project related tests so desktop
 importers remain selected. Explicit prefix coverage maps unknown filenames and
 non-JS inputs to both complete published browser suites. Missing fallback coverage
 or CI output admission fails selection with the path and rule. Existing narrower
-browser mappings continue to follow the CI output filter.
+browser mappings continue to follow the CI output filter. Local affected runs
+omit complete a11y/deck selections, reporting their reasons and estimated case
+counts. The merge candidate's CI runs them; `--full` includes them locally.
 The viewer source hash recursively includes code, CSS, literal data and browser
 asset extensions under `src/patterns/`, including test-named code. Dotfiles and
 editor debris are excluded; symlinked pattern directories refuse with a diagnostic.

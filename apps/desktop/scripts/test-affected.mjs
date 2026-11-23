@@ -86,7 +86,7 @@ export function buildVitestPlan(paths, context, options = {}) {
 			})
 		)
 			return fullVitestPlan();
-		const steps = buildPlan(paths, context, options).filter((step) =>
+		const steps = buildPlan(paths, context, { ...options, full: true }).filter((step) =>
 			step.id.startsWith("vitest-"),
 		);
 		for (const step of steps) {
@@ -215,10 +215,40 @@ export function matchedFilters(paths, context) {
 	);
 }
 
+export function estimateCases(root, engines) {
+	let declarations = 0;
+	for (const file of globSync("**/*.spec.ts", { cwd: root })) {
+		const source = ts.createSourceFile(
+			file,
+			readFileSync(resolve(root, file), "utf8"),
+			ts.ScriptTarget.Latest,
+			true,
+		);
+		const visit = (node) => {
+			if (
+				ts.isCallExpression(node) &&
+				/^(?:test|test\.(?:only|skip|fixme))$/.test(node.expression.getText(source)) &&
+				node.arguments.length >= 2 &&
+				(ts.isStringLiteralLike(node.arguments[0]) || ts.isTemplateExpression(node.arguments[0]))
+			)
+				declarations++;
+			ts.forEachChild(node, visit);
+		};
+		visit(source);
+	}
+	return declarations * (engines === "all" ? 3 : 1);
+}
+
 export function buildPlan(
 	changed,
 	context,
-	{ engines = "chromium", deleted = [], outputMap = outputCoverage } = {},
+	{
+		engines = "chromium",
+		deleted = [],
+		outputMap = outputCoverage,
+		full = process.env.CI === "true",
+		log = console.log,
+	} = {},
 ) {
 	if (!["chromium", "all"].includes(engines)) throw new Error("--engines must be chromium or all");
 	const paths = unique(changed.map((path) => path.replaceAll("\\", "/")));
@@ -319,7 +349,8 @@ export function buildPlan(
 		pnpm("vitest-format", "exec", "vitest", "run", ...vitest, "--project", "grammar");
 
 	const suites = { a11y: new Set(), deck: new Set() };
-	let unmapped = false;
+	const unmapped = [];
+	const widened = { a11y: [], deck: [] };
 	for (const path of paths) {
 		if (!matchedFilters([path], context).output) continue;
 		const spec = path.match(/^packages\/export-pipeline\/tests\/(a11y|deck)\/(.+)\.spec\.ts$/);
@@ -329,13 +360,29 @@ export function buildPlan(
 		}
 		const entry = outputMap.find((entry) => matches(path, entry.paths));
 		if (!entry) {
-			unmapped = true;
+			unmapped.push(path);
 			continue;
 		}
-		for (const suite of ["a11y", "deck"]) for (const spec of entry[suite]) suites[suite].add(spec);
+		for (const suite of ["a11y", "deck"]) {
+			for (const spec of entry[suite]) suites[suite].add(spec);
+			if (entry[suite].includes("*")) widened[suite].push(path);
+		}
 	}
-	if (filters.output && unmapped) for (const suite of Object.values(suites)) suite.add("*");
+	if (filters.output && unmapped.length) for (const suite of Object.values(suites)) suite.add("*");
 	if (css) suites.a11y.add("contrast-themes");
+	if (!full) {
+		for (const [suite, specs] of Object.entries(suites)) {
+			if (!specs.has("*")) continue;
+			log(
+				`${suite}: omitted widened suite, estimated ${estimateCases(resolve(import.meta.dirname, `../../../packages/export-pipeline/tests/${suite}`), engines)} cases (test declarations per selected engine; loops and skips are not expanded).`,
+			);
+			if (unmapped.length) log(`Unmapped changed paths: ${unmapped.join(", ")}`);
+			if (widened[suite].length)
+				log(`Coverage map requests full suite: ${widened[suite].join(", ")}`);
+			log(`The merge candidate's CI runs this suite. Use --full to run it locally.`);
+			specs.clear();
+		}
+	}
 	const projects = (engines === "all" ? ["chromium", "firefox", "webkit"] : ["chromium"]).map(
 		(engine) => `--project=${engine}`,
 	);
@@ -377,7 +424,11 @@ export function buildPlan(
 	return steps;
 }
 
-export async function runPlan(steps, execute) {
+export async function runPlan(
+	steps,
+	execute,
+	{ full = process.env.CI === "true", log = console.log } = {},
+) {
 	mkdirSync(tmpdir(), { recursive: true });
 	if (process.env.PRAXITY_TEST_ARTIFACTS)
 		mkdirSync(process.env.PRAXITY_TEST_ARTIFACTS, { recursive: true });
@@ -387,6 +438,11 @@ export async function runPlan(steps, execute) {
 			results.push({ id: step.id, code: await execute(step) });
 		} catch (error) {
 			results.push({ id: step.id, code: 1, error: error.message });
+		}
+		if (!full && results.at(-1).code !== 0) {
+			const skipped = steps.slice(results.length).map((step) => step.id);
+			if (skipped.length) log(`Skipped after ${step.id} failed: ${skipped.join(", ")}`);
+			break;
 		}
 	}
 	return results;
@@ -479,6 +535,7 @@ async function main() {
 		options: {
 			base: { type: "string", default: "origin/main" },
 			"dry-run": { type: "boolean", default: false },
+			full: { type: "boolean", default: false },
 			engines: { type: "string", default: "chromium" },
 			files: { type: "string", multiple: true },
 			"vitest-only": { type: "boolean", default: false },
@@ -501,6 +558,7 @@ async function main() {
 		steps = (values["vitest-only"] ? buildVitestPlan : buildPlan)(paths, context, {
 			engines: values.engines,
 			deleted,
+			full: values.full || process.env.CI === "true",
 		});
 		console.log(`CI filters: ${JSON.stringify(matchedFilters(paths, context))}`);
 	} catch (error) {
@@ -543,8 +601,10 @@ async function main() {
 		console.log(`Summary: dry run, ${runnable.length} commands`);
 		return;
 	}
-	const results = await runPlan(runnable, (step) =>
-		step.id.startsWith("vitest-") ? executeVitest(step, root) : execute(step, root),
+	const results = await runPlan(
+		runnable,
+		(step) => (step.id.startsWith("vitest-") ? executeVitest(step, root) : execute(step, root)),
+		{ full: values.full || process.env.CI === "true" },
 	);
 	console.log("\nSummary:");
 	for (const result of results)

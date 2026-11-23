@@ -12,14 +12,26 @@ Read, review and inspection trust checks.
 The stopped U7 staged host, outline and source-host browser specs are retired;
 shared frame/inspection, transport and published-output tests remain.
 
-Browser suites use Chromium; `--engines all` adds Firefox and WebKit. Unmapped published-output changes outside the guarded runtime roots run both complete suites.
+Local runs stop at the first failed step and list the steps left unrun.
+Use `--full` to keep running after failures and include widened browser suites.
+`CI=true` preserves full selection and execution, including the CI Vitest-only
+callers; candidate and nightly gates are unchanged.
+
+Browser suites use Chromium; `--engines all` adds Firefox and WebKit. When a11y or
+deck selection widens to the complete suite, local runs omit that suite and print
+its changed-path reasons and an estimated case count from test declarations in
+the real specs, multiplied by the selected engines. The estimate does not expand
+parameterized loops or account for skips. The merge candidate's CI runs the
+complete suites. Use `--full` to run them locally. Unmapped published-output
+changes outside the guarded runtime roots select both complete suites.
 The learner-authority roots (including `export-pipeline/src/patterns/`) and
 ownership/routing scripts have exhaustive prefix coverage: unknown paths select
 both complete published browser suites. A missing fallback map or CI output-filter
 admission fails selection with the changed path; existing narrower browser mappings
 continue to follow the CI filter. Those changes run the export-pipeline tests,
 including bundle closure and byte budgets, in addition to cross-project related
-tests and the mapped a11y/deck journeys. Every code change runs the real source-owner
+tests and the mapped a11y/deck journeys. Complete browser selections follow the
+local deferral rule above. Every code change runs the real source-owner
 command, including desktop export-input and format-renderers changes.
 CSS changes always run both CSS budget files and theme contrast; affected packages and their dependents get typechecks. Candidate and nightly CI run the full gates.
 

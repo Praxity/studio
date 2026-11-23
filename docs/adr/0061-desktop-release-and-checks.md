@@ -354,3 +354,15 @@ not establish new platform guarantees.
 
 Changes to these owners must preserve the recorded admission, lifecycle and
 platform constraints. Keep checks at their owning interfaces when refactoring.
+
+### Local affected-test execution (2026-11-23)
+
+Local affected runs stop at the first failure and name steps left unrun. Complete
+a11y/deck selections are deferred to the merge candidate's CI, with changed-path
+reasons and estimated counts from test declarations in the specs. The estimate
+multiplies declarations by the selected engines but does not expand loops or
+account for skips. This avoids browser setup just to print a local plan.
+`--full` includes complete browser selections and continues after failures.
+`CI=true` preserves the previous plans and execution, including both Vitest-only
+workflow callers. Browser mappings, browser-editor selection and full-Vitest
+fallback stay unchanged.
