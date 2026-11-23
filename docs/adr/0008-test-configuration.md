@@ -26,7 +26,7 @@ Decided 2026-11-22. The executable host lives in `apps/cli`, with private worksp
 
 ### Slow-test allowlist path migration
 
-Decided 2026-11-22. The validator permits the fixed, one-way move from `apps/desktop/` to `apps/cli/`. It first matches exact file/name keys. A migrated entry must retain every field except `file`, remove the old key from the current list and have a unique destination. Dated entries still undergo expiry, date and run validation. Other additions remain subject to the existing shrink-only and dated-addition rules. Once the base no longer contains an old key, the migration cannot restore it.
+Decided 2026-11-22. The validator uses `priorStudioAppPath` from `scripts/studio-app-layout.mjs` for the fixed, one-way move from `apps/desktop/` to `apps/cli/`. Its path sets are projected from file/name keys, so the shared owner handles the prefix and old-entry removal rules while the validator checks every field except `file` for equality. Exact keys take precedence and destinations stay unique. Dated entries still undergo expiry, date and run validation. Other additions remain subject to the existing shrink-only and dated-addition rules. Once the base no longer contains an old key, the migration cannot restore it.
 
 ## Consequences
 
