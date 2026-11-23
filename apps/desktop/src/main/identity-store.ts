@@ -2823,6 +2823,32 @@ export async function persistCourseIdentity(
 				if (retirements !== "confirmed") {
 					const retired = identityWriteRetirements(result);
 					if (retired.length) {
+						if (
+							!baseline.options.operations?.length &&
+							[...baseline.sources].some(
+								([file, source]) =>
+									payload.lessons.has(file) &&
+									source !== payload.lessons.get(file)?.tree.stream.source,
+							)
+						) {
+							const diskSources = [...baseline.sources].filter(
+								(entry): entry is [string, string] =>
+									entry[1] !== null && baseline.options.lessonPaths.includes(entry[0]),
+							);
+							await resolveAdmittedCourseIdentity(
+								root,
+								{
+									lessonPaths: baseline.options.lessonPaths.filter(
+										(file) => baseline.sources.get(file) !== null,
+									),
+									sources: Object.fromEntries(diskSources),
+									removedPaths: baseline.options.removedPaths,
+								},
+								undefined,
+								undefined,
+								baseline.files,
+							);
+						}
 						throw new IdentityRetirementError(retired);
 					}
 				}

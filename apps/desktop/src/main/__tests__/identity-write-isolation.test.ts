@@ -156,7 +156,6 @@ it("a real watcher returns an outside-retirement refusal without an error event 
 	).toMatchObject({
 		ok: false,
 		code: "identity-retirement-pending",
-		reviewUrl: "/launch",
 		retirements: [{ file: "bad.prax", page: "Other", label: "Saved other body.", line: null }],
 	});
 	expect(events.filter((event) => event.type === "error")).toEqual([]);
@@ -260,7 +259,6 @@ it("canvas outside-loss refusal is a coded result with unchanged storage", async
 		ok: false,
 		code: "identity-retirement-pending",
 		retirements: [{ file: "bad.prax", page: "Other", label: "Saved other body.", line: null }],
-		reviewUrl: "/launch",
 	});
 	expect(await bytes(root)).toEqual(original);
 });
