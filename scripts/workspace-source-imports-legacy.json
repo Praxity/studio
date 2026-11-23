@@ -44,12 +44,6 @@
 		"@praxity/grammar/src/operations/contract.ts",
 		"@praxity/operations/src/ranges.ts"
 	],
-	"apps/desktop/src/main/studio/preview-scheduler.ts": ["@praxity/operations/src/ranges.ts"],
-	"apps/desktop/src/renderer/browser/canvas-text.ts": [
-		"@praxity/grammar/src/line-endings.ts",
-		"@praxity/grammar/src/source-edit.ts",
-		"@praxity/operations/src/ranges.ts"
-	],
 	"apps/desktop/src/shared/editor-session.ts": [
 		"@praxity/grammar/src/operations/contract.ts",
 		"@praxity/grammar/src/v4/schema.ts",
@@ -80,10 +74,6 @@
 	"packages/content-identity/src/types.ts": [
 		"@praxity/grammar/src/operations/contract.ts",
 		"@praxity/grammar/src/v4/tree/index.ts"
-	],
-	"packages/editor-core/src/components/design-navigation-defaults.test.tsx": [
-		"@praxity/grammar/src/nav-archetype-presets.ts",
-		"@praxity/grammar/src/v4/schema.ts"
 	],
 	"packages/editor-core/src/components/design-system-panel.tsx": [
 		"@praxity/grammar/src/nav-archetype-layout.ts"

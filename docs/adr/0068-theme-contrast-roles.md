@@ -54,7 +54,7 @@ In `apps/desktop/src/renderer/themes/registry.ts`, `familyOrder` places the app'
 own theme first. Sorting it below other families made the default appear missing.
 
 In `apps/desktop/src/renderer/themes/__tests__/theme-contrast.test.ts`, `PAIRS`
-covers the combinations rendered by `apps/desktop/src/shared/canvas-styles.ts`.
+covered the combinations rendered by the retired `apps/desktop/src/shared/canvas-styles.ts`. The browser canvas controls were removed on 2026-11-22; retain these contrast roles for surviving theme consumers.
 Text uses 4.5:1 under WCAG 1.4.3; control boundaries and focus indicators use 3:1
 under WCAG 1.4.11.
 

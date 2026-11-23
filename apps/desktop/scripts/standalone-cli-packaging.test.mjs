@@ -84,7 +84,6 @@ for (const [platform, arch] of [
 		await mkdir(path.join(outputDir, "typst"));
 		await mkdir(path.join(outputDir, "export-assets"));
 		await mkdir(path.join(outputDir, "legal"));
-
 		await mkdir(path.join(outputDir, "typst/fonts"));
 		await writeFile(path.join(outputDir, "typst/fonts/LICENSE"), "font notice");
 		await writeFile(path.join(outputDir, "export-assets", "viewer.css"), "body {}");

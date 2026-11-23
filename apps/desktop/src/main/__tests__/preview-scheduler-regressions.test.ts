@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { mkdtemp, readFile, rm, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -13,11 +12,7 @@ import { readLesson } from "@praxity/grammar";
 import { afterEach, expect, it, vi } from "vitest";
 import { persistFixtureIdentity } from "../../test-utils/identity-fixture";
 import { resolveLessonSources } from "../lesson-source";
-import {
-	type PreviewDraftIdentity,
-	PreviewScheduler,
-	type PreviewSchedulerEvent,
-} from "../studio/preview-scheduler";
+import { PreviewScheduler, type PreviewSchedulerEvent } from "../studio/preview-scheduler";
 import { createStudioProjectSession, type StudioEvent } from "../studio/project-session";
 
 const roots: string[] = [];
@@ -268,68 +263,30 @@ it("review: dispose clears a scheduled trailing timer and blocks an in-flight de
 	expect(events).toHaveLength(count);
 });
 
-it("container drafts retain admitted child IDs without writing source or identity", async () => {
-	const body =
-		"Second panel. A retained explanation keeps this item recognizable through a small source edit.";
-	const source = `# Page\n\n::: tabs\n:: First\n\nFirst panel.\n\n:: Second\n\n${body}\n:::\n`;
-	const { root } = await fixture({ "lesson.prax": source });
-	const resolved = await resolveLessonSources(root);
-	const lesson = resolved.lessons.get("lesson.prax");
-	const page = lesson?.pages[0];
-	const tabs = page?.blocks.find((block) => block.type === "tabs");
-	if (!lesson || !page || !tabs) throw Error("Missing container fixture");
-	const scheduler = new PreviewScheduler(
-		await createCourseContext({ ...model(0), content: lesson.pages }),
-		() => {},
-	);
+it("compiled scheduler failures retain their code and localization reference", async () => {
+	const { PracticeAdmissionError } = await import("@praxity/export-pipeline");
+	const events: PreviewSchedulerEvent[] = [];
+	const scheduler = await PreviewScheduler.create(model(0), (event) => events.push(event), {
+		compile: () => {
+			throw new PracticeAdmissionError("practice-no-tracking", "node", "data.actions", "fr");
+		},
+	});
 	try {
-		const admitted = {
-			admission: resolved,
-			files: [{ path: "lesson.prax", source }],
-		};
-		const before = structuredClone({ ...admitted, admission: { ...resolved, ids: undefined } });
-		const request = {
-			seq: 1,
-			pageId: page.id,
-			nodeId: tabs.id,
-			transactionId: randomUUID(),
-			source: source
-				.slice(source.indexOf("::: tabs"))
-				.replace("Second panel.", "Changed second panel."),
-		};
-		const rendered = scheduler.renderDraft(request, page, admitted);
-		expect(rendered.ok).toBe(true);
-		if (!rendered.ok) throw Error("Missing container draft");
-		const children = resolved.identity.sourceMappings.filter(
-			(mapping) => mapping.path.length > 2 && mapping.path[0] === 0,
+		scheduler.selectPage("page");
+		await vi.waitFor(() =>
+			expect(events).toContainEqual(
+				expect.objectContaining({
+					type: "compileFailed",
+					diagnostics: [
+						{
+							message: expect.any(String),
+							code: "practice-no-tracking",
+							messageRef: { key: "grammar.v4.practice-no-tracking", args: {} },
+						},
+					],
+				}),
+			),
 		);
-		expect(children.length).toBeGreaterThan(0);
-		for (const child of children)
-			expect(rendered.render.fragments[0].html).toContain(`data-node-id="${child.id}"`);
-		expect(rendered.render.fragments[0].html).toContain("Changed second panel.");
-		expect({ ...admitted, admission: { ...resolved, ids: undefined } }).toEqual(before);
-		expect((await resolveLessonSources(root)).identity).toEqual(resolved.identity);
-		expect(await readFile(join(root, "lesson.prax"), "utf8")).toBe(source);
-		for (const [change, code] of [
-			[{ ...admitted, files: [] }, "orphaned"],
-			[
-				{
-					...admitted,
-					admission: { ...resolved, identity: { ...resolved.identity, sourceMappings: [] } },
-				},
-				"orphaned",
-			],
-			[
-				{
-					...admitted,
-					files: [{ path: "lesson.prax", source: "# Page\n\n" }],
-				},
-				"not-allowed",
-			],
-		] satisfies Array<[PreviewDraftIdentity, string]>)
-			expect(
-				scheduler.renderDraft({ ...request, seq: 2, transactionId: randomUUID() }, page, change),
-			).toMatchObject({ ok: false, code });
 	} finally {
 		scheduler.close();
 	}

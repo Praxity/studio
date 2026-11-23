@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { previewRenderDraftSchema } from "../../../apps/desktop/src/shared/editor-session";
 import { isFrameCommand, isFrameView } from "../../editor-core/src/frame-bridge/protocol";
 import { renderBlockHtml } from "../src/render-block-html";
 
@@ -22,17 +21,6 @@ describe("display runtime-ID acceptance table", () => {
 					expanded: [id],
 					focus: { file: "a.prax", nodeId: id, role: "handle" },
 				}),
-		],
-		[
-			"preview draft schema",
-			(id) =>
-				previewRenderDraftSchema.safeParse({
-					transactionId: "draft",
-					pageId: id,
-					nodeId: id,
-					seq: 1,
-					source: "Text",
-				}).success,
 		],
 		[
 			"data-node-id rendering",

@@ -106,7 +106,6 @@ export async function startJourney(
 	const server = await startStudioServer({
 		projectDir,
 		port: options.port,
-
 		appVersion: "0.3.0",
 		exportAssetsDir: resolve(import.meta.dirname, "../../resources/export-assets"),
 		typstExecutablePath:

@@ -11,14 +11,39 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import { persistFixtureIdentity } from "../../test-utils/identity-fixture";
 import { createStudioProjectSession, type StudioEvent } from "../studio/project-session";
+
+const heldCompile = vi.hoisted(() => ({
+	start: undefined as undefined | ((seq: number) => void),
+	release: undefined as undefined | (() => void),
+}));
+vi.mock("@praxity/export-pipeline", async (original) => {
+	const actual = await original<typeof import("@praxity/export-pipeline")>();
+	return {
+		...actual,
+		compilePage: async (...args: Parameters<typeof actual.compilePage>) => {
+			if (heldCompile.start) {
+				const start = heldCompile.start;
+				heldCompile.start = undefined;
+				await new Promise<void>((resolve) => {
+					heldCompile.release = resolve;
+					start(args[0].seq);
+				});
+			}
+			return actual.compilePage(...args);
+		},
+	};
+});
 
 const roots: string[] = [];
 const sessions: Awaited<ReturnType<typeof createStudioProjectSession>>[] = [];
 const source = "# Page\n\n::: note Note {tone=info}\nBefore.\n:::\n";
 afterEach(async () => {
+	heldCompile.start = undefined;
+	heldCompile.release?.();
+	heldCompile.release = undefined;
 	await Promise.all(sessions.splice(0).map((session) => session.close()));
 	await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
@@ -173,4 +198,23 @@ it("a retargeted identity junction fails admission and restoration recovers cach
 	const replay = await waitFor(events, (event) => event.type === "pageCompiled");
 	if (replay.type !== "pageCompiled") throw new Error("Missing restored output");
 	expect(replay.patch.fragments).toEqual(baseline.patch.fragments);
+});
+
+it("failed watcher admission advances beyond a held compile and suppresses its stale result", async () => {
+	const { root, session, events } = await fixture();
+	const started = new Promise<number>((resolve) => {
+		heldCompile.start = resolve;
+	});
+	await session.invoke("previewSelectPage", {});
+	const heldSeq = await started;
+	await writeFile(join(root, "lesson.prax"), Buffer.from([0xff, 0xfe, 0xff]));
+	const failure = await waitFor(events, (event) => event.type === "compileFailed");
+	if (failure.type !== "compileFailed") throw new Error("Missing failure");
+	expect(failure.seq).toBeGreaterThan(heldSeq);
+	heldCompile.release?.();
+	await writeFile(join(root, "lesson.prax"), source.replace("Before.", "Recovered."));
+	await waitFor(events, (event) => event.type === "pageCompiled" && event.patch.seq > failure.seq);
+	expect(
+		events.filter((event) => event.type === "pageCompiled" && event.patch.seq === heldSeq),
+	).toEqual([]);
 });

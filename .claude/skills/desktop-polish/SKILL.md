@@ -1,11 +1,13 @@
 ---
 name: desktop-polish
-description: Studio thin canvas UI baseline. Use when building or reviewing canvas controls, styling, layout, or interactions.
+description: Studio UI baseline for retained review, inspection and learner interfaces.
 ---
 
 # Desktop polish
 
-An opinionated UI baseline for Studio's browser thin canvas. Read `docs/context/browser-editor.md` and the canvas trust checklist in `CODING_STANDARDS.md` before changing controls. The native canvas controls and protected shadow roots own author interaction; the Mantine guidance below applies only to retained learner islands.
+Browser canvas editing was retired on 2026-11-22. References below to canvas controls, `canvas.ts`, `canvas-text.ts` and `canvas-styles.ts` preserve historical guidance and do not apply to the current Read preview. Apply the remaining guidance only to retained review, inspection and learner interfaces.
+
+Read `docs/context/browser-editor.md` and the current trust checks in `CODING_STANDARDS.md` before changing controls. The Mantine guidance below applies to retained learner islands.
 
 Adapted from [ibelick/ui-skills/baseline-ui](https://github.com/ibelick/ui-skills) under MIT.
 

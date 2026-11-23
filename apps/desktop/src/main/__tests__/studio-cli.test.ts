@@ -49,9 +49,7 @@ async function fixture() {
 	);
 	roots.push(root);
 	const projectDir = join(root, "project");
-
 	await mkdir(projectDir);
-
 	await writeFile(
 		join(projectDir, "course.prax"),
 		"---\nid: fixture-lesson\ntitle: Test\n---\n# Hello\n",

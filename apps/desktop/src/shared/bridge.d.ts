@@ -1,7 +1,6 @@
 import type { ProjectConfig } from "@praxity/editor-core/types";
 import type { Scorm12StorageEstimate } from "@praxity/export-pipeline/scorm12-storage";
 import type { GrammarFrontmatter, PronunciationLexeme } from "@praxity/grammar";
-import type { StudioEditorBridge } from "./editor-session";
 import type { ExportRequest } from "./ipc-schemas";
 import type {
 	NarrationPanelDocument,
@@ -124,7 +123,6 @@ export interface PraxityBridge {
 	readonly browser?: {
 		initialProject: OpenProjectResult;
 		resolveAssetUrl?: (relativePath: string) => string;
-		editor?: StudioEditorBridge;
 	};
 	/** Absent in Electron. Browser adapters publish their fixed preference policy. */
 	readonly writableSettings?: readonly (keyof AppSettings)[];

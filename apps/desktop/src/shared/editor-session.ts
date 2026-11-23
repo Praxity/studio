@@ -1,46 +1,23 @@
 import type { FrameView } from "@praxity/editor-core/frame-bridge";
 import { buildFrameView, buildPageNodes } from "@praxity/editor-core/frame-bridge/view";
 import type {
-	AuthorOperationResult,
 	Dependencies,
 	Draft,
 	DraftSeed,
-	HistoryApplyRequest,
-	Resolution,
 	SelectionNode,
 	Session,
 } from "@praxity/editor-core/session";
 import { nodeNames } from "@praxity/editor-core/session";
 import { readLesson } from "@praxity/grammar";
-import type {
-	OperationRefusal,
-	OperationRequest,
-	OperationResult,
-} from "@praxity/grammar/src/operations/contract.ts";
+import type { OperationRefusal } from "@praxity/grammar/src/operations/contract.ts";
 import { BLOCK_SCHEMA } from "@praxity/grammar/src/v4/schema.ts";
 import type { TreeKind } from "@praxity/grammar/src/v4/tree/types.ts";
 import { draftText } from "@praxity/operations/src/ranges.ts";
-import type {
-	PreviewDraftRender,
-	PreviewNodeRender,
-	PreviewRenderEvent,
-} from "@praxity/shared-blocks/course-preview-protocol";
 import { z } from "zod";
 import { grammarSourceSchema, studioLessonFilenameSchema } from "./ipc-schemas";
 import type { ProjectWriteResult } from "./project-write-errors";
 
 export const sourceRevisionSchema = z.string().regex(/^[a-f0-9]{64}$/u);
-export const previewRenderDraftSchema = z
-	.object({
-		transactionId: z.string().min(1),
-		pageId: z.string().min(1).max(1024),
-		nodeId: z.string().min(1).max(1024),
-		seq: z.number().int().nonnegative().safe(),
-		source: grammarSourceSchema,
-	})
-	.strict();
-export type PreviewRenderDraftRequest = z.infer<typeof previewRenderDraftSchema>;
-export type PreviewRenderDraftResult = { ok: true; render: PreviewDraftRender } | OperationRefusal;
 export const nodeRefSchema = z
 	.object({
 		kind: z.literal("node"),
@@ -173,27 +150,6 @@ export const draftPersistenceOutcomeSchema = z.discriminatedUnion("status", [
 	z.object({ status: z.literal("unknown"), code: z.string().min(1) }).strict(),
 ]);
 export type DraftPersistenceOutcome = z.infer<typeof draftPersistenceOutcomeSchema>;
-export const draftPersistenceSessionSchema = z.object({ serviceId: z.string().uuid() }).strict();
-export const draftPersistenceIdentitySchema = draftPersistenceSessionSchema.extend({
-	attemptId: z.string().uuid(),
-});
-export const draftPersistenceSubmitSchema = draftPersistenceIdentitySchema.extend({
-	operation: draftPersistenceOperationSchema,
-});
-export const draftPersistenceReceiptSchema = z.discriminatedUnion("state", [
-	draftPersistenceIdentitySchema.extend({
-		state: z.literal("terminal"),
-		operation: draftPersistenceOperationSchema,
-		outcome: draftPersistenceOutcomeSchema,
-	}),
-	draftPersistenceIdentitySchema.extend({ state: z.literal("fenced") }),
-	draftPersistenceIdentitySchema.extend({
-		state: z.literal("unavailable"),
-		reason: z.enum(["service-lifetime", "attempt-conflict", "evicted"]),
-	}),
-]);
-export type DraftPersistenceReceipt = z.infer<typeof draftPersistenceReceiptSchema>;
-export const clipboardPutSchema = z.object({ clipboard: clipboardSchema }).strict();
 export type DraftPutResult =
 	| {
 			ok: false;
@@ -203,15 +159,6 @@ export type DraftPutResult =
 			stored: Draft;
 	  }
 	| { ok: true; writeResult: ProjectWriteResult };
-export type EditorOperationResult =
-	| (Extract<AuthorOperationResult, { ok: true }> & {
-			writeResult: ProjectWriteResult;
-			seq: number;
-			correspondence: import("@praxity/content-identity").IdentityReadView["correspondence"];
-			render?: PreviewNodeRender;
-	  })
-	| OperationRefusal;
-
 export interface EditorDraftRanges {
 	target: Extract<DraftSeed["target"], { kind: "node" }>;
 	expected: { start: number; end: number };
@@ -290,7 +237,11 @@ const snapshotKinds = {
 const snapshotTypes = new Set([...Object.keys(BLOCK_SCHEMA), ...Object.keys(snapshotKinds)]);
 const kindSchema = z.string().refine((kind) => Object.hasOwn(snapshotKinds, kind));
 const typeSchema = z.string().refine((type) => snapshotTypes.has(type));
-const displayIdSchema = previewRenderDraftSchema.shape.nodeId.refine((id) => labelBytes(id) <= 36);
+const displayIdSchema = z
+	.string()
+	.min(1)
+	.max(1024)
+	.refine((id) => labelBytes(id) <= 36);
 const sourceLimit = grammarSourceSchema.maxLength;
 if (sourceLimit === null) throw new Error("Editor snapshot requires bounded admitted source");
 const snapshotOffset = offset.max(sourceLimit);
@@ -587,37 +538,6 @@ export function parseEditorInput<S extends z.ZodTypeAny>(schema: S, input: unkno
 	return schema.parse(input);
 }
 
-export interface StudioEditorBridge {
-	editorSnapshot(): Promise<EditorSnapshot>;
-	onEditorSnapshotChanged(receive: (change: { seq: number }) => void): () => void;
-	previewSelectPage(
-		pageId?: string,
-	): Promise<{ pageId: string; seq: number; pages: { id: string; slug: string }[] }>;
-	onPreviewEvent(receive: (event: PreviewRenderEvent) => void): () => void;
-	onPreviewEpoch(receive: (epoch: number) => void): () => void;
-	previewRenderDraft(request: PreviewRenderDraftRequest): Promise<PreviewRenderDraftResult>;
-	draftPut(draft: Draft, expectedVersion?: number): Promise<DraftPutResult>;
-	draftList(): Promise<Draft[]>;
-	draftDelete(file: string, id: string): Promise<ProjectWriteResult>;
-	draftPersistenceSession(): Promise<{ serviceId: string }>;
-	draftPersistenceSubmit(
-		serviceId: string,
-		attemptId: string,
-		operation: DraftPersistenceOperation,
-	): Promise<DraftPersistenceReceipt>;
-	draftPersistenceReconcile(
-		serviceId: string,
-		attemptId: string,
-		operation: DraftPersistenceOperation,
-	): Promise<DraftPersistenceReceipt>;
-	draftResolve(draft: DraftSeed): Promise<Resolution>;
-	clipboardGet(): Promise<LocalClipboard | null>;
-	clipboardPut(clipboard: LocalClipboard): Promise<ProjectWriteResult>;
-	clipboardDiscard(): Promise<ProjectWriteResult>;
-	operationApply(request: OperationRequest): Promise<EditorOperationResult>;
-	operationResolve(request: OperationRequest): Promise<OperationResult | OperationRefusal>;
-	historyApply(request: HistoryApplyRequest): Promise<EditorOperationResult>;
-}
 export { seedSchema as draftSeedSchema };
 
 export interface CanvasPageScope {

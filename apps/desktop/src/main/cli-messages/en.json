@@ -249,9 +249,6 @@
 		"lessons": "Project has no readable lessons",
 		"lessonMissing": "Lesson is not in this project",
 		"courseRoot": "Course root is not authorized",
-		"conflict": "Lesson changed on disk since it was opened",
-		"metadataPath": "Metadata path is not authorized",
-		"metadataMissing": "ENOENT: Project metadata is absent",
 		"export": "Export failed",
 		"method": "Method is not available"
 	}

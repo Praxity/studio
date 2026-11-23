@@ -287,7 +287,6 @@ const reviewedDynamicImports = {
 	"packages/export-pipeline/src/__tests__/learning-patterns-admission.test.ts": [
 		'import(pathToFileURL(path.join(root,"packages/export-pipeline/src/bundle-viewer.ts")).href)',
 	],
-	"apps/desktop/e2e/browser-editor/event-stream.spec.ts": ["import(moduleUrl)"],
 	"apps/desktop/scripts/ci-minutes.test.mjs": [
 		"import(`../../../packages/export-pipeline/tests/${suite}/playwright.config.ts`)",
 	],

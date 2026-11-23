@@ -2,14 +2,11 @@
 
 ## Token reference
 
-Thin-canvas controls are owned by `apps/desktop/src/shared/canvas-styles.ts`.
-They serialize the retained contrast-corrected default themes from
-`apps/desktop/src/renderer/themes/`. The native textarea and reference-owned
-controls live in protected shadow roots. The React App, theme hook and desktop
-token stylesheet are retired.
-
-The component and panel guidance below applies only to retained editor-core
-components, not to the shipped thin canvas. Do not rebuild retired panels.
+Studio ships a local Read preview and optional review comments. The thin-canvas controls and `canvas-styles.ts` were retired on 2026-11-22.
+Retained theme definitions live in `apps/desktop/src/renderer/themes/`.
+The native textarea and protected shadow controls were removed with the browser editor.
+The component and panel guidance below is historical guidance for retained
+editor-core components. Do not rebuild retired panels.
 
 Learner themes are resolved separately by
 `packages/shared-blocks/src/themes/resolve-design-tokens.ts`. Keep editor
@@ -94,7 +91,7 @@ Do not derive content hierarchy from chrome font sizes.
 ## Component defaults
 
 Retained editor-core components use their own Mantine props and defaults. The
-thin canvas uses native controls and the sizes in `canvas-styles.ts`; it has no
+retired thin canvas used native controls and the sizes in `canvas-styles.ts`; it had no
 Mantine provider or App component.
 
 ## Panel Styling Standard

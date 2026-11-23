@@ -211,23 +211,17 @@ standalone block. When both blocks have a closer, the saved closer's exact
 spelling stays in place. Unchanged surrounding nodes use separate `modify`
 evidence. Each operation returns exact inverse bytes, IDs and guards.
 
-## Studio service
+## Operation service
 
-Studio's browser RPC accepts this request directly through `operationApply`
-and `operationResolve`. Resolve plans without writing. Apply returns the public
-operation result, a session `historyId`, and a `writeResult` acknowledgement.
+`praxity edit`, including `--rendered`, uses the shared operation service.
+Studio's Read preview no longer exposes `operationApply`, `operationResolve`
+or `historyApply` browser RPCs, following the 2026-11-22 editor retirement.
+The shared service still plans, applies and guards source operations for CLI callers.
 Every node target must supply `expectedText`. A stale request rebases by UUID
 only when the current owned slice matches that text. Without an ID, the
 fingerprint must identify exactly one node; a path never resolves a duplicate.
 Every lesson changed by the operation must have a client file base, including
 an indirectly selected glossary definer.
-
-`historyApply` takes `{transactionId, historyId, direction: "undo" | "redo"}`.
-The server holds the inverse and verifies its guards in the current revision.
-Clients cannot submit inverse records. History lasts for the session.
-The first service slice refuses clipboard operations until their persistence
-adapter lands. It also refuses stale insertion boundaries and inline token
-offsets, plus manifest and course targets. These refusals write no authored files.
 
 Hosts using I4 pass `readerRoles: true` in the registry context. Other callers
 may omit it to infer reader roles from prior identity snapshots. This flag also

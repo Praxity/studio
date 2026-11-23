@@ -20,10 +20,11 @@ persistence and interrupted-write recovery retain their existing write transacti
 CLI operations, inspection, recovery readers and review storage keep their owners.
 The browser identity confirmation form and session-only draft receipts are retired.
 
+2026-11-22: The unused canvas renderer and bundle are removed. CLI and preview startup no longer require an editor asset directory. Inspection and review assets retain their packaging and provenance.
+
 ### src/main/cli.ts
 
 - `writeIdentityNotice`: Standalone hosts flush this notice before identity replacement.
-- 2026-11-22: The unused canvas renderer and bundle are removed. CLI and preview startup no longer require an editor asset directory. Inspection and review assets retain their packaging and provenance.
 - `runPraxityCli`: Before language validation, use the first --lang value; absent or invalid values
   fall back to en.
 - `runPraxityCli`: Argument refusals do not need the server or rendering runtime.
@@ -212,6 +213,8 @@ Historical owner, removed on 2026-11-22 with browser narration registration.
 
 ### src/main/studio/preview-scheduler.ts
 
+2026-11-22: Draft rendering, settlement, subscription epochs, committed fragments and queued commit refreshes below are historical. Their browser callers are retired. Page compilation, outside refresh, diagnostics and stale-result fencing remain current.
+
 - `PreviewScheduler`: Session compiler. Admitted inputs enter here; filesystem and revision
   ownership remain in the host and operation service. One job yields one event-loop turn.
 - `renderDraft`: Null means the latest admission removed this page; undefined uses context facts.
@@ -239,7 +242,7 @@ Historical owner, removed on 2026-11-22 with browser narration registration.
 
 ### src/main/studio/project-session.ts
 
-The save, operation-commit, draft and browser-confirmation entries below record
+2026-11-22: The save, operation-commit, draft, identityReview and browser-confirmation entries below record
 the retired session APIs. Startup identity recovery, watcher admission, Read
 compilation, diagnostics and close/drain remain current.
 

@@ -10,6 +10,8 @@ Release tooling admits exact source and artifact bytes. Local checks select the 
 
 ## Decision
 
+2026-11-22: The canvas renderer, bundle receipt and embedded canvas digest are retired. The canvas build provisions below preserve historical rationale. Inspection and review packaging and provenance remain current.
+
 ### scripts/admit-rubato-release.mjs
 
 - `admitStudioRevision`: The newest CI run wins. An older success cannot mask a later failure.
@@ -235,11 +237,11 @@ Release tooling admits exact source and artifact bytes. Local checks select the 
 
 ### scripts/standalone-cli-packaging.mjs
 
-- `canvasBundlePlugin`: Inline as the first nonce-bearing script: a module script would run after
+- Historical `canvasBundlePlugin`: Inline as the first nonce-bearing script: a module script would run after
   course parsing.
   Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
   independently verified.
-- `generateBundle`: Source servers use this build receipt. Packaged servers use the embedded digest.
+- Historical `generateBundle`: Source servers use this build receipt. Packaged servers use the embedded digest.
 - `assertStandaloneTarget`: Linux Typst preparation supports CI; standalone distribution remains
   macOS/Windows.
   Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
@@ -329,7 +331,7 @@ Release tooling admits exact source and artifact bytes. Local checks select the 
 - `main`: Deleted files still select their owners and related tests, but cannot be linted or passed
   directly to a test runner. Their surviving consumers stay selected.
 
-### browser.vite.config.ts
+### Retired browser.vite.config.ts
 
 - `defineConfig` disables environment-file discovery and environment prefixes. Browser builds must
   not load launch-time secrets from the desktop environment.

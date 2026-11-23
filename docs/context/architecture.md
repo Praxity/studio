@@ -467,9 +467,9 @@ unchanged.
 Successful scalar edits preserve descendants' IDs and use normal I4 snapshot and
 lesson-head persistence. No canvas draft persistence or structural RPC is added.
 
-The browser text adapter is retired. Its source files and unused bundle remain
-until packaging cleanup. The internal session still exposes `operationApply`,
-`operationResolve` and `historyApply`; the browser has no route to invoke them.
+The browser text adapter, renderer bundle and session `operationApply`,
+`operationResolve` and `historyApply` APIs were removed on 2026-11-22.
+CLI edits retain the shared operation service and its source guards.
 Node targets require exact `expectedText`. UUIDs locate current nodes;
 ID-free fingerprints must have exactly one match. Changed slices refuse with
 `conflict`, missing IDs with `orphaned`, and duplicate matches with `ambiguous`.
@@ -517,9 +517,9 @@ and validation counters do not change that payload. A same-generation metadata
 update requires unchanged text, a higher `persistenceVersion`, and an
 `expectedVersion` matching the stored version. Missing legacy versions mean zero;
 competing metadata updates return `stale`. These checks hold the shared write admission.
-The controller tracks `persistedVersion` separately from `persistedGeneration`;
-adapters pass the put effect's `expectedVersion` to `draftPut` and reply with its
-request ID and submitted generation. Identical in-flight blurs keep that request.
+The retired browser controller tracked `persistedVersion` separately from `persistedGeneration`;
+its adapters passed the put effect's `expectedVersion` to `draftPut` and replied with its
+request ID and submitted generation. Identical in-flight blurs kept that request.
 The unmounted U7 project/lesson adapters, persistence queue, staged host and
 outline have been retired. The retained session and frame modules still support
 the legacy inspection/preview imports. The Read preview never mounts those
@@ -527,7 +527,7 @@ adapters and never calls draft persistence or draft rendering. Existing local
 records remain untouched.
 
 The internal `LocalEditorStore.draftPersist` preserves storage diagnostics through
-the fenced project service. Generation supersession, metadata competition and target reuse carry their
+its internal storage interface. Generation supersession, metadata competition and target reuse carry their
 distinct reasons and stored snapshot. The owner can compare that stored version
 with its retained prerequisite; the store does not invent missing predecessors.
 Corrupt buckets, unsafe local paths, missing membership and invalid requests retain
@@ -535,42 +535,30 @@ their diagnostic cause. Unclassified execution failures stay unknown. Committed
 bytes with a cleanup warning still return success. The legacy draft APIs retain
 their success and throwing contracts, and storage acceptance predicates are unchanged.
 
-Main's project-service lifetime has a UUID exposed by `draftPersistenceSession`.
-`draftPersistenceSubmit` binds an attempt UUID to one immutable operation and
-retains its terminal result. Duplicates attach to that execution; another payload
-cannot reuse its UUID. `draftPersistenceReconcile` names the complete operation and waits for an accepted
-attempt. Terminal receipts echo it; the bridge checks operation, service and attempt
-identity. The unfenced `draftPersist` RPC is removed.
-The CLI session retains the operation receipts; the legacy browser bridge is removed.
-An evicted terminal receipt proves the old
-attempt cannot execute again, so its immutable operation can be resubmitted with a
-fresh attempt ID. Service-lifetime and operation mismatches remain unavailable.
-For an unseen attempt it records a no-write fence before replying, so a late HTTP
-arrival cannot execute. Results are copied for callers, and service close drains
-accepted attempts. A replacement service refuses the former lifetime rather than
-certifying absence from its empty registry. Only the latest 128 terminal payloads remain in memory. Evicted attempt IDs retain
-a no-execution tombstone and report unavailable, never absence. Unseen fences last
-for the service lifetime.
+The browser session's draft persistence, receipt and reconciliation APIs were
+retired on 2026-11-22. `LocalEditorStore` remains the local recovery storage owner;
+`praxity recovery` lists and exports retained records.
+
 Deleting one draft preserves its siblings. Listing and deletion retain orphaned
 drafts when a lesson disappears. Local paths refuse symlinks and case aliases.
 Local writes also journal `.praxity/local/.gitignore`, so author projects ignore
 the directory without needing a root ignore rule. Asset/export readers refuse
 aliases into it, including a local directory moved into assets by an outside writer.
 
-`draftResolve` shares S1's node-ID or unique-fingerprint lookup and runs under a
-read admission. It returns `unchanged`, `changed`, `removed` or a refusal, with
-current guarded and editable source in a seed. It never replaces draft text or
-persists outside identity. Whole-file drafts compare the exact saved source;
-insertion and virtual reader-role drafts still require their target adapters.
+The browser `draftResolve` API was retired on 2026-11-22. Its historical contract
+used S1's node-ID or unique-fingerprint lookup under a read admission and returned
+`unchanged`, `changed`, `removed` or a refusal. It supplied guarded source without
+replacing draft text or persisting outside identity. The shared operation and
+local recovery owners remain.
 
 `packages/operations/src/ranges.ts` owns `draftText`, which validates UTF-16
 bounds and editable containment before slicing exact source strings.
 The author-only `editorDraftSeed` adapter in `shared/editor-session.ts` accepts
 a lesson's ranges and source, refusing a node outside that lesson's node list.
 
-`manifestEdit` accepts a file, source SHA-256 `baseRevision`, YAML key path and
-JSON value. It refuses stale revisions, edits `course.yaml` through `setYamlPath`
-or lesson design frontmatter through `setFrontmatterPath`, and installs lesson
+The browser `manifestEdit` wrapper was removed on 2026-11-22. Historically it accepted a file, source SHA-256 `baseRevision`, YAML key path and
+JSON value. It refused stale revisions, edited `course.yaml` through `setYamlPath`
+or lesson design frontmatter through `setFrontmatterPath`, and installed lesson
 metadata with I4 identity in T1. YAML edits retain bytes outside the edited entry,
 including the BOM, comments, mixed line endings and flow formatting. Frontmatter
 edits retain every body byte. Invalid or unclosed frontmatter returns `invalid-args`;

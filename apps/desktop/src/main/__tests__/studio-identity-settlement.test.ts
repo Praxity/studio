@@ -11,8 +11,17 @@ import {
 import { readLesson } from "@praxity/grammar";
 import { afterAll, afterEach, beforeAll, expect, it } from "vitest";
 import { runPraxityCli } from "../cli";
-import { initializeCourseIdentity, loadIdentityStore } from "../identity-store";
-import { resolveLessonSources, writeLessonSource } from "../lesson-source";
+import {
+	identityWriteRetirements,
+	initializeCourseIdentity,
+	loadIdentityStore,
+} from "../identity-store";
+import {
+	resolveLessonSources,
+	resolveLessonSourcesForWrite,
+	writeLessonSource,
+} from "../lesson-source";
+import { withProjectFileTransaction } from "../project-file-transactions";
 import { createStudioProjectSession } from "../studio/project-session";
 
 const base = "# First\n\nRepeated.\n\nOther subject.\n";
@@ -93,11 +102,25 @@ it.each(
 		try {
 			expect(await bytes(root)).toEqual(original);
 			expect((await session.readSnapshot()).project.grammar).toBe(duplicate);
-			expect((await session.identityReview()).retirements).toEqual([]);
+			expect(
+				await withProjectFileTransaction(
+					root,
+					async () => identityWriteRetirements(await resolveLessonSourcesForWrite(root)),
+					"write",
+					false,
+				),
+			).toEqual([]);
 			expect(await bytes(root)).toEqual(original);
 			const grammar = change === "removed" ? base : `${base}\nA distinct copy.\n`;
 			await writeLessonSource(root, "one.prax", grammar, duplicate);
-			expect((await session.identityReview()).retirements).toEqual([]);
+			expect(
+				await withProjectFileTransaction(
+					root,
+					async () => identityWriteRetirements(await resolveLessonSourcesForWrite(root)),
+					"write",
+					false,
+				),
+			).toEqual([]);
 			expect((await nodes(root))[donor].status).toBe("active");
 			expect(Object.values(await nodes(root)).filter((node) => node.status === "pending")).toEqual(
 				[],
@@ -158,12 +181,26 @@ it.each(["removed", "reworded"])(
 		const original = await bytes(root);
 		const session = await createStudioProjectSession(root, "test");
 		try {
-			expect((await session.identityReview()).retirements).toEqual([]);
+			expect(
+				await withProjectFileTransaction(
+					root,
+					async () => identityWriteRetirements(await resolveLessonSourcesForWrite(root)),
+					"write",
+					false,
+				),
+			).toEqual([]);
 			expect((await session.readSnapshot()).project.grammar).toBe(duplicate);
 			expect(await bytes(root)).toEqual(original);
 			const grammar = change === "removed" ? base : `${base}\nA distinct copy.\n`;
 			await writeLessonSource(root, "one.prax", grammar, duplicate);
-			expect((await session.identityReview()).retirements).toEqual([]);
+			expect(
+				await withProjectFileTransaction(
+					root,
+					async () => identityWriteRetirements(await resolveLessonSourcesForWrite(root)),
+					"write",
+					false,
+				),
+			).toEqual([]);
 			const current = await nodes(root);
 			const read = await resolveLessonSources(root);
 			expect(current[donor].status).toBe("active");
@@ -190,11 +227,22 @@ it.each(
 		const original = await bytes(root);
 		let session = await createStudioProjectSession(root, "test");
 		try {
-			const review = await session.identityReview();
-			expect(review.retirements).toMatchObject([
+			const { retirements, hasDuplicate } = await withProjectFileTransaction(
+				root,
+				async () => {
+					const admitted = await resolveLessonSourcesForWrite(root);
+					return {
+						retirements: identityWriteRetirements(admitted),
+						hasDuplicate: admitted.identity.unresolved.some((node) => node.reason === "duplicate"),
+					};
+				},
+				"write",
+				false,
+			);
+			expect(retirements).toMatchObject([
 				{ file: "one.prax", page: "First", label: "Other subject.", line: null },
 			]);
-			expect(review.confirmationBlocked).toBe(true);
+			expect(hasDuplicate).toBe(true);
 			expect(await bytes(root)).toEqual(original);
 		} finally {
 			await session.close();
@@ -203,7 +251,14 @@ it.each(
 		await writeFile(join(root, "one.prax"), fixed);
 		session = await createStudioProjectSession(root, "test");
 		try {
-			expect((await session.identityReview()).retirements).toEqual([]);
+			expect(
+				await withProjectFileTransaction(
+					root,
+					async () => identityWriteRetirements(await resolveLessonSourcesForWrite(root)),
+					"write",
+					false,
+				),
+			).toEqual([]);
 			expect((await session.readSnapshot()).project.grammar).toBe(fixed);
 			expect((await init(root, locale)).exitCode).toBe(0);
 			expect((await nodes(root))[donor].status).toBe("active");

@@ -320,8 +320,6 @@ Grammar 4 is the only supported source format. Grammar 3 is refused with `pnpm -
 
 ## Standalone browser build
 
-The build packages review assets, inspection support, learner assets and their provenance. It emits no canvas editor bundle or digest. Preview startup does not validate an editor payload.
-
 Set `PRAXITY_BROWSER_ARTIFACT` to an absolute standalone artifact directory when
 running `pnpm --filter @praxity/desktop e2e:browser-editor`. Without it, the journeys start
 the source server. The retained journeys run headlessly across Chromium, Firefox

@@ -284,7 +284,7 @@ test("all code changes run the real source-owner check, including output feeders
 	for (const path of [
 		"apps/desktop/src/main/export/build-export-input-from-project.ts",
 		"packages/format-renderers/src/future-renderer.ts",
-		"apps/desktop/src/main/index.ts",
+		"apps/desktop/src/main/cli.ts",
 		"scripts/future-check.mjs",
 		"packages/unrelated/future.ts",
 	])
@@ -315,8 +315,8 @@ test("CSS always selects both budget files and theme contrast", () => {
 	assert.equal(command(steps, "deck").includes("--project=firefox"), false);
 });
 
-test("any CSS, including editor-only CSS, selects budgets and contrast", () => {
-	const steps = plan(["apps/desktop/src/renderer/editor.css"]);
+test("any CSS, including theme CSS, selects budgets and contrast", () => {
+	const steps = plan(["apps/desktop/src/renderer/themes/default.css"]);
 	assert.ok(
 		command(steps, "vitest-direct").includes(
 			"packages/export-pipeline/src/__tests__/html-gen.test.ts",
@@ -381,9 +381,9 @@ test("changed tests run directly; script implementation covers indirect Node con
 		assert.ok(command(steps, "node").includes(path));
 });
 
-test("browser editor sources and Studio server select journeys in all requested engines", () => {
+test("review sources and Studio server select journeys in all requested engines", () => {
 	for (const path of [
-		"apps/desktop/src/renderer/browser/canvas.ts",
+		"apps/desktop/src/renderer/browser/review-entry.ts",
 		"apps/desktop/src/main/studio/server.ts",
 	]) {
 		const args = command(plan([path], { engines: "all" }), "browser-editor");
@@ -393,8 +393,8 @@ test("browser editor sources and Studio server select journeys in all requested 
 			"--project=webkit",
 		]);
 	}
-	const steps = plan(["apps/desktop/e2e/browser-editor/editor.spec.ts"]);
-	assert.ok(command(steps, "browser-editor").includes("e2e/browser-editor/editor.spec.ts"));
+	const steps = plan(["apps/desktop/e2e/browser-editor/review-launch.spec.ts"]);
+	assert.ok(command(steps, "browser-editor").includes("e2e/browser-editor/review-launch.spec.ts"));
 	assert.equal(command(steps, "vitest-direct"), undefined);
 });
 
@@ -522,11 +522,11 @@ test("removed source and unmapped fixtures select a complete workspace gate", ()
 		),
 	);
 	assert.ok(command(plan(["docs/test-fixtures/new.prax"]), "vitest-all"));
-	const removed = plan(["apps/desktop/e2e/browser-editor/editor.spec.ts"], {
-		deleted: ["apps/desktop/e2e/browser-editor/editor.spec.ts"],
+	const removed = plan(["apps/desktop/e2e/browser-editor/review-launch.spec.ts"], {
+		deleted: ["apps/desktop/e2e/browser-editor/review-launch.spec.ts"],
 	});
 	assert.equal(
-		command(removed, "browser-editor").includes("e2e/browser-editor/editor.spec.ts"),
+		command(removed, "browser-editor").includes("e2e/browser-editor/review-launch.spec.ts"),
 		false,
 	);
 });
