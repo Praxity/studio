@@ -18,6 +18,7 @@ Ownership guards and equivalence checks must fail closed without confusing gener
 ### `scripts/check-learning-patterns.mjs`
 
 - `verifyTrustedBase`: An empty object database forces contact even when the checkout already has the SHA. Include its authentication config without copying credentials. Keep shallow-fetch boundaries entirely outside the candidate checkout.
+- `trustedFixture`: The two text fixtures under `scripts/fixtures/learning-patterns-legacy/` preserve the verifier and admission module from commit `b1da0aaf17abf964ecc6e42fc801e475b15caf67`. Tests copy those bytes into a base commit without the layout helper, so legacy compatibility does not depend on CI fetching historical source.
 
 ### `scripts/check-machine-paths.mjs`
 
@@ -163,6 +164,9 @@ Ownership guards and equivalence checks must fail closed without confusing gener
 - `installInternalStudio`: The refusal still reports that version inspection failed.
 
 ### `scripts/learning-patterns-admission.mjs`
+
+- `scripts/studio-app-layout.mjs`: Accept exactly one of `apps/desktop` with `@praxity/desktop` or `apps/cli` with `@praxity/cli`. Refuse missing, ambiguous or mismatched layouts before resolving app tooling. The verifier and timeout checker share this rule in `scripts/studio-app-layout.mjs`. Trusted verification extracts that module when the base contains it; older bases keep their original two-file verifier. No helper is taken from the candidate.
+- `reviewedDynamicImports`: The exact reviewed app file and expression may use the corresponding CLI prefix. Keep other files, expressions and mixed prefixes refused. Manifest hashes, execution roles and the workflow's trusted-base selection remain unchanged. Regeneration resolves the inspection builder from the selected app directory. The shared prior-path lookup prefers exact base paths, maps only new CLI paths whose old desktop path is absent in the candidate, and never borrows from a retained old path. Timeout comparison uses the prior source and prior config defaults; actual raises still require evidence.
 
 - `admittedPath`: Pnpm's package-directory link is expected. Every component *inside* its real package must be an ordinary file/directory, including esbuild's helper inputs.
 - `inventoryLearningPatterns`: Parse source and bundle installed imports without evaluating upstream code.

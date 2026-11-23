@@ -594,6 +594,7 @@ export async function viewerSourceFiles(): Promise<string[]> {
 		WORKSPACE_LOCKFILE,
 		path.resolve(__dirname, "../../../scripts/learning-patterns-admission.json"),
 		path.resolve(__dirname, "../../../scripts/learning-patterns-admission.mjs"),
+		path.resolve(__dirname, "../../../scripts/studio-app-layout.mjs"),
 	].sort();
 	return allFiles;
 }

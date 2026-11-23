@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { lstat, readdir, readFile, realpath } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
+import { renamedStudioAppReferences, studioAppDirectory } from "./studio-app-layout.mjs";
 
 export const manifestPath = "scripts/learning-patterns-admission.json";
 const roles = new Set(["learner-bundle", "studio-browser", "node-build-time", "css", "legal"]);
@@ -77,7 +78,9 @@ export async function inventoryLearningPatterns(root) {
 	root = await realpath(root);
 	const require = createRequire(path.join(root, "package.json"));
 	const ts = require("typescript");
-	const toolingRequire = createRequire(path.join(root, "apps/desktop/package.json"));
+	const toolingRequire = createRequire(
+		path.join(root, await studioAppDirectory(root), "package.json"),
+	);
 	const { build } = toolingRequire("esbuild");
 	const { parse } = toolingRequire("yaml");
 	const pin = readPin(
@@ -283,52 +286,62 @@ export async function verifyLearningPatterns(root) {
 	return manifest;
 }
 
-const reviewedDynamicImports = {
-	"packages/export-pipeline/src/__tests__/learning-patterns-admission.test.ts": [
-		'import(pathToFileURL(path.join(root,"packages/export-pipeline/src/bundle-viewer.ts")).href)',
-	],
-	"apps/desktop/scripts/ci-minutes.test.mjs": [
-		"import(`../../../packages/export-pipeline/tests/${suite}/playwright.config.ts`)",
-	],
-	"apps/desktop/scripts/published-output-timing.test.mjs": [
-		"import(`../../../packages/export-pipeline/tests/${suite}/playwright.config.ts`)",
-	],
-	"apps/desktop/src/main/__tests__/fixtures/review2-writer.mjs": [
-		"import(`${repo}/apps/desktop/src/main/project-file-transactions.ts`)",
-		"import(`${repo}/apps/desktop/src/main/course-manifest-io.ts`)",
-		'import(newURL("../../lesson-source.ts",import.meta.url).href)',
-		"import(`${repo}/apps/desktop/src/main/lesson-source.ts`)",
-	],
-	"apps/desktop/src/main/__tests__/fixtures/review3-writer.mjs": [
-		"import(`${repo}/apps/desktop/src/main/project-file-transactions.ts`)",
-	],
-	"packages/content-identity/scripts/capture-legacy-store.ts": [
-		'import(pathToFileURL(join(baseline,"packages/grammar/src/read-lesson.ts")).href)',
-		'import(pathToFileURL(join(baseline,"packages/content-identity/src/index.ts")).href)',
-	],
-	"packages/export-pipeline/src/__tests__/bundle-viewer.test.ts": [
-		'import(pathToFileURL(path.join(root,"packages/export-pipeline/src/bundle-viewer.ts")).href)',
-		'import(pathToFileURL(path.join(pipeline,"src/export-assets.ts")).href)',
-		'import(pathToFileURL(path.join(pipeline,"src/build.ts")).href)',
-	],
-	"packages/export-pipeline/template/src/island-loader.ts": ["import(moduleUrl)"],
-	"packages/export-pipeline/tests/deck/dont-know-acceptance.spec.ts": [
-		"import(/*@vite-ignore*/`${location.origin}/reset-owner.js`)",
-	],
-	"packages/export-pipeline/tests/deck/dont-know-private.spec.ts": [
-		"import(/*@vite-ignore*/`${location.origin}/reset-owner.js`)",
-	],
-	"packages/export-pipeline/tests/deck/self-check-assets.spec.ts": [
-		'import(newURL(document.documentElement.getAttribute("data-island-self-check")??"",document.baseURI,).href)',
-	],
-	"packages/export-pipeline/tests/deck/self-check-island.spec.ts": [
-		"import(newURL(entry,document.baseURI).href)",
-		'import(newURL(document.documentElement.getAttribute("data-island-self-check")??"",document.baseURI,).href)',
-		"import(`${url}?consumer=a`)",
-		"import(`${url}?consumer=b`)",
-	],
-	"scripts/install-internal-studio.mjs": ["import(pathToFileURL(join(root,path)).href)"],
-};
+const reviewedDynamicImports = Object.fromEntries(
+	Object.entries({
+		"packages/export-pipeline/src/__tests__/learning-patterns-admission.test.ts": [
+			'import(pathToFileURL(path.join(root,"packages/export-pipeline/src/bundle-viewer.ts")).href)',
+		],
+		"apps/desktop/scripts/ci-minutes.test.mjs": [
+			"import(`../../../packages/export-pipeline/tests/${suite}/playwright.config.ts`)",
+		],
+		"apps/desktop/scripts/published-output-timing.test.mjs": [
+			"import(`../../../packages/export-pipeline/tests/${suite}/playwright.config.ts`)",
+		],
+		"apps/desktop/src/main/__tests__/fixtures/review2-writer.mjs": [
+			"import(`${repo}/apps/desktop/src/main/project-file-transactions.ts`)",
+			"import(`${repo}/apps/desktop/src/main/course-manifest-io.ts`)",
+			'import(newURL("../../lesson-source.ts",import.meta.url).href)',
+			"import(`${repo}/apps/desktop/src/main/lesson-source.ts`)",
+		],
+		"apps/desktop/src/main/__tests__/fixtures/review3-writer.mjs": [
+			"import(`${repo}/apps/desktop/src/main/project-file-transactions.ts`)",
+		],
+		"packages/content-identity/scripts/capture-legacy-store.ts": [
+			'import(pathToFileURL(join(baseline,"packages/grammar/src/read-lesson.ts")).href)',
+			'import(pathToFileURL(join(baseline,"packages/content-identity/src/index.ts")).href)',
+		],
+		"packages/export-pipeline/src/__tests__/bundle-viewer.test.ts": [
+			'import(pathToFileURL(path.join(root,"packages/export-pipeline/src/bundle-viewer.ts")).href)',
+			'import(pathToFileURL(path.join(pipeline,"src/export-assets.ts")).href)',
+			'import(pathToFileURL(path.join(pipeline,"src/build.ts")).href)',
+		],
+		"packages/export-pipeline/template/src/island-loader.ts": ["import(moduleUrl)"],
+		"packages/export-pipeline/tests/deck/dont-know-acceptance.spec.ts": [
+			"import(/*@vite-ignore*/`${location.origin}/reset-owner.js`)",
+		],
+		"packages/export-pipeline/tests/deck/dont-know-private.spec.ts": [
+			"import(/*@vite-ignore*/`${location.origin}/reset-owner.js`)",
+		],
+		"packages/export-pipeline/tests/deck/self-check-assets.spec.ts": [
+			'import(newURL(document.documentElement.getAttribute("data-island-self-check")??"",document.baseURI,).href)',
+		],
+		"packages/export-pipeline/tests/deck/self-check-island.spec.ts": [
+			"import(newURL(entry,document.baseURI).href)",
+			'import(newURL(document.documentElement.getAttribute("data-island-self-check")??"",document.baseURI,).href)',
+			"import(`${url}?consumer=a`)",
+			"import(`${url}?consumer=b`)",
+		],
+		"scripts/install-internal-studio.mjs": ["import(pathToFileURL(join(root,path)).href)"],
+	}).flatMap(([file, entries]) => {
+		const renamed = renamedStudioAppReferences(file);
+		return renamed === file
+			? [[file, entries]]
+			: [
+					[file, entries],
+					[renamed, entries.map(renamedStudioAppReferences)],
+				];
+	}),
+);
 
 function discoverImports(ts, file, source) {
 	const imports = new Set();

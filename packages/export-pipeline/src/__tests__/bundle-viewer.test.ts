@@ -459,6 +459,7 @@ async function isolatedViewerSources(complete = false) {
 		"pnpm-lock.yaml",
 		"scripts/learning-patterns-admission.json",
 		"scripts/learning-patterns-admission.mjs",
+		"scripts/studio-app-layout.mjs",
 	];
 	for (const file of files) {
 		await mkdir(path.dirname(path.join(root, file)), { recursive: true });
@@ -624,6 +625,7 @@ describe("computeViewerSourceHash", () => {
 		"packages/export-pipeline/src/classic-island-filename.ts",
 		"scripts/learning-patterns-admission.json",
 		"packages/export-pipeline/src/course-home.ts",
+		"scripts/studio-app-layout.mjs",
 		"packages/export-pipeline/src/course-session-time.ts",
 		"packages/grammar/src/deck-design.ts",
 		"packages/content-model/src/narration-display.ts",

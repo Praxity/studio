@@ -31,6 +31,7 @@ beforeAll(async () => {
 		);
 	for (const file of [
 		"scripts/learning-patterns-admission.mjs",
+		"scripts/studio-app-layout.mjs",
 		"packages/export-pipeline/package.json",
 		"pnpm-lock.yaml",
 	])
