@@ -181,7 +181,7 @@ describe("HTML export fidelity", () => {
 		expect(styleText).toContain("--praxity-color-accent: #db2526;");
 		expect(styleText).toContain("--praxity-font-family:");
 		expect(styleText).toContain("Source Sans 3");
-		expect(styleText).toContain("--space-8: 32px;");
+		expect(styleText).toContain("--space-8: 2rem;");
 		expect(styleText).toContain("--praxity-block-spacing: var(--block-gap);");
 
 		const configScript = firstDoc.getElementById("praxity-config");
