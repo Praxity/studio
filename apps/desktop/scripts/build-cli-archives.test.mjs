@@ -27,9 +27,9 @@ pnpm() {
   printf '%s|%s|%s\\n' "$*" "\${TYPST_ARCH:-}" "\${PRAXITY_BROWSER_ARTIFACT:-}" >> commands.log
   [[ "$*" != "$FAIL_COMMAND" ]] || return 23
   if [[ "$*" == build:cli ]]; then
-    mkdir -p dist/studio-cli/editor
+    mkdir -p dist/studio-cli/export-assets
     printf '%s' "$TYPST_ARCH" > dist/studio-cli/payload.txt
-    printf '%s' "$TYPST_ARCH" > dist/studio-cli/editor/index.html
+    printf '%s' "$TYPST_ARCH" > dist/studio-cli/export-assets/inspection-frame.js
     printf '{"sourceTreeDirty":%s}' "$(if [[ -n "$(git status --porcelain)" ]]; then echo true; else echo false; fi)" > dist/studio-cli/inventory.json
     if [[ "$DIRTY_AFTER_BUILD" == "$TYPST_ARCH" ]]; then printf 'generated' > unexpected-source.txt; fi
   elif [[ "$*" == test:cli ]]; then
@@ -170,7 +170,7 @@ for (const browser of [false, true]) {
 						arch,
 					);
 					assert.equal(
-						execFileSync("tar", ["-xOf", archive, "studio-cli/editor/index.html"], {
+						execFileSync("tar", ["-xOf", archive, "studio-cli/export-assets/inspection-frame.js"], {
 							encoding: "utf8",
 						}),
 						arch,

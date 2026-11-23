@@ -41,24 +41,22 @@ async function fixture(manifest = "title: Test\nlessons: [second.prax, first.pra
 	const root = await mkdtemp(join(scratch, "studio-server-"));
 	roots.push(root);
 	const projectDir = join(root, "project");
-	const editorAssetsDir = join(root, "editor");
 	await mkdir(projectDir);
-	await mkdir(editorAssetsDir);
-	await writeFile(
-		join(editorAssetsDir, "index.html"),
-		'<!doctype html><html lang="en"><title>Studio fixture</title></html>',
-	);
-	await writeFile(join(editorAssetsDir, "app.js"), "window.shipped = true;");
-	await writeFile(join(editorAssetsDir, "canvas.js"), "void 0;");
-	await writeFile(
-		join(editorAssetsDir, "canvas.sha256"),
-		"4f56045c295617d094843daf46a0b666472d5613d232b9fe302224248ed4d362\n",
-	);
+
 	await writeFile(join(projectDir, "first.prax"), source);
 	await writeFile(join(projectDir, "second.prax"), source);
 	if (manifest) await writeFile(join(projectDir, "course.yaml"), manifest);
-	return { root, projectDir, editorAssetsDir };
+	return { root, projectDir };
 }
+
+it("starts Read preview without an editor payload", async () => {
+	const files = await fixture();
+	const server = await startStudioServer({ ...files, appVersion: "0.3.0" });
+	servers.push(server);
+	const response = await fetch(server.origin, { redirect: "manual" });
+	expect(response.status).toBe(303);
+	expect(response.headers.get("location")).toContain("canvas=read");
+});
 
 async function running(preview = false) {
 	const files = await fixture();
@@ -916,20 +914,6 @@ describe("Studio startup admission", () => {
 			).status,
 		).toBe(200);
 	}, 20_000);
-	it("rejects overlapping UI/project roots so authored documents cannot be shipped UI", async () => {
-		const files = await fixture();
-		await writeFile(join(files.projectDir, "index.html"), "<script>window.pwned=true</script>");
-		for (const editorAssetsDir of [files.projectDir, files.root]) {
-			if (editorAssetsDir === files.root)
-				await writeFile(join(files.root, "index.html"), "<!doctype html><title>Fixture</title>");
-			await expect(
-				startStudioServer({ ...files, editorAssetsDir, appVersion: "test" }),
-			).rejects.toThrow(/separate roots/);
-		}
-		await expect(
-			startStudioServer({ ...files, projectDir: files.root, appVersion: "test" }),
-		).rejects.toThrow(/separate roots/);
-	});
 	it("accepts one standalone lesson and rejects an ambiguous folder without listening", async () => {
 		const files = await fixture("");
 		await expect(startStudioServer({ ...files, appVersion: "test" })).rejects.toThrow(/ambiguous/i);
@@ -953,63 +937,11 @@ describe("Studio startup admission", () => {
 		}
 	}, 20_000);
 
-	it("refuses absent UI bundles and hidden or traversing manifest lesson names", async () => {
+	it("refuses hidden or traversing manifest lesson names", async () => {
 		const files = await fixture();
-		await expect(
-			startStudioServer({
-				...files,
-				editorAssetsDir: join(files.root, "missing"),
-				appVersion: "test",
-			}),
-		).rejects.toThrow(/editor/i);
 		for (const filename of ["../outside.prax", ".praxity/private.prax", "missing.prax"]) {
 			await writeFile(join(files.projectDir, "course.yaml"), `lessons: [${filename}]\n`);
 			await expect(startStudioServer({ ...files, appVersion: "test" })).rejects.toThrow();
 		}
 	});
-	it.each(["missing", "substituted"])(
-		"checks %s canvas assets before attempting to claim the requested port",
-		async (state) => {
-			const files = await fixture();
-			if (state === "missing") await rm(join(files.editorAssetsDir, "canvas.js"));
-			else await writeFile(join(files.editorAssetsDir, "canvas.js"), "var PraxityCanvas = {}; ");
-			const holder = createServer();
-			await new Promise<void>((resolve) => holder.listen(0, "127.0.0.1", resolve));
-			try {
-				const address = holder.address();
-				if (!address || typeof address === "string") throw new Error("Fixture port is missing");
-				await expect(
-					startStudioServer({ ...files, appVersion: "test", port: address.port }),
-				).rejects.toThrow(/Canvas assets are unavailable/);
-			} finally {
-				await new Promise<void>((resolve, reject) =>
-					holder.close((error) => (error ? reject(error) : resolve())),
-				);
-			}
-		},
-	);
-	it.each(["missing", "empty", "substituted", "missing-digest", "invalid-digest"])(
-		"refuses %s canvas assets before initializing identity",
-		async (state) => {
-			const files = await fixture();
-			if (state === "missing") await rm(join(files.editorAssetsDir, "canvas.js"));
-			else if (state === "missing-digest") await rm(join(files.editorAssetsDir, "canvas.sha256"));
-			else if (state === "invalid-digest")
-				await writeFile(join(files.editorAssetsDir, "canvas.sha256"), "invalid");
-			else
-				await writeFile(
-					join(files.editorAssetsDir, "canvas.js"),
-					state === "empty" ? " \n" : "var PraxityCanvas = {}; ",
-				);
-			await expect(
-				startStudioServer({ ...files, appVersion: "test" }).then((server) => {
-					servers.push(server);
-					return server;
-				}),
-			).rejects.toThrow(/Canvas assets are unavailable.*Rebuild the standalone CLI/);
-			await expect(readdir(join(files.projectDir, ".praxity"))).rejects.toMatchObject({
-				code: "ENOENT",
-			});
-		},
-	);
 });

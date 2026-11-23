@@ -5,7 +5,6 @@ import { defineConfig } from "@playwright/test";
 export default defineConfig({
 	testDir: import.meta.dirname,
 	testMatch: "*.spec.ts",
-	globalSetup: "./global-setup.ts",
 	workers: 1,
 	retries: 0,
 	reporter: process.env.CI ? "line" : "list",

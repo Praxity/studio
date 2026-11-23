@@ -201,57 +201,11 @@ test("packaged recovery and Studio tolerate foreign, malformed and unreadable dr
 	}
 });
 
-test("packaged studio refuses missing, empty and substituted canvas bytes before startup", async (t) => {
-	const checkout = fileURLToPath(new URL("../../../", import.meta.url));
-	const artifact = path.join(checkout, "dist/studio-cli");
-	const root = await mkdtemp(path.join(os.tmpdir(), "studio-canvas-asset-"));
-	const canvasPath = path.join(artifact, "editor/canvas.js");
-	const canvas = await readFile(canvasPath);
-	const inventoryPath = path.join(artifact, "inventory.json");
-	const inventory = await readFile(inventoryPath);
-	const digestPath = path.join(artifact, "editor/canvas.sha256");
-	try {
-		for (const state of ["missing", "empty", "substituted", "substituted-with-digest"]) {
-			await t.test(state, async () => {
-				const project = path.join(root, state);
-				await mkdir(project);
-				await writeFile(path.join(project, "lesson.prax"), "# Canvas\n\nLearner text.\n");
-				const replacement =
-					'var PraxityCanvas={startStudioAuthor(){document.documentElement.dataset.reviewSubstitute="executed"}};';
-				if (state === "missing") await rm(canvasPath);
-				else await writeFile(canvasPath, state === "empty" ? "" : replacement);
-				if (state === "substituted-with-digest") await writeFile(digestPath, sha256(replacement));
-				const result = spawnSync(
-					process.execPath,
-					[path.join(artifact, "praxity.mjs"), "studio", project, "--no-open"],
-					{ encoding: "utf8", windowsHide: true, timeout: 20_000 },
-				);
-				assert.ifError(result.error);
-				assert.equal(result.status, 1);
-				assert.match(
-					result.stdout + result.stderr,
-					/Canvas assets are unavailable.*Rebuild the standalone CLI/,
-				);
-				assert.doesNotMatch(result.stdout, /http:\/\/127\.0\.0\.1:\d+/);
-				await assert.rejects(readdir(path.join(project, ".praxity")), { code: "ENOENT" });
-				assert.deepEqual(await readFile(inventoryPath), inventory);
-				await writeFile(canvasPath, canvas);
-			});
-		}
-	} finally {
-		await writeFile(canvasPath, canvas);
-		await writeFile(digestPath, `${sha256(canvas)}\n`);
-		await rm(root, { recursive: true, force: true });
-	}
-});
-
-test("packaged studio starts with the real canvas bytes", async () => {
+test("packaged studio starts without an editor payload", async () => {
 	const artifact = fileURLToPath(new URL("../../../dist/studio-cli/", import.meta.url));
 	const root = await mkdtemp(path.join(os.tmpdir(), "studio-canvas-valid-"));
-	const digestPath = path.join(artifact, "editor/canvas.sha256");
-	const digest = await readFile(digestPath);
+	await assert.rejects(readdir(path.join(artifact, "editor")), { code: "ENOENT" });
 	await writeFile(path.join(root, "lesson.prax"), "# Canvas\n\nLearner text.\n");
-	await rm(digestPath);
 	const child = spawn(
 		process.execPath,
 		[path.join(artifact, "praxity.mjs"), "studio", root, "--no-open"],
@@ -286,7 +240,6 @@ test("packaged studio starts with the real canvas bytes", async () => {
 	} finally {
 		if (child.connected) child.disconnect();
 		await stopped;
-		await writeFile(digestPath, digest);
 		await rm(root, { recursive: true, force: true });
 	}
 });
@@ -367,23 +320,13 @@ test("browser payload carries its emitted source closure, classification and ups
 	const provenance = JSON.parse(
 		await readFile(path.join(checkout, "dist/studio-cli-review/build-inputs.json"), "utf8"),
 	);
-	const browserFiles = inventory.files.filter((file) => file.path.startsWith("editor/"));
-	assert.deepEqual(browserFiles.map((file) => file.path).sort(), [
-		"editor/canvas.js",
-		"editor/canvas.sha256",
-	]);
-	assert.ok(browserFiles.some((file) => file.path === "editor/canvas.js"));
-	assert.ok(browserFiles.some((file) => file.path.endsWith(".js")));
-	assert.ok(browserFiles.every((file) => file.component === "studio-browser-editor"));
-	for (const file of browserFiles)
-		assert.equal(file.sha256, sha256(await readFile(path.join(artifact, file.path))));
-	for (const file of [
-		"apps/desktop/src/renderer/browser/canvas-entry.ts",
-		"apps/desktop/src/renderer/browser/canvas.ts",
-		"apps/desktop/src/renderer/browser/canvas-text.ts",
-		"apps/desktop/src/renderer/browser/event-stream.ts",
-		"apps/desktop/src/shared/canvas-styles.ts",
-	]) {
+	assert.ok(!inventory.files.some((file) => file.path.startsWith("editor/")));
+	const inspection = inventory.files.find(
+		(file) => file.path === "export-assets/inspection-frame.js",
+	);
+	assert.equal(inspection?.component, "studio-browser-editor");
+	assert.equal(inspection.sha256, sha256(await readFile(path.join(artifact, inspection.path))));
+	for (const file of ["apps/desktop/src/inspection-frame.ts"]) {
 		const input = provenance.inputs.find((input) => input.path === file);
 		assert.ok(input?.components.includes("studio-browser-editor"), file);
 		assert.equal(input.sha256, sha256(await readFile(path.join(checkout, file))), file);
@@ -392,9 +335,7 @@ test("browser payload carries its emitted source closure, classification and ups
 		assert.ok(
 			provenance.inputs.some(
 				(input) =>
-					input.path.includes(`/node_modules/${name}/`) &&
-					input.components.includes("third-party") &&
-					input.components.includes("studio-browser-editor"),
+					input.path.includes(`/node_modules/${name}/`) && input.components.includes("third-party"),
 			),
 			name,
 		);

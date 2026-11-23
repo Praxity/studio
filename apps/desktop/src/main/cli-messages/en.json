@@ -197,7 +197,6 @@
 		"pdfOptions": "PDF options require --format pdf.",
 		"port": "--port requires an integer from 1 to 65535, supplied once.",
 		"studioUsage": "Usage: praxity studio <project-dir> [--review] [--port <n>] [--no-open]",
-		"editorArtifact": "Use the standalone CLI artifact with its browser editor assets.",
 		"startup": "Studio startup failed",
 		"inspectUsage": "Usage: praxity inspect <project-dir> [--schema 0|1]",
 		"once": "{argument} may be supplied only once.",
@@ -219,9 +218,6 @@
 		"outputDirectory": "Output path is a directory"
 	},
 	"serverRefusals": {
-		"browserAssets": "Browser editor assets are unavailable. Rebuild the standalone CLI.",
-		"roots": "Editor assets and project files must have separate roots",
-		"canvasAssets": "Canvas assets are unavailable. Rebuild the standalone CLI.",
 		"localLaunch": "Canvas compilation requires a local launch",
 		"closing": "Studio session is closing",
 		"header": "Duplicate security header",

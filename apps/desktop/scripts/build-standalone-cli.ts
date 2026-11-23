@@ -5,7 +5,6 @@ import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
-import { build as buildBrowser } from "vite";
 import { bundleViewer } from "../../../packages/export-pipeline/src/bundle-viewer";
 import {
 	desktopExportInputs,
@@ -78,30 +77,6 @@ execFileSync(
 	],
 	{ stdio: "inherit" },
 );
-let thisCanvas: { inputs: string[] } = { inputs: [] };
-await buildBrowser({
-	configFile: path.join(desktopDir, "browser.vite.config.ts"),
-	build: { outDir: path.join(outputDir, "editor") },
-	plugins: [
-		{
-			name: "studio-browser-input-provenance",
-			configResolved(config) {
-				const canvas = config.plugins.find((plugin) => plugin.name === "studio-canvas-bundle");
-				if (!canvas) throw new Error("Canvas build plugin is unavailable");
-				thisCanvas = canvas.api;
-			},
-			async generateBundle() {
-				for (const input of thisCanvas.inputs) await recordInput(input, STUDIO_BROWSER_COMPONENT);
-			},
-		},
-	],
-});
-await assertLearningPatternsBundleInputs(
-	repoDir,
-	[{ inputs: Object.fromEntries(thisCanvas.inputs.map((input) => [input, {}])) }],
-	"studio-browser",
-	process.cwd(),
-);
 const bundle = await build({
 	entryPoints: { praxity: path.join(desktopDir, "src/main/standalone-cli.ts") },
 	outdir: outputDir,
@@ -119,9 +94,6 @@ const bundle = await build({
 		js: '#!/usr/bin/env node\nimport { createRequire as createBundleRequire } from "node:module"; const require = createBundleRequire(import.meta.url);',
 	},
 	define: {
-		__PRAXITY_CANVAS_SHA256__: JSON.stringify(
-			sha256(await readFile(path.join(outputDir, "editor/canvas.js"))),
-		),
 		"process.env.NODE_ENV": '"production"',
 		"process.env.PRAXITY_APP_VERSION": JSON.stringify(version),
 		"process.env.PRAXITY_VIEWER_SOURCE_HASH": JSON.stringify(metadata.viewerSourceHash),
@@ -273,7 +245,6 @@ await writeFile(
 			repository: { type: "git", url: "https://github.com/Praxity/studio.git" },
 			files: [
 				"*.mjs",
-				"editor/",
 				"export-assets/",
 				"typst/",
 				"legal/",
@@ -300,7 +271,6 @@ for (const file of [
 	"package.json",
 	"apps/desktop/package.json",
 	"apps/desktop/scripts/build-standalone-cli.ts",
-	"apps/desktop/browser.vite.config.ts",
 	"apps/desktop/scripts/standalone-cli-paths.mjs",
 	"apps/desktop/scripts/standalone-cli-packaging.mjs",
 	"apps/desktop/scripts/prepare-typst.mjs",

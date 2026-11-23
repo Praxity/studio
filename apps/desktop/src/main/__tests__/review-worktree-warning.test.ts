@@ -20,7 +20,7 @@ let main: string;
 let linked: string;
 let emptyBin: string;
 const runtime = { appVersion: "test", exportAssetsDir: "unused" };
-let studioRuntime: typeof runtime & { editorAssetsDir: string };
+let studioRuntime: typeof runtime;
 
 beforeAll(async () => {
 	scratch = await mkdtemp(join(tmpdir(), "review-worktree-warning-"));
@@ -50,14 +50,10 @@ beforeAll(async () => {
 	await openReviewStore(join(linked, "course"));
 	const assets = join(scratch, "assets");
 	await mkdir(assets);
-	await writeFile(join(assets, "canvas.js"), "void 0;");
-	await writeFile(
-		join(assets, "canvas.sha256"),
-		"4f56045c295617d094843daf46a0b666472d5613d232b9fe302224248ed4d362",
-	);
+
 	await writeFile(join(assets, "review-comments.js"), "void 0;");
 	await writeFile(join(assets, "review-comments.css"), "body {}");
-	studioRuntime = { ...runtime, exportAssetsDir: assets, editorAssetsDir: assets };
+	studioRuntime = { ...runtime, exportAssetsDir: assets };
 	await import("../studio/server");
 });
 afterEach(() => vi.unstubAllEnvs());

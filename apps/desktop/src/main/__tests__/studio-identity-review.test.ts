@@ -53,14 +53,8 @@ async function fixture(
 	const root = await mkdtemp(join(tmpdir(), "studio-identity-review-"));
 	roots.push(root);
 	const projectDir = join(root, "course");
-	const editorAssetsDir = join(root, "editor");
 	await mkdir(projectDir);
-	await mkdir(editorAssetsDir);
-	await writeFile(join(editorAssetsDir, "canvas.js"), "void 0;");
-	await writeFile(
-		join(editorAssetsDir, "canvas.sha256"),
-		"4f56045c295617d094843daf46a0b666472d5613d232b9fe302224248ed4d362\n",
-	);
+
 	await writeFile(
 		join(projectDir, "course.yaml"),
 		`title: Test\nlocale: ${locale}\nlessons: [first.prax]\n`,
@@ -68,7 +62,7 @@ async function fixture(
 	await writeFile(join(projectDir, "first.prax"), before);
 	await initializeCourseIdentity(projectDir, ["first.prax"]);
 	await writeFile(join(projectDir, "first.prax"), after);
-	return { projectDir, editorAssetsDir, appVersion: "test" };
+	return { projectDir, appVersion: "test" };
 }
 
 async function bytes(root: string, prefix = ""): Promise<Record<string, string>> {

@@ -5,111 +5,12 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { build, loadConfigFromFile } from "vite";
-import * as packaging from "./standalone-cli-packaging.mjs";
 import { filesIn, inventoryPayload, packagePraxFormat } from "./standalone-cli-packaging.mjs";
 import { portablePath } from "./standalone-cli-paths.mjs";
 
 const repoDir = fileURLToPath(new URL("../../../", import.meta.url));
 const sourceDir = path.join(repoDir, "docs/prax-format");
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
-
-test("browser build ships only the thin canvas and its digest", async () => {
-	const result = await build({
-		configFile: path.join(repoDir, "apps/desktop/browser.vite.config.ts"),
-		logLevel: "silent",
-		build: { write: false },
-	});
-	assert.deepEqual(result.output.map((file) => file.fileName).sort(), [
-		"canvas.js",
-		"canvas.sha256",
-	]);
-});
-
-test("canvas import check rejects each retired dependency, including transitive modules", () => {
-	for (const file of [
-		"apps/desktop/src/renderer/App.tsx",
-		"apps/desktop/src/renderer/EditorView.tsx",
-		"apps/desktop/src/renderer/browser/bridge.ts",
-		"packages/editor-core/src/session/controller.ts",
-		"apps/desktop/src/renderer/new-editor/draft-persistence.ts",
-		"apps/desktop/src/renderer/new-editor/lesson-session.ts",
-		"apps/desktop/src/renderer/new-editor/project-sessions.ts",
-		"apps/desktop/src/renderer/components/lens/EditorSessionHost.tsx",
-		"apps/desktop/src/renderer/components/course-map/OutlineTree.tsx",
-		"packages/editor-core/src/shortcuts/regions.ts",
-		"apps/desktop/src/main/operations/local-editor-store.ts",
-		"packages/editor-core/src/frame-bridge/source-field.ts",
-	]) {
-		assert.throws(() => packaging.assertCanvasInputs([file]), /Forbidden canvas dependency/);
-		assert.throws(
-			() => packaging.assertCanvasInputs([file.replaceAll("/", "\\")]),
-			/Forbidden canvas dependency/,
-		);
-	}
-	assert.doesNotThrow(() =>
-		packaging.assertCanvasInputs([
-			"apps/desktop/src/renderer/browser/canvas.ts",
-			"apps/desktop/src/renderer/browser/canvas-text.ts",
-			"apps/desktop/src/renderer/browser/event-stream.ts",
-			"apps/desktop/src/shared/canvas-messages.ts",
-			"apps/desktop/src/shared/canvas-styles.ts",
-		]),
-	);
-});
-
-test("canvas build emits its source closure and refuses a planted transitive shell import", async (t) => {
-	const root = await temporaryArtifact(t);
-	const entry = path.join(root, "canvas.ts");
-	const forbidden = path.join(root, "renderer", "App.tsx");
-	await mkdir(path.dirname(forbidden), { recursive: true });
-	await writeFile(forbidden, "export const shell = 'old shell';");
-	await writeFile(entry, "export function startStudioAuthor() { return 'canvas'; }");
-	const plugin = packaging.canvasBundlePlugin(entry);
-	const options = {
-		configFile: false,
-		logLevel: "silent",
-		plugins: [plugin],
-		build: { write: false, rollupOptions: { input: entry } },
-	};
-	const result = await build(options);
-	const canvas = result.output.find((file) => file.fileName === "canvas.js");
-	assert.ok(canvas);
-	assert.match(canvas.source, /PraxityCanvas/);
-	assert.equal(
-		result.output.find((file) => file.fileName === "canvas.sha256")?.source,
-		`${sha256(canvas.source)}\n`,
-	);
-	assert.deepEqual(plugin.api.inputs.map(portablePath), [portablePath(entry)]);
-	assert.ok(!result.output.some((file) => file.fileName.endsWith(".map")));
-	await writeFile(entry, "export { shell as startStudioAuthor } from './renderer/App';");
-	await assert.rejects(build(options), /Forbidden canvas dependency/);
-});
-
-test("shipped canvas entry includes the native text adapter and protected control styles", async (t) => {
-	const root = await temporaryArtifact(t);
-	const entry = path.join(root, "empty.ts");
-	await writeFile(entry, "void 0;");
-	const loaded = await loadConfigFromFile(
-		{ command: "build", mode: "production" },
-		path.join(repoDir, "apps/desktop/browser.vite.config.ts"),
-	);
-	const canvas = loaded.config.plugins.find((plugin) => plugin.name === "studio-canvas-bundle");
-	await build({
-		configFile: false,
-		logLevel: "silent",
-		plugins: [canvas],
-		build: { write: false, rollupOptions: { input: entry } },
-	});
-	const inputs = canvas.api.inputs.map((file) => portablePath(path.relative(repoDir, file)));
-	for (const file of [
-		"apps/desktop/src/renderer/browser/canvas.ts",
-		"apps/desktop/src/renderer/browser/canvas-text.ts",
-		"apps/desktop/src/renderer/browser/event-stream.ts",
-		"apps/desktop/src/shared/canvas-styles.ts",
-	])
-		assert.ok(inputs.includes(file), `Missing packaged canvas input: ${file}`);
-});
 
 async function temporaryArtifact(t) {
 	const directory = await mkdtemp(path.join(tmpdir(), "praxity cli packaging "));
@@ -183,12 +84,7 @@ for (const [platform, arch] of [
 		await mkdir(path.join(outputDir, "typst"));
 		await mkdir(path.join(outputDir, "export-assets"));
 		await mkdir(path.join(outputDir, "legal"));
-		await mkdir(path.join(outputDir, "editor"));
-		await writeFile(
-			path.join(outputDir, "editor", "index.html"),
-			'<script type="module" src="/editor.js"></script>',
-		);
-		await writeFile(path.join(outputDir, "editor", "editor.js"), 'console.log("Editor");');
+
 		await mkdir(path.join(outputDir, "typst/fonts"));
 		await writeFile(path.join(outputDir, "typst/fonts/LICENSE"), "font notice");
 		await writeFile(path.join(outputDir, "export-assets", "viewer.css"), "body {}");
@@ -201,8 +97,6 @@ for (const [platform, arch] of [
 		assert.deepEqual(
 			payload.files.map((file) => [file.path, file.component]),
 			[
-				["editor/editor.js", "studio-browser-editor"],
-				["editor/index.html", "studio-browser-editor"],
 				["export-assets/inspection-frame.js", "studio-browser-editor"],
 				["export-assets/viewer.css", "course-delivery-runtime-and-inputs"],
 				["legal/LICENSE", "operative-legal-notice"],

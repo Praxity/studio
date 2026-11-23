@@ -197,7 +197,6 @@
 		"pdfOptions": "Les options PDF exigent --format pdf.",
 		"port": "L’option --port exige un nombre entier de 1 à 65535 et ne peut être fournie qu’une seule fois.",
 		"studioUsage": "Utilisation : praxity studio <project-dir> [--review] [--port <n>] [--no-open]",
-		"editorArtifact": "Utilisez la version autonome de l’interface en ligne de commande, fournie avec les fichiers de son éditeur Web.",
 		"startup": "Le démarrage de Studio a échoué",
 		"inspectUsage": "Utilisation : praxity inspect <project-dir> [--schema 0|1]",
 		"once": "L’option {argument} ne peut être fournie qu’une seule fois.",
@@ -219,9 +218,6 @@
 		"outputDirectory": "Le chemin de sortie désigne un dossier"
 	},
 	"serverRefusals": {
-		"browserAssets": "Les fichiers de l’éditeur Web ne sont pas accessibles. Reconstruisez l’interface en ligne de commande autonome.",
-		"roots": "Les fichiers de l’éditeur et du projet doivent être dans des dossiers racines distincts",
-		"canvasAssets": "Les fichiers du canevas ne sont pas accessibles. Reconstruisez l’interface en ligne de commande autonome.",
 		"localLaunch": "La compilation du canevas exige un lancement local",
 		"closing": "La session Studio est en cours de fermeture",
 		"header": "En-tête de sécurité en double",

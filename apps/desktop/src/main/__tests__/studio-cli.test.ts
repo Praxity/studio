@@ -15,7 +15,7 @@ import type { StudioServer } from "../studio/server";
 
 const roots: string[] = [];
 const servers: StudioServer[] = [];
-const runtime = { appVersion: "0.3.0", exportAssetsDir: "unused", editorAssetsDir: "missing" };
+const runtime = { appVersion: "0.3.0", exportAssetsDir: "unused" };
 let writerRoot: string;
 let writerEntry: string;
 beforeAll(async () => {
@@ -48,21 +48,15 @@ async function fixture() {
 		join(process.env.PRAXITY_TEST_ARTIFACTS ?? tmpdir(), "studio cli spaces "),
 	);
 	roots.push(root);
-	const editorAssetsDir = join(root, "editor");
 	const projectDir = join(root, "project");
-	await mkdir(editorAssetsDir);
+
 	await mkdir(projectDir);
-	await writeFile(join(editorAssetsDir, "index.html"), "<!doctype html><title>Fixture</title>");
-	await writeFile(join(editorAssetsDir, "canvas.js"), "void 0;");
-	await writeFile(
-		join(editorAssetsDir, "canvas.sha256"),
-		"4f56045c295617d094843daf46a0b666472d5613d232b9fe302224248ed4d362\n",
-	);
+
 	await writeFile(
 		join(projectDir, "course.prax"),
 		"---\nid: fixture-lesson\ntitle: Test\n---\n# Hello\n",
 	);
-	return { editorAssetsDir, projectDir };
+	return { projectDir };
 }
 
 it.each([
@@ -79,14 +73,13 @@ it.each([
 ] as const)(
 	"fresh Studio open after a real interrupted write explains identity recovery in %s",
 	async (locale, restore, keep) => {
-		const { projectDir, editorAssetsDir } = await fixture();
+		const { projectDir } = await fixture();
 		await writeFile(join(projectDir, "narration.yaml"), "old narration");
 		await interruptProjectWrite(projectDir, "narration.yaml", "new narration", writerEntry);
 		await withProjectFileTransaction(projectDir, async () => {}, "write");
 		await rm(join(projectDir, "narration.yaml"));
 		const result = await runPraxityCli(["studio", projectDir, "--no-open", "--lang", locale], {
 			...runtime,
-			editorAssetsDir,
 		});
 		if (result.studioServer) servers.push(result.studioServer);
 		expect(result.exitCode).toBe(1);
@@ -142,7 +135,7 @@ it.each(["en", "fr"] as const)(
 
 describe("studio command", () => {
 	it.each(["en", "fr"] as const)("explains linked storage in stderr, %s", async (locale) => {
-		const { editorAssetsDir, projectDir } = await fixture();
+		const { projectDir } = await fixture();
 		const target = join(projectDir, "linked-store");
 		await mkdir(target);
 		await writeFile(join(target, "keep.json"), "keep these bytes");
@@ -150,7 +143,6 @@ describe("studio command", () => {
 		const before = await projectDiskSnapshot(target);
 		const result = await runPraxityCli(["studio", projectDir, "--no-open", "--lang", locale], {
 			...runtime,
-			editorAssetsDir,
 		});
 		expect(result.exitCode).toBe(1);
 		expect(result.studioServer).toBeUndefined();
@@ -202,11 +194,10 @@ describe("studio command", () => {
 	});
 
 	it("prints the Read preview ready URL after admission and honours --no-open", async () => {
-		const { editorAssetsDir, projectDir } = await fixture();
+		const { projectDir } = await fixture();
 		for (const noOpen of [true, false]) {
 			const result = await runPraxityCli(["studio", projectDir, ...(noOpen ? ["--no-open"] : [])], {
 				...runtime,
-				editorAssetsDir,
 			});
 			expect(result.exitCode).toBe(0);
 			expect(result.stderr).toBe("");
@@ -221,8 +212,8 @@ describe("studio command", () => {
 	});
 
 	it("accepts --port and binds exactly that port", async () => {
-		const { editorAssetsDir, projectDir } = await fixture();
-		const cliRuntime = { ...runtime, editorAssetsDir };
+		const { projectDir } = await fixture();
+		const cliRuntime = { ...runtime };
 		const initial = await runPraxityCli(["studio", projectDir, "--no-open"], cliRuntime);
 		if (!initial.studioServer) throw new Error(initial.stderr);
 		servers.push(initial.studioServer);
@@ -243,7 +234,6 @@ describe("studio command", () => {
 		const holder = await fixture();
 		const initial = await runPraxityCli(["studio", holder.projectDir, "--no-open"], {
 			...runtime,
-			editorAssetsDir: holder.editorAssetsDir,
 		});
 		if (!initial.studioServer) throw new Error(initial.stderr);
 		servers.push(initial.studioServer);
@@ -251,7 +241,7 @@ describe("studio command", () => {
 		const port = new URL(initial.studioServer.origin).port;
 		const result = await runPraxityCli(
 			["studio", contender.projectDir, "--port", port, "--no-open"],
-			{ ...runtime, editorAssetsDir: contender.editorAssetsDir },
+			{ ...runtime },
 		);
 		expect(result.exitCode).toBe(1);
 		expect(result.studioServer).toBeUndefined();
@@ -271,10 +261,10 @@ describe("studio command", () => {
 			try {
 				const address = listener.address();
 				if (!address || typeof address === "string") throw new Error("Listener did not bind");
-				const { projectDir, editorAssetsDir } = await fixture();
+				const { projectDir } = await fixture();
 				const result = await runPraxityCli(
 					["studio", projectDir, "--no-open", "--port", String(address.port)],
-					{ ...runtime, editorAssetsDir },
+					{ ...runtime },
 				);
 				expect(result.exitCode).toBe(1);
 				expect(result.studioServer).toBeUndefined();
@@ -345,11 +335,10 @@ describe("studio command", () => {
 		try {
 			const address = listener.address();
 			if (!address || typeof address === "string") throw new Error("Listener did not bind");
-			const { projectDir, editorAssetsDir } = await fixture();
+			const { projectDir } = await fixture();
 			const result = await Promise.race([
 				runPraxityCli(["studio", projectDir, "--no-open", "--port", String(address.port)], {
 					...runtime,
-					editorAssetsDir,
 				}),
 				new Promise<never>((_resolve, reject) => {
 					deadline = setTimeout(() => reject(new Error("Collision probe stalled")), 2500);
@@ -377,12 +366,12 @@ describe("studio command", () => {
 		const address = listener.address();
 		if (!address || typeof address === "string") throw new Error("Listener did not bind");
 		await new Promise<void>((resolve) => listener.close(() => resolve()));
-		const { projectDir, editorAssetsDir } = await fixture();
+		const { projectDir } = await fixture();
 		await rm(join(projectDir, "course.prax"));
 		try {
 			const result = await runPraxityCli(
 				["studio", projectDir, "--no-open", "--port", String(address.port)],
-				{ ...runtime, editorAssetsDir },
+				{ ...runtime },
 			);
 			expect(result.exitCode).toBe(1);
 			await new Promise<void>((resolve, reject) => {
@@ -433,10 +422,10 @@ describe("studio command", () => {
 			try {
 				const address = listener.address();
 				if (!address || typeof address === "string") throw new Error("Listener did not bind");
-				const { projectDir, editorAssetsDir } = await fixture();
+				const { projectDir } = await fixture();
 				const result = await runPraxityCli(
 					["studio", projectDir, "--no-open", "--port", String(address.port)],
-					{ ...runtime, editorAssetsDir },
+					{ ...runtime },
 				);
 				const message = holder
 					? `Port ${address.port} is already used by Studio for course "${holder}". Stop that Studio or choose another --port.`

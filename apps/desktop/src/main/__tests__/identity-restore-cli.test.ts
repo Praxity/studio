@@ -21,7 +21,7 @@ function withCountingFlushes<T>(work: (value: T) => Promise<void>) {
 }
 
 const roots: string[] = [];
-const runtime = { appVersion: "0.3.0", exportAssetsDir: "unused", editorAssetsDir: "missing" };
+const runtime = { appVersion: "0.3.0", exportAssetsDir: "unused" };
 afterEach(async () => {
 	await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });

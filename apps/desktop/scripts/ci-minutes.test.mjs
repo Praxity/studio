@@ -494,7 +494,7 @@ const browserInputPaths = [
 	"packages/export-pipeline/template/**/*",
 	"packages/export-pipeline/tests/{a11y,deck,fixtures}/**/*",
 	"apps/desktop/{src,e2e}/**/*",
-	"apps/desktop/browser.vite.config.ts",
+	"apps/desktop/e2e/browser-editor/global-setup.ts",
 	"apps/desktop/scripts/{prebuild-viewer.ts,standalone-cli-packaging.mjs,prepare-typst.mjs}",
 	"docs/test-fixtures/**/*",
 	"docs/prax-format/examples/**/*",
@@ -684,7 +684,7 @@ for (const source of [
 }
 
 for (const file of [
-	"apps/desktop/browser.vite.config.ts",
+	"apps/desktop/e2e/browser-editor/global-setup.ts",
 	"packages/export-pipeline/template/review-comments.js",
 	"packages/grammar/__tests__/helpers/lesson-fixture.ts",
 	"packages/grammar/__tests__/fixtures/grammar4-starters.json",

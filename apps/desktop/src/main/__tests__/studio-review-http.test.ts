@@ -1270,18 +1270,12 @@ describe("author listener isolation", () => {
 		const root = await mkdtemp(join(tmpdir(), "studio-review-paired-"));
 		roots.push(root);
 		const store = await openReviewStore(root);
-		const editorAssetsDir = await mkdtemp(join(tmpdir(), "studio-review-editor-"));
-		roots.push(editorAssetsDir);
 		await writeFile(join(root, "lesson.prax"), "---\ntitle: Test\n---\n\n# Hello\n");
-		await writeFile(join(editorAssetsDir, "canvas.js"), "void 0;");
-		await writeFile(
-			join(editorAssetsDir, "canvas.sha256"),
-			"4f56045c295617d094843daf46a0b666472d5613d232b9fe302224248ed4d362\n",
-		);
+
 		capability = randomBytes(32).toString("base64url");
 		server = await startStudioServer({
 			projectDir: root,
-			editorAssetsDir,
+
 			appVersion: "0.3.0",
 			review: { store, capability },
 		});

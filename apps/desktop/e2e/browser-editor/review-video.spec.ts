@@ -40,7 +40,7 @@ for (const review of [true, false]) {
 			["studio", projectDir, ...(review ? ["--review"] : []), "--no-open"],
 			{
 				appVersion: "0.3.0",
-				editorAssetsDir: process.env.PRAXITY_BROWSER_EDITOR_ASSETS,
+
 				exportAssetsDir: resolve(import.meta.dirname, "../../resources/export-assets"),
 			},
 		);

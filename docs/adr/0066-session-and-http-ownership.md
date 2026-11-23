@@ -15,9 +15,7 @@ The author host and learner host have different authority. Session lifecycle mus
 ### src/main/cli.ts
 
 - `writeIdentityNotice`: Standalone hosts flush this notice before identity replacement.
-- `editorAssetsDir`: Only the standalone artifact supplies a browser UI build.
-  Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
-  independently verified.
+- 2026-11-22: The unused canvas renderer and bundle are removed. CLI and preview startup no longer require an editor asset directory. Inspection and review assets retain their packaging and provenance.
 - `runPraxityCli`: Before language validation, use the first --lang value; absent or invalid values
   fall back to en.
 - `runPraxityCli`: Argument refusals do not need the server or rendering runtime.
@@ -387,8 +385,6 @@ below record the retired browser author transport. Their original reasoning is
 preserved; they do not require routes, tokens or event streams in the Read host.
 The same-site document guard remains on Read launch and one-use admission.
 
-- `__PRAXITY_CANVAS_SHA256__`: Replaced with a build-owned literal in the standalone CLI; never read
-  from the environment.
 - `DEFAULT_PORT_START`: Avoid Rubato's reserved 41700-41999 ports and their +1000 learner ports.
 - `STUDIO_IDENTITY`: Escape untrusted terminal controls before this value can enter any message.
 - `identifyStudio`: An occupied port is untrusted. Never follow redirects or let its response stall
@@ -399,7 +395,6 @@ The same-site document guard remains on Read launch and one-use admission.
 - `identifyStudio`: A total deadline also bounds peers that keep sending bytes without ending.
 - `end`: Drain oversized chunked uploads without retaining them. Closing while the client is still
   sending can reset its socket before it receives the 413.
-- `uiFiles`: Capture only trusted build output. Project files never participate in editor routing.
 - `startStudioServer`: Claim the port before identity persistence, preview compilation and watcher
   startup.
 - `startStudioServer`: Refuse linked lineage before temporary-output setup can touch the sidecar.

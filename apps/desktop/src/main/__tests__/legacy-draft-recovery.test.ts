@@ -158,16 +158,9 @@ it("refuses aliased draft storage before creating any exported files", async () 
 		drafts: [],
 		draftsError: expect.stringContaining("symbolic links"),
 	});
-	const editorAssetsDir = join(root, "editor");
-	await mkdir(editorAssetsDir);
-	await writeFile(join(editorAssetsDir, "canvas.js"), "void 0;");
-	await writeFile(
-		join(editorAssetsDir, "canvas.sha256"),
-		"4f56045c295617d094843daf46a0b666472d5613d232b9fe302224248ed4d362\n",
-	);
+
 	const studio = await runPraxityCli(["studio", project, "--no-open"], {
 		...runtime,
-		editorAssetsDir,
 	});
 	if (studio.studioServer) servers.push(studio.studioServer);
 	expect(studio.exitCode, studio.stderr).toBe(0);
@@ -263,16 +256,9 @@ it("refuses an export destination whose parent aliases project metadata", async 
 it.each(["en", "fr"] as const)("Studio reports a recoverable draft count in %s", async (locale) => {
 	const { root, project, store, draft } = await fixture();
 	await store.draftPut({ draft });
-	const editorAssetsDir = join(root, "editor");
-	await mkdir(editorAssetsDir);
-	await writeFile(join(editorAssetsDir, "canvas.js"), "void 0;");
-	await writeFile(
-		join(editorAssetsDir, "canvas.sha256"),
-		"4f56045c295617d094843daf46a0b666472d5613d232b9fe302224248ed4d362\n",
-	);
+
 	const result = await runPraxityCli(["studio", project, "--no-open", "--lang", locale], {
 		...runtime,
-		editorAssetsDir,
 	});
 	if (result.studioServer) servers.push(result.studioServer);
 	expect(result.exitCode, result.stderr).toBe(0);

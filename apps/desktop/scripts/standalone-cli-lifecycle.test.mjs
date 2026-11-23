@@ -32,13 +32,7 @@ describe("standalone Studio lifecycle", () => {
 		project = path.join(root, "course");
 		await mkdir(project);
 		project = await realpath(project);
-		await mkdir(path.join(root, "editor"));
-		await writeFile(path.join(root, "editor/index.html"), "<!doctype html><title>Studio</title>");
-		await writeFile(path.join(root, "editor/canvas.js"), "void 0;");
-		await writeFile(
-			path.join(root, "editor/canvas.sha256"),
-			"4f56045c295617d094843daf46a0b666472d5613d232b9fe302224248ed4d362\n",
-		);
+
 		await writeFile(path.join(project, "lesson.prax"), "---\ntitle: Test\n---\n# Hello\n");
 		await promisify(execFile)(
 			process.execPath,

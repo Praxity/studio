@@ -7,10 +7,10 @@ import { DEFAULT_PROJECT_CONFIG } from "@praxity/editor-core/types";
 import { ViewerAssetsError } from "@praxity/export-pipeline/bundle-viewer";
 import { CoursePracticeAdmissionError } from "@praxity/grammar";
 import { createTranslator } from "use-intl/core";
-import { canvasMessages } from "../shared/canvas-messages";
 import { CourseHomeUrlError } from "../shared/course-manifest";
 import { type ExportFormat, studioPortSchema } from "../shared/ipc-schemas";
 import type { SelfCheckNarrationWarning } from "../shared/narration-sidecar";
+import { previewMessages } from "../shared/preview-messages";
 import {
 	ProjectPermissionError,
 	projectIdentityRecoveryAdvice,
@@ -78,7 +78,6 @@ interface CliRuntime {
 	exportAssetsDir: string;
 	expectedAppVersion?: string;
 	expectedViewerSourceHash?: string;
-	editorAssetsDir?: string;
 }
 
 export interface CliExecution {
@@ -355,7 +354,7 @@ async function errorExecution(
 				ok: false,
 				error: {
 					code: "accessibility_blocked",
-					message: canvasMessages[locale === "fr" ? "fr" : "en"].exportAccessibilityBlocked,
+					message: previewMessages[locale === "fr" ? "fr" : "en"].exportAccessibilityBlocked,
 					details: { criticalIssueCount: error.issues.length, issues: error.issues },
 				},
 			},
@@ -363,7 +362,7 @@ async function errorExecution(
 				.replace("{command}", command)
 				.replace(
 					"{reason}",
-					canvasMessages[locale === "fr" ? "fr" : "en"].exportAccessibilityBlocked,
+					previewMessages[locale === "fr" ? "fr" : "en"].exportAccessibilityBlocked,
 				),
 		);
 	}
@@ -643,8 +642,6 @@ export async function runPraxityCli(args: string[], runtime: CliRuntime): Promis
 				else throw new CliError("invalid_arguments", t.raw("refusals.studioUsage"), 2);
 			}
 			if (!projectDir) throw new CliError("invalid_arguments", t("refusals.missingProject"), 2);
-			if (!runtime.editorAssetsDir)
-				throw new CliError("editor_assets_missing", t("refusals.editorArtifact"), 1);
 			const root = await resolveProjectDir(projectDir, t);
 			if (reviewEnabled) {
 				const manifest = await lstat(path.join(root, COURSE_MANIFEST_FILENAME)).catch(
@@ -686,7 +683,7 @@ export async function runPraxityCli(args: string[], runtime: CliRuntime): Promis
 				projectDir: root,
 				locale: adviceLocale,
 				appVersion: runtime.appVersion,
-				editorAssetsDir: runtime.editorAssetsDir,
+
 				port,
 				onPortFallback: () => {
 					portFallback = true;

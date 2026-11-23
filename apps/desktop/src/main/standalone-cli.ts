@@ -95,7 +95,7 @@ const result = await runPraxityCli(args, {
 		),
 	appVersion: process.env.PRAXITY_APP_VERSION ?? "unknown",
 	exportAssetsDir: path.join(path.dirname(fileURLToPath(import.meta.url)), "export-assets"),
-	editorAssetsDir: path.join(path.dirname(fileURLToPath(import.meta.url)), "editor"),
+
 	expectedAppVersion: process.env.PRAXITY_APP_VERSION,
 	expectedViewerSourceHash: process.env.PRAXITY_VIEWER_SOURCE_HASH,
 });

@@ -46,7 +46,6 @@ beforeAll(async () => {
 		{
 			appVersion: "0.3.0",
 			exportAssetsDir: fallbackFiles.assetsDir,
-			editorAssetsDir: fallbackFiles.editorAssetsDir,
 		},
 	);
 	try {
@@ -67,8 +66,7 @@ async function fixture(cleanup = cleanups) {
 	cleanup.push(() => rm(root, { recursive: true }));
 	const projectDir = join(root, "project");
 	const assetsDir = join(root, "assets");
-	const editorAssetsDir = join(root, "editor");
-	await Promise.all([projectDir, assetsDir, editorAssetsDir].map((dir) => mkdir(dir)));
+	await Promise.all([projectDir, assetsDir].map((dir) => mkdir(dir)));
 	for (const name of ["review-comments.js", "review-comments.css"])
 		await cp(
 			fileURLToPath(
@@ -76,11 +74,7 @@ async function fixture(cleanup = cleanups) {
 			),
 			join(assetsDir, name),
 		);
-	await writeFile(join(editorAssetsDir, "canvas.js"), "void 0;");
-	await writeFile(
-		join(editorAssetsDir, "canvas.sha256"),
-		"4f56045c295617d094843daf46a0b666472d5613d232b9fe302224248ed4d362",
-	);
+
 	await writeFile(join(projectDir, "lesson.prax"), "# First\n\nBody.\n");
 	await writeFile(
 		join(projectDir, "course.yaml"),
@@ -98,7 +92,7 @@ async function fixture(cleanup = cleanups) {
 	state.reviewId = reviewId;
 	await writeFile(join(storage, reviewId, "comments.json"), JSON.stringify(state));
 	const store = await openReviewStore(projectDir);
-	return { root, projectDir, assetsDir, editorAssetsDir, store };
+	return { root, projectDir, assetsDir, store };
 }
 
 async function running(
@@ -354,7 +348,6 @@ it.each(["en", "fr"])("CLI reports preferred-port fallback on stderr in %s", asy
 			{
 				appVersion: "0.3.0",
 				exportAssetsDir: files.assetsDir,
-				editorAssetsDir: files.editorAssetsDir,
 			},
 		);
 		if (result.studioServer) cleanups.push(() => result.studioServer?.close() ?? Promise.resolve());
@@ -402,7 +395,6 @@ async function launchPorts(
 	const result = await runPraxityCli(["studio", projectDir, "--no-open", ...args], {
 		appVersion: "0.3.0",
 		exportAssetsDir: fileURLToPath(new URL("../../../resources/export-assets/", import.meta.url)),
-		editorAssetsDir: files.editorAssetsDir,
 	});
 	if (result.studioServer) cleanups.push(() => result.studioServer?.close() ?? Promise.resolve());
 	expect(result.exitCode, result.stderr).toBe(0);
@@ -486,7 +478,6 @@ it("an explicit editor EACCES bind refusal still stops startup", async () => {
 			{
 				appVersion: "0.3.0",
 				exportAssetsDir: fallbackFiles.assetsDir,
-				editorAssetsDir: fallbackFiles.editorAssetsDir,
 			},
 		);
 		if (result.studioServer) cleanups.push(() => result.studioServer?.close() ?? Promise.resolve());
@@ -815,7 +806,6 @@ it.each(["corrupt-json", "newer-schema", "unsafe-path"])(
 		const result = await runPraxityCli(["studio", files.projectDir, "--review", "--no-open"], {
 			appVersion: "0.3.0",
 			exportAssetsDir: files.assetsDir,
-			editorAssetsDir: files.editorAssetsDir,
 		});
 		if (result.studioServer) cleanups.push(() => result.studioServer?.close() ?? Promise.resolve());
 		expect(result.exitCode).toBe(1);
@@ -835,7 +825,6 @@ it.each(["en", "fr"])(
 			{
 				appVersion: "0.3.0",
 				exportAssetsDir: files.assetsDir,
-				editorAssetsDir: files.editorAssetsDir,
 			},
 		);
 		expect(result.exitCode).toBe(1);
@@ -890,7 +879,6 @@ it.each([
 			{
 				appVersion: "0.3.0",
 				exportAssetsDir: files.assetsDir,
-				editorAssetsDir: files.editorAssetsDir,
 			},
 		);
 		if (result.studioServer) cleanups.push(() => result.studioServer?.close() ?? Promise.resolve());
@@ -918,7 +906,6 @@ it.each(["directory", "symlink"])(
 		const result = await runPraxityCli(["studio", nonCourse, "--review", "--no-open"], {
 			appVersion: "0.3.0",
 			exportAssetsDir: files.assetsDir,
-			editorAssetsDir: files.editorAssetsDir,
 		});
 		if (result.studioServer) cleanups.push(() => result.studioServer?.close() ?? Promise.resolve());
 		expect(result.exitCode).toBe(1);

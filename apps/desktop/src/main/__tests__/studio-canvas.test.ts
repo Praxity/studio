@@ -17,17 +17,12 @@ it("admits the canvas mode through launch, preserving exact route and origin adm
 	const root = await mkdtemp(join(tmpdir(), "studio-canvas-"));
 	cleanup.push(() => rm(root, { recursive: true, force: true }));
 	await mkdir(join(root, "project"));
-	await mkdir(join(root, "editor"));
+
 	await writeFile(join(root, "project/lesson.prax"), "# Title\n\nA **nested** word.\n");
-	await writeFile(join(root, "editor/index.html"), "<!doctype html><title>Editor</title>");
-	await writeFile(join(root, "editor/canvas.js"), "void 0;");
-	await writeFile(
-		join(root, "editor/canvas.sha256"),
-		"4f56045c295617d094843daf46a0b666472d5613d232b9fe302224248ed4d362\n",
-	);
+
 	const server = await startStudioServer({
 		projectDir: join(root, "project"),
-		editorAssetsDir: join(root, "editor"),
+
 		appVersion: "0.3.0",
 	});
 	cleanup.push(() => server.close());
@@ -213,17 +208,12 @@ it("admits compilation once, refuses absent and non-HTML launches, and retains o
 	const root = await mkdtemp(join(tmpdir(), "studio-canvas-"));
 	cleanup.push(() => rm(root, { recursive: true, force: true }));
 	await mkdir(join(root, "project"));
-	await mkdir(join(root, "editor"));
+
 	await writeFile(join(root, "project/lesson.prax"), "# First\n\nRevision zero.\n");
-	await writeFile(join(root, "editor/index.html"), "<!doctype html><title>Editor</title>");
-	await writeFile(join(root, "editor/canvas.js"), "void 0;");
-	await writeFile(
-		join(root, "editor/canvas.sha256"),
-		"4f56045c295617d094843daf46a0b666472d5613d232b9fe302224248ed4d362\n",
-	);
+
 	const server = await startStudioServer({
 		projectDir: join(root, "project"),
-		editorAssetsDir: join(root, "editor"),
+
 		appVersion: "0.3.0",
 		exportAssetsDir: fileURLToPath(new URL("../../../resources/export-assets/", import.meta.url)),
 	});
