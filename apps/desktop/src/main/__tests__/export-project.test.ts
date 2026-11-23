@@ -44,7 +44,7 @@ vi.mock("../export/build-export-input-from-project", () => ({
 vi.mock("../export/accessibility-enforcement", () => ({
 	assertExportAccessibility: mocks.assertExportAccessibility,
 }));
-vi.mock("../telemetry-utils", () => ({
+vi.mock("../export/block-metrics", () => ({
 	getMetricsFromBlocks: mocks.getMetricsFromBlocks,
 }));
 

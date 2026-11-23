@@ -2,7 +2,9 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test } from "@playwright/test";
-import { createStudioProjectSession } from "../../src/main/studio/project-session";
+import { OperationService } from "../../src/main/operations/operation-service";
+import { canvasSourceLocation } from "../../src/main/studio/preview-diagnostics";
+import { previewMessages } from "../../src/shared/preview-messages";
 import { startJourney } from "./global-setup";
 
 const expected = {
@@ -19,7 +21,6 @@ for (const locale of ["en", "fr"] as const) {
 			join(process.env.PRAXITY_TEST_ARTIFACTS ?? tmpdir(), "source-error-"),
 		);
 		let stop: (() => Promise<void>) | undefined;
-		let session: Awaited<ReturnType<typeof createStudioProjectSession>> | undefined;
 		try {
 			const original = await readFile(
 				new URL("./fixtures/source-error-feedback-after-options.prax", import.meta.url),
@@ -40,7 +41,7 @@ for (const locale of ["en", "fr"] as const) {
 			await writeFile(join(fixture, "lesson.prax"), source);
 			stop = await startJourney(browser, { courseFixture: fixture });
 			const root = process.env.PRAXITY_BROWSER_PROJECT ?? "";
-			session = await createStudioProjectSession(root, "test", undefined, undefined, locale);
+			const service = new OperationService(root);
 			const scope = {
 				editorSeq: 0,
 				file: "lesson.prax",
@@ -49,20 +50,21 @@ for (const locale of ["en", "fr"] as const) {
 				pageIds: ["page"],
 				pageIndex: 0,
 			};
-			const refused = (await session.invoke("canvasTextSnapshot", {}, scope)) as {
-				sourceRefusal?: string;
-			};
-			expect(refused.sourceRefusal).toBe(expected[locale]);
-			expect(refused.sourceRefusal).not.toMatch(/grammar\.v4|rt-|Datenschutz|bartholomew/);
+			const refused = await service.canvasTextSnapshot(scope);
+			if (!refused.sourceError) throw new Error("Missing source diagnostic");
+			const message = canvasSourceLocation(
+				refused.sourceError,
+				previewMessages[locale].detachedFeedback,
+				locale,
+			);
+			expect(message).toBe(expected[locale]);
+			expect(message).not.toMatch(/grammar\.v4|rt-|Datenschutz|bartholomew/);
 			expect(await readFile(join(root, "lesson.prax"), "utf8")).toBe(source);
 			await writeFile(
 				join(root, "lesson.prax"),
 				source.replace(/^(correct:.*|incorrect:.*)\r?\n/gmu, ""),
 			);
-			expect(
-				((await session.invoke("canvasTextSnapshot", {}, scope)) as { sourceRefusal?: string })
-					.sourceRefusal,
-			).toBeUndefined();
+			expect((await service.canvasTextSnapshot(scope)).sourceError).toBeUndefined();
 			await page.goto(process.env.PRAXITY_BROWSER_READY_URL ?? "");
 			await page.getByRole("link", { name: "d-c1.prax", exact: true }).click();
 			await page.getByRole("link", { name: "Page d-c1.prax", exact: true }).click();
@@ -76,7 +78,6 @@ for (const locale of ["en", "fr"] as const) {
 				0,
 			);
 		} finally {
-			await session?.close();
 			await page.goto("about:blank");
 			await stop?.();
 			await rm(fixture, { recursive: true });

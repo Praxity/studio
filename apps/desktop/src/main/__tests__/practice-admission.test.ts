@@ -14,6 +14,7 @@ import { runPraxityCli } from "../cli";
 import { CoursePreviewService } from "../course-preview-service";
 import { exportProject } from "../export/export-project";
 import { resolveLessonSources } from "../lesson-source";
+import { OperationService } from "../operations/operation-service";
 import { canvasPracticeRefusalText } from "../studio/preview-diagnostics";
 import { PreviewScheduler } from "../studio/preview-scheduler";
 import {
@@ -260,35 +261,6 @@ it.each(["2.5", "'2'", "2"])(
 			session.subscribe((event) => replay.push(event));
 			expect(replay.filter((event) => event.type === "compileFailed")).toEqual([]);
 		}
-	},
-);
-
-it.each(["2.5", "'2'", "2"])(
-	"choice draft attempts=%s returns a located refusal or a render",
-	async (attempts) => {
-		const initial = attemptsSource("0");
-		const root = await fixture(initial);
-		const session = await createStudioProjectSession(root, "test");
-		sessions.push(session);
-		const identity = await resolveLessonSources(root);
-		const page = identity.lessons.get("lesson.prax")?.pages[0];
-		const node = page?.blocks.find((block) => block.type === "assessment");
-		if (!page || !node) throw Error("Missing choice");
-		const result = await session.invoke("previewRenderDraft", {
-			transactionId: "choice-attempts-draft",
-			pageId: page.id,
-			nodeId: node.id,
-			seq: 1,
-			source: attemptsSource(attempts).slice("# Page\n\n".length),
-		});
-		if (attempts === "2") expect(result).toMatchObject({ ok: true });
-		else
-			expect(result).toMatchObject({
-				ok: false,
-				code: "invalid-args",
-				diagnostics: [expect.objectContaining(attemptsDiagnostic)],
-			});
-		expect(await readFile(path.join(root, "lesson.prax"), "utf8")).toBe(initial);
 	},
 );
 
@@ -736,61 +708,7 @@ it("existing duplicate-logic-name stays non-blocking for export, full preview an
 	expect(mocks.host).toHaveBeenCalledOnce();
 });
 
-it("a refused commit updates draft admission and suppresses its own watcher echo", async () => {
-	const { createHash } = await import("node:crypto");
-	const initialSource = fixtureSource(21);
-	const root = await fixture(initialSource);
-	const session = await createStudioProjectSession(root, "test");
-	sessions.push(session);
-	const identity = await resolveLessonSources(root);
-	const read = identity.lessons.get("lesson.prax");
-	const node = read?.pages[0]?.blocks.find((block) => block.type === "text");
-	const mapping = identity.identity.sourceMappings.find((entry) => entry.id === node?.id);
-	if (!read || !node || !mapping) throw Error("Missing source mapping");
-	const events: StudioEvent[] = [];
-	session.subscribe((event) => events.push(event));
-	events.length = 0;
-	const result = await session.invoke("operationApply", {
-		transactionId: "refused-preview-commit",
-		operation: "editSource",
-		files: [
-			{
-				path: "lesson.prax",
-				baseRevision: createHash("sha256").update(initialSource).digest("hex"),
-			},
-		],
-		targets: [
-			{
-				file: "lesson.prax",
-				ref: {
-					kind: "node",
-					nodeId: node.id,
-					path: mapping.path,
-					fingerprint: mapping.fingerprint,
-				},
-				expectedText: initialSource.slice(mapping.span.start, mapping.span.end),
-			},
-		],
-		args: { text: "::: text {name=publicText}\nRevised.\n" },
-	});
-	expect(result, JSON.stringify(result)).toMatchObject({ ok: true });
-	expect(events.filter((event) => event.type === "compileFailed")).toHaveLength(1);
-	const treeChanged = new Promise<void>((resolve) => {
-		const disconnect = session.subscribe((event) => {
-			if (event.type === "treeChanged") {
-				disconnect();
-				resolve();
-			}
-		});
-	});
-	mocks.watcher?.emit("all", "change", path.join(root, "lesson.prax"));
-	await treeChanged;
-	expect(events.filter((event) => event.type === "compileFailed")).toHaveLength(1);
-	expect(events.filter((event) => event.type === "editorChanged")).toHaveLength(1);
-	expect(events.filter((event) => event.type === "grammarChanged")).toHaveLength(0);
-});
-
-it.each(["commit", "queued commit refresh", "outside change"] as const)(
+it.each(["outside change"] as const)(
 	"compiled %s failures keep localization metadata",
 	async (site) => {
 		const root = await fixture();
@@ -799,52 +717,9 @@ it.each(["commit", "queued commit refresh", "outside change"] as const)(
 		const error = new PracticeAdmissionError("practice-no-tracking", "node", "data.actions", "fr");
 		const events: StudioEvent[] = [];
 		session.subscribe((event) => events.push(event));
-		if (site !== "outside change") {
-			if (site === "commit")
-				vi.spyOn(PreviewScheduler.prototype, "renderCommitted").mockImplementation(() => {
-					throw error;
-				});
-			else vi.spyOn(PreviewScheduler.prototype, "refresh").mockRejectedValue(error);
-			const { createHash } = await import("node:crypto");
-			const identity = await resolveLessonSources(root);
-			const node = identity.lessons
-				.get("lesson.prax")
-				?.pages[0].blocks.find((block) => block.type === "text");
-			const mapping = identity.identity.sourceMappings.find((entry) => entry.id === node?.id);
-			if (!node || !mapping) throw Error("Missing source mapping");
-			expect(
-				await session.invoke("operationApply", {
-					transactionId: "compiled-refusal",
-					operation: "editSource",
-					files: [
-						{
-							path: "lesson.prax",
-							baseRevision: createHash("sha256").update(publicSource).digest("hex"),
-						},
-					],
-					targets: [
-						{
-							file: "lesson.prax",
-							ref: {
-								kind: "node",
-								nodeId: node.id,
-								path: mapping.path,
-								fingerprint: mapping.fingerprint,
-							},
-							expectedText: publicSource.slice(mapping.span.start, mapping.span.end),
-						},
-					],
-					args: { text: "::: text {name=publicText}\nRevised.\n" },
-				}),
-			).toMatchObject({ ok: true });
-		} else {
-			vi.spyOn(PreviewScheduler.prototype, "refresh").mockRejectedValue(error);
-			await writeFile(
-				path.join(root, "lesson.prax"),
-				publicSource.replace("Public\n", "Revised.\n"),
-			);
-			mocks.watcher?.emit("all", "change", path.join(root, "lesson.prax"));
-		}
+		vi.spyOn(PreviewScheduler.prototype, "refresh").mockRejectedValue(error);
+		await writeFile(path.join(root, "lesson.prax"), `${publicSource}\nChanged.\n`);
+		mocks.watcher?.emit("all", "change", path.join(root, "lesson.prax"));
 		await vi.waitFor(() =>
 			expect(events).toContainEqual(
 				expect.objectContaining({
@@ -973,42 +848,6 @@ async function textEdit(root: string, text: string, type = "text") {
 	};
 }
 
-it("a queued commit refresh does not hide a later watcher event for real outside bytes", async () => {
-	const root = await fixture();
-	const session = await createStudioProjectSession(root, "test");
-	sessions.push(session);
-	const events: StudioEvent[] = [];
-	session.subscribe((event) => events.push(event));
-	const operation = await textEdit(root, "::: text {name=publicText}\nRevised.\n");
-	vi.useFakeTimers({ toFake: ["setImmediate", "clearImmediate"] });
-	expect(await session.invoke("operationApply", operation)).toMatchObject({ ok: true });
-	const outside = (await readFile(path.join(root, "lesson.prax"), "utf8")).replace(
-		"Revised.",
-		"Outside.",
-	);
-	await writeFile(path.join(root, "lesson.prax"), outside);
-	await vi.runAllTimersAsync();
-	await vi.waitFor(async () =>
-		expect(await session.invoke("previewStats", {})).toMatchObject({ contextSeq: 1 }),
-	);
-	const watched = new Promise<void>((resolve) => {
-		const disconnect = session.subscribe((event) => {
-			if (event.type === "treeChanged") {
-				disconnect();
-				resolve();
-			}
-		});
-	});
-	mocks.watcher?.emit("all", "change", path.join(root, "lesson.prax"));
-	await watched;
-	expect(events).toContainEqual({
-		type: "grammarChanged",
-		filename: "lesson.prax",
-		grammar: outside,
-	});
-	expect(events.filter((event) => event.type === "editorChanged")).toHaveLength(1);
-});
-
 it("an editor commit repairs a logic refusal and publishes the retained private choice", async () => {
 	const root = await fixture(fixtureSource(21));
 	const session = await createStudioProjectSession(root, "test");
@@ -1022,7 +861,8 @@ it("an editor commit repairs a logic refusal and publishes the retained private 
 		}),
 	);
 	const operation = await textEdit(root, "::: text\nRepaired.\n", "logic");
-	expect(await session.invoke("operationApply", operation)).toMatchObject({ ok: true });
+	expect(await new OperationService(root).apply(operation)).toMatchObject({ ok: true });
+	mocks.watcher?.emit("all", "change", path.join(root, "lesson.prax"));
 	await vi.waitFor(async () =>
 		expect(await session.invoke("previewStats", {})).toMatchObject({ contextSeq: 1 }),
 	);

@@ -12,6 +12,14 @@ The author host and learner host have different authority. Session lifecycle mus
 
 2026-11-22: `studio/review-bootstrap.ts` now owns the Read review payload and assets, independently of Edit-link composition, ahead of removing the browser editor. This extraction preserves response bytes and headers.
 
+2026-11-22: The session no longer registers source, operation, history, draft,
+clipboard, metadata or browser narration APIs. Its preview sequence starts at
+zero and advances for admitted outside changes and failed admissions, preserving
+Read build ordering without a session OperationService. Startup identity
+persistence and interrupted-write recovery retain their existing write transaction.
+CLI operations, inspection, recovery readers and review storage keep their owners.
+The browser identity confirmation form and session-only draft receipts are retired.
+
 ### src/main/cli.ts
 
 - `writeIdentityNotice`: Standalone hosts flush this notice before identity replacement.
@@ -184,6 +192,8 @@ browser source-write transport. Its former constraints remain historical rationa
 
 ### src/main/studio/narration-policy.ts
 
+Historical owner, removed on 2026-11-22 with browser narration registration.
+
 - `studioNarrationStatus`: Browser sessions disclose availability only. Credentials never cross the
   bridge.
   Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
@@ -228,6 +238,10 @@ browser source-write transport. Its former constraints remain historical rationa
 - `refresh`: Fence running work before sending an optimistic fragment for the new seq.
 
 ### src/main/studio/project-session.ts
+
+The save, operation-commit, draft and browser-confirmation entries below record
+the retired session APIs. Startup identity recovery, watcher admission, Read
+compilation, diagnostics and close/drain remain current.
 
 - `createStudioProjectSession`: Capture the session scope before opening an admission. Deferred jobs
   must acquire fresh locks, never inherit a released T1 AsyncLocalStorage scope.

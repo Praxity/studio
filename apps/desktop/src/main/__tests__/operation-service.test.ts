@@ -124,16 +124,14 @@ afterEach(async () => {
 });
 
 it.each(Object.getOwnPropertyNames(Object.prototype))(
-	"S1 RPC refuses inherited setting name %s without writes",
+	"S1 service refuses inherited setting name %s without writes",
 	async (name) => {
-		const { root } = await fixture();
-		const session = await createStudioProjectSession(root, "test");
-		sessions.push(session);
+		const { root, service } = await fixture();
 		const input = await request(root);
 		input.args = { name, value: "warning" };
 		const before = await bytes(root);
-		for (const method of ["operationResolve", "operationApply"]) {
-			expect(await session.invoke(method, JSON.parse(JSON.stringify(input)))).toMatchObject({
+		for (const method of ["resolve", "apply"] as const) {
+			expect(await service[method](JSON.parse(JSON.stringify(input)))).toMatchObject({
 				ok: false,
 				code: "invalid-args",
 			});
@@ -1023,29 +1021,6 @@ it.each([
 	const before = await bytes(root);
 	expect(await service.apply(input)).toMatchObject({ ok: false, code: "invalid-args" });
 	expect(await bytes(root)).toEqual(before);
-});
-
-it("S1 admits operationApply, operationResolve and historyApply through session RPC", async () => {
-	const { root } = await fixture();
-	const session = await createStudioProjectSession(root, "test");
-	sessions.push(session);
-	const input = await request(root);
-	const before = await bytes(root);
-	expect(await session.invoke("operationResolve", input)).toMatchObject({ ok: true });
-	expect(await bytes(root)).toEqual(before);
-	const result = (await session.invoke("operationApply", input)) as {
-		ok: boolean;
-		historyId: string;
-	};
-	expect(result.ok).toBe(true);
-	expect(
-		await session.invoke("historyApply", {
-			transactionId: randomUUID(),
-			historyId: result.historyId,
-			direction: "undo",
-		}),
-	).toMatchObject({ ok: true });
-	expect(await readFile(join(root, "lesson.prax"), "utf8")).toBe(source);
 });
 
 const canvasSource =
@@ -2516,15 +2491,12 @@ it("C03 refuses another-block disk edit without watcher delivery or identity wri
 	expect(await bytes(root)).toEqual(before);
 });
 
-it.each(["service", "RPC"])(
+it.each(["service"])(
 	"C03 %s refuses forged canvas operations and fields with zero writes",
 	async (transport) => {
 		const { root, service } = await fixture({ "lesson.prax": canvasSource });
-		const session =
-			transport === "RPC" ? await createStudioProjectSession(root, "test") : undefined;
-		if (session) sessions.push(session);
-		const invoke = (args: unknown) =>
-			session ? session.invoke("canvasTextApply", args) : service.canvasTextApply(args);
+
+		const invoke = (args: unknown) => service.canvasTextApply(args);
 		const field = (await service.canvasTextSnapshot()).fields.find(
 			(field) => field.kind === "heading",
 		);
@@ -2579,7 +2551,7 @@ it("C03 maps generated page-title RPC saves to the owning page subject", async (
 	const { root, service } = await fixture({ "lesson.prax": canvasSource });
 	const session = await createStudioProjectSession(root, "test");
 	sessions.push(session);
-	const snapshot = (await session.invoke("canvasTextSnapshot", {})) as Awaited<
+	const snapshot = (await service.canvasTextSnapshot()) as Awaited<
 		ReturnType<OperationService["canvasTextSnapshot"]>
 	>;
 	const field = snapshot.fields.find((field) => field.kind === "page");
@@ -2589,7 +2561,7 @@ it("C03 maps generated page-title RPC saves to the owning page subject", async (
 	expect(lesson?.nodes.get(field.nodeId)).toMatchObject({ role: "title", node: { kind: "page" } });
 	expect(field.nodeId).not.toBe(field.ownerId);
 	const ids = [...(lesson?.nodes.keys() ?? [])];
-	const result = await session.invoke("canvasTextApply", canvasInput(field, "Emergency response"));
+	const result = await service.canvasTextApply(canvasInput(field, "Emergency response"));
 	expect(result, JSON.stringify(result)).toMatchObject({
 		ok: true,
 	});
@@ -2818,11 +2790,11 @@ it("keeps compile-only choice trees out of narration and editor RPC payloads", a
 	const { root, service } = await fixture({ "lesson.prax": projectedChoiceSource });
 	const session = await createStudioProjectSession(root, "test");
 	sessions.push(session);
-	const narration = (await session.invoke("narrationAuthoringRead", {
-		filename: "lesson.prax",
-	})) as {
-		document: Awaited<ReturnType<typeof readNarrationAuthoring>>["documents"][number];
-	};
+	const document = (await readNarrationAuthoring(root)).documents.find(
+		(doc) => doc.filename === "lesson.prax",
+	);
+	if (!document) throw new Error("Missing narration document");
+	const narration = { document };
 	expect(
 		narration.document.pages.some((page) =>
 			page.blocks.some((block) => block.type === "assessment"),
@@ -2836,9 +2808,14 @@ it("keeps compile-only choice trees out of narration and editor RPC payloads", a
 				: method === "courseLoad"
 					? { courseDir: root }
 					: {};
-		expect(JSON.stringify(await session.invoke(method, args)), method).not.toMatch(
-			compilerMetadata,
-		);
+		expect(
+			JSON.stringify(
+				method === "canvasTextSnapshot"
+					? await service.canvasTextSnapshot()
+					: await session.invoke(method, args),
+			),
+			method,
+		).not.toMatch(compilerMetadata);
 	}
 	expect(JSON.stringify(await service.canvasTextSnapshot())).not.toMatch(compilerMetadata);
 });

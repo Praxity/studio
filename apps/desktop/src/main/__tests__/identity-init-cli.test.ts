@@ -20,6 +20,7 @@ import {
 } from "../export/build-export-input-from-project";
 import { estimateProjectScorm12Storage } from "../export/export-project";
 import { loadIdentityStore } from "../identity-store";
+import { writeLessonSource } from "../lesson-source";
 import { createStudioProjectSession } from "../studio/project-session";
 
 const runtime = { appVersion: "test", exportAssetsDir: "unused" };
@@ -214,12 +215,12 @@ describe.each([false, true])("duplicate re-derivation, saved pending=%s", (saved
 		await writeFile(join(root, "first.prax"), "# First\n\nRepeated.\n");
 		if (savedPending) {
 			const studio = await createStudioProjectSession(root, "test");
-			await studio.invoke("courseWriteLesson", {
-				courseDir: root,
-				filename: "first.prax",
-				grammar: "# First\n\nRepeated.\n",
-				expectedGrammar: "# First\n\nRepeated.\n",
-			});
+			await writeLessonSource(
+				root,
+				"first.prax",
+				"# First\n\nRepeated.\n",
+				"# First\n\nRepeated.\n",
+			);
 			await studio.close();
 			expect(
 				(await loadIdentityStore(root)).snapshots.some((snapshot) =>

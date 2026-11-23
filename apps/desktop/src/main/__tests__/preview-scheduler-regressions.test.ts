@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { mkdtemp, readFile, rm, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -205,56 +205,6 @@ it("a new invalid unlisted lesson does not freeze later valid edits", async () =
 	});
 });
 
-it("a valid lesson commit retains another lesson's parser diagnostics", async () => {
-	const good = "# Good\n\nBefore.\n";
-	const { root, session, events } = await fixture({
-		"course.yaml": "title: Course\nlessons:\n  - good.prax\n  - bad.prax\n",
-		"good.prax": good,
-		"bad.prax": "# Bad\n\nFine.\n",
-	});
-	const initial = await resolveLessonSources(root);
-	const badPage = initial.lessons.get("bad.prax")?.pages[0]?.id;
-	const goodPage = initial.lessons.get("good.prax")?.pages[0]?.id;
-	if (!badPage || !goodPage) throw Error("Missing lesson pages");
-	await session.invoke("previewSelectPage", { pageId: badPage });
-	await eventFor(events, (e) => e.type === "pageCompiled");
-	await session.invoke("previewSelectPage", { pageId: goodPage });
-	await writeFile(join(root, "bad.prax"), "# Bad\n\n::: note Broken\nUnclosed.\n");
-	await eventFor(events, (e) => e.type === "compileFailed");
-	await eventFor(events, (e) => e.type === "grammarChanged" && e.filename === "bad.prax");
-	const identity = await resolveLessonSources(root);
-	const node = identity.identity.sourceMappings.find(
-		(n) => n.file === "good.prax" && n.path.join() === "0,0",
-	);
-	if (!node) throw Error("Missing good text node");
-	events.length = 0;
-	expect(
-		await session.invoke("operationApply", {
-			transactionId: randomUUID(),
-			operation: "editSource",
-			files: [{ path: "good.prax", baseRevision: createHash("sha256").update(good).digest("hex") }],
-			targets: [
-				{
-					file: "good.prax",
-					ref: { kind: "node", nodeId: node.id, path: node.path, fingerprint: node.fingerprint },
-					expectedText: good.slice(node.span.start, node.span.end),
-				},
-			],
-			args: { text: "Committed." },
-		}),
-	).toMatchObject({
-		ok: true,
-		render: {
-			fragments: [expect.objectContaining({ html: expect.stringContaining("Committed.") })],
-		},
-	});
-	await eventFor(events, (e) => e.type === "pageCompiled" && e.patch.pageId === goodPage);
-	events.length = 0;
-	await session.invoke("previewSelectPage", { pageId: badPage });
-	await eventFor(events, (e) => e.type === "pageCompiled" && e.patch.pageId === badPage);
-	expect(events.some((e) => e.type === "compileFailed" && e.pageId === badPage)).toBe(true);
-}, 20_000);
-
 it.each(["delete", "rename", "move"] as const)(
 	"review: stale running compile is fenced after page %s",
 	async (change) => {
@@ -316,37 +266,6 @@ it("review: dispose clears a scheduled trailing timer and blocks an in-flight de
 	const count = events.length;
 	await vi.runAllTimersAsync();
 	expect(events).toHaveLength(count);
-});
-
-it("review: accepted insertBlock float must not mark a valid page failed", async () => {
-	const source = "# Page\n\nBefore.\n";
-	const { root, session, events } = await fixture({ "lesson.prax": source });
-	await session.invoke("previewSelectPage", {});
-	await eventFor(events, (e) => e.type === "pageCompiled");
-	events.length = 0;
-	const identity = await resolveLessonSources(root);
-	const page = identity.identity.sourceMappings.find((n) => n.path.join() === "0");
-	const last = identity.identity.sourceMappings.find((n) => n.path.join() === "0,0");
-	if (!page || !last) throw Error("Missing source targets");
-	const result = await session.invoke("operationApply", {
-		transactionId: randomUUID(),
-		operation: "insertBlock",
-		files: [
-			{ path: "lesson.prax", baseRevision: createHash("sha256").update(source).digest("hex") },
-		],
-		targets: [
-			{
-				file: "lesson.prax",
-				ref: { kind: "insertion", parentId: page.id, after: last.id, before: null },
-			},
-		],
-		args: {
-			text: "::: float {side=left}\n![Picture](https://example.com/picture.png)\nText beside picture.\n:::\n",
-		},
-	});
-	expect(result).toMatchObject({ ok: true });
-	await eventFor(events, (e) => e.type === "pageCompiled" && e.patch.seq === 1);
-	expect(events.filter((e) => e.type === "compileFailed")).toEqual([]);
 });
 
 it("container drafts retain admitted child IDs without writing source or identity", async () => {

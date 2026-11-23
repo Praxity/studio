@@ -1,22 +1,18 @@
-import { createHash, randomUUID } from "node:crypto";
-import { cp, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
-import { get } from "node:http";
+import { randomUUID } from "node:crypto";
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { JSDOM } from "jsdom";
 import { afterEach, expect, it } from "vitest";
-import { runPraxityCli } from "../cli";
 import {
 	identityRetirements,
 	initializeCourseIdentity,
 	loadIdentityStore,
 	resolveCourseIdentity,
 } from "../identity-store";
+import { OperationService } from "../operations/operation-service";
 import { withProjectFileTransaction } from "../project-file-transactions";
-import { renderIdentityReview } from "../studio/identity-review";
 import { createStudioProjectSession } from "../studio/project-session";
 import { type StudioServer, startStudioServer } from "../studio/server";
-import { sessionResult } from "./fixtures/studio-session";
 
 const paragraph = "# First\n\nAlpha paragraph about safety.\n\nBeta paragraph about tools.\n";
 const accordion = "# First\n\n::: accordion\n:: One\nFirst body.\n:: Two\nSecond body.\n:::\n";
@@ -91,9 +87,7 @@ it.each(cases)(
 		expect((await session.identityReview()).revision).toBe(review.revision);
 		expect((await session.readSnapshot()).project.grammar).toBe(after);
 		expect(await bytes(projectDir)).toEqual(original);
-		await expect(
-			session.invoke("projectSave", { grammar: `${after}\n`, expectedGrammar: after }),
-		).rejects.toMatchObject({ code: "identity_retirement_pending" });
+
 		expect(await bytes(projectDir)).toEqual(original);
 		await session.close();
 		sessions.splice(sessions.indexOf(session), 1);
@@ -130,37 +124,6 @@ it.each([
 	expect(await bytes(projectDir)).toEqual(stable);
 });
 
-it.each(["en", "fr"])(
-	"refuses %s writes after an outside retirement until confirmation",
-	async (locale) => {
-		const before = "# First\n\n## Heading\n\nOriginal body.\n";
-		const after = "# First\n\n## Heading\n\nA wholly different explanation.\n";
-		const { projectDir } = await fixture(before, before, locale);
-		const session = await createStudioProjectSession(projectDir, "test");
-		sessions.push(session);
-		await writeFile(join(projectDir, "first.prax"), after);
-		const original = await bytes(projectDir);
-		expect((await session.readSnapshot()).project.grammar).toBe(after);
-		await expect(
-			session.invoke("projectSave", {
-				grammar: after.replace("Heading", "Saved heading"),
-				expectedGrammar: after,
-			}),
-		).rejects.toMatchObject({ code: "identity_retirement_pending" });
-		expect(await bytes(projectDir)).toEqual(original);
-		const review = await session.identityReview();
-		expect(review.retirements.map((item) => item.label)).toEqual(["Original body."]);
-		await session.confirmIdentityRetirements(review.revision);
-		await session.invoke("projectSave", {
-			grammar: `${after}\nA further block.\n`,
-			expectedGrammar: after,
-		});
-		expect(await readFile(join(projectDir, "first.prax"), "utf8")).toBe(
-			"# First\n\n## Heading\n\nA wholly different explanation.\n\nA further block.\n",
-		);
-	},
-);
-
 it("keeps an ambiguous duplicate transient without a retirement gate", async () => {
 	const after = `${paragraph}\nAlpha paragraph about safety.\n`;
 	const files = await fixture(paragraph, after);
@@ -187,119 +150,6 @@ it("keeps an ambiguous duplicate transient without a retirement gate", async () 
 	expect(await readFile(join(files.projectDir, "first.prax"), "utf8")).toBe(after);
 });
 
-it.each(
-	["en", "fr"].flatMap((locale) =>
-		["projectSave", "courseWriteLesson"].flatMap((method) =>
-			[false, true].map((outsideAddition) => ({ locale, method, outsideAddition })),
-		),
-	),
-)(
-	"refuses a $locale $method draft retirement honestly and admits an addition, outside addition $outsideAddition",
-	async ({ locale, method, outsideAddition }) => {
-		const files = await fixture(paragraph, paragraph, locale);
-		const server = await startStudioServer(files);
-		servers.push(server);
-		const session = await createStudioProjectSession(
-			files.projectDir,
-			"test",
-			undefined,
-			undefined,
-			locale as "en" | "fr",
-		);
-		sessions.push(session);
-		const current = outsideAddition ? `${paragraph}\nAn outside addition.\n` : paragraph;
-		if (outsideAddition) await writeFile(join(files.projectDir, "first.prax"), current);
-		const original = await bytes(files.projectDir);
-		const save = async (grammar: string) => {
-			const result = await sessionResult(session, method, {
-				...(method === "courseWriteLesson"
-					? { courseDir: files.projectDir, filename: "first.prax" }
-					: {}),
-				grammar,
-				expectedGrammar: current,
-			});
-			return { status: result.status, json: async () => result };
-		};
-		const refused = await save(
-			current.replace("Alpha paragraph about safety.", "A completely different explanation."),
-		);
-		expect(refused.status).toBe(409);
-		const body = await refused.json();
-		expect(body.error).toMatchObject({
-			code: "identity_draft_retirement",
-			message:
-				locale === "fr"
-					? 'Cet enregistrement retirerait du contenu enregistré : first.prax: First; "Alpha paragraph about safety.". Gardez ce texte, ou faites la modification dans le canevas, où Studio en garde la trace.'
-					: 'This save would remove saved content: first.prax: First; "Alpha paragraph about safety.". Keep that text, or make the change in the canvas, where Studio keeps track of it.',
-			details: {
-				retirements: [
-					{ file: "first.prax", page: "First", label: "Alpha paragraph about safety.", line: null },
-				],
-			},
-		});
-		expect(body.error).not.toHaveProperty("reviewUrl");
-		expect(await bytes(files.projectDir)).toEqual(original);
-		expect((await fetch(`${server.origin}/launch`, { redirect: "manual" })).status).toBe(303);
-		const addition = `${current}\nA new block.\n`;
-		expect((await save(addition)).status).toBe(200);
-		expect(await readFile(join(files.projectDir, "first.prax"), "utf8")).toBe(addition);
-	},
-);
-
-it.each(["source save", "recorded canvas edit"])(
-	"refuses an outside deletion in another lesson before %s",
-	async (writer) => {
-		const first = "# First\n\n## Heading\n\nFirst body.\n";
-		const { projectDir } = await fixture(first, first);
-		await writeFile(
-			join(projectDir, "course.yaml"),
-			"title: Test\nlessons: [first.prax, second.prax]\n",
-		);
-		await writeFile(
-			join(projectDir, "second.prax"),
-			"# Second\n\nRetained body.\n\nRemoved body.\n",
-		);
-		await initializeCourseIdentity(projectDir, ["first.prax", "second.prax"]);
-		const session = await createStudioProjectSession(projectDir, "test");
-		sessions.push(session);
-		const snapshot = (await session.invoke("canvasTextSnapshot", {})) as {
-			fields: { file: string; nodeId: string; field: string; text: string; baseRevision: string }[];
-		};
-		const heading = snapshot.fields.find((field) => field.text === "Heading");
-		if (!heading) throw new Error("Missing heading fixture binding");
-		await writeFile(join(projectDir, "second.prax"), "# Second\n\nRetained body.\n");
-		const before = await bytes(projectDir);
-		const saving =
-			writer === "source save"
-				? session.invoke("courseWriteLesson", {
-						courseDir: projectDir,
-						filename: "first.prax",
-						grammar: `${first}\nNew paragraph.\n`,
-						expectedGrammar: first,
-					})
-				: session.invoke("canvasTextApply", {
-						transactionId: randomUUID(),
-						operation: "setText",
-						file: heading.file,
-						nodeId: heading.nodeId,
-						field: heading.field,
-						baseRevision: heading.baseRevision,
-						expectedText: heading.text,
-						text: "Saved heading",
-					});
-		if (writer === "source save")
-			await expect(saving).rejects.toMatchObject({ code: "identity_retirement_pending" });
-		else
-			await expect(saving).resolves.toMatchObject({
-				ok: false,
-				code: "identity-retirement-pending",
-				reviewUrl: "/launch",
-				retirements: [{ file: "second.prax", page: "Second", label: "Removed body.", line: null }],
-			});
-		expect(await bytes(projectDir)).toEqual(before);
-	},
-);
-
 it("validates malformed frontmatter before confirmation and opens it without persisting", async () => {
 	const malformed = "---\ntitle: Broken\n\n# Changed\n";
 	const { projectDir } = await fixture(paragraph, malformed);
@@ -309,17 +159,7 @@ it("validates malformed frontmatter before confirmation and opens it without per
 	expect((await session.readSnapshot()).project.grammar).toBe(malformed);
 	const review = await session.identityReview();
 	expect(review.retirements).toEqual([]);
-	await expect(session.confirmIdentityRetirements(review.revision)).rejects.toMatchObject({
-		code: "bad_yaml",
-	});
-	expect(
-		await session.invoke("manifestEdit", {
-			file: "first.prax",
-			baseRevision: createHash("sha256").update(malformed).digest("hex"),
-			path: ["design", "colorAccent"],
-			value: "#123456",
-		}),
-	).toMatchObject({ ok: false, code: "invalid-args" });
+
 	expect(await bytes(projectDir)).toEqual(before);
 });
 
@@ -351,92 +191,6 @@ it("opens and renders preview beside fresh invalid source without writing it or 
 	expect(await preview.text()).toContain("Alpha paragraph about safety.");
 	expect(await authored()).toEqual(before);
 	expect(await bytes(join(projectDir, ".praxity/identity"))).toEqual(identity);
-});
-
-it("admits Read and a retained service edit to a valid lesson while another stays invalid and opaque", async () => {
-	const first = "# First\n\n## Heading\n\nStable saved paragraph.\n";
-	const second = "# Second\n\nSaved other paragraph.\n";
-	const invalid = "# Second\n\n::: note\nUnclosed.\n";
-	const files = await fixture(first, first);
-	const { projectDir } = files;
-	await writeFile(
-		join(projectDir, "course.yaml"),
-		"title: Test\nlessons: [first.prax, second.prax]\n",
-	);
-	await writeFile(join(projectDir, "second.prax"), second);
-	await initializeCourseIdentity(projectDir, ["first.prax", "second.prax"]);
-	const head = (await loadIdentityStore(projectDir)).heads.find(
-		(item) => item.path === "second.prax",
-	);
-	if (!head) throw new Error("Missing invalid lesson fixture head");
-	const snapshotPath = join(projectDir, ".praxity/identity/snapshots", `${head.head}.json`);
-	const { lessonId } = JSON.parse(await readFile(snapshotPath, "utf8")) as { lessonId: string };
-	const opaquePaths = [
-		join(projectDir, ".praxity/identity/lessons", `${lessonId}.json`),
-		snapshotPath,
-	];
-	const opaque = await Promise.all(opaquePaths.map((path) => readFile(path)));
-	await writeFile(join(projectDir, "second.prax"), invalid);
-	const original = await bytes(join(projectDir, ".praxity/identity"));
-	const server = await startStudioServer({
-		...files,
-		exportAssetsDir: join(import.meta.dirname, "../../../resources/export-assets"),
-	});
-	servers.push(server);
-	const document = await fetch(`${server.origin}/launch?canvas=read`);
-	expect(document.status).toBe(200);
-	const html = await document.text();
-	expect(html).toContain("Heading");
-	expect(await bytes(join(projectDir, ".praxity/identity"))).toEqual(original);
-	const session = await createStudioProjectSession(projectDir, "test");
-	sessions.push(session);
-	const firstHead = (await loadIdentityStore(projectDir)).heads.find(
-		(item) => item.path === "first.prax",
-	);
-	if (!firstHead) throw new Error("Missing valid lesson identity");
-	const firstSnapshot = JSON.parse(
-		await readFile(
-			join(projectDir, ".praxity/identity/snapshots", `${firstHead.head}.json`),
-			"utf8",
-		),
-	);
-	const scope = {
-		editorSeq: 0,
-		file: "first.prax",
-		lessonId: firstSnapshot.lessonId,
-		pageId: "first",
-		pageIds: ["first"],
-		pageIndex: 0,
-	};
-	const rpc = async (method: string, args: unknown) => {
-		const result = await session.invoke(method, args, scope);
-		return { status: 200, json: async () => ({ ok: true, result }) };
-	};
-	const snapshotResponse = await rpc("canvasTextSnapshot", {});
-	expect(snapshotResponse.status).toBe(200);
-	const snapshot = (await snapshotResponse.json()).result as {
-		fields: { file: string; nodeId: string; field: string; text: string; baseRevision: string }[];
-	};
-	expect(snapshot.fields.every((field) => field.file === "first.prax")).toBe(true);
-	const heading = snapshot.fields.find((field) => field.text === "Heading");
-	if (!heading) throw new Error("Missing valid heading fixture binding");
-	const saved = await rpc("canvasTextApply", {
-		transactionId: randomUUID(),
-		operation: "setText",
-		file: heading.file,
-		nodeId: heading.nodeId,
-		field: heading.field,
-		baseRevision: heading.baseRevision,
-		expectedText: heading.text,
-		text: "Saved heading",
-	});
-	expect(saved.status).toBe(200);
-	expect(await saved.json()).toMatchObject({ ok: true, result: { ok: true } });
-	expect(await readFile(join(projectDir, "first.prax"), "utf8")).toBe(
-		first.replace("## Heading", "## Saved heading"),
-	);
-	expect(await readFile(join(projectDir, "second.prax"), "utf8")).toBe(invalid);
-	expect(await Promise.all(opaquePaths.map((path) => readFile(path)))).toEqual(opaque);
 });
 
 const svgDataImage = "![Chart](data:image/svg+xml,%3Csvg%3E%3C/svg%3E)";
@@ -507,56 +261,6 @@ it.each([
 	},
 );
 
-it.each(["en", "fr"])(
-	"refuses %s duplicate plus rewrite without retiring the duplicate",
-	async (locale) => {
-		const after =
-			"# First\n\nAlpha paragraph about safety.\n\nA wholly different explanation.\n\nAlpha paragraph about safety.\n";
-		const files = await fixture(paragraph, after, locale);
-		const { projectDir } = files;
-		const original = await bytes(projectDir);
-		const session = await createStudioProjectSession(projectDir, "test");
-		sessions.push(session);
-		const review = await session.identityReview();
-		expect(review.retirements.map((node) => node.label)).toEqual(["Beta paragraph about tools."]);
-		await expect(
-			session.invoke("projectSave", { grammar: after, expectedGrammar: after }),
-		).rejects.toMatchObject({ code: "identity_retirement_pending" });
-		await expect(session.confirmIdentityRetirements(review.revision)).rejects.toMatchObject({
-			code: "identity_duplicate_pending",
-		});
-		expect(await bytes(projectDir)).toEqual(original);
-	},
-);
-
-it("escapes located source repair text in the blocked gate", () => {
-	const page = renderIdentityReview(
-		{
-			locale: "en",
-			revision: "0".repeat(64),
-			confirmationBlocked: true,
-			retirements: [],
-			sourceError: {
-				code: "source_invalid",
-				file: "<img src=x>.prax",
-				line: 3,
-				message: "Fix <script>text</script>.",
-			},
-		},
-		"token",
-	);
-	const dom = new JSDOM(page.html);
-	try {
-		expect(dom.window.document.querySelector("#review-source-error")?.textContent).toBe(
-			"<img src=x>.prax: Line 3. Fix <script>text</script>.",
-		);
-		expect(dom.window.document.querySelector("img")).toBeNull();
-		expect(dom.window.document.querySelectorAll("script")).toHaveLength(1);
-	} finally {
-		dom.window.close();
-	}
-});
-
 it("reports retirements through the shared owner without UUID labels", async () => {
 	const { projectDir } = await fixture(accordion, "# First\n\nA replacement.\n");
 	await withProjectFileTransaction(
@@ -570,114 +274,6 @@ it("reports retirements through the shared owner without UUID labels", async () 
 		},
 		"write",
 	);
-});
-
-it.each([false, true])(
-	"renders hostile diagnostic text without admitting authored HTML or scripts, mixed %s",
-	(confirmationBlocked) => {
-		const payload =
-			'</li><img src=x onerror="globalThis.attacked=true"><script>globalThis.attacked=true</script>';
-		const page = renderIdentityReview(
-			{
-				locale: "en",
-				revision: "0".repeat(64),
-				confirmationBlocked,
-				duplicate: { file: payload, line: 1 },
-				retirements: [
-					{
-						file: payload,
-						kind: "block",
-						page: payload,
-						label: payload,
-						id: "old-id",
-						line: null,
-						span: { start: 0, end: 1 },
-					},
-				],
-			},
-			payload,
-		);
-		const dom = new JSDOM(page.html);
-		try {
-			expect(dom.window.document.querySelector("ul")?.textContent).toContain(payload);
-			if (confirmationBlocked)
-				expect(dom.window.document.querySelector("#review-duplicates")?.textContent).toContain(
-					payload,
-				);
-			expect(dom.window.document.querySelectorAll("img")).toHaveLength(0);
-			expect(dom.window.document.querySelectorAll("script")).toHaveLength(1);
-			expect(dom.window.document.querySelector("script")?.getAttribute("nonce")).toBe(page.nonce);
-		} finally {
-			dom.window.close();
-		}
-	},
-);
-
-it("confirmed retirement matches CLI re-derivation and preserves source and kept IDs", async () => {
-	const after =
-		"# First\n\nAlpha paragraph about safety rules.\n\nBrand new block.\n\nBeta paragraph about tools.\n";
-	const { projectDir } = await fixture(paragraph, after);
-	const reference = await mkdtemp(join(tmpdir(), "studio-identity-reference-"));
-	roots.push(reference);
-	await cp(projectDir, reference, { recursive: true });
-	const oldIds = new Set(
-		(await loadIdentityStore(projectDir)).snapshots.flatMap((snapshot) =>
-			Object.keys(snapshot.nodes),
-		),
-	);
-	const original = await bytes(projectDir);
-	const session = await createStudioProjectSession(projectDir, "test");
-	sessions.push(session);
-	const review = await session.identityReview();
-	expect(await bytes(projectDir)).toEqual(original);
-	expect(await session.confirmIdentityRetirements(review.revision)).toMatchObject({
-		changed: true,
-	});
-	const confirmed = await loadIdentityStore(projectDir);
-	const nodes = Object.fromEntries(
-		confirmed.snapshots.flatMap((snapshot) => Object.entries(snapshot.nodes)),
-	);
-	for (const item of review.retirements) expect(nodes[item.id]?.status).toBe("retired");
-	expect(Object.keys(nodes).filter((id) => !oldIds.has(id))).toHaveLength(2);
-	expect((await session.identityReview()).retirements).toEqual([]);
-	expect(await readFile(join(projectDir, "first.prax"), "utf8")).toBe(after);
-	const cli = await runPraxityCli(
-		["identity", "init", reference, "--rederive", "--confirm-unpublished"],
-		{ appVersion: "test", exportAssetsDir: "unused" },
-	);
-	expect(cli.exitCode).toBe(0);
-	const normalize = (store: typeof confirmed) => {
-		const ids = new Map(store.heads.map((head) => [head.head, `head:${head.path}`]));
-		for (const snapshot of store.snapshots)
-			for (const [id, node] of Object.entries(snapshot.nodes))
-				if (!oldIds.has(id))
-					ids.set(
-						id,
-						`new:${node.kind}:${node.type}:${node.span.start}:${node.span.end}:${node.order}`,
-					);
-		const replace = (value: unknown): unknown => {
-			if (typeof value === "string") return ids.get(value) ?? value;
-			if (Array.isArray(value)) return value.map(replace);
-			if (value && typeof value === "object")
-				return Object.fromEntries(
-					Object.entries(value).map(([key, item]) => [ids.get(key) ?? key, replace(item)]),
-				);
-			return value;
-		};
-		return replace({
-			...store,
-			heads: [...store.heads].sort((a, b) => a.path.localeCompare(b.path)),
-			snapshots: [...store.snapshots].sort((a, b) => a.lessonId.localeCompare(b.lessonId)),
-		});
-	};
-	expect(normalize(confirmed)).toEqual(normalize(await loadIdentityStore(reference)));
-	const stable = await bytes(projectDir);
-	await session.close();
-	sessions.pop();
-	const reopened = await createStudioProjectSession(projectDir, "test");
-	sessions.push(reopened);
-	expect((await reopened.identityReview()).retirements).toEqual([]);
-	expect(await bytes(projectDir)).toEqual(stable);
 });
 
 it.each(["en", "fr"] as const)(
@@ -725,3 +321,90 @@ it.each(["en", "fr"] as const)(
 		expect(await bytes(files.projectDir)).toEqual(original);
 	},
 );
+
+it("admits Read and a retained service edit to a valid lesson while another stays invalid and opaque", async () => {
+	const first = "# First\n\n## Heading\n\nStable saved paragraph.\n";
+	const second = "# Second\n\nSaved other paragraph.\n";
+	const invalid = "# Second\n\n::: note\nUnclosed.\n";
+	const files = await fixture(first, first);
+	const { projectDir } = files;
+	await writeFile(
+		join(projectDir, "course.yaml"),
+		"title: Test\nlessons: [first.prax, second.prax]\n",
+	);
+	await writeFile(join(projectDir, "second.prax"), second);
+	await initializeCourseIdentity(projectDir, ["first.prax", "second.prax"]);
+	const head = (await loadIdentityStore(projectDir)).heads.find(
+		(item) => item.path === "second.prax",
+	);
+	if (!head) throw new Error("Missing invalid lesson fixture head");
+	const snapshotPath = join(projectDir, ".praxity/identity/snapshots", `${head.head}.json`);
+	const { lessonId } = JSON.parse(await readFile(snapshotPath, "utf8")) as { lessonId: string };
+	const opaquePaths = [
+		join(projectDir, ".praxity/identity/lessons", `${lessonId}.json`),
+		snapshotPath,
+	];
+	const opaque = await Promise.all(opaquePaths.map((path) => readFile(path)));
+	await writeFile(join(projectDir, "second.prax"), invalid);
+	const original = await bytes(join(projectDir, ".praxity/identity"));
+	const server = await startStudioServer({
+		...files,
+		exportAssetsDir: join(import.meta.dirname, "../../../resources/export-assets"),
+	});
+	servers.push(server);
+	const document = await fetch(`${server.origin}/launch?canvas=read`);
+	expect(document.status).toBe(200);
+	const html = await document.text();
+	expect(html).toContain("Heading");
+	expect(await bytes(join(projectDir, ".praxity/identity"))).toEqual(original);
+	const session = await createStudioProjectSession(projectDir, "test");
+	sessions.push(session);
+	const firstHead = (await loadIdentityStore(projectDir)).heads.find(
+		(head) => head.path === "first.prax",
+	);
+	if (!firstHead) throw new Error("Missing valid lesson identity");
+	const firstSnapshot = JSON.parse(
+		await readFile(
+			join(projectDir, ".praxity/identity/snapshots", `${firstHead.head}.json`),
+			"utf8",
+		),
+	);
+	const service = new OperationService(projectDir);
+	const rpc = async (method: string, args: unknown) => {
+		const result =
+			method === "canvasTextSnapshot"
+				? await service.canvasTextSnapshot({
+						file: "first.prax",
+						lessonId: firstSnapshot.lessonId,
+						pageId: "first",
+						pageIndex: 0,
+					})
+				: await service.canvasTextApply(args);
+		return { status: 200, json: async () => ({ ok: true, result }) };
+	};
+	const snapshotResponse = await rpc("canvasTextSnapshot", {});
+	expect(snapshotResponse.status).toBe(200);
+	const snapshot = (await snapshotResponse.json()).result as {
+		fields: { file: string; nodeId: string; field: string; text: string; baseRevision: string }[];
+	};
+	expect(snapshot.fields.every((field) => field.file === "first.prax")).toBe(true);
+	const heading = snapshot.fields.find((field) => field.text === "Heading");
+	if (!heading) throw new Error("Missing valid heading fixture binding");
+	const saved = await rpc("canvasTextApply", {
+		transactionId: randomUUID(),
+		operation: "setText",
+		file: heading.file,
+		nodeId: heading.nodeId,
+		field: heading.field,
+		baseRevision: heading.baseRevision,
+		expectedText: heading.text,
+		text: "Saved heading",
+	});
+	expect(saved.status).toBe(200);
+	expect(await saved.json()).toMatchObject({ ok: true, result: { ok: true } });
+	expect(await readFile(join(projectDir, "first.prax"), "utf8")).toBe(
+		first.replace("## Heading", "## Saved heading"),
+	);
+	expect(await readFile(join(projectDir, "second.prax"), "utf8")).toBe(invalid);
+	expect(await Promise.all(opaquePaths.map((path) => readFile(path)))).toEqual(opaque);
+});

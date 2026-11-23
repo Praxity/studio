@@ -10,7 +10,6 @@ import {
 	resolveCourseIdentity,
 } from "../identity-store";
 import { resolveLessonSources, writeLessonSource } from "../lesson-source";
-import { editManifest } from "../operations/manifest-editor";
 import { OperationService } from "../operations/operation-service";
 import { withProjectFileTransaction } from "../project-file-transactions";
 import { createStudioProjectSession, type StudioEvent } from "../studio/project-session";
@@ -131,7 +130,7 @@ it("a real watcher returns an outside-retirement refusal without an error event 
 	sessions.push(session);
 	const events: StudioEvent[] = [];
 	session.subscribe((event) => events.push(event));
-	const snapshot = (await session.invoke("canvasTextSnapshot", {})) as Awaited<
+	const snapshot = (await new OperationService(root).canvasTextSnapshot()) as Awaited<
 		ReturnType<OperationService["canvasTextSnapshot"]>
 	>;
 	const heading = snapshot.fields.find((field) => field.text === "Heading");
@@ -144,7 +143,7 @@ it("a real watcher returns an outside-retirement refusal without an error event 
 	);
 	const original = await bytes(root);
 	expect(
-		await session.invoke("canvasTextApply", {
+		await new OperationService(root).canvasTextApply({
 			transactionId: randomUUID(),
 			operation: "setText",
 			file: heading.file,
@@ -264,29 +263,6 @@ it("canvas outside-loss refusal is a coded result with unchanged storage", async
 		reviewUrl: "/launch",
 	});
 	expect(await bytes(root)).toEqual(original);
-});
-
-it("invalid lesson design metadata edits save exact bytes and leave identity unchanged", async () => {
-	const root = await fixture();
-	const source = `---\ntitle: Other\ndesign: { colorAccent: red }\n---\n\n${bad}`;
-	await writeFile(join(root, "bad.prax"), source);
-	const original = await bytes(root);
-	expect(
-		await editManifest(root, {
-			file: "bad.prax",
-			baseRevision: createHash("sha256").update(source).digest("hex"),
-			path: ["design", "colorAccent"],
-			value: "blue",
-		}),
-	).toMatchObject({ ok: true });
-	expect(await readFile(join(root, "bad.prax"), "utf8")).toBe(
-		source.replace("colorAccent: red", "colorAccent: blue"),
-	);
-	const identity = (files: Record<string, string>) =>
-		Object.fromEntries(
-			Object.entries(files).filter(([path]) => path.startsWith(".praxity/identity/")),
-		);
-	expect(identity(await bytes(root))).toEqual(identity(original));
 });
 
 it.each(["course", "head"])(

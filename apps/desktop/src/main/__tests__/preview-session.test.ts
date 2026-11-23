@@ -1,4 +1,3 @@
-import { createHash, randomUUID } from "node:crypto";
 import {
 	cp,
 	mkdtemp,
@@ -12,21 +11,9 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, expect, it, vi } from "vitest";
-import type { EditorOperationResult } from "../../shared/editor-session";
+import { afterEach, expect, it } from "vitest";
 import { persistFixtureIdentity } from "../../test-utils/identity-fixture";
-import { resolveLessonSources } from "../lesson-source";
-import { withProjectFileFlushes } from "../project-file-transactions";
 import { createStudioProjectSession, type StudioEvent } from "../studio/project-session";
-
-function withCountingFlushes<Args extends unknown[]>(work: (...args: Args) => Promise<void>) {
-	return async (...args: Args) => {
-		const flushes = { syncFile: vi.fn(async () => {}), syncDirectory: vi.fn(async () => {}) };
-		await withProjectFileFlushes(flushes, () => work(...args));
-		expect(flushes.syncFile).toHaveBeenCalled();
-		expect(flushes.syncDirectory).toHaveBeenCalled();
-	};
-}
 
 const roots: string[] = [];
 const sessions: Awaited<ReturnType<typeof createStudioProjectSession>>[] = [];
@@ -55,61 +42,7 @@ async function waitFor(events: StudioEvent[], predicate: (event: StudioEvent) =>
 	}
 	throw new Error("Preview event missed T6's 1 s deadline");
 }
-async function applyNoteTone() {
-	const { root, session } = await fixture();
-	const current = await resolveLessonSources(root);
-	const node = current.identity.sourceMappings.find(
-		(node) => node.file === "lesson.prax" && node.path.join() === "0,0",
-	);
-	if (!node) throw new Error("Missing note");
-	const request = {
-		transactionId: randomUUID(),
-		operation: "setProperty",
-		files: [
-			{ path: "lesson.prax", baseRevision: createHash("sha256").update(source).digest("hex") },
-		],
-		targets: [
-			{
-				file: "lesson.prax",
-				ref: { kind: "node", nodeId: node.id, path: node.path, fingerprint: node.fingerprint },
-				expectedText: source.slice(node.span.start, node.span.end),
-			},
-		],
-		args: { name: "tone", value: "warning" },
-	};
-	const result = (await session.invoke("operationApply", request)) as EditorOperationResult;
-	return { session, request, node, result };
-}
 
-it(
-	"T2 operationApply returns new node HTML and a monotonic seq; refusal does not advance",
-	withCountingFlushes(async () => {
-		const { session, request, node, result } = await applyNoteTone();
-		expect(result).toMatchObject({
-			ok: true,
-			seq: 1,
-			render: { seq: 1, fragments: [{ id: node.id, html: expect.stringContaining("warning") }] },
-		});
-		expect(await session.invoke("operationApply", request)).toMatchObject({ ok: false });
-	}),
-	15_000,
-);
-
-it(
-	"T2 historyApply after an operation advances the render seq",
-	withCountingFlushes(async () => {
-		const { session, result } = await applyNoteTone();
-		if (!result.ok) throw new Error("Operation refused");
-		expect(
-			await session.invoke("historyApply", {
-				transactionId: randomUUID(),
-				historyId: result.historyId,
-				direction: "undo",
-			}),
-		).toMatchObject({ ok: true, seq: 2, render: { seq: 2 } });
-	}),
-	13_182,
-);
 it("T6 watcher admits an outside revision and compiles the visible page", async () => {
 	const { root, session, events } = await fixture();
 	const selected = (await session.invoke("previewSelectPage", {})) as { pageId: string };
@@ -119,7 +52,11 @@ it("T6 watcher admits an outside revision and compiles the visible page", async 
 	const event = await waitFor(events, (event) => event.type === "pageCompiled");
 	expect(event).toMatchObject({
 		type: "pageCompiled",
-		patch: { pageId: selected.pageId, fragments: [{ html: expect.stringContaining("Outside.") }] },
+		patch: {
+			seq: 1,
+			pageId: selected.pageId,
+			fragments: [{ html: expect.stringContaining("Outside.") }],
+		},
 	});
 });
 

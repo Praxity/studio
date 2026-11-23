@@ -1,8 +1,7 @@
 import { AsyncResource } from "node:async_hooks";
-import { createHash, randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 import { lstat, stat } from "node:fs/promises";
 import path from "node:path";
-import { isDeepStrictEqual } from "node:util";
 import {
 	type CourseContextChanges,
 	EmptyCourseError,
@@ -21,27 +20,13 @@ import { LEARNER_STATE_MAX_BYTES } from "@praxity/shared-blocks/learner-state";
 import { watch } from "chokidar";
 import { createTranslator } from "use-intl/core";
 import { z } from "zod";
-import type { CanvasPageScope } from "../../shared/editor-session";
-import {
-	clipboardPutSchema,
-	type DraftPersistenceOperation,
-	type DraftPersistenceReceipt,
-	draftPersistenceSubmitSchema,
-	parseEditorInput,
-	previewRenderDraftSchema,
-} from "../../shared/editor-session";
+import { parseEditorInput } from "../../shared/editor-session";
 import {
 	courseLessonSchema,
 	courseLoadSchema,
 	coursePreviewBuildSchema,
-	courseWriteLessonSchema,
-	grammarSourceSchema,
-	narrationAuthoringReadSchema,
-	narrationAuthoringWriteSchema,
-	narrationCleanupSchema,
 	studioLessonFilenameSchema,
 } from "../../shared/ipc-schemas";
-import { NARRATION_SIDECAR_PATH, parseNarrationSidecarV2 } from "../../shared/narration-sidecar";
 import { previewMessages } from "../../shared/preview-messages";
 import {
 	NarrationTargetUnresolvedError,
@@ -60,14 +45,12 @@ import {
 } from "../export/build-export-input-from-project";
 import { ProjectExportError } from "../export/export-project";
 import { ProjectAssetInventory } from "../export/project-asset-inventory";
-import { formatIdentityAdvice } from "../identity-init-cli";
 import {
 	CourseIdentitySession,
 	IdentityRetirementError,
 	IdentitySourceError,
 	identitySourceError,
 	identityWriteRetirements,
-	initializeCourseIdentity,
 	persistCourseIdentity,
 	type ResolvedCourseIdentity,
 } from "../identity-store";
@@ -75,30 +58,16 @@ import {
 	readLessonSource,
 	resolveLessonSources,
 	resolveLessonSourcesForWrite,
-	writeLessonSource,
 } from "../lesson-source";
-import {
-	cleanupNarrationRecordings,
-	readNarrationAuthoring,
-	writeNarrationAuthoring,
-} from "../narration-authoring";
 import { readEditorSnapshot } from "../operations/block-inspection";
-import { LocalEditorStore } from "../operations/local-editor-store";
-import { editManifest } from "../operations/manifest-editor";
-import { OperationService, operationTransactionId } from "../operations/operation-service";
 import {
 	assertAllowedProjectRoot,
 	assertSamePath,
-	readFileWithin,
 	resolveExistingPathWithin,
 } from "../path-security";
 import { listProjectAssets } from "../project-assets";
 import { readProjectConfig, resolveCompletionSettings } from "../project-config";
-import {
-	acknowledgeProjectWrite,
-	projectRecoveryArchives,
-	withProjectFileTransaction,
-} from "../project-file-transactions";
+import { projectRecoveryArchives, withProjectFileTransaction } from "../project-file-transactions";
 import { readProjectTree } from "../project-tree";
 import { browserExportSchema, StudioExportService } from "./export-service";
 import {
@@ -106,33 +75,15 @@ import {
 	type StudioIdentityReview,
 	sourceErrorMessage,
 } from "./identity-review";
-import { studioNarrationStatus } from "./narration-policy";
 import {
 	type CanvasPracticeDiagnostic,
 	canvasPracticeDiagnostics,
 	canvasPracticeRefusalText,
-	canvasSourceLocation,
 	previewDiagnostics,
 } from "./preview-diagnostics";
-import {
-	type PreviewDraftIdentity,
-	PreviewScheduler,
-	type PreviewSchedulerEvent,
-} from "./preview-scheduler";
+import { PreviewScheduler, type PreviewSchedulerEvent } from "./preview-scheduler";
 
 const emptyArgs = z.object({}).strict();
-const projectSaveSchema = z
-	.object({
-		grammar: grammarSourceSchema,
-		expectedGrammar: grammarSourceSchema,
-	})
-	.strict();
-const lessonWriteSchema = courseWriteLessonSchema
-	.extend({
-		expectedGrammar: grammarSourceSchema,
-	})
-	.strict();
-
 export class StudioSessionError extends Error {
 	constructor(
 		readonly status: number,
@@ -173,10 +124,9 @@ export async function createStudioProjectSession(
 	const identitySession = new CourseIdentitySession(root);
 	const assetInventory = new ProjectAssetInventory(root);
 	const admittedSources = new Map<string, string>();
-	const committedSources = new Map<string, string>();
+	let previewSequence = 0;
 	const admittedPages = new Map<string, string[]>();
 	const goodLessons = new Map<string, ReadLessonResult>();
-	let draftIdentity: PreviewDraftIdentity | undefined;
 	const operationTimings: Partial<Record<"snapshot" | "plan" | "commit", number>> = {};
 	let inputMs = 0;
 	let outsideTiming: { watcherEventAt: number; admissionMs: number; inputMs: number } | undefined;
@@ -186,13 +136,6 @@ export async function createStudioProjectSession(
 				[...identity.lessons].map(([path, read]) => ({ path, read })),
 			).map((diagnostic) => diagnostic.file),
 		);
-		draftIdentity = {
-			admission: identity,
-			files: [...identity.lessons].map(([path, read]) => ({
-				path,
-				source: lessonSourceText(read),
-			})),
-		};
 		admittedSources.clear();
 		for (const file of goodLessons.keys())
 			if (!identity.lessons.has(file)) {
@@ -213,7 +156,6 @@ export async function createStudioProjectSession(
 	let closed = false;
 	let pendingChanges = Promise.resolve();
 	const listeners = new Set<(event: StudioEvent) => void>();
-	let draftSubscriptionEpoch = 0;
 	const publish = (event: StudioEvent) => {
 		if (!closed) for (const listener of listeners) listener(event);
 	};
@@ -300,9 +242,7 @@ export async function createStudioProjectSession(
 
 	let scheduler: PreviewScheduler;
 	let locale: "en" | "fr" = "en";
-	async function identityReview(
-		purpose: "entry" | "confirmation" = "entry",
-	): Promise<StudioIdentityReview> {
+	async function identityReview(): Promise<StudioIdentityReview> {
 		return withProjectFileTransaction(
 			root,
 			async () => {
@@ -317,8 +257,6 @@ export async function createStudioProjectSession(
 					line: problem.line,
 					message: sourceErrorMessage(locale, problem),
 				};
-				if (sourceError && purpose === "confirmation")
-					throw new StudioSessionError(422, sourceError.code, sourceError.message);
 				const duplicate = result.identity.unresolved.find((node) => node.reason === "duplicate");
 				const duplicateRead = duplicate && result.lessons.get(duplicate.file);
 				if (duplicate && !duplicateRead) throw new Error("Missing duplicate source admission");
@@ -492,65 +430,6 @@ export async function createStudioProjectSession(
 		false,
 	);
 	const selectedLesson = initial.orderedLessons[0];
-	const operations = new OperationService(
-		root,
-		identitySession,
-		async (result, identity) => {
-			publish({ type: "editorChanged", seq: result.seq });
-			const previousPages = result.files
-				.filter((file) => file.fromRevision !== file.toRevision)
-				.flatMap((file) => goodLessons.get(file.path)?.pages ?? []);
-			rememberSources(identity);
-			for (const file of result.files)
-				if (file.fromRevision !== file.toRevision) committedSources.set(file.path, file.toRevision);
-			try {
-				assertCoursePracticeAdmission(
-					[...identity.lessons].map(([path, read]) => ({ path, read })),
-				);
-				const files = result.files
-					.filter((file) => file.fromRevision !== file.toRevision)
-					.map((file) => file.path);
-				const render = scheduler.renderCommitted(
-					result.seq,
-					previousPages,
-					files.flatMap((file) => identity.lessons.get(file)?.pages ?? []),
-				);
-				scheduler.enqueueRefresh(result.seq, async () => {
-					await withProjectFileTransaction(
-						root,
-						async () => {
-							const current = await resolveLessonSources(root, {}, { identitySession });
-							await refreshPreview(current, result.seq, undefined, false);
-							rememberSources(current);
-						},
-						"read",
-					);
-				});
-				return render;
-			} catch (error) {
-				scheduler.fail(result.seq, previewDiagnostics(error));
-				return undefined;
-			}
-		},
-		(stage, ms) => {
-			operationTimings[stage] = ms;
-		},
-	);
-	const localEditor = new LocalEditorStore(root);
-	const draftPersistenceServiceId = randomUUID();
-	type DraftAttempt =
-		| { state: "fenced" }
-		| { state: "evicted" }
-		| {
-				state: "running";
-				operation: DraftPersistenceOperation;
-				completion: Promise<DraftPersistenceReceipt>;
-		  }
-		| { state: "terminal"; operation: DraftPersistenceOperation; receipt: DraftPersistenceReceipt };
-	const draftAttempts = new Map<string, DraftAttempt>();
-	const terminalAttempts: string[] = [];
-	const terminalReceiptLimit = 128;
-
 	async function readSnapshot() {
 		return withProjectFileTransaction(root, readSessionSnapshot, "read");
 	}
@@ -572,113 +451,11 @@ export async function createStudioProjectSession(
 			project,
 			appVersion,
 			exportEnforced: exports?.enforced ?? true,
-			editorSeq: operations.sequence(),
+			editorSeq: previewSequence,
 		};
 	}
 
-	async function save(filename: string, source: string, expectedSource: string) {
-		try {
-			return await acknowledgeProjectWrite(
-				withProjectFileTransaction(
-					root,
-					async () => {
-						await authorizeLesson(filename);
-						return writeLessonSource(root, filename, source, expectedSource);
-					},
-					"write",
-				),
-			);
-		} catch (error) {
-			if (error instanceof Error && error.message.includes("changed on disk")) {
-				throw new StudioSessionError(409, "source_conflict", t("sessionRefusals.conflict"));
-			}
-			throw error;
-		}
-	}
-
 	const methods = new Map<string, (args: unknown) => Promise<unknown>>([
-		[
-			"narrationCleanup",
-			async (args) => {
-				const { paths, currentSource } = narrationCleanupSchema.parse(args);
-				return cleanupNarrationRecordings(root, paths, currentSource);
-			},
-		],
-		[
-			"narrationAuthoringRead",
-			async (args) => {
-				const { filename, source } = narrationAuthoringReadSchema.parse(args);
-				return withProjectFileTransaction(
-					root,
-					async () => {
-						await authorizeLessonSnapshot(filename);
-						const view = await readNarrationAuthoring(
-							root,
-							source === undefined ? {} : { [filename]: source },
-						);
-						const document = view.documents.find((doc) => doc.filename === filename);
-						if (!document) throw new Error("Unknown narration lesson");
-						return { sidecar: view.sidecar, source: view.source, document };
-					},
-					"read",
-				);
-			},
-		],
-		[
-			"narrationAuthoringWrite",
-			async (args) => {
-				const { source, expectedSource } = narrationAuthoringWriteSchema.parse(args);
-				return writeNarrationAuthoring(root, parseNarrationSidecarV2(source), expectedSource);
-			},
-		],
-
-		[
-			"narrationStatus",
-			async (args) => {
-				emptyArgs.parse(args);
-				return studioNarrationStatus(process.env);
-			},
-		],
-		[
-			"projectReadTextFile",
-			async (args) => {
-				const { relativePath } = z
-					.object({
-						relativePath: z
-							.string()
-							.transform((filename) =>
-								path.isAbsolute(filename) ? path.relative(root, filename) : filename,
-							)
-							.pipe(z.enum(["course.yaml", NARRATION_SIDECAR_PATH])),
-					})
-					.strict()
-					.parse(args);
-				return withProjectFileTransaction(
-					root,
-					async () => {
-						let present: boolean;
-						try {
-							present = await optionalInput(relativePath);
-						} catch {
-							throw new StudioSessionError(
-								403,
-								"path_forbidden",
-								t("sessionRefusals.metadataPath"),
-							);
-						}
-						if (!present) {
-							throw new StudioSessionError(
-								404,
-								"file_not_found",
-								t("sessionRefusals.metadataMissing"),
-							);
-						}
-						return readFileWithin(root, path.join(root, relativePath), "utf8");
-					},
-					"read",
-				);
-			},
-		],
 		[
 			"configRead",
 			async (args) => {
@@ -691,13 +468,6 @@ export async function createStudioProjectSession(
 			async (args) => {
 				emptyArgs.parse(args);
 				return readProjectTree(root);
-			},
-		],
-		[
-			"projectSave",
-			async (args) => {
-				const input = projectSaveSchema.parse(args);
-				return save(selectedLesson, input.grammar, input.expectedGrammar);
 			},
 		],
 		[
@@ -718,33 +488,7 @@ export async function createStudioProjectSession(
 				return readLesson(root, input.filename);
 			},
 		],
-		[
-			"courseWriteLesson",
-			async (args) => {
-				const input = lessonWriteSchema.parse(args);
-				await authorizeRoot(input.courseDir);
-				return save(input.filename, input.grammar, input.expectedGrammar);
-			},
-		],
 	]);
-	methods.set("operationApply", async (args) => {
-		const transactionId = operationTransactionId(args);
-		try {
-			const result = await operations.apply(args);
-			scheduler.settleDraft(result.transactionId, result.ok);
-			return result;
-		} catch (error) {
-			scheduler.settleDraft(transactionId, false);
-			throw error;
-		}
-	});
-	methods.set("previewRenderDraft", async (args) => {
-		const request = parseEditorInput(previewRenderDraftSchema, args);
-		const page = [...goodLessons.values()]
-			.flatMap((read) => read.pages)
-			.find((page) => page.id === request.pageId);
-		return scheduler.renderDraft(request, page ?? null, draftIdentity);
-	});
 	methods.set("previewSelectPage", async (args) => {
 		const { pageId } = z
 			.object({ pageId: z.string().min(1).optional() })
@@ -768,121 +512,10 @@ export async function createStudioProjectSession(
 			outsideTiming,
 		};
 	});
-	methods.set("operationResolve", (args) => operations.resolve(args));
-	methods.set("canvasTextSnapshot", (args) => {
-		parseEditorInput(emptyArgs, args);
-		return operations.canvasTextSnapshot();
-	});
-	methods.set("canvasTextApply", (args) => operations.canvasTextApply(args));
 	methods.set("editorSnapshot", async (args) => {
 		parseEditorInput(emptyArgs, args);
-		return readEditorSnapshot(root, identitySession, () => operations.sequence());
+		return readEditorSnapshot(root, identitySession, () => previewSequence);
 	});
-	methods.set("historyApply", (args) => operations.historyApply(args));
-	methods.set("draftResolve", (args) => operations.draftResolve(args));
-	methods.set("draftPut", (args) => localEditor.draftPut(args));
-	methods.set("draftDelete", (args) => localEditor.draftDelete(args));
-	methods.set("draftPersistenceSession", async (args) => {
-		emptyArgs.parse(args);
-		return { serviceId: draftPersistenceServiceId };
-	});
-	methods.set("draftPersistenceSubmit", async (args) => {
-		const { serviceId, attemptId, operation } = parseEditorInput(
-			draftPersistenceSubmitSchema,
-			args,
-		);
-		const identity = { serviceId, attemptId };
-		if (serviceId !== draftPersistenceServiceId)
-			return {
-				...identity,
-				state: "unavailable",
-				reason: "service-lifetime",
-			} satisfies DraftPersistenceReceipt;
-		const prior = draftAttempts.get(attemptId);
-		if (prior?.state === "evicted")
-			return {
-				...identity,
-				state: "unavailable",
-				reason: "evicted",
-			} satisfies DraftPersistenceReceipt;
-		if (prior?.state === "fenced")
-			return { ...identity, state: "fenced" } satisfies DraftPersistenceReceipt;
-		if (prior) {
-			if (!isDeepStrictEqual(prior.operation, operation))
-				return {
-					...identity,
-					state: "unavailable",
-					reason: "attempt-conflict",
-				} satisfies DraftPersistenceReceipt;
-			return structuredClone(prior.state === "terminal" ? prior.receipt : await prior.completion);
-		}
-		const completion = localEditor.draftPersist(operation).then((outcome) => {
-			const receipt = {
-				...identity,
-				state: "terminal",
-				operation,
-				outcome,
-			} satisfies DraftPersistenceReceipt;
-			draftAttempts.set(attemptId, { state: "terminal", operation, receipt });
-			terminalAttempts.push(attemptId);
-			while (terminalAttempts.length > terminalReceiptLimit) {
-				const evicted = terminalAttempts.shift();
-				if (evicted) draftAttempts.set(evicted, { state: "evicted" });
-			}
-			return receipt;
-		});
-		draftAttempts.set(attemptId, { state: "running", operation, completion });
-		return structuredClone(await completion);
-	});
-	methods.set("draftPersistenceReconcile", async (args) => {
-		const { serviceId, attemptId, operation } = parseEditorInput(
-			draftPersistenceSubmitSchema,
-			args,
-		);
-		const identity = { serviceId, attemptId };
-		if (serviceId !== draftPersistenceServiceId)
-			return {
-				...identity,
-				state: "unavailable",
-				reason: "service-lifetime",
-			} satisfies DraftPersistenceReceipt;
-		const prior = draftAttempts.get(attemptId);
-		if (!prior) {
-			draftAttempts.set(attemptId, { state: "fenced" });
-			return { ...identity, state: "fenced" } satisfies DraftPersistenceReceipt;
-		}
-		if (prior.state === "fenced")
-			return { ...identity, state: "fenced" } satisfies DraftPersistenceReceipt;
-		if (prior.state === "evicted")
-			return {
-				...identity,
-				state: "unavailable",
-				reason: "evicted",
-			} satisfies DraftPersistenceReceipt;
-		if (!isDeepStrictEqual(prior.operation, operation))
-			return {
-				...identity,
-				state: "unavailable",
-				reason: "attempt-conflict",
-			} satisfies DraftPersistenceReceipt;
-		return structuredClone(prior.state === "terminal" ? prior.receipt : await prior.completion);
-	});
-	methods.set("draftList", async (args) => {
-		parseEditorInput(emptyArgs, args);
-		return localEditor.draftList();
-	});
-	methods.set("clipboardGet", async (args) => {
-		parseEditorInput(emptyArgs, args);
-		return localEditor.clipboardGet();
-	});
-	methods.set("clipboardPut", async (args) =>
-		localEditor.clipboardPut(parseEditorInput(clipboardPutSchema, args).clipboard),
-	);
-	methods.set("clipboardDiscard", async (args) => {
-		parseEditorInput(emptyArgs, args);
-		return localEditor.clipboardPut(null);
-	});
-	methods.set("manifestEdit", (args) => editManifest(root, args));
 	methods.set("assetList", async (args) => {
 		parseEditorInput(emptyArgs, args);
 		return listProjectAssets(root);
@@ -893,7 +526,7 @@ export async function createStudioProjectSession(
 			const data = await manifestData();
 			const refusalLocale = data.manifest.locale?.startsWith("fr") ? "fr" : "en";
 			try {
-				return await preview.buildCanvas(identitySession, operations.sequence());
+				return await preview.buildCanvas(identitySession, previewSequence);
 			} catch (error) {
 				const diagnostics = canvasPracticeDiagnostics(error);
 				if (!diagnostics) throw error;
@@ -915,7 +548,7 @@ export async function createStudioProjectSession(
 				.parse(args);
 			if (request) await authorizeLesson(request.lessonFilename);
 			else await manifestData();
-			return preview.build(request, identitySession, format, operations.sequence());
+			return preview.build(request, identitySession, format, previewSequence);
 		});
 		const leaseSchema = z.object({ leaseId: z.string().uuid() }).strict();
 		for (const [method, operation] of [
@@ -1030,7 +663,7 @@ export async function createStudioProjectSession(
 						filename === "praxity.json"
 					) {
 						let previewSeq: number | undefined;
-						let sourceEcho = false;
+
 						try {
 							await withProjectFileTransaction(
 								root,
@@ -1041,14 +674,13 @@ export async function createStudioProjectSession(
 											const source = await readLessonSource(root, filename);
 											const hash = createHash("sha256").update(source).digest("hex");
 											if (hash === admittedSources.get(filename)) {
-												sourceEcho = hash === committedSources.get(filename);
 												return;
 											}
 										} else identitySession.invalidate();
 									}
 									const identity = await resolveLessonSources(root, {}, { identitySession });
 									const admissionMs = performance.now() - admittedAt;
-									const seq = operations.admitOutsideChange();
+									const seq = ++previewSequence;
 									publish({ type: "editorChanged", seq });
 									previewSeq = seq;
 									await refreshPreview(
@@ -1066,9 +698,8 @@ export async function createStudioProjectSession(
 								},
 								"read",
 							);
-							if (sourceEcho) return;
 						} catch (error) {
-							const failureSeq = previewSeq ?? operations.admitOutsideChange();
+							const failureSeq = previewSeq ?? ++previewSequence;
 							if (previewSeq === undefined) publish({ type: "editorChanged", seq: failureSeq });
 							scheduler.fail(
 								failureSeq,
@@ -1105,80 +736,12 @@ export async function createStudioProjectSession(
 		cancelExport: () => exports?.cancel(),
 		readSnapshot,
 		identityReview,
-		async confirmIdentityRetirements(revision: string) {
-			return withProjectFileTransaction(
-				root,
-				async () => {
-					const assertReviewed = async () => {
-						const review = await identityReview("confirmation");
-						if (review.revision !== revision)
-							throw new StudioSessionError(
-								409,
-								"identity_review_changed",
-								identityReviewMessages[locale].stale,
-							);
-						if (review.confirmationBlocked)
-							throw new StudioSessionError(
-								409,
-								"identity_duplicate_pending",
-								formatIdentityAdvice(
-									identityReviewMessages[locale].duplicates,
-									undefined,
-									review.duplicate,
-								),
-							);
-					};
-					await assertReviewed();
-					const data = await manifestData();
-					const result = await initializeCourseIdentity(root, data.lessonFilesOnDisk, {
-						rederive: true,
-						beforeWrite: assertReviewed,
-					});
-					identitySession.invalidate();
-					const seq = operations.admitOutsideChange();
-					publish({ type: "editorChanged", seq });
-					try {
-						const identity = await resolveLessonSources(root, {}, { identitySession });
-						rememberSources(identity);
-						await refreshPreview(identity, seq, undefined, false);
-					} catch (error) {
-						scheduler.fail(seq, previewDiagnostics(error));
-					}
-					return result;
-				},
-				"write",
-			);
-		},
-		async invoke(method: string, args: unknown, canvasPageScope?: CanvasPageScope) {
+		async invoke(method: string, args: unknown) {
 			if (closed) throw new StudioSessionError(503, "session_closed", t("serverRefusals.closing"));
 			const operation = methods.get(method);
 			if (!operation)
 				throw new StudioSessionError(404, "method_not_allowed", t("sessionRefusals.method"));
 			try {
-				if (canvasPageScope && method === "canvasTextSnapshot") {
-					parseEditorInput(emptyArgs, args);
-					const snapshot = await operations.canvasTextSnapshot(canvasPageScope);
-					const error = snapshot.sourceError;
-					const canvasLocale = snapshot.locale.startsWith("fr") ? "fr" : "en";
-					return {
-						...snapshot,
-						sourceRefusal: snapshot.lessonMissing
-							? previewMessages[canvasLocale].lessonGone
-							: error
-								? canvasSourceLocation(
-										error,
-										previewMessages[canvasLocale][
-											error.code === "detached-feedback" ? "detachedFeedback" : "sourceError"
-										],
-										canvasLocale,
-									)
-								: undefined,
-						servedSeq: canvasPageScope.editorSeq,
-						servedSourceRevisions: canvasPageScope.sourceRevisions,
-					};
-				}
-				if (canvasPageScope && method === "canvasTextApply")
-					return await operations.canvasTextApply(args, canvasPageScope);
 				return await operation(args);
 			} catch (error) {
 				if (error instanceof NarrationTargetUnresolvedError)
@@ -1211,13 +774,9 @@ export async function createStudioProjectSession(
 			}
 		},
 		subscribe(listener: (event: StudioEvent) => void) {
-			scheduler.endDraftSubscription();
-			const epoch = ++draftSubscriptionEpoch;
 			listeners.add(listener);
 			scheduler.replayFailures(listener);
 			return () => {
-				if (listeners.has(listener) && epoch === draftSubscriptionEpoch)
-					scheduler.endDraftSubscription();
 				listeners.delete(listener);
 			};
 		},
@@ -1228,12 +787,7 @@ export async function createStudioProjectSession(
 			listeners.clear();
 			const results = [
 				...(await Promise.allSettled([watcher.close(), pendingChanges])),
-				...(await Promise.allSettled([
-					scheduler.drained(),
-					...[...draftAttempts.values()].flatMap((attempt) =>
-						attempt.state === "running" ? [attempt.completion] : [],
-					),
-				])),
+				...(await Promise.allSettled([scheduler.drained()])),
 				...(await Promise.allSettled([exports?.close(), preview?.dispose()])),
 			];
 			const errors = results.flatMap((result) =>

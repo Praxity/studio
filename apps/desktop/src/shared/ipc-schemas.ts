@@ -6,19 +6,6 @@ export const grammarSourceSchema = z
 	.string()
 	.max(5_000_000, "String must contain at most 5000000 character(s)");
 
-export const narrationAuthoringReadSchema = z
-	.object({
-		filename: z.string().regex(/^[^/\\:\x00-\x1f]+\.prax$/i),
-		source: grammarSourceSchema.optional(),
-	})
-	.strict();
-export const narrationAuthoringWriteSchema = z
-	.object({
-		source: grammarSourceSchema,
-		expectedSource: grammarSourceSchema.nullable(),
-	})
-	.strict();
-
 export const projectConfigSchema = z.object({
 	version: z.number().int().positive(),
 	export: z.object({
@@ -96,13 +83,6 @@ export const narrationAttachSchema = z.object({
 	kind: z.enum(["audio", "timings"]),
 	script: z.string().max(5_000).optional(),
 });
-export const narrationCleanupSchema = z.object({
-	paths: z
-		.array(z.string().regex(/^assets\/narration\/narration-[a-f0-9]{12}\.(?:mp3|vtt)$/u))
-		.max(2),
-	currentSource: z.string().max(5_000_000),
-});
-
 export const filePathSchema = z
 	.string()
 	.min(1)
@@ -167,11 +147,6 @@ export const courseLessonSchema = z.object({
 export const studioLessonFilenameSchema = courseLessonSchema.shape.filename.refine(
 	(filename) => !filename.startsWith(".") && !/[:\x00-\x1f]/u.test(filename),
 );
-
-export const courseWriteLessonSchema = courseLessonSchema.extend({
-	grammar: z.string().max(5_000_000),
-	expectedGrammar: z.string().max(5_000_000).optional(),
-});
 
 export const courseCreateLessonSchema = z.object({
 	courseDir: z.string().min(1),

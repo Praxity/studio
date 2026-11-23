@@ -295,11 +295,6 @@ it.each(["empty", "ambiguous"])("localizes project-session startup refusal: %s",
 });
 it.each([
 	["/api/rpc", { method: "missing", args: {} }, "La méthode n’est pas disponible"],
-	[
-		"/api/rpc",
-		{ method: "projectReadTextFile", args: { relativePath: "narration.yaml" } },
-		"ENOENT : les métadonnées du projet sont absentes",
-	],
 ] as const)("localizes retained %s session refusal body=%j (fr)", async (url, body, message) => {
 	const f = await fixture();
 	const result = await runPraxityCli(["studio", f.projectDir, "--lang", "fr"], {

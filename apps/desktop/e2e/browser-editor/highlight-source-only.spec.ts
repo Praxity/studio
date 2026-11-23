@@ -2,7 +2,8 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { expect, type Page, test } from "@playwright/test";
 import type { SCORMRuntime } from "../../../../packages/export-pipeline/src/scorm/types";
-import { createStudioProjectSession } from "../../src/main/studio/project-session";
+import { OperationService } from "../../src/main/operations/operation-service";
+import { canvasSourceLocation } from "../../src/main/studio/preview-diagnostics";
 import { previewMessages } from "../../src/shared/preview-messages";
 import { startJourney } from "./global-setup";
 
@@ -125,28 +126,18 @@ for (const [lang, width, theme] of [
 			const root = page.locator("[data-highlight]");
 			const good = await root.innerHTML();
 			await writeFile(file, updated.replace("{key}", '{key="true"}'));
-			const session = await createStudioProjectSession(invalidRoot, "test");
-			try {
-				const snapshot = (await session.invoke(
-					"canvasTextSnapshot",
-					{},
-					{
-						editorSeq: 0,
-						file: "second.prax",
-						lessonId: "lesson",
-						pageId: "page",
-						pageIds: ["page"],
-						pageIndex: 0,
-					},
-				)) as { sourceRefusal?: string };
-				expect(snapshot.sourceRefusal).toBe(
-					(lang === "fr"
-						? "second.prax, ligne 9, colonne 38 : "
-						: "second.prax, line 9, column 35: ") + messages.sourceError,
-				);
-			} finally {
-				await session.close();
-			}
+			const snapshot = await new OperationService(invalidRoot).canvasTextSnapshot({
+				file: "second.prax",
+				lessonId: "lesson",
+				pageId: "page",
+				pageIndex: 0,
+			});
+			if (!snapshot.sourceError) throw new Error("Missing source diagnostic");
+			expect(canvasSourceLocation(snapshot.sourceError, messages.sourceError, lang)).toBe(
+				(lang === "fr"
+					? "second.prax, ligne 9, colonne 38 : "
+					: "second.prax, line 9, column 35: ") + messages.sourceError,
+			);
 			expect(await root.innerHTML()).toBe(good);
 			await writeFile(file, recovered);
 			await page.goto(invalidReady);

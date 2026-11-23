@@ -1,8 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { editManifest } from "../../../apps/desktop/src/main/operations/manifest-editor.ts";
 import { applyOperation, operationRegistry } from "../../operations/src/index.ts";
 import { applyEdits, setFrontmatterPath, setYamlPath } from "../src/source-edit.ts";
 import {
@@ -145,47 +141,4 @@ describe.each(sourceEditCorpus)("byte contract: $name", (entry) => {
 		outsideRange(source, next, { start, end: start + 3 });
 		expect(Buffer.from(next)).toEqual(Buffer.from(source.replace("red # keep", "blue # keep")));
 	});
-
-	it.each(["lesson.prax", "course.yaml"])(
-		"manifest editor preserves %s or returns a coded refusal without writes",
-		async (file) => {
-			const root = await mkdtemp(join(tmpdir(), "byte-contract-"));
-			try {
-				await writeFile(join(root, "lesson.prax"), entry.source);
-				const course =
-					invalid && file === "lesson.prax"
-						? "title: Course\nlessons: [lesson.prax]\n"
-						: yamlCorpusSource(entry.source);
-				await writeFile(join(root, "course.yaml"), course);
-				const source = file === "lesson.prax" ? entry.source : course;
-				const result = await editManifest(root, {
-					file,
-					baseRevision: digest(source),
-					path: ["design", "colorAccent"],
-					value: "blue",
-				});
-				if (invalid) {
-					expect(result).toMatchObject({ ok: false, code: "invalid-args" });
-					expect(await readFile(join(root, file))).toEqual(Buffer.from(source));
-				} else {
-					expect(result.ok, JSON.stringify(result)).toBe(true);
-					expect(await readFile(join(root, file))).toEqual(
-						Buffer.from(source.replace("red # keep", "blue # keep")),
-					);
-				}
-				const unchanged = await readFile(join(root, file));
-				expect(
-					await editManifest(root, {
-						file,
-						baseRevision: "0".repeat(64),
-						path: ["design", "colorAccent"],
-						value: "yellow",
-					}),
-				).toEqual({ ok: false, code: "stale" });
-				expect(await readFile(join(root, file))).toEqual(unchanged);
-			} finally {
-				await rm(root, { recursive: true, force: true });
-			}
-		},
-	);
 });

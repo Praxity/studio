@@ -12,7 +12,7 @@ import { readLesson } from "@praxity/grammar";
 import { afterAll, afterEach, beforeAll, expect, it } from "vitest";
 import { runPraxityCli } from "../cli";
 import { initializeCourseIdentity, loadIdentityStore } from "../identity-store";
-import { resolveLessonSources } from "../lesson-source";
+import { resolveLessonSources, writeLessonSource } from "../lesson-source";
 import { createStudioProjectSession } from "../studio/project-session";
 
 const base = "# First\n\nRepeated.\n\nOther subject.\n";
@@ -84,13 +84,7 @@ it.each(
 		const { root, donor } = await initializedFixture();
 		let session = await createStudioProjectSession(root, "test");
 		try {
-			if (savedPending)
-				await session.invoke("courseWriteLesson", {
-					courseDir: root,
-					filename: "one.prax",
-					grammar: duplicate,
-					expectedGrammar: duplicate,
-				});
+			if (savedPending) await writeLessonSource(root, "one.prax", duplicate, duplicate);
 		} finally {
 			await session.close();
 		}
@@ -102,12 +96,7 @@ it.each(
 			expect((await session.identityReview()).retirements).toEqual([]);
 			expect(await bytes(root)).toEqual(original);
 			const grammar = change === "removed" ? base : `${base}\nA distinct copy.\n`;
-			await session.invoke("courseWriteLesson", {
-				courseDir: root,
-				filename: "one.prax",
-				grammar,
-				expectedGrammar: duplicate,
-			});
+			await writeLessonSource(root, "one.prax", grammar, duplicate);
 			expect((await session.identityReview()).retirements).toEqual([]);
 			expect((await nodes(root))[donor].status).toBe("active");
 			expect(Object.values(await nodes(root)).filter((node) => node.status === "pending")).toEqual(
@@ -173,12 +162,7 @@ it.each(["removed", "reworded"])(
 			expect((await session.readSnapshot()).project.grammar).toBe(duplicate);
 			expect(await bytes(root)).toEqual(original);
 			const grammar = change === "removed" ? base : `${base}\nA distinct copy.\n`;
-			await session.invoke("courseWriteLesson", {
-				courseDir: root,
-				filename: "one.prax",
-				grammar,
-				expectedGrammar: duplicate,
-			});
+			await writeLessonSource(root, "one.prax", grammar, duplicate);
 			expect((await session.identityReview()).retirements).toEqual([]);
 			const current = await nodes(root);
 			const read = await resolveLessonSources(root);
@@ -211,9 +195,6 @@ it.each(
 				{ file: "one.prax", page: "First", label: "Other subject.", line: null },
 			]);
 			expect(review.confirmationBlocked).toBe(true);
-			await expect(session.confirmIdentityRetirements(review.revision)).rejects.toMatchObject({
-				code: "identity_duplicate_pending",
-			});
 			expect(await bytes(root)).toEqual(original);
 		} finally {
 			await session.close();

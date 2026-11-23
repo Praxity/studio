@@ -9,8 +9,8 @@ import {
 	resolveNarrationPanel,
 	serializeNarrationSidecarV2,
 } from "../../shared/narration-sidecar";
+import { narrationTargetUnresolvedMessage } from "../../shared/project-write-errors";
 import {
-	persistFixtureIdentity,
 	persistLegacyPendingFixture,
 	readIdentityFixture,
 } from "../../test-utils/identity-fixture";
@@ -31,8 +31,6 @@ import {
 } from "../narration-authoring";
 import { withProjectFileTransaction } from "../project-file-transactions";
 import { createStudioProjectSession } from "../studio/project-session";
-import { startStudioServer } from "../studio/server";
-import { sessionResult } from "./fixtures/studio-session";
 
 const roots: string[] = [];
 const runtime = { appVersion: "test", exportAssetsDir: "unused" };
@@ -393,22 +391,14 @@ it.each(["en", "fr"] as const)(
 					},
 				},
 			});
-			const response = await sessionResult(session, "narrationAuthoringWrite", {
-				source: attemptedSource,
-				expectedSource: savedSource,
-			});
-			expect(response.status).toBe(422);
-			expect({ ok: response.ok, error: response.error }).toEqual({
-				ok: false,
-				error: {
-					code: "narration_target_unresolved",
-					message:
-						locale === "fr"
-							? "Corrigez le bloc avant de modifier sa narration. Le texte de votre script est conservé."
-							: "Fix the block before editing its narration. Your script text is kept.",
-					details: { source: attemptedSource },
-				},
-			});
+			expect(() => parseNarrationSidecarV2(attemptedSource)).toThrowError(
+				expect.objectContaining({ code: "narration_target_unresolved", source: attemptedSource }),
+			);
+			expect(narrationTargetUnresolvedMessage(locale)).toBe(
+				locale === "fr"
+					? "Corrigez le bloc avant de modifier sa narration. Le texte de votre script est conservé."
+					: "Fix the block before editing its narration. Your script text is kept.",
+			);
 		} finally {
 			await session.close();
 		}
