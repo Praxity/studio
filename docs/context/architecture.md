@@ -12,7 +12,7 @@ Praxity Studio hosts grammar 4 projects through the standalone CLI and local Rea
   -> local project files
 ```
 
-- `apps/cli/` owns the standalone CLI, Read preview server, filesystem access, preview services and export commands. Its directory name is retained.
+- `apps/cli/` owns the standalone CLI, Read preview server, filesystem access, preview services and export commands.
 - `packages/content-model/` owns dependency-free block data types, constants, and inline grammar formatting.
 - `packages/editor-core/` owns the grammar editor, panels, document store, accessibility checker, and adapter-backed editor features.
 - `packages/grammar/` owns grammar 4 tokenization, the lossless tree, schema and `readLesson()` renderer projection. Hosts retain source bytes; source edits do not regenerate the document from renderer blocks.
