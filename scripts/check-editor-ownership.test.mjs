@@ -63,7 +63,7 @@ test("T1 rejects planted input and message listeners in every retained editor di
 	);
 	assert.deepEqual(
 		checkEditorSource(
-			"apps/desktop/src/renderer/EditorView.tsx",
+			"apps/cli/src/renderer/EditorView.tsx",
 			"doc.addEventListener('keydown', handle)",
 		),
 		[],
@@ -117,7 +117,11 @@ test("T2 rejects planted trust-marker reads and writes outside the WeakSet owner
 
 test("M2 and A1 reject planted handlers and live regions in new editing code", () => {
 	const path = "packages/editor-core/src/frame-bridge/planted.tsx";
-	for (const guardedPath of [path, "packages/editor-core/src/session/planted.ts"])
+	for (const guardedPath of [
+		path,
+		"packages/editor-core/src/session/planted.ts",
+		"apps/cli/src/renderer/editing/planted.tsx",
+	])
 		for (const source of [
 			'if (e.key === "Escape") close();',
 			"if (e.key === 'Esc') close();",
@@ -140,7 +144,7 @@ test("M2 and A1 reject planted handlers and live regions in new editing code", (
 		0,
 	);
 	assert.equal(
-		checkEditorSource("apps/desktop/src/renderer/EditorView.tsx", 'e.key === "Escape"').length,
+		checkEditorSource("apps/cli/src/renderer/EditorView.tsx", 'e.key === "Escape"').length,
 		0,
 	);
 	assert.equal(

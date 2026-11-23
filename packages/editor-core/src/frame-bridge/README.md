@@ -8,7 +8,7 @@ reader's transient allocator.
 
 Inject a bundle calling `startInspectionFrame` into the inspection page, with
 the editor's exact HTTP origin, a per-frame channel and the page ID. It refuses
-pages without `?praxity-inspect=1`. In Studio, `apps/desktop/src/inspection-frame.ts`
+pages without `?praxity-inspect=1`. In Studio, `apps/cli/src/inspection-frame.ts`
 starts the Page lens runtime (`startInspectionPreview` in shared-blocks), which
 reads the product's `praxity-channel` and `praxity-parent-origin` parameters and
 starts this bridge once `CourseArtifactFrame` names the page over its private port. `connectPageFrame` runs in the editor and

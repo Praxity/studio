@@ -18,7 +18,7 @@ import SlowTestsReporter, { validateAllowlist } from "./slow-tests-reporter.mjs"
 
 const root = resolve(import.meta.dirname, "..");
 const entry = {
-	file: "apps/desktop/src/slow.test.ts",
+	file: "apps/cli/src/slow.test.ts",
 	name: "suite > slow",
 	reason: "Measured on Linux; remove after reducing filesystem setup.",
 };
@@ -52,6 +52,68 @@ const datedEntry = {
 	run: "https://github.com/example/studio/actions/runs/12345",
 	backlog: "Run 12345; expire 2026-11-01",
 };
+
+const oldEntry = { ...entry, file: "apps/desktop/src/slow.test.ts" };
+const oldDatedEntry = { ...datedEntry, file: oldEntry.file };
+
+test("CLI path migration preserves unchanged plain and dated entries", () => {
+	for (const prior of [oldEntry, oldDatedEntry, { ...oldEntry, metadata: { measured: [1, 2] } }]) {
+		const moved = { ...prior, file: "apps/cli/src/slow.test.ts" };
+		assert.doesNotThrow(() => validateAllowlist([moved], [prior], today));
+	}
+});
+
+test("CLI path migration refuses changed fields and retained old entries", () => {
+	for (const prior of [oldEntry, oldDatedEntry]) {
+		const moved = { ...prior, file: "apps/cli/src/slow.test.ts" };
+		for (const changed of [
+			{ reason: "Different reason" },
+			{ metadata: { measured: true } },
+			...(prior.added ? [{ backlog: "different" }, { added: "2026-10-17" }, { run: "67890" }] : []),
+		])
+			assert.throws(() => validateAllowlist([{ ...moved, ...changed }], [prior], today));
+		assert.throws(() => validateAllowlist([prior, moved], [prior], today));
+		assert.throws(() => validateAllowlist([moved, moved], [prior], today), /Duplicate/);
+	}
+	const prior = { ...oldEntry, metadata: { measured: [1, 2] } };
+	assert.throws(() =>
+		validateAllowlist(
+			[{ ...prior, file: "apps/cli/src/slow.test.ts", metadata: { measured: [1, 3] } }],
+			[prior],
+			today,
+		),
+	);
+});
+
+test("CLI path migration cannot add names, reverse paths or revive removed entries", () => {
+	const moved = { ...oldEntry, file: "apps/cli/src/slow.test.ts" };
+	for (const [current, previous] of [
+		[{ ...moved, name: "added test" }, [oldEntry]],
+		[oldEntry, [moved]],
+		[{ ...oldEntry, file: "apps/other/src/slow.test.ts" }, [oldEntry]],
+		[moved, []],
+	])
+		assert.throws(() => validateAllowlist([current], previous, today), /may only shrink/);
+});
+
+test("CLI path migration keeps dated expiry and metadata requirements", () => {
+	const moved = { ...oldDatedEntry, file: "apps/cli/src/slow.test.ts" };
+	assert.throws(
+		() => validateAllowlist([moved], [oldDatedEntry], Date.parse("2026-11-02")),
+		/expired/,
+	);
+	for (const field of ["added", "run", "backlog"]) {
+		const partial = { ...moved };
+		delete partial[field];
+		assert.throws(() => validateAllowlist([partial], [oldDatedEntry], today));
+	}
+	assert.throws(() =>
+		validateAllowlist([{ ...oldEntry, file: moved.file }], [oldDatedEntry], today),
+	);
+	assert.throws(() =>
+		validateAllowlist([moved], [{ ...oldDatedEntry, added: "2026-10-03" }], today),
+	);
+});
 
 test("dated additions pass from an empty or absent base and from a plain entry", () => {
 	for (const previous of [undefined, [], [entry]])
@@ -142,7 +204,7 @@ test("dated entries expire after 14 UTC calendar days regardless of the base", (
 	for (const previous of [undefined, [], [expired]])
 		assert.throws(() => validateAllowlist([expired], previous, today), {
 			message:
-				'Slow-test entry expired after 14 days: ["apps/desktop/src/slow.test.ts","suite > slow"]; fix the test or re-add it deliberately with a new date and run',
+				'Slow-test entry expired after 14 days: ["apps/cli/src/slow.test.ts","suite > slow"]; fix the test or re-add it deliberately with a new date and run',
 		});
 	assert.doesNotThrow(() => validateAllowlist([{ ...datedEntry, added: "2026-10-04" }], [], today));
 	assert.doesNotThrow(() => validateAllowlist([expired], [], Date.parse("2026-10-17T23:59:59Z")));
@@ -204,8 +266,8 @@ const task = (file, name, duration) => ({
 		moduleId: resolve(root, file),
 		project: {
 			name: "desktop",
-			config: { root: resolve(root, "apps/desktop") },
-			vite: { config: { configFile: resolve(root, "apps/desktop/vitest.config.ts") } },
+			config: { root: resolve(root, "apps/cli") },
+			vite: { config: { configFile: resolve(root, "apps/cli/vitest.config.ts") } },
 		},
 	},
 	name,
@@ -373,8 +435,8 @@ test("a load spike over budget then under passes after a one-worker file confirm
 	assert.ok(result.calls[0].args.includes("--maxWorkers=1"));
 	assert.ok(result.calls[0].args.includes("--no-file-parallelism"));
 	assert.ok(result.calls[0].args.includes("--project=desktop"));
-	assert.ok(result.calls[0].args.includes(resolve(root, "apps/desktop/vitest.config.ts")));
-	assert.ok(result.calls[0].args.includes(`--root=${resolve(root, "apps/desktop")}`));
+	assert.ok(result.calls[0].args.includes(resolve(root, "apps/cli/vitest.config.ts")));
+	assert.ok(result.calls[0].args.includes(`--root=${resolve(root, "apps/cli")}`));
 	assert.ok(
 		result.calls[0].args.includes(
 			`--testNamePattern=^(?:${RegExp.escape("slow [busy]. (once+)")})$`,
@@ -407,8 +469,8 @@ test("confirmation has one three-minute deadline and names every unfinished file
 		const result = await checkConfirmation(
 			[
 				task(entry.file, "slow", 2109),
-				task("apps/desktop/src/second.test.ts", "slow", 2109),
-				task("apps/desktop/src/third.test.ts", "slow", 2109),
+				task("apps/cli/src/second.test.ts", "slow", 2109),
+				task("apps/cli/src/third.test.ts", "slow", 2109),
 			],
 			{
 				now: () => elapsed,
@@ -441,7 +503,7 @@ test("confirmation stops at the job deadline and names every unconfirmed file", 
 	for (const reportOnly of [undefined, "true"]) {
 		let now = 1700000000000;
 		const result = await checkConfirmation(
-			[task(entry.file, "slow", 2109), task("apps/desktop/src/second.test.ts", "slow", 2109)],
+			[task(entry.file, "slow", 2109), task("apps/cli/src/second.test.ts", "slow", 2109)],
 			{
 				jobDeadline: "1700000010000",
 				now: () => now,
@@ -467,8 +529,8 @@ test("a timed-out rerun leaves every remaining file unconfirmed", async () => {
 	const result = await checkConfirmation(
 		[
 			task(entry.file, "slow", 2109),
-			task("apps/desktop/src/second.test.ts", "slow", 2109),
-			task("apps/desktop/src/third.test.ts", "slow", 2109),
+			task("apps/cli/src/second.test.ts", "slow", 2109),
+			task("apps/cli/src/third.test.ts", "slow", 2109),
 		],
 		{
 			now: () => elapsed,
@@ -488,11 +550,11 @@ test("a timed-out rerun leaves every remaining file unconfirmed", async () => {
 			timeouts: [120000],
 			code: 1,
 			logs:
-				"Confirming slow tests in file: apps/desktop/src/slow.test.ts\n" +
+				"Confirming slow tests in file: apps/cli/src/slow.test.ts\n" +
 				"Slow-test confirmation infrastructure failed:\n" +
-				"apps/desktop/src/slow.test.ts, confirmation could not run: slow: spawnSync ETIMEDOUT\n" +
-				"apps/desktop/src/second.test.ts, previous confirmation timed out; slow tests remain unconfirmed: slow\n" +
-				"apps/desktop/src/third.test.ts, previous confirmation timed out; slow tests remain unconfirmed: slow",
+				"apps/cli/src/slow.test.ts, confirmation could not run: slow: spawnSync ETIMEDOUT\n" +
+				"apps/cli/src/second.test.ts, previous confirmation timed out; slow tests remain unconfirmed: slow\n" +
+				"apps/cli/src/third.test.ts, previous confirmation timed out; slow tests remain unconfirmed: slow",
 		},
 	);
 });
@@ -500,7 +562,7 @@ test("a timed-out rerun leaves every remaining file unconfirmed", async () => {
 test("report-only confirmation timeout warns for every unconfirmed file and preserves earlier failures", async () => {
 	for (const viaReporter of [false, true]) {
 		const result = await checkConfirmation(
-			[task(entry.file, "slow", 2109), task("apps/desktop/src/second.test.ts", "slow", 2109)],
+			[task(entry.file, "slow", 2109), task("apps/cli/src/second.test.ts", "slow", 2109)],
 			{
 				error: Object.assign(new Error("spawnSync ETIMEDOUT"), { code: "ETIMEDOUT" }),
 				reportOnly: "true",
@@ -552,7 +614,7 @@ test("report-only confirmation assertion and five-second test timeout failures r
 test("report-only emits one warning containing every unconfirmed file beyond ten annotations", async () => {
 	const files = Array.from(
 		{ length: 12 },
-		(_, index) => `apps/desktop/src/unconfirmed-${index}.test.ts`,
+		(_, index) => `apps/cli/src/unconfirmed-${index}.test.ts`,
 	);
 	const result = await checkConfirmation(
 		files.map((file) => task(file, "slow", 2109)),
@@ -571,7 +633,7 @@ test("a confirmation timeout cannot hide a completed failing or invalid report",
 	for (const options of [
 		{ assertions: [{ fullName: "slow", status: "failed", duration: 5000 }] },
 		{ unhandledErrors: [{ message: "planted infrastructure" }] },
-		{ reportedFile: resolve(root, "apps/desktop/wrong.test.ts") },
+		{ reportedFile: resolve(root, "apps/cli/wrong.test.ts") },
 	]) {
 		const result = await checkConfirmation(task(entry.file, "slow", 5100), {
 			...options,
@@ -604,7 +666,7 @@ test("an infrastructure exception named ETIMEDOUT remains fatal in report-only m
 
 test("confirmation refuses a different file even when its test name matches", async () => {
 	const result = await checkConfirmation(task(entry.file, "same name", 2109), {
-		reportedFile: resolve(root, "apps/desktop/src/other.test.ts"),
+		reportedFile: resolve(root, "apps/cli/src/other.test.ts"),
 	});
 	assert.equal(result.code, 1);
 	assert.match(result.logs, /confirmation must report exactly the selected file/);
@@ -761,12 +823,12 @@ if (await confirmSlowTests(readPendingSlowTests(${JSON.stringify(pendingFile)}),
 for (const [project, relativeFile, name] of [
 	[
 		"desktop",
-		"apps/desktop/src/main/__tests__/preview-scheduler-regressions.test.ts",
+		"apps/cli/src/main/__tests__/preview-scheduler-regressions.test.ts",
 		"review: continuous edits must not starve trailing compile",
 	],
 	[
 		"desktop",
-		"apps/desktop/src/main/__tests__/project-text-file.test.ts",
+		"apps/cli/src/main/__tests__/project-text-file.test.ts",
 		"preserves both refusal and cleanup errors without acknowledging a failed stage",
 	],
 	[
@@ -776,16 +838,13 @@ for (const [project, relativeFile, name] of [
 	],
 	[
 		"desktop",
-		"apps/desktop/src/main/__tests__/identity-store-parallel.test.ts",
+		"apps/cli/src/main/__tests__/identity-store-parallel.test.ts",
 		"reads independent store files concurrently, with a fixed cap and fresh result ordering",
 	],
 ]) {
 	test(`real workspace reporter confirms ${relativeFile} with intact mocks`, () => {
 		const file = resolve(root, relativeFile);
-		const projectRoot = resolve(
-			root,
-			project === "desktop" ? "apps/desktop" : "packages/editor-core",
-		);
+		const projectRoot = resolve(root, project === "desktop" ? "apps/cli" : "packages/editor-core");
 		const pendingDir = mkdtempSync(resolve(tmpdir(), "slow-workspace-"));
 		const pendingFile = resolve(pendingDir, "pending.json");
 		try {
@@ -1077,7 +1136,7 @@ for (const title of ["process fixture", "second fixture"]) test(title, async () 
 						root,
 						violations: ["process fixture", "second fixture"].map((name) => ({
 							nameParts: [name],
-							entry: { file: "apps/desktop/src/slow.test.ts", name },
+							entry: { file: "apps/cli/src/slow.test.ts", name },
 							duration: 2109,
 							moduleId: file,
 							projectRoot: dir,

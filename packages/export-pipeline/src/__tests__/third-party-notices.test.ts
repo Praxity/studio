@@ -74,7 +74,7 @@ it("preserves selected font terms in source HTML and SCORM archives without comp
 	const cursorLicense = await readFile(
 		path.resolve(
 			import.meta.dirname,
-			"../../../../apps/desktop/resources/third-party-notices/feather-icons@4.29.2/LICENSE",
+			"../../../../apps/cli/resources/third-party-notices/feather-icons@4.29.2/LICENSE",
 		),
 		"utf8",
 	);
@@ -198,7 +198,7 @@ it("retains exact upstream supplemental licence text and rejects absent licence 
 			await readFile(
 				path.resolve(
 					import.meta.dirname,
-					"../../../../apps/desktop/resources/third-party-notices/react-remove-scroll-bar@2.3.8/LICENSE",
+					"../../../../apps/cli/resources/third-party-notices/react-remove-scroll-bar@2.3.8/LICENSE",
 				),
 				"utf8",
 			),

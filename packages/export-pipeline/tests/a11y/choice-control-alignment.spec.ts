@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { contrastRatio } from "@praxity/shared-blocks/color-math";
-import { servedReview } from "../../../../apps/desktop/e2e/browser-editor/review-fixture";
+import { servedReview } from "../../../../apps/cli/e2e/browser-editor/review-fixture";
 import { choiceBaselines } from "./choice-baselines";
 import { readTestEnv } from "./helpers";
 

@@ -621,7 +621,7 @@ describe("buildScormPackage desktop mode", () => {
 		timeout: 30_000,
 	}, async () => {
 		const original = await readFile(
-			new URL("../../../../apps/desktop/resources/icon.png", import.meta.url),
+			new URL("../../../../apps/cli/resources/icon.png", import.meta.url),
 		);
 		const codecDir = path.join(prebuiltAssetsDir, "image-codecs");
 		await mkdir(codecDir);

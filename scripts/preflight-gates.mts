@@ -121,7 +121,7 @@ export async function collectGatePreflight({
 			env.PRAXITY_TEST_TYPST ??
 				join(
 					root,
-					"apps/desktop/resources/typst",
+					"apps/cli/resources/typst",
 					process.platform === "win32" ? "typst.exe" : "typst",
 				),
 		],

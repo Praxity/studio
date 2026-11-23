@@ -321,6 +321,6 @@ Grammar 4 is the only supported source format. Grammar 3 is refused with `pnpm -
 ## Standalone browser build
 
 Set `PRAXITY_BROWSER_ARTIFACT` to an absolute standalone artifact directory when
-running `pnpm --filter @praxity/desktop e2e:browser-editor`. Without it, the journeys start
+running `pnpm --filter @praxity/cli e2e:browser-editor`. Without it, the journeys start
 the source server. The retained journeys run headlessly across Chromium, Firefox
 and WebKit. See [the testing strategy](testing-strategy.md).

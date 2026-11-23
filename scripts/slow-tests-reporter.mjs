@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { posix, relative, resolve } from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import {
 	confirmationProcessBudgetMs,
 	confirmationTestName,
@@ -8,6 +9,7 @@ import {
 	slowTestBudgetMs,
 	testNameParts,
 } from "./confirm-slow-tests.mjs";
+import { priorStudioAppPath } from "./studio-app-layout.mjs";
 
 export { slowTestBudgetMs };
 
@@ -75,8 +77,25 @@ export function validateAllowlist(entries, previous, now = Date.now()) {
 	if (previous !== undefined) {
 		validateEntries(previous);
 		const allowed = new Map(previous.map((entry) => [key(entry), entry]));
+		const current = new Set(entries.map(key));
 		for (const entry of entries) {
-			const prior = allowed.get(key(entry));
+			let prior = allowed.get(key(entry));
+			if (!prior) {
+				const previousPaths = { has: (file) => allowed.has(key({ ...entry, file })) };
+				const currentPaths = { has: (file) => current.has(key({ ...entry, file })) };
+				const oldFile = priorStudioAppPath(entry.file, previousPaths, new Set());
+				if (oldFile) {
+					const moved = allowed.get(key({ ...entry, file: oldFile }));
+					if (
+						priorStudioAppPath(entry.file, previousPaths, currentPaths) !== oldFile ||
+						!isDeepStrictEqual(entry, { ...moved, file: entry.file })
+					)
+						throw new Error(
+							`Slow-test migration must preserve every field and remove the old entry: ${key(entry)}`,
+						);
+					prior = moved;
+				}
+			}
 			if (!prior && !isDated(entry))
 				throw new Error(`Slow-test allowlist may only shrink: ${key(entry)}`);
 			if (prior && isDated(prior)) {

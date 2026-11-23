@@ -2,10 +2,7 @@ import assert from "node:assert/strict";
 import { globSync, readFileSync } from "node:fs";
 import { posix } from "node:path";
 import { test } from "node:test";
-import {
-	admitRelease,
-	admitRubatoPublisher,
-} from "../apps/desktop/scripts/admit-rubato-release.mjs";
+import { admitRelease, admitRubatoPublisher } from "../apps/cli/scripts/admit-rubato-release.mjs";
 
 const formatRoot = new URL("../docs/prax-format/", import.meta.url);
 const skills = ["SKILL.md", ...globSync("skill/*.md", { cwd: formatRoot })].map((path) => ({

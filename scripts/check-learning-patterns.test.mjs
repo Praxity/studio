@@ -17,7 +17,7 @@ const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const script = path.join(repo, "scripts/check-learning-patterns.mjs");
 const pin = "7bc938f1df5383f687c9fd8a7266caf9f8ad545f";
 const tarball = `https://codeload.github.com/Praxity/learning-patterns/tar.gz/${pin}`;
-const require = createRequire(path.join(repo, "apps/desktop/package.json"));
+const require = createRequire(path.join(repo, "apps/cli/package.json"));
 const { parse, stringify } = require("yaml");
 
 async function fixture(t) {
@@ -33,7 +33,7 @@ async function fixture(t) {
 	await put("apps/desktop/package.json", '{"name":"@praxity/desktop","private":true}');
 	await symlink(path.join(repo, "node_modules"), path.join(root, "node_modules"), "dir");
 	await symlink(
-		path.join(repo, "apps/desktop/node_modules"),
+		path.join(repo, "apps/cli/node_modules"),
 		path.join(root, "apps/desktop/node_modules"),
 		"dir",
 	);

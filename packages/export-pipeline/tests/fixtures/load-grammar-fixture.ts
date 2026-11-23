@@ -13,7 +13,7 @@ import { authoringCatalogSource } from "./authoring-catalog";
 const FIXTURE_ROOT = resolve(import.meta.dirname, "../../../../docs/test-fixtures");
 const FIXTURE_PATH = resolve(FIXTURE_ROOT, "sample-course-grammar.md");
 const REPO_ROOT = resolve(FIXTURE_ROOT, "../..");
-const DESKTOP_DIR = resolve(REPO_ROOT, "apps/desktop");
+const DESKTOP_DIR = resolve(REPO_ROOT, "apps/cli");
 const DESKTOP_EXPORT_ASSETS_DIR = resolve(DESKTOP_DIR, "resources/export-assets");
 
 export interface LoadedGrammarFixture {

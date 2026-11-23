@@ -119,7 +119,7 @@ export async function readPackageNotice(input: string): Promise<PackageNotice> {
 	}
 	const supplement = path.join(
 		repoRoot,
-		"apps/desktop/resources/third-party-notices",
+		"apps/cli/resources/third-party-notices",
 		`${name}@${version}`,
 	);
 	if (existsSync(supplement)) {
@@ -163,7 +163,7 @@ export async function collectRuntimeNotices(
 								LICENSE: await readFile(
 									path.join(
 										repoRoot,
-										"apps/desktop/resources/third-party-notices/feather-icons@4.29.2/LICENSE",
+										"apps/cli/resources/third-party-notices/feather-icons@4.29.2/LICENSE",
 									),
 									"utf8",
 								),

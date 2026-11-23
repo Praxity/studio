@@ -239,7 +239,7 @@ async function main() {
 				prepareErrors[side] = String(error);
 			}
 		}
-		const require = createRequire(path.join(base, "apps/desktop/package.json"));
+		const require = createRequire(path.join(base, "apps/cli/package.json"));
 		for (const course of courses) {
 			const tick = performance.now();
 			const directory = path.join(out, course.name);

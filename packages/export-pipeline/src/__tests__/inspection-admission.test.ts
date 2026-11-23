@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, it } from "vitest";
-import { bundleInspectionFrame } from "../../../../apps/desktop/scripts/prebuild-viewer.ts";
+import { bundleInspectionFrame } from "../../../../apps/cli/scripts/prebuild-viewer.ts";
 
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 let root = "";
@@ -12,7 +12,7 @@ let refusal = "";
 
 beforeAll(async () => {
 	root = await mkdtemp(path.join(tmpdir(), "learning-patterns-inspection-"));
-	await mkdir(path.join(root, "apps/desktop/src"), { recursive: true });
+	await mkdir(path.join(root, "apps/cli/src"), { recursive: true });
 	await mkdir(path.join(root, "packages/export-pipeline/node_modules"), { recursive: true });
 	await mkdir(path.join(root, "scripts"));
 	const installed = path.join(root, "packages/export-pipeline/node_modules/learning-patterns");
@@ -20,10 +20,10 @@ beforeAll(async () => {
 		recursive: true,
 		dereference: true,
 	});
-	await symlink(installed, path.join(root, "apps/desktop/src/learning-patterns"), "dir");
+	await symlink(installed, path.join(root, "apps/cli/src/learning-patterns"), "dir");
 	await writeFile(path.join(installed, "inspection-probe.js"), "export const probe = 1797;\n");
 	await writeFile(
-		path.join(root, "apps/desktop/src/inspection-frame.ts"),
+		path.join(root, "apps/cli/src/inspection-frame.ts"),
 		'import { probe } from "./learning-patterns/inspection-probe.js"; console.log(probe);\n',
 	);
 	await writeFile(

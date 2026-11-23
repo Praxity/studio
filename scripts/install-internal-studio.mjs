@@ -19,13 +19,13 @@ import {
 	internalCandidateReleaseSource,
 	isAdmittedInternalCandidateRun,
 	selectNewestInternalStudioRevision,
-} from "../apps/desktop/scripts/admit-rubato-release.mjs";
-import { downloadCandidate } from "../apps/desktop/scripts/download-candidate.mjs";
+} from "../apps/cli/scripts/admit-rubato-release.mjs";
+import { downloadCandidate } from "../apps/cli/scripts/download-candidate.mjs";
 
 import {
 	studioRepositories,
 	studioRepositoryFromRemote,
-} from "../apps/desktop/scripts/studio-repositories.mjs";
+} from "../apps/cli/scripts/studio-repositories.mjs";
 
 const workflow = "cli-candidate.yml";
 const minimumFree = 8n * 1024n ** 3n;

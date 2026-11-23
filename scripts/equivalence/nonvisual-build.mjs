@@ -29,8 +29,8 @@ const inputOptions = {
 	viewerVersionPath: path.join(assets, "viewer.version.json"),
 };
 const buildInput = owner(
-	() => source("./apps/desktop/src/main/export/build-export-input-from-project.ts"),
-	"apps/desktop/src/main/export/build-export-input-from-project.ts",
+	() => source("./apps/cli/src/main/export/build-export-input-from-project.ts"),
+	"apps/cli/src/main/export/build-export-input-from-project.ts",
 	"buildCourseExportInput",
 );
 if (mode === "stages") {
@@ -65,8 +65,8 @@ if (mode === "stages") {
 		"planModuleRuntime",
 	);
 	const resolveCompletion = owner(
-		() => source("./apps/desktop/src/main/project-config.ts"),
-		"apps/desktop/src/main/project-config.ts",
+		() => source("./apps/cli/src/main/project-config.ts"),
+		"apps/cli/src/main/project-config.ts",
 		"resolveCompletionSettings",
 	);
 	const defaults = source("./packages/editor-core/src/types/project.ts").DEFAULT_PROJECT_CONFIG;
@@ -94,8 +94,8 @@ if (mode === "stages") {
 		resourcesTabEnabled: prepared.config.resourcesTabEnabled,
 	});
 	const readSidecar = owner(
-		() => source("./apps/desktop/src/main/export/build-export-input-from-project.ts"),
-		"apps/desktop/src/main/export/build-export-input-from-project.ts",
+		() => source("./apps/cli/src/main/export/build-export-input-from-project.ts"),
+		"apps/cli/src/main/export/build-export-input-from-project.ts",
 		"readNarrationSidecar",
 	);
 	const resolveV2 = owner(
@@ -163,8 +163,8 @@ if (mode === "stages") {
 	);
 } else if (["html", "scorm-1.2", "scorm-2004", "pdf"].includes(mode)) {
 	const exportProject = owner(
-		() => source("./apps/desktop/src/main/export/export-project.ts"),
-		"apps/desktop/src/main/export/export-project.ts",
+		() => source("./apps/cli/src/main/export/export-project.ts"),
+		"apps/cli/src/main/export/export-project.ts",
 		"exportProject",
 	);
 	const result = await exportProject({
@@ -191,8 +191,8 @@ if (mode === "stages") {
 		"buildCoursePdfSource",
 	);
 	const resolveAssets = owner(
-		() => source("./apps/desktop/src/main/export/resolve-pdf-assets.ts"),
-		"apps/desktop/src/main/export/resolve-pdf-assets.ts",
+		() => source("./apps/cli/src/main/export/resolve-pdf-assets.ts"),
+		"apps/cli/src/main/export/resolve-pdf-assets.ts",
 		"resolvePdfAssets",
 	);
 	const input = await buildInput({

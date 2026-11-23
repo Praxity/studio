@@ -2,7 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
 
-const require = createRequire(new URL("../../apps/desktop/package.json", import.meta.url));
+const require = createRequire(new URL("../../apps/cli/package.json", import.meta.url));
 const sorted = (views) => views.sort((a, b) => a.key.localeCompare(b.key, "en"));
 
 export function deriveInventory(documents) {

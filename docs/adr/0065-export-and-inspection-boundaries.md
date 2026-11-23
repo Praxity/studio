@@ -23,12 +23,12 @@ Author inspection, preview and publication have different identity and content r
   an unsandboxed document.
   Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
   independently verified.
-  Related coverage: `apps/desktop/src/main/__tests__/inspection-csp.test.ts`, "enforces an opaque
+  Related coverage: `apps/cli/src/main/__tests__/inspection-csp.test.ts`, "enforces an opaque
   inspection origin even without an iframe sandbox" and "allows opaque inspection font reads only
   within the admitted artifact", pins the response policy; the WebKit cause remains unverified.
 - `courseCsp`: Nonces are readable by same-origin documents. Every inspection response must isolate
   its document, including direct navigation and popups.
-  Related coverage: `apps/desktop/src/main/__tests__/inspection-csp.test.ts`, "enforces an opaque
+  Related coverage: `apps/cli/src/main/__tests__/inspection-csp.test.ts`, "enforces an opaque
   inspection origin even without an iframe sandbox" and "allows opaque inspection font reads only
   within the admitted artifact", pins the response policy; the WebKit cause remains unverified.
 - `serveCourseFile`: Inspection transforms captured bytes only. Learner serving retains its
@@ -140,9 +140,9 @@ Author inspection, preview and publication have different identity and content r
 
 Sources: the named symbols and their comments at commit
 `bed54f6109aa4ae868c981f53233a5ee9c5afdd7`, with the corresponding
-interface tests in `apps/desktop/src/` and browser and tooling tests in
-`apps/desktop/e2e/` and `apps/desktop/scripts/`. Paths above are relative
-to `apps/desktop/`. These records preserve the existing rationale; they do
+interface tests in `apps/cli/src/` and browser and tooling tests in
+`apps/cli/e2e/` and `apps/cli/scripts/`. Paths above are relative
+to `apps/cli/`. These records preserve the existing rationale; they do
 not establish new platform guarantees.
 
 ## Consequences

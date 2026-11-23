@@ -2,18 +2,18 @@ import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, expect, it } from "vitest";
-import { runPraxityCli } from "../../../apps/desktop/src/main/cli.ts";
-import en from "../../../apps/desktop/src/main/cli-messages/en.json";
-import fr from "../../../apps/desktop/src/main/cli-messages/fr.json";
+import { runPraxityCli } from "../../../apps/cli/src/main/cli.ts";
+import en from "../../../apps/cli/src/main/cli-messages/en.json";
+import fr from "../../../apps/cli/src/main/cli-messages/fr.json";
 import {
 	editExitCodes,
 	editHelp,
 	editRefusalCatalogue,
-} from "../../../apps/desktop/src/main/edit-cli.ts";
-import { readBlockInventory } from "../../../apps/desktop/src/main/operations/block-inspection.ts";
-import { OperationService } from "../../../apps/desktop/src/main/operations/operation-service.ts";
-import { editCliOutputSchema } from "../../../apps/desktop/src/shared/edit-cli-schema.ts";
-import { persistFixtureIdentity } from "../../../apps/desktop/src/test-utils/identity-fixture.ts";
+} from "../../../apps/cli/src/main/edit-cli.ts";
+import { readBlockInventory } from "../../../apps/cli/src/main/operations/block-inspection.ts";
+import { OperationService } from "../../../apps/cli/src/main/operations/operation-service.ts";
+import { editCliOutputSchema } from "../../../apps/cli/src/shared/edit-cli-schema.ts";
+import { persistFixtureIdentity } from "../../../apps/cli/src/test-utils/identity-fixture.ts";
 import editorFr from "../../editor-core/src/messages/fr.json";
 import { operationRefusalCodes } from "../../grammar/src/operations/contract.ts";
 import { operationRegistry } from "../src/index.ts";

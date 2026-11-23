@@ -11,7 +11,7 @@ import { afterAll, beforeAll, expect, it } from "vitest";
 let directory: string;
 let metafile: Metafile;
 const forbidden =
-	/(?:^|\/)(?:electron|react|react-dom)(?:\/|$)|(?:^|\/)apps\/desktop\/|(?:^|\/)packages\/export-pipeline\/|\/src\/viewer\/|@myriaddreamin[+/]/;
+	/(?:^|\/)(?:electron|react|react-dom)(?:\/|$)|(?:^|\/)apps\/cli\/|(?:^|\/)packages\/export-pipeline\/|\/src\/viewer\/|@myriaddreamin[+/]/;
 
 beforeAll(async () => {
 	directory = await mkdtemp(path.join(tmpdir(), "course-pdf-bundle-"));

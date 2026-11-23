@@ -41,7 +41,7 @@ async function desktopExportCopyInputs(): Promise<DesktopExportInputFile[]> {
 			assetPath: `image-codecs/${path.basename(specifier)}`,
 		})),
 		...(await directoryInputs(
-			path.resolve(pipelineRoot, "../../apps/desktop/resources/third-party-notices/image-codecs"),
+			path.resolve(pipelineRoot, "../../apps/cli/resources/third-party-notices/image-codecs"),
 			"image-codecs/notices",
 		)),
 		...(await directoryInputs(path.join(pipelineRoot, "schemas"), "schemas")),

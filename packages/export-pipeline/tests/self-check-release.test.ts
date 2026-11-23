@@ -7,9 +7,9 @@ import { join } from "node:path";
 import { readSelfCheckContent } from "@praxity/grammar";
 import AdmZip from "adm-zip";
 import { expect, it } from "vitest";
-import { runPraxityCli } from "../../../apps/desktop/src/main/cli";
-import { resolveLessonSources } from "../../../apps/desktop/src/main/lesson-source";
-import { persistFixtureIdentity } from "../../../apps/desktop/src/test-utils/identity-fixture";
+import { runPraxityCli } from "../../../apps/cli/src/main/cli";
+import { resolveLessonSources } from "../../../apps/cli/src/main/lesson-source";
+import { persistFixtureIdentity } from "../../../apps/cli/src/test-utils/identity-fixture";
 import {
 	buildCoursePdfSource,
 	exportCoursePdf,
@@ -51,10 +51,7 @@ it.skipIf(!process.env.PRAXITY_TEST_TYPST).each(["en", "fr"] as const)(
 				{
 					appVersion: "test",
 					typstExecutablePath: process.env.PRAXITY_TEST_TYPST,
-					exportAssetsDir: join(
-						import.meta.dirname,
-						"../../../apps/desktop/resources/export-assets",
-					),
+					exportAssetsDir: join(import.meta.dirname, "../../../apps/cli/resources/export-assets"),
 				},
 			);
 			expect(result.exitCode).toBe(1);
@@ -107,10 +104,7 @@ it.each(["en", "fr"] as const)(
 					["export", root, "--format", format, "--output", output],
 					{
 						appVersion: "test",
-						exportAssetsDir: join(
-							import.meta.dirname,
-							"../../../apps/desktop/resources/export-assets",
-						),
+						exportAssetsDir: join(import.meta.dirname, "../../../apps/cli/resources/export-assets"),
 					},
 				);
 				expect(result.exitCode, result.stderr + result.stdout).toBe(0);

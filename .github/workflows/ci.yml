@@ -109,7 +109,7 @@ jobs:
               - '.github/workflows/ci.yml'
               - '.github/workflows/cli-candidate.yml'
               - '.github/workflows/cli-proof.yml'
-              - 'apps/desktop/scripts/build-cli-archives.sh'
+              - 'apps/cli/scripts/build-cli-archives.sh'
               - '**/*.prax'
               - 'docs/test-fixtures/**'
               - 'docs/prax-format/reference/blocks.json'
@@ -117,11 +117,11 @@ jobs:
             output:
               - 'packages/**'
               - 'scripts/check-source-owners.mjs'
-              - 'apps/desktop/scripts/test-affected.mjs'
-              - 'apps/desktop/scripts/test-affected-output-map.mjs'
-              - 'apps/desktop/src/renderer/components/panels/compositions-data*'
+              - 'apps/cli/scripts/test-affected.mjs'
+              - 'apps/cli/scripts/test-affected-output-map.mjs'
+              - 'apps/cli/src/renderer/components/panels/compositions-data*'
               - 'docs/test-fixtures/assets/**'
-              - 'apps/desktop/resources/**'
+              - 'apps/cli/resources/**'
               - 'docs/test-fixtures/**'
               - 'pnpm-lock.yaml'
               - 'pnpm-workspace.yaml'
@@ -132,12 +132,12 @@ jobs:
             # Browser authoring includes the canvas, local server, frame bridge,
             # preview compiler and their served assets. Retired U7 staged specs are gone.
             browser_editor:
-              - 'apps/desktop/src/**'
-              - 'apps/desktop/e2e/**'
-              - 'apps/desktop/scripts/**'
-              - 'apps/desktop/resources/**'
-              - 'apps/desktop/package.json'
-              - 'apps/desktop/tsconfig*.json'
+              - 'apps/cli/src/**'
+              - 'apps/cli/e2e/**'
+              - 'apps/cli/scripts/**'
+              - 'apps/cli/resources/**'
+              - 'apps/cli/package.json'
+              - 'apps/cli/tsconfig*.json'
               - 'packages/**'
               - 'docs/test-fixtures/**'
               - 'pnpm-lock.yaml'
@@ -200,7 +200,7 @@ jobs:
              "docs/tasks/**", "docs/releases/**", "docs/rules/**", "docs/adr/**",
              "legal/**", ".claude/**", "*.md", ".github/dependabot.yml",
              ".github/workflows/!(ci).yml"]
-        run: node apps/desktop/scripts/ci-browser-cli.mjs --candidate
+        run: node apps/cli/scripts/ci-browser-cli.mjs --candidate
       # REST exposes completed step names, binding the fetched base to this H and run.
       - name: Candidate base ${{ steps.browser.outputs.candidate_base }}
         if: github.event_name == 'workflow_dispatch' && inputs.gate == 'candidate'
@@ -323,7 +323,7 @@ jobs:
         run: |
           tests=()
           serial_tests=" $(tr '\n' ' ' < scripts/serial-node-tests.txt) "
-          for file in scripts/*.test.mjs apps/desktop/scripts/*.test.mjs; do
+          for file in scripts/*.test.mjs apps/cli/scripts/*.test.mjs; do
             if [[ "$serial_tests" != *" $file "* ]]; then
               tests+=("$file")
             fi
@@ -332,11 +332,11 @@ jobs:
 
       - name: Verify npm tarball installation and exports
         env:
-          PRAXITY_STUDIO_TYPST: ${{ github.workspace }}/apps/desktop/resources/typst/typst
+          PRAXITY_STUDIO_TYPST: ${{ github.workspace }}/apps/cli/resources/typst/typst
         run: |
-          pnpm --filter @praxity/desktop prepare:typst
+          pnpm --filter @praxity/cli prepare:typst
           pnpm build:cli
-          node --test --test-name-pattern='portable CLI exports' apps/desktop/scripts/standalone-cli.proof.mjs
+          node --test --test-name-pattern='portable CLI exports' apps/cli/scripts/standalone-cli.proof.mjs
 
   node26-cli-proof:
     needs: changes
@@ -354,15 +354,15 @@ jobs:
           node-version: 24.22.1
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @praxity/desktop prepare:typst
+      - run: pnpm --filter @praxity/cli prepare:typst
       - run: pnpm build:cli
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 26.13.1
       - name: Verify npm tarball on Node 26
         env:
-          PRAXITY_STUDIO_TYPST: ${{ github.workspace }}/apps/desktop/resources/typst/typst
-        run: node --test --test-name-pattern='portable CLI exports' apps/desktop/scripts/standalone-cli.proof.mjs
+          PRAXITY_STUDIO_TYPST: ${{ github.workspace }}/apps/cli/resources/typst/typst
+        run: node --test --test-name-pattern='portable CLI exports' apps/cli/scripts/standalone-cli.proof.mjs
 
   affected-test:
     needs: changes
@@ -428,16 +428,16 @@ jobs:
       - run: pnpm install --frozen-lockfile
         if: needs.changes.outputs.code == 'true'
       # Studio RPC integration tests consume shipped assets and compile real PDFs.
-      - run: pnpm --filter @praxity/desktop prebuild
+      - run: pnpm --filter @praxity/cli prebuild
         if: needs.changes.outputs.code == 'true'
       # The script verifies cached archives against pinned digests, so a cache hit skips only the download.
       - name: Cache Typst downloads
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         if: needs.changes.outputs.code == 'true'
         with:
-          path: apps/desktop/resources/.typst-cache
-          key: typst-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/desktop/scripts/prepare-typst.mjs') }}
-      - run: pnpm --filter @praxity/desktop prepare:typst
+          path: apps/cli/resources/.typst-cache
+          key: typst-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/cli/scripts/prepare-typst.mjs') }}
+      - run: pnpm --filter @praxity/cli prepare:typst
         if: needs.changes.outputs.code == 'true'
       # Native format-renderers checks inspect PDF content and tags with Poppler.
       - name: Install Poppler
@@ -611,7 +611,7 @@ jobs:
       - run: pnpm --filter @praxity/export-pipeline prebuild:client
         if: needs.changes.outputs.output == 'true'
       # CLI release journeys consume desktop export assets as well as the compiler cache.
-      - run: pnpm --filter @praxity/desktop prebuild
+      - run: pnpm --filter @praxity/cli prebuild
         if: needs.changes.outputs.output == 'true'
       # The distractor acceptance fixture also exports and scans native CLI PDFs.
       # The script verifies cached archives against pinned digests, so a cache hit skips only the download.
@@ -619,9 +619,9 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         if: needs.changes.outputs.output == 'true'
         with:
-          path: apps/desktop/resources/.typst-cache
-          key: typst-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/desktop/scripts/prepare-typst.mjs') }}
-      - run: pnpm --filter @praxity/desktop prepare:typst
+          path: apps/cli/resources/.typst-cache
+          key: typst-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/cli/scripts/prepare-typst.mjs') }}
+      - run: pnpm --filter @praxity/cli prepare:typst
         if: needs.changes.outputs.output == 'true'
       - name: Install Poppler
         uses: ./.github/actions/install-poppler
@@ -691,7 +691,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Resolve Playwright version
         id: playwright-version
-        run: pnpm --filter @praxity/desktop exec node -e "console.log('version=' + require('@playwright/test/package.json').version)" >> "$GITHUB_OUTPUT"
+        run: pnpm --filter @praxity/cli exec node -e "console.log('version=' + require('@playwright/test/package.json').version)" >> "$GITHUB_OUTPUT"
       - name: Cache Playwright browser
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
@@ -702,8 +702,8 @@ jobs:
         with:
           browser: ${{ matrix.browser }}
           playwright-version: ${{ steps.playwright-version.outputs.version }}
-          package: '@praxity/desktop'
-      - run: pnpm --filter @praxity/desktop prebuild
+          package: '@praxity/cli'
+      - run: pnpm --filter @praxity/cli prebuild
       # Without the export-pipeline bundle, each worker's first publish rebuilds it into
       # prebuilt/ concurrently, and one worker can read another's half-copied chunks.
       - run: pnpm --filter @praxity/export-pipeline prebuild
@@ -711,9 +711,9 @@ jobs:
       - name: Cache Typst downloads
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
         with:
-          path: apps/desktop/resources/.typst-cache
-          key: typst-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/desktop/scripts/prepare-typst.mjs') }}
-      - run: pnpm --filter @praxity/desktop prepare:typst
+          path: apps/cli/resources/.typst-cache
+          key: typst-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('apps/cli/scripts/prepare-typst.mjs') }}
+      - run: pnpm --filter @praxity/cli prepare:typst
       - name: Prepare browser authoring scratch
         run: |
           scratch="$RUNNER_TEMP/browser-editor"
@@ -728,7 +728,7 @@ jobs:
           fi
           printf 'PRAXITY_TEST_ARTIFACTS=%s\n' "$scratch" >> "$GITHUB_ENV"
       - name: Browser authoring journeys
-        run: pnpm --filter @praxity/desktop run e2e:browser-editor --project=${{ matrix.browser }} --shard=${{ matrix.shard }} --workers=2
+        run: pnpm --filter @praxity/cli run e2e:browser-editor --project=${{ matrix.browser }} --shard=${{ matrix.shard }} --workers=2
       - name: Report WebKit core dumps and I/O pressure
         if: failure() && !cancelled() && matrix.browser == 'webkit'
         continue-on-error: true

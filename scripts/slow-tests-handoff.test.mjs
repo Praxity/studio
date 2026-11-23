@@ -171,11 +171,11 @@ reporter.onTestRunStart();
 if (scenario === "original failure") process.exitCode = 1;
 if (scenario !== "forks only") {
   for (const file of ["slow.test.ts", "second.test.ts"])
-    reporter.onTestCaseResult({ name: "slow", fullName: "slow", diagnostic: () => ({ duration: 5100 }), module: { moduleId: resolve(root, "apps/desktop", file), project: { name: "desktop", config: { root }, vite: { config: { configFile: false } } } } });
+    reporter.onTestCaseResult({ name: "slow", fullName: "slow", diagnostic: () => ({ duration: 5100 }), module: { moduleId: resolve(root, "apps/cli", file), project: { name: "desktop", config: { root }, vite: { config: { configFile: false } } } } });
   await reporter.onTestRunEnd();
 }
 if (["timeout then forks", "forks only"].includes(scenario))
-  console.error("[vitest-pool]: Timeout terminating forks worker for test files apps/desktop/path-utils.test.ts.");
+  console.error("[vitest-pool]: Timeout terminating forks worker for test files apps/cli/path-utils.test.ts.");
 `,
 			],
 			{
@@ -233,7 +233,7 @@ test("report-only forks termination warns only after a confirmation timeout in t
 			}));
 			reporter.onInit({ config: { root }, logger });
 			const hang =
-				"[vitest-pool]: Timeout terminating forks worker for test files apps/desktop/path-utils.test.ts.";
+				"[vitest-pool]: Timeout terminating forks worker for test files apps/cli/path-utils.test.ts.";
 			if (scenario === "earlier hang") logger.error(hang);
 			if (scenario !== "no timeout") {
 				reporter.onTestCaseResult({
@@ -241,7 +241,7 @@ test("report-only forks termination warns only after a confirmation timeout in t
 					name: "slow",
 					diagnostic: () => ({ duration: 2109 }),
 					module: {
-						moduleId: resolve(root, "apps/desktop/slow.test.ts"),
+						moduleId: resolve(root, "apps/cli/slow.test.ts"),
 						project: { name: "desktop", config: { root }, vite: { config: { configFile: false } } },
 					},
 				});
@@ -344,11 +344,11 @@ async function record(name = "slow", reportRoot = root) {
 		name,
 		diagnostic: () => ({ duration: 2109 }),
 		module: {
-			moduleId: resolve(root, "apps/desktop/slow.test.ts"),
+			moduleId: resolve(root, "apps/cli/slow.test.ts"),
 			project: {
 				name: "desktop",
-				config: { root: resolve(root, "apps/desktop") },
-				vite: { config: { configFile: resolve(root, "apps/desktop/vitest.config.ts") } },
+				config: { root: resolve(root, "apps/cli") },
+				vite: { config: { configFile: resolve(root, "apps/cli/vitest.config.ts") } },
 			},
 		},
 	});
@@ -366,13 +366,13 @@ test("CI reporter finishes without spawning while a stuck shard worker is still 
 				root,
 				violations: [
 					{
-						entry: { file: "apps/desktop/slow.test.ts", name: "slow" },
+						entry: { file: "apps/cli/slow.test.ts", name: "slow" },
 						nameParts: ["slow"],
 						duration: 2109,
-						moduleId: resolve(root, "apps/desktop/slow.test.ts"),
-						projectRoot: resolve(root, "apps/desktop"),
+						moduleId: resolve(root, "apps/cli/slow.test.ts"),
+						projectRoot: resolve(root, "apps/cli"),
 						projectName: "desktop",
-						configFile: resolve(root, "apps/desktop/vitest.config.ts"),
+						configFile: resolve(root, "apps/cli/vitest.config.ts"),
 					},
 				],
 			});
@@ -595,7 +595,7 @@ test("in-process report-only confirmation keeps its 120-second wall cap and time
 					fullName: "slow",
 					diagnostic: () => ({ duration: 2109 }),
 					module: {
-						moduleId: resolve(root, "apps/desktop/slow.test.ts"),
+						moduleId: resolve(root, "apps/cli/slow.test.ts"),
 						project: { name: "desktop", config: { root }, vite: { config: { configFile: false } } },
 					},
 				});
@@ -604,7 +604,7 @@ test("in-process report-only confirmation keeps its 120-second wall cap and time
 				assert.equal(elapsed, scenario === "timeout" ? 60000 : 120000, logs.join("\n"));
 				if (scenario === "start retry") assert.match(logs.join("\n"), /passed alone/);
 				logger.error(
-					"[vitest-pool]: Timeout terminating forks worker for test files apps/desktop/path-utils.test.ts.",
+					"[vitest-pool]: Timeout terminating forks worker for test files apps/cli/path-utils.test.ts.",
 				);
 				assert.equal(process.exitCode, scenario === "start retry" ? 1 : undefined, logs.join("\n"));
 				assert.equal(

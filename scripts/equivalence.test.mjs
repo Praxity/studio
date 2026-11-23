@@ -33,7 +33,7 @@ const image = async (width, height, values = []) => {
 };
 
 test("capture waits for narration duration verification rather than a transient loading slider", () => {
-	const require = createRequire(new URL("../apps/desktop/package.json", import.meta.url));
+	const require = createRequire(new URL("../apps/cli/package.json", import.meta.url));
 	const { JSDOM } = require("jsdom");
 	const dom = new JSDOM(
 		'<div class="praxity-narration-position"><input type="range" max="1" value="0" disabled></div>',
@@ -632,7 +632,7 @@ test("R3-P2: head and zero-offset scroller changes pass; changed nonzero offsets
 	const root = await mkdtemp(path.join(tmpdir(), "equivalence-scroll-keys-"));
 	t.after(() => rm(root, { recursive: true, force: true }));
 	await writeFile(path.join(root, "view.png"), await image(1, 1));
-	const require = createRequire(new URL("../apps/desktop/package.json", import.meta.url));
+	const require = createRequire(new URL("../apps/cli/package.json", import.meta.url));
 	const { JSDOM } = require("jsdom");
 	const positions = (head, extra = "", top = 125) => {
 		const dom = new JSDOM(

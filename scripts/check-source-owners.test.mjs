@@ -187,7 +187,7 @@ test("choice admission refuses undeclared production imports", () => {
 		for (const path of [
 			"packages/shared-blocks/src/learner-state.ts",
 			"packages/shared-blocks/src/index.ts",
-			"apps/desktop/src/inspection-frame.ts",
+			"apps/cli/src/inspection-frame.ts",
 		])
 			assert.match(checkDormantChoiceImports(path, source).join("\n"), /declared/);
 	}
@@ -353,11 +353,11 @@ test("source-owner command rejects a planted LMS outcome write", () => {
 });
 
 test("init may preserve the settings BOM but cannot detect Prax source", () => {
-	const path = "apps/desktop/src/main/init-course.ts";
+	const path = "apps/cli/src/main/init-course.ts";
 	assert.deepEqual(checkSourceOwners(path, 'original.startsWith("\\uFEFF")'), []);
 	assert.notDeepEqual(checkSourceOwners(path, 'original.startsWith("---")'), []);
 	assert.notDeepEqual(
-		checkSourceOwners("apps/desktop/src/main/other.ts", 'original.startsWith("\\uFEFF")'),
+		checkSourceOwners("apps/cli/src/main/other.ts", 'original.startsWith("\\uFEFF")'),
 		[],
 	);
 });
@@ -391,7 +391,7 @@ for (const source of [
 ]) {
 	test(`protected archive deletion belongs only to I4: ${source}`, () => {
 		assert.notDeepEqual(
-			checkIdentityWriterImports("apps/desktop/src/main/narration-authoring.ts", source),
+			checkIdentityWriterImports("apps/cli/src/main/narration-authoring.ts", source),
 			[],
 		);
 	});
@@ -399,14 +399,14 @@ for (const source of [
 test("I4 may import protected pruning and other writers may import ordinary T1", () => {
 	assert.deepEqual(
 		checkIdentityWriterImports(
-			"apps/desktop/src/main/identity-store.ts",
+			"apps/cli/src/main/identity-store.ts",
 			'import { reclaimProtectedArchives } from "./project-file-transactions";',
 		),
 		[],
 	);
 	assert.deepEqual(
 		checkIdentityWriterImports(
-			"apps/desktop/src/main/narration-authoring.ts",
+			"apps/cli/src/main/narration-authoring.ts",
 			'import { writeProjectFiles } from "./project-file-transactions";',
 		),
 		[],
@@ -414,7 +414,7 @@ test("I4 may import protected pruning and other writers may import ordinary T1",
 });
 test("source-owner command rejects protected pruning outside I4", () => {
 	const result = runFixture({
-		path: "apps/desktop/src/main/narration-authoring.ts",
+		path: "apps/cli/src/main/narration-authoring.ts",
 		source: 'import { reclaimProtectedArchives } from "./project-file-transactions";',
 	});
 	assert.equal(result.status, 1, result.stdout + result.stderr);
@@ -439,7 +439,7 @@ for (const source of [
 ]) {
 	test(`T1 refuses identity dependencies: ${source}`, () => {
 		assert.match(
-			checkIdentityWriterImports("apps/desktop/src/main/project-file-transactions.ts", source).join(
+			checkIdentityWriterImports("apps/cli/src/main/project-file-transactions.ts", source).join(
 				"\n",
 			),
 			/T1 must not import identity-/u,
@@ -449,14 +449,14 @@ for (const source of [
 test("T1 permits the protected-path leaf and identity may consume T1 facts", () => {
 	assert.deepEqual(
 		checkIdentityWriterImports(
-			"apps/desktop/src/main/project-file-transactions.ts",
+			"apps/cli/src/main/project-file-transactions.ts",
 			'import { isIdentityLineagePath } from "./project-protected-paths";',
 		),
 		[],
 	);
 	assert.deepEqual(
 		checkIdentityWriterImports(
-			"apps/desktop/src/main/identity-store.ts",
+			"apps/cli/src/main/identity-store.ts",
 			'import { readProjectRecoveryEvidence } from "./project-file-transactions";',
 		),
 		[],
@@ -464,7 +464,7 @@ test("T1 permits the protected-path leaf and identity may consume T1 facts", () 
 });
 test("source-owner command rejects a planted T1 identity import", () => {
 	const result = runFixture({
-		path: "apps/desktop/src/main/project-file-transactions.ts",
+		path: "apps/cli/src/main/project-file-transactions.ts",
 		source: 'import { liveIdentityStoreIsIntact } from "./identity-store-files";',
 	});
 	assert.equal(result.status, 1, result.stdout + result.stderr);
@@ -473,7 +473,7 @@ test("source-owner command rejects a planted T1 identity import", () => {
 
 test("source-owner command rejects a relative T1 content-identity import", () => {
 	const result = runFixture({
-		path: "apps/desktop/src/main/project-file-transactions.ts",
+		path: "apps/cli/src/main/project-file-transactions.ts",
 		source:
 			'import { assertPath } from "../../../../packages/content-identity/src/files.ts"; assertPath("lesson.prax");',
 		files: {
@@ -485,8 +485,8 @@ test("source-owner command rejects a relative T1 content-identity import", () =>
 });
 
 for (const path of [
-	"apps/desktop/src/shared/editor-session.ts",
-	"apps/desktop/src/main/studio/project-session.ts",
+	"apps/cli/src/shared/editor-session.ts",
+	"apps/cli/src/main/studio/project-session.ts",
 ]) {
 	for (const source of [
 		'import { buildPageNodes } from "@praxity/editor-core/frame-bridge";',
@@ -517,8 +517,8 @@ for (const path of [
 	}
 }
 for (const path of [
-	"apps/desktop/src/inspection-frame.ts",
-	"apps/desktop/src/main/__tests__/frame.test.ts",
+	"apps/cli/src/inspection-frame.ts",
+	"apps/cli/src/main/__tests__/frame.test.ts",
 ]) {
 	test(`browser frame barrel remains available in ${path}`, () => {
 		assert.deepEqual(
@@ -533,9 +533,9 @@ for (const path of [
 
 for (const name of ["planInverseGroup", "consumeInverseGroupIdentity"]) {
 	for (const path of [
-		"apps/desktop/src/renderer/planted.ts",
-		"apps/desktop/src/shared/editor-session.ts",
-		"apps/desktop/src/main/identity-store.ts",
+		"apps/cli/src/renderer/planted.ts",
+		"apps/cli/src/shared/editor-session.ts",
+		"apps/cli/src/main/identity-store.ts",
 	]) {
 		for (const source of [
 			`import { ${name} as candidate } from "@praxity/operations";`,
@@ -551,7 +551,7 @@ for (const name of ["planInverseGroup", "consumeInverseGroupIdentity"]) {
 	test(`group history ownership permits named service import of ${name}`, () => {
 		assert.deepEqual(
 			checkIdentityWriterImports(
-				"apps/desktop/src/main/operations/operation-service.ts",
+				"apps/cli/src/main/operations/operation-service.ts",
 				`import { ${name} } from "@praxity/operations";`,
 			),
 			[],
@@ -566,8 +566,8 @@ for (const source of [
 	'const operations = await import("@praxity/operations/src/inverse.ts");',
 ]) {
 	for (const path of [
-		"apps/desktop/src/renderer/planted.ts",
-		"apps/desktop/src/main/operations/operation-service.ts",
+		"apps/cli/src/renderer/planted.ts",
+		"apps/cli/src/main/operations/operation-service.ts",
 	]) {
 		test(`group history ownership refuses whole-module access in ${path}: ${source}`, () => {
 			assert.match(
@@ -581,7 +581,7 @@ for (const source of [
 test("group history ownership permits ordinary operations imports", () => {
 	assert.deepEqual(
 		checkIdentityWriterImports(
-			"apps/desktop/src/shared/editor-session.ts",
+			"apps/cli/src/shared/editor-session.ts",
 			'import { applyOperation, type OperationSourceFile } from "@praxity/operations";',
 		),
 		[],
@@ -601,8 +601,8 @@ for (const writer of [
 	]) {
 		test(`identity writer ownership refuses reader access: ${source}`, () => {
 			assert.ok(
-				checkIdentityWriterImports("apps/desktop/src/main/studio/preview-scheduler.ts", source)
-					.length > 0,
+				checkIdentityWriterImports("apps/cli/src/main/studio/preview-scheduler.ts", source).length >
+					0,
 			);
 		});
 	}
@@ -615,7 +615,7 @@ for (const source of [
 ]) {
 	test(`identity writer ownership refuses whole-module reader access: ${source}`, () => {
 		assert.match(
-			checkIdentityWriterImports("apps/desktop/src/main/studio/preview-scheduler.ts", source).join(
+			checkIdentityWriterImports("apps/cli/src/main/studio/preview-scheduler.ts", source).join(
 				"\n",
 			),
 			/import identity writers by name/u,
@@ -636,8 +636,8 @@ for (const source of [
 ]) {
 	test(`identity writer ownership refuses loader and test helper bypass: ${source}`, () => {
 		assert.ok(
-			checkIdentityWriterImports("apps/desktop/src/main/studio/preview-scheduler.ts", source)
-				.length > 0,
+			checkIdentityWriterImports("apps/cli/src/main/studio/preview-scheduler.ts", source).length >
+				0,
 		);
 	});
 }
@@ -647,13 +647,10 @@ test("identity writer ownership CLI confines direct identity fixture writes to t
 	try {
 		execFileSync("git", ["init", "--quiet", root]);
 		for (const [path, source] of [
+			["apps/cli/src/test-utils/identity-fixture.ts", "export function writeIdentityFixture() {}"],
+			["apps/cli/src/main/identity-store.ts", "export function resolveCourseIdentity() {}"],
 			[
-				"apps/desktop/src/test-utils/identity-fixture.ts",
-				"export function writeIdentityFixture() {}",
-			],
-			["apps/desktop/src/main/identity-store.ts", "export function resolveCourseIdentity() {}"],
-			[
-				"apps/desktop/src/main/studio/preview-scheduler.ts",
+				"apps/cli/src/main/studio/preview-scheduler.ts",
 				'import { writeIdentityFixture } from "../../test-utils/identity-fixture";\nimport { createRequire } from "node:module"; const load = createRequire(import.meta.url); const spec = "../identity-store"; load(spec)[key];',
 			],
 		]) {
@@ -677,15 +674,15 @@ for (const [path, allowed] of [
 	["packages/export-pipeline/vitest.global-setup.ts", true],
 	["packages/export-pipeline/scripts/update-page-compiler-baseline.mts", true],
 	["scripts/preflight-gates.mts", true],
-	["apps/desktop/src/main/__tests__/setup.ts", true],
-	["apps/desktop/src/main/setup.test.ts", true],
-	["apps/desktop/src/main/planted.ts", false],
+	["apps/cli/src/main/__tests__/setup.ts", true],
+	["apps/cli/src/main/setup.test.ts", true],
+	["apps/cli/src/main/planted.ts", false],
 	["packages/export-pipeline/src/planted.ts", false],
 ]) {
 	test(`production test-helper scope ${allowed ? "permits" : "refuses"} ${path}`, () => {
 		const failures = checkIdentityWriterImports(
 			path,
-			'import { writeIdentityFixture } from "@praxity/desktop/test-utils/identity-fixture";',
+			'import { writeIdentityFixture } from "@praxity/cli/test-utils/identity-fixture";',
 		);
 		assert.deepEqual(failures, allowed ? [] : [`${path}:1: test helpers belong only in tests`]);
 	});
@@ -707,13 +704,13 @@ for (const source of [
 	'const factory = process["getBuiltinModule"]("node:module")["createRequire"]; factory(import.meta.url)("./identity-store")[key];',
 ]) {
 	test(`desktop production loader refuses indirect access: ${source}`, () => {
-		assert.ok(checkIdentityWriterImports("apps/desktop/src/main/planted.ts", source).length > 0);
+		assert.ok(checkIdentityWriterImports("apps/cli/src/main/planted.ts", source).length > 0);
 	});
 }
 
 for (const path of [
-	"apps/desktop/src/main/__tests__/loader.ts",
-	"apps/desktop/src/main/loader.test.ts",
+	"apps/cli/src/main/__tests__/loader.ts",
+	"apps/cli/src/main/loader.test.ts",
 	"packages/export-pipeline/src/loader.ts",
 ]) {
 	test(`desktop production loader permits other source ${path}`, () => {
@@ -730,28 +727,28 @@ for (const path of [
 test("identity writer ownership permits read interfaces and named writer owners", () => {
 	assert.deepEqual(
 		checkIdentityWriterImports(
-			"apps/desktop/src/main/studio/preview-scheduler.ts",
+			"apps/cli/src/main/studio/preview-scheduler.ts",
 			'import { resolveLessonSources } from "../lesson-source";',
 		),
 		[],
 	);
 	assert.deepEqual(
 		checkIdentityWriterImports(
-			"apps/desktop/src/main/studio/project-session.ts",
+			"apps/cli/src/main/studio/project-session.ts",
 			'import { resolveLessonSourcesForWrite } from "../lesson-source";',
 		),
 		[],
 	);
 	assert.deepEqual(
 		checkIdentityWriterImports(
-			"apps/desktop/src/main/operations/operation-service.ts",
+			"apps/cli/src/main/operations/operation-service.ts",
 			'import { resolveCourseIdentity, persistCourseIdentity } from "../identity-store";',
 		),
 		[],
 	);
 	assert.deepEqual(
 		checkIdentityWriterImports(
-			"apps/desktop/src/main/__tests__/identity-writer-admission.test.ts",
+			"apps/cli/src/main/__tests__/identity-writer-admission.test.ts",
 			'import { resolveCourseIdentity } from "../identity-store";',
 		),
 		[],
@@ -763,13 +760,13 @@ test("identity writer ownership CLI follows aliased barrel exports", () => {
 	try {
 		execFileSync("git", ["init", "--quiet", root]);
 		for (const [path, source] of [
-			["apps/desktop/src/main/identity-store.ts", "export function resolveCourseIdentity() {}"],
+			["apps/cli/src/main/identity-store.ts", "export function resolveCourseIdentity() {}"],
 			[
-				"apps/desktop/src/main/operations/operation-service.ts",
+				"apps/cli/src/main/operations/operation-service.ts",
 				'export { resolveCourseIdentity as admitted } from "../identity-store";',
 			],
 			[
-				"apps/desktop/src/main/studio/preview-scheduler.ts",
+				"apps/cli/src/main/studio/preview-scheduler.ts",
 				'import * as owner from "../operations/operation-service"; owner.admitted();',
 			],
 		]) {
@@ -798,9 +795,7 @@ for (const predicate of ["isRuntimeNodeId", "isDisplayNodeId"]) {
 		`const { ${predicate}: accepts } = require("@praxity/content-model/types");`,
 	]) {
 		test(`display ID ownership rejects durable widening: ${source}`, () => {
-			assert.ok(
-				checkDisplayIdImports("apps/desktop/src/shared/editor-session.ts", source).length > 0,
-			);
+			assert.ok(checkDisplayIdImports("apps/cli/src/shared/editor-session.ts", source).length > 0);
 		});
 	}
 }
@@ -812,20 +807,11 @@ test("display ID ownership admits only each owner's predicate and test fixtures"
 	assert.deepEqual(checkDisplayIdImports("packages/content-identity/src/files.ts", display), []);
 	assert.deepEqual(checkDisplayIdImports("packages/content-identity/src/resolve.ts", runtime), []);
 	assert.deepEqual(checkDisplayIdImports("packages/content-identity/src/resolve.ts", display), []);
-	assert.deepEqual(
-		checkDisplayIdImports("apps/desktop/src/shared/narration-sidecar.ts", display),
-		[],
-	);
-	assert.deepEqual(
-		checkDisplayIdImports("apps/desktop/src/shared/edit-cli-schema.ts", display),
-		[],
-	);
+	assert.deepEqual(checkDisplayIdImports("apps/cli/src/shared/narration-sidecar.ts", display), []);
+	assert.deepEqual(checkDisplayIdImports("apps/cli/src/shared/edit-cli-schema.ts", display), []);
+	assert.equal(checkDisplayIdImports("apps/cli/src/shared/edit-cli-schema.ts", runtime).length, 1);
 	assert.equal(
-		checkDisplayIdImports("apps/desktop/src/shared/edit-cli-schema.ts", runtime).length,
-		1,
-	);
-	assert.equal(
-		checkDisplayIdImports("apps/desktop/src/shared/narration-sidecar.ts", runtime).length,
+		checkDisplayIdImports("apps/cli/src/shared/narration-sidecar.ts", runtime).length,
 		1,
 	);
 	assert.equal(checkDisplayIdImports("packages/shared-blocks/src/narration.ts", runtime).length, 1);
@@ -835,7 +821,7 @@ test("display ID ownership admits only each owner's predicate and test fixtures"
 	);
 	assert.deepEqual(
 		checkDisplayIdImports(
-			"apps/desktop/src/shared/editor-session.ts",
+			"apps/cli/src/shared/editor-session.ts",
 			'import { isIdentityNodeId } from "@praxity/content-model/types";',
 		),
 		[],
@@ -844,7 +830,7 @@ test("display ID ownership admits only each owner's predicate and test fixtures"
 
 test("read snapshot parser ownership keeps display admission in private matching", () => {
 	const source = 'import { parseIdentityReadSnapshot as parse } from "./files.ts";';
-	assert.ok(checkDisplayIdImports("apps/desktop/src/main/identity-store.ts", source).length > 0);
+	assert.ok(checkDisplayIdImports("apps/cli/src/main/identity-store.ts", source).length > 0);
 	assert.deepEqual(checkDisplayIdImports("packages/content-identity/src/resolve.ts", source), []);
 });
 
@@ -855,9 +841,7 @@ for (const source of [
 	'const ids = require("@praxity/content-model/types");',
 ]) {
 	test(`display ID ownership rejects whole-module predicate imports: ${source}`, () => {
-		assert.ok(
-			checkDisplayIdImports("apps/desktop/src/shared/editor-session.ts", source).length > 0,
-		);
+		assert.ok(checkDisplayIdImports("apps/cli/src/shared/editor-session.ts", source).length > 0);
 	});
 }
 test("display ID ownership preserves canonical barrels and unrelated members", () => {
@@ -874,7 +858,7 @@ test("display ID ownership preserves canonical barrels and unrelated members", (
 	);
 	assert.deepEqual(
 		checkDisplayIdImports(
-			"apps/desktop/src/shared/editor-session.ts",
+			"apps/cli/src/shared/editor-session.ts",
 			"object.constructor; object.toString;",
 		),
 		[],
@@ -885,7 +869,7 @@ test("display ID ownership CLI rejects a planted durable import", () => {
 	const root = mkdtempSync(join(tmpdir(), "display-id-owner-"));
 	try {
 		execFileSync("git", ["init", "--quiet", root]);
-		const file = join(root, "apps/desktop/src/shared/editor-session.ts");
+		const file = join(root, "apps/cli/src/shared/editor-session.ts");
 		mkdirSync(dirname(file), { recursive: true });
 		writeFileSync(
 			file,
@@ -1005,7 +989,7 @@ for (const name of [
 	});
 }
 
-const path = "apps/desktop/src/planted.ts";
+const path = "apps/cli/src/planted.ts";
 for (const source of [
 	"const pages = source.match(/^---\\s/gm);",
 	"const pages = source.match(/^#\\s+/gm);",
@@ -1151,14 +1135,14 @@ test("prompt readers and unrelated schema imports remain allowed", () => {
 	);
 	assert.deepEqual(
 		checkSelfCheckOwners(
-			"apps/desktop/src/main/export/build-export-input-from-project.ts",
+			"apps/cli/src/main/export/build-export-input-from-project.ts",
 			'import { readLesson } from "@praxity/grammar"; if (!read || read.tree.stream.source !== input.lessonSource) throw Error("revision");',
 		),
 		[],
 	);
 	assert.equal(
 		checkSelfCheckOwners(
-			"apps/desktop/src/main/export/build-export-input-from-project.ts",
+			"apps/cli/src/main/export/build-export-input-from-project.ts",
 			'import { readLesson } from "@praxity/grammar"; publish(read.tree.root);',
 		).length,
 		1,
@@ -1183,7 +1167,7 @@ test("retrieval accessor imports and calls cannot bypass author ownership", () =
 	for (const path of [
 		"packages/export-pipeline/template/src/patterns/planted.ts",
 		"packages/shared-blocks/src/planted.ts",
-		"apps/desktop/src/main/export/planted.ts",
+		"apps/cli/src/main/export/planted.ts",
 	]) {
 		assert.ok(checkSelfCheckOwners(path, source).length > 0, path);
 	}
@@ -1218,7 +1202,7 @@ for (const accessor of [
 	});
 }
 
-const exportBridge = "apps/desktop/src/main/export/build-export-input-from-project.ts";
+const exportBridge = "apps/cli/src/main/export/build-export-input-from-project.ts";
 const compilerOwner = "packages/export-pipeline/src/self-check.ts";
 test("the self-check island may use library logic but cannot import raw author or compiler content", () => {
 	const island = "packages/export-pipeline/template/src/islands/self-check-support.ts";
@@ -1246,8 +1230,8 @@ test("the self-check island may use library logic but cannot import raw author o
 });
 const compilerBuild = "packages/export-pipeline/src/build.ts";
 const compilerContext = "packages/export-pipeline/src/preview/course-context.ts";
-const desktopConsumer = "apps/desktop/src/main/export/planted.ts";
-const authorConsumer = "apps/desktop/src/main/identity-store.ts";
+const desktopConsumer = "apps/cli/src/main/export/planted.ts";
+const authorConsumer = "apps/cli/src/main/identity-store.ts";
 
 test("rejects a namespace re-export inside the compiler owner", () => {
 	assert.equal(
@@ -1320,7 +1304,7 @@ for (const source of [
 		for (const path of [desktopConsumer, authorConsumer]) {
 			assert.equal(checkSelfCheckOwners(path, source).length, 1);
 		}
-		assert.deepEqual(checkSelfCheckOwners("apps/desktop/src/tests/planted.ts", source), []);
+		assert.deepEqual(checkSelfCheckOwners("apps/cli/src/tests/planted.ts", source), []);
 	});
 }
 
@@ -1427,7 +1411,7 @@ const rejectedFixtures = [
 	].map((source) => ({ name: `whole read or computed import ${source}`, source })),
 	{
 		name: "sidecar is no longer an author owner",
-		path: "apps/desktop/src/shared/narration-sidecar.ts",
+		path: "apps/cli/src/shared/narration-sidecar.ts",
 		source: 'import {readSelfCheckContent} from "@praxity/grammar";',
 	},
 
@@ -1641,7 +1625,7 @@ publish(files.tree, frame.nodes, identity.nodes);`,
 test("author cache and browser URL exceptions cannot authorize other raw-reader uses", () => {
 	for (const [path, source] of [
 		[
-			"apps/desktop/src/main/studio/project-session.ts",
+			"apps/cli/src/main/studio/project-session.ts",
 			"function publishReader(read: {tree: object; nodes: Map<string, object>}) { return JSON.stringify(read); }",
 		],
 		["packages/export-pipeline/template/src/island-loader.ts", "const raw = require(moduleUrl);"],
@@ -1966,7 +1950,7 @@ for (const source of distractorRawBypasses) {
 		for (const path of [
 			"packages/export-pipeline/src/patterns/text/render.ts",
 			"packages/shared-blocks/src/grammar-adapter.ts",
-			"apps/desktop/src/main/export/inspect-project-v1.ts",
+			"apps/cli/src/main/export/inspect-project-v1.ts",
 		])
 			assert.ok(checkSelfCheckOwners(path, source).length > 0, path);
 		for (const path of [
@@ -2024,7 +2008,7 @@ for (const source of [
 ])
 	test(`distractor compiler channel stays private repo-wide: ${source}`, () => {
 		for (const path of [
-			"apps/desktop/src/main/export/other.ts",
+			"apps/cli/src/main/export/other.ts",
 			"packages/shared-blocks/src/narration.ts",
 		])
 			assert.match(
@@ -2034,7 +2018,7 @@ for (const source of [
 	});
 
 test("desktop bridge may only merge the prepared distractor channel at its named site", () => {
-	const path = "apps/desktop/src/main/export/build-export-input-from-project.ts";
+	const path = "apps/cli/src/main/export/build-export-input-from-project.ts";
 	assert.deepEqual(
 		checkSelfCheckOwners(
 			path,
@@ -2055,7 +2039,7 @@ test("desktop bridge may only merge the prepared distractor channel at its named
 
 test("source-owner command rejects the distractor channel outside export-pipeline", () => {
 	const result = runFixture({
-		path: "apps/desktop/src/main/export/planted.ts",
+		path: "apps/cli/src/main/export/planted.ts",
 		source: "JSON.stringify(course.writeDistractorsContents);",
 	});
 	assert.equal(result.status, 1, result.stdout + result.stderr);
@@ -2132,17 +2116,14 @@ test("workspace src guard permits public entries, relative internals and same-pa
 
 test("workspace src legacy exceptions permit only their exact caller and specifier", () => {
 	const source = 'import { normalizeLineEndings } from "@praxity/grammar/src/line-endings.ts";';
-	assert.deepEqual(
-		checkWorkspaceSourceImports("apps/desktop/src/shared/editor-source.ts", source),
-		[],
-	);
+	assert.deepEqual(checkWorkspaceSourceImports("apps/cli/src/shared/editor-source.ts", source), []);
 	assert.equal(
 		checkWorkspaceSourceImports("packages/editor-core/src/planted.ts", source).length,
 		1,
 	);
 	assert.equal(
 		checkWorkspaceSourceImports(
-			"apps/desktop/src/shared/editor-source.ts",
+			"apps/cli/src/shared/editor-source.ts",
 			source.replace("line-endings.ts", "private.ts"),
 		).length,
 		1,
@@ -2155,8 +2136,8 @@ test("workspace src guard keeps the real advice consumer on public package entri
 });
 
 const nativePdfPaths = {
-	input: "apps/desktop/src/main/export/build-export-input-from-project.ts",
-	host: "apps/desktop/src/main/export/export-project.ts",
+	input: "apps/cli/src/main/export/build-export-input-from-project.ts",
+	host: "apps/cli/src/main/export/export-project.ts",
 	renderer: "packages/format-renderers/src/pipelines/course-pdf.ts",
 };
 test("native PDF author-content exceptions admit only the typed handoff and lookup sites", () => {

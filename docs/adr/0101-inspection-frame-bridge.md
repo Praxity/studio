@@ -130,7 +130,7 @@ Inspection markup and CSS are untrusted. Editor controls require private admissi
 
   Evidence: the code comment this replaced (commit bed54f6); not independently verified.
 
-  Related browser regression: `apps/desktop/e2e/browser-editor/frame-bridge.spec.ts`, `${name} keep handle centred on first line`, with `name` equal to `transformed ancestors with geometry fallback`. It deletes `currentCSSZoom` and checks handle centres under transform and zoom; it does not independently establish the historical engine-support claim.
+  Related browser regression: `apps/cli/e2e/browser-editor/frame-bridge.spec.ts`, `${name} keep handle centred on first line`, with `name` equal to `transformed ancestors with geometry fallback`. It deletes `currentCSSZoom` and checks handle centres under transform and zoom; it does not independently establish the historical engine-support claim.
 
 - `packages/editor-core/src/frame-bridge/page-lens.ts`, `position`: Rendered boxes snap to layout units, so a self-measured origin wobbles by a fraction of a pixel; keep the last exact origin while it agrees.
 

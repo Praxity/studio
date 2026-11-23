@@ -21,25 +21,22 @@ import type { PraxityBlock } from "@praxity/shared-blocks/types";
 import { splitBlocksIntoPages } from "@praxity/shared-blocks/viewer/split-pages";
 import AdmZip from "adm-zip";
 import { afterAll, beforeAll, expect, it, vi } from "vitest";
-import { runPraxityCli } from "../../../apps/desktop/src/main/cli";
-import { buildCourseExportInput } from "../../../apps/desktop/src/main/export/build-export-input-from-project";
+import { runPraxityCli } from "../../../apps/cli/src/main/cli";
+import { buildCourseExportInput } from "../../../apps/cli/src/main/export/build-export-input-from-project";
 import {
 	inspectProjectV1,
 	projectText,
-} from "../../../apps/desktop/src/main/export/inspect-project-v1";
-import { ProjectAssetInventory } from "../../../apps/desktop/src/main/export/project-asset-inventory";
-import { resolveLessonSources } from "../../../apps/desktop/src/main/lesson-source";
-import {
-	openProjectAsset,
-	resolveProjectAsset,
-} from "../../../apps/desktop/src/main/project-assets";
-import { PreviewScheduler } from "../../../apps/desktop/src/main/studio/preview-scheduler";
-import { resolveLessonNarration } from "../../../apps/desktop/src/shared/narration-sidecar";
+} from "../../../apps/cli/src/main/export/inspect-project-v1";
+import { ProjectAssetInventory } from "../../../apps/cli/src/main/export/project-asset-inventory";
+import { resolveLessonSources } from "../../../apps/cli/src/main/lesson-source";
+import { openProjectAsset, resolveProjectAsset } from "../../../apps/cli/src/main/project-assets";
+import { PreviewScheduler } from "../../../apps/cli/src/main/studio/preview-scheduler";
+import { resolveLessonNarration } from "../../../apps/cli/src/shared/narration-sidecar";
 import {
 	persistFixtureIdentity,
 	persistLegacyPendingFixture,
 	readIdentityFixture,
-} from "../../../apps/desktop/src/test-utils/identity-fixture";
+} from "../../../apps/cli/src/test-utils/identity-fixture";
 import { checkCourseAccessibility } from "../../editor-core/src/lib/a11y/checker";
 import {
 	buildCoursePdfSource,
@@ -149,7 +146,7 @@ let input: CourseExportInput;
 let lessons: Awaited<ReturnType<typeof resolveLessonSources>>;
 const runtime = {
 	appVersion: "test",
-	exportAssetsDir: resolve(import.meta.dirname, "../../../apps/desktop/resources/export-assets"),
+	exportAssetsDir: resolve(import.meta.dirname, "../../../apps/cli/resources/export-assets"),
 };
 const previewOptions = () => ({
 	projectDir: root,
@@ -624,7 +621,7 @@ beforeAll(async () => {
 			...options,
 			executablePath:
 				process.env.PRAXITY_TEST_TYPST ??
-				resolve(import.meta.dirname, "../../../apps/desktop/resources/typst/typst"),
+				resolve(import.meta.dirname, "../../../apps/cli/resources/typst/typst"),
 			temporaryRoot: root,
 		});
 		const file = join(root, `invariant-${answers}.pdf`);

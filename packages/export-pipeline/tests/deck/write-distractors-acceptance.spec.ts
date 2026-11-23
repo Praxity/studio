@@ -9,8 +9,8 @@ import { expect, type Locator, type Page, test } from "@playwright/test";
 import { readWriteDistractorsContent } from "@praxity/grammar";
 import AdmZip from "adm-zip";
 import { build } from "esbuild";
-import { resolveLessonSources } from "../../../../apps/desktop/src/main/lesson-source";
-import { persistFixtureIdentity } from "../../../../apps/desktop/src/test-utils/identity-fixture";
+import { resolveLessonSources } from "../../../../apps/cli/src/main/lesson-source";
+import { persistFixtureIdentity } from "../../../../apps/cli/src/test-utils/identity-fixture";
 import { compileCourse, deployCourse, writeDistractorsContentInput } from "../../src/build";
 import { bundleViewer, computeViewerSourceHash } from "../../src/bundle-viewer";
 import { prepareDesktopExportInputs } from "../../src/export-assets";
@@ -53,9 +53,7 @@ test.beforeAll(async () => {
 	if (cached) await cp(cached.directory, assets, { recursive: true });
 	else await bundleViewer(assets);
 	await prepareDesktopExportInputs(assets);
-	const { version } = JSON.parse(
-		await readFile(join(checkout, "apps/desktop/package.json"), "utf8"),
-	);
+	const { version } = JSON.parse(await readFile(join(checkout, "apps/cli/package.json"), "utf8"));
 	await writeFile(
 		join(assets, "viewer.version.json"),
 		JSON.stringify({
@@ -68,13 +66,13 @@ test.beforeAll(async () => {
 		process.env.PRAXITY_TEST_TYPST ||
 		join(
 			checkout,
-			"apps/desktop/resources/typst",
+			"apps/cli/resources/typst",
 			process.platform === "win32" ? "typst.exe" : "typst",
 		);
 	await build({
 		stdin: {
 			resolveDir: checkout,
-			contents: `import {runPraxityCli} from './apps/desktop/src/main/cli'; const result = await runPraxityCli(process.argv.slice(2), {appVersion: ${JSON.stringify(version)}, exportAssetsDir: ${JSON.stringify(assets)}, typstExecutablePath: ${JSON.stringify(typstExecutablePath)}, pdfAssetsDir: ${JSON.stringify(dirname(typstExecutablePath))}}); process.stdout.write(result.stdout); process.stderr.write(result.stderr); process.exitCode = result.exitCode;`,
+			contents: `import {runPraxityCli} from './apps/cli/src/main/cli'; const result = await runPraxityCli(process.argv.slice(2), {appVersion: ${JSON.stringify(version)}, exportAssetsDir: ${JSON.stringify(assets)}, typstExecutablePath: ${JSON.stringify(typstExecutablePath)}, pdfAssetsDir: ${JSON.stringify(dirname(typstExecutablePath))}}); process.stdout.write(result.stdout); process.stderr.write(result.stderr); process.exitCode = result.exitCode;`,
 		},
 		outfile: join(root, "cli.mjs"),
 		bundle: true,

@@ -242,7 +242,7 @@ the manifest's declared mapping and preserve payload comparison.
 
 PDF requires the pinned Typst 0.15.1 bundle (fonts and MiTeX beside the executable)
 and Poppler 24.02 tools. Provision with the repository's
-`apps/desktop/scripts/prepare-typst.mjs --output "$PINNED_TYPST_DIR"`.
+`apps/cli/scripts/prepare-typst.mjs --output "$PINNED_TYPST_DIR"`.
 `pdftotext -enc UTF-8 file.pdf -` preserves extraction order;
 `pdfinfo -struct-text file.pdf` supplies structure and tagged text as a
 localisation aid; Poppler does not expose every `/Alt`, `/ActualText`, `/Lang`

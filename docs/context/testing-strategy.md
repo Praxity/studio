@@ -37,7 +37,7 @@ local deferral rule above. Every code change runs the real source-owner
 command, including desktop export-input and format-renderers changes.
 CSS changes always run both CSS budget files and theme contrast; affected packages and their dependents get typechecks. Candidate and nightly CI run the full gates.
 
-The artifact retention policy in `apps/desktop/scripts/ci-minutes.test.mjs` guards accidental omissions; YAML aliases/anchors and local directories named like `upload-artifact@v4` can bypass detection. Retention above seven days cites a release or audit evidence document and an exact phrase, so adding lines above it does not break CI.
+The artifact retention policy in `apps/cli/scripts/ci-minutes.test.mjs` guards accidental omissions; YAML aliases/anchors and local directories named like `upload-artifact@v4` can bypass detection. Retention above seven days cites a release or audit evidence document and an exact phrase, so adding lines above it does not break CI.
 
 When you raise a test timeout, cite the failed run on the changed line:
 
@@ -167,7 +167,7 @@ starts outlast the journeys' 5-second waits. On tmpfs, fsync doesn't touch the
 disk. Chromium shards keep their scratch on runner disk. A failed WebKit shard
 logs `coredumpctl list` and `/proc/pressure/io`, so the log names any process
 that dumped core and shows recent I/O stalls.
-`apps/desktop/src/test-utils/fixture-temp.ts` owns fixture placement for the
+`apps/cli/src/test-utils/fixture-temp.ts` owns fixture placement for the
 complete recovery-save latency gate and journal-flush parity on runner disk.
 Disk placement preserves the gate's storage costs, not proof of power-loss
 durability. Other journal recovery tests still check process death and recovered
@@ -302,9 +302,9 @@ day instead of at the next `cli-candidate.yml` build.
 | `format-renderers` | Native course PDF and shared Typst helpers |
 | `desktop` | Main process, preload bridge, renderer hooks, security, and export integration |
 
-The export-pipeline Vitest setup builds its source-mode viewer assets and caches the comprehensive published-output fixture when needed. Studio RPC integration tests use the separate shipped desktop assets. Run `pnpm --filter @praxity/desktop prebuild` and `pnpm --filter @praxity/desktop prepare:typst` before those tests on a fresh checkout. CI prepares both in every test shard. No web or SCORM-importer project remains.
+The export-pipeline Vitest setup builds its source-mode viewer assets and caches the comprehensive published-output fixture when needed. Studio RPC integration tests use the separate shipped desktop assets. Run `pnpm --filter @praxity/cli prebuild` and `pnpm --filter @praxity/cli prepare:typst` before those tests on a fresh checkout. CI prepares both in every test shard. No web or SCORM-importer project remains.
 
-Finish desktop prebuild before running tests that read `apps/desktop/resources/export-assets`. Export-pipeline setup builds `packages/export-pipeline/prebuilt` separately. Independent read-only suites may run in parallel.
+Finish desktop prebuild before running tests that read `apps/cli/resources/export-assets`. Export-pipeline setup builds `packages/export-pipeline/prebuilt` separately. Independent read-only suites may run in parallel.
 
 The durable file journal's affected gate includes `studio-server`, alongside
 transaction, OS lock, identity, course IO, preview, export and inspection suites.
@@ -353,7 +353,7 @@ Each run makes 30 leadership page-17 commits. The gate uses each run's first-20
 nearest-rank p95, then passes when the median of those three p95s is at most
 600 ms. It publishes every run's first-20 p95 and maximum across all 30 commits,
 including ineligible runs, plus the median p95. No slow commit is discarded or
-adjusted. `apps/desktop/scripts/compile-scheduler-gate.mjs` owns the budgets and
+adjusted. `apps/cli/scripts/compile-scheduler-gate.mjs` owns the budgets and
 eligibility rules. T2a retains its 100 ms p95 checks on both the first 20 and all
 30 samples in each eligible run. These main-process timings do not establish
 gesture-to-frame-paint latency; P3b supplies that evidence.
@@ -417,8 +417,8 @@ system volume and the ReFS course volume, respectively. Their parent directories
 must exist. Real courses live on the ReFS volume. In PowerShell:
 
 ```powershell
-node --import tsx apps/desktop/scripts/benchmark-compile-scheduler.mts "$env:PRAXITY_GATE_SOURCE" "$env:PRAXITY_GATE_NTFS"
-node --import tsx apps/desktop/scripts/benchmark-compile-scheduler.mts "$env:PRAXITY_GATE_SOURCE" "$env:PRAXITY_GATE_REFS"
+node --import tsx apps/cli/scripts/benchmark-compile-scheduler.mts "$env:PRAXITY_GATE_SOURCE" "$env:PRAXITY_GATE_NTFS"
+node --import tsx apps/cli/scripts/benchmark-compile-scheduler.mts "$env:PRAXITY_GATE_SOURCE" "$env:PRAXITY_GATE_REFS"
 ```
 
 The script copies the source to `run-N/course` inside scratch and records the
@@ -434,7 +434,7 @@ exits 2 with no gate verdict.
 ## Native inventory timestamps
 
 From the repo root, run
-`node --import tsx apps/desktop/scripts/inventory-native-differential.mts <scratch-dir> <skew-ms> 500`
+`node --import tsx apps/cli/scripts/inventory-native-differential.mts <scratch-dir> <skew-ms> 500`
 with skew values `0` and `60000` on each tested volume. Each run performs 2,000
 mutations across same-size writes, truncate-extension, replacement and symlink
 retargeting. A writer thread completes each mutation before retained bytes and
@@ -446,7 +446,7 @@ This is an explicit machine check, outside the automatic affected gate.
 
 ## Native PDF
 
-Tests that compile real PDFs in `packages/format-renderers` use the Typst, fonts and MiTeX that ship in the app. `pnpm --filter @praxity/desktop prepare:typst` installs them; `dev` and `build` also run it. Once they're installed, `pnpm test` and the format-renderers suite use them automatically, with a 60 s per-test timeout. Without them, the native checks are skipped. Set `PRAXITY_TEST_TYPST` only to use a different binary. A system Typst of another version gives false failures, because MiTeX is resolved next to the binary.
+Tests that compile real PDFs in `packages/format-renderers` use the Typst, fonts and MiTeX that ship in the app. `pnpm --filter @praxity/cli prepare:typst` installs them; `dev` and `build` also run it. Once they're installed, `pnpm test` and the format-renderers suite use them automatically, with a 60 s per-test timeout. Without them, the native checks are skipped. Set `PRAXITY_TEST_TYPST` only to use a different binary. A system Typst of another version gives false failures, because MiTeX is resolved next to the binary.
 
 Run these locally before a PDF release. The existing Linux Vitest shards prepare the pinned x64 musl compiler, fonts, MiTeX and distro Poppler utilities, and run the format-renderers native checks too. The shared test helper parses Poppler 24.02 and 26.09 structure output; exact image alt text is checked in the PDF bytes because 24.02 omits it from the structure listing. Typography baseline checks use the bundled compiler and its SVG glyph groups.
 
@@ -454,7 +454,7 @@ The write-distractors acceptance file builds its viewer and CLI once, then expor
 
 `tests/deck/highlight-acceptance.spec.ts` builds one production CLI and viewer, then captures ten artifacts across paged/deck layouts and preview, HTML, SCORM 1.2/2004 and xAPI. Its shared setup and optional evidence-capture hooks each allow 120 seconds. Individual cases have a two-second acceptance budget, measured from Playwright JSON; CI's published `timing-summary.md` reports durations but does not enforce that budget. The filesystem-only notice checks run in Chromium once. A fast Vitest test validates the documented course manifest and whole-course references, and parses/renders both EN/FR lessons. HTTP exercises ESM and local files exercise the classic adapters. File tests deny every HTTP(S) request; Chromium and Firefox also enable offline emulation. WebKit offline emulation rejects plain local files. Its file tests establish operation with HTTP(S) requests denied, without claiming offline-emulation acceptance. Real screen-reader speech remains a separate, digest-bound acceptance step.
 
-The `published-output-deck` CI job prepares the pinned app Typst with `pnpm --filter @praxity/desktop prepare:typst` and installs Poppler before running that file in every engine. Its scratch CLI uses the prepared compiler in `apps/desktop/resources/typst/` (or the explicit `PRAXITY_TEST_TYPST` override), matching the native format-renderers setup. Local runs need the same preparation and `pdftotext` on PATH. Both CLI PDF byte scans are mandatory; missing tools fail the fixture.
+The `published-output-deck` CI job prepares the pinned app Typst with `pnpm --filter @praxity/cli prepare:typst` and installs Poppler before running that file in every engine. Its scratch CLI uses the prepared compiler in `apps/cli/resources/typst/` (or the explicit `PRAXITY_TEST_TYPST` override), matching the native format-renderers setup. Local runs need the same preparation and `pdftotext` on PATH. Both CLI PDF byte scans are mandatory; missing tools fail the fixture.
 
 ## SCORM gates
 
@@ -484,7 +484,7 @@ does not change the system PATH. Its archive SHA-256 is
 [MSYS2's package page](https://packages.msys2.org/packages/mingw-w64-ucrt-x86_64-libxml2).
 The companion libiconv and zlib DLLs must sit beside the executable.
 
-Preflight uses the bundled Typst in `apps/desktop/resources/typst/` by default;
+Preflight uses the bundled Typst in `apps/cli/resources/typst/` by default;
 `PRAXITY_TEST_TYPST` overrides it. `PRAXITY_NVDA` overrides the NVDA executable;
 otherwise preflight checks the two Windows Program Files locations.
 
@@ -530,7 +530,7 @@ Rustici-backed suites test compatibility, not conformance claims:
 
 ## Browser authoring journeys
 
-`pnpm --filter @praxity/desktop e2e:browser-editor --workers=2` runs headless Read, review and inspection journeys in Chromium, Firefox and WebKit. They cover Read navigation, review comments, recovery and inspection security. CLI tests cover source edits, including `praxity edit --rendered`, narration, identity and export. The legacy shell, prerequisite UI and Electron-only cases are removed. Mixed filesystem, identity and inspection suites retain their browser/service assertions.
+`pnpm --filter @praxity/cli e2e:browser-editor --workers=2` runs headless Read, review and inspection journeys in Chromium, Firefox and WebKit. They cover Read navigation, review comments, recovery and inspection security. CLI tests cover source edits, including `praxity edit --rendered`, narration, identity and export. The legacy shell, prerequisite UI and Electron-only cases are removed. Mixed filesystem, identity and inspection suites retain their browser/service assertions.
 
 CI's `browser-editor` job runs Chromium and WebKit on Ubuntu four-CPU runners,
 with three shards per engine and two workers per shard; PRs run Chromium only. The Electron binary-install step and Xvfb wrapper are removed.
@@ -695,12 +695,9 @@ Use `docs/test-fixtures/sample-course-grammar.md` for broad published-output cov
 
 ## Authoring contracts
 
-`apps/desktop/src/renderer/__tests__/grammar4-insertion.test.ts` checks independent semantics
-for every offered starter before round trips and composed-document boundary checks.
-`enum-source-contract.test.ts` checks advertised values and explicit compatibility
-values separately. An implemented metadata flag does not prove runtime behavior.
-`apps/desktop/src/renderer/components/panels/__tests__/grammar4-compositions.test.ts` checks every starter and composition for retired authored
-syntax, then verifies composition boundaries and selected block semantics. Sidebar insertion uses schema-backed templates. Raw slash insertion is disabled.
+`packages/grammar/__tests__/enum-source-contract.test.ts` checks advertised values
+and explicit compatibility values separately. An implemented metadata flag does
+not prove runtime behavior.
 
 The isolated authoring catalog in
 `packages/export-pipeline/tests/fixtures/authoring-catalog.ts` feeds static and real
@@ -749,7 +746,7 @@ contents and live versus saved revisions. Opening full preview flushes pending s
 Run this small journey locally with:
 
 ```bash
-pnpm --filter @praxity/desktop e2e:browser-editor --workers=2
+pnpm --filter @praxity/cli e2e:browser-editor --workers=2
 ```
 
 Keep combinations in fast source/compiled tests; add browser permutations when

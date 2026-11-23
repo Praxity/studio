@@ -56,7 +56,7 @@ jobs:
           FORMAL_RELEASE: "true"
           PACK_VERSION: ${{ inputs.pack_version }}
           PUBLISH_PACK: ${{ inputs.publish_pack }}
-        run: node apps/desktop/scripts/admit-rubato-release.mjs
+        run: node apps/cli/scripts/admit-rubato-release.mjs
 
   build:
     needs: admit
@@ -114,9 +114,9 @@ jobs:
         env:
           TMPDIR: /tmp/cc-${{ github.run_id }}
         run: |
-          source "$GITHUB_WORKSPACE/workflow/apps/desktop/scripts/prepare-macos-tmpdir.sh"
-          pnpm --filter @praxity/desktop prepare:typst
-          bash ../workflow/apps/desktop/scripts/build-cli-archives.sh
+          source "$GITHUB_WORKSPACE/workflow/apps/cli/scripts/prepare-macos-tmpdir.sh"
+          pnpm --filter @praxity/cli prepare:typst
+          bash ../workflow/apps/cli/scripts/build-cli-archives.sh
 
       - name: Capture verified archive digests
         id: digests
@@ -124,7 +124,7 @@ jobs:
           set -euo pipefail
           shopt -s nullglob
           for arch in arm64 x64; do
-            archives=(apps/desktop/release/praxity-cli-*-macos-"$arch".tar.gz)
+            archives=(apps/cli/release/praxity-cli-*-macos-"$arch".tar.gz)
             [[ ${#archives[@]} == 1 ]] || exit 1
             digest="$(shasum -a 256 "${archives[0]}")"
             digest="${digest%% *}"
@@ -145,7 +145,7 @@ jobs:
           # No -p here: a retry must refuse an existing handoff.
           mkdir "$handoff"
           shopt -s nullglob
-          archives=(apps/desktop/release/praxity-cli-*.tar.gz)
+          archives=(apps/cli/release/praxity-cli-*.tar.gz)
           [[ ${#archives[@]} -gt 0 ]]
           for archive in "${archives[@]}"; do
             [[ -f "$archive" && -f "$archive.sha256" ]]
@@ -234,14 +234,14 @@ jobs:
 
       - name: Prepare source fixture assets
         run: |
-          pnpm --filter @praxity/desktop prebuild
-          pnpm --filter @praxity/desktop prepare:typst
+          pnpm --filter @praxity/cli prebuild
+          pnpm --filter @praxity/cli prepare:typst
 
       - name: Download sealed CLI archives
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: cli-release-handoff
-          path: source/apps/desktop/release
+          path: source/apps/cli/release
 
       - name: Verify and extract native archive
         env:
@@ -249,33 +249,33 @@ jobs:
           ARCHIVE_SHA256: ${{ needs.build.outputs.x64_sha256 }}
         run: |
           set -euo pipefail
-          cd apps/desktop/release
+          cd apps/cli/release
           actual="$(shasum -a 256 "$ARCHIVE_NAME")"
           [[ "${actual%% *}" == "$ARCHIVE_SHA256" ]] || exit 1
           mkdir -p ../../../dist
           tar -xzf "$ARCHIVE_NAME" -C ../../../dist
 
       - name: Install headless browsers
-        run: pnpm --filter @praxity/desktop exec playwright install "${{ matrix.browser }}"
+        run: pnpm --filter @praxity/cli exec playwright install "${{ matrix.browser }}"
 
       - name: Enable macOS keyboard navigation
         id: keyboard_navigation
-        run: source ../workflow/apps/desktop/scripts/enable-macos-keyboard-navigation.sh
+        run: source ../workflow/apps/cli/scripts/enable-macos-keyboard-navigation.sh
 
       - name: Verify packaged browser journeys
         timeout-minutes: 45
         env:
           TMPDIR: /tmp/cc-${{ github.run_id }}
         run: |
-          source "$GITHUB_WORKSPACE/workflow/apps/desktop/scripts/prepare-macos-tmpdir.sh"
-          PRAXITY_STUDIO_TYPST="$PWD/apps/desktop/resources/typst/typst" PRAXITY_BROWSER_ARTIFACT="$PWD/dist/studio-cli" pnpm --filter @praxity/desktop run e2e:browser-editor --project="${{ matrix.browser }}" --shard="${{ matrix.shard }}"
+          source "$GITHUB_WORKSPACE/workflow/apps/cli/scripts/prepare-macos-tmpdir.sh"
+          PRAXITY_STUDIO_TYPST="$PWD/apps/cli/resources/typst/typst" PRAXITY_BROWSER_ARTIFACT="$PWD/dist/studio-cli" pnpm --filter @praxity/cli run e2e:browser-editor --project="${{ matrix.browser }}" --shard="${{ matrix.shard }}"
 
       - name: Restore macOS keyboard navigation
         if: always()
         working-directory: ${{ runner.temp }}
         env:
           ORIGINAL_MODE: ${{ steps.keyboard_navigation.outputs.original_mode }}
-        run: source "$GITHUB_WORKSPACE/workflow/apps/desktop/scripts/restore-macos-keyboard-navigation.sh"
+        run: source "$GITHUB_WORKSPACE/workflow/apps/cli/scripts/restore-macos-keyboard-navigation.sh"
 
       - name: Clean browser workspace and downloads
         if: always()
@@ -445,7 +445,7 @@ jobs:
       - name: Prepare external Typst with verified upstream digest
         run: |
           pnpm --dir workflow install --frozen-lockfile
-          pnpm --dir workflow --filter @praxity/desktop prepare:typst
+          pnpm --dir workflow --filter @praxity/cli prepare:typst
       - name: Download verified private candidate
         env:
           GH_TOKEN: ${{ github.token }}
@@ -455,7 +455,7 @@ jobs:
           EXPECTED_ARM64_SHA256: ${{ needs.build.outputs.arm64_sha256 }}
           EXPECTED_X64_NAME: ${{ needs.build.outputs.x64_name }}
           EXPECTED_X64_SHA256: ${{ needs.build.outputs.x64_sha256 }}
-        run: node workflow/apps/desktop/scripts/download-candidate.mjs
+        run: node workflow/apps/cli/scripts/download-candidate.mjs
       - name: Verify native package smoke
         env:
           NATIVE_ARCH: ${{ matrix.arch }}
@@ -472,7 +472,7 @@ jobs:
           unset GH_TOKEN GITHUB_TOKEN
           tar -xzf "${archives[0]}"
           node studio-cli/praxity.mjs --help
-          export PRAXITY_STUDIO_TYPST="$GITHUB_WORKSPACE/workflow/apps/desktop/resources/typst/typst"
+          export PRAXITY_STUDIO_TYPST="$GITHUB_WORKSPACE/workflow/apps/cli/resources/typst/typst"
           mkdir smoke-course
           printf 'title: Native smoke\nlessons: [lesson.prax]\ndesign:\n  typography:\n    pairing: book\n' > smoke-course/course.yaml
           printf '# Formula\n\nRecall this formula.\n\n$$\nx^2\n$$\n' > smoke-course/lesson.prax
@@ -507,7 +507,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RESOLVE_RUBATO_PUBLISH: "true"
-        run: node workflow/apps/desktop/scripts/admit-rubato-release.mjs
+        run: node workflow/apps/cli/scripts/admit-rubato-release.mjs
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: Praxity/rubato
@@ -522,7 +522,7 @@ jobs:
           EXPECTED_ARM64_SHA256: ${{ needs.build.outputs.arm64_sha256 }}
           EXPECTED_X64_NAME: ${{ needs.build.outputs.x64_name }}
           EXPECTED_X64_SHA256: ${{ needs.build.outputs.x64_sha256 }}
-        run: node workflow/apps/desktop/scripts/download-candidate.mjs
+        run: node workflow/apps/cli/scripts/download-candidate.mjs
       - name: Publish verified Rubato pack
         working-directory: rubato
         env:

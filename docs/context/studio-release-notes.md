@@ -21,6 +21,11 @@ Decision, 2026-10-16: Studio stays on GitHub Free and uses the repository-secret
 
 ## Publish a Rubato pack
 
+The public `cli-release.yml` workflow supports only Studio SHAs from after the
+`apps/desktop` to `apps/cli` rename. Its `ref` must contain
+`apps/cli/package.json`. A pre-rename SHA uses the unsupported old layout and
+fails during archive building, before publication.
+
 A private `CLI candidate` builds only a full SHA on Studio main or the head of a
 branch in this repository. Admission refuses pull-request and fork refs, which
 GitHub also serves through this repository.

@@ -27,4 +27,4 @@ Do not share `DECK_ARTIFACT_DIR` across concurrent invocations or projects. To i
 pnpm --filter @praxity/export-pipeline exec node --input-type=module -e 'import http from "node:http"; import handler from "serve-handler"; http.createServer((req,res)=>handler(req,res,{public:"/tmp/praxity-module-deck",cleanUrls:false})).listen(8768,"127.0.0.1")'
 ```
 
-Open `http://127.0.0.1:8768/reading/index.html` or `/audio/index.html`. Studio save and preview integration is covered by headless browser authoring journeys in `apps/desktop/e2e/browser-editor/`. Visual acceptance and physical assistive-technology/LMS testing remain separate checks. Timestamps are used only internally; none are displayed in the transcript.
+Open `http://127.0.0.1:8768/reading/index.html` or `/audio/index.html`. Studio save and preview integration is covered by headless browser authoring journeys in `apps/cli/e2e/browser-editor/`. Visual acceptance and physical assistive-technology/LMS testing remain separate checks. Timestamps are used only internally; none are displayed in the transcript.
