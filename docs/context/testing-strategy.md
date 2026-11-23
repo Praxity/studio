@@ -8,7 +8,7 @@ Vitest-only selection ignores Markdown under `docs/context/` and runs the gramma
 project for Markdown under `docs/prax-format/`. Fixtures, setup dependencies and
 unknown non-source inputs still require full Vitest.
 The browser-editor shards discover the remaining `*.spec.ts` files, including
-the direct `canvas*.spec.ts` journeys and legacy shell/preview trust checks.
+Read, review and inspection trust checks.
 The stopped U7 staged host, outline and source-host browser specs are retired;
 shared frame/inspection, transport and published-output tests remain.
 
@@ -516,7 +516,7 @@ Rustici-backed suites test compatibility, not conformance claims:
 
 ## Browser authoring journeys
 
-`pnpm --filter @praxity/desktop e2e:browser-editor --workers=2` runs headless authoring journeys in Chromium, Firefox and WebKit. They cover canvas Read/Edit, saves and recovery, plus retained inspection security. CLI tests cover narration, identity and export. The legacy shell, prerequisite UI and Electron-only cases are removed. Mixed filesystem, identity and inspection suites retain their browser/service assertions.
+`pnpm --filter @praxity/desktop e2e:browser-editor --workers=2` runs headless Read, review and inspection journeys in Chromium, Firefox and WebKit. They cover Read navigation, review comments, recovery and inspection security. CLI tests cover source edits, including `praxity edit --rendered`, narration, identity and export. The legacy shell, prerequisite UI and Electron-only cases are removed. Mixed filesystem, identity and inspection suites retain their browser/service assertions.
 
 CI's `browser-editor` job runs Chromium and WebKit on Ubuntu four-CPU runners,
 with three shards per engine and two workers per shard; PRs run Chromium only. The Electron binary-install step and Xvfb wrapper are removed.

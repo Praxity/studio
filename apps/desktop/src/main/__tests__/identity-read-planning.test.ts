@@ -354,3 +354,23 @@ it(
 		).toBe(true);
 	}),
 );
+
+it("review: retained durable container edit adds descendants without runtime IDs on disk", async () => {
+	const { root, service } = await fixture();
+	const target = (await readBlockInventory(root)).blocks.find((block) => block.type === "tabs");
+	if (!target) throw new Error("Missing target");
+	const editable =
+		"::: tabs\n:: First\n\nNew first.\n\n:: Second\n\nNew second.\n\nAdded paragraph.\n\n:: Third\n\nThird tab.\n";
+	const written = await service.apply(edit(target, editable));
+	expect(written.ok).toBe(true);
+	expect(await readFile(join(root, "a.prax"), "utf8")).toBe(
+		inserted.replace("New second.", "New second.\n\nAdded paragraph.\n\n:: Third\n\nThird tab."),
+	);
+	const reloaded = await resolveLessonSources(root);
+	expect(reloaded.identity.sourceMappings.every((m) => !m.id.startsWith("rt-"))).toBe(true);
+	expect(
+		Object.entries(await bytes(root))
+			.filter(([path]) => path.startsWith(".praxity/identity/"))
+			.every(([, text]) => !text.includes("rt-")),
+	).toBe(true);
+});

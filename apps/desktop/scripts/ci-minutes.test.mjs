@@ -1369,7 +1369,7 @@ for (const [name, files, expected] of [
 }
 
 for (const [name, event, files, expected] of [
-	["renderer-only PR", "pull_request", ["apps/desktop/src/renderer/browser/canvas.ts"], false],
+	["renderer-only PR", "pull_request", ["apps/desktop/src/inspection-frame.ts"], false],
 	["docs-only PR", "pull_request", ["docs/context/testing-strategy.md"], false],
 	["root manifest PR", "pull_request", ["package.json"], true],
 	["package manifest PR", "pull_request", ["packages/grammar/package.json"], true],

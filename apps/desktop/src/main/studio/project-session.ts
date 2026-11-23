@@ -279,7 +279,6 @@ export async function createStudioProjectSession(
 		identity: ResolvedCourseIdentity,
 		seq: number,
 		changed: CourseContextChanges | undefined,
-		optimistic: boolean,
 	) {
 		const practiceDiagnostics = practiceAdmissionDiagnostics(
 			[...identity.lessons].map(([path, read]) => ({ path, read })),
@@ -289,11 +288,7 @@ export async function createStudioProjectSession(
 			return undefined;
 		}
 		const input = await previewInput(identity, seq);
-		const render = await scheduler.refresh(
-			input,
-			changed ?? { assets: [...input.resolvedAssets.keys()] },
-			optimistic,
-		);
+		await scheduler.refresh(input, changed ?? { assets: [...input.resolvedAssets.keys()] });
 		for (const [file, read] of identity.lessons) {
 			const diagnostics = read.errors
 				.filter((error) => error.level === "error")
@@ -321,7 +316,6 @@ export async function createStudioProjectSession(
 					});
 			}
 		}
-		return render;
 	}
 	const initial = await withProjectFileTransaction(
 		root,
@@ -623,16 +617,11 @@ export async function createStudioProjectSession(
 									const seq = ++previewSequence;
 									publish({ type: "editorChanged", seq });
 									previewSeq = seq;
-									await refreshPreview(
-										identity,
-										seq,
-										{
-											lessons: filename.endsWith(".prax") ? [filename] : undefined,
-											manifest: filename === "course.yaml" || filename === "praxity.json",
-											assets: filename.startsWith("assets/") ? [filename] : undefined,
-										},
-										false,
-									);
+									await refreshPreview(identity, seq, {
+										lessons: filename.endsWith(".prax") ? [filename] : undefined,
+										manifest: filename === "course.yaml" || filename === "praxity.json",
+										assets: filename.startsWith("assets/") ? [filename] : undefined,
+									});
 									outsideTiming = { watcherEventAt, admissionMs, inputMs };
 									rememberSources(identity);
 								},

@@ -515,3 +515,12 @@ describe("8,800-node course", () => {
 		);
 	});
 });
+
+it("review: isolates the display ID byte guard", () => {
+	const input = structuredClone(prepareEditorSnapshot(simpleSnapshot));
+	const node = input.lessons[0].nodes.at(-1);
+	if (!node) throw new Error("Missing node");
+	node.id = "中".repeat(36);
+	node.target = null;
+	expect(editorSnapshotSchema.safeParse(input).success).toBe(false);
+});

@@ -74,7 +74,7 @@ it("review: adding a valid float boundary must still compile the page", async ()
 		const next: CourseContextInput = { ...model(1), content: [{ ...parsed.pages[0], id: "page" }] };
 		const fresh = compilePage(await createCourseContext(next), "page");
 		expect(fresh.html).toContain("Text beside picture.");
-		await scheduler.refresh(next, {}, true);
+		await scheduler.refresh(next, {});
 		await vi.runAllTimersAsync();
 		expect(events.some((e) => e.type === "pageCompiled" && e.patch.seq === 1)).toBe(true);
 		expect(events.some((e) => e.type === "compileFailed")).toBe(false);
@@ -233,7 +233,7 @@ it.each(["delete", "rename", "move"] as const)(
 				next.moduleDeck = {};
 				next.content[0].lessonId = "second-lesson";
 			}
-			await scheduler.refresh(next, {}, false);
+			await scheduler.refresh(next, {});
 			if (!finish) throw Error("Compile did not start");
 			finish();
 			await Promise.resolve();
@@ -254,7 +254,7 @@ it("review: dispose clears a scheduled trailing timer and blocks an in-flight de
 	);
 	scheduler.selectPage("page");
 	await vi.runAllTimersAsync();
-	await scheduler.refresh({ ...model(1), title: "Renamed" }, {}, false);
+	await scheduler.refresh({ ...model(1), title: "Renamed" }, {});
 	expect(vi.getTimerCount()).toBeGreaterThan(0);
 	scheduler.close();
 	expect(vi.getTimerCount()).toBe(0);
@@ -287,6 +287,37 @@ it("compiled scheduler failures retain their code and localization reference", a
 				}),
 			),
 		);
+	} finally {
+		scheduler.close();
+	}
+});
+
+it("newer preview content fences stale failures and refreshes", async () => {
+	vi.useFakeTimers();
+	const events: PreviewSchedulerEvent[] = [];
+	const input = (seq: number) => {
+		const value = model(seq);
+		value.content[0].blocks[0].data.content = `Content ${seq}`;
+		return value;
+	};
+	const scheduler = await PreviewScheduler.create(input(0), (event) => events.push(event));
+	try {
+		await scheduler.refresh(input(2), {});
+		await vi.runAllTimersAsync();
+		expect(scheduler.lastGood("page")?.html).toContain("Content 2");
+		events.length = 0;
+		scheduler.fail(1, [{ message: "Stale failure" }]);
+		await vi.runAllTimersAsync();
+		expect(events.filter((event) => event.type === "compileFailed")).toEqual([]);
+		expect(scheduler.lastGood("page")?.html).toContain("Content 2");
+		await expect(scheduler.refresh(input(1), {})).rejects.toThrow(
+			"Course context sequence must advance",
+		);
+		expect(events).toEqual([]);
+		await vi.runAllTimersAsync();
+		expect(scheduler.context().seq).toBe(2);
+		expect(scheduler.lastGood("page")?.seq).toBe(2);
+		expect(scheduler.lastGood("page")?.html).toContain("Content 2");
 	} finally {
 		scheduler.close();
 	}

@@ -272,78 +272,9 @@ window, with a 400 ms maximum wait during continuous edits. `PreviewScheduler` r
 discards results superseded for that page, and yields between jobs. Studio's
 `previewSelectPage` RPC selects the visible page and returns navigation IDs;
 `previewStats` exposes compile counters and measured stage durations. Session
-events are `draftRendered`, `nodesRendered`, `pageCompiled` and `compileFailed`. `pageCompiled`
-carries the ordered page patch and changed `documentRegions`, which are outside
-the page order. P3b carries `patch`, `patched` and `compileFailed` through the
-frame bridge's private protocol. The course preview channel refuses these messages.
-Inspection's retained working directory still needs integration with the existing
-course host.
+events are `pageCompiled`, `compileFailed` and `pagesChanged`. `pageCompiled` carries the ordered page patch and changed `documentRegions`, which are outside the page order. Newer admitted revisions fence in-flight output and diagnostics; failures preserve the last good compiled page. Source edits use `praxity edit`, including `--rendered`, through the durable operation service. Browser draft rendering, optimistic node refresh and session write RPCs were retired on 2026-11-22. Their decision history remains in [ADR 0066](../adr/0066-session-and-http-ownership.md).
 
-T2a uses `previewRenderDraft({ transactionId, pageId, nodeId, seq, source })`.
-`source` contains one complete grammar-4 node, including its closer when present.
-The host parses it in memory and calls `renderNode` with the saved page's latest
-admitted siblings. This path opens no files or T1 admission. Its response and
-`draftRendered` event carry `{ seq, pageId, transactionId, state, fragments }`.
-The per-page draft `seq` belongs to commit gestures within the renderer subscription
-lifetime and must strictly increase;
-it is separate from the operation service's admitted revision `seq`. P3b must
-fence draft responses in that domain, retain focus, and show Saving until the
-matching durable operation settles. A newer draft also holds older page compiles.
-Pending drafts are retained by transaction and node, so a newer sibling draft
-cannot discard an earlier transaction's settlement. Each accepted draft emits
-one `state: saved` or `state: reverted` settlement. Each new event subscription
-starts the current renderer epoch, reverts old pending drafts and resets the
-per-page sequences. A renderer reload can start again at 1 even before its old
-stream closes. Only the current subscription's disconnect can end that epoch;
-an old stream's later disconnect cannot reset the new renderer's sequences.
-A refusal restores the latest admitted fragment
-without deleting S2's draft. If admission removed the node or made it a layout
-region, the settlement has no node fragment and the page compile supplies the
-current order and regions. A page compile suppressed while a draft was pending
-is requested again when that page's last draft settles. Its operation response
-supplies the localized refusal key for one announcement. Frame patching, status
-copy and the gesture-to-paint T2a gate belong to P3b.
-
-T2b accepted operations and history writes carry a monotonic `seq` and real node
-HTML in `render` for small page edits. The response renders only changed nodes
-from the durable identity and latest admitted page siblings. It retains T1's
-complete durable acknowledgement.
-The [scheduler latency gate](testing-strategy.md#scheduler-latency-gate) uses
-three eligible quiet-machine runs and reports maxima separately on each volume;
-it measures typical saves without weakening T1 or bounding the worst save.
-
-Full admitted-input and context refreshes run afterward in the scheduler queue
-under a fresh read admission, including a
-fresh identity resolution in that same admission. Commit-time identity never
-combines with later manifest, settings or asset reads. Without watcher hints,
-the refresh invalidates every admitted asset digest. Not-yet-started
-refreshes coalesce to the latest complete input; newer admitted revisions fence
-in-flight output and diagnostics. Queue wakeups use the host's captured session
-async scope so they cannot inherit a released T1 lock. Watcher source echoes compare
-fresh bytes with admitted SHA-256 hashes. Lesson unlink/add events wait for T1
-before checking whether the source is still absent. A save's temporary live-name
-gap preserves held-field correspondence; a real deletion revokes it. Existing
-outside replacement bytes still pass through the revision and text guards.
-Outside revisions resolve through the
-session identity admission, refresh the context, then compile the visible page.
-Parser failures retain that lesson's last valid preview input and output and emit
-diagnostics for its pages. Other lessons continue refreshing and compiling.
-New invalid lessons have no content to retain; their diagnostics still reach the
-host without blocking valid pages. The learner
-preview continues to use immutable artifact leases. `SmallPreviewFrame`'s edit
-polling cadence is marked for replacement by P3b.
-
-`html-gen.ts` owns rendering rules; `html-pages.ts` writes `compileDocument()`
-results and canonical redirects. `createCourseContextFromHtml()` captures the
-publisher's already adapted model after asset rewriting, without adapting it
-again. Filesystem setup, image optimisation and viewer assets remain in
-`build.ts`; selective asset preparation remains a subsequent context slice.
-
-Studio source hosts resolve course, lesson, page, block and child UUIDs through I4. Identity lives in `.praxity/identity/`; source contains authored names for logic, not generated IDs. Studio opening and saves persist identity; save installs the supplied source bytes and identity through one write admission. An unchanged save does not replace `.prax` files. Preview drafts resolve in memory. CLI and Studio browser exports use strict read admission and refuse pending, invalid or transient identities. CLI export names `praxity identity init <course>` to record identity explicitly. Inspection also uses read admission and never persists identity. The lower-level export builder defaults to read-only; persistence requires an explicit `manifestPolicy: "write"`. Current CLI and browser export hosts explicitly set `"read-only"`.
-
-Schema 1 inspection retains its fields and adds `entityId` and `revision` to lessons, pages and blocks. Their revision comes from the resolved identity snapshot. Both inspection schemas and preview hold read admissions and preserve source bytes.
-
-Copy the complete project, including `.praxity/identity/`, to retain identity. The converter establishes grammar 4 identity before installing its approved output. Grammar 3 refusal names the archived conversion command; preparation, notices and archive SHA-256 are recorded in [converter-archive.md](converter-archive.md).
+Read preview uses the canonical learner compiler. Review comments and inspection retain their separate admission and script-stripped frame protocol. The shared editor-core preview protocol still accepts `nodesRendered`; the Studio scheduler no longer emits it.
 
 ### Retained review evidence
 
@@ -893,7 +824,7 @@ retain the original file style.
 
 The module-deck compiler applies the content-model `supportsDeckPassGate` response-type restriction. Unsupported authored Pass gates produce a localized compiler error. Group and automatic-answer validation remain separate compiler rules.
 
-The Read preview loads captured learner HTML on a separate listener. The launch listener exposes no browser source-write RPC or author projection. `GET /` enters Read mode through `/launch` admission. The old browser shell, Electron main entry, preload, windows and IPC are removed. `pnpm build:cli` packages canvas assets and export support; it refuses startup if the canvas digest does not match. See [browser editor status](browser-editor.md).
+The Read preview loads captured learner HTML on a separate listener. The launch listener exposes no browser source-write RPC or author projection. `GET /` enters Read mode through `/launch` admission. The old browser shell, Electron main entry, preload, windows and IPC are removed. `pnpm build:cli` packages Read preview, review and inspection assets plus export support, with inventory and provenance checks for retained assets. See [browser editor status](browser-editor.md).
 
 `praxity studio <folder> --port <n>` binds exactly that port on `127.0.0.1`.
 Without `--port`, Studio uses a course-specific default and falls back to a temporary

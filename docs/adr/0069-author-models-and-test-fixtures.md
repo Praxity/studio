@@ -217,11 +217,11 @@ Author transports, source editing and test adapters preserve ownership rather th
   independently verified.
 - `safeJson`: Zod can discard __proto__ while cloning. Reject it, inherited objects and prototype
   names before a schema or YAML setter can interpret them.
-- `StudioEditorBridge`: Rooted browser editor APIs; persistence carries the controller's exact
+- Retired 2026-11-22, `StudioEditorBridge`: Rooted browser editor APIs; persistence carries the controller's exact
   draft.
   Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
   independently verified.
-- `StudioEditorBridge`: Same-revision callers share a read; newer callers share a queued refresh.
+- Retired 2026-11-22, `StudioEditorBridge`: Same-revision callers share a read; newer callers share a queued refresh.
   Stale replies retry once.
 - `CanvasPageScope`: Captured compiler page identity and position, independent of course DOM
   markers.

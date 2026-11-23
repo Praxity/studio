@@ -10,17 +10,13 @@ import {
 	createCourseContext,
 	getPageDependencies,
 	refreshCourseContext,
-	renderNode,
 } from "@praxity/export-pipeline";
 import type {
 	PreviewCompileDiagnostic,
 	PreviewHtmlFragment,
-	PreviewNodeRender,
 	PreviewPatch,
 	PreviewRenderEvent,
 } from "@praxity/shared-blocks/course-preview-protocol";
-import { imageFloatRegions } from "@praxity/shared-blocks/image-float";
-import type { PraxityBlock, PraxityPage } from "@praxity/shared-blocks/types";
 
 import { previewDiagnostics } from "./preview-diagnostics";
 
@@ -85,53 +81,6 @@ export class PreviewScheduler {
 		return this.good.get(pageId);
 	}
 
-	private renderSmallEdit(
-		seq: number,
-		previous: readonly PraxityPage[],
-		pages: readonly PraxityPage[],
-		renderFragment: (page: PraxityPage, block: PraxityBlock) => ReturnType<typeof renderNode>,
-	): PreviewNodeRender | undefined {
-		const touched = pages.flatMap((page) =>
-			imageFloatRegions(page.blocks)
-				.flatMap((region) => region.blocks)
-				.filter(
-					(block) =>
-						JSON.stringify(block) !==
-						JSON.stringify(
-							previous.find((old) => old.id === page.id)?.blocks.find((old) => old.id === block.id),
-						),
-				)
-				.map((block) => ({ page, block })),
-		);
-		const removed = previous
-			.flatMap((page) => page.blocks)
-			.filter(
-				(block) => !pages.some((page) => page.blocks.some((next) => next.id === block.id)),
-			).length;
-		if (!touched.length || touched.length + removed > 8) return undefined;
-		const renders: PreviewNodeRender[] = [];
-		const start = performance.now();
-		for (const page of pages) {
-			const nodes = touched.filter((node) => node.page.id === page.id);
-			if (!nodes.length || !this.current.pages.some((current) => current.id === page.id)) continue;
-			try {
-				const fragments = nodes.map(({ block }) => wireFragment(renderFragment(page, block)));
-				const render = { seq, pageId: page.id, fragments };
-				renders.push(render);
-				const sent = this.sent.get(page.id) ?? new Map();
-				for (const fragment of fragments) sent.set(fragment.id, fragment);
-				this.sent.set(page.id, sent);
-				this.publish({ type: "nodesRendered", render: structuredClone(render) });
-			} catch (error) {
-				this.publishFailure(seq, page.id, error);
-			}
-		}
-		this.timings.renderMs = performance.now() - start;
-		return structuredClone(
-			renders.find((render) => render.pageId === this.visiblePageId) ?? renders[0],
-		);
-	}
-
 	selectPage(pageId: string): void {
 		if (!this.current.pages.some((page) => page.id === pageId))
 			throw new Error("Unknown preview page.");
@@ -168,11 +117,7 @@ export class PreviewScheduler {
 		this.request([pageId], this.current.seq);
 	}
 
-	async refresh(
-		input: CourseContextInput,
-		changed: CourseContextChanges,
-		optimistic: boolean,
-	): Promise<PreviewNodeRender | undefined> {
+	async refresh(input: CourseContextInput, changed: CourseContextChanges): Promise<void> {
 		const previous = this.current;
 		const measuredAt = performance.now();
 		const next = await refreshCourseContext(previous, input, changed);
@@ -201,14 +146,10 @@ export class PreviewScheduler {
 			.map((page) => page.id);
 		this.failures.clear();
 		this.request(
-			optimistic || !invalidated.length
+			!invalidated.length
 				? invalidated
 				: [...new Set([...invalidated, this.visiblePageId].filter(Boolean))],
 			next.seq,
-		);
-		if (!optimistic) return undefined;
-		return this.renderSmallEdit(next.seq, previous.pages, next.pages, (page, block) =>
-			renderNode(next, page.id, block.id),
 		);
 	}
 

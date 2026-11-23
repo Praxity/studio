@@ -1,6 +1,6 @@
 ---
 name: screen-reader-tester
-description: Screen reader testing with Guidepup and VoiceOver. Use to verify what VoiceOver actually announces for a component, page, or interaction flow, when ARIA that looks correct still needs confirming against real speech output. Published output and the thin canvas run in the browser; embedded pane journeys use the installed host application, per /a11y section 2.3. Requires macOS with Accessibility permissions.
+description: Screen reader testing with Guidepup and VoiceOver. Use to verify what VoiceOver actually announces for a component, page, or interaction flow, when ARIA that looks correct still needs confirming against real speech output. Published output and Read preview and review run in the browser; embedded pane journeys use the installed host application, per /a11y section 2.3. Requires macOS with Accessibility permissions.
 tools: Read, Write, Edit, Bash, Grep, Glob
 model: sonnet
 ---
@@ -288,7 +288,7 @@ expect(log.join(" ")).not.toContain("image,");  // bare "image," with no descrip
 
 ### Test file location
 
-For published output, use the scratch browser harness selected by `/a11y` §2.3, with a smoke spec before flow specs. For canvas journeys, launch `praxity studio <course> --no-open` and test Read and Edit mode. Test pane transitions in the actual host application.
+For published output, use the scratch browser harness selected by `/a11y` §2.3, with a smoke spec before flow specs. For Read and review journeys, launch `praxity studio <course> --no-open` and test Read navigation and review comments with `--review`. Test pane transitions in the actual host application.
 
 ### Test structure template
 
@@ -345,17 +345,16 @@ When writing tests for Praxity blocks, verify these announcements:
 
 ### Components beyond blocks
 
-Verify these thin canvas journeys under `/a11y` §2.3 and the applicable ATAG Part A criteria. Record browser and host versions, actual speech, focus and task outcome. Published-output tests do not establish canvas or host pane accessibility.
+Verify these Read and review journeys under `/a11y` §2.3 and the applicable ATAG Part A criteria. Record browser and host versions, actual speech, focus and task outcome. Published-output tests do not establish Read, review or host pane accessibility.
 
 | Component | What to Verify |
 |---|---|
-| Read and Edit links | Mode, document navigation and return focus announced |
-| Edit text buttons | Kind and distinguishing text named in document reading order |
-| Native textarea | Label, raw-source hint, composition, Enter/blur save and Escape cancel |
-| Refusal and unknown save | Exact text retained; error, Copy and Reload actions reachable |
-| Discard confirmation | Question names its group, Keep editing and discard reachable |
-| Saved-output refresh | Updated content announced without taking moved focus |
-| Embedded preview pane | Entry, exit and return to the current canvas control verified in the host application |
+| Read navigation | Document changes and return focus announced |
+| Review composer | Label, typing, submission and cancellation accessible |
+| Review threads | Comment anchors, replies and resolution reachable |
+| Diagnostics | Error text and source location announced |
+| Refreshed output | Updated content announced without taking moved focus |
+| Embedded preview pane | Entry, exit and return focus verified in the host application |
 
 ## Running tests
 

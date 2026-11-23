@@ -5,7 +5,7 @@ description: Studio UI baseline for retained review, inspection and learner inte
 
 # Desktop polish
 
-Browser canvas editing was retired on 2026-11-22. References below to canvas controls, `canvas.ts`, `canvas-text.ts` and `canvas-styles.ts` preserve historical guidance and do not apply to the current Read preview. Apply the remaining guidance only to retained review, inspection and learner interfaces.
+Apply this guidance to Read preview, review comments, inspection and learner interfaces. Source edits use `praxity edit`, including `--rendered`.
 
 Read `docs/context/browser-editor.md` and the current trust checks in `CODING_STANDARDS.md` before changing controls. The Mantine guidance below applies to retained learner islands.
 
@@ -23,17 +23,17 @@ A review is done when every item in the review checklist at the end has an answe
 
 ## Stack
 
-- **Components**: native buttons and textareas in `apps/desktop/src/renderer/browser/canvas.ts` and `canvas-text.ts`. Learner islands use Mantine v9.
-- **Styling**: protected author CSS in `apps/desktop/src/shared/canvas-styles.ts`.
-- **Tokens**: `packages/editor-core/src/styles/editor-tokens.css` defines editor chrome tokens. `apps/desktop/src/shared/canvas-styles.ts` emits protected canvas tokens from `apps/desktop/src/renderer/themes/`. Check light and dark mode.
+- **Components**: review controls live in `packages/export-pipeline/template/review-comments.js`; learner islands use Mantine v9.
+- **Styling**: use the retained review stylesheet and canonical learner styles.
+- **Tokens**: use the token owner for the interface being changed. Shared theme values remain in `apps/desktop/src/renderer/themes/`. Check light and dark mode.
 - **Icons**: `@tabler/icons-react` at `size={20}` and `stroke={1.5}` for toolbar icons.
 - **Fonts**: system font stack (`system-ui, -apple-system, sans-serif`). No web fonts.
 - **No Tailwind, no CSS-in-JS, no styled-components.**
 
-## Canvas design contract
+## Read and review design contract
 
-- MUST reuse the canvas text and focus owners. The canvas has one native field, no sidebar or structural editor.
-- Read mode uses the compiled learner page. Edit mode adds protected text controls and strips course scripts through the existing author projection. Follow `docs/context/architecture.md`.
+- MUST reuse review comment and inspection focus owners.
+- Read preview uses the compiled learner page. Inspection strips course scripts through the retained projection. Follow `docs/context/architecture.md`.
 - MUST resolve learner theming through the canonical compiler for preview and export.
 - Fix preview/export divergence in the shared compiler or viewer/runtime owner.
 - Learner styles live under `.praxity-viewer-shell`. Author controls retain reference-owned shadow roots and top-layer placement, protected from hostile course CSS.
@@ -49,11 +49,11 @@ A review is done when every item in the review checklist at the end has an answe
 
 ## CSS conventions
 
-- MUST use CSS custom properties from `packages/editor-core/src/styles/editor-tokens.css` for editor chrome and `apps/desktop/src/shared/canvas-styles.ts` for canvas controls. Never hardcode hex values in component CSS.
+- MUST use CSS custom properties from `packages/editor-core/src/styles/editor-tokens.css` for editor chrome. Never hardcode hex values in component CSS.
 - MUST use BEM-style class naming (`.block__element--modifier`). Match existing patterns in the file.
 - MUST scope styles to the component. No global selectors that leak.
 - SHOULD use `var(--*)` for dynamic values (colors, borders, surfaces). Use inline `style` only for truly dynamic values (grid columns, computed dimensions).
-- Preserve important host geometry required by the canvas trust checklist. Document other important overrides.
+- Preserve important host geometry required by the inspection trust checklist. Document other important overrides.
 - MUST use the existing spacing scale: 2, 4, 6, 8, 12, 16, 20, 24, 32, 40px. If a value isn't in the scale, use the nearest one; never introduce arbitrary spacing values.
 
 ## Animation
@@ -90,9 +90,8 @@ A review is done when every item in the review checklist at the end has an answe
 
 ## Layout
 
-- MUST use a consistent `z-index` scale. Check existing values in `packages/editor-core/src/styles/editor-tokens.css` and neighboring files before adding new ones. Preserve the protected placement in `apps/desktop/src/shared/canvas-styles.ts`. Never use arbitrary `z-index: 9999`.
+- MUST use a consistent `z-index` scale. Check existing values in `packages/editor-core/src/styles/editor-tokens.css` and neighboring files before adding new ones. Never use arbitrary `z-index: 9999`.
 - MUST use `dvh` units instead of `vh` for viewport height.
-- Activity/ribbon surfaces use the dedicated `--activity-bar-*` variables emitted by `apps/desktop/src/shared/canvas-styles.ts` from the theme definitions. They are not fixed dark; the current baseline follows the panel-gray theme.
 - Panel borders use `var(--border-primary)`. Never hardcode border colors.
 
 ## Interaction
@@ -105,7 +104,7 @@ A review is done when every item in the review checklist at the end has an answe
 
 ## Color and theme
 
-- All colors MUST use the CSS variables owned by `packages/editor-core/src/styles/editor-tokens.css` for editor chrome or emitted by `apps/desktop/src/shared/canvas-styles.ts` for canvas controls.
+- All colors MUST use the CSS variables owned by `packages/editor-core/src/styles/editor-tokens.css` for editor chrome.
 - MUST work in both `data-theme="light"` and `data-theme="dark"`.
 - Accent color: `var(--accent)` (blue). SHOULD limit accent usage to one per view: primary action, active state, or focus ring. Not decorative.
 - NEVER use gradients unless explicitly requested.
@@ -117,7 +116,7 @@ A review is done when every item in the review checklist at the end has an answe
 [data-theme="dark"] .image { outline-color: rgba(255, 255, 255, 0.08); }
 ```
 
-Literal colors are allowed only in `packages/editor-core/src/styles/editor-tokens.css`, theme registry data, tests/fixtures, generated placeholder SVG assets, and brand/logo assets. `apps/desktop/src/shared/canvas-styles.ts` derives canvas tokens from theme data. Component CSS still uses tokens.
+Literal colors are allowed only in `packages/editor-core/src/styles/editor-tokens.css`, theme registry data, tests/fixtures, generated placeholder SVG assets, and brand/logo assets. Component CSS still uses tokens.
 
 ## Icons
 
@@ -127,11 +126,11 @@ Literal colors are allowed only in `packages/editor-core/src/styles/editor-token
 - NEVER mix icon libraries: no Lucide, no Heroicons, no inline SVGs for standard actions.
 - Icon color via `color="var(--text-secondary)"` or `currentColor`.
 
-## Browser canvas
+## Read preview and review comments
 
 - Test narrow viewports, zoom and embedded preview pane resizing.
-- Preserve native selection, paste, undo and composition. Enter and blur save once; Escape cancels.
-- Keep refused or unconfirmed text and recovery controls reachable without taking moved focus.
+- Preserve native selection, paste, undo and composition in review comment fields.
+- Keep unsubmitted review text and error recovery controls reachable without taking moved focus.
 - Run affected specs with `pnpm --filter @praxity/desktop e2e:browser-editor` in Chromium, Firefox and WebKit. Real screen-reader evidence follows `/a11y`.
 
 ## Design anti-patterns
@@ -150,7 +149,7 @@ Never ship these:
 
 When building or reviewing desktop UI, answer each:
 
-1. **Tokens**: all colors from `packages/editor-core/src/styles/editor-tokens.css` for editor chrome or `apps/desktop/src/shared/canvas-styles.ts` for canvas controls? Works in both themes?
+1. **Tokens**: all colors from `packages/editor-core/src/styles/editor-tokens.css` for editor chrome? Works in both themes?
 2. **Spacing**: using the 8px-based scale? No arbitrary values?
 3. **Components**: using Mantine where it provides keyboard/focus behavior?
 4. **Transitions**: 120ms ease for hover/press? Properties named? Reduced motion respected?

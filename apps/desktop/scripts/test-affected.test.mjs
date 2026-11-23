@@ -383,7 +383,7 @@ test("changed tests run directly; script implementation covers indirect Node con
 
 test("review sources and Studio server select journeys in all requested engines", () => {
 	for (const path of [
-		"apps/desktop/src/renderer/browser/review-entry.ts",
+		"packages/export-pipeline/template/review-comments.js",
 		"apps/desktop/src/main/studio/server.ts",
 	]) {
 		const args = command(plan([path], { engines: "all" }), "browser-editor");

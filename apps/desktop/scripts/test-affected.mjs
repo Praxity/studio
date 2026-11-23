@@ -354,7 +354,7 @@ export function buildPlan(
 	}
 	const browserPaths = paths.filter((path) =>
 		matches(path, [
-			"apps/desktop/src/renderer/browser/**",
+			"packages/export-pipeline/template/review-comments.js",
 			"apps/desktop/src/main/studio/**",
 			"apps/desktop/e2e/browser-editor/**",
 		]),

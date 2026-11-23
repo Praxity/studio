@@ -74,28 +74,28 @@ same structural nodes. Their final line ending, list marker and indentation stay
 outside the field. Existing wrap terminators survive normalized LF input,
 including mixed endings. Empty text, paragraph splits, new headings, directives
 or lists refuse. Parent entries expose only their own text range; children stay
-intact, outside the field in both the canvas and ordinary operations. Pasted bullet
+intact, outside the selected field in rendered and ordinary operations. Pasted bullet
 markers refuse. A leading numeric prefix such as `2026. ` stays inline text after
-the item's marker; later lines cannot introduce list items. The canvas excludes fill-blank sentences,
+the item's marker; later lines cannot introduce list items. Rendered-field editing excludes fill-blank sentences,
 whose scored blanks remain available through ordinary operations. Surviving
 wraps retain their terminator at the same text boundary when wraps are added or
 deleted; new wraps use the field's existing ending, then the file's, then LF.
 Choice option `text` and authored feedback part `value` share this validation.
 Label edits preserve answer markers, option IDs, response settings and feedback. Pasting an
 answer marker or another option refuses. Shared or promoted feedback edits its
-authored source part; generated defaults have no editable source field. Canvas edits
+authored source part; generated defaults have no editable source field. Rendered-field edits
 cannot turn generic question feedback into a legacy timing word; option feedback
 treats these words as literal prose. Ordinary `setText` still fills empty authored
-parts and edits question feedback timing values. Empty parts have no canvas field.
+parts and edits question feedback timing values. Empty parts have no rendered field.
 Wrapped labels and feedback preserve their existing line endings. Feedback retains
 its parsed continuation structure: adding its first continuation or removing its
 last continuation refuses with `unsupported-syntax`. These rules also apply to
 ordinary `setText` of a named `caption:` part, in every block that owns one.
 An exact empty string still clears a caption through ordinary operations;
 whitespace-only text refuses with `empty-text`, and leading spaces refuse
-with `unsupported-syntax`. Canvas captions cannot be cleared.
+with `unsupported-syntax`. Rendered captions cannot be cleared.
 These validation rules also apply to the
-canvas text API. Author-input refusals are `empty-text`,
+rendered-field API used by `praxity edit --rendered`. Author-input refusals are `empty-text`,
 `line-break`, `unsupported-syntax`, `list-marker` and `settings`; unavailable
 fields return `not-allowed`.
 For page titles and headings, `setText` removes spaces and tabs at the start and
