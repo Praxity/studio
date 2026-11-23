@@ -18,7 +18,11 @@ import {
 	persistCourseIdentity,
 	resolveCourseIdentity,
 } from "../identity-store";
-import { resolveLessonSources, resolveLessonSourcesForWrite } from "../lesson-source";
+import {
+	resolveLessonSources,
+	resolveLessonSourcesForWrite,
+	writeLessonSource,
+} from "../lesson-source";
 import { OperationService } from "../operations/operation-service";
 import { withProjectFileTransaction } from "../project-file-transactions";
 import { createStudioProjectSession } from "../studio/project-session";
@@ -522,12 +526,7 @@ async function pendingTemplate() {
 	await writeFile(join(root, "one.prax"), duplicate);
 	const session = await createStudioProjectSession(root, "test");
 	try {
-		await session.invoke("courseWriteLesson", {
-			courseDir: root,
-			filename: "one.prax",
-			grammar: duplicate,
-			expectedGrammar: duplicate,
-		});
+		await writeLessonSource(root, "one.prax", duplicate, duplicate);
 	} finally {
 		await session.close();
 	}
@@ -781,12 +780,7 @@ it.each([
 					matchText: "Unclosed.",
 				});
 			const grammar = anchoredSource.replace("computer,", "computre,") + retainedText;
-			await session.invoke("courseWriteLesson", {
-				courseDir: root,
-				filename: "one.prax",
-				grammar,
-				expectedGrammar: intermediate,
-			});
+			await writeLessonSource(root, "one.prax", grammar, intermediate);
 			expect((await nodes(root))[donor].status).toBe("active");
 			if (retained)
 				expect((await nodes(root))[retained[0]]).toMatchObject({
@@ -950,12 +944,7 @@ it.each(["removed", "reworded"])(
 		try {
 			expect(await projectDiskSnapshot(root)).toEqual(saved);
 			const grammar = change === "removed" ? base : `${base}\nA distinct copy.\n`;
-			await session.invoke("courseWriteLesson", {
-				courseDir: root,
-				filename: "one.prax",
-				grammar,
-				expectedGrammar: duplicate,
-			});
+			await writeLessonSource(root, "one.prax", grammar, duplicate);
 			const current = await nodes(root);
 			expect(current[donor].status).toBe("active");
 			expect(Object.values(current).filter((node) => node.status === "pending")).toEqual([]);

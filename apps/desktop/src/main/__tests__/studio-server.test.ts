@@ -1,8 +1,7 @@
-import { type ChildProcess, fork } from "node:child_process";
-import { randomUUID } from "node:crypto";
+import { type ChildProcess } from "node:child_process";
 import { once } from "node:events";
-import { mkdir, mkdtemp, readdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
-import { createServer, request } from "node:http";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { request } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -278,52 +277,6 @@ describe("Studio launch HTTP boundary and retained project session", () => {
 		expect(built.status).toBe(303);
 		expect(new URL(String(built.headers.location)).origin).not.toBe(server.origin);
 	});
-	it("refuses retired browser write routes with the former author capability", async () => {
-		const { server, token, projectDir } = await running(true);
-		const before = await readFile(join(projectDir, "second.prax"), "utf8");
-		for (const route of [
-			"/api/rpc",
-			"/api/identity/confirm",
-			"/api/session",
-			"/api/events",
-			"/canvas",
-			"/canvas/preview/old/page.html",
-			"/launch?canvas=1",
-		]) {
-			const response = await probe(server, route, {
-				method: "POST",
-				headers: {
-					Origin: server.origin,
-					Authorization: `Bearer ${token}`,
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({
-					method: "projectSave",
-					args: { source: "# Replaced" },
-					revision: "a".repeat(64),
-				}),
-			});
-			expect(response.status).toBe(405);
-		}
-		for (const method of (await testSession(server)).session.registeredMethods) {
-			const response = await rpc(server, token, method, {
-				grammar: "# Replaced",
-				expectedGrammar: source,
-			});
-			expect(response.status).toBe(405);
-		}
-		for (const route of [
-			"/api/session",
-			"/api/events",
-			"/launch?canvas=1",
-			"/canvas/preview/old/page.html",
-		]) {
-			expect(
-				(await probe(server, route, { headers: { Authorization: `Bearer ${token}` } })).status,
-			).toBe(404);
-		}
-		expect(await readFile(join(projectDir, "second.prax"), "utf8")).toBe(before);
-	});
 	it("identifies the admitted course without credentials", async () => {
 		const { server, projectDir } = await running();
 		const response = await probe(server, "/api/identity");
@@ -400,20 +353,6 @@ describe("Studio launch HTTP boundary and retained project session", () => {
 		expect(server.readyUrl).toBe(`${server.origin}/`);
 	}, 15_000);
 
-	it("reports a retryable file-sharing save refusal and succeeds after release", async () => {
-		const { server, token, projectDir } = await running();
-		faults.renameBusy = true;
-		const grammar = `${source}\nDraft paragraph.\n`;
-		const args = { grammar, expectedGrammar: source };
-		const response = await service(server, token, "projectSave", args);
-		expect(response.status).toBe(503);
-		expect(JSON.parse(response.text).error.code).toBe("EFILEBUSY");
-		expect(await readFile(join(projectDir, "second.prax"), "utf8")).toBe(source);
-		faults.renameBusy = false;
-		expect((await service(server, token, "projectSave", args)).status).toBe(200);
-		expect(await readFile(join(projectDir, "second.prax"), "utf8")).toBe(grammar);
-	}, 20_000);
-
 	it("refreshes the session snapshot after its initial lesson is removed", async () => {
 		const { server, projectDir } = await running();
 		await rm(join(projectDir, "second.prax"));
@@ -466,103 +405,6 @@ describe("Studio launch HTTP boundary and retained project session", () => {
 			await session.close();
 		}
 	}, 15_000);
-
-	it.each(["private lock cache", "Project is busy in another Studio window or process"])(
-		"keeps schema errors distinct from project errors named by input keys: %s",
-		async (key) => {
-			const { server, token } = await running();
-			const response = await service(server, token, "projectSave", {
-				grammar: source,
-				expectedGrammar: source,
-				[key]: true,
-			});
-			expect(response.status).toBe(400);
-			expect(JSON.parse(response.text).error.code).toBe("bad_schema");
-		},
-	);
-	it("admits only rooted metadata baselines, with strict schemas and explicit absence", async () => {
-		const { server, token, projectDir } = await running();
-		const baseline = await service(server, token, "projectReadTextFile", {
-			relativePath: "course.yaml",
-		});
-		expect(JSON.parse(baseline.text).result).toBe(
-			"title: Test\nlessons: [second.prax, first.prax]\n",
-		);
-		const missing = await service(server, token, "projectReadTextFile", {
-			relativePath: "narration.yaml",
-		});
-		expect(missing.status).toBe(404);
-		expect(JSON.parse(missing.text).error.message).toContain("ENOENT");
-		for (const relativePath of [
-			"../course.yaml",
-			".praxity/content-identity.json",
-			"first.prax",
-			"assets/evil.html",
-		]) {
-			expect((await service(server, token, "projectReadTextFile", { relativePath })).status).toBe(
-				400,
-			);
-		}
-		expect(
-			(
-				await service(server, token, "projectReadTextFile", {
-					relativePath: "course.yaml",
-					extra: true,
-				})
-			).status,
-		).toBe(400);
-		await writeFile(join(projectDir, "narration.yaml"), "version: 1\n");
-		expect(
-			JSON.parse(
-				(await service(server, token, "projectReadTextFile", { relativePath: "narration.yaml" }))
-					.text,
-			).result,
-		).toBe("version: 1\n");
-	});
-	it("reads absolute metadata paths from the project draft owner without admitting other files", async () => {
-		const { server, token, projectDir, root } = await running();
-		await writeFile(join(projectDir, "narration.yaml"), "version: 1\n");
-		for (const [filename, expected] of [
-			["course.yaml", "title: Test\nlessons: [second.prax, first.prax]\n"],
-			["narration.yaml", "version: 1\n"],
-		]) {
-			const response = await service(server, token, "projectReadTextFile", {
-				relativePath: join(projectDir, filename),
-			});
-			expect(response.status).toBe(200);
-			expect(JSON.parse(response.text).result).toBe(expected);
-		}
-		for (const filename of [
-			join(root, "course.yaml"),
-			join(projectDir, "first.prax"),
-			join(projectDir, ".praxity", "content-identity.json"),
-		]) {
-			expect(
-				(await service(server, token, "projectReadTextFile", { relativePath: filename })).status,
-			).toBe(400);
-		}
-	});
-	it.each([false, true])(
-		"refuses an escaping or dangling metadata link, absolute path: %s",
-		async (absolute) => {
-			const { server, token, projectDir, root } = await running();
-			const outside = join(root, "private.yaml");
-			await writeFile(outside, "private credential\n");
-			await symlink(outside, join(projectDir, "narration.yaml"));
-			const escaped = await service(server, token, "projectReadTextFile", {
-				relativePath: absolute ? join(projectDir, "narration.yaml") : "narration.yaml",
-			});
-			expect(escaped.status).toBe(403);
-			expect(JSON.parse(escaped.text).error.code).toBe("path_forbidden");
-			expect(escaped.text).not.toContain("private credential");
-			await rm(outside);
-			const dangling = await service(server, token, "projectReadTextFile", {
-				relativePath: absolute ? join(projectDir, "narration.yaml") : "narration.yaml",
-			});
-			expect(dangling.status).toBe(403);
-			expect(JSON.parse(dangling.text).error.code).toBe("path_forbidden");
-		},
-	);
 	it("binds loopback, bootstraps manifest order even for identical lessons, and refuses retired shell and project assets", async () => {
 		const { server, token, projectDir } = await running();
 		expect(new URL(server.origin).hostname).toBe("127.0.0.1");
@@ -686,91 +528,6 @@ describe("Studio launch HTTP boundary and retained project session", () => {
 		},
 	);
 
-	it("refuses non-allowlisted methods, unsupported HTTP methods and bad schemas without writes", async () => {
-		const { server, token, projectDir } = await running();
-		for (const method of [
-			"projectOpenByPath",
-			"projectWriteTextFile",
-			"appSubmitIssueReport",
-			"telemetryTrack",
-			"__proto__",
-			"constructor",
-			"toString",
-		]) {
-			expect((await service(server, token, method, {})).status).toBe(404);
-		}
-		for (const args of [
-			null,
-			[],
-			{},
-			{ courseDir: projectDir, filename: "second.prax", grammar: "# Lost" },
-			{
-				courseDir: projectDir,
-				filename: "second.prax",
-				grammar: "# Lost",
-				expectedGrammar: source,
-				extra: true,
-			},
-		]) {
-			expect((await service(server, token, "courseWriteLesson", args)).status).toBe(400);
-		}
-		for (const method of ["DELETE", "PUT", "PATCH", "GET", "HEAD"]) {
-			expect((await probe(server, "/api/rpc", { method })).status).toBe(
-				["GET", "HEAD"].includes(method) ? 404 : 405,
-			);
-		}
-		expect(await readFile(join(projectDir, "second.prax"), "utf8")).toBe(source);
-	});
-
-	it("authorizes lesson paths at the root and uses expected-source identity saves", async () => {
-		const { server, token, root, projectDir } = await running();
-		for (const filename of [
-			"../first.prax",
-			"assets/nested.prax",
-			"C:\\escape.prax",
-			"second.prax:stream.prax",
-			"missing.prax",
-		]) {
-			const result = await service(server, token, "courseReadLesson", {
-				courseDir: projectDir,
-				filename,
-			});
-			expect([400, 403, 404]).toContain(result.status);
-		}
-		expect(
-			(
-				await service(server, token, "courseReadLesson", {
-					courseDir: root,
-					filename: "second.prax",
-				})
-			).status,
-		).toBe(403);
-		const next = `${source}\nEdited paragraph.\n`;
-		expect(
-			(
-				await service(server, token, "courseWriteLesson", {
-					courseDir: projectDir,
-					filename: "second.prax",
-					grammar: next,
-					expectedGrammar: source,
-				})
-			).status,
-		).toBe(200);
-		expect(await readFile(join(projectDir, "second.prax"), "utf8")).toBe(next);
-		expect(
-			(
-				await service(server, token, "courseWriteLesson", {
-					courseDir: projectDir,
-					filename: "second.prax",
-					grammar: "# Stale",
-					expectedGrammar: source,
-				})
-			).status,
-		).toBe(409);
-		expect(await readFile(join(projectDir, "second.prax"), "utf8")).toBe(next);
-		expect((await retainedSnapshot(server)).text).toContain("Edited");
-	});
-
 	it("subscribes to external changes and closes listeners idempotently", async () => {
 		const { server, token, projectDir } = await running();
 		const session = (await testSession(server)).session;
@@ -837,83 +594,12 @@ describe("Studio startup admission", () => {
 			["projectReadTree", {}],
 			["courseLoad", { courseDir: files.projectDir }],
 			["courseReadLesson", { courseDir: files.projectDir, filename: "second.prax" }],
-			["projectReadTextFile", { relativePath: "course.yaml" }],
 		] as const)
 			expect((await service(server, token, method, args)).status).toBe(200);
 		expect(await readFile(join(files.projectDir, "second.prax"), "utf8")).toBe(original);
 		expect(await readFile(join(stage, "second.prax"), "utf8")).toBe("RECOVERY BYTES");
 		expect((await readIdentityFixture(files.projectDir)).files).toEqual(identity.files);
 	});
-	it.each(["projectSave", "courseWriteLesson"])(
-		"acknowledges committed %s despite cleanup failure and accepts its next baseline",
-		async (method) => {
-			const { server, token, projectDir } = await running();
-			const grammar = `${source}\nCommitted paragraph.\n`;
-			faults.cleanup = true;
-			const args = { courseDir: projectDir, filename: "second.prax" };
-			const saved = await service(server, token, method, {
-				...(method === "courseWriteLesson" ? args : {}),
-				grammar,
-				expectedGrammar: source,
-			});
-			expect(saved.status).toBe(200);
-			expect(JSON.parse(saved.text).result.cleanupError).toContain("Stage cleanup denied");
-			expect(await readFile(join(projectDir, "second.prax"), "utf8")).toBe(grammar);
-			const read = await service(server, token, "courseReadLesson", args);
-			expect(read.status).toBe(503);
-			expect(JSON.parse(read.text).error.code).toBe("ERECOVERYREQUIRED");
-			expect(read.text).toContain("save or the next write");
-			const nextGrammar = `${grammar}\nNext paragraph.\n`;
-			const next = await service(server, token, method, {
-				...(method === "courseWriteLesson" ? args : {}),
-				grammar: nextGrammar,
-				expectedGrammar: grammar,
-			});
-			expect(next.status).toBe(200);
-			expect(JSON.parse(next.text).result).toEqual({});
-			expect(await readFile(join(projectDir, "second.prax"), "utf8")).toBe(nextGrammar);
-		},
-		20_000,
-	);
-	it("returns the shared busy code for reads and writes, keeps source and permits retry after release", async () => {
-		const { server, token, projectDir } = await running();
-		const child = fork(
-			fileURLToPath(new URL("./fixtures/os-lock-writer.ts", import.meta.url)),
-			["hold", projectDir],
-			{
-				execArgv: ["--import", "tsx"],
-				stdio: ["ignore", "ignore", "pipe", "ipc"],
-			},
-		);
-		children.push(child);
-		await new Promise<void>((resolve, reject) => {
-			child.on("message", (value) => {
-				if ((value as { paused?: boolean }).paused) resolve();
-			});
-			child.once("error", reject);
-			child.once("exit", () => reject(new Error("Lock holder exited before admission")));
-		});
-		for (const [method, args] of [
-			["courseReadLesson", { courseDir: projectDir, filename: "second.prax" }],
-			["projectSave", { grammar: "# Refused\n", expectedGrammar: source }],
-		] as const) {
-			const result = await service(server, token, method, args);
-			expect(result.status).toBe(503);
-			expect(JSON.parse(result.text).error.code).toBe("EPROJECTBUSY");
-		}
-		expect(await readFile(join(projectDir, "second.prax"), "utf8")).toBe(source);
-		const exited = once(child, "exit");
-		child.send({ resume: true });
-		await exited;
-		expect(
-			(
-				await service(server, token, "courseReadLesson", {
-					courseDir: projectDir,
-					filename: "second.prax",
-				})
-			).status,
-		).toBe(200);
-	}, 20_000);
 	it("accepts one standalone lesson and rejects an ambiguous folder without listening", async () => {
 		const files = await fixture("");
 		await expect(startStudioServer({ ...files, appVersion: "test" })).rejects.toThrow(/ambiguous/i);

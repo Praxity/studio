@@ -31,8 +31,8 @@ import { readCourseManifestData } from "../course-manifest-io";
 import { resolveLessonSources } from "../lesson-source";
 import { resolveCompletionSettings } from "../project-config";
 import { withProjectFileTransaction } from "../project-file-transactions";
-import { getMetricsFromBlocks } from "../telemetry-utils";
 import { type AuthorWarning, assertExportAccessibility } from "./accessibility-enforcement";
+import { getMetricsFromBlocks } from "./block-metrics";
 import {
 	buildCourseExportInput,
 	buildExportInputFromProject,

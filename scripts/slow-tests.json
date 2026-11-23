@@ -1781,11 +1781,6 @@
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/studio-export.test.ts",
-		"name": "Studio exports > discloses environment credential availability without exposing or persisting secrets",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5083 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-export.test.ts",
 		"name": "Studio exports > keeps the accessibility gate, requires explicit override and rejects option/schema bypasses",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 17760 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
@@ -1811,46 +1806,6 @@
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
-		"name": "D11 resolves an changed outside edit without writing",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5004 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
-		"name": "D11 resolves an removed outside edit without writing",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2431 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
-		"name": "D11 resolves an unrelated outside edit without writing",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5019 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
-		"name": "draft and clipboard persistence are gitignored inside an author's own project",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5017 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
-		"name": "draftPut accepts a higher generation for the same identified node after it moves",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5033 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
-		"name": "draftPut refuses a changed id-free-node owner",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2651 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
-		"name": "draftPut refuses a changed insertion owner",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3373 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
-		"name": "draftPut refuses a changed scope owner",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2493 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
 		"name": "export refuses local data whose canonical directory moved into assets",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2700 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
@@ -1858,81 +1813,6 @@
 		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
 		"name": "list refuses local data whose canonical directory moved into assets",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3331 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
-		"name": "manifest and draft RPC reject prototype name __proto__ cleanly",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5014 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
-		"name": "manifest and draft RPC reject prototype name constructor cleanly",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5004 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
-		"name": "manifest and draft RPC reject prototype name toString cleanly",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5012 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
-		"name": "manifestEdit changes only the course scalar bytes, retaining BOM, mixed endings and flow sequences",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3027 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
-		"name": "manifestEdit edits BOM-prefixed frontmatter once and retains its title and body",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3352 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
-		"name": "manifestEdit refuses a stale revision and preserves comments on an admitted edit",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3117 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
-		"name": "manifestEdit refuses an unapplied same-value edit",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2386 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
-		"name": "manifestEdit returns a conflict when an outside writer changes the lesson after revision checking",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4990 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
-		"name": "manifestEdit writes frontmatter design and identity together, retaining lesson body bytes",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4228 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
-		"name": "per-lesson draft buckets retain siblings and survive removal of the lesson",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5006 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
-		"name": "refuses a draft ID collision across lesson owners without replacing either author's text",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5025 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
-		"name": "refuses a draft ID collision across target owners without replacing either author's text",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5019 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
-		"name": "refuses corrupt local records and local symlink parents instead of returning empty success",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5005 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
-		"name": "strict local schemas refuse extra keys and non-project lesson paths before writing",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2818 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-local.test.ts",
-		"name": "two windows refuse draft generation 1 after generation 7",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3209 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/studio-preview.test.ts",
@@ -1948,16 +1828,6 @@
 		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
 		"name": "Studio HTTP boundary > adds a restrictive CSP, private caching policy, and no CORS headers to every response",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2970 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
-		"name": "Studio HTTP boundary > admits only rooted metadata baselines, with strict schemas and explicit absence",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3190 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
-		"name": "Studio HTTP boundary > authorizes lesson paths at the root and uses expected-source identity saves",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5178 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
@@ -1993,11 +1863,6 @@
 		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
 		"name": "Studio HTTP boundary > loads courses without rewriting a missing course identity or inheriting a parent workspace",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 4252 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
-		"name": "Studio HTTP boundary > reads absolute metadata paths from the project draft owner without admitting other files",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 3411 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
@@ -2041,11 +1906,6 @@
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
-		"name": "Studio HTTP boundary > reports a retryable file-sharing save refusal and succeeds after release",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5528 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
 		"name": "Studio launch HTTP boundary and retained project session > subscribes to external changes and closes listeners idempotently",
 		"reason": "CI run 45080769805 measured 3424 ms in shard and 2284 ms alone; reduce subscription lifecycle setup below the 2000 ms budget.",
 		"added": "2026-11-22",
@@ -2081,11 +1941,6 @@
 		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
 		"name": "Studio startup admission > rejects escaping and dangling manifest/config/lesson links before listening",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5005 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
-		"name": "Studio startup admission > returns the shared busy code for reads and writes, keeps source and permits retry after release",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 19462 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
 	{
 		"file": "packages/editor-core/src/session/session.test.ts",

@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { projectDiskSnapshot } from "../../test-utils/interrupted-project-write";
 import { runPraxityCli } from "../cli";
 import { loadIdentityStore, resolveCourseIdentity } from "../identity-store";
+import { writeLessonSource } from "../lesson-source";
 import { createStudioProjectSession } from "../studio/project-session";
 
 const runtime = { appVersion: "test", exportAssetsDir: "unused" };
@@ -205,12 +206,12 @@ describe.each(["en", "fr"])("identity routing in %s", (locale) => {
 				await writeFile(join(root, "first.prax"), `${original}\nRepeated.\n`);
 				if (savedPending) {
 					const studio = await createStudioProjectSession(root, "test");
-					await studio.invoke("courseWriteLesson", {
-						courseDir: root,
-						filename: "first.prax",
-						grammar: `${original}\nRepeated.\n`,
-						expectedGrammar: `${original}\nRepeated.\n`,
-					});
+					await writeLessonSource(
+						root,
+						"first.prax",
+						`${original}\nRepeated.\n`,
+						`${original}\nRepeated.\n`,
+					);
 					await studio.close();
 					const pending = await loadIdentityStore(root);
 					expect(
@@ -251,12 +252,12 @@ describe.each(["en", "fr"])("identity routing in %s", (locale) => {
 			await writeFile(join(root, "first.prax"), `${original}\nRepeated.\n`);
 			if (savedPending) {
 				const session = await createStudioProjectSession(root, "test");
-				await session.invoke("courseWriteLesson", {
-					courseDir: root,
-					filename: "first.prax",
-					grammar: `${original}\nRepeated.\n`,
-					expectedGrammar: `${original}\nRepeated.\n`,
-				});
+				await writeLessonSource(
+					root,
+					"first.prax",
+					`${original}\nRepeated.\n`,
+					`${original}\nRepeated.\n`,
+				);
 				await session.close();
 			}
 			before = await identityBytes(root);
@@ -293,12 +294,12 @@ describe.each(["en", "fr"])("identity routing in %s", (locale) => {
 			rewrittenId = rewritten[0];
 			await writeFile(join(root, "first.prax"), `${original}\nRepeated.\n`);
 			const session = await createStudioProjectSession(root, "test");
-			await session.invoke("courseWriteLesson", {
-				courseDir: root,
-				filename: "first.prax",
-				grammar: `${original}\nRepeated.\n`,
-				expectedGrammar: `${original}\nRepeated.\n`,
-			});
+			await writeLessonSource(
+				root,
+				"first.prax",
+				`${original}\nRepeated.\n`,
+				`${original}\nRepeated.\n`,
+			);
 			await session.close();
 			provisionalIds = (await loadIdentityStore(root)).snapshots
 				.flatMap((s) => Object.keys(s.nodes))

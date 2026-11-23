@@ -1,12 +1,10 @@
-import { createHash, randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Draft } from "@praxity/editor-core/session";
 import { afterEach, expect, it, vi } from "vitest";
 import { LocalEditorStore } from "../operations/local-editor-store";
-import { createStudioProjectSession } from "../studio/project-session";
-import { sessionResult } from "./fixtures/studio-session";
 
 const fault = vi.hoisted(() => ({
 	cleanup: false,
@@ -213,38 +211,19 @@ it("D3 successive project services retain corruption rather than bad request sch
 	const { root } = await fixture();
 	await mkdir(join(root, ".praxity/local/drafts"), { recursive: true });
 	await writeFile(join(root, ".praxity/local/drafts/file-" + "a".repeat(64) + ".json"), "{");
-	const project = await createStudioProjectSession(root, "test");
-	sessions.push(project);
-	const lifetime = (await project.invoke("draftPersistenceSession", {})) as { serviceId: string };
-	expect(
-		(
-			(await project.invoke("draftPersistenceSubmit", {
-				...lifetime,
-				attemptId: randomUUID(),
-				operation: { action: "put", draft },
-			})) as { outcome: unknown }
-		).outcome,
-	).toMatchObject({
+	expect(await new LocalEditorStore(root).draftPersist({ action: "put", draft })).toMatchObject({
 		status: "refused",
 		reason: "corrupt-storage",
 	});
-	const replacement = await createStudioProjectSession(root, "test");
-	sessions.push(replacement);
-	const serverLifetime = (await replacement.invoke("draftPersistenceSession", {})) as {
-		serviceId: string;
-	};
 	expect(
-		await sessionResult(replacement, "draftPersistenceSubmit", {
-			...serverLifetime,
-			attemptId: randomUUID(),
-			operation: { action: "remove", file: "a.prax", id: draft.id },
+		await new LocalEditorStore(root).draftPersist({
+			action: "remove",
+			file: "a.prax",
+			id: draft.id,
 		}),
-	).toMatchObject({
-		status: 200,
-		ok: true,
-		result: { outcome: { status: "refused", reason: "corrupt-storage" } },
-	});
+	).toMatchObject({ status: "refused", reason: "corrupt-storage" });
 });
+
 it("D3 typed admission refuses a symlink and missing lesson while preserving author text", async () => {
 	const { root, store } = await fixture();
 	expect(

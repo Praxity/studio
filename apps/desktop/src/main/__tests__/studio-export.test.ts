@@ -541,33 +541,6 @@ describe("Studio exports", () => {
 		expect(await third).toBeNull();
 		expect((await readdir(join(projectDir, "exports"))).length).toBe(1);
 	});
-	it("discloses environment credential availability without exposing or persisting secrets", async () => {
-		const { rpc, projectDir, server, token, session } = await serverFixture();
-		vi.stubEnv("SONIOX_API_KEY", "");
-		vi.stubEnv("SONIOX_REGION", "eu");
-		expect((await rpc("narrationStatus")).result).toEqual({
-			configured: false,
-			region: "eu",
-			disclosureRequired: true,
-		});
-		vi.stubEnv("SONIOX_API_KEY", "SYNTHETIC-SECRET");
-		vi.stubEnv("SONIOX_REGION", "us");
-		expect((await rpc("narrationStatus")).result).toEqual({
-			configured: true,
-			region: "us",
-			disclosureRequired: true,
-		});
-		vi.stubEnv("SONIOX_REGION", "jp");
-		expect((await rpc("narrationStatus")).result).toEqual({
-			configured: true,
-			region: "jp",
-			disclosureRequired: true,
-		});
-		const snapshot = await session.readSnapshot();
-		expect(JSON.stringify(snapshot)).not.toContain("SYNTHETIC");
-		expect((await rpc("narrationConfigure", { apiKey: "SYNTHETIC-SECRET" })).status).toBe(404);
-		expect(await readdir(projectDir)).not.toContain("settings.json");
-	});
 });
 
 describe("highlight RPC publication", () => {

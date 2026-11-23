@@ -66,12 +66,7 @@ export const sourceOwnerAllowlist = [
 		reason:
 			"Legacy ProseMirror metadata folding uses paragraph positions, not source offsets, and performs no save. Retire with the legacy source editor.",
 	},
-	{
-		path: "apps/desktop/src/main/telemetry-utils.ts",
-		expression: "/^#\\s+.+/gm",
-		reason:
-			"Telemetry uses this estimate only if the grammar reader throws. It may count fenced examples and never supplies editor positions or saved data. Replace when telemetry gains a reader-failure metric.",
-	},
+
 	{
 		path: "packages/shared-blocks/src/narration.ts",
 		expression: "/^\\uFEFF/u",

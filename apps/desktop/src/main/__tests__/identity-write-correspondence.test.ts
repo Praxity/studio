@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import { persistFixtureIdentity } from "../../test-utils/identity-fixture";
 import {
 	CourseIdentitySession,
@@ -378,22 +378,21 @@ it("I4 the real author session returns correspondence separately from every prev
 	await outside;
 	expect(await session.readSnapshot()).toHaveProperty("editorSeq", 1);
 	const request = await edit(root, "a.prax", "New", "Changed\n");
-	const dry = (await session.invoke("operationResolve", request)) as Awaited<
-		ReturnType<OperationService["resolve"]>
-	>;
+	const identitySession = new CourseIdentitySession(root);
+	await resolveLessonSources(root, {}, { identitySession });
+	const service = new OperationService(root, identitySession);
+	const dry = (await service.resolve(request)) as Awaited<ReturnType<OperationService["resolve"]>>;
 	if (!dry.ok) throw new Error(dry.code);
 	expect(dry.focus.nodeId).toMatch(/^rt-[0-9a-f]{32}$/);
-	const result = (await session.invoke("operationApply", request)) as Awaited<
-		ReturnType<OperationService["apply"]>
-	>;
+	const result = (await service.apply(request)) as Awaited<ReturnType<OperationService["apply"]>>;
 	if (!result.ok) throw new Error(result.code);
 	expect(result.correspondence).toHaveLength(2);
 	expect(result.correspondence).toContainEqual({
 		runtimeId: dry.focus.nodeId,
 		durableId: result.focus.nodeId,
 	});
-	expect(result.seq).toBe(2);
-	expect(await session.readSnapshot()).toHaveProperty("editorSeq", 2);
+	expect(result.seq).toBe(1);
+	await vi.waitFor(async () => expect(await session.readSnapshot()).toHaveProperty("editorSeq", 2));
 	expect(events.filter((event) => event.type === "editorChanged")).toEqual([
 		{ type: "editorChanged", seq: 1 },
 		{ type: "editorChanged", seq: 2 },

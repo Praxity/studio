@@ -194,41 +194,6 @@ export const draftPersistenceReceiptSchema = z.discriminatedUnion("state", [
 ]);
 export type DraftPersistenceReceipt = z.infer<typeof draftPersistenceReceiptSchema>;
 export const clipboardPutSchema = z.object({ clipboard: clipboardSchema }).strict();
-type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
-const jsonValue: z.ZodType<JsonValue> = z.lazy(() =>
-	z.union([
-		z.null(),
-		z.boolean(),
-		z.number().finite(),
-		z.string(),
-		z.array(jsonValue),
-		z.record(safeName, jsonValue),
-	]),
-);
-export const manifestEditSchema = z
-	.object({
-		file: z.union([z.literal("course.yaml"), studioLessonFilenameSchema]),
-		baseRevision: sourceRevisionSchema,
-		path: z.array(safeName).min(1).max(16),
-		value: jsonValue,
-	})
-	.strict()
-	.refine((request) => request.file === "course.yaml" || request.path[0] === "design");
-export type ManifestEdit = z.infer<typeof manifestEditSchema>;
-export type ManifestEditResult =
-	| {
-			ok: false;
-			code:
-				| "stale"
-				| "conflict"
-				| "invalid-args"
-				| "not-allowed"
-				| "source-invalid"
-				| "bad-yaml"
-				| "identity-retirement-pending";
-			reviewUrl?: string;
-	  }
-	| { ok: true; revision: string; writeResult: ProjectWriteResult };
 export type DraftPutResult =
 	| {
 			ok: false;
@@ -649,7 +614,6 @@ export interface StudioEditorBridge {
 	clipboardGet(): Promise<LocalClipboard | null>;
 	clipboardPut(clipboard: LocalClipboard): Promise<ProjectWriteResult>;
 	clipboardDiscard(): Promise<ProjectWriteResult>;
-	manifestEdit(request: ManifestEdit): Promise<ManifestEditResult>;
 	operationApply(request: OperationRequest): Promise<EditorOperationResult>;
 	operationResolve(request: OperationRequest): Promise<OperationResult | OperationRefusal>;
 	historyApply(request: HistoryApplyRequest): Promise<EditorOperationResult>;

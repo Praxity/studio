@@ -122,7 +122,7 @@ it.each(
 		text: scenario.text,
 	};
 	if (session) {
-		expect(await session.invoke("canvasTextApply", input)).toMatchObject({ ok: true });
+		expect(await service.canvasTextApply(input)).toMatchObject({ ok: true });
 	} else {
 		const args = [
 			"edit",

@@ -1,6 +1,6 @@
 import { readLesson } from "@praxity/grammar";
 import { expect, it } from "vitest";
-import { getMetricsFromBlocks } from "../telemetry-utils";
+import { getMetricsFromBlocks } from "../export/block-metrics";
 
 const metrics = (source: string) => getMetricsFromBlocks(readLesson(source).blocks);
 

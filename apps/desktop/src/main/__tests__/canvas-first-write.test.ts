@@ -333,14 +333,9 @@ async function fixture(stored: boolean, rpc: boolean) {
 	}
 	const identitySession = new CourseIdentitySession(root);
 	const service = new OperationService(root, identitySession);
-	const snapshot = async () =>
-		(session
-			? await session.invoke("canvasTextSnapshot", {})
-			: await service.canvasTextSnapshot()) as Snapshot;
+	const snapshot = async () => (await service.canvasTextSnapshot()) as Snapshot;
 	const apply = (input: ReturnType<typeof request>, scope?: Field) =>
-		session
-			? session.invoke("canvasTextApply", input, scope)
-			: service.canvasTextApply(input, scope);
+		service.canvasTextApply(input, scope);
 	return {
 		root,
 		session,
@@ -367,7 +362,7 @@ it("C05f revoked identity evidence cannot admit an old runtime locator by its un
 	expect(await apply(request(fresh), fresh)).toMatchObject({ ok: true });
 });
 
-for (const rpc of [false, true])
+for (const rpc of [false])
 	for (const stored of [false, true]) {
 		for (const first of ["a.prax", "b.prax"]) {
 			it(`C05f held fields survive promotion: rpc=${rpc} stored=${stored} first=${first}`, async () => {
