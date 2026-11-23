@@ -346,7 +346,7 @@ Commands, engine setup, and environment triage live in `/a11y` §0 and §2. Keep
 
 - [ ] **Rule out the environment before recording a manual finding as a defect.** See `/a11y` §2.1 for Safari keyboard settings, scanner and iframe mismatches, and the first-load rotor glitch.
 - [ ] **Test keyboard, focus, and visual-state fixes in WebKit, Chromium, and Firefox.** Some real defects reproduce in one engine and stay invisible in the others, so passing in one engine does not count as passing.
-- [ ] **Run live screen-reader verification in the target host.** Use the actual T3 preview host with VoiceOver for the thin canvas, plus Safari with VoiceOver for published output. The Studio Electron app is retired. Results from one are not evidence for the other.
+- [ ] **Run live screen-reader verification in the target host.** Use the actual T3 preview host with VoiceOver for Read preview and review comments, plus Safari with VoiceOver for published output. The Studio Electron app is retired. Results from one are not evidence for the other.
 - [ ] **Verify a new interactive component standalone before placing it on a full page.**
 - [ ] **VoiceOver rotor test.** Open the rotor (VO+U) and check that Landmarks, Headings, and Lists match the expected structure. If the very first load looks wrong, reload once before trusting the result.
 - [ ] **Tab-through test.** Tab from the start of the page to the end and back. Check for a logical order, no traps, and visible focus on every stop. Do this in all three engines.

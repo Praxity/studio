@@ -2,7 +2,6 @@ import { createHash } from "node:crypto";
 import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createCourseContext } from "@praxity/export-pipeline";
 import * as operations from "@praxity/operations";
 import { afterEach, expect, it, vi } from "vitest";
 import { editCliOutputSchema } from "../../shared/edit-cli-schema";
@@ -13,7 +12,6 @@ import { resolveLessonSources } from "../lesson-source";
 import { readBlockInventory } from "../operations/block-inspection";
 import { OperationService } from "../operations/operation-service";
 import { withProjectFileFlushes } from "../project-file-transactions";
-import { PreviewScheduler } from "../studio/preview-scheduler";
 
 function withCountingFlushes<Args extends unknown[]>(work: (...args: Args) => Promise<void>) {
 	return async (...args: Args) => {
@@ -357,69 +355,22 @@ it(
 	}),
 );
 
-it("an unstored container draft projects retained and new children before writing the exact durable result", async () => {
-	const { root, session, service } = await fixture();
-	const view = await resolveLessonSources(root, {}, { identitySession: session });
-	const lesson = view.lessons.get("a.prax");
-	const page = lesson?.pages[0];
-	const tabs = page?.blocks.find((block) => block.type === "tabs");
-	if (!lesson || !page || !tabs) throw new Error("Missing container view");
-	const before = await bytes(root);
-	const scheduler = new PreviewScheduler(
-		await createCourseContext({ id: "c", title: "C", sourceLocale: "en", content: lesson.pages }),
-		() => {},
-	);
+it("review: retained durable container edit adds descendants without runtime IDs on disk", async () => {
+	const { root, service } = await fixture();
+	const target = (await readBlockInventory(root)).blocks.find((block) => block.type === "tabs");
+	if (!target) throw new Error("Missing target");
 	const editable =
 		"::: tabs\n:: First\n\nNew first.\n\n:: Second\n\nNew second.\n\nAdded paragraph.\n\n:: Third\n\nThird tab.\n";
-	try {
-		const rendered = scheduler.renderDraft(
-			{
-				seq: 1,
-				pageId: page.id,
-				nodeId: tabs.id,
-				transactionId: "read-draft",
-				source: `${editable}:::\n`,
-			},
-			page,
-			{
-				admission: view,
-				files: [...view.lessons].map(([path, read]) => ({ path, source: read.tree.stream.source })),
-			},
-		);
-		expect(rendered.ok).toBe(true);
-		if (!rendered.ok) throw new Error("Container draft refused");
-		const html = rendered.render.fragments[0].html;
-		const renderedIds = [
-			...new Set([...html.matchAll(/data-node-id="([^"]+)"/g)].map((match) => match[1])),
-		];
-		const retained = [
-			"rt-00000000000000000000000000001003",
-			"rt-00000000000000000000000000001004",
-			"rt-00000000000000000000000000001005",
-			"rt-00000000000000000000000000001007",
-		];
-		for (const id of retained) expect(renderedIds).toContain(id);
-		const added = renderedIds.filter((id) => !retained.includes(id));
-		expect(added).toHaveLength(4);
-		for (const id of renderedIds) expect(id).toMatch(/^rt-[0-9a-f]{32}$/);
-		expect(html).toContain("Added paragraph.");
-		expect(html).toContain("Third tab.");
-		expect(await bytes(root)).toEqual(before);
-		const target = (await readBlockInventory(root)).blocks.find((block) => block.type === "tabs");
-		if (!target) throw new Error("Missing saved draft target");
-		const written = await service.apply(edit(target, editable));
-		expect(written.ok).toBe(true);
-		expect(await readFile(join(root, "a.prax"), "utf8")).toBe(
-			inserted.replace("New second.", "New second.\n\nAdded paragraph.\n\n:: Third\n\nThird tab."),
-		);
-		const reloaded = await resolveLessonSources(root);
-		expect(reloaded.identity.sourceMappings.every((m) => !m.id.startsWith("rt-"))).toBe(true);
-		expect(
-			Object.entries(await bytes(root))
-				.filter(([path]) => path.startsWith(".praxity/identity/"))
-				.every(([, text]) => !text.includes("rt-")),
-		).toBe(true);
-	} finally {
-		scheduler.close();
-	}
+	const written = await service.apply(edit(target, editable));
+	expect(written.ok).toBe(true);
+	expect(await readFile(join(root, "a.prax"), "utf8")).toBe(
+		inserted.replace("New second.", "New second.\n\nAdded paragraph.\n\n:: Third\n\nThird tab."),
+	);
+	const reloaded = await resolveLessonSources(root);
+	expect(reloaded.identity.sourceMappings.every((m) => !m.id.startsWith("rt-"))).toBe(true);
+	expect(
+		Object.entries(await bytes(root))
+			.filter(([path]) => path.startsWith(".praxity/identity/"))
+			.every(([, text]) => !text.includes("rt-")),
+	).toBe(true);
 });

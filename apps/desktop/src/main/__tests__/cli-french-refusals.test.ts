@@ -27,12 +27,10 @@ async function fixture() {
 	roots.push(root);
 	const projectDir = join(root, "course");
 	await mkdir(projectDir);
-
 	await writeFile(
 		join(projectDir, "lesson.prax"),
 		"---\nid: french-cli\ntitle: Test\n---\n# Hello\n",
 	);
-
 	return { projectDir };
 }
 it.each([

@@ -11,8 +11,13 @@ import { applyOperation } from "@praxity/operations";
 import { withoutInlineProjectionMetadata } from "@praxity/shared-blocks/inline-markdown";
 import { afterAll, afterEach, beforeAll, expect, it, vi } from "vitest";
 import { persistFixtureIdentity } from "../../test-utils/identity-fixture";
-import { loadIdentityStore, persistCourseIdentity, resolveCourseIdentity } from "../identity-store";
-import { resolveLessonSources } from "../lesson-source";
+import {
+	identityWriteRetirements,
+	loadIdentityStore,
+	persistCourseIdentity,
+	resolveCourseIdentity,
+} from "../identity-store";
+import { resolveLessonSources, resolveLessonSourcesForWrite } from "../lesson-source";
 import { readNarrationAuthoring, writeNarrationAuthoring } from "../narration-authoring";
 import { readBlockInventory } from "../operations/block-inspection";
 import { OperationService } from "../operations/operation-service";
@@ -317,7 +322,14 @@ it("D14 recorded card deletion retires its descendants without a retirement gate
 	expect(nodes[body.id]?.status).toBe("retired");
 	const session = await createStudioProjectSession(root, "test");
 	sessions.push(session);
-	expect((await session.identityReview()).retirements).toEqual([]);
+	expect(
+		await withProjectFileTransaction(
+			root,
+			async () => identityWriteRetirements(await resolveLessonSourcesForWrite(root)),
+			"write",
+			false,
+		),
+	).toEqual([]);
 });
 
 it("S1 rejects forged history, direct inverse payloads and transaction replay", async () => {

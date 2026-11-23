@@ -292,12 +292,9 @@ beforeAll(async () => {
 				scheduler.selectPage(page.id);
 				await vi.runAllTimersAsync();
 			}
-			await scheduler.refresh(scheduled, {}, true);
+			await scheduler.refresh(scheduled, {});
 			await vi.runAllTimersAsync();
 			expect(events.some((event) => (event as { type: string }).type === "pageCompiled")).toBe(
-				true,
-			);
-			expect(events.some((event) => (event as { type: string }).type === "nodesRendered")).toBe(
 				true,
 			);
 			scan("scheduler/events", JSON.stringify(events));

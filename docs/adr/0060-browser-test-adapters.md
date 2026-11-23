@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Records existing behaviour; no executable code change.
+Accepted. Records test-adapter decisions; no executable code change. Browser editor cases are retired as of 2026-11-22. Their rationale remains below; Read, review and inspection cases remain current.
 
 ## Context
 

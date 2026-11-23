@@ -20,10 +20,11 @@ persistence and interrupted-write recovery retain their existing write transacti
 CLI operations, inspection, recovery readers and review storage keep their owners.
 The browser identity confirmation form and session-only draft receipts are retired.
 
+2026-11-22: The unused canvas renderer and bundle are removed. CLI and preview startup no longer require an editor asset directory. Inspection and review assets retain their packaging and provenance.
+
 ### src/main/cli.ts
 
 - `writeIdentityNotice`: Standalone hosts flush this notice before identity replacement.
-- 2026-11-22: The unused canvas renderer and bundle are removed. CLI and preview startup no longer require an editor asset directory. Inspection and review assets retain their packaging and provenance.
 - `runPraxityCli`: Before language validation, use the first --lang value; absent or invalid values
   fall back to en.
 - `runPraxityCli`: Argument refusals do not need the server or rendering runtime.
@@ -212,6 +213,8 @@ Historical owner, removed on 2026-11-22 with browser narration registration.
 
 ### src/main/studio/preview-scheduler.ts
 
+2026-11-22: Draft rendering, settlement, subscription epochs, committed fragments and queued commit refreshes below are historical. Their browser callers are retired. Page compilation, outside refresh, diagnostics and stale-result fencing remain current.
+
 - `PreviewScheduler`: Session compiler. Admitted inputs enter here; filesystem and revision
   ownership remain in the host and operation service. One job yields one event-loop turn.
 - `renderDraft`: Null means the latest admission removed this page; undefined uses context facts.
@@ -228,20 +231,18 @@ Historical owner, removed on 2026-11-22 with browser narration registration.
   compile still handle them.
   Evidence: the code comment this replaced (commit bed54f6109aa4ae868c981f53233a5ee9c5afdd7); not
   independently verified.
-- `renderSmallEdit`: A suppressed event's RPC response may belong to an obsolete renderer. Keep its
+- Retired 2026-11-22, `renderSmallEdit`: A suppressed event's RPC response may belong to an obsolete renderer. Keep its
   fragments eligible for the current subscription's page patch.
 - `enqueueRefresh`: Queue full input/context preparation with page compilation. A newer complete
   admitted input replaces any refresh that has not started.
 - `selectPage`: `sent` tracks a page, not a frame: a newly selected frame may lack what an earlier
   one received.
 - `refresh`: A patched page cannot follow a changed page list; its frame needs a new document.
-- `refresh`: Fence running work before sending an optimistic fragment for the new seq.
+- Retired 2026-11-22, `refresh`: Fence running work before sending an optimistic fragment for the new seq.
 
 ### src/main/studio/project-session.ts
 
-The save, operation-commit, draft and browser-confirmation entries below record
-the retired session APIs. Startup identity recovery, watcher admission, Read
-compilation, diagnostics and close/drain remain current.
+Current startup recovery, watcher admission, Read compilation and diagnostics remain supported. Each retired entry below retains its original reasoning.
 
 - `createStudioProjectSession`: Capture the session scope before opening an admission. Deferred jobs
   must acquire fresh locks, never inherit a released T1 AsyncLocalStorage scope.
@@ -249,9 +250,9 @@ compilation, diagnostics and close/drain remain current.
   outside writes. Events still read current bytes through the admitted lesson reader.
 - `rememberSources`: A contained-invalid commit is still admitted source; suppress its own watcher
   echo.
-- `createStudioProjectSession`: Opening the editor admits a writer before any authored-file
+- Retired 2026-11-22, `createStudioProjectSession`: Opening the editor admits a writer before any authored-file
   discovery. Subsequent snapshots and previews remain strict readers.
-- `identityReview`: Opaque invalid lessons must not prevent entry to valid lessons. Confirmation
+- Retired 2026-11-22, `identityReview`: Opaque invalid lessons must not prevent entry to valid lessons. Confirmation
   still validates the whole graph it would persist.
 - `previewInput`: Preview consumers retain the last valid lesson slice. Identity admission and
   diagnostics still describe the current disk revision.
@@ -261,29 +262,29 @@ compilation, diagnostics and close/drain remain current.
 - `refreshPreview`: Without watcher hints, any asset may have changed before this admission.
 - `refreshPreview`: An invalid unlisted lesson has no preview page. Report its diagnostics on the
   retained course without blocking valid jobs.
-- `createStudioProjectSession`: Writers keep invalid lessons opaque; preview still needs their
+- Retired 2026-11-22, `createStudioProjectSession`: Writers keep invalid lessons opaque; preview still needs their
   transient read identities.
 - `createStudioProjectSession`: Fence the whole course: a cross-lesson refusal may name only the
   reader file while its private target still has D02's runtime refusal.
-- `createStudioProjectSession`: Metadata, assets and the complete context belong to the scheduler.
+- Retired 2026-11-22, `createStudioProjectSession`: Metadata, assets and the complete context belong to the scheduler.
   Its read admission starts after this durable write releases the lock.
-- `createStudioProjectSession`: The queued job owns a new admission. Its identity must be issued
+- Retired 2026-11-22, `createStudioProjectSession`: The queued job owns a new admission. Its identity must be issued
   here too, since outside edits can precede their watcher.
-- `createStudioProjectSession`: The durable write succeeded. Report preview failure without turning
+- Retired 2026-11-22, `createStudioProjectSession`: The durable write succeeded. Report preview failure without turning
   its acknowledgement into a failed save that the client might retry.
-- `createStudioProjectSession`: Keep late-arrival tombstones for this lifetime; bound receipts
+- Retired 2026-11-22, `createStudioProjectSession`: Keep late-arrival tombstones for this lifetime; bound receipts
   containing author payloads.
-- `save`: Authorization reads the manifest. Admit the save before that read so this authorized write
+- Retired 2026-11-22, `save`: Authorization reads the manifest. Admit the save before that read so this authorized write
   can recover an interrupted previous save.
-- `createStudioProjectSession`: Only the editor's metadata baselines are admitted. Plaintext editing
+- Retired 2026-11-22, `createStudioProjectSession`: Only the editor's metadata baselines are admitted. Plaintext editing
   is deferred.
-- `createStudioProjectSession`: The shared draft owner passes absolute paths. Keep metadata
+- Retired 2026-11-22, `createStudioProjectSession`: The shared draft owner passes absolute paths. Keep metadata
   admission here.
-- `createStudioProjectSession` registers the `previewRenderDraft` RPC to look up its page in
+- Retired 2026-11-22, `createStudioProjectSession` registers the `previewRenderDraft` RPC to look up its page in
   `goodLessons` and call `scheduler.renderDraft(request, page ?? null, draftIdentity)`. Those saved
   pages were admitted at open, commit or watcher delivery. This handler opens no new project-file
   admission, file or lock and does not mutate persisted drafts.
-- `createStudioProjectSession` registers `draftPersistenceReconcile` to inspect
+- Retired 2026-11-22, `createStudioProjectSession` registers `draftPersistenceReconcile` to inspect
   `draftAttempts.get(attemptId)`. A missing entry does not prove that an earlier authenticated
   `draftPersistenceSubmit` request cannot still arrive. Reconciliation inserts a `fenced` entry
   before replying, so that late submission cannot begin executing the same attempt.
@@ -292,16 +293,16 @@ compilation, diagnostics and close/drain remain current.
   saved operation's watcher echo has identical input and is ignored.
 - `createStudioProjectSession`: T1 replacements can outlast Chokidar's atomic window. Wait for that
   transaction before treating its unlink echo as deletion.
-- `createStudioProjectSession`: A queued refresh may already know real outside bytes. Only the
+- Retired 2026-11-22, `createStudioProjectSession`: A queued refresh may already know real outside bytes. Only the
   commit's own bytes suppress grammarChanged.
 - `createStudioProjectSession`: Decoder, path and configuration errors may throw before the parser
   returns diagnostics. Fence output and preserve the error.
 - `createStudioProjectSession`: An unlink echo may already have replacement bytes to publish.
-- `confirmIdentityRetirements`: A preview failure cannot turn an acknowledged identity write into a
+- Retired 2026-11-22, `confirmIdentityRetirements`: A preview failure cannot turn an acknowledged identity write into a
   failed save.
-- `subscribe`: Reload may open its stream before the old socket closes. The newest subscription owns
+- Retired 2026-11-22, `subscribe`: Reload may open its stream before the old socket closes. The newest subscription owns
   the draft epoch; older closes cannot reset it.
-- `close`: Drain scheduled compiles before disposing the preview they render into; collect every
+- Retired 2026-11-22, `close`: Drain scheduled compiles before disposing the preview they render into; collect every
   cleanup failure rather than stopping at the first.
 
 ### src/main/studio/read-only-server.ts

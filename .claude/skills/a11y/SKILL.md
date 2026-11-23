@@ -31,7 +31,7 @@ This is the only project-specific section. Replace all of it when porting.
 | Authoring-tool scope | Apply ATAG 2.0 Parts A and B to Studio. Record the criterion, level, applicability, and evidence for each item. Choose a formal conformance level as a separate decision. |
 | ATAG conformance target | ATAG 2.0 AA for Parts A and B. Before making a claim, define which output technologies and workflows it covers. AAA readability for learner content stays a separate product target. |
 | Praxity defaults | The defaults in §5. They go beyond WCAG and apply to Studio, previews, and generated courses. |
-| Shipping engines | Chromium (thin canvas and Chromium learners), WebKit (Safari learners), Gecko (Firefox learners, including NVDA) |
+| Shipping engines | Chromium (Read preview, review and Chromium learners), WebKit (Safari learners), Gecko (Firefox learners, including NVDA) |
 
 **When porting,** delete any row whose binding the target project lacks, and do not invent a command to fill it. A skill that names a missing command does more harm than one that names none. Stale commands are what led to this file.
 
@@ -131,7 +131,7 @@ An automated suite that runs only Chromium cannot catch these. If the project's 
 
 ### 2.3 Match VoiceOver testing to the application
 
-For published output and the thin canvas in Safari, run Guidepup `voiceOverTest` with Playwright `browserName: "webkit"`. Start the canvas with `praxity studio <course> --no-open`; exercise Read and Edit mode. Run browser journeys with `pnpm --filter @praxity/desktop e2e:browser-editor` in all three engines.
+For published output, Read preview and review in Safari, run Guidepup `voiceOverTest` with Playwright `browserName: "webkit"`. Start Read preview with `praxity studio <course> --no-open`; exercise Read navigation and review comments with `--review`. Run browser journeys with `pnpm --filter @praxity/desktop e2e:browser-editor` in all three engines.
 
 For embedded preview pane entry and exit, use core Guidepup against the actual host application. Maintainers: read the VoiceOver runbook reached through `AGENTS.local.md` first. Browser-only checks cannot verify host pane focus transitions. Record application and browser versions, actual speech and focus.
 

@@ -70,11 +70,7 @@ import { readProjectConfig, resolveCompletionSettings } from "../project-config"
 import { projectRecoveryArchives, withProjectFileTransaction } from "../project-file-transactions";
 import { readProjectTree } from "../project-tree";
 import { browserExportSchema, StudioExportService } from "./export-service";
-import {
-	identityReviewMessages,
-	type StudioIdentityReview,
-	sourceErrorMessage,
-} from "./identity-review";
+import { sourceErrorMessage } from "./identity-review";
 import {
 	type CanvasPracticeDiagnostic,
 	canvasPracticeDiagnostics,
@@ -127,7 +123,6 @@ export async function createStudioProjectSession(
 	let previewSequence = 0;
 	const admittedPages = new Map<string, string[]>();
 	const goodLessons = new Map<string, ReadLessonResult>();
-	const operationTimings: Partial<Record<"snapshot" | "plan" | "commit", number>> = {};
 	let inputMs = 0;
 	let outsideTiming: { watcherEventAt: number; admissionMs: number; inputMs: number } | undefined;
 	const rememberSources = (identity: ResolvedCourseIdentity) => {
@@ -242,60 +237,6 @@ export async function createStudioProjectSession(
 
 	let scheduler: PreviewScheduler;
 	let locale: "en" | "fr" = "en";
-	async function identityReview(): Promise<StudioIdentityReview> {
-		return withProjectFileTransaction(
-			root,
-			async () => {
-				const data = await manifestData();
-				locale = data.manifest.locale?.startsWith("fr") ? "fr" : "en";
-				const result = await resolveLessonSourcesForWrite(root, {}, { identitySession });
-				const retirements = identityWriteRetirements(result);
-				const problem = identitySourceError(result);
-				const sourceError = problem && {
-					code: problem.code,
-					file: problem.file,
-					line: problem.line,
-					message: sourceErrorMessage(locale, problem),
-				};
-				const duplicate = result.identity.unresolved.find((node) => node.reason === "duplicate");
-				const duplicateRead = duplicate && result.lessons.get(duplicate.file);
-				if (duplicate && !duplicateRead) throw new Error("Missing duplicate source admission");
-				const revision = createHash("sha256")
-					.update(
-						JSON.stringify({
-							manifest: data.manifest,
-							sources: [...result.lessons].map(([file, lesson]) => [
-								file,
-								lessonSourceText(lesson),
-							]),
-							retirements,
-						}),
-					)
-					.digest("hex");
-				return {
-					locale,
-					revision,
-					retirements,
-					confirmationBlocked: Boolean(duplicate || sourceError),
-					...(sourceError ? { sourceError } : {}),
-					...(duplicate && duplicateRead
-						? {
-								duplicate: {
-									file: duplicate.file,
-									line: lineColumn(
-										lessonSourceText(duplicateRead),
-										result.identity.sourceMappings.find((node) => node.id === duplicate.id)?.span
-											.start ?? 0,
-									).line,
-								},
-							}
-						: {}),
-				};
-			},
-			"write",
-			false,
-		);
-	}
 	async function previewInput(
 		identity: ResolvedCourseIdentity,
 		seq: number,
@@ -338,7 +279,6 @@ export async function createStudioProjectSession(
 		identity: ResolvedCourseIdentity,
 		seq: number,
 		changed: CourseContextChanges | undefined,
-		optimistic: boolean,
 	) {
 		const practiceDiagnostics = practiceAdmissionDiagnostics(
 			[...identity.lessons].map(([path, read]) => ({ path, read })),
@@ -348,11 +288,7 @@ export async function createStudioProjectSession(
 			return undefined;
 		}
 		const input = await previewInput(identity, seq);
-		const render = await scheduler.refresh(
-			input,
-			changed ?? { assets: [...input.resolvedAssets.keys()] },
-			optimistic,
-		);
+		await scheduler.refresh(input, changed ?? { assets: [...input.resolvedAssets.keys()] });
 		for (const [file, read] of identity.lessons) {
 			const diagnostics = read.errors
 				.filter((error) => error.level === "error")
@@ -380,7 +316,6 @@ export async function createStudioProjectSession(
 					});
 			}
 		}
-		return render;
 	}
 	const initial = await withProjectFileTransaction(
 		root,
@@ -508,7 +443,6 @@ export async function createStudioProjectSession(
 		return {
 			...scheduler.stats(),
 			inputMs,
-			operationTimings: { ...operationTimings },
 			outsideTiming,
 		};
 	});
@@ -683,16 +617,11 @@ export async function createStudioProjectSession(
 									const seq = ++previewSequence;
 									publish({ type: "editorChanged", seq });
 									previewSeq = seq;
-									await refreshPreview(
-										identity,
-										seq,
-										{
-											lessons: filename.endsWith(".prax") ? [filename] : undefined,
-											manifest: filename === "course.yaml" || filename === "praxity.json",
-											assets: filename.startsWith("assets/") ? [filename] : undefined,
-										},
-										false,
-									);
+									await refreshPreview(identity, seq, {
+										lessons: filename.endsWith(".prax") ? [filename] : undefined,
+										manifest: filename === "course.yaml" || filename === "praxity.json",
+										assets: filename.startsWith("assets/") ? [filename] : undefined,
+									});
 									outsideTiming = { watcherEventAt, admissionMs, inputMs };
 									rememberSources(identity);
 								},
@@ -735,7 +664,6 @@ export async function createStudioProjectSession(
 		registeredMethods: [...methods.keys()],
 		cancelExport: () => exports?.cancel(),
 		readSnapshot,
-		identityReview,
 		async invoke(method: string, args: unknown) {
 			if (closed) throw new StudioSessionError(503, "session_closed", t("serverRefusals.closing"));
 			const operation = methods.get(method);
@@ -748,18 +676,6 @@ export async function createStudioProjectSession(
 					throw new StudioSessionError(422, error.code, narrationTargetUnresolvedMessage(locale), {
 						source: error.source,
 					});
-				if (error instanceof IdentityRetirementError && error.origin === "draft")
-					throw new StudioSessionError(
-						409,
-						"identity_draft_retirement",
-						identityReviewMessages[locale].draftRetirements.replace(
-							"{list}",
-							error.retirements
-								.map((item) => `${item.file}: ${item.page}; "${item.label}"`)
-								.join(", "),
-						),
-						{ retirements: error.retirements },
-					);
 				if (error instanceof IdentityRetirementError)
 					throw new StudioSessionError(
 						409,
@@ -787,7 +703,6 @@ export async function createStudioProjectSession(
 			listeners.clear();
 			const results = [
 				...(await Promise.allSettled([watcher.close(), pendingChanges])),
-				...(await Promise.allSettled([scheduler.drained()])),
 				...(await Promise.allSettled([exports?.close(), preview?.dispose()])),
 			];
 			const errors = results.flatMap((result) =>

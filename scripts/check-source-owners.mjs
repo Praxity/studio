@@ -66,7 +66,6 @@ export const sourceOwnerAllowlist = [
 		reason:
 			"Legacy ProseMirror metadata folding uses paragraph positions, not source offsets, and performs no save. Retire with the legacy source editor.",
 	},
-
 	{
 		path: "packages/shared-blocks/src/narration.ts",
 		expression: "/^\\uFEFF/u",

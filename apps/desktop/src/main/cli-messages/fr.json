@@ -249,9 +249,6 @@
 		"lessons": "Le projet n’a aucune leçon lisible",
 		"lessonMissing": "La leçon ne fait pas partie de ce projet",
 		"courseRoot": "La racine du cours n’est pas autorisée",
-		"conflict": "La leçon a changé sur le disque depuis son ouverture",
-		"metadataPath": "Le chemin des métadonnées n’est pas autorisé",
-		"metadataMissing": "ENOENT : les métadonnées du projet sont absentes",
 		"export": "L’exportation a échoué",
 		"method": "La méthode n’est pas disponible"
 	}

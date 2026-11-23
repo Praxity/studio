@@ -683,7 +683,6 @@ export async function runPraxityCli(args: string[], runtime: CliRuntime): Promis
 				projectDir: root,
 				locale: adviceLocale,
 				appVersion: runtime.appVersion,
-
 				port,
 				onPortFallback: () => {
 					portFallback = true;

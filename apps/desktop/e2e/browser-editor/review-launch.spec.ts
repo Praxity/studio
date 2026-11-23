@@ -25,7 +25,6 @@ for (const width of [1280, 390]) {
 		await writeFile(join(projectDir, "two.prax"), "# Third page\n\nThird body.\n");
 		const result = await runPraxityCli(["studio", projectDir, "--review", "--no-open"], {
 			appVersion: "0.3.0",
-
 			exportAssetsDir: resolve(import.meta.dirname, "../../resources/export-assets"),
 		});
 		const errors: string[] = [];
@@ -117,7 +116,6 @@ for (const layout of ["sidebar", "bottomBar"]) {
 			);
 			result = await runPraxityCli(["studio", root, "--review", "--no-open"], {
 				appVersion: "0.3.0",
-
 				exportAssetsDir: resolve(import.meta.dirname, "../../resources/export-assets"),
 			});
 			expect(result.exitCode, result.stderr).toBe(0);

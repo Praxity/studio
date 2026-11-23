@@ -1773,10 +1773,7 @@ export function identityWriteRetirements(
 }
 
 export class IdentityRetirementError extends IdentityStoreError {
-	constructor(
-		readonly retirements: IdentityRetiredLocation[],
-		readonly origin: "outside" | "draft" = "outside",
-	) {
+	constructor(readonly retirements: IdentityRetiredLocation[]) {
 		super(
 			{ key: "desktop.identity.exportRefused", args: {} },
 			"Identity: unrecorded content retirement requires confirmed re-derivation",
@@ -2826,7 +2823,6 @@ export async function persistCourseIdentity(
 				if (retirements !== "confirmed") {
 					const retired = identityWriteRetirements(result);
 					if (retired.length) {
-						let origin: "outside" | "draft" = "outside";
 						if (
 							!baseline.options.operations?.length &&
 							[...baseline.sources].some(
@@ -2839,7 +2835,7 @@ export async function persistCourseIdentity(
 								(entry): entry is [string, string] =>
 									entry[1] !== null && baseline.options.lessonPaths.includes(entry[0]),
 							);
-							const disk = await resolveAdmittedCourseIdentity(
+							await resolveAdmittedCourseIdentity(
 								root,
 								{
 									lessonPaths: baseline.options.lessonPaths.filter(
@@ -2852,9 +2848,8 @@ export async function persistCourseIdentity(
 								undefined,
 								baseline.files,
 							);
-							if (!identityWriteRetirements(disk).length) origin = "draft";
 						}
-						throw new IdentityRetirementError(retired, origin);
+						throw new IdentityRetirementError(retired);
 					}
 				}
 				await applyProjectFilePlan(root, plan, {

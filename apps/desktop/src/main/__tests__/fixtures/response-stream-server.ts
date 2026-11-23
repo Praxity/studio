@@ -14,9 +14,7 @@ const root = await fsp.mkdtemp(join(tmpdir(), "studio-stream-process-"));
 const projectDir = join(root, "project");
 await fsp.mkdir(join(projectDir, "assets"), { recursive: true });
 await fsp.mkdir(join(projectDir, "exports"));
-
 await fsp.writeFile(join(projectDir, "lesson.prax"), "# Lesson\n\nBody.\n");
-
 const bytes = Buffer.alloc(32 * 1024 * 1024, "x");
 const asset = join(projectDir, "assets", "large.mp4");
 const download = join(projectDir, "exports", "large.zip");

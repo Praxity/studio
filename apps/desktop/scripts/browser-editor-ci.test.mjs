@@ -14,10 +14,10 @@ test("browser editor CI selects its source, fixtures, assets and configuration o
 	assert.ok(Array.isArray(filters.browser_editor), "Browser editor needs its own PR path filter");
 	const covered = picomatch(filters.browser_editor, { dot: true });
 	for (const path of [
-		"apps/desktop/e2e/browser-editor/canvas-text.spec.ts",
+		"apps/desktop/e2e/browser-editor/review-launch.spec.ts",
 		"apps/desktop/e2e/browser-editor/playwright.config.ts",
 		"apps/desktop/e2e/raw-css.ts",
-		"apps/desktop/src/renderer/browser/canvas-text.ts",
+		"packages/export-pipeline/template/review-comments.js",
 		"apps/desktop/src/main/preview/preview-service.ts",
 		"apps/desktop/src/inspection-frame.ts",
 		"apps/desktop/src/shared/preview-types.ts",

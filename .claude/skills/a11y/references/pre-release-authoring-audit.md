@@ -17,9 +17,9 @@ row did not run.
 - Read the canonical `/a11y` skill and `.claude/agents/screen-reader-tester.md` first.
 - Freeze the build under review. Record Studio, preview host, macOS, browser, VoiceOver, UI
   language, and output-format versions from current evidence; never copy old values.
-- Include Read and Edit mode, text controls, save/cancel/refusal recovery, help,
+- Include Read navigation, review comment controls, diagnostics, help,
   embedded pane transitions, HTML export and SCORM export.
-- Assess the thin canvas as browser UI. Assess embedded pane transitions in the actual host.
+- Assess Read preview and review comments as browser UI. Assess embedded pane transitions in the actual host.
 - Warn the user immediately before every VoiceOver run, because VoiceOver takes over
   speech, focus, and browser control. Use WebKit only, and quit VoiceOver after each run.
 - Keep VoiceOver and mock-renderer specs under `/tmp`; do not commit them. Commit only

@@ -1871,16 +1871,6 @@
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
-		"name": "Studio HTTP boundary > refuses an escaping or dangling metadata link, absolute path: false",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2407 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
-		"name": "Studio HTTP boundary > refuses an escaping or dangling metadata link, absolute path: true",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2666 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
 		"name": "Studio HTTP boundary > rejects Origin http://evil.example, even with the capability",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 2409 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
@@ -1919,23 +1909,8 @@
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
-		"name": "Studio startup admission > acknowledges committed courseWriteLesson despite cleanup failure and accepts its next baseline",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5014 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
-		"name": "Studio startup admission > acknowledges committed projectSave despite cleanup failure and accepts its next baseline",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5030 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
 		"name": "Studio startup admission > keeps recovery stages and unmigrated source intact on startup and every editor read",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5067 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
-	},
-	{
-		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
-		"name": "Studio startup admission > refuses absent UI bundles and hidden or traversing manifest lesson names",
-		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5012 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",

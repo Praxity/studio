@@ -22,7 +22,6 @@ it("admits the canvas mode through launch, preserving exact route and origin adm
 
 	const server = await startStudioServer({
 		projectDir: join(root, "project"),
-
 		appVersion: "0.3.0",
 	});
 	cleanup.push(() => server.close());
@@ -213,7 +212,6 @@ it("admits compilation once, refuses absent and non-HTML launches, and retains o
 
 	const server = await startStudioServer({
 		projectDir: join(root, "project"),
-
 		appVersion: "0.3.0",
 		exportAssetsDir: fileURLToPath(new URL("../../../resources/export-assets/", import.meta.url)),
 	});

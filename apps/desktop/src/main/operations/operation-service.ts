@@ -122,7 +122,7 @@ export type OperationServiceResult =
 			render?: PreviewNodeRender;
 			fields?: Awaited<ReturnType<OperationService["canvasTextSnapshot"]>>["fields"];
 	  })
-	| (OperationRefusal & { retirements?: IdentityRetiredLocation[]; reviewUrl?: string });
+	| (OperationRefusal & { retirements?: IdentityRetiredLocation[] });
 interface OperationOptions {
 	expectedRevision?: OperationFileBase;
 	canvas?: { scope?: CanvasPageScope };
@@ -469,7 +469,6 @@ export class OperationService {
 				result = {
 					...refusal(transactionId, "identity-retirement-pending"),
 					retirements: error.retirements,
-					reviewUrl: "/launch",
 				};
 				return {};
 			}

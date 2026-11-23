@@ -21,14 +21,13 @@ packages/
 
 ### `apps/desktop/`
 
-The standalone CLI and browser canvas host. The directory keeps its historical name.
+The standalone CLI and local Read preview host. The directory keeps its historical name.
 
 - `src/main/`: CLI, rooted HTTP services, filesystem transactions, operations, identity, narration and export.
 - `src/main/export/`: local export owners shared by CLI and server.
-- `src/renderer/browser/canvas*.ts`: native author document and text adapter.
 - `src/renderer/themes/`: shared theme values still imported by CLI/export and tests.
 - `src/shared/`: service schemas, transport types, manifest types and path utilities.
-- `e2e/browser-editor/`: headless canvas and retained inspection journeys.
+- `e2e/browser-editor/`: headless Read, review and inspection journeys.
 - `scripts/`: viewer prebuild, standalone CLI packaging and release verification.
 
 ## Core packages
@@ -65,7 +64,7 @@ Reusable authoring UI and state.
 
 - `src/components/`: grammar editor, design controls, media workflows, and accessibility UI.
 - `src/stores/`: grammar document and editor stores.
-- `src/adapters/`: host capabilities supplied by retained service adapters. The standalone CLI and thin canvas own the supported host; the Electron app is retired.
+- `src/adapters/`: host capabilities supplied by retained service adapters. The standalone CLI and Read preview own the supported host; the Electron app is retired.
 - `src/lib/a11y/`: structural accessibility checker, rule metadata, and tests.
 - `src/lib/themes/`: design variants, tokens, and theme resolution.
 - `src/messages/`: English and French editor strings.

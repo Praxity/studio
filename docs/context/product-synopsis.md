@@ -1,10 +1,10 @@
 # Praxity Studio product synopsis
 
-Praxity Studio is the authoring and export engine moving into Rubato. Its standalone CLI and thin browser canvas let authors write grammar 4, preview locally, and export accessible eLearning without sending course or learner data to Praxity Studio.
+Praxity Studio is the authoring and export engine moving into Rubato. Its standalone CLI and local Read preview let authors write grammar 4, preview locally, and export accessible eLearning without sending course or learner data to Praxity Studio.
 
 ## Current focus
 
-The current quality bar is a local CLI and thin canvas, distributed through Rubato, that produce accessible SCORM and standalone HTML:
+The current quality bar is a local CLI and Read preview, distributed through Rubato, that produce accessible SCORM and standalone HTML:
 
 - responsive, slide-shaped pages from mobile Safari through desktop;
 - keyboard and screen-reader operation;
@@ -21,13 +21,13 @@ SCORM 1.2 and standalone HTML remain supported. xAPI code remains experimental a
 
 From 2026-11-21, Praxity-authored Studio code, including earlier versions and the exported course player, is available under MIT. Use, embedding and resale are permitted under that licence. See [LICENSING.md](../../LICENSING.md). Rubato host/UI remains MIT.
 
-Projects stay on the author's machine as readable `.prax` files, course metadata, and assets. Authoring, preview, and export work offline. The canvas and published output use the same canonical compiler: server-rendered HTML with only the planned islands. Edit mode uses an inspection projection of that compiler output.
+Projects stay on the author's machine as readable `.prax` files, course metadata, and assets. Authoring, preview, and export work offline. Read preview and published output use the same canonical compiler: server-rendered HTML with only the planned islands. Review comments and inspection use a script-stripped projection of that compiler output. Source changes use `praxity edit`, including `--rendered` for rendered text fields.
 
 The default slide theme is part of the product: restrained typography, generous space, one accent colour, and pre-validated accessible states. Brand themes override tokens. Named slide styles compose controlled layout primitives instead of arbitrary CSS, so exports can keep checking contrast and reflow.
 
 Praxity Studio is a general tool for instructional designers and small teams that need brandable, accessible SCORM without a cloud authoring platform. Client content and brand-pack application are consulting deliverables, not Studio roadmap work. Desktop IPC sharing is retired. Authoring stays local; learner tracking stays on the learner device or in the customer's LMS.
 
-The slide runtime described above is implemented and shipped: slides layout, narration bar with captions/transcript and synced reveals, the clean default theme, declarative slide styles, SCORM 2004 / 1.2 / HTML export, and the review-share worker. It has been through a specialist accessibility audit and a published-output taste pass. Canvas accessibility requires acceptance in the actual T3 preview host; published output is tested separately in Safari with VoiceOver.
+The slide runtime described above is implemented and shipped: slides layout, narration bar with captions/transcript and synced reveals, the clean default theme, declarative slide styles, SCORM 2004 / 1.2 / HTML export, and the review-share worker. It has been through a specialist accessibility audit and a published-output taste pass. Read and review accessibility requires acceptance in the actual T3 preview host; published output is tested separately in Safari with VoiceOver.
 
 ## V1 boundaries
 

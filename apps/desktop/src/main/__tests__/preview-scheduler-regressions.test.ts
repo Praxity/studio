@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { mkdtemp, readFile, rm, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -13,11 +12,7 @@ import { readLesson } from "@praxity/grammar";
 import { afterEach, expect, it, vi } from "vitest";
 import { persistFixtureIdentity } from "../../test-utils/identity-fixture";
 import { resolveLessonSources } from "../lesson-source";
-import {
-	type PreviewDraftIdentity,
-	PreviewScheduler,
-	type PreviewSchedulerEvent,
-} from "../studio/preview-scheduler";
+import { PreviewScheduler, type PreviewSchedulerEvent } from "../studio/preview-scheduler";
 import { createStudioProjectSession, type StudioEvent } from "../studio/project-session";
 
 const roots: string[] = [];
@@ -79,7 +74,7 @@ it("review: adding a valid float boundary must still compile the page", async ()
 		const next: CourseContextInput = { ...model(1), content: [{ ...parsed.pages[0], id: "page" }] };
 		const fresh = compilePage(await createCourseContext(next), "page");
 		expect(fresh.html).toContain("Text beside picture.");
-		await scheduler.refresh(next, {}, true);
+		await scheduler.refresh(next, {});
 		await vi.runAllTimersAsync();
 		expect(events.some((e) => e.type === "pageCompiled" && e.patch.seq === 1)).toBe(true);
 		expect(events.some((e) => e.type === "compileFailed")).toBe(false);
@@ -238,7 +233,7 @@ it.each(["delete", "rename", "move"] as const)(
 				next.moduleDeck = {};
 				next.content[0].lessonId = "second-lesson";
 			}
-			await scheduler.refresh(next, {}, false);
+			await scheduler.refresh(next, {});
 			if (!finish) throw Error("Compile did not start");
 			finish();
 			await Promise.resolve();
@@ -259,7 +254,7 @@ it("review: dispose clears a scheduled trailing timer and blocks an in-flight de
 	);
 	scheduler.selectPage("page");
 	await vi.runAllTimersAsync();
-	await scheduler.refresh({ ...model(1), title: "Renamed" }, {}, false);
+	await scheduler.refresh({ ...model(1), title: "Renamed" }, {});
 	expect(vi.getTimerCount()).toBeGreaterThan(0);
 	scheduler.close();
 	expect(vi.getTimerCount()).toBe(0);
@@ -268,68 +263,61 @@ it("review: dispose clears a scheduled trailing timer and blocks an in-flight de
 	expect(events).toHaveLength(count);
 });
 
-it("container drafts retain admitted child IDs without writing source or identity", async () => {
-	const body =
-		"Second panel. A retained explanation keeps this item recognizable through a small source edit.";
-	const source = `# Page\n\n::: tabs\n:: First\n\nFirst panel.\n\n:: Second\n\n${body}\n:::\n`;
-	const { root } = await fixture({ "lesson.prax": source });
-	const resolved = await resolveLessonSources(root);
-	const lesson = resolved.lessons.get("lesson.prax");
-	const page = lesson?.pages[0];
-	const tabs = page?.blocks.find((block) => block.type === "tabs");
-	if (!lesson || !page || !tabs) throw Error("Missing container fixture");
-	const scheduler = new PreviewScheduler(
-		await createCourseContext({ ...model(0), content: lesson.pages }),
-		() => {},
-	);
+it("compiled scheduler failures retain their code and localization reference", async () => {
+	const { PracticeAdmissionError } = await import("@praxity/export-pipeline");
+	const events: PreviewSchedulerEvent[] = [];
+	const scheduler = await PreviewScheduler.create(model(0), (event) => events.push(event), {
+		compile: () => {
+			throw new PracticeAdmissionError("practice-no-tracking", "node", "data.actions", "fr");
+		},
+	});
 	try {
-		const admitted = {
-			admission: resolved,
-			files: [{ path: "lesson.prax", source }],
-		};
-		const before = structuredClone({ ...admitted, admission: { ...resolved, ids: undefined } });
-		const request = {
-			seq: 1,
-			pageId: page.id,
-			nodeId: tabs.id,
-			transactionId: randomUUID(),
-			source: source
-				.slice(source.indexOf("::: tabs"))
-				.replace("Second panel.", "Changed second panel."),
-		};
-		const rendered = scheduler.renderDraft(request, page, admitted);
-		expect(rendered.ok).toBe(true);
-		if (!rendered.ok) throw Error("Missing container draft");
-		const children = resolved.identity.sourceMappings.filter(
-			(mapping) => mapping.path.length > 2 && mapping.path[0] === 0,
+		scheduler.selectPage("page");
+		await vi.waitFor(() =>
+			expect(events).toContainEqual(
+				expect.objectContaining({
+					type: "compileFailed",
+					diagnostics: [
+						{
+							message: expect.any(String),
+							code: "practice-no-tracking",
+							messageRef: { key: "grammar.v4.practice-no-tracking", args: {} },
+						},
+					],
+				}),
+			),
 		);
-		expect(children.length).toBeGreaterThan(0);
-		for (const child of children)
-			expect(rendered.render.fragments[0].html).toContain(`data-node-id="${child.id}"`);
-		expect(rendered.render.fragments[0].html).toContain("Changed second panel.");
-		expect({ ...admitted, admission: { ...resolved, ids: undefined } }).toEqual(before);
-		expect((await resolveLessonSources(root)).identity).toEqual(resolved.identity);
-		expect(await readFile(join(root, "lesson.prax"), "utf8")).toBe(source);
-		for (const [change, code] of [
-			[{ ...admitted, files: [] }, "orphaned"],
-			[
-				{
-					...admitted,
-					admission: { ...resolved, identity: { ...resolved.identity, sourceMappings: [] } },
-				},
-				"orphaned",
-			],
-			[
-				{
-					...admitted,
-					files: [{ path: "lesson.prax", source: "# Page\n\n" }],
-				},
-				"not-allowed",
-			],
-		] satisfies Array<[PreviewDraftIdentity, string]>)
-			expect(
-				scheduler.renderDraft({ ...request, seq: 2, transactionId: randomUUID() }, page, change),
-			).toMatchObject({ ok: false, code });
+	} finally {
+		scheduler.close();
+	}
+});
+
+it("newer preview content fences stale failures and refreshes", async () => {
+	vi.useFakeTimers();
+	const events: PreviewSchedulerEvent[] = [];
+	const input = (seq: number) => {
+		const value = model(seq);
+		value.content[0].blocks[0].data.content = `Content ${seq}`;
+		return value;
+	};
+	const scheduler = await PreviewScheduler.create(input(0), (event) => events.push(event));
+	try {
+		await scheduler.refresh(input(2), {});
+		await vi.runAllTimersAsync();
+		expect(scheduler.lastGood("page")?.html).toContain("Content 2");
+		events.length = 0;
+		scheduler.fail(1, [{ message: "Stale failure" }]);
+		await vi.runAllTimersAsync();
+		expect(events.filter((event) => event.type === "compileFailed")).toEqual([]);
+		expect(scheduler.lastGood("page")?.html).toContain("Content 2");
+		await expect(scheduler.refresh(input(1), {})).rejects.toThrow(
+			"Course context sequence must advance",
+		);
+		expect(events).toEqual([]);
+		await vi.runAllTimersAsync();
+		expect(scheduler.context().seq).toBe(2);
+		expect(scheduler.lastGood("page")?.seq).toBe(2);
+		expect(scheduler.lastGood("page")?.html).toContain("Content 2");
 	} finally {
 		scheduler.close();
 	}

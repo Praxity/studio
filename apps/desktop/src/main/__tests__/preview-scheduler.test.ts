@@ -58,46 +58,12 @@ it("refreshing a cross-page dependency produces the same page as a fresh context
 	scheduler.selectPage("page");
 	await vi.runAllTimersAsync();
 	const next = model(1, "Bob");
-	await scheduler.refresh(next, { lessons: ["definition"] }, false);
+	await scheduler.refresh(next, { lessons: ["definition"] });
 	await vi.runAllTimersAsync();
 	expect(scheduler.lastGood("page")?.html).toBe(
 		compilePage(await createCourseContext(next), "page").html,
 	);
 	expect(scheduler.lastGood("page")?.html).toContain('data-fallback="Bob">Bob');
-	scheduler.close();
-});
-
-it("renders every touched page below the eight-node limit", async () => {
-	vi.useFakeTimers();
-	const multiple = (seq: number, text: string): CourseContextInput => ({
-		...input(seq, text),
-		content: [
-			input(seq, text).content[0],
-			{
-				id: "second",
-				title: "Second",
-				blocks: [{ id: "other", type: "text", data: { content: text } }],
-			},
-		],
-	});
-	const events: PreviewSchedulerEvent[] = [];
-	const scheduler = new PreviewScheduler(
-		await createCourseContext(multiple(0, "Before")),
-		(event) => events.push(event),
-	);
-	expect(await scheduler.refresh(multiple(1, "After"), {}, true)).toMatchObject({
-		pageId: "page",
-		seq: 1,
-	});
-	expect(
-		events.filter((event) => event.type === "nodesRendered").map((event) => event.render.pageId),
-	).toEqual(["page", "second"]);
-	await vi.runAllTimersAsync();
-	expect(
-		events
-			.filter((event) => event.type === "pageCompiled")
-			.every((event) => event.patch.fragments.length === 0),
-	).toBe(true);
 	scheduler.close();
 });
 
@@ -156,21 +122,7 @@ it("navigation replays complete current fragments without another compile", asyn
 	scheduler.close();
 });
 
-it("optimistic payload mutation cannot change the next compile's comparison baseline", async () => {
-	vi.useFakeTimers();
-	const events: PreviewSchedulerEvent[] = [];
-	const scheduler = new PreviewScheduler(await createCourseContext(input()), (event) =>
-		events.push(event),
-	);
-	const render = await scheduler.refresh(input(1, "After"), {}, true);
-	if (!render?.fragments[0]) throw new Error("Missing render");
-	render.fragments[0].html = "Mutated client payload";
-	await vi.runAllTimersAsync();
-	expect(events.at(-1)).toMatchObject({ type: "pageCompiled", patch: { fragments: [] } });
-	scheduler.close();
-});
-
-it("T2 omits optimistic rendering above eight touched nodes", async () => {
+it("refresh compiles all nine touched nodes", async () => {
 	vi.useFakeTimers();
 	const base = input();
 	const many = (seq: number, content: string): CourseContextInput => ({
@@ -189,32 +141,9 @@ it("T2 omits optimistic rendering above eight touched nodes", async () => {
 		],
 	});
 	const scheduler = new PreviewScheduler(await createCourseContext(many(0, "Before")), () => {});
-	expect(await scheduler.refresh(many(1, "After"), {}, true)).toBeUndefined();
+	expect(await scheduler.refresh(many(1, "After"), {})).toBeUndefined();
 	await vi.runAllTimersAsync();
 	expect(scheduler.lastGood("page")?.fragments.size).toBe(9);
-	scheduler.close();
-});
-
-it("T2 returns real node HTML and suppresses its duplicate in the compile patch", async () => {
-	vi.useFakeTimers();
-	const events: PreviewSchedulerEvent[] = [];
-	const scheduler = new PreviewScheduler(
-		await createCourseContext(input()),
-		events.push.bind(events),
-	);
-	scheduler.selectPage("page");
-	await vi.runAllTimersAsync();
-	const render = await scheduler.refresh(input(1, "After"), {}, true);
-	expect(render).toMatchObject({
-		seq: 1,
-		pageId: "page",
-		fragments: [{ id: "node", html: expect.stringContaining("After") }],
-	});
-	await vi.runAllTimersAsync();
-	expect(events.at(-1)).toMatchObject({
-		type: "pageCompiled",
-		patch: { seq: 1, fragments: [], shellStale: false },
-	});
 	scheduler.close();
 });
 
@@ -227,7 +156,7 @@ it("a newly selected frame receives fragments an earlier frame of its page alrea
 	);
 	scheduler.selectPage("page");
 	await vi.runAllTimersAsync();
-	await scheduler.refresh(input(1, "After"), {}, true);
+	await scheduler.refresh(input(1, "After"), {});
 	scheduler.selectPage("page");
 	await vi.runAllTimersAsync();
 	expect(events.at(-1)).toMatchObject({
@@ -242,14 +171,10 @@ it("reports a changed page list, but not a content-only refresh", async () => {
 	const scheduler = new PreviewScheduler(await createCourseContext(input()), (event) =>
 		events.push(event),
 	);
-	await scheduler.refresh(input(1, "After"), {}, false);
+	await scheduler.refresh(input(1, "After"), {});
 	expect(events.filter((event) => event.type === "pagesChanged")).toEqual([]);
 	const renamed = input(2, "After");
-	await scheduler.refresh(
-		{ ...renamed, content: [{ ...renamed.content[0], id: "replaced" }] },
-		{},
-		false,
-	);
+	await scheduler.refresh({ ...renamed, content: [{ ...renamed.content[0], id: "replaced" }] }, {});
 	expect(events.filter((event) => event.type === "pagesChanged")).toEqual([
 		{ type: "pagesChanged", pageIds: ["replaced"] },
 	]);
@@ -267,7 +192,7 @@ it("reports an actual shell change without recompiling hidden page bodies", asyn
 	);
 	scheduler.selectPage("page");
 	await vi.runAllTimersAsync();
-	await scheduler.refresh({ ...input(1), title: "Renamed course" }, { manifest: true }, false);
+	await scheduler.refresh({ ...input(1), title: "Renamed course" }, { manifest: true });
 	await vi.runAllTimersAsync();
 	expect(events.at(-1)).toMatchObject({ type: "pageCompiled", patch: { shellStale: true } });
 	expect(scheduler.lastGood("page")?.html).toBe(
@@ -277,7 +202,7 @@ it("reports an actual shell change without recompiling hidden page bodies", asyn
 	scheduler.close();
 });
 
-it("discards a compile that completes after optimistic seq 4", async () => {
+it("discards a compile that completes after admitted seq 4", async () => {
 	vi.useFakeTimers();
 	const events: PreviewSchedulerEvent[] = [];
 	let resolve: ((value: ReturnType<typeof compilePage>) => void) | undefined;
@@ -293,7 +218,7 @@ it("discards a compile that completes after optimistic seq 4", async () => {
 	);
 	scheduler.selectPage("page");
 	await vi.advanceTimersByTimeAsync(0);
-	await scheduler.refresh(input(4, "Newest"), {}, true);
+	await scheduler.refresh(input(4, "Newest"), {});
 	if (!resolve) throw new Error("Compile did not start");
 	resolve(compilePage(scheduler.context(), "page"));
 	await Promise.resolve();
@@ -312,7 +237,7 @@ it("outside refresh compiles the visible page; a parse failure keeps its last go
 	);
 	scheduler.selectPage("page");
 	await vi.runAllTimersAsync();
-	await scheduler.refresh(input(1, "Outside"), {}, false);
+	await scheduler.refresh(input(1, "Outside"), {});
 	await vi.runAllTimersAsync();
 	expect(events.at(-1)).toMatchObject({
 		type: "pageCompiled",
@@ -327,7 +252,7 @@ it("outside refresh compiles the visible page; a parse failure keeps its last go
 		diagnostics: [{ message: "Unclosed block", line: 3 }],
 	});
 	expect(scheduler.lastGood("page")).toBe(lastGood);
-	await scheduler.refresh(input(3, "Recovered"), {}, false);
+	await scheduler.refresh(input(3, "Recovered"), {});
 	await vi.runAllTimersAsync();
 	expect(events.at(-1)).toMatchObject({ type: "pageCompiled", patch: { seq: 3 } });
 	scheduler.close();
@@ -370,8 +295,36 @@ it("reports compiler exceptions and releases the queue for the next revision", a
 		diagnostics: [{ message: "Compile broke" }],
 	});
 	broken = false;
-	await scheduler.refresh(input(1, "Fixed"), {}, false);
+	await scheduler.refresh(input(1, "Fixed"), {});
 	await vi.runAllTimersAsync();
 	expect(events.at(-1)?.type).toBe("pageCompiled");
+	scheduler.close();
+});
+
+it("compiles every touched page on refresh", async () => {
+	vi.useFakeTimers();
+	const multiple = (seq: number, text: string): CourseContextInput => ({
+		...input(seq, text),
+		content: [
+			input(seq, text).content[0],
+			{
+				id: "second",
+				title: "Second",
+				blocks: [{ id: "other", type: "text", data: { content: text } }],
+			},
+		],
+	});
+	const events: PreviewSchedulerEvent[] = [];
+	const scheduler = new PreviewScheduler(
+		await createCourseContext(multiple(0, "Before")),
+		(event) => events.push(event),
+	);
+	await scheduler.refresh(multiple(1, "After"), {});
+	await vi.runAllTimersAsync();
+	expect(
+		events.filter((event) => event.type === "pageCompiled").map((event) => event.patch.pageId),
+	).toEqual(["page", "second"]);
+	for (const pageId of ["page", "second"])
+		expect(scheduler.lastGood(pageId)?.html).toContain("After");
 	scheduler.close();
 });

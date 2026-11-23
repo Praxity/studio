@@ -5,12 +5,16 @@ import { join } from "node:path";
 import { afterEach, expect, it } from "vitest";
 import {
 	identityRetirements,
+	identitySourceError,
+	identityWriteRetirements,
 	initializeCourseIdentity,
 	loadIdentityStore,
 	resolveCourseIdentity,
 } from "../identity-store";
+import { resolveLessonSourcesForWrite } from "../lesson-source";
 import { OperationService } from "../operations/operation-service";
 import { withProjectFileTransaction } from "../project-file-transactions";
+import { sourceErrorMessage } from "../studio/identity-review";
 import { createStudioProjectSession } from "../studio/project-session";
 import { type StudioServer, startStudioServer } from "../studio/server";
 
@@ -79,12 +83,16 @@ it.each(cases)(
 		const session = await createStudioProjectSession(projectDir, "test");
 		sessions.push(session);
 		expect(await bytes(projectDir)).toEqual(original);
-		const review = await session.identityReview();
-		expect(review.retirements.length).toBeGreaterThan(0);
-		expect(
-			review.retirements.every((node) => node.file === "first.prax" && node.line === null),
-		).toBe(true);
-		expect((await session.identityReview()).revision).toBe(review.revision);
+		const retirements = await withProjectFileTransaction(
+			projectDir,
+			async () => identityWriteRetirements(await resolveLessonSourcesForWrite(projectDir)),
+			"write",
+			false,
+		);
+		expect(retirements.length).toBeGreaterThan(0);
+		expect(retirements.every((node) => node.file === "first.prax" && node.line === null)).toBe(
+			true,
+		);
 		expect((await session.readSnapshot()).project.grammar).toBe(after);
 		expect(await bytes(projectDir)).toEqual(original);
 
@@ -106,7 +114,14 @@ it.each([
 	const original = await bytes(projectDir);
 	const session = await createStudioProjectSession(projectDir, "test");
 	sessions.push(session);
-	expect((await session.identityReview()).retirements).toEqual([]);
+	expect(
+		await withProjectFileTransaction(
+			projectDir,
+			async () => identityWriteRetirements(await resolveLessonSourcesForWrite(projectDir)),
+			"write",
+			false,
+		),
+	).toEqual([]);
 	expect(await bytes(projectDir)).not.toEqual(original);
 	const current = Object.fromEntries(
 		(await loadIdentityStore(projectDir)).snapshots.flatMap((snapshot) =>
@@ -120,7 +135,14 @@ it.each([
 	sessions.pop();
 	const reopened = await createStudioProjectSession(projectDir, "test");
 	sessions.push(reopened);
-	expect((await reopened.identityReview()).retirements).toEqual([]);
+	expect(
+		await withProjectFileTransaction(
+			projectDir,
+			async () => identityWriteRetirements(await resolveLessonSourcesForWrite(projectDir)),
+			"write",
+			false,
+		),
+	).toEqual([]);
 	expect(await bytes(projectDir)).toEqual(stable);
 });
 
@@ -157,8 +179,13 @@ it("validates malformed frontmatter before confirmation and opens it without per
 	const session = await createStudioProjectSession(projectDir, "test");
 	sessions.push(session);
 	expect((await session.readSnapshot()).project.grammar).toBe(malformed);
-	const review = await session.identityReview();
-	expect(review.retirements).toEqual([]);
+	const retirements = await withProjectFileTransaction(
+		projectDir,
+		async () => identityWriteRetirements(await resolveLessonSourcesForWrite(projectDir)),
+		"write",
+		false,
+	);
+	expect(retirements).toEqual([]);
 
 	expect(await bytes(projectDir)).toEqual(before);
 });
@@ -250,9 +277,22 @@ it.each([
 			locale as "en" | "fr",
 		);
 		sessions.push(session);
-		const review = await session.identityReview();
-		expect(review.sourceError).toMatchObject({ file: "second.prax", line: 3, message: repair });
-		expect(review.retirements.map((item) => item.label)).toContain("Alpha paragraph about safety.");
+		const { retirements, problem } = await withProjectFileTransaction(
+			projectDir,
+			async () => {
+				const admitted = await resolveLessonSourcesForWrite(projectDir);
+				return {
+					retirements: identityWriteRetirements(admitted),
+					problem: identitySourceError(admitted),
+				};
+			},
+			"write",
+			false,
+		);
+		expect(problem).toMatchObject({ file: "second.prax", line: 3 });
+		if (!problem) throw new Error("Missing source problem");
+		expect(sourceErrorMessage(locale as "en" | "fr", problem)).toBe(repair);
+		expect(retirements.map((item) => item.label)).toContain("Alpha paragraph about safety.");
 		const preview = await fetch(`${server.origin}/launch?canvas=read`);
 		expect(preview.status).toBe(200);
 		expect(await preview.text()).toContain("Beta paragraph about tools.");
