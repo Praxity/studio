@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { persistFixtureIdentity } from "../../test-utils/identity-fixture";
+import { persistFixtureIdentity, readIdentityFixture } from "../../test-utils/identity-fixture";
 import { projectLockCacheDirectory } from "../path-security";
 import { createStudioProjectSession } from "../studio/project-session";
 import { type StudioServer, startStudioServer } from "../studio/server";
@@ -574,6 +574,31 @@ describe("Studio startup admission", () => {
 				startStudioServer({ ...files, projectDir, appVersion: "test" }),
 			).rejects.toMatchObject({ code: "ELOCKCACHE" });
 		}
+	});
+	it("keeps recovery stages and unmigrated source intact on startup and every editor read", async () => {
+		const files = await fixture();
+		const original = "# Unmigrated source\n";
+		await writeFile(join(files.projectDir, "second.prax"), original);
+		await persistFixtureIdentity(files.projectDir);
+		const identity = await readIdentityFixture(files.projectDir);
+		const stage = join(files.projectDir, ".praxity-write-second.prax.abandoned");
+		await mkdir(stage);
+		await writeFile(join(stage, "second.prax"), "RECOVERY BYTES");
+		const server = await startStudioServer({ ...files, appVersion: "test" });
+		servers.push(server);
+		const token = "a".repeat(43);
+		const snapshot = await retainedSnapshot(server);
+		expect(JSON.parse(snapshot.text).result.project.grammar).toBe(original);
+		for (const [method, args] of [
+			["configRead", {}],
+			["projectReadTree", {}],
+			["courseLoad", { courseDir: files.projectDir }],
+			["courseReadLesson", { courseDir: files.projectDir, filename: "second.prax" }],
+		] as const)
+			expect((await service(server, token, method, args)).status).toBe(200);
+		expect(await readFile(join(files.projectDir, "second.prax"), "utf8")).toBe(original);
+		expect(await readFile(join(stage, "second.prax"), "utf8")).toBe("RECOVERY BYTES");
+		expect((await readIdentityFixture(files.projectDir)).files).toEqual(identity.files);
 	});
 	it("accepts one standalone lesson and rejects an ambiguous folder without listening", async () => {
 		const files = await fixture("");

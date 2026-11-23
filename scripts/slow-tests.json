@@ -1929,6 +1929,11 @@
 	},
 	{
 		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
+		"name": "Studio startup admission > keeps recovery stages and unmigrated source intact on startup and every editor read",
+		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5067 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
+	},
+	{
+		"file": "apps/desktop/src/main/__tests__/studio-server.test.ts",
 		"name": "Studio startup admission > refuses absent UI bundles and hidden or traversing manifest lesson names",
 		"reason": "Linux shared-host baseline at e4a77640a, maxWorkers=2: 5012 ms. Existing test exceeded the budget before this guard; remove when it meets the budget."
 	},
