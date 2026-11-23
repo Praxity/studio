@@ -136,7 +136,6 @@ jobs:
               - 'apps/desktop/e2e/**'
               - 'apps/desktop/scripts/**'
               - 'apps/desktop/resources/**'
-              - 'apps/desktop/browser.vite.config.ts'
               - 'apps/desktop/package.json'
               - 'apps/desktop/tsconfig*.json'
               - 'packages/**'

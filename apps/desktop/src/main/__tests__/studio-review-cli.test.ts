@@ -14,20 +14,13 @@ const assetsDir = fileURLToPath(new URL("../../../resources/export-assets", impo
 const servers: StudioServer[] = [];
 let root: string;
 let projectDir: string;
-let editorAssetsDir: string;
 let sharedReview: Awaited<ReturnType<typeof start>>;
 beforeAll(async () => {
 	await import("../studio/server");
 	root = await mkdtemp(join(tmpdir(), "studio-review-cli-"));
 	projectDir = join(root, "project");
-	editorAssetsDir = join(root, "editor");
 	await mkdir(projectDir);
-	await mkdir(editorAssetsDir);
-	await writeFile(join(editorAssetsDir, "canvas.js"), "void 0;");
-	await writeFile(
-		join(editorAssetsDir, "canvas.sha256"),
-		"4f56045c295617d094843daf46a0b666472d5613d232b9fe302224248ed4d362",
-	);
+
 	await writeFile(
 		join(projectDir, "course.yaml"),
 		"title: Review fixture\nlessons: [one.prax, two.prax]\n",
@@ -52,7 +45,6 @@ async function start(review = true) {
 		{
 			appVersion: "0.3.0",
 			exportAssetsDir: assetsDir,
-			editorAssetsDir,
 		},
 	);
 	expect(result.exitCode, result.stderr).toBe(0);

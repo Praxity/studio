@@ -12,17 +12,11 @@ import { startStudioServer } from "../../studio/server";
 
 const root = await fsp.mkdtemp(join(tmpdir(), "studio-stream-process-"));
 const projectDir = join(root, "project");
-const editorAssetsDir = join(root, "editor");
 await fsp.mkdir(join(projectDir, "assets"), { recursive: true });
 await fsp.mkdir(join(projectDir, "exports"));
-await fsp.mkdir(editorAssetsDir);
+
 await fsp.writeFile(join(projectDir, "lesson.prax"), "# Lesson\n\nBody.\n");
-await fsp.writeFile(join(editorAssetsDir, "index.html"), "<html>Editor</html>");
-await fsp.writeFile(join(editorAssetsDir, "canvas.js"), "void 0;");
-await fsp.writeFile(
-	join(editorAssetsDir, "canvas.sha256"),
-	"4f56045c295617d094843daf46a0b666472d5613d232b9fe302224248ed4d362\n",
-);
+
 const bytes = Buffer.alloc(32 * 1024 * 1024, "x");
 const asset = join(projectDir, "assets", "large.mp4");
 const download = join(projectDir, "exports", "large.zip");
@@ -63,7 +57,7 @@ function midBody(url: string, headers?: Record<string, string>): Promise<Incomin
 
 await persistFixtureIdentity(projectDir);
 const server = await startStudioReadOnlyServer({ projectDir, getEditorOrigin: () => "" });
-const editor = await startStudioServer({ projectDir, editorAssetsDir, appVersion: "0.3.0" });
+const editor = await startStudioServer({ projectDir, appVersion: "0.3.0" });
 const openResponse = (url: string) => midBody(url);
 const deploymentStreams = new Set<import("node:stream").Readable>();
 let latestPreviewStream: import("node:stream").Readable | undefined;

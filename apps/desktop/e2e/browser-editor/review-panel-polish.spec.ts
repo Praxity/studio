@@ -166,7 +166,6 @@ for (const locale of ["en", "fr"] as const) {
 			const started = await runPraxityCli(["studio", projectDir, "--review", "--no-open"], {
 				appVersion: "test",
 				exportAssetsDir: assetsDir,
-				editorAssetsDir: process.env.PRAXITY_BROWSER_EDITOR_ASSETS,
 			});
 			expect(started.exitCode, started.stderr).toBe(0);
 			if (!started.studioServer) throw new Error(started.stderr);

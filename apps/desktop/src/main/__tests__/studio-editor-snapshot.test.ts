@@ -153,14 +153,10 @@ it.each(["UTF-8", "identity", "manifest"])(
 		const ui = await mkdtemp(join(tmpdir(), "studio-snapshot-redaction-"));
 		roots.push(ui);
 		await writeFile(join(ui, "index.html"), "<!doctype html><title>Test</title>");
-		await writeFile(join(ui, "canvas.js"), "void 0;");
-		await writeFile(
-			join(ui, "canvas.sha256"),
-			"4f56045c295617d094843daf46a0b666472d5613d232b9fe302224248ed4d362\n",
-		);
+
 		const server = await startStudioServer({
 			projectDir: root,
-			editorAssetsDir: ui,
+
 			appVersion: "test",
 			exportAssetsDir: join(import.meta.dirname, "../../../resources/export-assets"),
 		});

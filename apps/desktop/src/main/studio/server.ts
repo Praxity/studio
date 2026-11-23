@@ -1,12 +1,11 @@
 import { createHash, randomBytes } from "node:crypto";
-import { readFile, realpath, stat } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { createServer, type IncomingMessage, request, type ServerResponse } from "node:http";
 import type { Socket } from "node:net";
 import path from "node:path";
 import { createTranslator } from "use-intl/core";
 import { ZodError, z } from "zod";
 import { studioPortSchema } from "../../shared/ipc-schemas";
-import { isDesktopSubPath } from "../../shared/path-utils";
 import {
 	isProjectBusyError,
 	isProjectFileBusyError,
@@ -19,7 +18,7 @@ import cliFr from "../cli-messages/fr.json" with { type: "json" };
 import { CoursePreviewService } from "../course-preview-service";
 import { CoursePreviewStateStore } from "../course-preview-state-store";
 import { assertPlainIdentityStore } from "../identity-store";
-import { assertAllowedProjectRoot, readFileWithin } from "../path-security";
+import { assertAllowedProjectRoot } from "../path-security";
 import {
 	assertProjectWritesAllowed,
 	withProjectFileTransaction,
@@ -28,8 +27,6 @@ import { ownHttpResponse } from "../response-stream";
 import { createStudioProjectSession, StudioSessionError } from "./project-session";
 import { startStudioReadOnlyServer } from "./read-only-server";
 import { prepareStudioTemporaryOutputs } from "./temporary-outputs";
-
-declare const __PRAXITY_CANVAS_SHA256__: string;
 
 const DEFAULT_PORT_START = 45000;
 const DEFAULT_PORT_COUNT = 1000;
@@ -54,7 +51,6 @@ export interface StudioServerOptions {
 	locale?: "en" | "fr";
 	projectDir: string;
 	appVersion: string;
-	editorAssetsDir: string;
 	port?: number;
 	onPortFallback?: () => void;
 	exportAssetsDir?: string;
@@ -136,19 +132,6 @@ function identifyStudio(port: number): Promise<string | null> {
 	});
 }
 
-async function uiFiles(editorAssetsDir: string, t: ReturnType<typeof createTranslator>) {
-	let root: string;
-	try {
-		root = await realpath(editorAssetsDir);
-		if (!(await stat(root)).isDirectory()) throw new Error("Missing canvas directory");
-	} catch (cause) {
-		throw new Error(t("serverRefusals.browserAssets"), {
-			cause,
-		});
-	}
-	return { root };
-}
-
 export function defaultStudioPort(canonicalRoot: string): number {
 	return (
 		DEFAULT_PORT_START +
@@ -163,29 +146,8 @@ export async function startStudioServer(options: StudioServerOptions): Promise<S
 	const explicitPort =
 		options.port === undefined ? undefined : studioPortSchema.parse(options.port);
 	const projectRoot = await assertAllowedProjectRoot(options.projectDir);
-	const ui = await uiFiles(options.editorAssetsDir, t);
 	const canonical = (root: string) => (process.platform === "win32" ? root.toLowerCase() : root);
 	const port = explicitPort ?? defaultStudioPort(canonical(projectRoot));
-	if (
-		isDesktopSubPath(canonical(projectRoot), canonical(ui.root)) ||
-		isDesktopSubPath(canonical(ui.root), canonical(projectRoot))
-	) {
-		throw new Error(t("serverRefusals.roots"));
-	}
-	let canvasScript: string;
-	try {
-		const bytes = await readFileWithin(ui.root, path.join(ui.root, "canvas.js"));
-		const expectedDigest =
-			typeof __PRAXITY_CANVAS_SHA256__ === "undefined"
-				? String(await readFileWithin(ui.root, path.join(ui.root, "canvas.sha256"), "utf8")).trim()
-				: __PRAXITY_CANVAS_SHA256__;
-		if (createHash("sha256").update(bytes).digest("hex") !== expectedDigest)
-			throw new Error("Canvas SHA-256 mismatch");
-		canvasScript = String(bytes);
-		if (!canvasScript.trim()) throw new Error("Empty canvas.js");
-	} catch (cause) {
-		throw new Error(t("serverRefusals.canvasAssets"), { cause });
-	}
 	const server = createServer({
 		maxHeaderSize: 16_384,
 		requestTimeout: 15_000,

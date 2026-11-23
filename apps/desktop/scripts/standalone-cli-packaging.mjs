@@ -5,60 +5,6 @@ import { assertNoPrivateCheckoutPath, portablePath } from "./standalone-cli-path
 
 export const STUDIO_BROWSER_COMPONENT = "studio-browser-editor";
 
-export function assertCanvasInputs(inputs) {
-	for (const input of inputs) {
-		const file = portablePath(input).split("?")[0];
-		if (
-			/(?:^|\/)renderer\/(?:App|EditorView)\.tsx$/.test(file) ||
-			/(?:^|\/)renderer\/browser\/bridge\.ts$/.test(file) ||
-			/(?:^|\/)renderer\/components\/(?:lens|course-map)\//.test(file) ||
-			/(?:^|\/)editor-core\/src\/shortcuts\/regions\.ts$/.test(file) ||
-			/(?:^|\/)editor-core\/src\/(?:session|frame-bridge)\//.test(file) ||
-			/(?:^|\/)renderer\/new-editor\/(?:draft-persistence|lesson-session|project-sessions)\.ts$/.test(
-				file,
-			) ||
-			/(?:^|\/)main\/operations\/local-editor-store\.ts$/.test(file)
-		)
-			throw new Error(`Forbidden canvas dependency: ${file}`);
-	}
-}
-
-export function canvasBundlePlugin(entry) {
-	const api = { inputs: [] };
-	return {
-		name: "studio-canvas-bundle",
-		api,
-		async generateBundle() {
-			const { build } = await import("esbuild");
-			const result = await build({
-				entryPoints: [entry],
-				bundle: true,
-				write: false,
-				metafile: true,
-				format: "iife",
-				globalName: "PraxityCanvas",
-				platform: "browser",
-				target: "esnext",
-				minify: true,
-				sourcemap: false,
-			});
-			const inputs = Object.keys(result.metafile.inputs);
-			assertCanvasInputs(inputs);
-			api.inputs = inputs.map((file) => path.resolve(file));
-			this.emitFile({
-				type: "asset",
-				fileName: "canvas.js",
-				source: result.outputFiles[0].text,
-			});
-			this.emitFile({
-				type: "asset",
-				fileName: "canvas.sha256",
-				source: `${createHash("sha256").update(result.outputFiles[0].contents).digest("hex")}\n`,
-			});
-		},
-	};
-}
-
 export async function filesIn(directory) {
 	const files = [];
 	for (const entry of await readdir(directory, { withFileTypes: true })) {
@@ -110,9 +56,7 @@ export async function inventoryPayload(outputDir, repoDir, { platform, arch }) {
 								? STUDIO_BROWSER_COMPONENT
 								: relative.startsWith("export-assets/")
 									? "course-delivery-runtime-and-inputs"
-									: relative.startsWith("editor/")
-										? STUDIO_BROWSER_COMPONENT
-										: "studio-module",
+									: "studio-module",
 		});
 	}
 	return { platform, arch, payloadSha256: sha256(JSON.stringify(files)), files };

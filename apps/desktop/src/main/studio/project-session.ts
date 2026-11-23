@@ -21,7 +21,6 @@ import { LEARNER_STATE_MAX_BYTES } from "@praxity/shared-blocks/learner-state";
 import { watch } from "chokidar";
 import { createTranslator } from "use-intl/core";
 import { z } from "zod";
-import { canvasMessages } from "../../shared/canvas-messages";
 import type { CanvasPageScope } from "../../shared/editor-session";
 import {
 	clipboardPutSchema,
@@ -43,6 +42,7 @@ import {
 	studioLessonFilenameSchema,
 } from "../../shared/ipc-schemas";
 import { NARRATION_SIDECAR_PATH, parseNarrationSidecarV2 } from "../../shared/narration-sidecar";
+import { previewMessages } from "../../shared/preview-messages";
 import {
 	NarrationTargetUnresolvedError,
 	narrationTargetUnresolvedMessage,
@@ -1163,11 +1163,11 @@ export async function createStudioProjectSession(
 					return {
 						...snapshot,
 						sourceRefusal: snapshot.lessonMissing
-							? canvasMessages[canvasLocale].lessonGone
+							? previewMessages[canvasLocale].lessonGone
 							: error
 								? canvasSourceLocation(
 										error,
-										canvasMessages[canvasLocale][
+										previewMessages[canvasLocale][
 											error.code === "detached-feedback" ? "detachedFeedback" : "sourceError"
 										],
 										canvasLocale,
@@ -1201,7 +1201,7 @@ export async function createStudioProjectSession(
 					throw new StudioSessionError(
 						409,
 						"identity_retirement_pending",
-						canvasMessages[locale].identityReviewPending,
+						previewMessages[locale].identityReviewPending,
 					);
 				if (error instanceof IdentitySourceError)
 					throw new StudioSessionError(422, error.code, sourceErrorMessage(locale, error));

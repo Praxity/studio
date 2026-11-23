@@ -380,13 +380,7 @@ it.each(["en", "fr"] as const)(
 		if (!segment) throw new Error("Missing self-check target");
 		expect(segment.target.id).toMatch(/^rt-/);
 		expect(segment.target.id).not.toBe(savedTarget);
-		const editorAssetsDir = await mkdtemp(join(tmpdir(), "narration-editor-"));
-		roots.push(editorAssetsDir);
-		await writeFile(join(editorAssetsDir, "canvas.js"), "void 0;");
-		await writeFile(
-			join(editorAssetsDir, "canvas.sha256"),
-			"4f56045c295617d094843daf46a0b666472d5613d232b9fe302224248ed4d362\n",
-		);
+
 		const session = await createStudioProjectSession(root, "test", undefined, undefined, locale);
 		try {
 			const attemptedSource = JSON.stringify({

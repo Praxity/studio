@@ -31,7 +31,6 @@ for (const target of ["lesson.prax", "course.yaml"]) {
 		const result = await runPraxityCli(["studio", root, "--no-open"], {
 			appVersion: "0.3.0",
 			exportAssetsDir: join(import.meta.dirname, "../../resources/export-assets"),
-			editorAssetsDir: process.env.PRAXITY_BROWSER_EDITOR_ASSETS,
 		});
 		try {
 			expect(result.exitCode, result.stderr).toBe(0);

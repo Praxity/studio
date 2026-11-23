@@ -101,7 +101,7 @@ it("has no question marks inside words in French catalogs or message modules", (
 	expect(paths).toContain("apps/desktop/src/shared/project-write-errors.ts");
 	expect(paths).toContain("apps/desktop/src/main/cli-messages/fr.json");
 	expect(paths).toContain("packages/editor-core/src/messages/fr.json");
-	expect(paths).toContain("apps/desktop/src/shared/canvas-messages.ts");
+	expect(paths).toContain("apps/desktop/src/shared/preview-messages.ts");
 	expect(paths).toContain("packages/shared-blocks/src/i18n/strings.ts");
 	expect(paths).toContain("apps/desktop/src/shared/keyboard-shortcuts.ts");
 	expect(paths).toContain("packages/shared-blocks/src/i18n/completion-gate-strings.ts");

@@ -21,7 +21,7 @@ test("browser editor CI selects its source, fixtures, assets and configuration o
 		"apps/desktop/src/main/preview/preview-service.ts",
 		"apps/desktop/src/inspection-frame.ts",
 		"apps/desktop/src/shared/preview-types.ts",
-		"apps/desktop/browser.vite.config.ts",
+		"apps/desktop/e2e/browser-editor/global-setup.ts",
 		"apps/desktop/scripts/prebuild-viewer.ts",
 		"apps/desktop/resources/export-assets/viewer.css",
 		"apps/desktop/package.json",

@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { expect, type Page, test } from "@playwright/test";
 import type { SCORMRuntime } from "../../../../packages/export-pipeline/src/scorm/types";
 import { createStudioProjectSession } from "../../src/main/studio/project-session";
-import { canvasMessages } from "../../src/shared/canvas-messages";
+import { previewMessages } from "../../src/shared/preview-messages";
 import { startJourney } from "./global-setup";
 
 const source = (lang: string) =>
@@ -57,7 +57,7 @@ for (const [lang, width, theme] of [
 		const recoveredText = lang === "fr" ? "Le mur est rouge." : "The wall is red.";
 		const updated = initial.replace(initialText, updatedText);
 		const recovered = initial.replace(initialText, recoveredText);
-		const messages = canvasMessages[lang];
+		const messages = previewMessages[lang];
 		const chunk = (target = page) =>
 			target.locator("[data-highlight-passage] [data-highlight-chunk]").nth(1);
 

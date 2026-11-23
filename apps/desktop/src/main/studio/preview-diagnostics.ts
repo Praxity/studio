@@ -1,7 +1,7 @@
 import { PracticeAdmissionError } from "@praxity/export-pipeline";
 import { CoursePracticeAdmissionError, practiceDiagnosticMessage } from "@praxity/grammar";
 import type { PreviewCompileDiagnostic } from "@praxity/shared-blocks/course-preview-protocol";
-import { canvasMessages } from "../../shared/canvas-messages";
+import { previewMessages } from "../../shared/preview-messages";
 
 export function previewDiagnostics(error: unknown, file?: string): PreviewCompileDiagnostic[] {
 	if (error instanceof CoursePracticeAdmissionError) return error.diagnostics;
@@ -59,7 +59,7 @@ export function canvasSourceLocation(
 		column: String(location.column),
 		message,
 	};
-	return canvasMessages[locale].sourceLocation.replace(
+	return previewMessages[locale].sourceLocation.replace(
 		/\{(file|line|column|message)\}/g,
 		(_, key: keyof typeof values) => values[key],
 	);

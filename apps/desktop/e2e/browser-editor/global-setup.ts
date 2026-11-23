@@ -3,22 +3,7 @@ import { cp, mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import type { Browser, BrowserContext } from "@playwright/test";
-import { build } from "vite";
 import { startStudioServer } from "../../src/main/studio/server";
-
-export default async function setup() {
-	const scratch = process.env.PRAXITY_TEST_ARTIFACTS ?? join(tmpdir(), "studio-browser-editor");
-	await mkdir(scratch, { recursive: true });
-	const root = await mkdtemp(join(scratch, "journey-"));
-	const artifact = process.env.PRAXITY_BROWSER_ARTIFACT;
-	const editorAssetsDir = artifact ? join(artifact, "editor") : join(root, "editor");
-	if (!artifact)
-		await build({
-			configFile: resolve(import.meta.dirname, "../../browser.vite.config.ts"),
-			build: { outDir: editorAssetsDir },
-		});
-	process.env.PRAXITY_BROWSER_EDITOR_ASSETS = editorAssetsDir;
-}
 
 export async function startJourney(
 	owner: Browser | BrowserContext,
@@ -36,8 +21,6 @@ export async function startJourney(
 	const scratch = process.env.PRAXITY_TEST_ARTIFACTS ?? join(tmpdir(), "studio-browser-editor");
 	const root = await mkdtemp(join(scratch, "journey-"));
 	const artifact = process.env.PRAXITY_BROWSER_ARTIFACT;
-	const editorAssetsDir = process.env.PRAXITY_BROWSER_EDITOR_ASSETS;
-	if (!editorAssetsDir) throw new Error("Browser journey editor assets were not initialized");
 	const projectDir = join(root, "project");
 	await mkdir(projectDir);
 	if (options.courseFixture) {
@@ -123,7 +106,7 @@ export async function startJourney(
 	const server = await startStudioServer({
 		projectDir,
 		port: options.port,
-		editorAssetsDir,
+
 		appVersion: "0.3.0",
 		exportAssetsDir: resolve(import.meta.dirname, "../../resources/export-assets"),
 		typstExecutablePath:

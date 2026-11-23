@@ -26,19 +26,14 @@ async function fixture() {
 	const root = await mkdtemp(join(tmpdir(), "cli-french-"));
 	roots.push(root);
 	const projectDir = join(root, "course");
-	const editorAssetsDir = join(root, "editor");
 	await mkdir(projectDir);
-	await mkdir(editorAssetsDir);
+
 	await writeFile(
 		join(projectDir, "lesson.prax"),
 		"---\nid: french-cli\ntitle: Test\n---\n# Hello\n",
 	);
-	await writeFile(join(editorAssetsDir, "canvas.js"), "void 0;");
-	await writeFile(
-		join(editorAssetsDir, "canvas.sha256"),
-		"4f56045c295617d094843daf46a0b666472d5613d232b9fe302224248ed4d362",
-	);
-	return { projectDir, editorAssetsDir };
+
+	return { projectDir };
 }
 it.each([
 	[["export"], "Le dossier du projet est manquant."],
@@ -90,10 +85,6 @@ it.each([
 		["studio", "course", "--bad"],
 		"Utilisation : praxity studio <project-dir> [--review] [--port <n>] [--no-open]",
 	],
-	[
-		["studio", "course"],
-		"Utilisez la version autonome de l’interface en ligne de commande, fournie avec les fichiers de son éditeur Web.",
-	],
 	[["inspect"], "Utilisation : praxity inspect <project-dir> [--schema 0|1]"],
 ] as const)("localizes refusal %j with --lang before or after it", async (args, message) => {
 	for (const argv of [
@@ -106,35 +97,11 @@ it.each([
 		expect(result.stderr).toContain(message);
 	}
 });
-it.each(["missing", "overlap", "digest", "empty"])(
-	"localizes startup refusal: %s",
-	async (kind) => {
-		const f = await fixture();
-		if (kind === "missing") f.editorAssetsDir = join(f.editorAssetsDir, "missing");
-		if (kind === "overlap") f.editorAssetsDir = f.projectDir;
-		if (kind === "digest") await writeFile(join(f.editorAssetsDir, "canvas.js"), "bad");
-		if (kind === "empty") await writeFile(join(f.editorAssetsDir, "canvas.js"), "");
-		const result = await runPraxityCli(["studio", f.projectDir, "--lang", "fr"], {
-			...runtime,
-			editorAssetsDir: f.editorAssetsDir,
-		});
-		const message =
-			kind === "missing"
-				? "Les fichiers de l’éditeur Web ne sont pas accessibles. Reconstruisez l’interface en ligne de commande autonome."
-				: kind === "overlap"
-					? "Les fichiers de l’éditeur et du projet doivent être dans des dossiers racines distincts"
-					: "Les fichiers du canevas ne sont pas accessibles. Reconstruisez l’interface en ligne de commande autonome.";
-		expect(result.exitCode).toBe(1);
-		expect(JSON.parse(result.stdout).error.message).toBe(message);
-		expect(result.stderr).toContain(message);
-	},
-);
 it("localizes unavailable project paths", async () => {
 	const f = await fixture();
 	const missing = join(f.projectDir, "missing");
 	const result = await runPraxityCli(["studio", missing, "--lang", "fr"], {
 		...runtime,
-		editorAssetsDir: f.editorAssetsDir,
 	});
 	expect(JSON.parse(result.stdout).error.message).toBe(
 		`Le dossier du projet n’est pas accessible : ${missing}`,
@@ -155,7 +122,7 @@ it.each([true, false])("localizes occupied-port refusal (Studio: %s)", async (st
 		if (!address || typeof address === "string") throw new Error("No port");
 		const result = await runPraxityCli(
 			["studio", f.projectDir, "--port", String(address.port), "--lang", "fr"],
-			{ ...runtime, editorAssetsDir: f.editorAssetsDir },
+			{ ...runtime },
 		);
 		const message = studio
 			? `Le port ${address.port} est déjà utilisé par Studio pour le cours « ${f.projectDir} ». Arrêtez cette instance de Studio ou choisissez un autre port avec --port.`
@@ -307,7 +274,6 @@ it("localizes an unexpected non-Error startup failure", async () => {
 		const f = await fixture();
 		const result = await runPraxityCli(["studio", f.projectDir, "--lang", "fr"], {
 			...runtime,
-			editorAssetsDir: f.editorAssetsDir,
 		});
 		expect(JSON.parse(result.stdout).error.message).toBe("Le démarrage de Studio a échoué");
 	} finally {
@@ -321,7 +287,6 @@ it.each(["empty", "ambiguous"])("localizes project-session startup refusal: %s",
 	else await writeFile(join(f.projectDir, "other.prax"), "# Other\n");
 	const result = await runPraxityCli(["studio", f.projectDir, "--lang", "fr"], {
 		...runtime,
-		editorAssetsDir: f.editorAssetsDir,
 	});
 	expect(result.exitCode).toBe(1);
 	expect(JSON.parse(result.stdout).error.message).toBe(
@@ -339,7 +304,6 @@ it.each([
 	const f = await fixture();
 	const result = await runPraxityCli(["studio", f.projectDir, "--lang", "fr"], {
 		...runtime,
-		editorAssetsDir: f.editorAssetsDir,
 	});
 	if (!result.studioServer) throw new Error(result.stderr);
 	servers.push(result.studioServer);
@@ -369,7 +333,6 @@ it.each([
 		await writeFile(join(f.projectDir, "course.yaml"), "title: Empty\nlessons: []\n");
 		const result = await runPraxityCli(["studio", f.projectDir, "--lang", locale], {
 			...runtime,
-			editorAssetsDir: f.editorAssetsDir,
 		});
 		expect(result.exitCode).toBe(1);
 		expect(JSON.parse(result.stdout).error.message).toBe(message);

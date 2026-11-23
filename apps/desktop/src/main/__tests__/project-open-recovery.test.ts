@@ -31,25 +31,18 @@ async function fixture() {
 	const parent = await mkdtemp(join(tmpdir(), "project open recovery spaces "));
 	roots.push(parent);
 	const root = join(parent, "course");
-	const editorAssetsDir = join(parent, "editor");
 	await mkdir(root);
-	await mkdir(editorAssetsDir);
-	await writeFile(join(editorAssetsDir, "index.html"), "<!doctype html><title>Recovery</title>");
-	await writeFile(join(editorAssetsDir, "canvas.js"), "void 0;");
-	await writeFile(
-		join(editorAssetsDir, "canvas.sha256"),
-		"4f56045c295617d094843daf46a0b666472d5613d232b9fe302224248ed4d362\n",
-	);
+
 	await writeFile(join(root, "lesson.prax"), source);
 	await writeFile(join(root, "course.yaml"), manifest);
 	await persistFixtureIdentity(root);
-	return { root, parent, editorAssetsDir };
+	return { root, parent };
 }
 
 it.each(["lesson.prax", "course.yaml"])(
 	"praxity studio recovers a dead writer's %s before discovery and serves Read",
 	async (target) => {
-		const { root, editorAssetsDir } = await fixture();
+		const { root } = await fixture();
 		await interruptProjectWrite(
 			root,
 			target,
@@ -57,7 +50,6 @@ it.each(["lesson.prax", "course.yaml"])(
 		);
 		const result = await runPraxityCli(["studio", root, "--no-open"], {
 			...runtime,
-			editorAssetsDir,
 		});
 		if (result.studioServer) servers.push(result.studioServer);
 		expect(result.exitCode, result.stderr).toBe(0);

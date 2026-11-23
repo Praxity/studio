@@ -390,7 +390,7 @@ test("fixed CLI port restores browser drafts across a real restart and busy fall
 			["studio", projectDir, "--review", "--no-open", "--port", String(editorPort)],
 			{
 				appVersion: "0.3.0",
-				editorAssetsDir: process.env.PRAXITY_BROWSER_EDITOR_ASSETS,
+
 				exportAssetsDir: assetsDir,
 			},
 		);

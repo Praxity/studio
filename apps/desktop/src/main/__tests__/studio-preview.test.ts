@@ -18,21 +18,14 @@ async function fixture() {
 	);
 	roots.push(root);
 	const projectDir = join(root, "project");
-	const editorAssetsDir = join(root, "editor");
 	await mkdir(join(projectDir, "assets"), { recursive: true });
-	await mkdir(editorAssetsDir);
-	await writeFile(join(editorAssetsDir, "index.html"), "<!doctype html><title>Editor</title>");
-	await writeFile(join(editorAssetsDir, "canvas.js"), "void 0;");
-	await writeFile(
-		join(editorAssetsDir, "canvas.sha256"),
-		"4f56045c295617d094843daf46a0b666472d5613d232b9fe302224248ed4d362\n",
-	);
+
 	await writeFile(
 		join(projectDir, "lesson.prax"),
 		"---\nid: preview-fixture\ntitle: Saved\n---\n\n# Saved\n\nSaved body.\n",
 	);
 	await writeFile(join(root, "workspace.praxity.yaml"), "defaultLocale: fr\n");
-	return { root, projectDir, editorAssetsDir };
+	return { root, projectDir };
 }
 afterEach(async () => {
 	await Promise.all(servers.splice(0).map((server) => server.close()));

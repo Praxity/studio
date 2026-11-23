@@ -59,7 +59,7 @@ beforeAll(async () => {
 				    const principal = await store.principalFor('author', 'local-cli');
 				    await store[args[1]](principal, {});
 				} else if (action === 'server-save') {
-				    await startStudioServer({ projectDir: args[0], editorAssetsDir: '' });
+				    await startStudioServer({ projectDir: args[0], appVersion: 'test' });
 				} else if (action === 'temporary-save') {
 				    await prepareStudioTemporaryOutputs(args[0]);
 				} else if (action === 'save') {

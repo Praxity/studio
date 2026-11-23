@@ -140,17 +140,12 @@ it.each(["en", "fr"] as const)(
 
 it("Studio preserves version-refusal advice in both requested languages without writing", async () => {
 	const { root } = await fixture(true);
-	const assets = await mkdtemp(join(tmpdir(), "identity-legacy-canvas-"));
-	roots.push(assets);
-	await writeFile(join(assets, "index.html"), "<!doctype html><title>Fixture</title>");
-	await writeFile(join(assets, "canvas.js"), "void 0;");
-	await writeFile(join(assets, "canvas.sha256"), digest("void 0;"));
+
 	const before = await files(root);
 	for (const locale of ["en", "fr"] as const) {
 		const result = await runPraxityCli(["studio", root, "--no-open", "--lang", locale], {
 			appVersion: "test",
 			exportAssetsDir: "unused",
-			editorAssetsDir: assets,
 		});
 		await result.studioServer?.close();
 		expect(result.exitCode).toBe(1);

@@ -1,6 +1,6 @@
 # Local Read preview and review comments
 
-Studio runs through the standalone CLI and local Read preview. `pnpm build:cli` still packages and verifies the retired native text adapter in `dist/studio-cli/editor/` before listening, but the browser never executes it. Removing those packaged assets is a separate change.
+Studio runs through the standalone CLI and local Read preview. `pnpm build:cli` packages the retained inspection and review assets with their provenance. The retired canvas renderer and its bundle are removed; preview startup needs no editor asset directory.
 
 `praxity studio <folder> [--review] [--port <n>] [--no-open]` starts a foreground server. The printed ready URL opens `/`, which enters Read mode on the separate learner origin. Source changes use `praxity edit`, including `--rendered`. Browser Edit mode, its author document, generic RPC transport and identity confirmation endpoint are removed. Ctrl+C closes listeners, subscriptions and watchers and waits for admitted file operations. Export, inspect, identity and narration use the standalone CLI.
 
@@ -320,12 +320,9 @@ Grammar 4 is the only supported source format. Grammar 3 is refused with `pnpm -
 
 ## Standalone browser build
 
-The build still emits and verifies the legacy `editor/canvas.js` and
-`canvas.sha256` assets before startup. The browser no longer executes that bundle;
-packaging removal is separate from retiring the routes. Review assets, inspection
-support, learner assets and their provenance remain packaged.
+The build packages review assets, inspection support, learner assets and their provenance. It emits no canvas editor bundle or digest. Preview startup does not validate an editor payload.
 
 Set `PRAXITY_BROWSER_ARTIFACT` to an absolute standalone artifact directory when
-running `pnpm --filter @praxity/desktop e2e:browser-editor`. Without it, setup builds
+running `pnpm --filter @praxity/desktop e2e:browser-editor`. Without it, the journeys start
 the source server. The retained journeys run headlessly across Chromium, Firefox
 and WebKit. See [the testing strategy](testing-strategy.md).
