@@ -17,4 +17,8 @@ test("prior paths prefer exact matches and migrate only removed, unoccupied old 
 	assert.equal(priorStudioAppPath(old, new Set([moved]), new Set([old])), undefined);
 	assert.equal(priorStudioAppPath(moved, new Set(), new Set([moved])), undefined);
 	assert.equal(priorStudioAppPath("apps/other/a.ts", new Set([old]), new Set()), undefined);
+	assert.equal(
+		priorStudioAppPath("apps/xyz/a.ts", new Set([old]), new Set(["apps/xyz/a.ts"])),
+		undefined,
+	);
 });

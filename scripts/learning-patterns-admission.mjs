@@ -332,10 +332,15 @@ const reviewedDynamicImports = Object.fromEntries(
 			"import(`${url}?consumer=b`)",
 		],
 		"scripts/install-internal-studio.mjs": ["import(pathToFileURL(join(root,path)).href)"],
-	}).flatMap(([file, entries]) => [
-		[file, entries],
-		[renamedStudioAppReferences(file), entries.map(renamedStudioAppReferences)],
-	]),
+	}).flatMap(([file, entries]) => {
+		const renamed = renamedStudioAppReferences(file);
+		return renamed === file
+			? [[file, entries]]
+			: [
+					[file, entries],
+					[renamed, entries.map(renamedStudioAppReferences)],
+				];
+	}),
 );
 
 function discoverImports(ts, file, source) {

@@ -18,6 +18,7 @@ Ownership guards and equivalence checks must fail closed without confusing gener
 ### `scripts/check-learning-patterns.mjs`
 
 - `verifyTrustedBase`: An empty object database forces contact even when the checkout already has the SHA. Include its authentication config without copying credentials. Keep shallow-fetch boundaries entirely outside the candidate checkout.
+- `trustedFixture`: The two text fixtures under `scripts/fixtures/learning-patterns-legacy/` preserve the verifier and admission module from commit `b1da0aaf17abf964ecc6e42fc801e475b15caf67`. Tests copy those bytes into a base commit without the layout helper, so legacy compatibility does not depend on CI fetching historical source.
 
 ### `scripts/check-machine-paths.mjs`
 

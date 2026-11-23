@@ -348,17 +348,20 @@ test("regeneration writes current bytes and clears every review field", async (t
 	await assert.rejects(verifyLearningPatterns(root), /Incomplete review metadata/);
 });
 
-async function trustedFixture(t) {
+async function trustedFixture(t, legacy = false) {
 	const { root, put } = await fixture(t);
-	await put("scripts/check-learning-patterns.mjs", await readFile(script));
-	await put(
-		"scripts/learning-patterns-admission.mjs",
-		await readFile(path.join(repo, "scripts/learning-patterns-admission.mjs")),
-	);
-	await put(
-		"scripts/studio-app-layout.mjs",
-		await readFile(path.join(repo, "scripts/studio-app-layout.mjs")),
-	);
+	for (const name of ["check-learning-patterns.mjs", "learning-patterns-admission.mjs"])
+		await put(
+			`scripts/${name}`,
+			await readFile(
+				path.join(repo, "scripts", legacy ? `fixtures/learning-patterns-legacy/${name}.txt` : name),
+			),
+		);
+	if (!legacy)
+		await put(
+			"scripts/studio-app-layout.mjs",
+			await readFile(path.join(repo, "scripts/studio-app-layout.mjs")),
+		);
 	const runGit = (...args) =>
 		execFileSync(
 			"git",
@@ -380,6 +383,44 @@ async function trustedFixture(t) {
 		runGit("update-ref", "HEAD", merge);
 	};
 	return { root, put, base, runGit, mergeCandidate };
+}
+
+for (const mode of ["local", "CI shell"]) {
+	test(`trusted helper ignores a broken candidate helper: ${mode}`, async (t) => {
+		const fx = await trustedFixture(t);
+		await fx.put(
+			"scripts/studio-app-layout.mjs",
+			'throw new Error("Candidate helper must not execute");',
+		);
+		if (mode === "local") {
+			assert.match(await verifyTrustedBase(fx.root, fx.base), /admission verified: 7 files/);
+		} else {
+			fx.mergeCandidate(fx.base);
+			const result = await runAdmissionStep(t, fx);
+			assert.equal(result.status, 0, result.stderr);
+			assert.match(result.stdout, /admission verified: 7 files/);
+		}
+	});
+
+	test(`trusted helper supports an old two-file base: ${mode}`, async (t) => {
+		const fx = await trustedFixture(t, true);
+		assert.equal(
+			fx.runGit("ls-tree", "--name-only", fx.base, "--", "scripts/studio-app-layout.mjs"),
+			"",
+		);
+		await fx.put(
+			"scripts/studio-app-layout.mjs",
+			'throw new Error("Candidate helper must not execute");',
+		);
+		if (mode === "local") {
+			assert.match(await verifyTrustedBase(fx.root, fx.base), /admission verified: 7 files/);
+		} else {
+			fx.mergeCandidate(fx.base);
+			const result = await runAdmissionStep(t, fx);
+			assert.equal(result.status, 0, result.stderr);
+			assert.match(result.stdout, /admission verified: 7 files/);
+		}
+	});
 }
 
 test("trusted base runs its verifier even when the candidate verifier is weakened", async (t) => {
