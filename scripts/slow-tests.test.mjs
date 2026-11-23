@@ -53,6 +53,61 @@ const datedEntry = {
 	backlog: "Run 12345; expire 2026-11-01",
 };
 
+test("CLI path migration preserves unchanged plain and dated entries", () => {
+	for (const prior of [entry, datedEntry, { ...entry, metadata: { measured: [1, 2] } }]) {
+		const moved = { ...prior, file: "apps/cli/src/slow.test.ts" };
+		assert.doesNotThrow(() => validateAllowlist([moved], [prior], today));
+	}
+});
+
+test("CLI path migration refuses changed fields and retained old entries", () => {
+	for (const prior of [entry, datedEntry]) {
+		const moved = { ...prior, file: "apps/cli/src/slow.test.ts" };
+		for (const changed of [
+			{ reason: "Different reason" },
+			{ metadata: { measured: true } },
+			...(prior.added ? [{ backlog: "different" }, { added: "2026-10-17" }, { run: "67890" }] : []),
+		])
+			assert.throws(() => validateAllowlist([{ ...moved, ...changed }], [prior], today));
+		assert.throws(() => validateAllowlist([prior, moved], [prior], today));
+		assert.throws(() => validateAllowlist([moved, moved], [prior], today), /Duplicate/);
+	}
+	const prior = { ...entry, metadata: { measured: [1, 2] } };
+	assert.throws(() =>
+		validateAllowlist(
+			[{ ...prior, file: "apps/cli/src/slow.test.ts", metadata: { measured: [1, 3] } }],
+			[prior],
+			today,
+		),
+	);
+});
+
+test("CLI path migration cannot add names, reverse paths or revive removed entries", () => {
+	const moved = { ...entry, file: "apps/cli/src/slow.test.ts" };
+	for (const [current, previous] of [
+		[{ ...moved, name: "added test" }, [entry]],
+		[entry, [moved]],
+		[{ ...entry, file: "apps/other/src/slow.test.ts" }, [entry]],
+		[moved, []],
+	])
+		assert.throws(() => validateAllowlist([current], previous, today), /may only shrink/);
+});
+
+test("CLI path migration keeps dated expiry and metadata requirements", () => {
+	const moved = { ...datedEntry, file: "apps/cli/src/slow.test.ts" };
+	assert.throws(
+		() => validateAllowlist([moved], [datedEntry], Date.parse("2026-11-02")),
+		/expired/,
+	);
+	for (const field of ["added", "run", "backlog"]) {
+		const partial = { ...moved };
+		delete partial[field];
+		assert.throws(() => validateAllowlist([partial], [datedEntry], today));
+	}
+	assert.throws(() => validateAllowlist([{ ...entry, file: moved.file }], [datedEntry], today));
+	assert.throws(() => validateAllowlist([moved], [{ ...datedEntry, added: "2026-10-03" }], today));
+});
+
 test("dated additions pass from an empty or absent base and from a plain entry", () => {
 	for (const previous of [undefined, [], [entry]])
 		for (const run of [12345, "12345", datedEntry.run])
