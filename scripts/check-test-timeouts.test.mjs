@@ -386,3 +386,63 @@ test("evidence after regex and template literals is still found", () => {
 	);
 	assert.equal(raised(before, raise).length, 1);
 });
+
+for (const state of ["uncommitted", "committed", "explicit head"]) {
+	test(`CLI migration keeps deadlines and config defaults, detects raises: ${state}`, (t) => {
+		const root = mkdtempSync(join(tmpdir(), "timeout-move-"));
+		t.after(() => rmSync(root, { recursive: true }));
+		const git = (...args) =>
+			execFileSync(
+				"git",
+				["-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", ...args],
+				{ cwd: root, stdio: "pipe" },
+			)
+				.toString()
+				.trim();
+		git("init", "-q");
+		mkdirSync(join(root, "apps/desktop"), { recursive: true });
+		writeFileSync(
+			join(root, "apps/desktop/vitest.config.ts"),
+			"export default { test: { testTimeout: 10000 } };",
+		);
+		writeFileSync(join(root, "apps/desktop/keep.test.ts"), 'test("keep", () => {}, 15000);');
+		git("add", ".");
+		git("commit", "-qm", "base");
+		git("branch", "base");
+		git("mv", "apps/desktop", "apps/cli");
+		writeFileSync(join(root, "apps/cli/new.test.ts"), 'test("new", () => {}, 9000);');
+		const check = () => {
+			if (state !== "uncommitted") {
+				git("add", ".");
+				git("commit", "-qm", "candidate");
+			}
+			return checkTimeoutChanges(root, "base", state === "explicit head" ? "HEAD" : undefined);
+		};
+		assert.deepEqual(check(), []);
+		writeFileSync(join(root, "apps/cli/keep.test.ts"), 'test("keep", () => {}, 20000);');
+		assert.deepEqual(check(), [{ filename: "apps/cli/keep.test.ts", line: 1, kind: "test" }]);
+	});
+}
+
+test("CLI migration does not borrow deadlines from a retained old file", (t) => {
+	const root = mkdtempSync(join(tmpdir(), "timeout-copy-"));
+	t.after(() => rmSync(root, { recursive: true }));
+	const git = (...args) =>
+		execFileSync(
+			"git",
+			["-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", ...args],
+			{ cwd: root, stdio: "pipe" },
+		);
+	git("init", "-q");
+	mkdirSync(join(root, "apps/desktop"), { recursive: true });
+	const source = 'test("keep", () => {}, 15000);';
+	writeFileSync(join(root, "apps/desktop/keep.test.ts"), source);
+	git("add", ".");
+	git("commit", "-qm", "base");
+	git("branch", "base");
+	mkdirSync(join(root, "apps/cli"));
+	writeFileSync(join(root, "apps/cli/keep.test.ts"), source);
+	assert.deepEqual(checkTimeoutChanges(root, "base"), [
+		{ filename: "apps/cli/keep.test.ts", line: 1, kind: "test" },
+	]);
+});

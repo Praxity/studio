@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdir, mkdtemp, readFile, rm, symlink, unlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rename, rm, symlink, unlink, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -30,7 +30,7 @@ async function fixture(t) {
 	await put("package.json", '{"private":true}');
 	await put(".gitignore", "node_modules\n");
 	await put("packages/export-pipeline/package.json", '{"private":true}');
-	await put("apps/desktop/package.json", '{"private":true}');
+	await put("apps/desktop/package.json", '{"name":"@praxity/desktop","private":true}');
 	await symlink(path.join(repo, "node_modules"), path.join(root, "node_modules"), "dir");
 	await symlink(
 		path.join(repo, "apps/desktop/node_modules"),
@@ -89,6 +89,87 @@ async function fixture(t) {
 	const save = () => put(manifestPath, JSON.stringify(manifest));
 	await save();
 	return { root, put, manifest, save, lock };
+}
+
+for (const layout of ["desktop", "cli", "missing", "ambiguous", "wrong name"]) {
+	test(`verifier app layout: ${layout}`, async (t) => {
+		const { root, put } = await fixture(t);
+		if (layout === "cli") {
+			await rename(path.join(root, "apps/desktop"), path.join(root, "apps/cli"));
+			await put("apps/cli/package.json", '{"name":"@praxity/cli","private":true}');
+		}
+		if (layout === "missing") await rm(path.join(root, "apps/desktop"), { recursive: true });
+		if (layout === "ambiguous") await put("apps/cli/package.json", '{"name":"@praxity/cli"}');
+		if (layout === "wrong name") await put("apps/desktop/package.json", '{"name":"@praxity/cli"}');
+		const result = spawnSync(process.execPath, [script, "--root", root], { encoding: "utf8" });
+		if (layout === "desktop" || layout === "cli") {
+			assert.equal(result.status, 0, result.stderr);
+			assert.match(result.stdout, /admission verified: 7 files/);
+		} else {
+			assert.equal(result.status, 1, result.stderr);
+			assert.match(
+				result.stderr,
+				layout === "missing"
+					? /Missing Studio app layout/
+					: layout === "ambiguous"
+						? /Ambiguous Studio app layout/
+						: /Expected @praxity\/desktop/,
+			);
+			assert.doesNotMatch(result.stdout, /admission verified:/);
+		}
+	});
+}
+
+for (const app of ["desktop", "cli"]) {
+	for (const [file, expression] of [
+		[
+			"scripts/ci-minutes.test.mjs",
+			"import(`../../../packages/export-pipeline/tests/${suite}/playwright.config.ts`)",
+		],
+		[
+			"scripts/published-output-timing.test.mjs",
+			"import(`../../../packages/export-pipeline/tests/${suite}/playwright.config.ts`)",
+		],
+		[
+			"src/main/__tests__/fixtures/review2-writer.mjs",
+			`import(\`\${repo}/apps/${app}/src/main/project-file-transactions.ts\`)`,
+		],
+		[
+			"src/main/__tests__/fixtures/review3-writer.mjs",
+			`import(\`\${repo}/apps/${app}/src/main/project-file-transactions.ts\`)`,
+		],
+	]) {
+		test(`verifier admits only the reviewed ${app}/${file} expression`, async (t) => {
+			const { root, put } = await fixture(t);
+			if (app === "cli") {
+				await rename(path.join(root, "apps/desktop"), path.join(root, "apps/cli"));
+				await put("apps/cli/package.json", '{"name":"@praxity/cli","private":true}');
+			}
+			await put(`apps/${app}/${file}`, `${expression};`);
+			await assert.doesNotReject(verifyLearningPatterns(root));
+			if (expression.includes(`apps/${app}/`)) {
+				await put(
+					`apps/${app}/${file}`,
+					expression.replaceAll(`apps/${app}/`, `apps/${app === "cli" ? "desktop" : "cli"}/`),
+				);
+				await assert.rejects(
+					verifyLearningPatterns(root),
+					/Unresolved learning-patterns import boundary/,
+				);
+			}
+			await put(`apps/${app}/${file}`, "import(unreviewed);");
+			await assert.rejects(
+				verifyLearningPatterns(root),
+				/Unresolved learning-patterns import boundary/,
+			);
+			await put(`apps/${app}/${file}`, "");
+			await put(`apps/${app}/unreviewed/${file}`, `${expression};`);
+			await assert.rejects(
+				verifyLearningPatterns(root),
+				/Unresolved learning-patterns import boundary/,
+			);
+		});
+	}
 }
 
 test("clean admission discovers imported logic/helpers, schemas, CSS and legal inputs", async (t) => {
@@ -273,6 +354,10 @@ async function trustedFixture(t) {
 	await put(
 		"scripts/learning-patterns-admission.mjs",
 		await readFile(path.join(repo, "scripts/learning-patterns-admission.mjs")),
+	);
+	await put(
+		"scripts/studio-app-layout.mjs",
+		await readFile(path.join(repo, "scripts/studio-app-layout.mjs")),
 	);
 	const runGit = (...args) =>
 		execFileSync(

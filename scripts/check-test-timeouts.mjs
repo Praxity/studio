@@ -4,6 +4,7 @@ import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
 import ts from "typescript";
+import { priorStudioAppPath } from "./studio-app-layout.mjs";
 
 const actions = new Set([
 	"click",
@@ -364,6 +365,7 @@ export function checkTimeoutChanges(root, base = "origin/main", head) {
 		revision
 			? (revision === ancestor ? tracked : headPaths).has(path)
 			: existsSync(resolve(root, path));
+	const current = { has: (path) => has(path, head) };
 	function defaults(path, source) {
 		const playwright = framework(path, source) === "playwright";
 		for (
@@ -372,9 +374,10 @@ export function checkTimeoutChanges(root, base = "origin/main", head) {
 			dir = dirname(dir).replaceAll("\\", "/")
 		) {
 			const config = `${dir === "." ? "" : `${dir}/`}${playwright ? "playwright" : "vitest"}.config.ts`;
-			if (has(config, ancestor)) {
+			const priorConfig = priorStudioAppPath(config, tracked, current);
+			if (priorConfig) {
 				const initial = { test: playwright ? 30000 : 5000, expect: 5000, action: 0, navigation: 0 };
-				for (const site of deadlines(read(config, ancestor), config, initial, true))
+				for (const site of deadlines(read(priorConfig, ancestor), config, initial, true))
 					if (site.amount !== undefined) initial[site.kind] = site.amount;
 				return initial;
 			}
@@ -384,7 +387,8 @@ export function checkTimeoutChanges(root, base = "origin/main", head) {
 	const errors = [];
 	for (const path of new Set(paths)) {
 		if (!/\.[cm]?[jt]sx?$/.test(path) || !has(path, head)) continue;
-		const before = tracked.has(path) ? read(path, ancestor) : "";
+		const prior = priorStudioAppPath(path, tracked, current);
+		const before = prior ? read(prior, ancestor) : "";
 		const after = read(path, head);
 		const diff = git(
 			"diff",

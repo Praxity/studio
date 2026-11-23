@@ -179,6 +179,9 @@ jobs:
             trusted_verifier="$trusted_directory/check-learning-patterns.mjs"
             git -C "$trusted_directory/repository" -c maintenance.auto=false -c gc.auto=0 show "$ADMISSION_BASE:scripts/check-learning-patterns.mjs" > "$trusted_verifier"
             git -C "$trusted_directory/repository" -c maintenance.auto=false -c gc.auto=0 show "$ADMISSION_BASE:scripts/learning-patterns-admission.mjs" > "$trusted_directory/learning-patterns-admission.mjs"
+            if [[ -n "$(git -C "$trusted_directory/repository" -c maintenance.auto=false -c gc.auto=0 ls-tree --name-only "$ADMISSION_BASE" -- scripts/studio-app-layout.mjs)" ]]; then
+              git -C "$trusted_directory/repository" -c maintenance.auto=false -c gc.auto=0 show "$ADMISSION_BASE:scripts/studio-app-layout.mjs" > "$trusted_directory/studio-app-layout.mjs"
+            fi
           fi
           out=$(node "$trusted_verifier" --root "$GITHUB_WORKSPACE")
           printf '%s\n' "$out"

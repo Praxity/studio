@@ -15,6 +15,8 @@ import {
 	verifyLearningPatterns,
 } from "./learning-patterns-admission.mjs";
 
+import { studioAppDirectory } from "./studio-app-layout.mjs";
+
 export * from "./learning-patterns-admission.mjs";
 
 const verifierPath = "scripts/check-learning-patterns.mjs";
@@ -52,6 +54,12 @@ export async function verifyTrustedBase(root, base) {
 			path.join(directory, "learning-patterns-admission.mjs"),
 			git(repository, "show", `${revision}:${ownerPath}`),
 		);
+		const layoutPath = "scripts/studio-app-layout.mjs";
+		if (git(repository, "ls-tree", "--name-only", revision, "--", layoutPath).trim())
+			await writeFile(
+				path.join(directory, "studio-app-layout.mjs"),
+				git(repository, "show", `${revision}:${layoutPath}`),
+			);
 		const stdout = execFileSync(process.execPath, [trusted, "--root", root], {
 			encoding: "utf8",
 			stdio: ["ignore", "pipe", "inherit"],
@@ -103,9 +111,11 @@ if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.ar
 					} catch (error) {
 						if (error.code !== "LEARNING_PATTERNS_ADMISSION" || !inputs) throw error;
 					}
-					const { bundleInspectionFrame } = await import(
-						"../apps/desktop/scripts/prebuild-viewer.ts"
-					);
+					const appDirectory = await studioAppDirectory(root);
+					const { bundleInspectionFrame } =
+						appDirectory === "apps/desktop"
+							? await import("../apps/desktop/scripts/prebuild-viewer.ts")
+							: await import("../apps/cli/scripts/prebuild-viewer.ts");
 					try {
 						await bundleInspectionFrame(root, directory, (files) => {
 							inspectionInputs = files;
