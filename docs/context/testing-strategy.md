@@ -695,12 +695,9 @@ Use `docs/test-fixtures/sample-course-grammar.md` for broad published-output cov
 
 ## Authoring contracts
 
-`apps/cli/src/renderer/__tests__/grammar4-insertion.test.ts` checks independent semantics
-for every offered starter before round trips and composed-document boundary checks.
-`enum-source-contract.test.ts` checks advertised values and explicit compatibility
-values separately. An implemented metadata flag does not prove runtime behavior.
-`apps/cli/src/renderer/components/panels/__tests__/grammar4-compositions.test.ts` checks every starter and composition for retired authored
-syntax, then verifies composition boundaries and selected block semantics. Sidebar insertion uses schema-backed templates. Raw slash insertion is disabled.
+`packages/grammar/__tests__/enum-source-contract.test.ts` checks advertised values
+and explicit compatibility values separately. An implemented metadata flag does
+not prove runtime behavior.
 
 The isolated authoring catalog in
 `packages/export-pipeline/tests/fixtures/authoring-catalog.ts` feeds static and real

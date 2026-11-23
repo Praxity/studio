@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Records existing behaviour.
+Accepted. The Vitest configuration sections record existing behaviour; the dated sections record the CLI rename decisions.
 
 ## Context
 
@@ -18,15 +18,15 @@ Bare Vitest invocation must use the same package environments as the workspace c
 
 - `test.maxWorkers`: Serialize filesystem-heavy Mac files; their child writers still run concurrently.
 
+Sources: the corresponding comments and implementations at commit `bed54f6109aa4ae868c981f53233a5ee9c5afdd7` and the project definitions in `vitest.workspace.ts`.
+
 ### CLI workspace name
 
-The executable host lives in `apps/cli`, with private workspace package `@praxity/cli`, because Studio no longer contains an editor app. Distribution remains `@praxity/studio`, binary `praxity` and output `dist/studio-cli`. The Vitest project keeps the name `desktop` for nightly selection compatibility. Source filenames and mode values retain their existing contracts.
+Decided 2026-11-22. The executable host lives in `apps/cli`, with private workspace package `@praxity/cli`, because Studio no longer contains an editor app. Distribution remains `@praxity/studio`, binary `praxity` and output `dist/studio-cli`. The Vitest project keeps the name `desktop` because the macOS nightly test job selects `--project=desktop`. Keep filenames such as `desktop-design.ts`, the `desktop` mode value and message keys such as `desktop.identity`; these are separate contracts.
 
 ### Slow-test allowlist path migration
 
-The validator permits the fixed, one-way move from `apps/desktop/` to `apps/cli/`. It first matches exact file/name keys. A migrated entry must retain every field except `file`, remove the old key from the current list and have a unique destination. Dated entries still undergo expiry, date and run validation. Other additions remain subject to the existing shrink-only and dated-addition rules. Once the base no longer contains an old key, the migration cannot restore it.
-
-Sources: the corresponding comments and implementations at commit `bed54f6109aa4ae868c981f53233a5ee9c5afdd7` and the project definitions in `vitest.workspace.ts`.
+Decided 2026-11-22. The validator permits the fixed, one-way move from `apps/desktop/` to `apps/cli/`. It first matches exact file/name keys. A migrated entry must retain every field except `file`, remove the old key from the current list and have a unique destination. Dated entries still undergo expiry, date and run validation. Other additions remain subject to the existing shrink-only and dated-addition rules. Once the base no longer contains an old key, the migration cannot restore it.
 
 ## Consequences
 

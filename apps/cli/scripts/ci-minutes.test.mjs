@@ -1345,6 +1345,8 @@ for (const [name, files, expected] of [
 	["legal archive", ["legal/archive/0.2.0/COMPONENT-SCHEDULE.shipped.md"], false],
 	["export pipeline", ["packages/export-pipeline/src/html-gen.ts"], true],
 	["grammar", ["packages/grammar/src/read-lesson.ts"], true],
+	["CLI resource assets", ["apps/cli/resources/icon.png"], true],
+	["CLI affected selector", ["apps/cli/scripts/test-affected.mjs"], true],
 	[
 		"compositions used by the suites",
 		["apps/cli/src/renderer/components/panels/compositions-data.ts"],

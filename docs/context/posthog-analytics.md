@@ -6,9 +6,7 @@ commits, and chat output. The desktop capture and source-map keys in
 `apps/cli/.env` are for the application and release build, not analytics
 queries.
 
-Event names and properties live in
-`apps/cli/src/main/telemetry-catalog.md`. Query the project through PostHog's
-HogQL endpoint:
+Query event names and properties through the project's PostHog HogQL endpoint:
 
 ```bash
 set -a
