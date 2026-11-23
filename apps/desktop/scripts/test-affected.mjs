@@ -215,28 +215,21 @@ export function matchedFilters(paths, context) {
 	);
 }
 
-export function estimateCases(root, engines) {
-	let declarations = 0;
-	for (const file of globSync("**/*.spec.ts", { cwd: root })) {
-		const source = ts.createSourceFile(
-			file,
-			readFileSync(resolve(root, file), "utf8"),
-			ts.ScriptTarget.Latest,
-			true,
-		);
-		const visit = (node) => {
-			if (
-				ts.isCallExpression(node) &&
-				/^(?:test|test\.(?:only|skip|fixme))$/.test(node.expression.getText(source)) &&
-				node.arguments.length >= 2 &&
-				(ts.isStringLiteralLike(node.arguments[0]) || ts.isTemplateExpression(node.arguments[0]))
-			)
-				declarations++;
-			ts.forEachChild(node, visit);
-		};
-		visit(source);
-	}
-	return declarations * (engines === "all" ? 3 : 1);
+function listBrowserCases(suite, projects) {
+	const root = resolve(import.meta.dirname, "../../../packages/export-pipeline");
+	const require = createRequire(resolve(root, "package.json"));
+	return execFileSync(
+		process.execPath,
+		[
+			require.resolve("@playwright/test/cli"),
+			"test",
+			`--config=tests/${suite}/playwright.config.ts`,
+			"--list",
+			"--reporter=list",
+			...projects,
+		],
+		{ cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+	);
 }
 
 export function buildPlan(
@@ -246,7 +239,8 @@ export function buildPlan(
 		engines = "chromium",
 		deleted = [],
 		outputMap = outputCoverage,
-		full = process.env.CI === "true",
+		list = listBrowserCases,
+		full = false,
 		log = console.log,
 	} = {},
 ) {
@@ -349,6 +343,7 @@ export function buildPlan(
 		pnpm("vitest-format", "exec", "vitest", "run", ...vitest, "--project", "grammar");
 
 	const suites = { a11y: new Set(), deck: new Set() };
+	const explicit = { a11y: new Set(), deck: new Set() };
 	const unmapped = [];
 	const widened = { a11y: [], deck: [] };
 	for (const path of paths) {
@@ -356,6 +351,7 @@ export function buildPlan(
 		const spec = path.match(/^packages\/export-pipeline\/tests\/(a11y|deck)\/(.+)\.spec\.ts$/);
 		if (spec && !deleted.includes(path)) {
 			suites[spec[1]].add(spec[2]);
+			explicit[spec[1]].add(spec[2]);
 			continue;
 		}
 		const entry = outputMap.find((entry) => matches(path, entry.paths));
@@ -369,23 +365,36 @@ export function buildPlan(
 		}
 	}
 	if (filters.output && unmapped.length) for (const suite of Object.values(suites)) suite.add("*");
-	if (css) suites.a11y.add("contrast-themes");
-	if (!full) {
-		for (const [suite, specs] of Object.entries(suites)) {
-			if (!specs.has("*")) continue;
-			log(
-				`${suite}: omitted widened suite, estimated ${estimateCases(resolve(import.meta.dirname, `../../../packages/export-pipeline/tests/${suite}`), engines)} cases (test declarations per selected engine; loops and skips are not expanded).`,
-			);
-			if (unmapped.length) log(`Unmapped changed paths: ${unmapped.join(", ")}`);
-			if (widened[suite].length)
-				log(`Coverage map requests full suite: ${widened[suite].join(", ")}`);
-			log(`The merge candidate's CI runs this suite. Use --full to run it locally.`);
-			specs.clear();
-		}
+	if (css) {
+		suites.a11y.add("contrast-themes");
+		explicit.a11y.add("contrast-themes");
 	}
 	const projects = (engines === "all" ? ["chromium", "firefox", "webkit"] : ["chromium"]).map(
 		(engine) => `--project=${engine}`,
 	);
+	if (!full) {
+		for (const [suite, specs] of Object.entries(suites)) {
+			if (!specs.has("*")) continue;
+			try {
+				const output = list(suite, projects);
+				const total = output.match(/^Total: (\d+) tests?\b/m);
+				if (!total) throw new Error("Playwright listing has no Total count");
+				log(
+					`${suite}: whole suite selects ${total[1]} cases (Playwright listing, including skipped cases).`,
+				);
+			} catch (error) {
+				log(`${suite}: count unavailable: ${error.stderr?.toString().trim() || error.message}`);
+			}
+			if (unmapped.length) log(`Unmapped changed paths: ${unmapped.join(", ")}`);
+			if (widened[suite].length)
+				log(`Coverage map requests full suite: ${widened[suite].join(", ")}`);
+			log(
+				`Only the rest of the suite is left to the merge candidate's CI; edited specs and CSS contrast still run locally. Use --full only when CI reports a failure in this suite or the controller asks.`,
+			);
+			specs.clear();
+			for (const spec of explicit[suite]) specs.add(spec);
+		}
+	}
 	if (suites.deck.size && !steps.some((step) => step.id === "viewer-assets"))
 		pnpm("viewer-assets", "--filter", "@praxity/export-pipeline", "prebuild:client");
 	for (const [suite, specs] of Object.entries(suites)) {
@@ -424,11 +433,7 @@ export function buildPlan(
 	return steps;
 }
 
-export async function runPlan(
-	steps,
-	execute,
-	{ full = process.env.CI === "true", log = console.log } = {},
-) {
+export async function runPlan(steps, execute, { full = false, log = console.log } = {}) {
 	mkdirSync(tmpdir(), { recursive: true });
 	if (process.env.PRAXITY_TEST_ARTIFACTS)
 		mkdirSync(process.env.PRAXITY_TEST_ARTIFACTS, { recursive: true });
@@ -547,6 +552,7 @@ async function main() {
 		throw new Error("--files is only supported with --dry-run for sample diffs");
 	if ((values["select-only"] || values["affected-only"]) && !values["vitest-only"])
 		throw new Error("Selection modes require --vitest-only");
+	const full = values.full || process.env.CI === "true";
 	const root = resolve(import.meta.dirname, "../../..");
 	let paths = [];
 	let deleted = [];
@@ -558,7 +564,7 @@ async function main() {
 		steps = (values["vitest-only"] ? buildVitestPlan : buildPlan)(paths, context, {
 			engines: values.engines,
 			deleted,
-			full: values.full || process.env.CI === "true",
+			full,
 		});
 		console.log(`CI filters: ${JSON.stringify(matchedFilters(paths, context))}`);
 	} catch (error) {
@@ -604,7 +610,7 @@ async function main() {
 	const results = await runPlan(
 		runnable,
 		(step) => (step.id.startsWith("vitest-") ? executeVitest(step, root) : execute(step, root)),
-		{ full: values.full || process.env.CI === "true" },
+		{ full },
 	);
 	console.log("\nSummary:");
 	for (const result of results)
@@ -612,7 +618,9 @@ async function main() {
 			`  ${result.code === 0 ? "PASS" : "FAIL"} ${result.id} (${result.code})${result.error ? `: ${result.error}` : ""}`,
 		);
 	const failed = results.filter((result) => result.code !== 0);
-	console.log(`${results.length - failed.length} passed, ${failed.length} failed`);
+	console.log(
+		`${results.length - failed.length} passed, ${failed.length} failed, ${runnable.length - results.length} not run`,
+	);
 	process.exitCode = failed.length ? 1 : 0;
 }
 

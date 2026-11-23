@@ -12,18 +12,20 @@ Read, review and inspection trust checks.
 The stopped U7 staged host, outline and source-host browser specs are retired;
 shared frame/inspection, transport and published-output tests remain.
 
-Local runs stop at the first failed step and list the steps left unrun.
-Use `--full` to keep running after failures and include widened browser suites.
-`CI=true` preserves full selection and execution, including the CI Vitest-only
-callers; candidate and nightly gates are unchanged.
+Local runs stop at the first failed step, list the steps left unrun and include
+that count in the summary. CI always runs every selected step and the complete
+suites. Use `--full` only when CI reports a failure in that suite or the controller
+asks; it includes complete browser selections and continues after failures.
 
-Browser suites use Chromium; `--engines all` adds Firefox and WebKit. When a11y or
-deck selection widens to the complete suite, local runs omit that suite and print
-its changed-path reasons and an estimated case count from test declarations in
-the real specs, multiplied by the selected engines. The estimate does not expand
-parameterized loops or account for skips. The merge candidate's CI runs the
-complete suites. Use `--full` to run them locally. Unmapped published-output
-changes outside the guarded runtime roots select both complete suites.
+Browser suites use Chromium; `--engines all` adds Firefox and WebKit. When a change
+selects the whole a11y or deck suite, a local run skips that complete suite,
+prints the paths that selected it and its case count, and leaves the rest of the
+suite to the merge candidate's CI. Edited browser specs and `contrast-themes` for
+CSS still run locally. Counts come from Playwright's `--list` for the selected
+engines and include skipped cases. Listing starts no browser. If listing fails
+or has no total, the output reports that the count is unavailable and why.
+Unmapped published-output changes outside the guarded runtime roots select both
+complete suites.
 The learner-authority roots (including `export-pipeline/src/patterns/`) and
 ownership/routing scripts have exhaustive prefix coverage: unknown paths select
 both complete published browser suites. A missing fallback map or CI output-filter

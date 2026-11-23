@@ -9,7 +9,6 @@ import {
 	buildPlan,
 	buildVitestPlan,
 	changedFiles,
-	estimateCases,
 	execute,
 	loadContext,
 	matchedFilters,
@@ -651,7 +650,11 @@ for (const throws of [false, true]) {
 				if (throws) throw new Error("broken");
 				return 7;
 			},
-			{ full: false, log: (message) => messages.push(message) },
+			{
+				full: false,
+				list: () => "Total: 42 tests in 2 files",
+				log: (message) => messages.push(message),
+			},
 		);
 		assert.deepEqual(executed, ["first"]);
 		assert.deepEqual(results, [
@@ -661,17 +664,21 @@ for (const throws of [false, true]) {
 	});
 }
 
-test("local widened suites report estimates and changed-path reasons without changing narrow selections", () => {
+test("local widened suites report listing counts and changed-path reasons without changing narrow selections", () => {
 	const messages = [];
 	const path = ".github/workflows/ci.yml";
-	const local = plan([path], { full: false, log: (message) => messages.push(message) });
+	const local = plan([path], {
+		full: false,
+		list: () => "Total: 42 tests in 2 files",
+		log: (message) => messages.push(message),
+	});
 	for (const suite of ["a11y", "deck"]) {
 		assert.equal(command(local, suite), undefined);
-		assert.match(messages.join("\n"), new RegExp(`${suite}:.*estimated [1-9]\\d* cases`));
+		assert.match(messages.join("\n"), new RegExp(`${suite}:.*42 cases`));
 	}
 	assert.match(messages.join("\n"), /Unmapped changed paths: \.github\/workflows\/ci.yml/);
 	assert.match(messages.join("\n"), /merge candidate's CI/);
-	assert.match(messages.join("\n"), /loops and skips are not expanded/);
+	assert.doesNotMatch(messages.join("\n"), /estimated/);
 	assert.deepEqual(
 		plan(["packages/shared-blocks/src/viewer/deck-shell.css"], { full: false }),
 		plan(["packages/shared-blocks/src/viewer/deck-shell.css"]),
@@ -681,7 +688,11 @@ test("local widened suites report estimates and changed-path reasons without cha
 test("explicit full coverage mappings are also omitted locally with their reason", () => {
 	const messages = [];
 	const path = "packages/export-pipeline/src/patterns/text/future.json";
-	const steps = plan([path], { full: false, log: (message) => messages.push(message) });
+	const steps = plan([path], {
+		full: false,
+		list: () => "Total: 42 tests in 2 files",
+		log: (message) => messages.push(message),
+	});
 	assert.equal(command(steps, "a11y"), undefined);
 	assert.equal(command(steps, "deck"), undefined);
 	assert.match(
@@ -690,7 +701,7 @@ test("explicit full coverage mappings are also omitted locally with their reason
 	);
 });
 
-test("CI=true preserves full plans and continues after failure without an explicit flag", async (t) => {
+test("module defaults remain local even when CI=true", async (t) => {
 	const saved = process.env.CI;
 	process.env.CI = "true";
 	t.after(() => {
@@ -702,18 +713,21 @@ test("CI=true preserves full plans and continues after failure without an explic
 		[".github/workflows/ci.yml"],
 		["packages/export-pipeline/src/patterns/text/future.json"],
 	]) {
-		assert.equal(JSON.stringify(buildPlan(paths, context)), JSON.stringify(plan(paths)));
+		assert.equal(
+			command(
+				buildPlan(paths, context, { list: () => "Total: 42 tests in 2 files", log: () => {} }),
+				"a11y",
+			),
+			undefined,
+		);
 	}
 	const executed = [];
 	const results = await runPlan([{ id: "one" }, { id: "two" }], (step) => {
 		executed.push(step.id);
 		return 7;
 	});
-	assert.deepEqual(executed, ["one", "two"]);
-	assert.deepEqual(results, [
-		{ id: "one", code: 7 },
-		{ id: "two", code: 7 },
-	]);
+	assert.deepEqual(executed, ["one"]);
+	assert.deepEqual(results, [{ id: "one", code: 7 }]);
 });
 
 test("CLI --full restores widened suites; local dry-run reports their omission", () => {
@@ -732,7 +746,7 @@ test("CLI --full restores widened suites; local dry-run reports their omission",
 	const local = run("");
 	assert.equal(local.status, 0, local.stderr);
 	assert.doesNotMatch(local.stdout, /\[(a11y|deck)\]/);
-	assert.match(local.stdout, /estimated [1-9]\d* cases/);
+	assert.match(local.stdout, /[1-9]\d* cases/);
 	const full = run("", "--full");
 	assert.equal(full.status, 0, full.stderr);
 	assert.match(full.stdout, /\[a11y\]/);
@@ -744,18 +758,127 @@ test("CLI --full restores widened suites; local dry-run reports their omission",
 	assert.equal(run("true", "--vitest-only").stdout, run("", "--full", "--vitest-only").stdout);
 });
 
-test("case estimates read current spec declarations and scale by selected engines", (t) => {
-	const dir = mkdtempSync(join(tmpdir(), "affected-count-"));
-	t.after(() => rmSync(dir, { recursive: true, force: true }));
-	const file = join(dir, "example.spec.ts");
-	writeFileSync(
-		file,
-		'test.describe("group", () => { test("one", () => {}); test.skip("two", () => {}); test.skip(true, "condition"); });',
+test("listing receives the selected engines and reports Playwright's total", () => {
+	const calls = [];
+	const messages = [];
+	const steps = plan([".github/workflows/ci.yml"], {
+		full: false,
+		engines: "all",
+		list: (suite, projects) => {
+			calls.push([suite, projects]);
+			return `Listing tests:\n  parameterized test\nTotal: ${suite === "a11y" ? 1876 : 1759} tests in 97 files\n`;
+		},
+		log: (message) => messages.push(message),
+	});
+	assert.deepEqual(calls, [
+		["a11y", ["--project=chromium", "--project=firefox", "--project=webkit"]],
+		["deck", ["--project=chromium", "--project=firefox", "--project=webkit"]],
+	]);
+	assert.equal(command(steps, "a11y"), undefined);
+	assert.match(messages.join("\n"), /a11y:.*1876 cases/);
+	assert.match(messages.join("\n"), /deck:.*1759 cases/);
+	assert.match(
+		messages.join("\n"),
+		/only when CI reports a failure in this suite or the controller asks/,
 	);
-	assert.equal(estimateCases(dir, "chromium"), 2);
-	assert.equal(estimateCases(dir, "all"), 6);
-	writeFileSync(file, 'for (const name of ["a", "b"]) { test(`case ${name}`, () => {}); }');
-	assert.equal(estimateCases(dir, "chromium"), 1);
-	writeFileSync(join(dir, "helper.ts"), 'test("not a spec", () => {});');
-	assert.equal(estimateCases(dir, "chromium"), 1);
 });
+
+for (const reason of ["listing crashed", "Playwright listing has no Total count"]) {
+	test(`unavailable listing count reports why: ${reason}`, () => {
+		const messages = [];
+		const steps = plan([".github/workflows/ci.yml"], {
+			full: false,
+			list: () => {
+				if (reason === "listing crashed") throw new Error(reason);
+				return "Listing tests: missing total";
+			},
+			log: (message) => messages.push(message),
+		});
+		assert.equal(command(steps, "deck"), undefined);
+		assert.match(messages.join("\n"), new RegExp(`count unavailable: ${reason}`));
+		assert.doesNotMatch(messages.join("\n"), /\d+ cases|estimated/);
+	});
+}
+
+test("local full-suite deferral keeps edited browser specs and CSS contrast", () => {
+	const a11y = "packages/export-pipeline/tests/a11y/activity-bugs.spec.ts";
+	const deck = "packages/export-pipeline/tests/deck/focus-contrast.spec.ts";
+	const steps = plan(
+		[".github/workflows/ci.yml", a11y, deck, "packages/shared-blocks/src/viewer/deck-shell.css"],
+		{ full: false, list: () => "Total: 42 tests in 2 files", log: () => {} },
+	);
+	assert.deepEqual(command(steps, "a11y"), [
+		"--filter",
+		"@praxity/export-pipeline",
+		"test:a11y",
+		"tests/a11y/activity-bugs.spec.ts",
+		"tests/a11y/contrast-themes.spec.ts",
+		"--project=chromium",
+	]);
+	assert.deepEqual(command(steps, "deck"), [
+		"--filter",
+		"@praxity/export-pipeline",
+		"test:deck",
+		"tests/deck/focus-contrast.spec.ts",
+		"--project=chromium",
+	]);
+	const messages = [];
+	const deleted = plan([".github/workflows/ci.yml", a11y], {
+		full: false,
+		deleted: [a11y],
+		list: () => "Total: 42 tests in 2 files",
+		log: (message) => messages.push(message),
+	});
+	assert.equal(command(deleted, "a11y"), undefined);
+	assert.match(
+		messages.join("\n"),
+		/Only the rest of the suite is left to the merge candidate's CI/,
+	);
+});
+
+for (const [mode, ci, flags, expected] of [
+	["local", "", [], 1],
+	["CI", "true", [], 4],
+	["full", "", ["--full"], 4],
+]) {
+	test(`non-dry-run CLI ${mode} execution honours failure policy and summary`, (t) => {
+		const dir = mkdtempSync(join(tmpdir(), "affected-mode-"));
+		t.after(() => rmSync(dir, { recursive: true, force: true }));
+		const output = join(dir, "calls.jsonl");
+		const fakePnpm = join(dir, "fake-pnpm.cjs");
+		writeFileSync(
+			fakePnpm,
+			'const fs = require("node:fs"); const path = process.env.FAKE_CALLS; const first = !fs.existsSync(path); fs.appendFileSync(path, JSON.stringify(process.argv.slice(2)) + "\\n"); process.exit(first ? 7 : 0);',
+		);
+		const result = spawnSync(
+			process.execPath,
+			[
+				resolve(root, "apps/desktop/scripts/test-affected.mjs"),
+				"--vitest-only",
+				"--base",
+				"missing-base",
+				...flags,
+			],
+			{
+				encoding: "utf8",
+				env: { ...process.env, CI: ci, npm_execpath: fakePnpm, FAKE_CALLS: output },
+			},
+		);
+		assert.equal(result.status, 1, result.stderr);
+		const calls = readFileSync(output, "utf8")
+			.trim()
+			.split("\n")
+			.map((line) => JSON.parse(line));
+		assert.equal(calls.length, expected, result.stdout);
+		assert.deepEqual(calls[0], ["--filter", "@praxity/desktop", "prebuild"]);
+		if (expected === 4) {
+			assert.deepEqual(calls[1], ["--filter", "@praxity/desktop", "prepare:typst"]);
+			assert.deepEqual(calls[2], ["--filter", "@praxity/export-pipeline", "prebuild:client"]);
+			assert.equal(calls[3][1], "vitest");
+		}
+		assert.match(
+			result.stdout,
+			new RegExp(`${expected - 1} passed, 1 failed, ${4 - expected} not run`),
+		);
+	});
+}

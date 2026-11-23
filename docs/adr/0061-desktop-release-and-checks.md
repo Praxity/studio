@@ -357,12 +357,18 @@ platform constraints. Keep checks at their owning interfaces when refactoring.
 
 ### Local affected-test execution (2026-11-23)
 
-Local affected runs stop at the first failure and name steps left unrun. Complete
-a11y/deck selections are deferred to the merge candidate's CI, with changed-path
-reasons and estimated counts from test declarations in the specs. The estimate
-multiplies declarations by the selected engines but does not expand loops or
-account for skips. This avoids browser setup just to print a local plan.
-`--full` includes complete browser selections and continues after failures.
-`CI=true` preserves the previous plans and execution, including both Vitest-only
-workflow callers. Browser mappings, browser-editor selection and full-Vitest
+Local affected runs stop at the first failure, name steps left unrun and count
+them in the summary. Complete a11y/deck selections are left to the merge
+candidate's CI. Edited browser specs and `contrast-themes` for CSS still run
+locally. Changed-path reasons accompany case counts from Playwright's own
+`--list` for the selected engines, including skipped cases. Listing starts no
+browser or global setup. If it fails or returns no total, report that the count
+is unavailable and why; never substitute a guess.
+
+Use `--full` only when CI reports a failure in that suite or the controller asks.
+It includes complete browser selections and continues after failures. CI always
+runs every selected step and the complete suites. `main` computes full mode once
+from `--full` or `CI=true` and passes it to planning and execution; their module
+defaults are local. Both Vitest-only workflow callers retain their previous plans
+and execution. Browser mappings, browser-editor selection and full-Vitest
 fallback stay unchanged.
