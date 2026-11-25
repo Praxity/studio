@@ -26,6 +26,7 @@ const runId = (run) => {
 };
 
 function validateEntries(entries, today) {
+	const expired = [];
 	if (!Array.isArray(entries)) throw new Error("Slow-test allowlist must be an array");
 	const seen = new Set();
 	for (const entry of entries) {
@@ -64,16 +65,14 @@ function validateEntries(entries, today) {
 		if (today !== undefined) {
 			if (entry.added > today)
 				throw new Error(`Slow-test added must not be in the future: ${key(entry)}`);
-			if ((Date.parse(today) - added) / 86400000 > 14)
-				throw new Error(
-					`Slow-test entry expired after 14 days: ${key(entry)}; fix the test or re-add it deliberately with a new date and run`,
-				);
+			if ((Date.parse(today) - added) / 86400000 > 14) expired.push(entry);
 		}
 	}
+	return expired;
 }
 
 export function validateAllowlist(entries, previous, now = Date.now()) {
-	validateEntries(entries, new Date(now).toISOString().slice(0, 10));
+	const expired = validateEntries(entries, new Date(now).toISOString().slice(0, 10));
 	if (previous !== undefined) {
 		validateEntries(previous);
 		const allowed = new Map(previous.map((entry) => [key(entry), entry]));
@@ -98,6 +97,8 @@ export function validateAllowlist(entries, previous, now = Date.now()) {
 			}
 			if (!prior && !isDated(entry))
 				throw new Error(`Slow-test allowlist may only shrink: ${key(entry)}`);
+			if ((!prior || entry.added !== prior.added) && expired.includes(entry))
+				throw new Error(`Slow-test new entry expired after 14 days: ${key(entry)}`);
 			if (prior && isDated(prior)) {
 				if (!isDated(entry))
 					throw new Error(`Slow-test dated metadata cannot be removed: ${key(entry)}`);
@@ -106,6 +107,7 @@ export function validateAllowlist(entries, previous, now = Date.now()) {
 			}
 		}
 	}
+	return expired;
 }
 
 export default class SlowTestsReporter {
@@ -138,7 +140,10 @@ export default class SlowTestsReporter {
 			};
 		}
 		const entries = JSON.parse(readFileSync(new URL("./slow-tests.json", import.meta.url), "utf8"));
-		validateAllowlist(entries);
+		for (const entry of validateAllowlist(entries))
+			ctx.logger.log(
+				`::warning::Slow-test entry expired after 14 days: ${key(entry)}; added ${entry.added}; backlog ${entry.backlog}`,
+			);
 		this.allowed = new Set(entries.map(key));
 		this.violations = [];
 	}
