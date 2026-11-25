@@ -96,12 +96,9 @@ test("CLI path migration cannot add names, reverse paths or revive removed entri
 		assert.throws(() => validateAllowlist([current], previous, today), /may only shrink/);
 });
 
-test("CLI path migration keeps dated expiry and metadata requirements", () => {
+test("CLI path migration keeps expired allowances and metadata requirements", () => {
 	const moved = { ...oldDatedEntry, file: "apps/cli/src/slow.test.ts" };
-	assert.throws(
-		() => validateAllowlist([moved], [oldDatedEntry], Date.parse("2026-11-02")),
-		/expired/,
-	);
+	assert.doesNotThrow(() => validateAllowlist([moved], [oldDatedEntry], Date.parse("2026-11-02")));
 	for (const field of ["added", "run", "backlog"]) {
 		const partial = { ...moved };
 		delete partial[field];
@@ -199,13 +196,21 @@ test("dated entries still require valid file, name and reason and stay unique", 
 	assert.throws(() => validateAllowlist([datedEntry, datedEntry], [], today), /Duplicate/);
 });
 
-test("dated entries expire after 14 UTC calendar days regardless of the base", () => {
+test("existing dated entries keep their allowance after 14 UTC calendar days", () => {
 	const expired = { ...datedEntry, added: "2026-10-03" };
-	for (const previous of [undefined, [], [expired]])
-		assert.throws(() => validateAllowlist([expired], previous, today), {
-			message:
-				'Slow-test entry expired after 14 days: ["apps/cli/src/slow.test.ts","suite > slow"]; fix the test or re-add it deliberately with a new date and run',
-		});
+	for (const previous of [undefined, [expired]])
+		assert.doesNotThrow(() => validateAllowlist([expired], previous, today));
+});
+
+test("new, renamed, converted and renewed entries refuse dates older than 14 UTC days", () => {
+	const expired = { ...datedEntry, added: "2026-10-03" };
+	for (const previous of [
+		[],
+		[entry],
+		[{ ...expired, name: "old name" }],
+		[{ ...expired, added: "2026-10-02", run: "67890" }],
+	])
+		assert.throws(() => validateAllowlist([expired], previous, today), /expired after 14 days/);
 	assert.doesNotThrow(() => validateAllowlist([{ ...datedEntry, added: "2026-10-04" }], [], today));
 	assert.doesNotThrow(() => validateAllowlist([expired], [], Date.parse("2026-10-17T23:59:59Z")));
 	assert.throws(
@@ -276,6 +281,47 @@ const task = (file, name, duration) => ({
 	diagnostic: () => ({ duration }),
 });
 
+test("reporter warns once per expired entry at initialization and keeps its allowance", async (t) => {
+	const entries = JSON.parse(readFileSync(resolve(root, "scripts/slow-tests.json"), "utf8"));
+	const dated = entries.filter((entry) => entry.added);
+	assert.ok(dated.length > 0);
+	const now = Math.max(...dated.map((entry) => Date.parse(entry.added))) + 15 * 86400000;
+	t.mock.method(Date, "now", () => now);
+	for (const reportOnly of ["false", "true"]) {
+		const oldReportOnly = process.env.SLOW_TESTS_REPORT_ONLY;
+		process.env.SLOW_TESTS_REPORT_ONLY = reportOnly;
+		const logs = [];
+		try {
+			const reporter = new SlowTestsReporter(() =>
+				assert.fail("Expired allowances must not rerun"),
+			);
+			reporter.onInit({
+				config: { root },
+				logger: {
+					log: (message) => logs.push(message),
+					error: (message) => assert.fail(message),
+				},
+			});
+			for (const allowed of dated) {
+				for (let i = 0; i < 2; i++)
+					reporter.onTestCaseResult(task(allowed.file, allowed.name, 4500));
+			}
+			await reporter.onTestRunEnd();
+			const warnings = logs.filter((line) => line.startsWith("::warning::Slow-test entry expired"));
+			assert.equal(warnings.length, dated.length);
+			for (const allowed of dated)
+				assert.ok(
+					warnings.includes(
+						`::warning::Slow-test entry expired after 14 days: ${JSON.stringify([allowed.file, allowed.name])}; added ${allowed.added}; backlog ${allowed.backlog}`,
+					),
+				);
+		} finally {
+			if (oldReportOnly === undefined) delete process.env.SLOW_TESTS_REPORT_ONLY;
+			else process.env.SLOW_TESTS_REPORT_ONLY = oldReportOnly;
+		}
+	}
+});
+
 async function checkConfirmation(
 	initial,
 	{
@@ -298,6 +344,7 @@ async function checkConfirmation(
 	const initialTests = Array.isArray(initial) ? initial : [initial];
 	const calls = [];
 	const logs = [];
+	const initializationLogs = [];
 	const oldCI = process.env.CI;
 	const oldCode = process.exitCode;
 	const oldReportOnly = process.env.SLOW_TESTS_REPORT_ONLY;
@@ -344,6 +391,7 @@ async function checkConfirmation(
 			delete process.env.CI;
 			const reporter = new SlowTestsReporter(run, now);
 			reporter.onInit({ config: { root }, logger });
+			initializationLogs.push(...logs.splice(0));
 			for (const initial of initialTests) reporter.onTestCaseResult(initial);
 			await reporter.onTestRunEnd();
 		} else if (
@@ -367,7 +415,7 @@ async function checkConfirmation(
 			)
 		)
 			process.exitCode = 1;
-		return { calls, logs: logs.join("\n"), code: process.exitCode };
+		return { calls, logs: logs.join("\n"), initializationLogs, code: process.exitCode };
 	} finally {
 		if (oldCI === undefined) delete process.env.CI;
 		else process.env.CI = oldCI;

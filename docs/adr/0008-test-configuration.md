@@ -26,7 +26,13 @@ Decided 2026-11-22. The executable host lives in `apps/cli`, with private worksp
 
 ### Slow-test allowlist path migration
 
-Decided 2026-11-22. The validator uses `priorStudioAppPath` from `scripts/studio-app-layout.mjs` for the fixed, one-way move from `apps/desktop/` to `apps/cli/`. Its path sets are projected from file/name keys, so the shared owner handles the prefix and old-entry removal rules while the validator checks every field except `file` for equality. Exact keys take precedence and destinations stay unique. Dated entries still undergo expiry, date and run validation. Other additions remain subject to the existing shrink-only and dated-addition rules. Once the base no longer contains an old key, the migration cannot restore it.
+Decided 2026-11-22. The validator uses `priorStudioAppPath` from `scripts/studio-app-layout.mjs` for the fixed, one-way move from `apps/desktop/` to `apps/cli/`. Its path sets are projected from file/name keys, so the shared owner handles the prefix and old-entry removal rules while the validator checks every field except `file` for equality. Exact keys take precedence and destinations stay unique. Dated entries still undergo date and run validation; expiry follows the decision below. Other additions remain subject to the existing shrink-only and dated-addition rules. Once the base no longer contains an old key, the migration cannot restore it.
+
+### Expired slow-test allowances
+
+Recorded 2026-11-25, following the owner's decision of 2026-11-15. An existing dated slow-test allowance stays effective after 14 UTC calendar days. The reporter warns once per expired entry at initialization, naming its file, full test name, `added` date and `backlog` pointer. The dated backlog entry remains the record for follow-up. Expiry must not prevent unrelated tests from running.
+
+The CI base comparison still refuses additions, renames, conversions from plain entries and date renewals whose `added` date is already more than 14 days old. Plain entries remain shrink-only, and dated entries retain their required metadata, date and run validation and one-way CLI path migration rules. Renewing a date still requires a different run.
 
 ## Consequences
 

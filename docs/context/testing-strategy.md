@@ -196,23 +196,25 @@ run URL or numeric run ID, and a non-empty `backlog` pointer. The dated backlog
 entry names the test, its measured time and the candidate run. Converting a plain
 entry to a dated entry requires the same fields.
 
-`validateAllowlist` enforces expiry in the reporter and the CI policy test on PRs
-and merge candidates. Dated entries expire after 14 UTC calendar days, whatever
-their backlog state. Fix the test and remove its entry, or deliberately re-add it
-with a new `added` date and a different run. The date cannot be in the future;
-changing a run URL to the same numeric ID does not count as a different run.
-Dated metadata cannot be stripped to avoid expiry. Removing an entry always passes,
-including when its base entry has expired.
+After 14 UTC calendar days, an existing dated entry keeps its allowance. At
+initialization the reporter prints one warning per expired entry, naming its
+file, full test name, `added` date and `backlog` pointer. The dated backlog entry
+remains the follow-up record. Expiry lets unrelated runs continue, including
+report-only runs. This follows the owner's 2026-11-15 decision, recorded in
+[ADR 0008](../adr/0008-test-configuration.md).
+
+The CI policy test compares entries with the base and refuses new or renamed
+entries, conversions from plain entries and date renewals whose `added` date is
+already more than 14 days old. The date cannot be in the future; renewing it
+requires a different run. Changing a run URL to the same numeric ID does not
+count as a different run. Dated metadata cannot be stripped. Removing an entry
+always passes, including when its base entry has expired.
 
 The admission check runs in PR CI. A candidate dispatch compares the head with
 itself, so it can't catch an added entry. Require green PR CI on the same head
 before dispatching a candidate. The "different run" rule compares only
 with the base entry, so a remove-then-re-add across two PRs can reuse a run. The
-dated tracking entry is the record maintainers must review. Expiry runs
-when the reporter starts. From day 15, every Vitest run that loads the reporter
-fails before any test runs, until the entry is fixed or re-added. That includes
-local runs, unrelated PRs and the macOS nightly, so the nightly records no timings
-until then.
+dated tracking entry is the record maintainers must review.
 
 Every PR push runs the fast gate, whether the PR is draft or ready. `changes`
 scans committed machine paths; `fast-checks` runs ownership, timeout evidence,
