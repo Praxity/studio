@@ -5,11 +5,13 @@ export type A11yTextSize = "default" | "large";
 export interface StoredA11yPreferences {
 	textSize?: A11yTextSize;
 	focusChoice: boolean | null;
+	motionChoice?: "off";
 }
 
 let memoryStore: string | null = null;
 
 function readRaw(): string | null {
+	if (memoryStore !== null) return memoryStore;
 	let value: string | null = null;
 	try {
 		value = localStorage.getItem(STORAGE_KEY);
@@ -28,6 +30,7 @@ export function readA11yPreferences(): StoredA11yPreferences {
 		const parsed = JSON.parse(raw) as Record<string, unknown>;
 		const storedSize = parsed.textSize;
 		return {
+			...(parsed.motionChoice === "off" ? { motionChoice: "off" as const } : {}),
 			textSize:
 				storedSize === "large" || storedSize === "x-large"
 					? "large"
@@ -51,16 +54,16 @@ export function writeA11yPreferences(preferences: StoredA11yPreferences): void {
 		...preferences,
 		focusMode: preferences.focusChoice === true,
 	});
+	memoryStore = value;
 	try {
 		localStorage.setItem(STORAGE_KEY, value);
+		memoryStore = null;
 		return;
 	} catch {}
 	try {
 		sessionStorage.setItem(STORAGE_KEY, value);
 		return;
-	} catch {
-		memoryStore = value;
-	}
+	} catch {}
 }
 
 function preferenceTargets(): HTMLElement[] {
@@ -81,7 +84,16 @@ export function applyA11yPreferences(textSize: A11yTextSize, focusMode: boolean)
 	}
 }
 
-export function applyReducedMotion(reduced: boolean): void {
+export function setMotionChoice(choice: "off" | null): void {
+	const preferences = readA11yPreferences();
+	if (choice === "off") preferences.motionChoice = choice;
+	else delete preferences.motionChoice;
+	writeA11yPreferences(preferences);
+	applyMotionPreferences(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false);
+}
+
+export function applyMotionPreferences(deviceReduces: boolean): void {
+	const reduced = deviceReduces || readA11yPreferences().motionChoice === "off";
 	for (const target of preferenceTargets()) {
 		if (reduced) target.dataset.praxityReducedMotion = "true";
 		else delete target.dataset.praxityReducedMotion;

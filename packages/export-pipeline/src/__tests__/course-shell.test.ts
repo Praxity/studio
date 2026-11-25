@@ -1,5 +1,9 @@
 /** @vitest-environment jsdom */
 
+import {
+	readA11yPreferences,
+	setMotionChoice,
+} from "@praxity/shared-blocks/viewer/a11y-preferences-store";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { focusScormResumePage } from "../../template/src/components/scorm-resume-focus";
 import { initializeCourseShell } from "../../template/src/course-shell";
@@ -47,6 +51,7 @@ afterEach(() => {
 		target.removeEventListener(type, listener, options);
 	}
 	listeners.length = 0;
+	vi.unstubAllGlobals();
 });
 
 it("orients a confirmed static Pages resume without a navigation island", () => {
@@ -529,4 +534,70 @@ it("restores a configured fallback destination and host decoration after the gat
 		delete window.__praxityLogicEngine;
 		delete window.__praxityDecoratePageHref;
 	}
+});
+
+it.each([undefined, "off"] as const)(
+	"resolves motion choice %s through OS changes in both directions",
+	(motionChoice) => {
+		const media = Object.assign(new EventTarget(), { matches: false });
+		vi.stubGlobal(
+			"matchMedia",
+			vi.fn(() => media),
+		);
+		localStorage.setItem("praxity-a11y", JSON.stringify({ motionChoice, focusChoice: null }));
+		document.head.innerHTML =
+			'<script id="praxity-shell-config" type="application/json">{"version":1,"kind":"page","entrance":"slide"}</script>';
+		initializeCourseShell();
+		expect(document.documentElement.dataset.praxityReducedMotion).toBe(
+			motionChoice ? "true" : undefined,
+		);
+		for (const reduced of [true, false, true]) {
+			media.matches = reduced;
+			media.dispatchEvent(Object.assign(new Event("change"), { matches: reduced }));
+			expect(document.documentElement.dataset.praxityReducedMotion).toBe(
+				reduced || motionChoice ? "true" : undefined,
+			);
+		}
+		setMotionChoice("off");
+		setMotionChoice(null);
+		expect(readA11yPreferences().motionChoice).toBeUndefined();
+		expect(document.documentElement.dataset.praxityReducedMotion).toBe("true");
+		media.matches = false;
+		media.dispatchEvent(Object.assign(new Event("change"), { matches: false }));
+		expect(document.documentElement.dataset.praxityReducedMotion).toBeUndefined();
+	},
+);
+
+it("keeps motion off through reading preference initialization, text and focus changes and reload", () => {
+	localStorage.setItem("praxity-a11y", JSON.stringify({ motionChoice: "off", focusChoice: null }));
+	const mount = () => {
+		document.head.innerHTML =
+			'<script id="praxity-shell-config" type="application/json">{"version":1,"kind":"page","entrance":"slide"}</script>';
+		document.body.innerHTML =
+			'<main data-praxity-root>Content</main><div data-a11y-toolbar><button data-a11y-action="text">Larger text</button><button data-a11y-action="focus">Reading guide</button></div>';
+		initializeCourseShell();
+		document.dispatchEvent(new Event("DOMContentLoaded"));
+	};
+	mount();
+	expect(readA11yPreferences().motionChoice).toBe("off");
+	for (const action of ["text", "focus"]) {
+		document.querySelector<HTMLButtonElement>(`[data-a11y-action="${action}"]`)?.click();
+		expect(readA11yPreferences().motionChoice).toBe("off");
+	}
+	expect(readA11yPreferences()).toEqual({
+		textSize: "large",
+		focusChoice: true,
+		motionChoice: "off",
+	});
+	document.documentElement.removeAttribute("data-praxity-reduced-motion");
+	mount();
+	expect(document.documentElement.dataset.praxityReducedMotion).toBe("true");
+	expect(readA11yPreferences()).toEqual({
+		textSize: "large",
+		focusChoice: true,
+		motionChoice: "off",
+	});
+	setMotionChoice(null);
+	document.querySelector<HTMLButtonElement>('[data-a11y-action="text"]')?.click();
+	expect(readA11yPreferences()).toEqual({ textSize: "default", focusChoice: true });
 });
