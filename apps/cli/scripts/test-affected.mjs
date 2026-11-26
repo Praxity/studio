@@ -31,13 +31,15 @@ const vitestTest = (path) =>
 	!scriptPath(path) &&
 	(!path.includes("/e2e/") || path.includes(".test.")) &&
 	!path.includes("/tests/a11y/") &&
-	!path.includes("/tests/deck/");
+	!path.includes("/tests/deck/") &&
+	!path.includes("/tests/scorm-local/");
 const sourcePath = (path) =>
 	/\.[cm]?[jt]sx?$/.test(path) &&
 	!scriptPath(path) &&
 	!path.includes("/e2e/") &&
 	!path.includes("/tests/a11y/") &&
 	!path.includes("/tests/deck/") &&
+	!path.includes("/tests/scorm-local/") &&
 	!vitestTest(path);
 const matches = (path, globs) => globs.some((glob) => picomatch(glob, { dot: true })(path));
 const globalConfigGlobs = [
