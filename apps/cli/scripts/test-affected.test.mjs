@@ -381,6 +381,21 @@ test("changed tests run directly; script implementation covers indirect Node con
 		assert.ok(command(steps, "node").includes(path));
 });
 
+for (const file of [
+	"lifecycle.spec.ts",
+	"local.spec.ts",
+	"retry.spec.ts",
+	"playwright.config.ts",
+]) {
+	test(`scorm-local Playwright files select no Vitest steps: ${file}`, () => {
+		const steps = plan([`packages/export-pipeline/tests/scorm-local/${file}`]);
+		assert.deepEqual(
+			steps.filter((step) => step.id.startsWith("vitest-")),
+			[],
+		);
+	});
+}
+
 test("review sources and Studio server select journeys in all requested engines", () => {
 	for (const path of [
 		"packages/export-pipeline/template/review-comments.js",
